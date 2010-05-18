@@ -13,6 +13,8 @@
 #include "evas_common.h"
 #include "evas_private.h"
 
+#define EVAS_WINK_MODULE_NAME jpeg
+#include "evas_wink.h"
 
 typedef struct _JPEG_error_mgr *emptr;
 struct _JPEG_error_mgr
@@ -720,6 +722,11 @@ evas_image_load_file_data_jpeg_alpha_internal(Image_Entry *ie, FILE *f, int *err
 static Eina_Bool
 evas_image_load_file_head_jpeg(Image_Entry *ie, const char *file, const char *key, int *error)
 {
+#ifdef USE_WINK_CODEC
+   if (evas_image_load_file_head_jpeg_wink(ie, file, key, error) == EINA_TRUE)
+	   return EINA_TRUE;
+#endif
+
    int val;
    FILE *f;
 
@@ -738,6 +745,11 @@ evas_image_load_file_head_jpeg(Image_Entry *ie, const char *file, const char *ke
 static Eina_Bool
 evas_image_load_file_data_jpeg(Image_Entry *ie, const char *file, const char *key, int *error)
 {
+#ifdef USE_WINK_CODEC
+   if (evas_image_load_file_data_jpeg_wink(ie, file, key, error) == EINA_TRUE)
+	   return EINA_TRUE;
+#endif
+
    int val;
    FILE *f;
 

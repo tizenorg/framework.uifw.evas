@@ -56,3 +56,15 @@ SUBDIRS += xpm
 endif
 endif
 
+if BUILD_LOADER_BMP
+if !EVAS_STATIC_BUILD_BMP
+SUBDIRS += bmp
+endif
+endif
+
+if BUILD_LOADER_WBMP
+if !EVAS_STATIC_BUILD_WBMP
+SUBDIRS += wbmp
+endif
+endif
+

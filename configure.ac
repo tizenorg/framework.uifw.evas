@@ -94,6 +94,8 @@ want_evas_image_loader_png="yes"
 want_evas_image_loader_svg="yes"
 want_evas_image_loader_tiff="yes"
 want_evas_image_loader_xpm="yes"
+want_evas_image_loader_bmp="yes"
+want_evas_image_loader_wbmp="yes"
 
 want_evas_font_loader_eet="yes"
 
@@ -204,6 +206,18 @@ PKG_CHECK_MODULES([EINA], [eina-0])
 PKG_CHECK_MODULES([FREETYPE], [freetype2 >= 9.3.0])
 
 requirement_evas="freetype2 eina-0 ${requirement_evas}"
+
+#WinkCodec
+AC_ARG_ENABLE([winkcodec],
+		AS_HELP_STRING([--enable-winkcodec],
+			[enable/disable wink codec (default: no)]),
+		[WINK=$enableval], [WINK=no])
+
+#if test "x${WINK}" = "xyes" ; then
+#	PKG_CHECK_MODULES([LIBWINK],[wink])
+#	AC_DEFINE(USE_WINK_CODEC, 1, [use wink codec])
+#	requirement_evas="wink ${requirement_evas}"
+#fi
 
 ## optional dependencies
 
@@ -668,6 +682,10 @@ EVAS_CHECK_IMAGE_LOADER([SVG], [${want_evas_image_loader_svg}])
 EVAS_CHECK_IMAGE_LOADER([Tiff], [${want_evas_image_loader_tiff}])
 
 EVAS_CHECK_IMAGE_LOADER([XPM], [${want_evas_image_loader_xpm}])
+
+EVAS_CHECK_IMAGE_LOADER([BMP], [${want_evas_image_loader_bmp}])
+
+EVAS_CHECK_IMAGE_LOADER([WBMP], [${want_evas_image_loader_wbmp}])
 
 
 #####################################################################
@@ -1351,6 +1369,8 @@ src/modules/loaders/jpeg/Makefile
 src/modules/loaders/png/Makefile
 src/modules/loaders/tiff/Makefile
 src/modules/loaders/xpm/Makefile
+src/modules/loaders/bmp/Makefile
+src/modules/loaders/wbmp/Makefile
 src/modules/loaders/svg/Makefile
 src/modules/loaders/pmaps/Makefile
 src/modules/savers/Makefile
@@ -1428,6 +1448,8 @@ echo "  PNG.....................: $have_evas_image_loader_png"
 echo "  SVG.....................: $have_evas_image_loader_svg"
 echo "  TIFF....................: $have_evas_image_loader_tiff"
 echo "  XPM.....................: $have_evas_image_loader_xpm"
+echo "  BMP.....................: $have_evas_image_loader_bmp"
+echo "  WBMP....................: $have_evas_image_loader_wbmp"
 # FIXME: need to add modular image loader system
 # FIXME: add more image loader modules
 echo

@@ -216,6 +216,24 @@ BuildRequires: edb-devel
 EDB Image saver module for Evas
 %endif
 
+%if %{with module_loader_bmp}
+%package module_loader_bmp
+Summary: BMP Image loader module for Evas
+Group: System Environment/Libraries
+##BuildRequires: (none, X?)
+%description module_loader_bmp
+BMP Image loader module for Evas
+%endif
+
+%if %{with module_loader_wbmp}
+%package module_loader_wbmp
+Summary: WBMP Image loader module for Evas
+Group: System Environment/Libraries
+##BuildRequires: (none, X?)
+%description module_loader_wbmp
+WBMP Image loader module for Evas
+%endif
+
 %if %{with module_loader_xpm}
 %package module_loader_xpm
 Summary: XPM Image loader module for Evas

@@ -21,6 +21,8 @@ static struct ext_loader_s	const loaders[] = {
    { "eap", "eet" },
    { "edb", "edb" },
    { "xpm", "xpm" },
+   { "bmp", "bmp" },
+   { "wbmp", "wbmp" },
    { "tiff", "tiff" },
    { "tif", "tiff" },
    { "svg", "svg" },
@@ -33,7 +35,7 @@ static struct ext_loader_s	const loaders[] = {
 };
 
 static const char *loaders_name[] = {
-  "png", "jpeg", "eet", "xpm", "tiff", "gif", "svg", "pmaps", "edb"
+  "png", "jpeg", "eet", "xpm", "bmp", "wbmp", "tiff", "gif", "svg", "pmaps", "edb"
 };
 
 struct evas_image_foreach_loader_data

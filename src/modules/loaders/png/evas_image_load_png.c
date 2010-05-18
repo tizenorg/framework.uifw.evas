@@ -28,6 +28,8 @@
 #include "evas_common.h"
 #include "evas_private.h"
 
+#define EVAS_WINK_MODULE_NAME png
+#include "evas_wink.h"
 
 #define PNG_BYTES_TO_CHECK 4
 
@@ -45,6 +47,11 @@ static Evas_Image_Load_Func evas_image_load_png_func =
 static Eina_Bool
 evas_image_load_file_head_png(Image_Entry *ie, const char *file, const char *key __UNUSED__, int *error)
 {
+#ifdef USE_WINK_CODEC
+   if (evas_image_load_file_head_png_wink(ie, file, key, error) == EINA_TRUE)
+      return EINA_TRUE;
+#endif
+
    png_uint_32 w32, h32;
    FILE *f;
    png_structp png_ptr = NULL;
@@ -130,6 +137,11 @@ evas_image_load_file_head_png(Image_Entry *ie, const char *file, const char *key
 static Eina_Bool
 evas_image_load_file_data_png(Image_Entry *ie, const char *file, const char *key __UNUSED__, int *error)
 {
+#ifdef USE_WINK_CODEC
+   if (evas_image_load_file_data_png_wink(ie, file, key, error) == EINA_TRUE)
+      return EINA_TRUE;
+#endif
+
    unsigned char *surface;
    png_uint_32 w32, h32;
    int w, h;
