@@ -1,0 +1,235 @@
+evas (0.9.9.060+svn20100304slp2+7) unstable; urgency=low
+
+  * Implemented bmp and wbmp image loader module without 3rd party codec.
+  * Git: 165.213.180.234:/git/slp2.0/slp2.0-pkgs/EFL
+  * Tag: evas_0.9.9.060+svn20100304slp2+7
+
+ -- YoungHoon Jung <yhoon.jung@samsung.com>  Wed, 21 Apr 2010 17:09:32 +0900
+
+evas (0.9.9.060+svn20100304slp2+6) unstable; urgency=low
+
+  * Bug fix - evas textblock cursor problem
+  * Git: 165.213.180.234:/git/slp2.0/slp2.0-pkgs/EFL
+  * Tag: evas_0.9.9.060+svn20100304slp2+6
+
+ -- Myungjae Lee <mjae.lee@samsung.com>  Thu, 16 Apr 2010 20:53:00 +0900
+
+evas (0.9.9.060+svn20100304slp2+5) unstable; urgency=low
+
+  * Rollback entry cursor bug fix
+  * Git: 165.213.180.234:/git/slp2.0/slp2.0-pkgs/EFL
+  * Tag: evas_0.9.9.060+svn20100304slp2+5
+
+ -- Myungjae Lee <mjae.lee@samsung.com>  Thu, 16 Apr 2010 11:28:00 +0900
+
+evas (0.9.9.060+svn20100304slp2+4) unstable; urgency=low
+
+  * Updated package version due to tag
+  * Git: 165.213.180.234:/git/slp2.0/slp2.0-pkgs/EFL
+  * Tag: evas_0.9.9.060+svn20100304slp2+4
+
+ -- Myungjae Lee <mjae.lee@samsung.com>  Thu, 15 Apr 2010 20:37:00 +0900
+
+evas (0.9.9.060+svn20100304slp2+3) unstable; urgency=low
+
+  * Bug fix - evas textblock cursor problem
+  * Git: 165.213.180.234:/git/slp2.0/slp2.0-pkgs/EFL
+  * Tag: evas_0.9.9.060+svn20100304slp2+3
+
+ -- Myungjae Lee <mjae.lee@samsung.com>  Thu, 15 Apr 2010 19:57:00 +0900
+
+evas (0.9.9.060+svn20100304slp2+2) unstable; urgency=low
+
+  * change control - add libfribidi-dev, libharfbuzz-dev
+  * Git: 165.213.180.234:/git/slp2.0/slp2.0-pkgs/EFL
+  * Tag: evas_0.9.9.060+svn20100304slp2+2
+
+ -- Jihoon Kim <jihoon48.kim@samsung.com>  Wed, 07 Apr 2010 17:15:28 +0900
+
+evas (0.9.9.060+svn20100304slp2+1) unstable; urgency=low
+
+  * change package version
+
+ -- Jaehwan Kim <jae.hwan.kim@samsung.com>  Thu, 25 Mar 2010 15:06:27 +0900
+
+evas (0.9.9.060+svn20100304-8) unstable; urgency=low
+
+  * added dependencies to libevas-dev.
+
+ -- YoungHoon Jung <yhoon.jung@samsung.com>  Wed, 24 Mar 2010 11:19:14 +0900
+
+evas (0.9.9.060+svn20100304-7) unstable; urgency=low
+
+  * Remove fribidi, haffbuzz from evas 
+
+ -- Jihoon Kim <jihoon48.kim@samsung.com>  Wed, 24 Mar 2010 11:32:22 +0900
+
+evas (0.9.9.060+svn20100304-6) unstable; urgency=low
+
+  * Clean up GLES/EGL stubs on EGL window surface gone.
+   + based on r47461, r47362 and r47386.
+    (upon a request from Gwanglim Lee<gl77.lee@samsung.com>)
+
+ -- YoungHoon Jung <yhoon.jung@samsung.com>  Tue, 23 Mar 2010 20:38:02 +0900
+
+evas (0.9.9.060+svn20100304-5) unstable; urgency=low
+
+  * patched evas_wink.h and minor modifications.
+
+ -- YoungHoon Jung <yhoon.jung@samsung.com>  Tue, 23 Mar 2010 16:19:47 +0900
+
+evas (0.9.9.060+svn20100304-4) unstable; urgency=low
+
+  * Change control file. (Add dependencies for harfbuzz, fribidi)
+
+ -- Doyoun Kang <doyoun.kang@samsung.com>  Tue, 23 Mar 2010 15:12:52 +0900
+
+evas (0.9.9.060+svn20100304-3) unstable; urgency=low
+
+  * disabled wink codec for PNG, JPG, and GIF.
+
+ -- YoungHoon Jung <yhoon.jung@samsung.com>  Mon, 22 Mar 2010 16:09:40 +0900
+
+evas (0.9.9.060+svn20100304-2) unstable; urgency=low
+
+  * implemented PNG/BMP/WBMP/JPEG/GIF image loaders using Wink Codec
+
+ -- YoungHoon Jung <yhoon.jung@samsung.com>  Thu, 18 Mar 2010 13:52:18 +0900
+
+evas (0.9.9.060+svn20100304-1) unstable; urgency=low
+
+  * EFL_update_revision_46864
+
+ -- Jaehwan Kim <jae.hwan.kim@samsung.com>  Wed, 10 Mar 2010 16:06:34 +0900
+
+evas (0.9.9.060+svn20100203-8) unstable; urgency=low
+
+  * revision up to 46421 (Full merge)
+
+ -- Sangjin Lee <lsj119@samsung.com>  Thu, 25 Feb 2010 19:29:30 +0900
+
+evas (0.9.9.060+svn20100203-7) unstable; urgency=low
+
+  * revision up to 46263 (partial merge)
+
+ -- Doyoun Kang <doyoun.kang@samsung.com>  Thu, 18 Feb 2010 19:27:04 +0900
+
+evas (0.9.9.060+svn20100203-6) unstable; urgency=low
+
+  * revision up to 45829
+
+ -- wonguk.jeong <wonguk.jeong@samsung.com>  Fri, 05 Feb 2010 20:52:34 +0900
+
+evas (0.9.9.060+svn20100203-5) unstable; urgency=low
+
+  * repack
+
+ -- Jaehwan Kim <jae.hwan.kim@samsung.com>  Thu, 04 Feb 2010 20:24:23 +0900
+
+evas (0.9.9.060+svn20100203-4) unstable; urgency=low
+
+  * force revision for i386
+
+ -- sangho park <sangho.g.park@samsung.com>  Thu, 04 Feb 2010 18:54:47 +0900
+
+evas (0.9.9.060+svn20100203-3) unstable; urgency=low
+
+  * reupload
+
+ -- Jaehwan Kim <jae.hwan.kim@samsung.com>  Thu, 04 Feb 2010 11:27:11 +0900
+
+evas (0.9.9.060+svn20100203-2) unstable; urgency=low
+
+  * reupload
+
+ -- Jaehwan Kim <jae.hwan.kim@samsung.com>  Thu, 04 Feb 2010 05:45:58 +0900
+
+evas (0.9.9.060+svn20100203-1) unstable; urgency=low
+
+  * EFL_update_revision_45828
+
+ -- Jaehwan Kim <jae.hwan.kim@samsung.com>  Wed, 03 Feb 2010 16:39:20 +0900
+
+evas (0.9.9.060+svn20100119-1) unstable; urgency=low
+
+  * EFL_update_revision_45322
+
+ -- Jihoon Kim <jihoon48.kim@samsung.com>  Tue, 19 Jan 2010 20:44:46 +0900
+
+evas (0.9.9.060+svn20100111-5) unstable; urgency=low
+
+  * Change required GLES deb package to opengl-es metapackage
+
+ -- Gwanglim Lee <gl77.lee@samsung.com>  Thu, 14 Jan 2010 19:15:22 +0900
+
+evas (0.9.9.060+svn20100111-4) unstable; urgency=low
+
+  * libpng12 dependency add
+
+ -- Jaehwan Kim <jae.hwan.kim@samsung.com>  Tue, 12 Jan 2010 21:01:14 +0900
+
+evas (0.9.9.060+svn20100111-3) unstable; urgency=low
+
+  * reupload EFL i686
+
+ -- Jaehwan Kim <jae.hwan.kim@samsung.com>  Tue, 12 Jan 2010 17:35:26 +0900
+
+evas (0.9.9.060+svn20100111-2) unstable; urgency=low
+
+  * reupload EFL
+
+ -- Jaehwan Kim <jae.hwan.kim@samsung.com>  Mon, 11 Jan 2010 22:16:31 +0900
+
+evas (0.9.9.060+svn20100111-1) unstable; urgency=low
+
+  * update EFL revision 45026
+
+ -- Jaehwan Kim <jae.hwan.kim@samsung.com>  Mon, 11 Jan 2010 13:28:03 +0900
+
+evas (0.9.9.060+svn20091229-3) unstable; urgency=low
+
+  * Patch for i386 build (exclude opengl-es)
+
+ -- Youmin Ha <youmin.ha@samsung.com>  Thu, 07 Jan 2010 21:28:44 +0900
+
+evas (0.9.9.060+svn20091229-2) unstable; urgency=low
+
+  * add depends (opengl-es-sgx540)
+
+ -- Jaehwan Kim <jae.hwan.kim@samsung.com>  Wed, 30 Dec 2009 19:31:45 +0900
+
+evas (0.9.9.060+svn20091229-1) unstable; urgency=low
+
+  * update EFL
+
+ -- Jaehwan Kim <jae.hwan.kim@samsung.com>  Tue, 29 Dec 2009 14:27:02 +0900
+
+evas (0.9.9.060+svn20091112-3) unstable; urgency=low
+
+  * modify architecture value from all to any 
+
+ -- Sangho Park <sangho.g.park@sangho.g.park>  Fri, 27 Nov 2009 15:39:53 +0900
+
+evas (0.9.9.060+svn20091112-2) unstable; urgency=low
+
+  * svn stable version
+
+ -- Sangho Park <sangho.g.park@sangho.g.park>  Thu, 19 Nov 2009 17:39:02 +0900
+
+evas (0.9.9.060+svn20091112-1) unstable; urgency=low
+
+  * Clean up changelog
+
+ -- Sangho Park <sangho.g.park@sangho.g.park>  Thu, 12 Nov 2009 23:27:21 +0100
+
+evas (0.9.9.060+svnYYYYMMDD-1) unstable; urgency=low
+
+  * Clean up changelog
+
+ -- quaker <quaker66@gmail.com>  Thu, 22 Apr 2009 18:27:21 +0100
+
+evas (0.9.9.050+svnYYYYMMDD-1) unstable; urgency=low
+
+  * Clean up changelog
+
+ -- quaker <quaker66@gmail.com>  Tue, 21 Apr 2009 19:13:59 +0100
