@@ -552,7 +552,8 @@ eng_output_redraws_next_update_push(void *data, void *surface __UNUSED__, int x 
    ta = t0 - pt;
    pt = t0;
 #endif
-   eglWaitNative(EGL_CORE_NATIVE_ENGINE); // previous rendering should be done and swapped
+   // to avoid rendering performance drop - yigl 100518
+   //eglWaitNative(EGL_CORE_NATIVE_ENGINE); // previous rendering should be done and swapped
 #ifdef FRAMECOUNT
    double t1 = get_time();
    tb = t1 - t0;
