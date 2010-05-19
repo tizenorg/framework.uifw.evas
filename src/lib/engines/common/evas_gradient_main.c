@@ -119,7 +119,7 @@ evas_common_gradient_init(void)
    grad_initialised = 1;
 }
 
-EAPI void
+void
 evas_common_gradient_shutdown(void)
 {
    RGBA_Gradient_Type  *geom;

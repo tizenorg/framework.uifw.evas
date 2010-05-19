@@ -109,7 +109,7 @@ evas_common_blend_init(void)
    if (comp) comp->init();
 }
 
-EAPI void
+void
 evas_common_blend_shutdown(void)
 {
    RGBA_Gfx_Compositor  *comp;
