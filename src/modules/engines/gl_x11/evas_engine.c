@@ -405,21 +405,10 @@ eng_output_free(void *data)
      }
    if ((initted == 1) && (gl_wins == 0))
      {
-        // undefined symbol error occurs when gl_x11 engine is loaded. - yigl 100519
-#if 0
-        evas_common_cpu_shutdown();
         evas_common_blend_shutdown();
         evas_common_image_shutdown();
-        evas_common_convert_shutdown();
-        evas_common_scale_shutdown();
-        evas_common_rectangle_shutdown();
         evas_common_gradient_shutdown();
-        evas_common_polygon_shutdown();
-        evas_common_line_shutdown();
         evas_common_font_shutdown();
-        evas_common_draw_shutdown();
-        evas_common_tilebuf_shutdown();
-#endif
         initted = 0;
      }
 }
