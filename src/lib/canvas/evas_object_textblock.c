@@ -109,6 +109,7 @@ struct _Evas_Object_Textblock_Format
    unsigned char        underline2 : 1;
    unsigned char        strikethrough : 1;
    unsigned char        backing : 1;
+   unsigned char	password : 1; 
 };
 
 struct _Evas_Textblock_Style
@@ -787,6 +788,7 @@ static const char *linerelsizestr = NULL;
 static const char *linegapstr = NULL;
 static const char *linerelgapstr = NULL;
 static const char *itemstr = NULL;
+static const char *visible = NULL;
 
 static void
 _format_command_init(void)
@@ -820,6 +822,7 @@ _format_command_init(void)
    linegapstr = eina_stringshare_add("linegap");
    linerelgapstr = eina_stringshare_add("linerelgap");
    itemstr = eina_stringshare_add("item");
+   visible = eina_stringshare_add("visible");
 }
 
 static void
@@ -854,6 +857,7 @@ _format_command_shutdown(void)
    eina_stringshare_del(linegapstr);
    eina_stringshare_del(linerelgapstr);
    eina_stringshare_del(itemstr);
+   eina_stringshare_del(visible);
 }
 
 static void
@@ -1149,6 +1153,15 @@ _format_command(Evas_Object *obj, Evas_Object_Textblock_Format *fmt, const char 
 		  if (fmt->linerelgap < 0.0) fmt->linerelgap = 0.0;
 	       }
           }
+     }
+   else if(cmd ==visible)
+   	{   		
+		int v;
+		v = atoi(tmp_param);
+		if(v==1)
+			fmt->password = 1;
+		else
+			fmt->password = 0;
      }
 
    if (new_font)
@@ -1814,7 +1827,7 @@ _layout_text_append(Ctxt *c, Evas_Object_Textblock_Format *fmt, Evas_Object_Text
 
    if (n)
      {
-        if ((repch) && (eina_strbuf_length_get(n->text)))
+   if ((!fmt->password)&&(repch) && (eina_strbuf_length_get(n->text)))
           {
              int i, len, chlen;
              char *ptr;
