@@ -7,6 +7,9 @@
 FT_Library      evas_ft_lib = 0;
 static int      initialised = 0;
 
+LK(lock_font_draw); // for freetype2 API calls
+LK(lock_fribidi); // for fribidi API calls
+
 EAPI void
 evas_common_font_init(void)
 {
@@ -17,6 +20,11 @@ evas_common_font_init(void)
    error = FT_Init_FreeType(&evas_ft_lib);
    if (error) return;
    evas_common_font_load_init();
+#ifdef EVAS_FRAME_QUEUING
+   evas_common_font_draw_init();
+#endif
+   LKI(lock_font_draw);
+   LKI(lock_fribidi);
 }
 
 EAPI void
@@ -28,11 +36,17 @@ evas_common_font_shutdown(void)
    initialised--;
    if (initialised != 0) return;
 
+   LKD(lock_font_draw);
+   LKD(lock_fribidi);
+   
    evas_common_font_load_shutdown();
    evas_common_font_cache_set(0);
    evas_common_font_flush();
 
    error = FT_Done_FreeType(evas_ft_lib);
+#ifdef EVAS_FRAME_QUEUING
+   evas_common_font_draw_finish();
+#endif
    evas_ft_lib = 0;
 }
 

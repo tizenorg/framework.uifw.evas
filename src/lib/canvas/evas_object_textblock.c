@@ -478,8 +478,8 @@ static const char escape_strings[] =
 	"&Eacute;\0"   "\xc3\x89\0"
 	"&Ecirc;\0"    "\xc3\x8a\0"
 	"&Euml;\0"     "\xc3\x8b\0"
-	"&Egrave;\0"   "\xc3\x8c\0"
-	"&Eacute;\0"   "\xc3\x8d\0"
+	"&Igrave;\0"   "\xc3\x8c\0"
+	"&Iacute;\0"   "\xc3\x8d\0"
 	"&Icirc;\0"    "\xc3\x8e\0"
 	"&Iuml;\0"     "\xc3\x8f\0"
 	"&Eth;\0"      "\xc3\x90\0"
@@ -6027,9 +6027,14 @@ _evas_object_textblock_rehint(Evas_Object *obj)
 	EINA_INLIST_FOREACH(ln->items, it)
 	  {
 	     if (it->format->font.font)
-	       evas_font_load_hinting_set(obj->layer->evas,
-					  it->format->font.font,
+            {  
+#ifdef EVAS_FRAME_QUEUING
+               evas_common_pipe_op_text_flush(it->format->font.font);
+#endif
+	          evas_font_load_hinting_set(obj->layer->evas,
+			   		  it->format->font.font,
 					  obj->layer->evas->hinting);
+	       }
 	  }
      }
    o->formatted.valid = 0;
