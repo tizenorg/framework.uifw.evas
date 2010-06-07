@@ -184,6 +184,7 @@ eng_info(Evas *e)
    info->func.best_visual_get = eng_best_visual_get;
    info->func.best_colormap_get = eng_best_colormap_get;
    info->func.best_depth_get = eng_best_depth_get;
+   info->render_mode = EVAS_RENDER_MODE_BLOCKING;
    return info;
    e = NULL;
 }
@@ -492,9 +493,11 @@ eng_output_redraws_next_update_get(void *data, int *x, int *y, int *w, int *h, i
    Render_Engine *re;
 
    re = (Render_Engine *)data;
-   evas_gl_common_context_flush(re->win->gl_context);
    /* get the upate rect surface - return engine data as dummy */
    if (!re->win->draw.redraw) return NULL;
+   evas_gl_common_context_flush(re->win->gl_context);
+   eng_window_use(re->win);
+   evas_gl_common_context_newframe(re->win->gl_context);
    if (x) *x = re->win->draw.x1;
    if (y) *y = re->win->draw.y1;
    if (w) *w = re->win->draw.x2 - re->win->draw.x1 + 1;

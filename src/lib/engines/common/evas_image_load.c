@@ -6,12 +6,14 @@
 #include "evas_private.h"
 #include "evas_cs.h"
 
-struct ext_loader_s {
-   const char*	extention;
-   const char*	loader;
+struct ext_loader_s
+{
+   const char *extention;
+   const char *loader;
 };
 
-static struct ext_loader_s	const loaders[] = {
+static const struct ext_loader_s loaders[] =
+{
    { "png", "png" },
    { "jpg", "jpeg" },
    { "jpeg", "jpeg" },
@@ -21,8 +23,6 @@ static struct ext_loader_s	const loaders[] = {
    { "eap", "eet" },
    { "edb", "edb" },
    { "xpm", "xpm" },
-   { "bmp", "bmp" },
-   { "wbmp", "wbmp" },
    { "tiff", "tiff" },
    { "tif", "tiff" },
    { "svg", "svg" },
@@ -31,11 +31,15 @@ static struct ext_loader_s	const loaders[] = {
    { "pbm", "pmaps" },
    { "pgm", "pmaps" },
    { "ppm", "pmaps" },
-   { "pnm", "pmaps" }
+   { "pnm", "pmaps" },
+   { "bmp", "bmp" },
+   { "wbmp", "wbmp" },
+   { "tga", "tga" }
 };
 
-static const char *loaders_name[] = {
-  "png", "jpeg", "eet", "xpm", "bmp", "wbmp", "tiff", "gif", "svg", "pmaps", "edb"
+static const char *loaders_name[] =
+{
+  "png", "jpeg", "eet", "xpm", "tiff", "gif", "svg", "pmaps", "edb", "bmp", "wbmp", "tga"
 };
 
 struct evas_image_foreach_loader_data

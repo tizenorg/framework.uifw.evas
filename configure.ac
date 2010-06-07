@@ -1,5 +1,23 @@
-# get rid of that stupid cache mechanism
-rm -f config.cache
+##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
+##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
+m4_define([v_maj], [0])
+m4_define([v_min], [9])
+m4_define([v_mic], [9])
+m4_define([v_rev], m4_esyscmd([(svnversion . | grep -v exported || echo 0) | awk -F : '{printf("%s\n", $1);}' | tr -d ' :MSP\n']))
+m4_if(v_rev, [0], [m4_define([v_rev], m4_esyscmd([git log 2> /dev/null | (grep -m1 git-svn-id || echo 0) | sed -e 's/.*@\([0-9]*\).*/\1/' | tr -d '\n']))])
+##--   When released, remove the dnl on the below line
+dnl m4_undefine([v_rev])
+##--   When doing snapshots - change soname. remove dnl on below line
+m4_define([relname], [ver-pre-svn-06])
+m4_define([v_rel], [-release relname])
+##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
+m4_ifdef([v_rev], [m4_define([v_ver], [v_maj.v_min.v_mic.v_rev])],
+[m4_define([v_ver], [v_maj.v_min.v_mic])])
+m4_define([lt_rev], m4_eval(v_maj + v_min))
+m4_define([lt_cur], v_mic)
+m4_define([lt_age], v_min)
+##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
+##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
 
 # rw_PROG_OBJC_WORKS
 # Check whether the Objective C compiler works.
@@ -14,8 +32,7 @@ AC_CACHE_CHECK([whether the Objective C compiler works],
                 AC_LANG_POP([Objective C])])
 ])
 
-AC_INIT([evas], [0.9.9.063], [enlightenment-devel@lists.sourceforge.net])
-release="ver-pre-svn-05"
+AC_INIT([evas], [v_ver], [enlightenment-devel@lists.sourceforge.net])
 AC_PREREQ([2.52])
 AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_MACRO_DIR([m4])
@@ -31,12 +48,20 @@ AC_LIBTOOL_WIN32_DLL
 define([AC_LIBTOOL_LANG_F77_CONFIG], [:])dnl
 AC_PROG_LIBTOOL
 
-VMAJ=`echo $PACKAGE_VERSION | awk -F. '{printf("%s", $1);}'`
-VMIN=`echo $PACKAGE_VERSION | awk -F. '{printf("%s", $2);}'`
-VMIC=`echo $PACKAGE_VERSION | awk -F. '{printf("%s", $3);}'`
-SNAP=`echo $PACKAGE_VERSION | awk -F. '{printf("%s", $4);}'`
-version_info=`expr $VMAJ + $VMIN`":$VMIC:$VMIN"
+##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
+##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
+m4_ifdef([v_rev], , [m4_define([v_rev], [0])])
+m4_ifdef([v_rel], , [m4_define([v_rel], [])])
+AC_DEFINE_UNQUOTED(VMAJ, [v_maj], [Major version])
+AC_DEFINE_UNQUOTED(VMIN, [v_min], [Minor version])
+AC_DEFINE_UNQUOTED(VMIC, [v_mic], [Micro version])
+AC_DEFINE_UNQUOTED(VREV, [v_rev], [Revison])
+version_info="lt_rev:lt_cur:lt_age"
+release_info="v_rel"
 AC_SUBST(version_info)
+AC_SUBST(release_info)
+##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
+##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
 
 EFL_CHECK_PATH_MAX
 
@@ -47,11 +72,9 @@ case "$host_os" in
       MODULE_ARCH="$host_os-$host_cpu"
       ;;
    *)
-      release_info="-release $release"
-      MODULE_ARCH="$host_os-$host_cpu-$release"
+      MODULE_ARCH="$host_os-$host_cpu-relname"
       ;;
 esac
-AC_SUBST(release_info)
 AC_SUBST(MODULE_ARCH)
 AC_DEFINE_UNQUOTED(MODULE_ARCH, "$MODULE_ARCH", "Module architecture")
 
@@ -96,6 +119,7 @@ want_evas_image_loader_tiff="yes"
 want_evas_image_loader_xpm="yes"
 want_evas_image_loader_bmp="yes"
 want_evas_image_loader_wbmp="yes"
+want_evas_image_loader_tga="yes"
 
 want_evas_font_loader_eet="yes"
 
@@ -687,6 +711,8 @@ EVAS_CHECK_IMAGE_LOADER([BMP], [${want_evas_image_loader_bmp}])
 
 EVAS_CHECK_IMAGE_LOADER([WBMP], [${want_evas_image_loader_wbmp}])
 
+EVAS_CHECK_IMAGE_LOADER([TGA], [${want_evas_image_loader_tga}])
+
 
 #####################################################################
 ## Cpu based optimizations
@@ -776,6 +802,38 @@ if test \( "x$build_pipe_render" = "xyes" -o "x$build_pipe_render" = "xauto" \);
 else
   AC_MSG_RESULT(no)
   build_pipe_render="no"
+fi
+
+#######################################
+## Async Renderer
+build_async_render="no"
+AC_MSG_CHECKING(whether to build Asynchronously Threaded Pipe Rendering support)
+AC_ARG_ENABLE(async-render,
+  AC_HELP_STRING([--enable-async-render], [enable asynchronously threaded pipe rendering support]),
+  [ build_async_render=$enableval ]
+)
+AC_MSG_RESULT($build_async_render)
+
+AC_MSG_CHECKING(whether we can build Asynchronously Threaded Pipe Rendering support)
+if test \( "x$build_async_render" = "xyes" \); then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(EVAS_FRAME_QUEUING, 1, [Build async render support])
+  build_async_render="yes"
+  AC_DEFINE(BUILD_PIPE_RENDER, 1, [Build pipe render support])
+  build_pipe_render="yes"
+  need_pthreads="yes"
+
+  PKG_CHECK_MODULES([XEXT],
+     [xext < 1.1.1],
+     [ build_avoid_libXext_bug=yes ],
+     [ build_avoid_libXext_bug=no ]
+  )
+  if test \( "x$build_avoid_libXext_bug" = "xyes" \); then
+    AC_DEFINE(LIBXEXT_VERSION_LOW, 1, [To avoid bug on old libXext version])
+  fi
+else
+  AC_MSG_RESULT(no)
+  build_async_render="no"
 fi
 
 #######################################
@@ -1371,6 +1429,7 @@ src/modules/loaders/tiff/Makefile
 src/modules/loaders/xpm/Makefile
 src/modules/loaders/bmp/Makefile
 src/modules/loaders/wbmp/Makefile
+src/modules/loaders/tga/Makefile
 src/modules/loaders/svg/Makefile
 src/modules/loaders/pmaps/Makefile
 src/modules/savers/Makefile
@@ -1475,6 +1534,7 @@ echo "  MAGIC_DEBUG.............: $want_evas_magic_debug"
 echo "  Cache Server............: $want_evas_cserve"
 echo
 echo "  Threaded Pipe Rendering.: $build_pipe_render"
+echo "  Async Pipe Rendering....: $build_async_render"
 echo "  Async Events............: $build_async_events"
 echo "  Async Image Preload.....: $build_async_preload"
 echo

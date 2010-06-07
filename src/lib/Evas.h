@@ -31,6 +31,22 @@
 # endif
 #endif /* ! _WIN32 */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define EVAS_VERSION_MAJOR 0
+#define EVAS_VERSION_MINOR 9
+
+   typedef struct _Evas_Version
+     {
+        int major;
+        int minor;
+        int micro;
+        int revision;
+     } Evas_Version;
+   
+   EAPI extern Evas_Version *evas_version;
 
 /**
  * @file
@@ -373,6 +389,12 @@ typedef enum _Evas_Image_Scale_Hint
    EVAS_IMAGE_SCALE_HINT_STATIC = 2
 } Evas_Image_Scale_Hint;
 
+typedef enum _Evas_Engine_Render_Mode
+{
+   EVAS_RENDER_MODE_BLOCKING = 0,
+   EVAS_RENDER_MODE_NONBLOCKING = 1,
+} Evas_Engine_Render_Mode;
+
 typedef enum _Evas_Image_Content_Hint
 {
    EVAS_IMAGE_CONTENT_HINT_NONE = 0,
@@ -596,10 +618,6 @@ typedef void      (*Evas_Event_Cb) (void *data, Evas *e, void *event_info);
 typedef Eina_Bool (*Evas_Object_Event_Post_Cb) (void *data, Evas *e);
 typedef void      (*Evas_Object_Event_Cb) (void *data, Evas *e, Evas_Object *obj, void *event_info);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @defgroup Evas_Group Top Level Functions
  *
@@ -721,6 +739,7 @@ extern "C" {
    EAPI void              evas_pointer_canvas_xy_get        (const Evas *e, Evas_Coord *x, Evas_Coord *y) EINA_ARG_NONNULL(1);
    EAPI int               evas_pointer_button_down_mask_get (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
    EAPI Eina_Bool         evas_pointer_inside_get           (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+   EAPI void              evas_sync(Evas *e) EINA_ARG_NONNULL(1);
 
 
 /**
