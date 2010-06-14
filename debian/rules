@@ -5,13 +5,19 @@ include /usr/share/cdbs/1/rules/debhelper.mk
 
 DEB_CONFIGURE_SCRIPT := ./autogen.sh
 DEB_MAKE_CLEAN_TARGET := distclean
-CFLAGS += -fvisibility=hidden -ffast-math
+ifeq (armel,$(DEB_HOST_ARCH))
+	CFLAGS += -fvisibility=hidden -ffast-math -mcpu=cortex-a8 -mfloat-abi=softfp -mfpu=neon
+else
+	CFLAGS += -fvisibility=hidden -ffast-math
+endif
 LDFLAGS += -fvisibility=hidden
 
 DEB_DH_STRIP_ARGS := --dbg-package=libevas-dbg
 
 ifeq (hppa,$(DEB_HOST_ARCH))
 	arch_flags += --disable-pthreads
+else ifeq (armel,$(DEB_HOST_ARCH))
+	arch_flags += --enable-pthreads --enable-cpu-neon
 else
 	arch_flags += --enable-pthreads
 endif
