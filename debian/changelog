@@ -1,3 +1,11 @@
+evas (0.9.9.060+svn.49540slp2+3build06) unstable; urgency=low
+
+  * rev 49790 partial update to resolve rotation bug when using GLES backend.
+  * Git: 165.213.180.234:/git/slp2.0/slp2.0-pkgs/EFL-pkgs/evas
+  * Tag: evas_0.9.9.060+svn.49540slp2+3build06
+
+ -- Gwanglim Lee <gl77.lee@samsung.com>  Tue, 22 Jun 2010 16:38:28 +0900
+
 evas (0.9.9.060+svn.49540slp2+3build05) unstable; urgency=low
 
   * Neonize on.
