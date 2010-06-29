@@ -351,6 +351,10 @@ eng_setup(Evas *e, void *in)
              eng_window_use(re->win);
              evas_gl_common_context_resize(re->win->gl_context, re->win->w, re->win->h, re->win->rot);
           }
+        else if (info->no_swap == 0)
+          {
+             eglSwapBuffers(re->win->egl_disp, re->win->egl_surface[0]);
+          }
         
      }
    if (!re->win)
@@ -576,7 +580,10 @@ eng_output_flush(void *data)
 #ifdef FRAMECOUNT
    double t0 = get_time();
 #endif   
-   eglSwapBuffers(re->win->egl_disp, re->win->egl_surface[0]);
+   if (re->info->no_swap)
+     glFlush();
+   else
+     eglSwapBuffers(re->win->egl_disp, re->win->egl_surface[0]);
 #ifdef FRAMECOUNT
    double t1 = get_time();
    printf("%1.5f\n", t1 - t0);

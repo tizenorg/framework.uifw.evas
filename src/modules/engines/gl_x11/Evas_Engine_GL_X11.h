@@ -42,6 +42,7 @@ struct _Evas_Engine_Info_GL_X11
    
    unsigned char vsync : 1; // does nothing right now
    unsigned char indirect : 1; // use indirect rendering
+   unsigned char no_swap : 1; // just GLES flush, no swap
 };
 #endif
 
