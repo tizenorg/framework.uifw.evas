@@ -351,9 +351,23 @@ eng_setup(Evas *e, void *in)
              eng_window_use(re->win);
              evas_gl_common_context_resize(re->win->gl_context, re->win->w, re->win->h, re->win->rot);
           }
+        else if (info->no_swap == 1)
+          {
+             info->num_deferred_swaps = 0;
+          }
         else if (info->no_swap == 0)
           {
-             eglSwapBuffers(re->win->egl_disp, re->win->egl_surface[0]);
+             if (info->num_deferred_swaps > 0)
+               {
+#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+                  if (re->win->egl_disp && re->win->egl_surface[0])
+                    eglSwapBuffers(re->win->egl_disp, re->win->egl_surface[0]);
+#else
+                  if (re->win->disp && re->win->win)
+                     glXSwapBuffers(re->win->disp, re->win->win);
+#endif
+                  info->num_deferred_swaps = 0;
+               }
           }
         
      }
@@ -581,7 +595,10 @@ eng_output_flush(void *data)
    double t0 = get_time();
 #endif   
    if (re->info->no_swap)
-     glFlush();
+     {
+        glFlush();
+        re->info->num_deferred_swaps++;
+     }
    else
      eglSwapBuffers(re->win->egl_disp, re->win->egl_surface[0]);
 #ifdef FRAMECOUNT
@@ -616,7 +633,13 @@ eng_output_flush(void *data)
 //       (re->win->draw.y2 == (re->win->h - 1))
        )
      {
-        glXSwapBuffers(re->win->disp, re->win->win);
+        if (re->info->no_swap)
+          {
+             glFlush();
+             re->info->num_deferred_swaps++;
+          }
+        else
+          glXSwapBuffers(re->win->disp, re->win->win);
      }
    else
      {
