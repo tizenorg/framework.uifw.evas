@@ -1,7 +1,7 @@
 Source: evas
 Section: libs
 Priority: optional
-Maintainer: Jaehwan Kim <jae.hwan.kim@samsung.com>, Jihoon Kim <jihoon48.kim@samsung.com>, wonguk jeong <wonguk.jeong@samsung.com>, Sangjin Lee <lsj119@samsung.com>, Doyoun Kang <doyoun.kang@samsung.com>, YoungHoon Jung <yhoon.jung@samsung.com>, Myungjae Lee <mjae.lee@samsung.com>, Juyung Seo <juyung.seo@samsung.com>
+Maintainer: Jaehwan Kim <jae.hwan.kim@samsung.com>, Jihoon Kim <jihoon48.kim@samsung.com>, wonguk jeong <wonguk.jeong@samsung.com>, Sangjin Lee <lsj119@samsung.com>, Doyoun Kang <doyoun.kang@samsung.com>, YoungHoon Jung <yhoon.jung@samsung.com>, Myungjae Lee <mjae.lee@samsung.com>, Juyung Seo <juyung.seo@samsung.com>, ChunEon Park <chuneon.park@samsung.com>
 Original-Maintainer:  Debian Pkg-e Team <pkg-e-devel@lists.alioth.debian.org>
 Uploaders: Albin Tonnerre <albin.tonnerre@gmail.com>,
  Niv Sardi <xaiki@debian.org>, Xavier Oswald <x.oswald@free.fr>,
