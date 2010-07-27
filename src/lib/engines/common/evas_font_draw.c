@@ -11,7 +11,8 @@
 
 #define WORD_CACHE_MAXLEN	50
 /* How many to cache */
-#define WORD_CACHE_NWORDS	20
+#define WORD_CACHE_NWORDS	40
+static int max_cached_words = WORD_CACHE_NWORDS;
 
 struct prword {
 	EINA_INLIST;
@@ -43,19 +44,30 @@ struct cinfo {
 };
 
 
-
-
+LK(lock_words); // for word cache call
 static Eina_Inlist *words = NULL;
 static struct prword *evas_font_word_prerender(RGBA_Draw_Context *dc, const char *text, int len, RGBA_Font *fn, RGBA_Font_Int *fi,int use_kerning);
 
-#ifdef EVAS_FRAME_QUEUING
 EAPI void
 evas_common_font_draw_init(void)
 {
+   char *p;
+   int tmp;
+#ifdef EVAS_FRAME_QUEUING
    LKI(lock_font_draw);
    LKI(lock_fribidi);
+#endif
+   if ((p = getenv("EVAS_WORD_CACHE_MAX_WORDS")))
+     {
+	tmp = strtol(p,NULL,10);
+	/* 0 to disable of course */
+	if (tmp > -1 && tmp < 500){
+	     max_cached_words = tmp;
+	}
+     }
 }
 
+#ifdef EVAS_FRAME_QUEUING
 EAPI void
 evas_common_font_draw_finish(void)
 {
@@ -393,13 +405,16 @@ evas_common_font_draw_internal(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font
    FT_UInt prev_index;
    DATA32 *im;
    int c;
+   char *p;
    int char_index = 0; /* the index of the current char */
 
 
 #if defined(METRIC_CACHE) || defined(WORD_CACHE)
-   /* A fast strNlen would be nice (there is a wcsnlen strangely) */
-   for (len = 0 ; text[len] && len < WORD_CACHE_MAXLEN ; len ++)
-     ;
+   /* A fast (portable) strNlen would be nice (there is a wcsnlen strangely) */
+   if ((p = memchr(text, 0, WORD_CACHE_MAXLEN)))
+	len = p - text;
+   else
+	len = WORD_CACHE_MAXLEN;
 
    if (len > 2 && len < WORD_CACHE_MAXLEN){
      struct prword *word = evas_font_word_prerender(dc, text, len, fn, fi,
@@ -432,6 +447,7 @@ evas_common_font_draw_internal(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font
 	//      y = ext_y;
 	  }
 
+	  if (xrun < 1) return;
 #ifdef WORD_CACHE
 	  for (j = rowstart ; j < rowend ; j ++){
 	       func(NULL, word->im + (word->roww * j) + xstart, dc->col.col,
@@ -496,7 +512,9 @@ evas_common_font_draw_internal(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font
 	LKL(fi->ft_mutex);
         if (fi->src->current_size != fi->size)
           {
+	     FTLOCK();
              FT_Activate_Size(fi->ft.size);
+	     FTUNLOCK();
              fi->src->current_size = fi->size;
           }
 	/* hmmm kerning means i can't sanely do my own cached metric tables! */
@@ -777,13 +795,17 @@ evas_font_word_prerender(RGBA_Draw_Context *dc, const char *in_text, int len, RG
    struct prword *w;
    int gl;
 
+
+   LKL(lock_words);
    EINA_INLIST_FOREACH(words,w){
 	if (w->len == len && w->font == fn && fi->size == w->size &&
-	      (w->str == in_text || strcmp(w->str, in_text) == 0)){
+	      (w->str == in_text || memcmp(w->str,in_text,len) == 0)){
 	  words = eina_inlist_promote(words, EINA_INLIST_GET(w));
+	  LKU(lock_words);
 	  return w;
 	}
    }
+   LKU(lock_words);
 
 #ifdef INTERNATIONAL_SUPPORT
    /*FIXME: should get the direction by parmater */
@@ -795,7 +817,8 @@ evas_font_word_prerender(RGBA_Draw_Context *dc, const char *in_text, int len, RG
     * holder, will change in the future.*/
    char *visual_text = evas_intl_utf8_to_visual(in_text, &len, &direction, NULL, NULL, &level_list);
    text = (visual_text) ? visual_text : in_text;
-   
+#else
+   text = in_text;
 #endif
 
    gl = dc->font_ext.func.gl_new ? 1: 0;
@@ -810,9 +833,12 @@ evas_font_word_prerender(RGBA_Draw_Context *dc, const char *in_text, int len, RG
 	ci->gl = evas_common_font_utf8_get_next((unsigned char *)text, &chr);
 	if (ci->gl == 0) break;
 	ci->index = evas_common_font_glyph_search(fn, &fi, ci->gl);
+	LKL(fi->ft_mutex);
 	if (fi->src->current_size != fi->size)
 	  {
+	     FTLOCK();
 	     FT_Activate_Size(fi->ft.size);
+	     FTUNLOCK();
              fi->src->current_size = fi->size;
           }
 	if (use_kerning && char_index && (pface == fi->src->ft.face))
@@ -823,6 +849,7 @@ evas_font_word_prerender(RGBA_Draw_Context *dc, const char *in_text, int len, RG
 	  }
        pface = fi->src->ft.face;
        ci->fg = evas_common_font_int_cache_glyph_get(fi, ci->index);
+       LKU(fi->ft_mutex);
        if (!ci->fg) continue;
        if (gl){
 	    ci->fg->ext_dat =dc->font_ext.func.gl_new(dc->font_ext.data,ci->fg);
@@ -866,7 +893,7 @@ evas_font_word_prerender(RGBA_Draw_Context *dc, const char *in_text, int len, RG
 
    save = malloc(sizeof(struct prword));
    save->cinfo = metrics;
-   save->str = eina_stringshare_add(text);
+   save->str = eina_stringshare_add(in_text);
    save->font = fn;
    save->size = fi->size;
    save->len = len;
@@ -875,10 +902,11 @@ evas_font_word_prerender(RGBA_Draw_Context *dc, const char *in_text, int len, RG
    save->roww = width;
    save->height = height;
    save->baseline = baseline;
+   LKL(lock_words);
    words = eina_inlist_prepend(words, EINA_INLIST_GET(save));
 
    /* Clean up if too long */
-   if (eina_inlist_count(words) > 20){
+   if (eina_inlist_count(words) > max_cached_words){
 	struct prword *last = (struct prword *)(words->last);
 	if (last->im) free(last->im);
 	if (last->cinfo) free(last->cinfo);
@@ -886,14 +914,14 @@ evas_font_word_prerender(RGBA_Draw_Context *dc, const char *in_text, int len, RG
 	words = eina_inlist_remove(words,EINA_INLIST_GET(last));
 	free(last);
    }
-
-   return save;
+   LKU(lock_words);
 
 #ifdef INTERNATIONAL_SUPPORT
    if (level_list) free(level_list);
    if (visual_text) free(visual_text);
 #endif
 
+   return save;
 }
 
 
