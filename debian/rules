@@ -32,7 +32,7 @@ else
 	arch_flags += --enable-winkcodec=no
 endif
 
-arch_flags += --enable-word-cache --enable-metric-cache
+#arch_flags += --enable-word-cache --enable-metric-cache
 
 DEB_CONFIGURE_EXTRA_FLAGS := --disable-image-loader-svg \
 	--enable-simple-x11 \
