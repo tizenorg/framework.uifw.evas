@@ -1,3 +1,11 @@
+evas (0.9.9.060+svn.49540slp2+3build13) unstable; urgency=low
+
+  * [word cache] Disabled again. 
+  * Git: 165.213.180.234:/git/slp/pkgs/evas
+  * Tag: evas_0.9.9.060+svn.49540slp2+3build13
+
+ -- ChunEon Park <chuneon.park@samsung.com>  Thu, 29 Jul 2010 20:27:09 +0900
+
 evas (0.9.9.060+svn.49540slp2+3build12) unstable; urgency=low
 
   * [word cache] Enabled word cache only not metric cache.
