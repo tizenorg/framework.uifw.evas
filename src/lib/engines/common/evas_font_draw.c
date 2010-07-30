@@ -795,6 +795,10 @@ evas_font_word_prerender(RGBA_Draw_Context *dc, const char *in_text, int len, RG
    struct prword *w;
    int gl;
 
+#ifndef METRIC_CACHE
+   gl = dc->font_ext.func.gl_new ? 1: 0;
+   if (gl) return NULL;
+#endif
 
    LKL(lock_words);
    EINA_INLIST_FOREACH(words,w){
