@@ -1,13 +1,13 @@
 Source: evas
 Section: libs
 Priority: optional
-Maintainer: Jaehwan Kim <jae.hwan.kim@samsung.com>, Jihoon Kim <jihoon48.kim@samsung.com>, wonguk jeong <wonguk.jeong@samsung.com>, Sangjin Lee <lsj119@samsung.com>, Doyoun Kang <doyoun.kang@samsung.com>, YoungHoon Jung <yhoon.jung@samsung.com>, Myungjae Lee <mjae.lee@samsung.com>, Juyung Seo <juyung.seo@samsung.com>
+Maintainer: Jaehwan Kim <jae.hwan.kim@samsung.com>, Jihoon Kim <jihoon48.kim@samsung.com>, wonguk jeong <wonguk.jeong@samsung.com>, Sangjin Lee <lsj119@samsung.com>, Doyoun Kang <doyoun.kang@samsung.com>, YoungHoon Jung <yhoon.jung@samsung.com>, Myungjae Lee <mjae.lee@samsung.com>, Juyung Seo <juyung.seo@samsung.com>, Gwanglim Lee <gl77.lee@samsung.com>
 Original-Maintainer:  Debian Pkg-e Team <pkg-e-devel@lists.alioth.debian.org>
 Uploaders: Albin Tonnerre <albin.tonnerre@gmail.com>,
  Niv Sardi <xaiki@debian.org>, Xavier Oswald <x.oswald@free.fr>,
  Jan Lübbe <jluebbe@debian.org>,
  Nikita V. Youshchenko <yoush@debian.org>,
- Gwanglim Lee <gl77.lee@samsung.com>, ChunEon Park <chuneon.park@samsung.com>
+ ChunEon Park <chuneon.park@samsung.com>
 Build-Depends: debhelper (>= 6), cdbs, libeet-dev (>= 1.1.0), libeina-dev (>= 0.0.2.060+svn20100304),
  libfreetype6-dev, libpng12-dev | libpng-dev, libx11-dev, libxrender-dev,
  x11proto-xext-dev, zlib1g, libjpeg7-dev,
