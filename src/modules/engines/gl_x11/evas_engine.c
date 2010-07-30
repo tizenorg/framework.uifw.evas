@@ -325,9 +325,13 @@ eng_setup(Evas *e, void *in)
             (info->info.destination_alpha != re->win->alpha) ||
             (info->info.rotation != re->win->rot))
           {
+             int inc = 0;
+
              if (re->win)
                {
+                  re->win->gl_context->references++;
                   eng_window_free(re->win);
+                  inc = 1;
                   gl_wins--;
                }
              re->win = eng_window_new(info->info.display,
@@ -342,6 +346,8 @@ eng_setup(Evas *e, void *in)
                                       info->info.destination_alpha,
                                       info->info.rotation);
              if (re->win) gl_wins++;
+             if ((re->win) && (inc))
+               re->win->gl_context->references--;
           }
         else if ((re->win->w != e->output.w) ||
                  (re->win->h != e->output.h))
