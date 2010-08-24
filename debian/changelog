@@ -1,3 +1,11 @@
+evas (0.9.9.060+svn.49540slp2+3build19) unstable; urgency=low
+
+  * Disabled word cache.
+  * Git: 165.213.180.234:/git/slp/pkgs/evas
+  * Tag: evas_0.9.9.060+svn.49540slp2+3build19
+
+ -- Juyung Seo <juyung.seo@samsung.com>  Wed, 25 Aug 2010 08:51:38 +0900
+
 evas (0.9.9.060+svn.49540slp2+3build18) unstable; urgency=low
 
   * Fixed segfault problem with GL engine when rotating.
