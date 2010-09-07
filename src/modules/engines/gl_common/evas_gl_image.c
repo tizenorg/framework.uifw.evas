@@ -265,6 +265,75 @@ evas_gl_common_image_native_disable(Evas_GL_Image *im)
 }
 
 void
+evas_gl_common_image_scale_hint_set(Evas_GL_Image *im, int hint)
+{
+   im->scale_hint = hint;
+   // FIXME: take advantage of this even in gl (eg if image is
+   // 1600x1200 but we always use it at 800x600 or even less - drop
+   // the texture res down for "non dynamic" stuff to save memory)
+}
+
+void
+evas_gl_common_image_content_hint_set(Evas_GL_Image *im, int hint)
+{
+   if (im->content_hint == hint) return;
+   im->content_hint = hint;
+   if (!im->gc) return;
+   if (!im->gc->shared->info.sec_image_map) return;
+   if (!im->gc->shared->info.bgra) return;
+   // does not handle yuv yet.
+   if (im->cs.space != EVAS_COLORSPACE_ARGB8888) return;
+   if (im->content_hint == EVAS_IMAGE_CONTENT_HINT_DYNAMIC)
+     {
+        if (im->cs.data)
+          {
+             if (!im->cs.no_free) free(im->cs.data);
+             im->cs.data = NULL;
+          }
+        im->cs.no_free = 0;
+        if (im->cached)
+          {
+             im->gc->shared->images = eina_list_remove(im->gc->shared->images, im);
+             im->cached = 0;
+          }
+        if (im->im)
+          {
+             evas_cache_image_drop(&im->im->cache_entry);
+             im->im = NULL;
+          }
+        if (im->tex)
+          {
+             evas_gl_common_texture_free(im->tex);
+             im->tex = NULL;
+          }
+        im->tex = evas_gl_common_texture_dynamic_new(im->gc, im);
+        im->tex_only = 1;
+     }
+   else
+     {
+        if (im->im)
+          {
+             evas_cache_image_drop(&im->im->cache_entry);
+             im->im = NULL;
+          }
+        if (im->tex)
+          {
+             evas_gl_common_texture_free(im->tex);
+             im->tex = NULL;
+          }
+        im->tex_only = 0;
+        
+        im->im = (RGBA_Image *)evas_cache_image_empty(evas_common_image_cache_get());
+        im->im->cache_entry.flags.alpha = im->alpha;
+        im->cs.space = EVAS_COLORSPACE_ARGB8888;
+        evas_cache_image_colorspace(&im->im->cache_entry, im->cs.space);
+        im->im = (RGBA_Image *)evas_cache_image_size_set(&im->im->cache_entry, im->w, im->h);
+        if (!im->tex)
+           im->tex = evas_gl_common_texture_new(im->gc, im->im);
+     }
+}
+
+void
 evas_gl_common_image_free(Evas_GL_Image *im)
 {
    im->references--;
@@ -454,7 +523,9 @@ evas_gl_common_image_draw(Evas_GL_Context *gc, Evas_GL_Image *im, int sx, int sy
      yuv = 1;
    
    im->tex->im = im;
-   if ((!gc->dc->cutout.rects) || (gc->dc->cutout.active > 16))
+   if ((!gc->dc->cutout.rects) || 
+       ((gc->shared->info.cutout_max > 0) &&
+           (gc->dc->cutout.active > gc->shared->info.cutout_max)))
      {
         if (gc->dc->clip.use)
           {

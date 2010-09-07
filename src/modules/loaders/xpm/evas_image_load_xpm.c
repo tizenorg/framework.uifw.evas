@@ -1,4 +1,3 @@
-
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
@@ -443,7 +442,7 @@ evas_image_load_file_xpm(Image_Entry *ie, const char *file, const char *key __UN
 					   r = (unsigned char)cmap[lookup[lu1][0]].r;
                                            g = (unsigned char)cmap[lookup[lu1][0]].g;
                                            b = (unsigned char)cmap[lookup[lu1][0]].b;
-                                           *ptr = (r << 16) | (g << 8) | b;
+                                           *ptr = RGB_JOIN(r, g, b);
 					   ptr++;
                                            count++;
                                         }
@@ -452,7 +451,7 @@ evas_image_load_file_xpm(Image_Entry *ie, const char *file, const char *key __UN
                                            r = (unsigned char)cmap[lookup[lu1][0]].r;
                                            g = (unsigned char)cmap[lookup[lu1][0]].g;
                                            b = (unsigned char)cmap[lookup[lu1][0]].b;
-                                           *ptr = (0xff << 24) | (r << 16) | (g << 8) | b;
+                                           *ptr = ARGB_JOIN(0xff, r, g, b);
 					   ptr++;
                                            count++;
                                         }
@@ -469,7 +468,7 @@ evas_image_load_file_xpm(Image_Entry *ie, const char *file, const char *key __UN
 				      r = (unsigned char)cmap[lookup[lu1][0]].r;
 				      g = (unsigned char)cmap[lookup[lu1][0]].g;
 				      b = (unsigned char)cmap[lookup[lu1][0]].b;
-				      *ptr = (0xff << 24) | (r << 16) | (g << 8) | b;
+				      *ptr = ARGB_JOIN(0xff, r, g, b);
 				      ptr++;
 				      count++;
                                    }
@@ -493,7 +492,7 @@ evas_image_load_file_xpm(Image_Entry *ie, const char *file, const char *key __UN
 					   r = (unsigned char)cmap[lookup[lu1][lu2]].r;
                                            g = (unsigned char)cmap[lookup[lu1][lu2]].g;
                                            b = (unsigned char)cmap[lookup[lu1][lu2]].b;
-                                           *ptr = (r << 16) | (g << 8) | b;
+                                           *ptr = RGB_JOIN(r, g, b);
 					   ptr++;
                                            count++;
                                         }
@@ -502,7 +501,7 @@ evas_image_load_file_xpm(Image_Entry *ie, const char *file, const char *key __UN
                                            r = (unsigned char)cmap[lookup[lu1][lu2]].r;
                                            g = (unsigned char)cmap[lookup[lu1][lu2]].g;
                                            b = (unsigned char)cmap[lookup[lu1][lu2]].b;
-                                           *ptr = (0xff << 24) | (r << 16) | (g << 8) | b;
+                                           *ptr = ARGB_JOIN(0xff, r, g, b);
 					   ptr++;
                                            count++;
                                         }
@@ -522,7 +521,7 @@ evas_image_load_file_xpm(Image_Entry *ie, const char *file, const char *key __UN
 				      r = (unsigned char)cmap[lookup[lu1][lu2]].r;
 				      g = (unsigned char)cmap[lookup[lu1][lu2]].g;
 				      b = (unsigned char)cmap[lookup[lu1][lu2]].b;
-				      *ptr = (0xff << 24) | (r << 16) | (g << 8) | b;
+				      *ptr = ARGB_JOIN(0xff, r, g, b);
 				      ptr++;
 				      count++;
                                    }
@@ -552,7 +551,7 @@ evas_image_load_file_xpm(Image_Entry *ie, const char *file, const char *key __UN
                                                      r = (unsigned char)cmap[j].r;
                                                      g = (unsigned char)cmap[j].g;
                                                      b = (unsigned char)cmap[j].b;
-						     *ptr = (r << 16) | (g << 8) | b;
+						     *ptr = RGB_JOIN(r, g, b);
 						     ptr++;
                                                      count++;
                                                   }
@@ -561,7 +560,7 @@ evas_image_load_file_xpm(Image_Entry *ie, const char *file, const char *key __UN
 						     r = (unsigned char)cmap[j].r;
                                                      g = (unsigned char)cmap[j].g;
                                                      b = (unsigned char)cmap[j].b;
-						     *ptr = (0xff << 24) | (r << 16) | (g << 8) | b;
+						     *ptr = ARGB_JOIN(0xff, r, g, b);
 						     ptr++;
                                                      count++;
                                                   }
@@ -589,7 +588,7 @@ evas_image_load_file_xpm(Image_Entry *ie, const char *file, const char *key __UN
                                                 r = (unsigned char)cmap[j].r;
                                                 g = (unsigned char)cmap[j].g;
                                                 b = (unsigned char)cmap[j].b;
-						*ptr = (0xff << 24) | (r << 16) | (g << 8) | b;
+						*ptr = ARGB_JOIN(0xff, r, g, b);
 						ptr++;
 						count++;
                                                 break;
@@ -631,9 +630,9 @@ evas_image_load_file_xpm(Image_Entry *ie, const char *file, const char *key __UN
 	  break;
      }
 
-   if (cmap) free(cmap);
-   if (line) free(line);
-   if (f) fclose(f);
+   free(cmap);
+   free(line);
+   fclose(f);
 
    xpm_parse_done();
    *error = EVAS_LOAD_ERROR_NONE;

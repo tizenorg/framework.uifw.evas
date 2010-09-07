@@ -1,7 +1,3 @@
-/*
- * vim:ts=8:sw=3:sts=8:noexpandtab:cino=>5n-3f0^-2{2
- */
-
 #include "evas_common.h"
 #include "evas_convert_rgb_8.h"
 
@@ -25,8 +21,8 @@ void evas_common_convert_rgba_to_8bpp_rgb_332_dith     (DATA32 *src, DATA8 *dst,
 
    CONVERT_LOOP_START_ROT_0();
 
-   dith = DM_TABLE[(x + dith_x) & DM_MSK][(y + dith_y) & DM_MSK] >> DM_SHF(3);
-   dith2 = DM_TABLE[(x + dith_x) & DM_MSK][(y + dith_y) & DM_MSK] >> DM_SHF(2);
+   dith = DM_SHR(DM_TABLE[(x + dith_x) & DM_MSK][(y + dith_y) & DM_MSK], 3);
+   dith2 = DM_SHR(DM_TABLE[(x + dith_x) & DM_MSK][(y + dith_y) & DM_MSK], 2);
 /*   r = (R_VAL(src_ptr)) >> (8 - 3);*/
 /*   g = (G_VAL(src_ptr)) >> (8 - 3);*/
 /*   b = (B_VAL(src_ptr)) >> (8 - 2);*/
@@ -98,8 +94,8 @@ void evas_common_convert_rgba_to_8bpp_rgb_232_dith     (DATA32 *src, DATA8 *dst,
 
    CONVERT_LOOP_START_ROT_0();
 
-   dith = DM_TABLE[(x + dith_x) & DM_MSK][(y + dith_y) & DM_MSK] >> DM_SHF(3);
-   dith2 = DM_TABLE[(x + dith_x) & DM_MSK][(y + dith_y) & DM_MSK] >> DM_SHF(2);
+   dith = DM_SHR(DM_TABLE[(x + dith_x) & DM_MSK][(y + dith_y) & DM_MSK], 3);
+   dith2 = DM_SHR(DM_TABLE[(x + dith_x) & DM_MSK][(y + dith_y) & DM_MSK], 2);
 /*   r = (R_VAL(src_ptr)) >> (8 - 2);*/
 /*   g = (G_VAL(src_ptr)) >> (8 - 3);*/
 /*   b = (B_VAL(src_ptr)) >> (8 - 2);*/
@@ -131,7 +127,7 @@ void evas_common_convert_rgba_to_8bpp_rgb_222_dith     (DATA32 *src, DATA8 *dst,
 
    CONVERT_LOOP_START_ROT_0();
 
-   dith = DM_TABLE[(x + dith_x) & DM_MSK][(y + dith_y) & DM_MSK] >> DM_SHF(2);
+   dith = DM_SHR(DM_TABLE[(x + dith_x) & DM_MSK][(y + dith_y) & DM_MSK], 2);
 /*   r = (R_VAL(src_ptr)) >> (8 - 2);*/
 /*   g = (G_VAL(src_ptr)) >> (8 - 2);*/
 /*   b = (B_VAL(src_ptr)) >> (8 - 2);*/
@@ -163,8 +159,8 @@ void evas_common_convert_rgba_to_8bpp_rgb_221_dith     (DATA32 *src, DATA8 *dst,
 
    CONVERT_LOOP_START_ROT_0();
 
-   dith = DM_TABLE[(x + dith_x) & DM_MSK][(y + dith_y) & DM_MSK] >> DM_SHF(2);
-   dith2 = DM_TABLE[(x + dith_x) & DM_MSK][(y + dith_y) & DM_MSK] >> DM_SHF(1);
+   dith = DM_SHR(DM_TABLE[(x + dith_x) & DM_MSK][(y + dith_y) & DM_MSK], 2);
+   dith2 = DM_SHR(DM_TABLE[(x + dith_x) & DM_MSK][(y + dith_y) & DM_MSK], 1);
 /*   r = (R_VAL(src_ptr)) >> (8 - 2);*/
 /*   g = (G_VAL(src_ptr)) >> (8 - 2);*/
 /*   b = (B_VAL(src_ptr)) >> (8 - 1);*/
@@ -196,8 +192,8 @@ void evas_common_convert_rgba_to_8bpp_rgb_121_dith     (DATA32 *src, DATA8 *dst,
 
    CONVERT_LOOP_START_ROT_0();
 
-   dith = DM_TABLE[(x + dith_x) & DM_MSK][(y + dith_y) & DM_MSK] >> DM_SHF(2);
-   dith2 = DM_TABLE[(x + dith_x) & DM_MSK][(y + dith_y) & DM_MSK] >> DM_SHF(1);
+   dith = DM_SHR(DM_TABLE[(x + dith_x) & DM_MSK][(y + dith_y) & DM_MSK], 2);
+   dith2 = DM_SHR(DM_TABLE[(x + dith_x) & DM_MSK][(y + dith_y) & DM_MSK], 1);
 /*   r = (R_VAL(src_ptr)) >> (8 - 1);*/
 /*   g = (G_VAL(src_ptr)) >> (8 - 2);*/
 /*   b = (B_VAL(src_ptr)) >> (8 - 1);*/
@@ -230,7 +226,7 @@ void evas_common_convert_rgba_to_8bpp_rgb_111_dith     (DATA32 *src, DATA8 *dst,
 
    CONVERT_LOOP_START_ROT_0();
 
-   dith = DM_TABLE[(x + dith_x) & DM_MSK][(y + dith_y) & DM_MSK] >> DM_SHF(1);
+   dith = DM_SHR(DM_TABLE[(x + dith_x) & DM_MSK][(y + dith_y) & DM_MSK], 1);
 /*   r = (R_VAL(src_ptr)) >> (8 - 1);*/
 /*   g = (G_VAL(src_ptr)) >> (8 - 1);*/
 /*   b = (B_VAL(src_ptr)) >> (8 - 1);*/

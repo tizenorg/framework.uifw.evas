@@ -1,4 +1,4 @@
-#include "evas_common.h"
+#include "evas_common.h"/* Also includes international specific stuff */
 #include "evas_common_soft16.h"
 
 /*
@@ -203,264 +203,6 @@ eng_polygon_draw(void *data __UNUSED__, void *context, void *surface, void *poly
    soft16_polygon_draw(surface, context, polygon, x, y);
 }
 
-
-static void
-eng_gradient2_color_np_stop_insert(void *data __UNUSED__, void *gradient __UNUSED__, int r __UNUSED__, int g __UNUSED__, int b __UNUSED__, int a __UNUSED__, float pos __UNUSED__)
-{
-}
-
-static void
-eng_gradient2_clear(void *data __UNUSED__, void *gradient __UNUSED__)
-{
-}
-
-static void
-eng_gradient2_fill_transform_set(void *data __UNUSED__, void *gradient __UNUSED__, void *transform __UNUSED__)
-{
-}
-
-static void
-eng_gradient2_fill_spread_set(void *data __UNUSED__, void *gradient __UNUSED__, int spread __UNUSED__)
-{
-}
-
-static void *
-eng_gradient2_linear_new(void *data __UNUSED__)
-{
-   return NULL;
-}
-
-static void
-eng_gradient2_linear_free(void *data __UNUSED__, void *linear_gradient __UNUSED__)
-{
-}
-
-static void
-eng_gradient2_linear_fill_set(void *data __UNUSED__, void *linear_gradient __UNUSED__, float x0 __UNUSED__, float y0 __UNUSED__, float x1 __UNUSED__, float y1 __UNUSED__)
-{
-}
-
-static int
-eng_gradient2_linear_is_opaque(void *data __UNUSED__, void *context __UNUSED__, void *linear_gradient __UNUSED__, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-   return 1;
-}
-
-static int
-eng_gradient2_linear_is_visible(void *data __UNUSED__, void *context __UNUSED__, void *linear_gradient __UNUSED__, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-   return 1;
-}
-
-static void
-eng_gradient2_linear_render_pre(void *data __UNUSED__, void *context __UNUSED__, void *linear_gradient __UNUSED__)
-{
-}
-
-static void
-eng_gradient2_linear_render_post(void *data __UNUSED__, void *linear_gradient __UNUSED__)
-{
-}
-
-static void
-eng_gradient2_linear_draw(void *data __UNUSED__, void *context __UNUSED__, void *surface __UNUSED__, void *linear_gradient __UNUSED__, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-}
-
-static void *
-eng_gradient2_radial_new(void *data __UNUSED__)
-{
-   return NULL;
-}
-
-static void
-eng_gradient2_radial_free(void *data __UNUSED__, void *radial_gradient __UNUSED__)
-{
-}
-
-static void
-eng_gradient2_radial_fill_set(void *data __UNUSED__, void *radial_gradient __UNUSED__, float cx __UNUSED__, float cy __UNUSED__, float rx __UNUSED__, float ry __UNUSED__)
-{
-}
-
-static int
-eng_gradient2_radial_is_opaque(void *data __UNUSED__, void *context __UNUSED__, void *radial_gradient __UNUSED__, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-   return 1;
-}
-
-static int
-eng_gradient2_radial_is_visible(void *data __UNUSED__, void *context __UNUSED__, void *radial_gradient __UNUSED__, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-   return 1;
-}
-
-static void
-eng_gradient2_radial_render_pre(void *data __UNUSED__, void *context __UNUSED__, void *radial_gradient __UNUSED__)
-{
-}
-
-static void
-eng_gradient2_radial_render_post(void *data __UNUSED__, void *radial_gradient __UNUSED__)
-{
-}
-
-static void
-eng_gradient2_radial_draw(void *data __UNUSED__, void *context __UNUSED__, void *surface __UNUSED__, void *radial_gradient __UNUSED__, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-}
-
-static void *
-eng_gradient_new(void *data __UNUSED__)
-{
-   NOT_IMPLEMENTED();
-   return NULL;
-//   return evas_common_gradient_new();
-}
-
-static void
-eng_gradient_free(void *data __UNUSED__, void *gradient __UNUSED__)
-{
-   NOT_IMPLEMENTED();
-//   evas_common_gradient_free(gradient);
-}
-
-static void
-eng_gradient_color_stop_add(void *data __UNUSED__, void *gradient __UNUSED__, int r __UNUSED__, int g __UNUSED__, int b __UNUSED__, int a __UNUSED__, int delta __UNUSED__)
-{
-   NOT_IMPLEMENTED();
-//   evas_common_gradient_color_stop_add(gradient, r, g, b, a, delta);
-}
-
-static void
-eng_gradient_alpha_stop_add(void *data __UNUSED__, void *gradient __UNUSED__, int a __UNUSED__, int delta __UNUSED__)
-{
-   NOT_IMPLEMENTED();
-//   evas_common_gradient_alpha_stop_add(gradient, a, delta);
-}
-
-static void
-eng_gradient_color_data_set(void *data __UNUSED__, void *gradient __UNUSED__, void *map __UNUSED__, int len __UNUSED__, int has_alpha __UNUSED__)
-{
-   NOT_IMPLEMENTED();
-//   evas_common_gradient_color_data_set(gradient, map, len, has_alpha);
-}
-
-static void
-eng_gradient_alpha_data_set(void *data __UNUSED__, void *gradient __UNUSED__, void *alpha_map __UNUSED__, int len __UNUSED__)
-{
-   NOT_IMPLEMENTED();
-//   evas_common_gradient_alpha_data_set(gradient, alpha_map, len);
-}
-
-static void
-eng_gradient_clear(void *data __UNUSED__, void *gradient __UNUSED__)
-{
-   NOT_IMPLEMENTED();
-//   evas_common_gradient_clear(gradient);
-}
-
-static void
-eng_gradient_fill_set(void *data __UNUSED__, void *gradient __UNUSED__, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-   NOT_IMPLEMENTED();
-//   evas_common_gradient_fill_set(gradient, x, y, w, h);
-}
-
-static void
-eng_gradient_fill_angle_set(void *data __UNUSED__, void *gradient __UNUSED__, double angle __UNUSED__)
-{
-   NOT_IMPLEMENTED();
-//   evas_common_gradient_fill_angle_set(gradient, angle);
-}
-
-static void
-eng_gradient_fill_spread_set(void *data __UNUSED__, void *gradient __UNUSED__, int spread __UNUSED__)
-{
-   NOT_IMPLEMENTED();
-//   evas_common_gradient_fill_spread_set(gradient, spread);
-}
-
-static void
-eng_gradient_angle_set(void *data __UNUSED__, void *gradient __UNUSED__, double angle __UNUSED__)
-{
-   NOT_IMPLEMENTED();
-//   evas_common_gradient_map_angle_set(gradient, angle);
-}
-
-static void
-eng_gradient_offset_set(void *data __UNUSED__, void *gradient __UNUSED__, float offset __UNUSED__)
-{
-   NOT_IMPLEMENTED();
-//   evas_common_gradient_map_offset_set(gradient, offset);
-}
-
-static void
-eng_gradient_direction_set(void *data __UNUSED__, void *gradient __UNUSED__, int direction __UNUSED__)
-{
-   NOT_IMPLEMENTED();
-//   evas_common_gradient_map_direction_set(gradient, direction);
-}
-
-static void
-eng_gradient_type_set(void *data __UNUSED__, void *gradient __UNUSED__, char *name __UNUSED__, char *params __UNUSED__)
-{
-   NOT_IMPLEMENTED();
-//   evas_common_gradient_type_set(gradient, name, params);
-}
-
-static int
-eng_gradient_is_opaque(void *data __UNUSED__, void *context __UNUSED__, void *gradient __UNUSED__, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-   NOT_IMPLEMENTED();
-   return 0;
-//   RGBA_Draw_Context *dc = (RGBA_Draw_Context *)context;
-//   RGBA_Gradient *gr = (RGBA_Gradient *)gradient;
-//
-//   if (!dc || !gr || !gr->type.geometer)  return 0;
-//   return !(gr->type.geometer->has_alpha(gr, dc->render_op) |
-//              gr->type.geometer->has_mask(gr, dc->render_op));
-}
-
-static int
-eng_gradient_is_visible(void *data __UNUSED__, void *context __UNUSED__, void *gradient __UNUSED__, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-   NOT_IMPLEMENTED();
-   return 0;
-//   RGBA_Draw_Context *dc = (RGBA_Draw_Context *)context;
-//
-//   if (!dc || !gradient)  return 0;
-//   return 1;
-}
-
-static void
-eng_gradient_render_pre(void *data __UNUSED__, void *context __UNUSED__, void *gradient __UNUSED__)
-{
-//   RGBA_Draw_Context *dc = (RGBA_Draw_Context *)context;
-//   RGBA_Gradient *gr = (RGBA_Gradient *)gradient;
-//   int  len;
-//
-//   if (!dc || !gr || !gr->type.geometer)  return;
-//   gr->type.geometer->geom_set(gr);
-//   len = gr->type.geometer->get_map_len(gr);
-//   evas_common_gradient_map(dc, gr, len);
-   NOT_IMPLEMENTED();
-}
-
-static void
-eng_gradient_render_post(void *data __UNUSED__, void *gradient __UNUSED__)
-{
-   NOT_IMPLEMENTED();
-}
-
-static void
-eng_gradient_draw(void *data __UNUSED__, void *context __UNUSED__, void *surface __UNUSED__, void *gradient __UNUSED__, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-//   evas_common_gradient_draw(surface, context, x, y, w, h, gradient);
-//   evas_common_cpu_end_opt();
-   NOT_IMPLEMENTED();
-}
-
 static int
 eng_image_alpha_get(void *data __UNUSED__, void *image)
 {
@@ -516,10 +258,11 @@ eng_image_colorspace_set(void *data __UNUSED__, void *image __UNUSED__, int cspa
    NOT_IMPLEMENTED();
 }
 
-static void
+static void *
 eng_image_native_set(void *data __UNUSED__, void *image __UNUSED__, void *native __UNUSED__)
 {
    NOT_IMPLEMENTED();
+   return NULL;
 }
 
 static void *
@@ -762,55 +505,55 @@ eng_font_max_descent_get(void *data __UNUSED__, void *font)
 }
 
 static void
-eng_font_string_size_get(void *data __UNUSED__, void *font, const char *text, int *w, int *h)
+eng_font_string_size_get(void *data __UNUSED__, void *font, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props, int *w, int *h)
 {
-   evas_common_font_query_size(font, text, w, h);
+   evas_common_font_query_size(font, text, intl_props, w, h);
 }
 
 static int
-eng_font_inset_get(void *data __UNUSED__, void *font, const char *text)
+eng_font_inset_get(void *data __UNUSED__, void *font, const Eina_Unicode *text)
 {
    return evas_common_font_query_inset(font, text);
 }
 
 static int
-eng_font_h_advance_get(void *data __UNUSED__, void *font, const char *text)
+eng_font_h_advance_get(void *data __UNUSED__, void *font, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props)
 {
    int h, v;
 
-   evas_common_font_query_advance(font, text, &h, &v);
+   evas_common_font_query_advance(font, text, intl_props, &h, &v);
    return h;
 }
 
 static int
-eng_font_v_advance_get(void *data __UNUSED__, void *font, const char *text)
+eng_font_v_advance_get(void *data __UNUSED__, void *font, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props)
 {
    int h, v;
 
-   evas_common_font_query_advance(font, text, &h, &v);
+   evas_common_font_query_advance(font, text, intl_props, &h, &v);
    return v;
 }
 
 static int
-eng_font_char_coords_get(void *data __UNUSED__, void *font, const char *text, int pos, int *cx, int *cy, int *cw, int *ch)
+eng_font_char_coords_get(void *data __UNUSED__, void *font, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props, int pos, int *cx, int *cy, int *cw, int *ch)
 {
-   return evas_common_font_query_char_coords(font, text, pos, cx, cy, cw, ch);
+   return evas_common_font_query_char_coords(font, text, intl_props, pos, cx, cy, cw, ch);
 }
 
 static int
-eng_font_char_at_coords_get(void *data __UNUSED__, void *font, const char *text, int x, int y, int *cx, int *cy, int *cw, int *ch)
+eng_font_char_at_coords_get(void *data __UNUSED__, void *font, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props, int x, int y, int *cx, int *cy, int *cw, int *ch)
 {
-   return evas_common_font_query_text_at_pos(font, text, x, y, cx, cy, cw, ch);
+   return evas_common_font_query_char_at_coords(font, text, intl_props, x, y, cx, cy, cw, ch);
 }
 
 static int
-eng_font_last_up_to_pos(void *data __UNUSED__, void *font, const char *text, int x, int y)
+eng_font_last_up_to_pos(void *data __UNUSED__, void *font, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props, int x, int y)
 {
-   return evas_common_font_query_last_up_to_pos(font, text, x, y);
+   return evas_common_font_query_last_up_to_pos(font, text, intl_props, x, y);
 }
 
 static void
-eng_font_draw(void *data __UNUSED__, void *context, void *surface, void *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const char *text)
+eng_font_draw(void *data __UNUSED__, void *context, void *surface, void *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props)
 {
    static RGBA_Image    *im = NULL;
    Soft16_Image         *dst = surface;
@@ -823,7 +566,7 @@ eng_font_draw(void *data __UNUSED__, void *context, void *surface, void *font, i
 					 soft16_font_glyph_new,
 					 soft16_font_glyph_free,
 					 soft16_font_glyph_draw);
-   evas_common_font_draw(im, context, font, x, y, text);
+   evas_common_font_draw(im, context, font, x, y, text, intl_props);
    evas_common_draw_context_font_ext_set(context,
 					 NULL,
 					 NULL,
@@ -920,49 +663,6 @@ static Evas_Func func =
      eng_polygon_point_add,
      eng_polygon_points_clear,
      eng_polygon_draw,
-     /* gradient draw funcs */
-     eng_gradient2_color_np_stop_insert,
-     eng_gradient2_clear,
-     eng_gradient2_fill_transform_set,
-     eng_gradient2_fill_spread_set,
-     
-     eng_gradient2_linear_new,
-     eng_gradient2_linear_free,
-     eng_gradient2_linear_fill_set,
-     eng_gradient2_linear_is_opaque,
-     eng_gradient2_linear_is_visible,
-     eng_gradient2_linear_render_pre,
-     eng_gradient2_linear_render_post,
-     eng_gradient2_linear_draw,
-     
-     eng_gradient2_radial_new,
-     eng_gradient2_radial_free,
-     eng_gradient2_radial_fill_set,
-     eng_gradient2_radial_is_opaque,
-     eng_gradient2_radial_is_visible,
-     eng_gradient2_radial_render_pre,
-     eng_gradient2_radial_render_post,
-     eng_gradient2_radial_draw,
-     
-     eng_gradient_new,
-     eng_gradient_free,
-     eng_gradient_color_stop_add,
-     eng_gradient_alpha_stop_add,
-     eng_gradient_color_data_set,
-     eng_gradient_alpha_data_set,
-     eng_gradient_clear,
-     eng_gradient_fill_set,
-     eng_gradient_fill_angle_set,
-     eng_gradient_fill_spread_set,
-     eng_gradient_angle_set,
-     eng_gradient_offset_set,
-     eng_gradient_direction_set,
-     eng_gradient_type_set,
-     eng_gradient_is_opaque,
-     eng_gradient_is_visible,
-     eng_gradient_render_pre,
-     eng_gradient_render_post,
-     eng_gradient_draw,
      /* image draw funcs */
      eng_image_load,
      eng_image_new_from_data,

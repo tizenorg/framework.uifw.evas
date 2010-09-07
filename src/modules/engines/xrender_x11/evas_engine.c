@@ -1,4 +1,4 @@
-#include "evas_common.h"
+#include "evas_common.h" /* Also includes international specific stuff */
 #include "evas_private.h"
 
 #include "Evas_Engine_XRender_X11.h"
@@ -95,27 +95,11 @@ struct _Render_Engine
 
    Eina_List       *updates;
 
-   void *(*font_surface_new)(void *xinf, RGBA_Font_Glyph *fg);
-   void (*font_surface_free)(void *fs);
-   void (*font_surface_draw)(void *xinf, void *surface, void *dc, RGBA_Font_Glyph *fg, int x, int y);
+   XR_Font_Surface *(*font_surface_new)(Ximage_Info *xinf, RGBA_Font_Glyph *fg);
+   void (*font_surface_free)(XR_Font_Surface *fs);
+   void (*font_surface_draw)(Ximage_Info *xinf, RGBA_Image *surface, RGBA_Draw_Context *dc, RGBA_Font_Glyph *fg, int x, int y);
 
-   XR_Gradient *(*gradient_new)(Ximage_Info *xinf);
-   void (*gradient_free)(XR_Gradient *gr);
-   void (*gradient_color_stop_add)(XR_Gradient *gr, int r, int g, int b, int a, int delta);
-   void (*gradient_alpha_stop_add)(XR_Gradient *gr, int a, int delta);
-   void (*gradient_color_data_set)(XR_Gradient *gr, void *map, int len, int has_alpha);
-   void (*gradient_alpha_data_set)(XR_Gradient *gr, void *alpha_map, int len);
-   void (*gradient_clear)(XR_Gradient *gr);
-   void (*gradient_fill_set)(XR_Gradient *gr, int x, int y, int w, int h);
-   void (*gradient_fill_angle_set)(XR_Gradient *gr, double angle);
-   void (*gradient_fill_spread_set)(XR_Gradient *gr, int spread);
-   void (*gradient_angle_set)(XR_Gradient *gr, double angle);
-   void (*gradient_offset_set)(XR_Gradient *gr, float offset);
-   void (*gradient_direction_set)(XR_Gradient *gr, int direction);
-   void (*gradient_type_set)(XR_Gradient *gr, char *name, char *params);
-   void (*gradient_draw)(Xrender_Surface *rs, RGBA_Draw_Context *dc, XR_Gradient *gr, int x, int y, int w, int h);
-
-   XR_Image *(*image_load)(Ximage_Info *xinf, const char *file, const char *key, Evas_Image_Load_Opts *lo);
+   XR_Image *(*image_load)(Ximage_Info *xinf, const char *file, const char *key, Evas_Image_Load_Opts *lo, int *error);
    XR_Image *(*image_new_from_data)(Ximage_Info *xinf, int w, int h, void *data, int alpha, int cspace);
    XR_Image *(*image_new_from_copied_data)(Ximage_Info *xinf, int w, int h, void *data, int alpha, int cspace);
    XR_Image *(*image_new)(Ximage_Info *xinf, int w, int h);
@@ -135,7 +119,7 @@ struct _Render_Engine
    void (*image_cache_set)(int size);
    int  (*image_cache_get)(void);
 
-   Ximage_Info *(*ximage_info_get)(void *connection, unsigned int draw, void *vis);
+   Ximage_Info *(*ximage_info_get)(Display *connection, Drawable draw, Visual *vis);
    void (*ximage_info_free)(Ximage_Info *xinf);
    void (*ximage_info_pool_flush)(Ximage_Info *xinf, int max_num, int max_mem);
    Ximage_Image *(*ximage_new)(Ximage_Info *xinf, int w, int h, int depth);
@@ -143,8 +127,8 @@ struct _Render_Engine
    void (*ximage_put)(Ximage_Image *xim, Drawable draw, int x, int y, int w, int h);
 
    Xrender_Surface *(*render_surface_new)(Ximage_Info *xinf, int w, int h, XRenderPictFormat *fmt, int alpha);
-   Xrender_Surface *(*render_surface_adopt)(Ximage_Info *xinf, unsigned int draw, int w, int h, int alpha);
-   Xrender_Surface *(*render_surface_format_adopt)(Ximage_Info *xinf, unsigned int draw, int w, int h, void *fmt, int alpha);
+   Xrender_Surface *(*render_surface_adopt)(Ximage_Info *xinf, Drawable draw, int w, int h, int alpha);
+   Xrender_Surface *(*render_surface_format_adopt)(Ximage_Info *xinf, Drawable draw, int w, int h, XRenderPictFormat *fmt, int alpha);
    void (*render_surface_free)(Xrender_Surface *rs);
    void (*render_surface_repeat_set)(Xrender_Surface *rs, int repeat);
    void (*render_surface_solid_rectangle_set)(Xrender_Surface *rs, int r, int g, int b, int a, int x, int y, int w, int h);
@@ -212,22 +196,6 @@ _output_xlib_setup(int           width,
    re->font_surface_new = _xre_xlib_font_surface_new;
    re->font_surface_free = _xre_xlib_font_surface_free;
    re->font_surface_draw = _xre_xlib_font_surface_draw;
-
-   re->gradient_new = _xre_xlib_gradient_new;
-   re->gradient_free = _xre_xlib_gradient_free;
-   re->gradient_color_stop_add = _xre_xlib_gradient_color_stop_add;
-   re->gradient_alpha_stop_add = _xre_xlib_gradient_alpha_stop_add;
-   re->gradient_color_data_set = _xre_xlib_gradient_color_data_set;
-   re->gradient_alpha_data_set = _xre_xlib_gradient_alpha_data_set;
-   re->gradient_clear = _xre_xlib_gradient_clear;
-   re->gradient_fill_set = _xre_xlib_gradient_fill_set;
-   re->gradient_fill_angle_set = _xre_xlib_gradient_fill_angle_set;
-   re->gradient_fill_spread_set = _xre_xlib_gradient_fill_spread_set;
-   re->gradient_angle_set = _xre_xlib_gradient_angle_set;
-   re->gradient_offset_set = _xre_xlib_gradient_offset_set;
-   re->gradient_direction_set = _xre_xlib_gradient_direction_set;
-   re->gradient_type_set = _xre_xlib_gradient_type_set;
-   re->gradient_draw = _xre_xlib_gradient_draw;
 
    re->image_load = _xre_xlib_image_load;
    re->image_new_from_data = _xre_xlib_image_new_from_data;
@@ -391,22 +359,6 @@ _output_xcb_setup(int           width,
    re->font_surface_free = _xre_xcb_font_surface_free;
    re->font_surface_draw = _xre_xcb_font_surface_draw;
 
-   re->gradient_new = _xre_xcb_gradient_new;
-   re->gradient_free = _xre_xcb_gradient_free;
-   re->gradient_color_stop_add = _xre_xcb_gradient_color_stop_add;
-   re->gradient_alpha_stop_add = _xre_xcb_gradient_alpha_stop_add;
-   re->gradient_color_data_set = _xre_xcb_gradient_color_data_set;
-   re->gradient_alpha_data_set = _xre_xcb_gradient_alpha_data_set;
-   re->gradient_clear = _xre_xcb_gradient_clear;
-   re->gradient_fill_set = _xre_xcb_gradient_fill_set;
-   re->gradient_fill_angle_set = _xre_xcb_gradient_fill_angle_set;
-   re->gradient_fill_spread_set = _xre_xcb_gradient_fill_spread_set;
-   re->gradient_angle_set = _xre_xcb_gradient_angle_set;
-   re->gradient_offset_set = _xre_xcb_gradient_offset_set;
-   re->gradient_direction_set = _xre_xcb_gradient_direction_set;
-   re->gradient_type_set = _xre_xcb_gradient_type_set;
-   re->gradient_draw = _xre_xcb_gradient_draw;
-
    re->image_load = _xre_xcb_image_load;
    re->image_new_from_data = _xre_xcb_image_new_from_data;
    re->image_new_from_copied_data = _xre_xcb_image_new_from_copied_data;
@@ -474,7 +426,7 @@ eng_info_free(Evas *e __UNUSED__, void *info)
    free(in);
 }
 
-static void
+static int
 eng_setup(Evas *e, void *in)
 {
    Render_Engine *re = NULL;
@@ -490,7 +442,6 @@ eng_setup(Evas *e, void *in)
 	evas_common_convert_init();
 	evas_common_scale_init();
 	evas_common_rectangle_init();
-	evas_common_gradient_init();
 	evas_common_polygon_init();
 	evas_common_line_init();
 	evas_common_font_init();
@@ -548,6 +499,8 @@ eng_setup(Evas *e, void *in)
         if (re->tb)
 	  evas_common_tilebuf_set_tile_size(re->tb, TILESIZE, TILESIZE);
      }
+
+   return 1;
 }
 
 static void
@@ -787,272 +740,6 @@ eng_polygon_draw(void *data, void *context, void *surface, void *polygon, int x,
    re->render_surface_polygon_draw((Xrender_Surface *)surface, (RGBA_Draw_Context *)context, (RGBA_Polygon_Point *)polygon, x, y);
 }
 
-
-static void
-eng_gradient2_color_np_stop_insert(void *data __UNUSED__, void *gradient __UNUSED__, int r __UNUSED__, int g __UNUSED__, int b __UNUSED__, int a __UNUSED__, float pos __UNUSED__)
-{
-}
-
-static void
-eng_gradient2_clear(void *data __UNUSED__, void *gradient __UNUSED__)
-{
-}
-
-static void
-eng_gradient2_fill_transform_set(void *data __UNUSED__, void *gradient __UNUSED__, void *transform __UNUSED__)
-{
-}
-
-static void
-eng_gradient2_fill_spread_set(void *data __UNUSED__, void *gradient __UNUSED__, int spread __UNUSED__)
-{
-}
-
-static void *
-eng_gradient2_linear_new(void *data __UNUSED__)
-{
-   return NULL;
-}
-
-static void
-eng_gradient2_linear_free(void *data __UNUSED__, void *linear_gradient __UNUSED__)
-{
-}
-
-static void
-eng_gradient2_linear_fill_set(void *data __UNUSED__, void *linear_gradient __UNUSED__, int x0 __UNUSED__, int y0 __UNUSED__, int x1 __UNUSED__, int y1 __UNUSED__)
-{
-}
-
-static int
-eng_gradient2_linear_is_opaque(void *data __UNUSED__, void *context __UNUSED__, void *linear_gradient __UNUSED__, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-   return 1;
-}
-
-static int
-eng_gradient2_linear_is_visible(void *data __UNUSED__, void *context __UNUSED__, void *linear_gradient __UNUSED__, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-   return 1;
-}
-
-static void
-eng_gradient2_linear_render_pre(void *data __UNUSED__, void *context __UNUSED__, void *linear_gradient __UNUSED__)
-{
-}
-
-static void
-eng_gradient2_linear_render_post(void *data __UNUSED__, void *linear_gradient __UNUSED__)
-{
-}
-
-static void
-eng_gradient2_linear_draw(void *data __UNUSED__, void *context __UNUSED__, void *surface __UNUSED__, void *linear_gradient __UNUSED__, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-}
-
-static void *
-eng_gradient2_radial_new(void *data __UNUSED__)
-{
-   return NULL;
-}
-
-static void
-eng_gradient2_radial_free(void *data __UNUSED__, void *radial_gradient __UNUSED__)
-{
-}
-
-static void
-eng_gradient2_radial_fill_set(void *data __UNUSED__, void *radial_gradient __UNUSED__, float cx __UNUSED__, float cy __UNUSED__, float rx __UNUSED__, float ry __UNUSED__)
-{
-}
-
-static int
-eng_gradient2_radial_is_opaque(void *data __UNUSED__, void *context __UNUSED__, void *radial_gradient __UNUSED__, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-   return 1;
-}
-
-static int
-eng_gradient2_radial_is_visible(void *data __UNUSED__, void *context __UNUSED__, void *radial_gradient __UNUSED__, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-   return 1;
-}
-
-static void
-eng_gradient2_radial_render_pre(void *data __UNUSED__, void *context __UNUSED__, void *radial_gradient __UNUSED__)
-{
-}
-
-static void
-eng_gradient2_radial_render_post(void *data __UNUSED__, void *radial_gradient __UNUSED__)
-{
-}
-
-static void
-eng_gradient2_radial_draw(void *data __UNUSED__, void *context __UNUSED__, void *surface __UNUSED__, void *radial_gradient __UNUSED__, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-}
-
-static void *
-eng_gradient_new(void *data)
-{
-   Render_Engine *re = (Render_Engine *)data;
-
-   return re->gradient_new(re->xinf);
-}
-
-static void
-eng_gradient_free(void *data, void *gradient)
-{
-   Render_Engine *re = (Render_Engine *)data;
-
-   re->gradient_free(gradient);
-}
-
-static void
-eng_gradient_color_stop_add(void *data, void *gradient, int r, int g, int b, int a, int delta)
-{
-   Render_Engine *re = (Render_Engine *)data;
-
-   re->gradient_color_stop_add(gradient, r, g, b, a, delta);
-}
-
-static void
-eng_gradient_alpha_stop_add(void *data, void *gradient, int a, int delta)
-{
-   Render_Engine *re = (Render_Engine *)data;
-
-   re->gradient_alpha_stop_add(gradient, a, delta);
-}
-
-static void
-eng_gradient_color_data_set(void *data, void *gradient, void *map, int len, int has_alpha)
-{
-   Render_Engine *re = (Render_Engine *)data;
-
-   re->gradient_color_data_set(gradient, map, len, has_alpha);
-}
-
-static void
-eng_gradient_alpha_data_set(void *data, void *gradient, void *alpha_map, int len)
-{
-   Render_Engine *re = (Render_Engine *)data;
-
-   re->gradient_alpha_data_set(gradient, alpha_map, len);
-}
-
-static void
-eng_gradient_clear(void *data, void *gradient)
-{
-   Render_Engine *re = (Render_Engine *)data;
-
-   re->gradient_clear(gradient);
-}
-
-static void
-eng_gradient_fill_set(void *data, void *gradient, int x, int y, int w, int h)
-{
-   Render_Engine *re = (Render_Engine *)data;
-
-   re->gradient_fill_set(gradient, x, y, w, h);
-}
-
-static void
-eng_gradient_fill_angle_set(void *data, void *gradient, double angle)
-{
-   Render_Engine *re = (Render_Engine *)data;
-
-   re->gradient_fill_angle_set(gradient, angle);
-}
-
-static void
-eng_gradient_fill_spread_set(void *data, void *gradient, int spread)
-{
-   Render_Engine *re = (Render_Engine *)data;
-
-   re->gradient_fill_spread_set(gradient, spread);
-}
-
-static void
-eng_gradient_angle_set(void *data, void *gradient, double angle)
-{
-   Render_Engine *re = (Render_Engine *)data;
-
-   re->gradient_angle_set(gradient, angle);
-}
-
-static void
-eng_gradient_offset_set(void *data, void *gradient, float offset)
-{
-   Render_Engine *re = (Render_Engine *)data;
-
-   re->gradient_offset_set(gradient, offset);
-}
-
-static void
-eng_gradient_direction_set(void *data, void *gradient, int direction)
-{
-   Render_Engine *re = (Render_Engine *)data;
-
-   re->gradient_direction_set(gradient, direction);
-}
-
-static void
-eng_gradient_type_set(void *data, void *gradient, char *name, char *params)
-{
-   Render_Engine *re = (Render_Engine *)data;
-
-   re->gradient_type_set(gradient, name, params);
-}
-
-static int
-eng_gradient_is_opaque(void *data __UNUSED__, void *context, void *gradient, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-   RGBA_Gradient  *grad;
-   RGBA_Draw_Context *dc = (RGBA_Draw_Context *)context;
-
-   if (!dc || !gradient) return 0;
-   grad = ((XR_Gradient *)gradient)->grad;
-   if(!grad || !grad->type.geometer)  return 0;
-   return !(grad->type.geometer->has_alpha(grad, dc->render_op) |
-              grad->type.geometer->has_mask(grad, dc->render_op));
-}
-
-static int
-eng_gradient_is_visible(void *data __UNUSED__, void *context, void *gradient, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-   if (!context || !gradient)  return 0;
-   return 1;
-}
-
-static void
-eng_gradient_render_pre(void *data __UNUSED__, void *context, void *gradient)
-{
-   int  len;
-   RGBA_Gradient  *grad;
-
-   if (!context || !gradient) return;
-   grad = ((XR_Gradient *)gradient)->grad;
-   if(!grad || !grad->type.geometer)  return;
-   grad->type.geometer->geom_set(grad);
-   len = grad->type.geometer->get_map_len(grad);
-   evas_common_gradient_map(context, grad, len);
-}
-
-static void
-eng_gradient_render_post(void *data __UNUSED__, void *gradient __UNUSED__)
-{
-}
-
-static void
-eng_gradient_draw(void *data, void *context, void *surface, void *gradient, int x, int y, int w, int h)
-{
-   Render_Engine *re = (Render_Engine *)data;
-
-   re->gradient_draw(surface, context, gradient, x, y, w, h);
-}
-
 static int
 eng_image_alpha_get(void *data, void *image)
 {
@@ -1183,9 +870,10 @@ eng_image_colorspace_set(void *data, void *image, int cspace)
    re->image_region_dirty(im, 0, 0, im->w, im->h);
 }
 
-static void
+static void *
 eng_image_native_set(void *data __UNUSED__, void *image __UNUSED__, void *native __UNUSED__)
 {
+   return NULL;
 }
 
 static void *
@@ -1202,7 +890,7 @@ eng_image_load(void *data, const char *file, const char *key, int *error, Evas_I
 
    re = (Render_Engine *)data;
    *error = 0;
-   im = re->image_load(re->xinf, file, key, lo);
+   im = re->image_load(re->xinf, file, key, lo, error);
    return im;
 }
 
@@ -1484,7 +1172,7 @@ eng_image_cache_get(void *data)
 }
 
 static void
-eng_font_draw(void *data, void *context, void *surface, void *font, int x, int y, int w, int h, int ow __UNUSED__, int oh __UNUSED__, const char *text)
+eng_font_draw(void *data, void *context, void *surface, void *font, int x, int y, int w, int h, int ow __UNUSED__, int oh __UNUSED__, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props)
 {
    Render_Engine        *re;
    RGBA_Image           *im;
@@ -1500,10 +1188,11 @@ eng_font_draw(void *data, void *context, void *surface, void *font, int x, int y
                                              0, EVAS_COLORSPACE_ARGB8888);
    evas_common_draw_context_font_ext_set((RGBA_Draw_Context *)context,
                                          re->xinf,
-                                         re->font_surface_new,
-                                         re->font_surface_free,
-                                         re->font_surface_draw);
-   evas_common_font_draw(im, context, font, x, y, text);
+            (void *(*)(void *, RGBA_Font_Glyph *)) re->font_surface_new,
+            (void (*)(void *))           re->font_surface_free,
+            (void  (*) (void *, void *, void *, RGBA_Font_Glyph *, int, int))
+                 re->font_surface_draw);
+   evas_common_font_draw(im, context, font, x, y, text, intl_props);
    evas_common_draw_context_font_ext_set(context,
                                          NULL,
                                          NULL,
@@ -1568,46 +1257,6 @@ module_open(Evas_Module *em)
    ORD(line_draw);
    ORD(polygon_draw);
 
-   ORD(gradient2_color_np_stop_insert);
-   ORD(gradient2_clear);
-   ORD(gradient2_fill_transform_set);
-   ORD(gradient2_fill_spread_set);
-   ORD(gradient2_linear_new);
-   ORD(gradient2_linear_free);
-   ORD(gradient2_linear_fill_set);
-   ORD(gradient2_linear_is_opaque);
-   ORD(gradient2_linear_is_visible);
-   ORD(gradient2_linear_render_pre);
-   ORD(gradient2_linear_render_post);
-   ORD(gradient2_linear_draw);
-   ORD(gradient2_radial_new);
-   ORD(gradient2_radial_free);
-   ORD(gradient2_radial_fill_set);
-   ORD(gradient2_radial_is_opaque);
-   ORD(gradient2_radial_is_visible);
-   ORD(gradient2_radial_render_pre);
-   ORD(gradient2_radial_render_post);
-   ORD(gradient2_radial_draw);
-
-   ORD(gradient_new);
-   ORD(gradient_free);
-   ORD(gradient_color_stop_add);
-   ORD(gradient_alpha_stop_add);
-   ORD(gradient_color_data_set);
-   ORD(gradient_alpha_data_set);
-   ORD(gradient_clear);
-   ORD(gradient_fill_set);
-   ORD(gradient_fill_angle_set);
-   ORD(gradient_fill_spread_set);
-   ORD(gradient_angle_set);
-   ORD(gradient_offset_set);
-   ORD(gradient_direction_set);
-   ORD(gradient_type_set);
-   ORD(gradient_is_opaque);
-   ORD(gradient_is_visible);
-   ORD(gradient_render_pre);
-   ORD(gradient_render_post);
-   ORD(gradient_draw);
    ORD(image_load);
    ORD(image_new_from_data);
    ORD(image_new_from_copied_data);

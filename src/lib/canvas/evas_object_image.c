@@ -1,7 +1,3 @@
-/*
- * vim:ts=8:sw=3:sts=8:noexpandtab:cino=>5n-3f0^-2{2
- */
-
 #include "evas_common.h"
 #include "evas_private.h"
 #include "../engines/common/evas_convert_color.h"
@@ -19,8 +15,7 @@ struct _Evas_Object_Image
    DATA32            magic;
 
    struct {
-      Evas_Common_Transform  transform;
-      int         spread;
+      int                  spread;
       Evas_Coord_Rectangle fill;
       struct {
 	 short         w, h, stride;
@@ -37,6 +32,8 @@ struct _Evas_Object_Image
 
       unsigned char  smooth_scale : 1;
       unsigned char  has_alpha :1;
+      unsigned char  opaque :1;
+      unsigned char  opaque_valid :1;
    } cur, prev;
 
    int               pixels_checked_out;
@@ -341,6 +338,7 @@ evas_object_image_border_set(Evas_Object *obj, int l, int r, int t, int b)
    o->cur.border.r = r;
    o->cur.border.t = t;
    o->cur.border.b = b;
+   o->cur.opaque_valid = 0;
    o->changed = 1;
    evas_object_change(obj);
 }
@@ -592,6 +590,7 @@ evas_object_image_fill_set(Evas_Object *obj, Evas_Coord x, Evas_Coord y, Evas_Co
    o->cur.fill.y = y;
    o->cur.fill.w = w;
    o->cur.fill.h = h;
+   o->cur.opaque_valid = 0;   
    o->changed = 1;
    evas_object_change(obj);
 }
@@ -681,86 +680,6 @@ evas_object_image_fill_spread_get(const Evas_Object *obj)
    return o->cur.spread;
 }
 
-EAPI void
-evas_object_image_fill_transform_set(Evas_Object *obj, Evas_Transform *t)
-{
-   Evas_Object_Image *o;
-
-   MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
-   return;
-   MAGIC_CHECK_END();
-   o = (Evas_Object_Image *)(obj->object_data);
-   MAGIC_CHECK(o, Evas_Object_Image, MAGIC_OBJ_IMAGE);
-   return;
-   MAGIC_CHECK_END();
-   if (!t)
-     {
-	o->cur.transform.mxx = 1;
-	o->cur.transform.mxy = 0;
-	o->cur.transform.mxz = 0;
-	o->cur.transform.myx = 0;
-	o->cur.transform.myy = 1;
-	o->cur.transform.myz = 0;
-	o->cur.transform.mzx = 0;
-	o->cur.transform.mzy = 0;
-	o->cur.transform.mzz = 1;
-
-	o->changed = 1;
-	evas_object_change(obj);
-	return;
-     }
-   if ( (o->cur.transform.mxx == t->mxx) ||
-	 (o->cur.transform.mxy == t->mxy) ||
-	 (o->cur.transform.mxy == t->mxy) ||
-	 (o->cur.transform.mxy == t->mxy) ||
-	 (o->cur.transform.mxy == t->mxy) ||
-	 (o->cur.transform.mxy == t->mxy) ||
-	 (o->cur.transform.mxy == t->mxy) ||
-	 (o->cur.transform.mxy == t->mxy) ||
-	 (o->cur.transform.mxy == t->mxy) )
-	    return;
-
-   o->cur.transform.mxx = t->mxx;
-   o->cur.transform.mxy = t->mxy;
-   o->cur.transform.mxz = t->mxz;
-   o->cur.transform.myx = t->myx;
-   o->cur.transform.myy = t->myy;
-   o->cur.transform.myz = t->myz;
-   o->cur.transform.mzx = t->mzx;
-   o->cur.transform.mzy = t->mzy;
-   o->cur.transform.mzz = t->mzz;
-
-   o->changed = 1;
-   evas_object_change(obj);
-}
-
-/*FIXME: To be documented*/
-EAPI void
-evas_object_image_fill_transform_get(const Evas_Object *obj, Evas_Transform *t)
-{
-   Evas_Object_Image *o;
-
-   MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
-   return;
-   MAGIC_CHECK_END();
-   o = (Evas_Object_Image *)(obj->object_data);
-   MAGIC_CHECK(o, Evas_Object_Image, MAGIC_OBJ_IMAGE);
-   return;
-   MAGIC_CHECK_END();
-   if (t)
-     {
-        t->mxx = o->cur.transform.mxx;
-        t->mxy = o->cur.transform.mxy;
-        t->mxz = o->cur.transform.mxz;
-        t->myx = o->cur.transform.myx;
-        t->myy = o->cur.transform.myy;
-        t->myz = o->cur.transform.myz;
-        t->mzx = o->cur.transform.mzx;
-        t->mzy = o->cur.transform.mzy;
-        t->mzz = o->cur.transform.mzz;
-     }
-}
-
 /**
  * Sets the size of the given image object.
  *
@@ -796,19 +715,33 @@ evas_object_image_size_set(Evas_Object *obj, int w, int h)
    o->cur.image.w = w;
    o->cur.image.h = h;
    if (o->engine_data)
-     o->engine_data = obj->layer->evas->engine.func->image_size_set(obj->layer->evas->engine.data.output,
-								    o->engine_data,
-								    w, h);
+      o->engine_data = obj->layer->evas->engine.func->image_size_set(obj->layer->evas->engine.data.output,
+                                                                     o->engine_data,
+                                                                     w, h);
    else
-     o->engine_data = obj->layer->evas->engine.func->image_new_from_copied_data
-     (obj->layer->evas->engine.data.output, w, h, NULL, o->cur.has_alpha,
-      o->cur.cspace);
-
-   if (obj->layer->evas->engine.func->image_stride_get)
-     obj->layer->evas->engine.func->image_stride_get(obj->layer->evas->engine.data.output,
-						     o->engine_data, &stride);
+      o->engine_data = obj->layer->evas->engine.func->image_new_from_copied_data
+      (obj->layer->evas->engine.data.output, w, h, NULL, o->cur.has_alpha,
+          o->cur.cspace);
+   
+   if (o->engine_data)
+     {
+        if (obj->layer->evas->engine.func->image_scale_hint_set)
+           obj->layer->evas->engine.func->image_scale_hint_set
+           (obj->layer->evas->engine.data.output,
+               o->engine_data, o->scale_hint);
+        if (obj->layer->evas->engine.func->image_content_hint_set)
+           obj->layer->evas->engine.func->image_content_hint_set
+           (obj->layer->evas->engine.data.output,
+               o->engine_data, o->content_hint);
+        if (obj->layer->evas->engine.func->image_stride_get)
+           obj->layer->evas->engine.func->image_stride_get
+           (obj->layer->evas->engine.data.output,
+               o->engine_data, &stride);
+        else
+           stride = w;
+     }
    else
-     stride = w;
+      stride = w;
    o->cur.image.stride = stride;
 
 /* FIXME - in engine call above
@@ -978,6 +911,26 @@ evas_object_image_data_set(Evas_Object *obj, void *data)
 									      data,
 									      o->cur.has_alpha,
 									      o->cur.cspace);
+        if (o->engine_data)
+          {
+             int stride = 0;
+             
+             if (obj->layer->evas->engine.func->image_scale_hint_set)
+                obj->layer->evas->engine.func->image_scale_hint_set
+                (obj->layer->evas->engine.data.output,
+                    o->engine_data, o->scale_hint);
+             if (obj->layer->evas->engine.func->image_content_hint_set)
+                obj->layer->evas->engine.func->image_content_hint_set
+                (obj->layer->evas->engine.data.output,
+                    o->engine_data, o->content_hint); 
+             if (obj->layer->evas->engine.func->image_stride_get)
+                obj->layer->evas->engine.func->image_stride_get
+                (obj->layer->evas->engine.data.output,
+                    o->engine_data, &stride);
+             else
+                stride = o->cur.image.w;
+             o->cur.image.stride = stride;
+         }
      }
    else
      {
@@ -1040,10 +993,30 @@ evas_object_image_data_get(const Evas_Object *obj, Eina_Bool for_writing)
 #endif
 
    data = NULL;
+   if (obj->layer->evas->engine.func->image_scale_hint_set)
+      obj->layer->evas->engine.func->image_scale_hint_set
+      (obj->layer->evas->engine.data.output,
+          o->engine_data, o->scale_hint);
+   if (obj->layer->evas->engine.func->image_content_hint_set)
+      obj->layer->evas->engine.func->image_content_hint_set
+      (obj->layer->evas->engine.data.output,
+          o->engine_data, o->content_hint);
    o->engine_data = obj->layer->evas->engine.func->image_data_get(obj->layer->evas->engine.data.output,
 								  o->engine_data,
 								  for_writing,
 								  &data);
+   if (o->engine_data)
+     {
+        int stride = 0;
+
+        if (obj->layer->evas->engine.func->image_stride_get)
+           obj->layer->evas->engine.func->image_stride_get
+           (obj->layer->evas->engine.data.output,
+               o->engine_data, &stride);
+        else
+           stride = o->cur.image.w;
+        o->cur.image.stride = stride;
+     }
    o->pixels_checked_out++;
    if (for_writing)
      {
@@ -1141,9 +1114,28 @@ evas_object_image_data_copy_set(Evas_Object *obj, void *data)
 									      o->cur.has_alpha,
 									      o->cur.cspace);
    if (o->engine_data)
-     o->engine_data = obj->layer->evas->engine.func->image_alpha_set(obj->layer->evas->engine.data.output,
-								     o->engine_data,
-								     o->cur.has_alpha);
+     {
+        int stride = 0;
+
+        o->engine_data = obj->layer->evas->engine.func->image_alpha_set(obj->layer->evas->engine.data.output,
+                                                                        o->engine_data,
+                                                                        o->cur.has_alpha);
+        if (obj->layer->evas->engine.func->image_scale_hint_set)
+           obj->layer->evas->engine.func->image_scale_hint_set
+           (obj->layer->evas->engine.data.output,
+               o->engine_data, o->scale_hint);
+        if (obj->layer->evas->engine.func->image_content_hint_set)
+           obj->layer->evas->engine.func->image_content_hint_set
+           (obj->layer->evas->engine.data.output,
+               o->engine_data, o->content_hint);
+        if (obj->layer->evas->engine.func->image_stride_get)
+           obj->layer->evas->engine.func->image_stride_get
+           (obj->layer->evas->engine.data.output,
+               o->engine_data, &stride);
+        else
+           stride = o->cur.image.w;
+        o->cur.image.stride = stride;
+     }
    o->pixels_checked_out = 0;
    EVAS_OBJECT_IMAGE_FREE_FILE_AND_KEY(o);
 }
@@ -1211,12 +1203,29 @@ evas_object_image_alpha_set(Evas_Object *obj, Eina_Bool has_alpha)
    o->cur.has_alpha = has_alpha;
    if (o->engine_data)
      {
+        int stride = 0;
+        
 #ifdef EVAS_FRAME_QUEUING
         evas_common_pipe_op_image_flush(o->engine_data);
 #endif
         o->engine_data = obj->layer->evas->engine.func->image_alpha_set(obj->layer->evas->engine.data.output,
 								     o->engine_data,
 								     o->cur.has_alpha);
+        if (obj->layer->evas->engine.func->image_scale_hint_set)
+           obj->layer->evas->engine.func->image_scale_hint_set
+           (obj->layer->evas->engine.data.output,
+               o->engine_data, o->scale_hint);
+        if (obj->layer->evas->engine.func->image_content_hint_set)
+           obj->layer->evas->engine.func->image_content_hint_set
+           (obj->layer->evas->engine.data.output,
+               o->engine_data, o->content_hint);
+        if (obj->layer->evas->engine.func->image_stride_get)
+           obj->layer->evas->engine.func->image_stride_get
+           (obj->layer->evas->engine.data.output,
+               o->engine_data, &stride);
+        else
+           stride = o->cur.image.w;
+        o->cur.image.stride = stride;
      }
    evas_object_image_data_update_add(obj, 0, 0, o->cur.image.w, o->cur.image.h);
    EVAS_OBJECT_IMAGE_FREE_FILE_AND_KEY(o);
@@ -1884,9 +1893,11 @@ evas_object_image_native_surface_set(Evas_Object *obj, Evas_Native_Surface *surf
    MAGIC_CHECK(o, Evas_Object_Image, MAGIC_OBJ_IMAGE);
    return;
    MAGIC_CHECK_END();
-   obj->layer->evas->engine.func->image_native_set(obj->layer->evas->engine.data.output,
-						   o->engine_data,
-						   surf);
+   if (!obj->layer->evas->engine.func->image_native_set) return;
+   o->engine_data = 
+      obj->layer->evas->engine.func->image_native_set(obj->layer->evas->engine.data.output,
+                                                      o->engine_data,
+                                                      surf);
 }
 
 /**
@@ -1910,6 +1921,7 @@ evas_object_image_native_surface_get(const Evas_Object *obj)
    MAGIC_CHECK(o, Evas_Object_Image, MAGIC_OBJ_IMAGE);
    return NULL;
    MAGIC_CHECK_END();
+   if (!obj->layer->evas->engine.func->image_native_get) return NULL;
    return obj->layer->evas->engine.func->image_native_get(obj->layer->evas->engine.data.output,
 							  o->engine_data);
 }
@@ -1935,14 +1947,28 @@ evas_object_image_scale_hint_set(Evas_Object *obj, Evas_Image_Scale_Hint hint)
    MAGIC_CHECK(o, Evas_Object_Image, MAGIC_OBJ_IMAGE);
    return;
    MAGIC_CHECK_END();
+   if (o->scale_hint == hint) return;
 #ifdef EVAS_FRAME_QUEUING
-   if (o->scale_hint != hint)
-     {
-        if (o->engine_data)
-          evas_common_pipe_op_image_flush(o->engine_data);
-     }
+   if (o->engine_data)
+      evas_common_pipe_op_image_flush(o->engine_data);
 #endif
    o->scale_hint = hint;
+   if (o->engine_data)
+     {
+        int stride = 0;
+        
+        if (obj->layer->evas->engine.func->image_scale_hint_set)
+           obj->layer->evas->engine.func->image_scale_hint_set
+           (obj->layer->evas->engine.data.output,
+               o->engine_data, o->scale_hint);
+        if (obj->layer->evas->engine.func->image_stride_get)
+           obj->layer->evas->engine.func->image_stride_get
+           (obj->layer->evas->engine.data.output,
+               o->engine_data, &stride);
+        else
+           stride = o->cur.image.w;
+        o->cur.image.stride = stride;
+     }
 }
 
 /**
@@ -1989,7 +2015,28 @@ evas_object_image_content_hint_set(Evas_Object *obj, Evas_Image_Content_Hint hin
    MAGIC_CHECK(o, Evas_Object_Image, MAGIC_OBJ_IMAGE);
    return;
    MAGIC_CHECK_END();
+   if (o->content_hint == hint) return;
+#ifdef EVAS_FRAME_QUEUING
+   if (o->engine_data)
+      evas_common_pipe_op_image_flush(o->engine_data);
+#endif
    o->content_hint = hint;
+   if (o->engine_data)
+     {
+        int stride = 0;
+        
+        if (obj->layer->evas->engine.func->image_content_hint_set)
+           obj->layer->evas->engine.func->image_content_hint_set
+           (obj->layer->evas->engine.data.output,
+               o->engine_data, o->content_hint);
+        if (obj->layer->evas->engine.func->image_stride_get)
+           obj->layer->evas->engine.func->image_stride_get
+           (obj->layer->evas->engine.data.output,
+               o->engine_data, &stride);
+        else
+           stride = o->cur.image.w;
+        o->cur.image.stride = stride;
+     }
 }
 
 /**
@@ -2152,10 +2199,11 @@ evas_object_image_unload(Evas_Object *obj, Eina_Bool dirty)
    if (dirty)
      {
         if (o->engine_data)
-          o->engine_data = obj->layer->evas->engine.func->image_dirty_region(obj->layer->evas->engine.data.output,
-                                                                             o->engine_data,
-                                                                             0, 0,
-                                                                             o->cur.image.w, o->cur.image.h);
+          o->engine_data = obj->layer->evas->engine.func->image_dirty_region
+           (obj->layer->evas->engine.data.output,
+               o->engine_data,
+               0, 0,
+               o->cur.image.w, o->cur.image.h);
      }
    if (o->engine_data)
      obj->layer->evas->engine.func->image_free(obj->layer->evas->engine.data.output,
@@ -2186,27 +2234,32 @@ evas_object_image_load(Evas_Object *obj)
    lo.region.y = o->load_opts.region.y;
    lo.region.w = o->load_opts.region.w;
    lo.region.h = o->load_opts.region.h;
-   o->engine_data = obj->layer->evas->engine.func->image_load(obj->layer->evas->engine.data.output,
-							      o->cur.file,
-							      o->cur.key,
-							      &o->load_error,
-							      &lo);
+   o->engine_data = obj->layer->evas->engine.func->image_load
+      (obj->layer->evas->engine.data.output,
+          o->cur.file,
+          o->cur.key,
+          &o->load_error,
+          &lo);
    if (o->engine_data)
      {
 	int w, h;
 	int stride;
 
-	obj->layer->evas->engine.func->image_size_get(obj->layer->evas->engine.data.output,
-						      o->engine_data, &w, &h);
+	obj->layer->evas->engine.func->image_size_get
+           (obj->layer->evas->engine.data.output,
+               o->engine_data, &w, &h);
 	if (obj->layer->evas->engine.func->image_stride_get)
-	  obj->layer->evas->engine.func->image_stride_get(obj->layer->evas->engine.data.output,
-							  o->engine_data, &stride);
+	  obj->layer->evas->engine.func->image_stride_get
+           (obj->layer->evas->engine.data.output,
+               o->engine_data, &stride);
 	else
 	  stride = w;
-	o->cur.has_alpha = obj->layer->evas->engine.func->image_alpha_get(obj->layer->evas->engine.data.output,
-									  o->engine_data);
-	o->cur.cspace = obj->layer->evas->engine.func->image_colorspace_get(obj->layer->evas->engine.data.output,
-									    o->engine_data);
+	o->cur.has_alpha = obj->layer->evas->engine.func->image_alpha_get
+           (obj->layer->evas->engine.data.output,
+               o->engine_data);
+	o->cur.cspace = obj->layer->evas->engine.func->image_colorspace_get
+           (obj->layer->evas->engine.data.output,
+               o->engine_data);
 	o->cur.image.w = w;
 	o->cur.image.h = h;
 	o->cur.image.stride = stride;
@@ -2299,8 +2352,8 @@ evas_object_image_new(void)
    o->cur.border.fill = 1;
    o->cur.border.scale = 1.0;
    o->cur.cspace = EVAS_COLORSPACE_ARGB8888;
-   o->cur.transform.mxx = o->cur.transform.myy = o->cur.transform.mzz = 1;
    o->cur.spread = EVAS_TEXTURE_REPEAT;
+   o->cur.opaque_valid = 0;
    o->prev = o->cur;
    return o;
 }
@@ -2893,14 +2946,24 @@ evas_object_image_is_opaque(Evas_Object *obj)
    /* this returns 1 if the internal object data implies that the object is */
    /* currently fully opaque over the entire rectangle it occupies */
    o = (Evas_Object_Image *)(obj->object_data);
-   if ((o->cur.fill.w < 1) || (o->cur.fill.h < 1))
-     return 0;
-   if (((o->cur.border.l != 0) ||
-	(o->cur.border.r != 0) ||
-	(o->cur.border.t != 0) ||
-	(o->cur.border.b != 0)) &&
-       (!o->cur.border.fill)) return 0;
-   if (!o->engine_data) return 0;
+   if (o->cur.opaque_valid)
+     {
+        if (!o->cur.opaque) return 0;
+     }
+   else
+     {
+        o->cur.opaque = 0;
+        o->cur.opaque_valid = 1;
+        if ((o->cur.fill.w < 1) || (o->cur.fill.h < 1))
+           return 0;
+        if (((o->cur.border.l != 0) ||
+             (o->cur.border.r != 0) ||
+             (o->cur.border.t != 0) ||
+             (o->cur.border.b != 0)) &&
+            (!o->cur.border.fill)) return 0;
+        if (!o->engine_data) return 0;
+        o->cur.opaque = 1;
+     }
    if ((obj->cur.map) && (obj->cur.usemap)) return 0;
    if (obj->cur.render_op == EVAS_RENDER_COPY) return 1;
    if (o->cur.has_alpha) return 0;
@@ -2915,14 +2978,24 @@ evas_object_image_was_opaque(Evas_Object *obj)
    /* this returns 1 if the internal object data implies that the object was */
    /* previously fully opaque over the entire rectangle it occupies */
    o = (Evas_Object_Image *)(obj->object_data);
-   if ((o->prev.fill.w < 1) || (o->prev.fill.h < 1))
-     return 0;
-   if (((o->prev.border.l != 0) ||
-	(o->prev.border.r != 0) ||
-	(o->prev.border.t != 0) ||
-	(o->prev.border.b != 0)) &&
-       (!o->prev.border.fill)) return 0;
-   if (!o->engine_data) return 0;
+   if (o->prev.opaque_valid)
+     {
+        if (!o->prev.opaque) return 0;
+     }
+   else
+     {
+        o->prev.opaque = 0;
+        o->prev.opaque_valid = 1;
+        if ((o->prev.fill.w < 1) || (o->prev.fill.h < 1))
+           return 0;
+        if (((o->prev.border.l != 0) ||
+             (o->prev.border.r != 0) ||
+             (o->prev.border.t != 0) ||
+             (o->prev.border.b != 0)) &&
+            (!o->prev.border.fill)) return 0;
+        if (!o->engine_data) return 0;
+        o->prev.opaque = 1;
+     }
    if (obj->prev.usemap) return 0;
    if (obj->prev.render_op == EVAS_RENDER_COPY) return 1;
    if (o->prev.has_alpha) return 0;
@@ -3033,10 +3106,11 @@ evas_object_image_is_inside(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
    
    stride = o->cur.image.stride;
    
-   o->engine_data = obj->layer->evas->engine.func->image_data_get(obj->layer->evas->engine.data.output,
-								  o->engine_data,
-								  0,
-								  &data);
+   o->engine_data = obj->layer->evas->engine.func->image_data_get
+      (obj->layer->evas->engine.data.output,
+          o->engine_data,
+          0,
+          &data);
    if (!data)
      return 0;
 
@@ -3106,7 +3180,7 @@ evas_object_image_get_opaque_rect(Evas_Object *obj, Evas_Coord *x, Evas_Coord *y
 }
 
 static int
-evas_object_image_can_map(Evas_Object *obj)
+evas_object_image_can_map(Evas_Object *obj __UNUSED__)
 {
    return 1;
 }

@@ -1,7 +1,3 @@
-/*
- * vim:ts=8:sw=3:sts=8:noexpandtab:cino=>5n-3f0^-2{2
- */
-
 #include "evas_common.h"
 #include "evas_scale_smooth.h"
 #include "evas_blend_private.h"
@@ -315,8 +311,11 @@ evas_common_scale_rgba_mipmap_down_2x2_mmx(DATA32 *src, DATA32 *dst, int src_w, 
    if (dst_w < 1) dst_w = 1;
    if (dst_h < 1) dst_h = 1;
 
+   /* NB: Dead assignments (reassigned to different values below)
    src_ptr = src;
    src_ptr2 = src + src_w;
+    */
+
    dst_ptr = dst;
    for (y = 0; y < dst_h; y++)
      {
@@ -400,7 +399,9 @@ evas_common_scale_rgba_mipmap_down_1x2_mmx(DATA32 *src, DATA32 *dst, int src_w, 
    if (dst_w < 1) dst_w = 1;
    if (dst_h < 1) dst_h = 1;
 
-   src_ptr = src;
+   /* NB: Dead assignment (gets reassigned later) */
+//   src_ptr = src;
+
    src_ptr2 = src + src_w;
    dst_ptr = dst;
    for (y = 0; y < dst_h; y++)

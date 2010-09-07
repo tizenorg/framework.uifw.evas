@@ -228,7 +228,7 @@ evas_image_load_file_data_jpeg_internal(Image_Entry *ie, FILE *f, int *error)
    struct _JPEG_error_mgr jerr;
    DATA8 *ptr, *line[16], *data;
    DATA32 *ptr2;
-   int x, y, l, i, scans, count;
+   int x, y, l, i, scans;
    int region = 0;
 
    cinfo.err = jpeg_std_error(&(jerr.pub));
@@ -331,7 +331,7 @@ evas_image_load_file_data_jpeg_internal(Image_Entry *ie, FILE *f, int *error)
 	return EINA_TRUE;
      }
    ptr2 = evas_cache_image_pixels(ie);
-   count = 0;
+
    /* We handle first CMYK (4 components) */
    if (cinfo.output_components == 4)
      {
@@ -493,8 +493,7 @@ evas_image_load_file_data_jpeg_internal(Image_Entry *ie, FILE *f, int *error)
                     {
                        for (x = 0; x < w; x++)
                          {
-                            *ptr2 =
-                              (0xff000000) | ((ptr[0]) << 16) | ((ptr[1]) << 8) | (ptr[2]);
+                            *ptr2 = ARGB_JOIN(0xff, ptr[0], ptr[1], ptr[2]);
                             ptr += 3;
                             ptr2++;
                          }
@@ -525,8 +524,7 @@ evas_image_load_file_data_jpeg_internal(Image_Entry *ie, FILE *f, int *error)
                                  ptr += (3 * ie->load_opts.region.x);
                                  for (x = 0; x < ie->load_opts.region.w; x++)
                                    {
-                                      *ptr2 =
-                                        (0xff000000) | ((ptr[0]) << 16) | ((ptr[1]) << 8) | (ptr[2]);
+                                      *ptr2 = ARGB_JOIN(0xff, ptr[0], ptr[1], ptr[2]);
                                       ptr += 3;
                                       ptr2++;
                                    }
@@ -560,8 +558,7 @@ evas_image_load_file_data_jpeg_internal(Image_Entry *ie, FILE *f, int *error)
                     {
                        for (x = 0; x < w; x++)
                          {
-                            *ptr2 =
-                              (0xff000000) | ((ptr[0]) << 16) | ((ptr[0]) << 8) | (ptr[0]);
+                            *ptr2 = ARGB_JOIN(0xff, ptr[0], ptr[0], ptr[0]);
                             ptr++;
                             ptr2++;
                          }
@@ -588,8 +585,7 @@ evas_image_load_file_data_jpeg_internal(Image_Entry *ie, FILE *f, int *error)
                                  ptr += ie->load_opts.region.x;
                                  for (x = 0; x < ie->load_opts.region.w; x++)
                                    {
-                                      *ptr2 =
-                                        (0xff000000) | ((ptr[0]) << 16) | ((ptr[0]) << 8) | (ptr[0]);
+                                      *ptr2 = ARGB_JOIN(0xff, ptr[0], ptr[0], ptr[0]);
                                       ptr++;
                                       ptr2++;
                                    }
@@ -618,7 +614,7 @@ evas_image_load_file_data_jpeg_alpha_internal(Image_Entry *ie, FILE *f, int *err
    struct _JPEG_error_mgr jerr;
    DATA8 *ptr, *line[16], *data;
    DATA32 *ptr2;
-   int x, y, l, i, scans, count, prevy;
+   int x, y, l, i, scans, prevy;
 
    if (!f)
      {
@@ -661,7 +657,6 @@ evas_image_load_file_data_jpeg_alpha_internal(Image_Entry *ie, FILE *f, int *err
 	return EINA_TRUE;
      }
    ptr2 = evas_cache_image_pixels(ie);
-   count = 0;
    prevy = 0;
    if (cinfo.output_components == 3)
      {

@@ -5,7 +5,7 @@
 #include <time.h>
 #include <SDL/SDL.h>
 
-#include "evas_common.h"
+#include "evas_common.h" /* Also includes international specific stuff */
 #include "evas_engine.h"
 
 int _evas_engine_soft_sdl_log_dom = -1;
@@ -739,7 +739,7 @@ evas_engine_sdl_image_format_get(void *data __UNUSED__, void *image __UNUSED__)
 }
 
 static void
-evas_engine_sdl_font_draw(void *data __UNUSED__, void *context, void *surface, void *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const char *text)
+evas_engine_sdl_font_draw(void *data __UNUSED__, void *context, void *surface, void *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props)
 {
    SDL_Engine_Image_Entry       *eim = surface;
    int                           mustlock_im = 0;
@@ -751,7 +751,7 @@ evas_engine_sdl_font_draw(void *data __UNUSED__, void *context, void *surface, v
 	_SDL_UPDATE_PIXELS(eim);
      }
 
-   evas_common_font_draw((RGBA_Image *) eim->cache_entry.src, context, font, x, y, text);
+   evas_common_font_draw((RGBA_Image *) eim->cache_entry.src, context, font, x, y, text, intl_props);
    evas_common_cpu_end_opt();
 
    if (mustlock_im)
@@ -857,26 +857,6 @@ evas_engine_sdl_polygon_draw(void *data __UNUSED__, void *context, void *surface
      SDL_UnlockSurface(eim->surface);
 }
 
-static void
-evas_engine_sdl_gradient_draw(void *data __UNUSED__, void *context, void *surface, void *gradient, int x, int y, int w, int h)
-{
-   SDL_Engine_Image_Entry       *eim = surface;
-   int                           mustlock_im = 0;
-
-   if (eim->surface && SDL_MUSTLOCK(eim->surface))
-     {
-        mustlock_im = 1;
-	SDL_LockSurface(eim->surface);
-	_SDL_UPDATE_PIXELS(eim);
-     }
-
-   evas_common_gradient_draw((RGBA_Image *) eim->cache_entry.src, context, x, y, w, h, gradient);
-   evas_common_cpu_end_opt();
-
-   if (mustlock_im)
-     SDL_UnlockSurface(eim->surface);
-}
-
 static int module_open(Evas_Module *em)
 {
    if (!em) return 0;
@@ -935,11 +915,10 @@ static int module_open(Evas_Module *em)
    ORD(line_draw);
    ORD(rectangle_draw);
    ORD(polygon_draw);
-   ORD(gradient_draw);
-   
+
    ORD(image_scale_hint_set);
    ORD(image_scale_hint_get);
-   
+
    /* now advertise out own api */
    em->functions = (void *)(&func);
    return 1;
@@ -982,7 +961,6 @@ _sdl_output_setup		(int w, int h, int fullscreen, int noframe, int alpha, int hw
    evas_common_convert_init();
    evas_common_scale_init();
    evas_common_rectangle_init();
-   evas_common_gradient_init();
    evas_common_polygon_init();
    evas_common_line_init();
    evas_common_font_init();

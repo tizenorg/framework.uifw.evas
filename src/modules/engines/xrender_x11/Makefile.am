@@ -15,7 +15,6 @@ if BUILD_ENGINE_XRENDER_X11
 
 XRENDER_X11_SOURCES = \
 evas_engine_xlib_font.c \
-evas_engine_xlib_gradient.c \
 evas_engine_xlib_image.c \
 evas_engine_xlib_render.c \
 evas_engine_xlib_ximage.c \
@@ -25,7 +24,6 @@ if BUILD_ENGINE_XRENDER_XCB
 
 XRENDER_X11_SOURCES += \
 evas_engine_xcb_font.c \
-evas_engine_xcb_gradient.c \
 evas_engine_xcb_image.c \
 evas_engine_xcb_render.c \
 evas_engine_xcb_ximage.c
@@ -36,7 +34,8 @@ XRENDER_X11_LIBADD = @evas_engine_xrender_xcb_libs@ @evas_engine_xrender_x11_lib
 
 pkgdir = $(libdir)/evas/modules/engines/xrender_x11/$(MODULE_ARCH)
 
-include_HEADERS = Evas_Engine_XRender_X11.h
+includes_HEADERS = Evas_Engine_XRender_X11.h
+includesdir = $(includedir)/evas-@VMAJ@
 
 if !EVAS_STATIC_BUILD_XRENDER_X11
 

@@ -39,19 +39,11 @@ evas_convert_grypal_6.c \
 evas_convert_yuv.c \
 evas_cpu.c \
 evas_draw_main.c \
+evas_encoding.c \
 evas_font_draw.c \
 evas_font_load.c \
 evas_font_main.c \
 evas_font_query.c \
-evas_gradient_main.c \
-evas_gradient_linear.c \
-evas_gradient_radial.c \
-evas_gradient_angular.c \
-evas_gradient_rectangular.c \
-evas_gradient_sinusoidal.c \
-evas_gradient2_main.c \
-evas_gradient2_linear.c \
-evas_gradient2_radial.c \
 evas_image_load.c \
 evas_image_save.c \
 evas_image_main.c \
@@ -67,9 +59,7 @@ evas_scale_span.c \
 evas_tiler.c \
 evas_regionbuf.c \
 evas_pipe.c \
-evas_intl_utils.c \
-evas_intl/evas_intl_arabic.c \
-evas_intl/evas_intl_arabic.h \
+evas_bidi_utils.c \
 evas_map_image.c \
 evas_map_image.h
 
@@ -89,10 +79,9 @@ evas_convert_rgb_32.h \
 evas_convert_rgb_8.h \
 evas_convert_yuv.h \
 evas_draw.h \
+evas_encoding.h \
 evas_font.h \
 evas_font_private.h \
-evas_gradient.h \
-evas_gradient_private.h \
 evas_image.h \
 evas_image_private.h \
 evas_line.h \
@@ -109,7 +98,7 @@ evas_scale_smooth_scaler_noscale.c \
 evas_scale_smooth_scaler_up.c \
 evas_scale_span.h \
 evas_pipe.h \
-evas_intl_utils.h \
+evas_bidi_utils.h \
 evas_map_image_internal.c \
 evas_map_image_core.c \
 evas_map_image_loop.c

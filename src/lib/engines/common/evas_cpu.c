@@ -1,7 +1,3 @@
-/*
- * vim:ts=8:sw=3:sts=8:noexpandtab:cino=>5n-3f0^-2{2
- */
-
 #include "evas_common.h"
 #if defined BUILD_MMX || defined BUILD_SSE
 #include "evas_mmx.h"
@@ -176,6 +172,8 @@ evas_common_cpu_init(void)
    cpu_feature_mask |= CPU_FEATURE_NEON *
      evas_common_cpu_feature_test(evas_common_cpu_neon_test);
    evas_common_cpu_end_opt();
+   if (getenv("EVAS_CPU_NO_NEON"))
+     cpu_feature_mask &= ~CPU_FEATURE_NEON;
 #endif
 #endif
 }

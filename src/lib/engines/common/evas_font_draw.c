@@ -1,22 +1,70 @@
-/*
- * vim:ts=8:sw=3:sts=8:noexpandtab:cino=>5n-3f0^-2{2
- */
-
 #include "evas_common.h"
 #include "evas_private.h"
 #include "evas_blend_private.h"
 
-#include "evas_intl_utils.h" /*defines INTERNATIONAL_SUPPORT if possible */
+#include "evas_bidi_utils.h" /*defines BIDI_SUPPORT if possible */
 #include "evas_font_private.h" /* for Frame-Queuing support */
 
-#ifdef EVAS_FRAME_QUEUING
+#define WORD_CACHE_MAXLEN	50
+/* How many to cache */
+#define WORD_CACHE_NWORDS	40
+static int max_cached_words = WORD_CACHE_NWORDS;
+
+struct prword {
+	EINA_INLIST;
+	/* FIXME: Need to save font/size et al */
+	int size;
+	struct cinfo *cinfo;
+	RGBA_Font *font;
+	const Eina_Unicode *str;
+	int len;
+	DATA8 *im;
+	int roww;
+	int width;
+	int height;
+	int baseline;
+};
+
+struct cinfo {
+	int gl;
+	FT_UInt index;
+	struct { int x, y; } pos;
+	int posx;
+	RGBA_Font_Glyph *fg;
+	struct {
+		int w,h;
+		int rows;
+		unsigned char *data;
+	} bm;
+};
+
+
+#if defined(METRIC_CACHE) || defined(WORD_CACHE)
+LK(lock_words); // for word cache call
+static Eina_Inlist *words = NULL;
+static struct prword *evas_font_word_prerender(RGBA_Draw_Context *dc, const Eina_Unicode *text, Evas_BiDi_Props *intl_props, int len, RGBA_Font *fn, RGBA_Font_Int *fi,int use_kerning);
+#endif
+
 EAPI void
 evas_common_font_draw_init(void)
 {
+   char *p;
+   int tmp;
+#ifdef EVAS_FRAME_QUEUING
    LKI(lock_font_draw);
    LKI(lock_fribidi);
+#endif
+   if ((p = getenv("EVAS_WORD_CACHE_MAX_WORDS")))
+     {
+	tmp = strtol(p,NULL,10);
+	/* 0 to disable of course */
+	if (tmp > -1 && tmp < 500){
+	     max_cached_words = tmp;
+	}
+     }
 }
 
+#ifdef EVAS_FRAME_QUEUING
 EAPI void
 evas_common_font_draw_finish(void)
 {
@@ -203,7 +251,7 @@ static FT_UInt
 _evas_common_get_char_index(RGBA_Font_Int* fi, int gl)
 {
    Font_Char_Index result;
-   FT_UInt ret;
+   //FT_UInt ret;
 
 #ifdef HAVE_PTHREAD
 ///   pthread_mutex_lock(&fi->ft_mutex);
@@ -339,56 +387,152 @@ evas_common_font_glyph_search(RGBA_Font *fn, RGBA_Font_Int **fi_ret, int gl)
 }
 
 
-
+/* 
+ * BiDi handling: We recieve the shaped string + other props from intl_props,
+ * we need to reorder it so we'll have the visual string (the way we draw)
+ * and then for kerning we have to switch the order of the kerning query (as the prev
+ * is on the right, and not on the left).
+ */
 static void
-evas_common_font_draw_internal(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font *fn, int x, int y, const char *in_text,
-                               RGBA_Gfx_Func func, int ext_x, int ext_y, int ext_w, int ext_h, RGBA_Font_Int *fi,
-                               int im_w, int im_h __UNUSED__, int use_kerning
+evas_common_font_draw_internal(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font *fn, int x, int y, const Eina_Unicode *in_text,
+                               const Evas_BiDi_Props *intl_props, RGBA_Gfx_Func func, int ext_x, int ext_y, int ext_w, 
+                               int ext_h, RGBA_Font_Int *fi, int im_w, int im_h __UNUSED__, int use_kerning
                                )
 {
    int pen_x, pen_y;
-   int chr;
-   const char *text = in_text;
+   int last_adv;
+   const Eina_Unicode *text = in_text;
    FT_Face pface = NULL;
    FT_UInt prev_index;
    DATA32 *im;
    int c;
    int char_index = 0; /* the index of the current char */
 
-#ifdef INTERNATIONAL_SUPPORT
-   int len = 0;
-   /*FIXME: should get the direction by parmater */
-   EvasIntlParType direction = FRIBIDI_TYPE_ON;
-   EvasIntlLevel *level_list;
 
-   /* change the text to visual ordering and update the level list
-    * for as minimum impact on the code as possible just use text as an
-    * holder, will change in the future.*/
-   char *visual_text = evas_intl_utf8_to_visual(in_text, &len, &direction, NULL, NULL, &level_list);
-   text = (visual_text) ? visual_text : in_text;
-   
+#if defined(METRIC_CACHE) || defined(WORD_CACHE)
+   unsigned int len;
+
+   /* A fast strNlen would be nice (there is a wcsnlen strangely) */
+   len = eina_unicode_strnlen(text,WORD_CACHE_MAXLEN);
+
+   if (len > 2 && len < WORD_CACHE_MAXLEN){
+     struct prword *word = evas_font_word_prerender(dc, text, intl_props, len, fn, fi,
+	   use_kerning);
+     if (word){
+	  int j,rowstart,rowend,xstart,xrun;
+	  im = dst->image.data;
+	  xrun = word->width;
+	  y -= word->baseline;
+	  xstart = 0;
+	  rowstart = 0;
+	  rowend = word->height;
+	  /* Clip to extent */
+	  if (x + xrun > ext_x + ext_w){
+	       xrun -= x + xrun - ext_x - ext_w;
+	  }
+	  if (x < ext_x) {
+	       int excess = ext_x - x;
+	       xstart = excess - 1;
+	       xrun -= excess;
+	       x = ext_x;
+	  }
+	  if (y + rowend > ext_y + ext_h){
+	      rowend -= (y - ext_y + rowend - ext_h);
+	  }
+	  if (y < ext_y){
+	      int excess = ext_y - y;
+	      rowstart += excess;
+	      //rowend -= excess;
+	//      y = ext_y;
+	  }
+
+	  if (xrun < 1) return;
+# ifdef WORD_CACHE
+	  if (word->im){
+	     for (j = rowstart ; j < rowend ; j ++){
+		  func(NULL, word->im + (word->roww * j) + xstart, dc->col.col,
+			im + ((y + j) * im_w) + x, xrun);
+	     }
+	     return;
+	  }
+# elif defined(METRIC_CACHE)
+	  int ind;
+	  y += word->baseline;
+	  for (ind = 0 ; ind < len ; ind ++){
+	     // FIXME Do we need to draw?
+	     struct cinfo *ci = word->cinfo + ind;
+	     for (j = rowstart ; j < rowend ; j ++)
+	       {
+		 if ((ci->fg->ext_dat) && (dc->font_ext.func.gl_draw))
+		   {
+		     /* ext glyph draw */
+		      dc->font_ext.func.gl_draw(dc->font_ext.data,
+			    (void *)dst,
+			    dc, ci->fg,
+			    x + ci->pos.x,
+			    y - ci->bm.h + j
+			    );
+		   }
+		else
+		   {
+		     func(NULL, word->im + (word->roww * j) + xstart,
+			   dc->col.col, im + ((y + j) * im_w) + x, xrun);
+		  }
+	     }
+	  }
+	return;
+# endif
+     }
+
+   }
 #endif
+
+#ifdef BIDI_SUPPORT
+   Eina_Unicode *visual_text;
+
+   visual_text = eina_unicode_strdup(in_text);
+
+   if (visual_text)
+     {
+        evas_bidi_props_reorder_line(visual_text, intl_props, NULL);
+        text = visual_text;
+     }
+   else
+     {
+        text = in_text;
+     }
+#endif
+
 
    pen_x = x;
    pen_y = y;
+   last_adv = 0;
    prev_index = 0;
    im = dst->image.data;
-   for (char_index = 0, c = 0, chr = 0; text[chr]; char_index++)
+   for (char_index = 0, c = 0; *text; text++, char_index++)
      {
 	FT_UInt index;
 	RGBA_Font_Glyph *fg;
 	int chr_x, chr_y;
 	int gl, kern;
 
-	gl = evas_common_font_utf8_get_next((unsigned char *)text, &chr);
+	gl = *text;
 
 	if (gl == 0) break;
 	index = evas_common_font_glyph_search(fn, &fi, gl);
 	LKL(fi->ft_mutex);
         if (fi->src->current_size != fi->size)
           {
+	     FTLOCK();
              FT_Activate_Size(fi->ft.size);
+	     FTUNLOCK();
              fi->src->current_size = fi->size;
+          }
+	fg = evas_common_font_int_cache_glyph_get(fi, index);
+	if (!fg) 
+          {
+             LKU(fi->ft_mutex);
+             continue;
           }
 	/* hmmm kerning means i can't sanely do my own cached metric tables! */
 	/* grrr - this means font face sharing is kinda... not an option if */
@@ -396,14 +540,18 @@ evas_common_font_draw_internal(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font
 	  if ((use_kerning) && (prev_index) && (index) &&
 	     (pface == fi->src->ft.face))
 	    {
-#ifdef INTERNATIONAL_SUPPORT
-	       /* if it's rtl, the kerning matching should be reversed, i.e prev
-		* index is now the index and the other way around. */
-	       if (evas_intl_is_rtl_char(level_list, char_index))
-		 {
-		    if (evas_common_font_query_kerning(fi, index, prev_index, &kern))
-		      pen_x += kern;
-		 }
+#ifdef BIDI_SUPPORT
+	      /* if it's rtl, the kerning matching should be reversed, i.e prev
+	       * index is now the index and the other way around. 
+               * There is a slight exception when there are compositing chars
+               * involved.*/
+	      if (intl_props && intl_props->props &&
+                  evas_bidi_is_rtl_char(intl_props->props->embedding_levels, char_index) &&
+                  fg->glyph->advance.x >> 16 > 0)
+		{
+	            if (evas_common_font_query_kerning(fi, index, prev_index, &kern))
+	            pen_x += kern;
+	         }
 	       else
 #endif
 		 {
@@ -412,11 +560,8 @@ evas_common_font_draw_internal(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font
 		      pen_x += kern;
 		 }
 	    }
-
 	  pface = fi->src->ft.face;
-	  fg = evas_common_font_int_cache_glyph_get(fi, index);
 	  LKU(fi->ft_mutex);
-	  if (!fg) continue;
 
 	  if (dc->font_ext.func.gl_new)
 	    {
@@ -424,7 +569,13 @@ evas_common_font_draw_internal(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font
 	       fg->ext_dat = dc->font_ext.func.gl_new(dc->font_ext.data, fg);
 	       fg->ext_dat_free = dc->font_ext.func.gl_free;
 	    }
-
+	  /* If the current one is not a compositing char, do the previous advance 
+	   * and set the current advance as the next advance to do */
+	  if (fg->glyph->advance.x >> 16 > 0) 
+	    {
+	       pen_x += last_adv;
+	       last_adv = fg->glyph->advance.x >> 16;
+	    }
 	  chr_x = (pen_x + (fg->glyph_out->left));
 	  chr_y = (pen_y + (fg->glyph_out->top));
 
@@ -557,17 +708,18 @@ evas_common_font_draw_internal(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font
 	    }
 	  else
 	    break;
-	  pen_x += fg->glyph->advance.x >> 16;
+
 	  prev_index = index;
      }
-#ifdef INTERNATIONAL_SUPPORT
-   if (level_list) free(level_list);
+#ifdef BIDI_SUPPORT
    if (visual_text) free(visual_text);
 #endif
 }
 
+
 EAPI void
-evas_common_font_draw(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font *fn, int x, int y, const char *text)
+evas_common_font_draw(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font *fn, int x, int y, const Eina_Unicode *text,
+                      const Evas_BiDi_Props *intl_props)
 {
    int ext_x, ext_y, ext_w, ext_h;
    int im_w, im_h;
@@ -618,7 +770,7 @@ evas_common_font_draw(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font *fn, int
 
    if (!dc->cutout.rects)
      {
-        evas_common_font_draw_internal(dst, dc, fn, x, y, text,
+        evas_common_font_draw_internal(dst, dc, fn, x, y, text, intl_props,
                                        func, ext_x, ext_y, ext_w, ext_h, fi,
                                        im_w, im_h, use_kerning
                                        );
@@ -635,7 +787,7 @@ evas_common_font_draw(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font *fn, int
                {
                   r = rects->rects + i;
                   evas_common_draw_context_set_clip(dc, r->x, r->y, r->w, r->h);
-                  evas_common_font_draw_internal(dst, dc, fn, x, y, text,
+                  evas_common_font_draw_internal(dst, dc, fn, x, y, text, intl_props,
                                                  func, r->x, r->y, r->w, r->h, fi,
                                                  im_w, im_h, use_kerning
                                                  );
@@ -648,3 +800,165 @@ evas_common_font_draw(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font *fn, int
    LKU(fn->lock);
 #endif
 }
+
+
+/* FIXME: Where is it freed at? */
+/* Only used if cache is on */
+#if defined(METRIC_CACHE) || defined(WORD_CACHE)
+struct prword *
+evas_font_word_prerender(RGBA_Draw_Context *dc, const Eina_Unicode *in_text, Evas_BiDi_Props *intl_props, int len, RGBA_Font *fn, RGBA_Font_Int *fi,int use_kerning){
+   int pen_x, pen_y;
+   struct cinfo *metrics;
+   const Eina_Unicode *text = in_text;
+   int chr;
+   FT_Face pface = NULL;
+   FT_UInt prev_index;
+   unsigned char *im;
+   int width;
+   int height, above, below, baseline, descent;
+   int c;
+   int i,j;
+   int char_index = 0; /* the index of the current char */
+   struct prword *w;
+   int gl;
+
+# ifndef METRIC_CACHE
+   gl = dc->font_ext.func.gl_new ? 1: 0;
+   if (gl) return NULL;
+# endif
+
+
+   LKL(lock_words);
+   EINA_INLIST_FOREACH(words,w){
+	if (w->len == len && w->font == fn && fi->size == w->size &&
+	      (w->str == in_text || memcmp(w->str, in_text, len * sizeof(Eina_Unicode)) == 0)){
+	  words = eina_inlist_promote(words, EINA_INLIST_GET(w));
+	  LKU(lock_words);
+	  return w;
+	}
+   }
+   LKU(lock_words);
+
+   gl = dc->font_ext.func.gl_new ? 1: 0;
+
+   pen_x = pen_y = 0;
+   above = 0; below = 0; baseline = 0; height = 0; descent = 0;
+   metrics = malloc(sizeof(struct cinfo) * len);
+   /* First pass: Work out how big */
+   for (char_index = 0, c = 0, chr = 0 ; *text ; text++, char_index ++){
+	struct cinfo *ci = metrics + char_index;
+	ci->gl = *text;
+	if (ci->gl == 0) break;
+	ci->index = evas_common_font_glyph_search(fn, &fi, ci->gl);
+	LKL(fi->ft_mutex);
+	if (fi->src->current_size != fi->size)
+	  {
+	     FTLOCK();
+	     FT_Activate_Size(fi->ft.size);
+	     FTUNLOCK();
+             fi->src->current_size = fi->size;
+          }
+       ci->fg = evas_common_font_int_cache_glyph_get(fi, ci->index);
+       LKU(fi->ft_mutex);
+       if (!ci->fg) continue;
+
+        /* hmmm kerning means i can't sanely do my own cached metric tables! */
+	/* grrr - this means font face sharing is kinda... not an option if */
+	/* you want performance */
+	if ((use_kerning) && (prev_index) && (ci->index) &&
+	     (pface == fi->src->ft.face))
+	   {
+              int kern = 0;
+# ifdef BIDI_SUPPORT
+	      /* if it's rtl, the kerning matching should be reversed, i.e prev
+	       * index is now the index and the other way around. 
+               * There is a slight exception when there are compositing chars
+               * involved.*/
+	      if (intl_props && 
+                  evas_bidi_is_rtl_char(intl_props->props->embedding_levels, char_index) &&
+                  ci->fg->glyph->advance.x >> 16 > 0)
+		{
+		   if (evas_common_font_query_kerning(fi, ci->index, prev_index, &kern))
+		      ci->pos.x += kern;
+		}
+	      else
+# endif
+              {
+
+	           if (evas_common_font_query_kerning(fi, prev_index, ci->index, &kern))
+	              ci->pos.x += kern;
+	      }
+           }
+
+       pface = fi->src->ft.face;
+       if (gl){
+	    ci->fg->ext_dat =dc->font_ext.func.gl_new(dc->font_ext.data,ci->fg);
+	    ci->fg->ext_dat_free = dc->font_ext.func.gl_free;
+       }
+       ci->bm.data = ci->fg->glyph_out->bitmap.buffer;
+       ci->bm.w = MAX(ci->fg->glyph_out->bitmap.pitch,
+		      ci->fg->glyph_out->bitmap.width);
+       ci->bm.rows = ci->fg->glyph_out->bitmap.rows;
+       ci->bm.h = ci->fg->glyph_out->top;
+       above = ci->bm.rows - (ci->bm.rows - ci->bm.h);
+       below = ci->bm.rows - ci->bm.h;
+       if (below > descent) descent = below;
+       if (above > baseline) baseline = above;
+       ci->pos.x = pen_x + ci->fg->glyph_out->left;
+       ci->pos.y = pen_y + ci->fg->glyph_out->top;
+       pen_x += ci->fg->glyph->advance.x >> 16;
+       prev_index = ci->index;
+  }
+
+  /* First loop done */
+  width = pen_x;
+  width = (width & 0x7) ? width + (8 - (width & 0x7)) : width;
+
+  height = baseline + descent;
+  if (!gl){
+     im = calloc(height, width);
+     for (i = 0 ; i  < char_index ; i ++){
+	  struct cinfo *ci = metrics + i;
+	  for (j = 0 ; j < ci->bm.rows ; j ++){
+	    memcpy(im + ci->pos.x + (j + baseline - ci->bm.h) * width, ci->bm.data + j * ci->bm.w, ci->bm.w);
+	  }
+
+     }
+  } else {
+       im = NULL;
+  }
+   /* Save it */
+   struct prword *save;
+
+
+   save = malloc(sizeof(struct prword));
+   save->cinfo = metrics;
+   save->str = eina_ustringshare_add(in_text);
+   save->font = fn;
+   save->size = fi->size;
+   save->len = len;
+   save->im = im;
+   save->width = pen_x;
+   save->roww = width;
+   save->height = height;
+   save->baseline = baseline;
+   LKL(lock_words);
+   words = eina_inlist_prepend(words, EINA_INLIST_GET(save));
+
+   /* Clean up if too long */
+   if (eina_inlist_count(words) > max_cached_words){
+	struct prword *last = (struct prword *)(words->last);
+	if (last->im) free(last->im);
+	if (last->cinfo) free(last->cinfo);
+	eina_ustringshare_del(last->str);
+	words = eina_inlist_remove(words,EINA_INLIST_GET(last));
+	free(last);
+   }
+   LKU(lock_words);
+
+   return save;
+}
+#endif
+
+
+

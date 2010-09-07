@@ -202,6 +202,7 @@ eng_window_new(Display *disp,
         printf("Error: eglMakeCurrent() fail.\n");
         printf("Error: error # was: 0x%x\n", eglGetError());
      }
+    _evas_gl_x11_window = gw;
 
    vendor = glGetString(GL_VENDOR);
    renderer = glGetString(GL_RENDERER);
@@ -288,6 +289,17 @@ eng_window_new(Display *disp,
         fprintf(stderr, "version: %s\n", version);
         
         if (strstr(vendor, "NVIDIA"))
+           // FIXME: also same as tegra2 - maybe check renderer too
+           // 
+           // vendor: NVIDIA Corporation
+           // renderer: NVIDIA Tegra
+           // version: OpenGL ES 2.0
+           // 
+           // vs (for example)
+           // 
+           // vendor: NVIDIA Corporation
+           // renderer: GeForce GT 220/PCI/SSE2
+           // version: 3.2.0 NVIDIA 195.36.24
           {
              gw->detected.loose_binding = 1;
           }
@@ -385,6 +397,9 @@ eng_window_new(Display *disp,
 	eng_window_free(gw);
 	return NULL;
      }
+#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+   gw->gl_context->egldisp = gw->egl_disp;
+#endif   
    evas_gl_common_context_use(gw->gl_context);
    evas_gl_common_context_resize(gw->gl_context, w, h, rot);
    win_count++;
@@ -394,22 +409,28 @@ eng_window_new(Display *disp,
 void
 eng_window_free(Evas_GL_X11_Window *gw)
 {
+   int ref = 0;
    win_count--;
+   eng_window_use(gw);
    if (gw == _evas_gl_x11_window) _evas_gl_x11_window = NULL;
-   if (gw->gl_context) evas_gl_common_context_free(gw->gl_context);
+   if (gw->gl_context)
+      {
+         ref = gw->gl_context->references - 1;
+         evas_gl_common_context_free(gw->gl_context);
+      }
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
    if (gw->egl_surface[0] != EGL_NO_SURFACE)
      eglDestroySurface(gw->egl_disp, gw->egl_surface[0]);
-   if (win_count == 0)
+   if (ref == 0)
      {
         if (context) eglDestroyContext(gw->egl_disp, context);
-        eglMakeCurrent(gw->egl_disp, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
         eglTerminate(gw->egl_disp);
         context = EGL_NO_CONTEXT;
      }
+   eglMakeCurrent(gw->egl_disp, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 #else
    if (gw->glxwin) glXDestroyWindow(gw->disp, gw->glxwin);
-   if (win_count == 0)
+   if (ref == 0)
      {
         if (context) glXDestroyContext(gw->disp, context);
         if (rgba_context) glXDestroyContext(gw->disp, rgba_context);

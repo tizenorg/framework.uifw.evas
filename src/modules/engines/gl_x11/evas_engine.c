@@ -1,3 +1,4 @@
+#include "evas_common.h" /* Also includes international specific stuff */
 #include "evas_engine.h"
 
 #include <dlfcn.h>      /* dlopen,dlclose,etc */
@@ -10,6 +11,24 @@
 #else
 // GLX
 #endif
+
+typedef struct _Render_Engine Render_Engine;
+
+struct _Render_Engine
+{
+   Evas_GL_X11_Window      *win;
+   Evas_Engine_Info_GL_X11 *info;
+   Evas                    *evas;
+   int                      end;
+   
+   XrmDatabase   xrdb; // xres - dpi
+   struct { // xres - dpi
+      int        dpi; // xres - dpi
+   } xr; // xres - dpi
+};
+
+static int initted = 0;
+static int gl_wins = 0;
 
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
 
@@ -159,21 +178,6 @@ xrdb_user_query(const char *name, const char *cls, char **type, XrmValue *val)
    return EINA_FALSE;
 }
 
-typedef struct _Render_Engine Render_Engine;
-
-struct _Render_Engine
-{
-   Evas_GL_X11_Window      *win;
-   Evas_Engine_Info_GL_X11 *info;
-   Evas                    *evas;
-   int                      end;
-   
-   XrmDatabase   xrdb; // xres - dpi
-   struct { // xres - dpi
-      int        dpi; // xres - dpi
-   } xr; // xres - dpi
-};
-
 static void *
 eng_info(Evas *e)
 {
@@ -198,9 +202,6 @@ eng_info_free(Evas *e __UNUSED__, void *info)
    in = (Evas_Engine_Info_GL_X11 *)info;
    free(in);
 }
-
-static int initted = 0;
-static int gl_wins = 0;
 
 static int
 eng_setup(Evas *e, void *in)
@@ -304,7 +305,6 @@ eng_setup(Evas *e, void *in)
              evas_common_convert_init();
              evas_common_scale_init();
              evas_common_rectangle_init();
-             evas_common_gradient_init();
              evas_common_polygon_init();
              evas_common_line_init();
              evas_common_font_init();
@@ -325,9 +325,13 @@ eng_setup(Evas *e, void *in)
             (info->info.destination_alpha != re->win->alpha) ||
             (info->info.rotation != re->win->rot))
           {
+             int inc = 0;
+             
              if (re->win)
                {
+                  re->win->gl_context->references++;
                   eng_window_free(re->win);
+                  inc = 1;
                   gl_wins--;
                }
              re->win = eng_window_new(info->info.display,
@@ -342,6 +346,8 @@ eng_setup(Evas *e, void *in)
                                       info->info.destination_alpha,
                                       info->info.rotation);
              if (re->win) gl_wins++;
+             if ((re->win) && (inc))
+                re->win->gl_context->references--;
           }
         else if ((re->win->w != e->output.w) ||
                  (re->win->h != e->output.h))
@@ -574,7 +580,11 @@ eng_output_flush(void *data)
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
 #ifdef FRAMECOUNT
    double t0 = get_time();
-#endif   
+#endif
+   if (re->info->vsync)
+      eglSwapInterval(re->win->egl_disp, 1);
+   else
+      eglSwapInterval(re->win->egl_disp, 0);
    eglSwapBuffers(re->win->egl_disp, re->win->egl_surface[0]);
 #ifdef FRAMECOUNT
    double t1 = get_time();
@@ -740,366 +750,6 @@ eng_polygon_draw(void *data, void *context, void *surface __UNUSED__, void *poly
    evas_gl_common_poly_draw(re->win->gl_context, polygon, x, y);
 }
 
-static void
-eng_gradient2_color_np_stop_insert(void *data __UNUSED__, void *gradient __UNUSED__, int r __UNUSED__, int g __UNUSED__, int b __UNUSED__, int a __UNUSED__, float pos __UNUSED__)
-{
-   evas_common_gradient2_color_np_stop_insert(gradient, r, g, b, a, pos);
-}
-
-static void
-eng_gradient2_clear(void *data __UNUSED__, void *gradient __UNUSED__)
-{
-   evas_common_gradient2_clear(gradient);
-}
-
-static void
-eng_gradient2_fill_transform_set(void *data __UNUSED__, void *gradient __UNUSED__, void *transform __UNUSED__)
-{
-   evas_common_gradient2_fill_transform_set(gradient, transform);
-}
-
-static void
-eng_gradient2_fill_spread_set(void *data __UNUSED__, void *gradient __UNUSED__, int spread __UNUSED__)
-{
-   evas_common_gradient2_fill_spread_set(gradient, spread);
-}
-
-static void *
-eng_gradient2_linear_new(void *data __UNUSED__)
-{
-   return evas_common_gradient2_linear_new();
-}
-
-static void
-eng_gradient2_linear_free(void *data __UNUSED__, void *linear_gradient __UNUSED__)
-{
-   evas_common_gradient2_free(linear_gradient);
-}
-
-static void
-eng_gradient2_linear_fill_set(void *data __UNUSED__, void *linear_gradient __UNUSED__, float x0 __UNUSED__, float y0 __UNUSED__, float x1 __UNUSED__, float y1 __UNUSED__)
-{
-   evas_common_gradient2_linear_fill_set(linear_gradient, x0, y0, x1, y1);
-}
-
-static int
-eng_gradient2_linear_is_opaque(void *data __UNUSED__, void *context __UNUSED__, void *linear_gradient __UNUSED__, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-   RGBA_Draw_Context *dc = (RGBA_Draw_Context *)context;
-   RGBA_Gradient2 *gr = (RGBA_Gradient2 *)linear_gradient;
-
-   if (!dc || !gr || !gr->type.geometer)  return 0;
-   return !(gr->type.geometer->has_alpha(gr, dc->render_op) |
-            gr->type.geometer->has_mask(gr, dc->render_op));
-}
-
-static int
-eng_gradient2_linear_is_visible(void *data __UNUSED__, void *context __UNUSED__, void *linear_gradient __UNUSED__, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-   RGBA_Draw_Context *dc = (RGBA_Draw_Context *)context;
-
-   if (!dc || !linear_gradient)  return 0;
-   return 1;
-}
-
-static void
-eng_gradient2_linear_render_pre(void *data __UNUSED__, void *context __UNUSED__, void *linear_gradient __UNUSED__)
-{
-   RGBA_Draw_Context *dc = (RGBA_Draw_Context *)context;
-   RGBA_Gradient2 *gr = (RGBA_Gradient2 *)linear_gradient;
-   int  len;
-   
-   if (!dc || !gr || !gr->type.geometer)  return;
-   gr->type.geometer->geom_update(gr);
-   len = gr->type.geometer->get_map_len(gr);
-   evas_common_gradient2_map(dc, gr, len);
-}
-
-static void
-eng_gradient2_linear_render_post(void *data __UNUSED__, void *linear_gradient __UNUSED__)
-{
-}
-
-static void
-eng_gradient2_linear_draw(void *data __UNUSED__, void *context __UNUSED__, void *surface __UNUSED__, void *linear_gradient __UNUSED__, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-   Render_Engine *re;
-
-   re = (Render_Engine *)data;
-   eng_window_use(re->win);
-   re->win->gl_context->dc = context;
-     {
-        Evas_GL_Image *gim;
-        RGBA_Image *im;
-        RGBA_Draw_Context *dc = context;
-        int op = dc->render_op, cuse = dc->clip.use;
-        
-        im = (RGBA_Image *)evas_cache_image_empty(evas_common_image_cache_get());
-        im = (RGBA_Image *)evas_cache_image_size_set(&im->cache_entry, w, h);
-        
-        dc->render_op = _EVAS_RENDER_FILL;
-        dc->clip.use = 0;
-        
-        // draw to buf, copy to tex, draw tex
-        evas_common_gradient2_draw(im, dc, 0, 0, w, h, linear_gradient);
-
-        gim = evas_gl_common_image_new_from_data(re->win->gl_context, w, h,
-                                                 im->image.data, 1,
-                                                 EVAS_COLORSPACE_ARGB8888);
-        dc->render_op = op;
-        dc->clip.use = cuse;
-        evas_gl_common_image_draw(re->win->gl_context, gim, 0, 0, w, h, x, y, w, h, 0);
-        evas_cache_image_drop(&im->cache_entry);
-        evas_gl_common_image_free(gim);
-     }
-}
-
-static void *
-eng_gradient2_radial_new(void *data __UNUSED__)
-{
-   return evas_common_gradient2_radial_new();
-}
-
-static void
-eng_gradient2_radial_free(void *data __UNUSED__, void *radial_gradient __UNUSED__)
-{
-   evas_common_gradient2_free(radial_gradient);
-}
-
-static void
-eng_gradient2_radial_fill_set(void *data __UNUSED__, void *radial_gradient __UNUSED__, float cx __UNUSED__, float cy __UNUSED__, float rx __UNUSED__, float ry __UNUSED__)
-{
-   evas_common_gradient2_radial_fill_set(radial_gradient, cx, cy, rx, ry);
-}
-
-static int
-eng_gradient2_radial_is_opaque(void *data __UNUSED__, void *context __UNUSED__, void *radial_gradient __UNUSED__, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-   RGBA_Draw_Context *dc = (RGBA_Draw_Context *)context;
-   RGBA_Gradient2 *gr = (RGBA_Gradient2 *)radial_gradient;
-   
-   if (!dc || !gr || !gr->type.geometer)  return 0;
-   return !(gr->type.geometer->has_alpha(gr, dc->render_op) |
-            gr->type.geometer->has_mask(gr, dc->render_op));
-}
-
-static int
-eng_gradient2_radial_is_visible(void *data __UNUSED__, void *context __UNUSED__, void *radial_gradient __UNUSED__, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-   RGBA_Draw_Context *dc = (RGBA_Draw_Context *)context;
-   
-   if (!dc || !radial_gradient)  return 0;
-   return 1;
-}
-
-static void
-eng_gradient2_radial_render_pre(void *data __UNUSED__, void *context __UNUSED__, void *radial_gradient __UNUSED__)
-{
-   RGBA_Draw_Context *dc = (RGBA_Draw_Context *)context;
-   RGBA_Gradient2 *gr = (RGBA_Gradient2 *)radial_gradient;
-   int  len;
-   
-   if (!dc || !gr || !gr->type.geometer)  return;
-   gr->type.geometer->geom_update(gr);
-   len = gr->type.geometer->get_map_len(gr);
-   evas_common_gradient2_map(dc, gr, len);
-}
-
-static void
-eng_gradient2_radial_render_post(void *data __UNUSED__, void *radial_gradient __UNUSED__)
-{
-}
-
-static void
-eng_gradient2_radial_draw(void *data __UNUSED__, void *context __UNUSED__, void *surface __UNUSED__, void *radial_gradient __UNUSED__, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-   Render_Engine *re;
-
-   re = (Render_Engine *)data;
-   eng_window_use(re->win);
-   re->win->gl_context->dc = context;
-     {
-        Evas_GL_Image *gim;
-        RGBA_Image *im;
-        RGBA_Draw_Context *dc = context;
-        int op = dc->render_op, cuse = dc->clip.use;
-        
-        im = (RGBA_Image *)evas_cache_image_empty(evas_common_image_cache_get());
-        im = (RGBA_Image *)evas_cache_image_size_set(&im->cache_entry, w, h);
-        
-        dc->render_op = _EVAS_RENDER_FILL;
-        dc->clip.use = 0;
-        
-        // draw to buf, copy to tex, draw tex
-        evas_common_gradient2_draw(im, dc, 0, 0, w, h, radial_gradient);
-
-        gim = evas_gl_common_image_new_from_data(re->win->gl_context, w, h,
-                                                 im->image.data, 1,
-                                                 EVAS_COLORSPACE_ARGB8888);
-        dc->render_op = op;
-        dc->clip.use = cuse;
-        evas_gl_common_image_draw(re->win->gl_context, gim, 0, 0, w, h, x, y, w, h, 0);
-        evas_cache_image_drop(&im->cache_entry);
-        evas_gl_common_image_free(gim);
-     }
-}
-
-static void *
-eng_gradient_new(void *data __UNUSED__)
-{
-   return evas_common_gradient_new();
-}
-
-static void
-eng_gradient_free(void *data __UNUSED__, void *gradient)
-{
-   evas_common_gradient_free(gradient);
-}
-
-static void
-eng_gradient_color_stop_add(void *data __UNUSED__, void *gradient, int r, int g, int b, int a, int delta)
-{
-   evas_common_gradient_color_stop_add(gradient, r, g, b, a, delta);
-}
-
-static void
-eng_gradient_alpha_stop_add(void *data __UNUSED__, void *gradient, int a, int delta)
-{
-   evas_common_gradient_alpha_stop_add(gradient, a, delta);
-}
-
-static void
-eng_gradient_color_data_set(void *data __UNUSED__, void *gradient, void *map, int len, int has_alpha)
-{
-   evas_common_gradient_color_data_set(gradient, map, len, has_alpha);
-}
-
-static void
-eng_gradient_alpha_data_set(void *data __UNUSED__, void *gradient, void *alpha_map, int len)
-{
-   evas_common_gradient_alpha_data_set(gradient, alpha_map, len);
-}
-
-static void
-eng_gradient_clear(void *data __UNUSED__, void *gradient)
-{
-   evas_common_gradient_clear(gradient);
-}
-
-static void
-eng_gradient_fill_set(void *data __UNUSED__, void *gradient, int x, int y, int w, int h)
-{
-   evas_common_gradient_fill_set(gradient, x, y, w, h);
-}
-
-static void
-eng_gradient_fill_angle_set(void *data __UNUSED__, void *gradient, double angle)
-{
-   evas_common_gradient_fill_angle_set(gradient, angle);
-}
-
-static void
-eng_gradient_fill_spread_set(void *data __UNUSED__, void *gradient, int spread)
-{
-   evas_common_gradient_fill_spread_set(gradient, spread);
-}
-
-static void
-eng_gradient_angle_set(void *data __UNUSED__, void *gradient, double angle)
-{
-   evas_common_gradient_map_angle_set(gradient, angle);
-}
-
-static void
-eng_gradient_offset_set(void *data __UNUSED__, void *gradient, float offset)
-{
-   evas_common_gradient_map_offset_set(gradient, offset);
-}
-
-static void
-eng_gradient_direction_set(void *data __UNUSED__, void *gradient, int direction)
-{
-   evas_common_gradient_map_direction_set(gradient, direction);
-}
-
-static void
-eng_gradient_type_set(void *data __UNUSED__, void *gradient, char *name, char *params)
-{
-   evas_common_gradient_type_set(gradient, name, params);
-}
-
-static int
-eng_gradient_is_opaque(void *data, void *context, void *gradient, int x, int y, int w, int h)
-{
-   RGBA_Draw_Context *dc = (RGBA_Draw_Context *)context;
-   RGBA_Gradient *gr = (RGBA_Gradient *)gradient;
-   
-   if (!dc || !gr || !gr->type.geometer)  return 0;
-   return !(gr->type.geometer->has_alpha(gr, dc->render_op) |
-            gr->type.geometer->has_mask(gr, dc->render_op));
-}
-
-static int
-eng_gradient_is_visible(void *data, void *context, void *gradient, int x, int y, int w, int h)
-{
-   RGBA_Draw_Context *dc = (RGBA_Draw_Context *)context;
-   
-   if (!dc || !gradient)  return 0;
-   return 1;
-}
-
-static void
-eng_gradient_render_pre(void *data, void *context, void *gradient)
-{
-   RGBA_Draw_Context *dc = (RGBA_Draw_Context *)context;
-   RGBA_Gradient *gr = (RGBA_Gradient *)gradient;
-   int  len;
-   
-   if (!dc || !gr || !gr->type.geometer)  return;
-   gr->type.geometer->geom_set(gr);
-   len = gr->type.geometer->get_map_len(gr);
-   evas_common_gradient_map(dc, gr, len);
-}
-
-static void
-eng_gradient_render_post(void *data __UNUSED__, void *gradient)
-{
-}
-
-static void
-eng_gradient_draw(void *data, void *context, void *surface __UNUSED__, void *gradient, int x, int y, int w, int h)
-{
-   Render_Engine *re;
-
-   re = (Render_Engine *)data;
-   eng_window_use(re->win);
-   re->win->gl_context->dc = context;
-     {
-        Evas_GL_Image *gim;
-        RGBA_Image *im;
-        RGBA_Draw_Context *dc = context;
-        int op = dc->render_op, cuse = dc->clip.use;
-        
-        im = (RGBA_Image *)evas_cache_image_empty(evas_common_image_cache_get());
-        im = (RGBA_Image *)evas_cache_image_size_set(&im->cache_entry, w, h);
-        
-        dc->render_op = _EVAS_RENDER_FILL;
-        dc->clip.use = 0;
-        
-        // draw to buf, copy to tex, draw tex
-        evas_common_gradient_draw(im, dc, 0, 0, w, h, gradient);
-
-        gim = evas_gl_common_image_new_from_data(re->win->gl_context, w, h,
-                                                 im->image.data, 1,
-                                                 EVAS_COLORSPACE_ARGB8888);
-        dc->render_op = op;
-        dc->clip.use = cuse;
-        evas_gl_common_image_draw(re->win->gl_context, gim, 0, 0, w, h, x, y, w, h, 0);
-        evas_cache_image_drop(&im->cache_entry);
-        evas_gl_common_image_free(gim);
-     }
-}
-
 static int
 eng_image_alpha_get(void *data, void *image)
 {
@@ -1133,12 +783,19 @@ eng_image_alpha_set(void *data, void *image, int has_alpha)
    re = (Render_Engine *)data;
    if (!image) return NULL;
    im = image;
+   if (im->alpha == has_alpha) return image;
    if (im->native.data)
      {
         im->alpha = has_alpha;
         return image;
      }
    eng_window_use(re->win);
+   if ((im->tex) && (im->tex->pt->dyn.img))
+     {
+        im->alpha = has_alpha;
+        im->tex->alpha = im->alpha;
+        return image;
+     }
    /* FIXME: can move to gl_common */
    if (im->cs.space != EVAS_COLORSPACE_ARGB8888) return im;
    if ((has_alpha) && (im->im->cache_entry.flags.alpha)) return image;
@@ -1279,7 +936,6 @@ struct _Native
 static void
 _native_bind_cb(void *data, void *image)
 {
-   Render_Engine *re = data;
    Evas_GL_Image *im = image;
    Native *n = im->native.data;
    
@@ -1290,17 +946,15 @@ _native_bind_cb(void *data, void *image)
           {
              glsym_glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, n->egl_surface);
              if (eglGetError() != EGL_SUCCESS)
-               {
-                  printf("Error:  glEGLImageTargetTexture2DOES() fail.\n");
-               }
+                printf("Error:  glEGLImageTargetTexture2DOES() fail.\n");
           }
         else
-          {
-             printf("Try glEGLImageTargetTexture2DOES on EGL with no support\n");
-          }
+           printf("Try glEGLImageTargetTexture2DOES on EGL with no support\n");
      }
 #else
 # ifdef GLX_BIND_TO_TEXTURE_TARGETS_EXT
+   Render_Engine *re = data;
+   
    if (glsym_glXBindTexImage)
      {
         glsym_glXBindTexImage(re->win->disp, n->glx_pixmap, 
@@ -1308,9 +962,7 @@ _native_bind_cb(void *data, void *image)
         GLERR(__FUNCTION__, __FILE__, __LINE__, "");
      }
    else
-     {
-        printf("Try glXBindTexImage on GLX with no support\n");
-     }
+      printf("Try glXBindTexImage on GLX with no support\n");
 # endif
 #endif
 }
@@ -1318,14 +970,15 @@ _native_bind_cb(void *data, void *image)
 static void
 _native_unbind_cb(void *data, void *image)
 {
-   Render_Engine *re = data;
    Evas_GL_Image *im = image;
-   Native *n = im->native.data;
 
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
    // nothing
 #else
 # ifdef GLX_BIND_TO_TEXTURE_TARGETS_EXT
+   Render_Engine *re = data;
+   Native *n = im->native.data;
+   
    if (glsym_glXReleaseTexImage)
      {
         glsym_glXReleaseTexImage(re->win->disp, n->glx_pixmap, 
@@ -1333,9 +986,7 @@ _native_unbind_cb(void *data, void *image)
         GLERR(__FUNCTION__, __FILE__, __LINE__, "");
      }
    else
-     {
-        printf("Try glXReleaseTexImage on GLX with no support\n");
-     }
+      printf("Try glXReleaseTexImage on GLX with no support\n");
 # endif
 #endif
 }
@@ -1346,7 +997,10 @@ _native_free_cb(void *data, void *image)
    Render_Engine *re = data;
    Evas_GL_Image *im = image;
    Native *n = im->native.data;
+   uint32_t pmid;
 
+   pmid = n->pixmap;
+   eina_hash_del(re->win->gl_context->shared->native_hash, &pmid, im);
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
    if (n->egl_surface)
      {
@@ -1355,14 +1009,10 @@ _native_free_cb(void *data, void *image)
              glsym_eglDestroyImage(re->win->egl_disp,
                                    n->egl_surface);
              if (eglGetError() != EGL_SUCCESS)
-               {
-                  printf("Error:  eglDestroyImage() fail.\n");
-               }
+                printf("Error:  eglDestroyImage() fail.\n");
           }
         else
-          {
-             printf("Try eglDestroyImage on EGL with no support\n");
-          }
+           printf("Try eglDestroyImage on EGL with no support\n");
      }
 #else
 # ifdef GLX_BIND_TO_TEXTURE_TARGETS_EXT
@@ -1377,9 +1027,7 @@ _native_free_cb(void *data, void *image)
                   GLERR(__FUNCTION__, __FILE__, __LINE__, "");
                }
              else
-               {
-                  printf("Try glXReleaseTexImage on GLX with no support\n");
-               }
+                printf("Try glXReleaseTexImage on GLX with no support\n");
           }
         if (glsym_glXDestroyPixmap)
           {
@@ -1387,9 +1035,7 @@ _native_free_cb(void *data, void *image)
              GLERR(__FUNCTION__, __FILE__, __LINE__, "");
           }
         else
-          {
-             printf("Try glXDestroyPixmap on GLX with no support\n");
-          }
+           printf("Try glXDestroyPixmap on GLX with no support\n");
         n->glx_pixmap = 0;
      }
 # endif
@@ -1402,16 +1048,18 @@ _native_free_cb(void *data, void *image)
    free(n);
 }
 
-static void
+static void *
 eng_image_native_set(void *data, void *image, void *native)
 {
    Render_Engine *re = (Render_Engine *)data;
    Evas_Native_Surface *ns = native;
-   Evas_GL_Image *im = image;
+   Evas_GL_Image *im = image, *im2 = NULL;
    Visual *vis = NULL;
    Pixmap pm = 0;
-
-   if (!im) return;
+   Native *n = NULL;
+   uint32_t pmid;
+   
+   if (!im) return NULL;
    if (ns)
      {
         vis = ns->data.x11.visual;
@@ -1420,32 +1068,50 @@ eng_image_native_set(void *data, void *image, void *native)
           {
              Evas_Native_Surface *n = im->native.data;
              if ((n->data.x11.visual == vis) && (n->data.x11.pixmap == pm))
-               {
-                  return;
-               }
+                return im;
           }
      }
-   if ((!ns) && (!im->native.data)) return;
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+   if ((!ns) && (!im->native.data)) return im;
+   
+   eng_window_use(re->win);
+   
    if (im->native.data)
      {
         if (im->native.func.free)
-          im->native.func.free(im->native.func.data, im);
+           im->native.func.free(im->native.func.data, im);
         evas_gl_common_image_native_disable(im);
-        im->native.data = NULL;
      }
-   if (native)
+   
+   pmid = pm;
+   im2 = eina_hash_find(re->win->gl_context->shared->native_hash, &pmid);
+   if (im2 == im) return im;
+   if (im2)
      {
-        Native *n;
-        
+        n = im2->native.data;
+        if (n)
+          {
+             im2->references++;
+             evas_gl_common_image_free(im);
+             return im2;
+          }
+     }
+   im2 = evas_gl_common_image_new_from_data(re->win->gl_context, 
+                                            im->w, im->h, NULL, im->alpha,
+                                            EVAS_COLORSPACE_ARGB8888);
+   evas_gl_common_image_free(im);
+   im = im2;
+#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+   if (native) 
+     {
         n = calloc(1, sizeof(Native));
         if (n)
           {
              EGLConfig egl_config;
              int config_attrs[20];
-             int num_config, i;
+             int num_config, i = 0;
              
-             i = 0;
+             eina_hash_add(re->win->gl_context->shared->native_hash, &pmid, im);
+                  
              config_attrs[i++] = EGL_RED_SIZE;
              config_attrs[i++] = 8;
              config_attrs[i++] = EGL_GREEN_SIZE;
@@ -1466,11 +1132,19 @@ eng_image_native_set(void *data, void *image, void *native)
              
              if (!eglChooseConfig(re->win->egl_disp, config_attrs, 
                                   &egl_config, 1, &num_config))
-               {
-                  printf("ERROR: eglChooseConfig() failed for pixmap 0x%x, num_config = %i\n", (unsigned int)pm, num_config);
-               }
+                printf("ERROR: eglChooseConfig() failed for pixmap 0x%x, num_config = %i\n", (unsigned int)pm, num_config);
              n->pixmap = pm;
              n->visual = vis;
+             if (glsym_eglCreateImage)
+                n->egl_surface = glsym_eglCreateImage(re->win->egl_disp,
+                                                      EGL_NO_CONTEXT,
+                                                      EGL_NATIVE_PIXMAP_KHR,
+                                                      (void *)pm,
+                                                      NULL);
+             else
+                printf("Try eglCreateImage on EGL with no support\n");
+             if (!n->egl_surface)
+                printf("ERROR: eglCreatePixmapSurface() for 0x%x failed\n", (unsigned int)pm);
              im->native.yinvert     = 1;
              im->native.loose       = 0;
              im->native.data        = n;
@@ -1480,39 +1154,16 @@ eng_image_native_set(void *data, void *image, void *native)
              im->native.func.free   = _native_free_cb;
              im->native.target      = GL_TEXTURE_2D;
              im->native.mipmap      = 0;
-             if (glsym_eglCreateImage)
-               {
-                  n->egl_surface = glsym_eglCreateImage(re->win->egl_disp,
-                                                        EGL_NO_CONTEXT,
-                                                        EGL_NATIVE_PIXMAP_KHR,
-                                                        (void *)pm,
-                                                        NULL);
-               }
-             else
-               {
-                  printf("Try eglCreateImage on EGL with no support\n");
-               }
-             if (!n->egl_surface)
-               {
-                  printf("ERROR: eglCreatePixmapSurface() for 0x%x failed\n", (unsigned int)pm);
-               }
              evas_gl_common_image_native_enable(im);
           }
      }
 #else
 # ifdef GLX_BIND_TO_TEXTURE_TARGETS_EXT
-   if (im->native.data)
-     {
-        if (im->native.func.free)
-          im->native.func.free(im->native.func.data, im);
-        evas_gl_common_image_native_disable(im);
-     }
    if (native)
      {
         int dummy;
         unsigned int w, h, depth = 32, border;
         Window wdummy;
-        Native *n;
 
         // fixme: round trip :(
         XGetGeometry(re->win->disp, pm, &wdummy, &dummy, &dummy, 
@@ -1524,16 +1175,15 @@ eng_image_native_set(void *data, void *image, void *native)
              int target = 0;
              int i = 0;
 
+             eina_hash_add(re->win->gl_context->shared->native_hash, &pmid, im);
              if ((re->win->depth_cfg[depth].tex_target &
                   GLX_TEXTURE_2D_BIT_EXT) 
 //                 && (1) // we assume npo2 for now
                  // size is pow2 || mnpo2 supported
-                 )
-               {
-                  target = GLX_TEXTURE_2D_EXT;
-               }
+                )
+                target = GLX_TEXTURE_2D_EXT;
              else if ((re->win->depth_cfg[depth].tex_target &
-                      GLX_TEXTURE_RECTANGLE_BIT_EXT))
+                       GLX_TEXTURE_RECTANGLE_BIT_EXT))
                {
                   printf("rect!!! (not handled)\n");
                   target = GLX_TEXTURE_RECTANGLE_EXT;
@@ -1543,14 +1193,10 @@ eng_image_native_set(void *data, void *image, void *native)
                   printf("broken text-from-pixmap\n");
                   if (!(re->win->depth_cfg[depth].tex_target &
                         GLX_TEXTURE_2D_BIT_EXT))
-                    {
-                       target = GLX_TEXTURE_RECTANGLE_EXT;
-                    }
+                     target = GLX_TEXTURE_RECTANGLE_EXT;
                   else if (!(re->win->depth_cfg[depth].tex_target &
                              GLX_TEXTURE_RECTANGLE_BIT_EXT))
-                    {
-                       target = GLX_TEXTURE_2D_EXT;
-                    }
+                     target = GLX_TEXTURE_2D_EXT;
                }
              
              
@@ -1566,49 +1212,43 @@ eng_image_native_set(void *data, void *image, void *native)
                }
              
              pixmap_att[i++] = 0;
-
+             
              memcpy(&(n->ns), ns, sizeof(Evas_Native_Surface));
              n->pixmap = pm;
              n->visual = vis;
              n->fbc = re->win->depth_cfg[depth].fbc;
-             im->native.yinvert     = re->win->depth_cfg[depth].yinvert;
-             im->native.loose       = re->win->detected.loose_binding;
-             im->native.data        = n;
-             im->native.func.data   = re;
-             im->native.func.bind   = _native_bind_cb;
-             im->native.func.unbind = _native_unbind_cb;
-             im->native.func.free   = _native_free_cb;
              if (glsym_glXCreatePixmap)
-               {
-                  n->glx_pixmap = glsym_glXCreatePixmap(re->win->disp, n->fbc, 
-                                                        n->pixmap, pixmap_att);
-               }
+                n->glx_pixmap = glsym_glXCreatePixmap(re->win->disp, 
+                                                      n->fbc, 
+                                                      n->pixmap, 
+                                                      pixmap_att);
              else
-               {
-                  printf("Try glXCreatePixmap on GLX with no support\n");
-               }
+                printf("Try glXCreatePixmap on GLX with no support\n");
              if (n->glx_pixmap)
                {
-//             printf("new native texture for %x | %4i x %4i @ %2i = %p\n",
-//                    pm, w, h, depth, n->glx_pixmap);
+//                  printf("%p: new native texture for %x | %4i x %4i @ %2i = %p\n",
+//                         n, pm, w, h, depth, n->glx_pixmap);
                   if (!target)
                     {
                        printf("no target :(\n");
                        if (glsym_glXQueryDrawable)
-                         glsym_glXQueryDrawable(re->win->disp, n->pixmap, GLX_TEXTURE_TARGET_EXT, &target);
+                          glsym_glXQueryDrawable(re->win->disp,
+                                                 n->pixmap, 
+                                                 GLX_TEXTURE_TARGET_EXT, 
+                                                 &target);
                     }
                   if (target == GLX_TEXTURE_2D_EXT)
                     {
                        im->native.target = GL_TEXTURE_2D;
                        im->native.mipmap = re->win->depth_cfg[depth].mipmap;
                     }
-#ifdef GL_TEXTURE_RECTANGLE_ARB             
+#  ifdef GL_TEXTURE_RECTANGLE_ARB             
                   else if (target == GLX_TEXTURE_RECTANGLE_EXT)
                     {
                        im->native.target = GL_TEXTURE_RECTANGLE_ARB;
                        im->native.mipmap = 0;
                     }
-#endif             
+#  endif             
                   else
                     {
                        im->native.target = GL_TEXTURE_2D;
@@ -1617,15 +1257,21 @@ eng_image_native_set(void *data, void *image, void *native)
                     }
                }
              else
-               {
-                  printf("ERROR: GLX Pixmap create fail\n");
-               }
+                printf("ERROR: GLX Pixmap create fail\n");
+             im->native.yinvert     = re->win->depth_cfg[depth].yinvert;
+             im->native.loose       = re->win->detected.loose_binding;
+             im->native.data        = n;
+             im->native.func.data   = re;
+             im->native.func.bind   = _native_bind_cb;
+             im->native.func.unbind = _native_unbind_cb;
+             im->native.func.free   = _native_free_cb;
 
              evas_gl_common_image_native_enable(im);
           }
      }
 # endif   
 #endif
+   return im;
 }
 
 static void *
@@ -1718,6 +1364,13 @@ eng_image_size_set(void *data, void *image, int w, int h)
         return image;
      }
    eng_window_use(re->win);
+   if ((im->tex) && (im->tex->pt->dyn.img))
+     {
+        evas_gl_common_texture_free(im->tex);
+        im->tex = NULL;
+        im->tex = evas_gl_common_texture_dynamic_new(im->gc, im);
+        return image;
+     }
    im_old = image;
    if ((eng_image_colorspace_get(data, image) == EVAS_COLORSPACE_YCBCR422P601_PL) ||
        (eng_image_colorspace_get(data, image) == EVAS_COLORSPACE_YCBCR422P709_PL))
@@ -1776,6 +1429,11 @@ eng_image_data_get(void *data, void *image, int to_write, DATA32 **image_data)
         *image_data = NULL;
         return im;
      }
+   if ((im->tex) && (im->tex->pt) && (im->tex->pt->dyn.data))
+     {
+        *image_data = im->tex->pt->dyn.data;
+        return im;
+     }
    eng_window_use(re->win);
    evas_cache_image_load_data(&im->im->cache_entry);
    switch (im->cs.space)
@@ -1825,6 +1483,28 @@ eng_image_data_put(void *data, void *image, DATA32 *image_data)
    im = image;
    if (im->native.data) return image;
    eng_window_use(re->win);
+   if ((im->tex) && (im->tex->pt) && (im->tex->pt->dyn.data))
+     {
+        if (im->tex->pt->dyn.data == image_data)
+          {
+             return image;
+          }
+        else
+          {
+	     int w, h;
+
+	     w = im->im->cache_entry.w;
+	     h = im->im->cache_entry.h;
+	     im2 = eng_image_new_from_data(data, w, h, image_data,
+					   eng_image_alpha_get(data, image),
+					   eng_image_colorspace_get(data, image));
+   	     if (!im2) return im;
+   	     evas_gl_common_image_free(im);
+   	     im = im2;
+             evas_gl_common_image_dirty(im, 0, 0, 0, 0);
+             return im;
+          }
+     }
    switch (im->cs.space)
      {
       case EVAS_COLORSPACE_ARGB8888:
@@ -1907,6 +1587,15 @@ eng_image_draw(void *data, void *context, void *surface, void *image, int src_x,
 static void
 eng_image_scale_hint_set(void *data __UNUSED__, void *image, int hint)
 {
+   if (image) evas_gl_common_image_scale_hint_set(image, hint);
+}
+
+static int
+eng_image_scale_hint_get(void *data __UNUSED__, void *image)
+{
+   Evas_GL_Image *gim = image;
+   if (!gim) return EVAS_IMAGE_SCALE_HINT_NONE;
+   return gim->scale_hint;
 }
 
 static void
@@ -1936,14 +1625,31 @@ eng_image_map_surface_free(void *data __UNUSED__, void *surface)
    evas_gl_common_image_free(surface);
 }
 
-static int
-eng_image_scale_hint_get(void *data __UNUSED__, void *image)
+static void
+eng_image_content_hint_set(void *data __UNUSED__, void *image, int hint)
 {
-   return EVAS_IMAGE_SCALE_HINT_NONE;
+   if (image) evas_gl_common_image_content_hint_set(image, hint);
+}
+
+static int
+eng_image_content_hint_get(void *data __UNUSED__, void *image)
+{
+   Evas_GL_Image *gim = image;
+   if (!gim) return EVAS_IMAGE_CONTENT_HINT_NONE;
+   return gim->content_hint;
 }
 
 static void
-eng_font_draw(void *data, void *context, void *surface, void *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const char *text)
+eng_image_stride_get(void *data, void *image, int *stride)
+{
+   Render_Engine *re = (Render_Engine *)data;
+   Evas_GL_Image *im = image;
+   *stride = im->w;
+   if ((im->tex) && (im->tex->pt->dyn.img)) *stride = im->tex->pt->dyn.w;
+}
+
+static void
+eng_font_draw(void *data, void *context, void *surface, void *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props)
 {
    Render_Engine *re;
 
@@ -1964,7 +1670,7 @@ eng_font_draw(void *data, void *context, void *surface, void *font, int x, int y
    					      evas_gl_font_texture_new,
    					      evas_gl_font_texture_free,
    					      evas_gl_font_texture_draw);
-	evas_common_font_draw(im, context, font, x, y, text);
+	evas_common_font_draw(im, context, font, x, y, text, intl_props);
 	evas_common_draw_context_font_ext_set(context,
 					      NULL,
 					      NULL,
@@ -2027,46 +1733,6 @@ module_open(Evas_Module *em)
    ORD(polygon_points_clear);
    ORD(polygon_draw);
 
-   ORD(gradient2_color_np_stop_insert);
-   ORD(gradient2_clear);
-   ORD(gradient2_fill_transform_set);
-   ORD(gradient2_fill_spread_set);
-   ORD(gradient2_linear_new);
-   ORD(gradient2_linear_free);
-   ORD(gradient2_linear_fill_set);
-   ORD(gradient2_linear_is_opaque);
-   ORD(gradient2_linear_is_visible);
-   ORD(gradient2_linear_render_pre);
-   ORD(gradient2_linear_render_post);
-   ORD(gradient2_linear_draw);
-   ORD(gradient2_radial_new);
-   ORD(gradient2_radial_free);
-   ORD(gradient2_radial_fill_set);
-   ORD(gradient2_radial_is_opaque);
-   ORD(gradient2_radial_is_visible);
-   ORD(gradient2_radial_render_pre);
-   ORD(gradient2_radial_render_post);
-   ORD(gradient2_radial_draw);
-
-   ORD(gradient_new);
-   ORD(gradient_free);
-   ORD(gradient_color_stop_add);
-   ORD(gradient_alpha_stop_add);
-   ORD(gradient_color_data_set);
-   ORD(gradient_alpha_data_set);
-   ORD(gradient_clear);
-   ORD(gradient_fill_set);
-   ORD(gradient_fill_angle_set);
-   ORD(gradient_fill_spread_set);
-   ORD(gradient_angle_set);
-   ORD(gradient_offset_set);
-   ORD(gradient_direction_set);
-   ORD(gradient_type_set);
-   ORD(gradient_is_opaque);
-   ORD(gradient_is_visible);
-   ORD(gradient_render_pre);
-   ORD(gradient_render_post);
-   ORD(gradient_draw);
    ORD(image_load);
    ORD(image_new_from_data);
    ORD(image_new_from_copied_data);
@@ -2089,14 +1755,19 @@ module_open(Evas_Module *em)
    ORD(image_colorspace_get);
    ORD(image_native_set);
    ORD(image_native_get);
+   
    ORD(font_draw);
    
    ORD(image_scale_hint_set);
    ORD(image_scale_hint_get);
+   ORD(image_stride_get);
    
    ORD(image_map4_draw);
    ORD(image_map_surface_new);
    ORD(image_map_surface_free);
+   
+   ORD(image_content_hint_set);
+   ORD(image_content_hint_get);
    
    /* now advertise out own api */
    em->functions = (void *)(&func);

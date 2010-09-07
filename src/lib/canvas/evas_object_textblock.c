@@ -1,7 +1,133 @@
-/*
- * vim:ts=8:sw=3:sts=8:noexpandtab:cino=>5n-3f0^-2{2
+/**
+ * @addtogroup Evas_Object_Textblock
+ *
+ * @{
  */
 
+/**
+ * @section Evas_Object_Textblock_Tutorial Textblock Object Tutorial
+ *
+ * This part explains about the textblock object's API and proper usage.
+ * If you want to develop textblock, you should also refer to @ref Evas_Object_Textblock_Internal.
+ * The main user of the textblock object is the edje entry object in Edje, so
+ * that's a good place to learn from, but I think this document is more than
+ * enough, if it's not, please request for me info and I'll update it.
+ *
+ * @subsection textblock_intro Introduction
+ * The textblock objects is, as implied, an object that can show big chunks of
+ * text. Textblock supports many features including: Text formatting, automatic
+ * and manual text alignment, embedding items (for example icons) and more.
+ * Textblock has three important parts, the text paragraphs, the format nodes
+ * and the cursors.
+ *
+ * @subsection textblock_cursors Textblock Object Cursors
+ * A textblock Cursor @ref Evas_Textblock_Cursor is data type that represents
+ * a position in a textblock. Each cursor contains information about the
+ * paragraph it points to, the position in that paragraph and the object itself.
+ * Cursors register to textblock objects upon creation, this means that once
+ * you created a cursor, it belongs to a specific obj and you can't for example
+ * copy a cursor "into" a cursor of a different object. Registered cursors
+ * also have the added benefit of updating automatically upon textblock changes,
+ * this means that if you have a cursor pointing to a specific character, it'll
+ * still point to it even after you change the whole object completely (as long
+ * as the char was not deleted), this is not possible without updating, beacuse
+ * as mentioned, each cursor holds a character position. There are many
+ * functions that handle cursors, just check out the evas_textblock_cursor*
+ * functions. For creation and deletion of cursors check out:
+ * @see evas_object_textblock_cursor_new()
+ * @see evas_textblock_cursor_free()
+ * @note Cursors are generally the correct way to handle text in the textblock object, and there are enough functions to do everything you need with them (no need to get big chunks of text and processing them yourself).
+ *
+ * @subsection textblock_paragraphs Textblock Object Paragraphs
+ * The textblock object is made out of text splitted to paragraphs (delimited
+ * by the paragraph separation character). Each paragraph has many (or none)
+ * format nodes associated with it which are responsible for the formatting
+ * of that paragraph.
+ *
+ * @subsection textblock_format_nodes Textblock Object Format Nodes
+ * As explained in @ref textblock_paragraphs each one of the format nodes
+ * is associated with a paragraph.
+ * There are two types of format nodes, visible and invisible:
+ * Visible: formats that a cursor can point to, i.e formats that
+ * occupy space, for example: newlines, tabs, items and etc.
+ * Invisible: formats that don't occupy space, for example: bold and underline.
+ * Being able to access format nodes is very important for some uses. For
+ * example, edje uses the "<a>" format to create links in the text (and pop
+ * popups above them when clicked). For the textblock object a is just a
+ * formatting instruction (how to color the text), but edje utilizes the access
+ * to the format nodes to make it do more.
+ * For more information, take a look at all the evas_textblock_node_format_*
+ * functions.
+ * The translation of "<tag>" tags to actual format is done according to the
+ * tags defined in the style, see @ref evas_textblock_style_set
+ *
+ * @subsection textblock_special_formats Special Formats
+ * @todo Write @textblock_special_formats
+ */
+
+/**
+ * @internal
+ * @section Evas_Object_Textblock_Internal Internal Textblock Object Tutorial
+ *
+ * This explains the internal design of the Evas Textblock Object, it's assumed
+ * that the reader of this section has already read @ref Evas_Object_Textblock_Tutorial "Textblock's usage docs.".
+ *
+ * @subsection textblock_internal_intro Introduction
+ * There are two main parts to the textblock object, the first being the node
+ * system, and the second being the layout system. The former is just an
+ * internal representation of the markup text, while the latter is the internal
+ * visual representation of the text (i.e positioning, sizing, fonts and etc).
+ *
+ * @subsection textblock_nodes The Nodes system
+ * The nodes mechanism consists of two main data types:
+ * ::Evas_Object_Textblock_Node_Text and ::Evas_Object_Textblock_Node_Format
+ * the former is for Text nodes and the latter is for format nodes.
+ * There's always at least one text node, even if there are only formats.
+ *
+ * @subsection textblock_nodes_text Text nodes
+ * Each text node is essentially a paragraph, it includes an @ref Eina_UStrbuf
+ * that stores the actual paragraph text, a utf8 string to store the paragraph
+ * text in utf8 (which is not used internally at all), A pointer to it's
+ * main @ref textblock_nodes_format_internal "Format Node" and the paragraph's
+ * @ref evas_bidi_props "BiDi properties". The pointer to the format node may be
+ * NULL if there's no format node anywhere before the end of the text node,
+ * not even in previous text nodes. If not NULL, it points to the first format
+ * node pointing to text inside of the text node, or if there is none, it points
+ * to the previous's text nodes format node. Each paragraph has a format node
+ * representing a paragraph separator pointing to it's last position except
+ * for the last paragraph, which has no such constraint. This constraint
+ * happens because text nodes are paragraphs and paragraphs are delimited by
+ * paragraph separators.
+ *
+ * @subsection textblock_nodes_format_internal Format Nodes - Internal
+ * Each format node stores a group of format information, for example the
+ * markup: \<font=Vera,Kochi font_size=10 align=left\> will all be inserted
+ * inside the same format node, altohugh it consists of different formatting
+ * commands.
+ * Each node has a pointer to it's text node, this pointer is NEVER NULL, even
+ * if there's only one format, and no text, a text node is created. Each format
+ * node includes an offset from the last format node of the same text node. For
+ * example, the markup "0<b>12</b>" will create two format nodes, the first
+ * having an offset of 1 and the second an offset of 2. Each format node also
+ * includes a @ref Eina_Strbuf that includes the textual representation of the
+ * format, and a boolean stating if the format is a visible format or not, see
+ * @ref textblock_nodes_format_visible
+ *
+ * @subsection textblock_nodes_format_visible Visible Format Nodes
+ * There are two types of format nodes, visible and invisible. They are the same
+ * in every way, except for the representation in the text node. While invisible
+ * format nodes have no representation in the text node, the visible ones do.
+ * The Uniceode object replacement character (0xFFFC) is inserted to every place
+ * a visible format node points to. This makes it very easy to treat visible
+ * formats as items in the text, both for BiDi purposes and cursor handling
+ * purposes.
+ * Here are a few example visible an invisible formats:
+ * Visible: newline char, tab, paragraph separator and an embedded item.
+ * Invisible: setting the color, font or alignment of the text.
+ *
+ * @subsection textblock_layout The layout system
+ * @todo write @ref textblock_layout
+ */
 #include "evas_common.h"
 #include "evas_private.h"
 
@@ -12,20 +138,83 @@
 /* private magic number for textblock objects */
 static const char o_type[] = "textblock";
 
+/* The char to be inserted instead of visible formats */
+#define EVAS_TEXTBLOCK_REPLACEMENT_CHAR 0xFFFC
+
 /* private struct for textblock object internal data */
+/**
+ * @intrenal
+ * @typedef Evas_Object_Textblock
+ * The actual textblock object.
+ */
 typedef struct _Evas_Object_Textblock             Evas_Object_Textblock;
+/**
+ * @intrenal
+ * @typedef Evas_Object_Style_Tag
+ * The structure used for finding style tags.
+ */
 typedef struct _Evas_Object_Style_Tag             Evas_Object_Style_Tag;
-typedef struct _Evas_Object_Textblock_Node        Evas_Object_Textblock_Node;
+/**
+ * @intrenal
+ * @typedef Evas_Object_Textblock_Node_Text
+ * A text node.
+ */
+typedef struct _Evas_Object_Textblock_Node_Text   Evas_Object_Textblock_Node_Text;
+/*
+ * Defined in Evas.h
+typedef struct _Evas_Object_Textblock_Node_Format Evas_Object_Textblock_Node_Format;
+*/
+
+/**
+ * @intrenal
+ * @typedef Evas_Object_Textblock_Paragraph
+ * A layouting paragraph.
+ */
+typedef struct _Evas_Object_Textblock_Paragraph   Evas_Object_Textblock_Paragraph;
+/**
+ * @intrenal
+ * @typedef Evas_Object_Textblock_Line
+ * A layouting line.
+ */
 typedef struct _Evas_Object_Textblock_Line        Evas_Object_Textblock_Line;
+/**
+ * @intrenal
+ * @typedef Evas_Object_Textblock_Item
+ * A layouting item.
+ */
 typedef struct _Evas_Object_Textblock_Item        Evas_Object_Textblock_Item;
+/**
+ * @intrenal
+ * @typedef Evas_Object_Textblock_Format_Item
+ * A layouting format item.
+ */
 typedef struct _Evas_Object_Textblock_Format_Item Evas_Object_Textblock_Format_Item;
+/**
+ * @intrenal
+ * @typedef Evas_Object_Textblock_Format
+ * A textblock format.
+ */
 typedef struct _Evas_Object_Textblock_Format      Evas_Object_Textblock_Format;
 
 /* the current state of the formatting */
+/**
+ * @intrenal
+ * @def GET_PREV(text, ind)
+ * Gets the index of the previous char in the text text, this simply returns
+ * the current char pointed to and decrements ind but ensures it stays in
+ * the text range.
+ */
+#define GET_PREV(text, ind) (((ind) > 0) ? (text[(ind)--]) : (text[ind]))
+/**
+ * @intrenal
+ * @def GET_NEXT(text, ind)
+ * Gets the index of the next in the text text, this simply returns
+ * the current char pointed to and increments indd but ensures it stays in
+ * the text range.
+ */
+#define GET_NEXT(text, ind) ((text[ind]) ? (text[(ind)++]) : (text[ind]))
 
-#define  NODE_TEXT   0
-#define  NODE_FORMAT 1
-
+/*FIXME: document the structs and struct items. */
 struct _Evas_Object_Style_Tag
 {
    EINA_INLIST;
@@ -35,11 +224,43 @@ struct _Evas_Object_Style_Tag
    size_t replace_len;
 };
 
-struct _Evas_Object_Textblock_Node
+struct _Evas_Object_Textblock_Node_Text
 {
    EINA_INLIST;
-   Eina_Strbuf *text;
-   int          type;
+   Eina_UStrbuf                       *unicode;
+   char *                              utf8;
+   Evas_Object_Textblock_Node_Format  *format_node;
+   Evas_BiDi_Paragraph_Props           bidi_props;
+};
+
+struct _Evas_Object_Textblock_Node_Format
+{
+   EINA_INLIST;
+   Eina_Strbuf                        *format;
+   Evas_Object_Textblock_Node_Text    *text_node;
+   size_t                              offset;
+   Eina_Bool                           visible;
+};
+
+/**
+ * @intrenal
+ * @def _NODE_TEXT(x)
+ * A convinience macro for casting to a text node.
+ */
+#define _NODE_TEXT(x)  ((Evas_Object_Textblock_Node_Text *) (x))
+/**
+ * @intrenal
+ * @def _NODE_FORMAT(x)
+ * A convinience macro for casting to a format node.
+ */
+#define _NODE_FORMAT(x)  ((Evas_Object_Textblock_Node_Format *) (x))
+
+struct _Evas_Object_Textblock_Paragraph
+{
+   EINA_INLIST;
+   Evas_Object_Textblock_Line        *lines;
+   int                                x, y, w, h;
+   int                                par_no;
 };
 
 struct _Evas_Object_Textblock_Line
@@ -55,31 +276,33 @@ struct _Evas_Object_Textblock_Line
 struct _Evas_Object_Textblock_Item
 {
    EINA_INLIST;
-   char                         *text;
-   Evas_Object_Textblock_Format *format;
-   Evas_Object_Textblock_Node   *source_node;
-   int                           x, w, h;
-   int                           inset, baseline;
-   int                           source_pos;
-   unsigned char                 type;
+   Eina_Unicode                    *text;
+   Evas_Object_Textblock_Format    *format;
+   Evas_Object_Textblock_Node_Text *source_node;
+   int                              x, w, h;
+   int                              inset, baseline;
+   size_t                           source_pos;
+   unsigned char                    type;
+   Evas_BiDi_Props                  bidi_props;
 };
 
 struct _Evas_Object_Textblock_Format_Item
 {
    EINA_INLIST;
-   const char                   *item;
-   Evas_Object_Textblock_Node   *source_node;
-   int                           x, w, h, y, ascent, descent;
-   unsigned char                 vsize : 2;
-   unsigned char                 size : 2;
-   unsigned char                 formatme : 1;
-   unsigned char                 ___padding___ : 3;
+   const char                          *item;
+   Evas_Object_Textblock_Node_Format   *source_node;
+   int                                  x, w, h, y, ascent, descent;
+   unsigned char                        vsize : 2;
+   unsigned char                        size : 2;
+   unsigned char                        formatme : 1;
+   unsigned char                        ___padding___ : 3;
 };
 
 struct _Evas_Object_Textblock_Format
 {
    int                  ref;
    double               halign;
+   Eina_Bool            halign_auto;
    double               valign;
    struct {
       const char       *name;
@@ -102,6 +325,7 @@ struct _Evas_Object_Textblock_Format
    double               linerelsize;
    int                  linegap;
    double               linerelgap;
+   double               linefill;
    unsigned char        style;
    unsigned char        wrap_word : 1;
    unsigned char        wrap_char : 1;
@@ -122,33 +346,34 @@ struct _Evas_Textblock_Style
 
 struct _Evas_Textblock_Cursor
 {
-   Evas_Object                *obj;
-   int                         pos;
-   Evas_Object_Textblock_Node *node;
-   Eina_Bool                   eol : 1;
+   Evas_Object                     *obj;
+   size_t                           pos;
+   Evas_Object_Textblock_Node_Text *node;
+
 };
 
 struct _Evas_Object_Textblock
 {
-   DATA32                       magic;
-   Evas_Textblock_Style        *style;
-   Evas_Textblock_Cursor       *cursor;
-   Eina_List                   *cursors;
-   Evas_Object_Textblock_Node  *nodes;
-   Evas_Object_Textblock_Line  *lines;
-   int                          last_w;
+   DATA32                              magic;
+   Evas_Textblock_Style               *style;
+   Evas_Textblock_Cursor              *cursor;
+   Eina_List                          *cursors;
+   Evas_Object_Textblock_Node_Text    *text_nodes;
+   Evas_Object_Textblock_Node_Format  *format_nodes;
+   Evas_Object_Textblock_Paragraph    *paragraphs;
+   int                                 last_w;
    struct {
-      int                       l, r, t, b;
+      int                              l, r, t, b;
    } style_pad;
-   char                        *markup_text;
-   void                        *engine_data;
-   const char                  *repch;
+   char                               *markup_text;
+   void                               *engine_data;
+   const char                         *repch;
    struct {
-      int                       w, h;
-      unsigned char             valid : 1;
+      int                              w, h;
+      unsigned char                    valid : 1;
    } formatted, native;
-   unsigned char                redraw : 1;
-   unsigned char                changed : 1;
+   unsigned char                       redraw : 1;
+   unsigned char                       changed : 1;
 };
 
 /* private methods for textblock objects */
@@ -219,12 +444,23 @@ static const Evas_Object_Func object_func =
    MAGIC_CHECK_END();
 
 
-/**
- * @addtogroup Evas_Object_Textblock
- * @{
- */
+
+static Evas_Object_Textblock_Node_Format *_evas_textblock_cursor_node_format_before_or_at_pos_get(const Evas_Textblock_Cursor *cur);
+static size_t _evas_textblock_node_format_pos_get(const Evas_Object_Textblock_Node_Format *fmt);
+static Eina_Bool _evas_textblock_format_is_visible(const char *s);
+static void _evas_textblock_node_format_remove(Evas_Object_Textblock *o, Evas_Object_Textblock_Node_Format *n, int visual_adjustment);
+static void _evas_textblock_node_format_free(Evas_Object_Textblock_Node_Format *n);
+static void _evas_textblock_node_text_free(Evas_Object_Textblock_Node_Text *n);
+static void _evas_textblock_changed(Evas_Object_Textblock *o, Evas_Object *obj);
+static void _evas_textblock_cursors_update_offset(const Evas_Textblock_Cursor *cur, const Evas_Object_Textblock_Node_Text *n, size_t start, int offset);
+static void _evas_textblock_cursors_set_node(Evas_Object_Textblock *o, const Evas_Object_Textblock_Node_Text *n, Evas_Object_Textblock_Node_Text *new_node);
 
 /* styles */
+/**
+ * @internal
+ * Clears the textblock style passed.
+ * @param ts The ts to be cleared. Must not be NULL.
+ */
 static void
 _style_clear(Evas_Textblock_Style *ts)
 {
@@ -245,6 +481,16 @@ _style_clear(Evas_Textblock_Style *ts)
    ts->tags = NULL;
 }
 
+/**
+ * @internal
+ * Searches inside the tags stored in the style for the tag who's
+ * replacement is s of size replace_len;
+ * @param ts The ts to be cleared. Must not be NULL.
+ * @param s The replace string to match.
+ * @param replace_len the length of the replace string.
+ * @param[out] tag_len The length of the tag found. - Must not be NULL.
+ * @return The tag found.
+ */
 static inline const char *
 _style_match_replace(Evas_Textblock_Style *ts, const char *s, size_t replace_len, size_t *tag_len)
 {
@@ -263,6 +509,15 @@ _style_match_replace(Evas_Textblock_Style *ts, const char *s, size_t replace_len
    return NULL;
 }
 
+/**
+ * @internal
+ * Searches inside the tags stored in the style for the tag matching s.
+ * @param ts The ts to be cleared. Must not be NULL.
+ * @param s The tag to be matched.
+ * @param tag_len the length of the tag string.
+ * @param[out] replace_len The length of the replcaement found. - Must not be NULL.
+ * @return The replacement string found.
+ */
 static inline const char *
 _style_match_tag(Evas_Textblock_Style *ts, const char *s, size_t tag_len, size_t *replace_len)
 {
@@ -281,25 +536,43 @@ _style_match_tag(Evas_Textblock_Style *ts, const char *s, size_t tag_len, size_t
    return NULL;
 }
 
+/**
+ * @internal
+ * Clears all the nodes (text and format) of the textblock object.
+ * @param obj The evas object, must not be NULL.
+ */
 static void
 _nodes_clear(const Evas_Object *obj)
 {
    Evas_Object_Textblock *o;
 
    o = (Evas_Object_Textblock *)(obj->object_data);
-   while (o->nodes)
+   while (o->text_nodes)
      {
-	Evas_Object_Textblock_Node *n;
+	Evas_Object_Textblock_Node_Text *n;
 
-	n = (Evas_Object_Textblock_Node *)o->nodes;
-	o->nodes = (Evas_Object_Textblock_Node *)eina_inlist_remove(EINA_INLIST_GET(o->nodes), EINA_INLIST_GET(n));
-	if (n->text) eina_strbuf_free(n->text);
-	free(n);
+	n = o->text_nodes;
+	o->text_nodes = _NODE_TEXT(eina_inlist_remove(EINA_INLIST_GET(o->text_nodes), EINA_INLIST_GET(n)));
+        _evas_textblock_node_text_free(n);
+     }
+   while (o->format_nodes)
+     {
+        Evas_Object_Textblock_Node_Format *n;
+
+        n = o->format_nodes;
+        o->format_nodes = _NODE_FORMAT(eina_inlist_remove(EINA_INLIST_GET(o->format_nodes), EINA_INLIST_GET(n)));
+        _evas_textblock_node_format_free(n);
      }
 }
 
+/**
+ * @internal
+ * Unrefs and frees (if needed) a textblock format.
+ * @param obj The Evas_Object, Must not be NULL.
+ * @param fmt the format to be cleaned, must not be NULL.
+ */
 static void
-_format_free(const Evas_Object *obj, Evas_Object_Textblock_Format *fmt)
+_format_unref_free(const Evas_Object *obj, Evas_Object_Textblock_Format *fmt)
 {
    fmt->ref--;
    if (fmt->ref > 0) return;
@@ -310,115 +583,36 @@ _format_free(const Evas_Object *obj, Evas_Object_Textblock_Format *fmt)
    free(fmt);
 }
 
+/**
+ * @internal
+ * Free a layout line.
+ * @param obj The evas object, must not be NULL.
+ * @param ln the layout line to be freed, must not be NULL.
+ */
 static void
 _line_free(const Evas_Object *obj, Evas_Object_Textblock_Line *ln)
 {
    while (ln->items)
      {
-	Evas_Object_Textblock_Item *it;
+        Evas_Object_Textblock_Item *it;
 
-	it = (Evas_Object_Textblock_Item *)ln->items;
-	ln->items = (Evas_Object_Textblock_Item *)eina_inlist_remove(EINA_INLIST_GET(ln->items), EINA_INLIST_GET(ln->items));
-	if (it->text) free(it->text);
-	_format_free(obj, it->format);
-	free(it);
+        it = (Evas_Object_Textblock_Item *)ln->items;
+        ln->items = (Evas_Object_Textblock_Item *)eina_inlist_remove(EINA_INLIST_GET(ln->items), EINA_INLIST_GET(ln->items));
+        if (it->text) free(it->text);
+        _format_unref_free(obj, it->format);
+        free(it);
      }
    while (ln->format_items)
      {
-	Evas_Object_Textblock_Format_Item *fi;
+        Evas_Object_Textblock_Format_Item *fi;
 
-	fi = (Evas_Object_Textblock_Format_Item *)ln->format_items;
-	ln->format_items = (Evas_Object_Textblock_Format_Item *)eina_inlist_remove(EINA_INLIST_GET(ln->format_items),
-										   EINA_INLIST_GET(ln->format_items));
-	if (fi->item) eina_stringshare_del(fi->item);
-	free(fi);
+        fi = (Evas_Object_Textblock_Format_Item *)ln->format_items;
+        ln->format_items = (Evas_Object_Textblock_Format_Item *)eina_inlist_remove(EINA_INLIST_GET(ln->format_items),
+              EINA_INLIST_GET(ln->format_items));
+        if (fi->item) eina_stringshare_del(fi->item);
+        free(fi);
      }
    if (ln) free(ln);
-}
-
-static void
-_lines_clear(const Evas_Object *obj, Evas_Object_Textblock_Line *lines)
-{
-   while (lines)
-     {
-	Evas_Object_Textblock_Line *ln;
-
-	ln = (Evas_Object_Textblock_Line *)lines;
-	lines = (Evas_Object_Textblock_Line *)eina_inlist_remove(EINA_INLIST_GET(lines), EINA_INLIST_GET(ln));
-	_line_free(obj, ln);
-     }
-}
-
-static void
-_nodes_adjacent_merge(const Evas_Object *obj, Evas_Object_Textblock_Node *n1)
-{
-   Evas_Object_Textblock *o;
-   Evas_Object_Textblock_Node *n0, *n2;
-   Eina_List *l;
-   Evas_Textblock_Cursor *data;
-   int plen;
-
-   if (n1->type != NODE_TEXT) return;
-   o = (Evas_Object_Textblock *)(obj->object_data);
-   n0 = (Evas_Object_Textblock_Node *)(EINA_INLIST_GET(n1))->prev;
-   n2 = (Evas_Object_Textblock_Node *)(EINA_INLIST_GET(n1))->next;
-   if ((n0) && (n0->type == NODE_TEXT))
-     {
-	plen = eina_strbuf_length_get(n0->text);
-	eina_strbuf_append_length(n0->text, eina_strbuf_string_get(n1->text),
-				  eina_strbuf_length_get(n1->text));
-        o->nodes = (Evas_Object_Textblock_Node *)eina_inlist_remove
-          (EINA_INLIST_GET(o->nodes), EINA_INLIST_GET(n1));
-//	(EINA_INLIST_GET(n0))->next = EINA_INLIST_GET(n2);
-//	if (n2) (EINA_INLIST_GET(n2))->prev = EINA_INLIST_GET(n0);
-	// fix any cursors in n1
-	if (n1 == o->cursor->node)
-	  {
-	     o->cursor->node = n0;
-	     o->cursor->pos += plen;
-	  }
-	EINA_LIST_FOREACH(o->cursors, l, data)
-	  {
-	     if (n1 == data->node)
-	       {
-		  data->node = n0;
-		  data->pos += plen;
-	       }
-	  }
-	if (n1->text) eina_strbuf_free(n1->text);
-	free(n1);
-	n1 = n0;
-        n2 = (Evas_Object_Textblock_Node *)(EINA_INLIST_GET(n1))->next;
-     }
-   if ((n2) && (n2->type == NODE_TEXT))
-     {
-	n0 = n1;
-	n1 = n2;
-	n2 = (Evas_Object_Textblock_Node *)(EINA_INLIST_GET(n1))->next;
-	plen = eina_strbuf_length_get(n0->text);
-	eina_strbuf_append_length(n0->text, eina_strbuf_string_get(n1->text),
-				  eina_strbuf_length_get(n1->text));
-        o->nodes = (Evas_Object_Textblock_Node *)eina_inlist_remove
-          (EINA_INLIST_GET(o->nodes), EINA_INLIST_GET(n1));
-//	(EINA_INLIST_GET(n0))->next = EINA_INLIST_GET(n2);
-//	if (n2) (EINA_INLIST_GET(n2))->prev = EINA_INLIST_GET(n0);
-	// fix any cursors in n1
-	if (n1 == o->cursor->node)
-	  {
-	     o->cursor->node = n0;
-	     o->cursor->pos += plen;
-	  }
-	EINA_LIST_FOREACH(o->cursors, l, data)
-	  {
-	     if (n1 == data->node)
-	       {
-		  data->node = n0;
-		  data->pos += plen;
-	       }
-	  }
-	if (n1->text) eina_strbuf_free(n1->text);
-	free(n1);
-     }
 }
 
 /* table of html escapes (that i can find) this should be ordered with the
@@ -427,158 +621,173 @@ _nodes_adjacent_merge(const Evas_Object *obj, Evas_Object_Textblock_Node *n1)
  * these are stored as one large string and one additional array that
  * contains the offsets to the tokens for space efficiency.
  */
+/**
+ * @internal
+ * @var escape_strings[]
+ * This string consists of NULL terminated pairs of strings, the first of
+ * every pair is an escape and the second is the value of the escape.
+ */
 static const char escape_strings[] =
-	/* most common escaped stuff */
-	" \0"          "\x20\0" /* NOTE: this here to avoid escaping to &nbsp */
-	"&nbsp;\0"     "\x20\0" /* NOTE: we allow nsbp's to break as we map early - maybe map to ascii 0x01 and then make the rendering code think 0x01 -> 0x20 */
-	"&quot;\0"     "\x22\0"
-	"&amp;\0"      "\x26\0"
-	"&lt;\0"       "\x3c\0"
-	"&gt;\0"       "\x3e\0"
-	/* all the rest */
-	"&iexcl;\0"    "\xc2\xa1\0"
-	"&cent;\0"     "\xc2\xa2\0"
-	"&pound;\0"    "\xc2\xa3\0"
-	"&curren;\0"   "\xc2\xa4\0"
-	"&yen;\0"      "\xc2\xa5\0"
-	"&brvbar;\0"   "\xc2\xa6\0"
-	"&sect;\0"     "\xc2\xa7\0"
-	"&uml;\0"      "\xc2\xa8\0"
-	"&copy;\0"     "\xc2\xa9\0"
-	"&ordf;\0"     "\xc2\xaa\0"
-	"&laquo;\0"    "\xc2\xab\0"
-	"&not;\0"      "\xc2\xac\0"
-	"&reg;\0"      "\xc2\xae\0"
-	"&macr;\0"     "\xc2\xaf\0"
-	"&deg;\0"      "\xc2\xb0\0"
-	"&plusmn;\0"   "\xc2\xb1\0"
-	"&sup2;\0"     "\xc2\xb2\0"
-	"&sup3;\0"     "\xc2\xb3\0"
-	"&acute;\0"    "\xc2\xb4\0"
-	"&micro;\0"    "\xc2\xb5\0"
-	"&para;\0"     "\xc2\xb6\0"
-	"&middot;\0"   "\xc2\xb7\0"
-	"&cedil;\0"    "\xc2\xb8\0"
-	"&sup1;\0"     "\xc2\xb9\0"
-	"&ordm;\0"     "\xc2\xba\0"
-	"&raquo;\0"    "\xc2\xbb\0"
-	"&frac14;\0"   "\xc2\xbc\0"
-	"&frac12;\0"   "\xc2\xbd\0"
-	"&frac34;\0"   "\xc2\xbe\0"
-	"&iquest;\0"   "\xc2\xbf\0"
-	"&Agrave;\0"   "\xc3\x80\0"
-	"&Aacute;\0"   "\xc3\x81\0"
-	"&Acirc;\0"    "\xc3\x82\0"
-	"&Atilde;\0"   "\xc3\x83\0"
-	"&Auml;\0"     "\xc3\x84\0"
-	"&Aring;\0"    "\xc3\x85\0"
-	"&Aelig;\0"    "\xc3\x86\0"
-	"&Ccedil;\0"   "\xc3\x87\0"
-	"&Egrave;\0"   "\xc3\x88\0"
-	"&Eacute;\0"   "\xc3\x89\0"
-	"&Ecirc;\0"    "\xc3\x8a\0"
-	"&Euml;\0"     "\xc3\x8b\0"
-	"&Igrave;\0"   "\xc3\x8c\0"
-	"&Iacute;\0"   "\xc3\x8d\0"
-	"&Icirc;\0"    "\xc3\x8e\0"
-	"&Iuml;\0"     "\xc3\x8f\0"
-	"&Eth;\0"      "\xc3\x90\0"
-	"&Ntilde;\0"   "\xc3\x91\0"
-	"&Ograve;\0"   "\xc3\x92\0"
-	"&Oacute;\0"   "\xc3\x93\0"
-	"&Ocirc;\0"    "\xc3\x94\0"
-	"&Otilde;\0"   "\xc3\x95\0"
-	"&Ouml;\0"     "\xc3\x96\0"
-	"&times;\0"    "\xc3\x97\0"
-	"&Oslash;\0"   "\xc3\x98\0"
-	"&Ugrave;\0"   "\xc3\x99\0"
-	"&Uacute;\0"   "\xc3\x9a\0"
-	"&Ucirc;\0"    "\xc3\x9b\0"
-	"&Yacute;\0"   "\xc3\x9d\0"
-	"&Thorn;\0"    "\xc3\x9e\0"
-	"&szlig;\0"    "\xc3\x9f\0"
-	"&agrave;\0"   "\xc3\xa0\0"
-	"&aacute;\0"   "\xc3\xa1\0"
-	"&acirc;\0"    "\xc3\xa2\0"
-	"&atilde;\0"   "\xc3\xa3\0"
-	"&auml;\0"     "\xc3\xa4\0"
-	"&aring;\0"    "\xc3\xa5\0"
-	"&aelig;\0"    "\xc3\xa6\0"
-	"&ccedil;\0"   "\xc3\xa7\0"
-	"&egrave;\0"   "\xc3\xa8\0"
-	"&eacute;\0"   "\xc3\xa9\0"
-	"&ecirc;\0"    "\xc3\xaa\0"
-	"&euml;\0"     "\xc3\xab\0"
-	"&igrave;\0"   "\xc3\xac\0"
-	"&iacute;\0"   "\xc3\xad\0"
-	"&icirc;\0"    "\xc3\xae\0"
-	"&iuml;\0"     "\xc3\xaf\0"
-	"&eth;\0"      "\xc3\xb0\0"
-	"&ntilde;\0"   "\xc3\xb1\0"
-	"&ograve;\0"   "\xc3\xb2\0"
-	"&oacute;\0"   "\xc3\xb3\0"
-	"&ocirc;\0"    "\xc3\xb4\0"
-	"&otilde;\0"   "\xc3\xb5\0"
-	"&ouml;\0"     "\xc3\xb6\0"
-	"&divide;\0"   "\xc3\xb7\0"
-	"&oslash;\0"   "\xc3\xb8\0"
-	"&ugrave;\0"   "\xc3\xb9\0"
-	"&uacute;\0"   "\xc3\xba\0"
-	"&ucirc;\0"    "\xc3\xbb\0"
-	"&uuml;\0"     "\xc3\xbc\0"
-	"&yacute;\0"   "\xc3\xbd\0"
-	"&thorn;\0"    "\xc3\xbe\0"
-	"&yuml;\0"     "\xc3\xbf\0"
-	"&alpha;\0"    "\xce\x91\0"
-	"&beta;\0"     "\xce\x92\0"
-	"&gamma;\0"    "\xce\x93\0"
-	"&delta;\0"    "\xce\x94\0"
-	"&epsilon;\0"  "\xce\x95\0"
-	"&zeta;\0"     "\xce\x96\0"
-	"&eta;\0"      "\xce\x97\0"
-	"&theta;\0"    "\xce\x98\0"
-	"&iota;\0"     "\xce\x99\0"
-	"&kappa;\0"    "\xce\x9a\0"
-	"&lambda;\0"   "\xce\x9b\0"
-	"&mu;\0"       "\xce\x9c\0"
-	"&nu;\0"       "\xce\x9d\0"
-	"&xi;\0"       "\xce\x9e\0"
-	"&omicron;\0"  "\xce\x9f\0"
-	"&pi;\0"       "\xce\xa0\0"
-	"&rho;\0"      "\xce\xa1\0"
-	"&sigma;\0"    "\xce\xa3\0"
-	"&tau;\0"      "\xce\xa4\0"
-	"&upsilon;\0"  "\xce\xa5\0"
-	"&phi;\0"      "\xce\xa6\0"
-	"&chi;\0"      "\xce\xa7\0"
-	"&psi;\0"      "\xce\xa8\0"
-	"&omega;\0"    "\xce\xa9\0"
-	"&hellip;\0"   "\xe2\x80\xa6\0"
-	"&euro;\0"     "\xe2\x82\xac\0"
-	"&larr;\0"     "\xe2\x86\x90\0"
-	"&uarr;\0"     "\xe2\x86\x91\0"
-	"&rarr;\0"     "\xe2\x86\x92\0"
-	"&darr;\0"     "\xe2\x86\x93\0"
-	"&harr;\0"     "\xe2\x86\x94\0"
-	"&larr;\0"     "\xe2\x87\x90\0"
-	"&rarr;\0"     "\xe2\x87\x92\0"
-	"&forall;\0"   "\xe2\x88\x80\0"
-	"&exist;\0"    "\xe2\x88\x83\0"
-	"&nabla;\0"    "\xe2\x88\x87\0"
-	"&prod;\0"     "\xe2\x88\x8f\0"
-	"&sum;\0"      "\xe2\x88\x91\0"
-	"&and;\0"      "\xe2\x88\xa7\0"
-	"&or;\0"       "\xe2\x88\xa8\0"
-	"&int;\0"      "\xe2\x88\xab\0"
-	"&ne;\0"       "\xe2\x89\xa0\0"
-	"&equiv;\0"    "\xe2\x89\xa1\0"
-	"&oplus;\0"    "\xe2\x8a\x95\0"
-	"&perp;\0"     "\xe2\x8a\xa5\0"
+/* most common escaped stuff */
+" \0"          "\x20\0" /* NOTE: this here to avoid escaping to &nbsp */
+"&nbsp;\0"     "\x20\0" /* NOTE: we allow nsbp's to break as we map early - maybe map to ascii 0x01 and then make the rendering code think 0x01 -> 0x20 */
+"&quot;\0"     "\x22\0"
+"&amp;\0"      "\x26\0"
+"&lt;\0"       "\x3c\0"
+"&gt;\0"       "\x3e\0"
+/* all the rest */
+"&iexcl;\0"    "\xc2\xa1\0"
+"&cent;\0"     "\xc2\xa2\0"
+"&pound;\0"    "\xc2\xa3\0"
+"&curren;\0"   "\xc2\xa4\0"
+"&yen;\0"      "\xc2\xa5\0"
+"&brvbar;\0"   "\xc2\xa6\0"
+"&sect;\0"     "\xc2\xa7\0"
+"&uml;\0"      "\xc2\xa8\0"
+"&copy;\0"     "\xc2\xa9\0"
+"&ordf;\0"     "\xc2\xaa\0"
+"&laquo;\0"    "\xc2\xab\0"
+"&not;\0"      "\xc2\xac\0"
+"&reg;\0"      "\xc2\xae\0"
+"&macr;\0"     "\xc2\xaf\0"
+"&deg;\0"      "\xc2\xb0\0"
+"&plusmn;\0"   "\xc2\xb1\0"
+"&sup2;\0"     "\xc2\xb2\0"
+"&sup3;\0"     "\xc2\xb3\0"
+"&acute;\0"    "\xc2\xb4\0"
+"&micro;\0"    "\xc2\xb5\0"
+"&para;\0"     "\xc2\xb6\0"
+"&middot;\0"   "\xc2\xb7\0"
+"&cedil;\0"    "\xc2\xb8\0"
+"&sup1;\0"     "\xc2\xb9\0"
+"&ordm;\0"     "\xc2\xba\0"
+"&raquo;\0"    "\xc2\xbb\0"
+"&frac14;\0"   "\xc2\xbc\0"
+"&frac12;\0"   "\xc2\xbd\0"
+"&frac34;\0"   "\xc2\xbe\0"
+"&iquest;\0"   "\xc2\xbf\0"
+"&Agrave;\0"   "\xc3\x80\0"
+"&Aacute;\0"   "\xc3\x81\0"
+"&Acirc;\0"    "\xc3\x82\0"
+"&Atilde;\0"   "\xc3\x83\0"
+"&Auml;\0"     "\xc3\x84\0"
+"&Aring;\0"    "\xc3\x85\0"
+"&Aelig;\0"    "\xc3\x86\0"
+"&Ccedil;\0"   "\xc3\x87\0"
+"&Egrave;\0"   "\xc3\x88\0"
+"&Eacute;\0"   "\xc3\x89\0"
+"&Ecirc;\0"    "\xc3\x8a\0"
+"&Euml;\0"     "\xc3\x8b\0"
+"&Igrave;\0"   "\xc3\x8c\0"
+"&Iacute;\0"   "\xc3\x8d\0"
+"&Icirc;\0"    "\xc3\x8e\0"
+"&Iuml;\0"     "\xc3\x8f\0"
+"&Eth;\0"      "\xc3\x90\0"
+"&Ntilde;\0"   "\xc3\x91\0"
+"&Ograve;\0"   "\xc3\x92\0"
+"&Oacute;\0"   "\xc3\x93\0"
+"&Ocirc;\0"    "\xc3\x94\0"
+"&Otilde;\0"   "\xc3\x95\0"
+"&Ouml;\0"     "\xc3\x96\0"
+"&times;\0"    "\xc3\x97\0"
+"&Oslash;\0"   "\xc3\x98\0"
+"&Ugrave;\0"   "\xc3\x99\0"
+"&Uacute;\0"   "\xc3\x9a\0"
+"&Ucirc;\0"    "\xc3\x9b\0"
+"&Yacute;\0"   "\xc3\x9d\0"
+"&Thorn;\0"    "\xc3\x9e\0"
+"&szlig;\0"    "\xc3\x9f\0"
+"&agrave;\0"   "\xc3\xa0\0"
+"&aacute;\0"   "\xc3\xa1\0"
+"&acirc;\0"    "\xc3\xa2\0"
+"&atilde;\0"   "\xc3\xa3\0"
+"&auml;\0"     "\xc3\xa4\0"
+"&aring;\0"    "\xc3\xa5\0"
+"&aelig;\0"    "\xc3\xa6\0"
+"&ccedil;\0"   "\xc3\xa7\0"
+"&egrave;\0"   "\xc3\xa8\0"
+"&eacute;\0"   "\xc3\xa9\0"
+"&ecirc;\0"    "\xc3\xaa\0"
+"&euml;\0"     "\xc3\xab\0"
+"&igrave;\0"   "\xc3\xac\0"
+"&iacute;\0"   "\xc3\xad\0"
+"&icirc;\0"    "\xc3\xae\0"
+"&iuml;\0"     "\xc3\xaf\0"
+"&eth;\0"      "\xc3\xb0\0"
+"&ntilde;\0"   "\xc3\xb1\0"
+"&ograve;\0"   "\xc3\xb2\0"
+"&oacute;\0"   "\xc3\xb3\0"
+"&ocirc;\0"    "\xc3\xb4\0"
+"&otilde;\0"   "\xc3\xb5\0"
+"&ouml;\0"     "\xc3\xb6\0"
+"&divide;\0"   "\xc3\xb7\0"
+"&oslash;\0"   "\xc3\xb8\0"
+"&ugrave;\0"   "\xc3\xb9\0"
+"&uacute;\0"   "\xc3\xba\0"
+"&ucirc;\0"    "\xc3\xbb\0"
+"&uuml;\0"     "\xc3\xbc\0"
+"&yacute;\0"   "\xc3\xbd\0"
+"&thorn;\0"    "\xc3\xbe\0"
+"&yuml;\0"     "\xc3\xbf\0"
+"&alpha;\0"    "\xce\x91\0"
+"&beta;\0"     "\xce\x92\0"
+"&gamma;\0"    "\xce\x93\0"
+"&delta;\0"    "\xce\x94\0"
+"&epsilon;\0"  "\xce\x95\0"
+"&zeta;\0"     "\xce\x96\0"
+"&eta;\0"      "\xce\x97\0"
+"&theta;\0"    "\xce\x98\0"
+"&iota;\0"     "\xce\x99\0"
+"&kappa;\0"    "\xce\x9a\0"
+"&lambda;\0"   "\xce\x9b\0"
+"&mu;\0"       "\xce\x9c\0"
+"&nu;\0"       "\xce\x9d\0"
+"&xi;\0"       "\xce\x9e\0"
+"&omicron;\0"  "\xce\x9f\0"
+"&pi;\0"       "\xce\xa0\0"
+"&rho;\0"      "\xce\xa1\0"
+"&sigma;\0"    "\xce\xa3\0"
+"&tau;\0"      "\xce\xa4\0"
+"&upsilon;\0"  "\xce\xa5\0"
+"&phi;\0"      "\xce\xa6\0"
+"&chi;\0"      "\xce\xa7\0"
+"&psi;\0"      "\xce\xa8\0"
+"&omega;\0"    "\xce\xa9\0"
+"&hellip;\0"   "\xe2\x80\xa6\0"
+"&euro;\0"     "\xe2\x82\xac\0"
+"&larr;\0"     "\xe2\x86\x90\0"
+"&uarr;\0"     "\xe2\x86\x91\0"
+"&rarr;\0"     "\xe2\x86\x92\0"
+"&darr;\0"     "\xe2\x86\x93\0"
+"&harr;\0"     "\xe2\x86\x94\0"
+"&larr;\0"     "\xe2\x87\x90\0"
+"&rarr;\0"     "\xe2\x87\x92\0"
+"&forall;\0"   "\xe2\x88\x80\0"
+"&exist;\0"    "\xe2\x88\x83\0"
+"&nabla;\0"    "\xe2\x88\x87\0"
+"&prod;\0"     "\xe2\x88\x8f\0"
+"&sum;\0"      "\xe2\x88\x91\0"
+"&and;\0"      "\xe2\x88\xa7\0"
+"&or;\0"       "\xe2\x88\xa8\0"
+"&int;\0"      "\xe2\x88\xab\0"
+"&ne;\0"       "\xe2\x89\xa0\0"
+"&equiv;\0"    "\xe2\x89\xa1\0"
+"&oplus;\0"    "\xe2\x8a\x95\0"
+"&perp;\0"     "\xe2\x8a\xa5\0"
+"&dagger;\0"   "\xe2\x80\xa0\0"
+"&Dagger;\0"   "\xe2\x80\xa1\0"
+"&bull;\0"     "\xe2\x80\xa2\0"
 ;
 
 
-static int
-_is_white(int c)
+/**
+ * @internal
+ * Checks if a char is a whitespace.
+ * @param c the unicode codepoint.
+ * @return EINA_TRUE if the unicode codepoint is a whitespace, EINA_FALSE otherwise.
+ */
+static Eina_Bool
+_is_white(Eina_Unicode c)
 {
    /*
     * unicode list of whitespace chars
@@ -597,30 +806,42 @@ _is_white(int c)
     * 3000 IDEOGRAPHIC SPACE
     */
    if (
-       (c == 0x20) ||
-       ((c >= 0x9) && (c <= 0xd)) ||
-       (c == 0x85) ||
-       (c == 0xa0) ||
-       (c == 0x1680) ||
-       (c == 0x180e) ||
-       ((c >= 0x2000) && (c <= 0x200a)) ||
-       (c == 0x2028) ||
-       (c == 0x2029) ||
-       (c == 0x202f) ||
-       (c == 0x205f) ||
-       (c == 0x3000)
-       )
-     return 1;
-   return 0;
+         (c == 0x20) ||
+         ((c >= 0x9) && (c <= 0xd)) ||
+         (c == 0x85) ||
+         (c == 0xa0) ||
+         (c == 0x1680) ||
+         (c == 0x180e) ||
+         ((c >= 0x2000) && (c <= 0x200a)) ||
+         (c == 0x2028) ||
+         (c == 0x2029) ||
+         (c == 0x202f) ||
+         (c == 0x205f) ||
+         (c == 0x3000)
+      )
+     return EINA_TRUE;
+   return EINA_FALSE;
 }
 
+/**
+ * @internal
+ * Creates a copy of a string without the whitespaces between byte indexes
+ * clean_start and clean_end and frees str.
+ *
+ * FIXME: BROKEN FOR NON-ENGLISH.
+ * @param clean_start The byte index of the location to start cleaning at.
+ * @param clean_end The byte index of the location to end cleaning at.
+ * @param str The string to copy and free.
+ * @return a copy of str cleaned of whitespaces.
+ */
 static char *
 _clean_white(int clean_start, int clean_end, char *str)
 {
    char *p, *p2, *str2 = NULL;
    int white, pwhite, start, ok;
 
-   return str;
+   /*FIXME: fix this function */
+   return strdup(str);
    str2 = malloc(strlen(str) + 2);
    p = str;
    p2 = str2;
@@ -629,79 +850,105 @@ _clean_white(int clean_start, int clean_end, char *str)
    ok = 1;
    while (*p != 0)
      {
-	pwhite = white;
-	if (isspace(*p) || _is_white(*p)) white = 1;
-	else white = 0;
-	if ((pwhite) && (white)) ok = 0;
-	else
-	  {
-	     if (!clean_start)
-	       {
-		  if ((start) && (pwhite) && (!white))
-		    {
-//		       *p2 = ' ';
-//		       p2++;
-		    }
-	       }
-	     ok = 1;
-	     if (!white) start = 0;
-	  }
-	if (clean_start)
-	  {
-	     if ((start) && (ok)) ok = 0;
-	  }
-	if (ok)
-	  {
-	     *p2 = *p;
-	     p2++;
-	  }
-	p++;
+        pwhite = white;
+        if (_is_white(*p)) white = 1;
+        else white = 0;
+        if ((pwhite) && (white)) ok = 0;
+        else
+          {
+             if (!clean_start)
+               {
+                  if ((start) && (pwhite) && (!white))
+                    {
+                       //		       *p2 = ' ';
+                       //		       p2++;
+                    }
+               }
+             ok = 1;
+             if (!white) start = 0;
+          }
+        if (clean_start)
+          {
+             if ((start) && (ok)) ok = 0;
+          }
+        if (ok)
+          {
+             *p2 = *p;
+             p2++;
+          }
+        p++;
      }
    *p2 = 0;
    if (clean_end)
      {
-	while (p2 > str2)
-	  {
-	     p2--;
-	     if (!(isspace(*p2) || _is_white(*p2))) break;
-	     *p2 = 0;
-	  }
+        while (p2 > str2)
+          {
+             p2--;
+             if (!(isspace(*p2) || _is_white(*p2))) break;
+             *p2 = 0;
+          }
      }
    free(str);
    return str2;
 }
 
-static void
-_append_text_run(Evas_Object_Textblock *o, char *s, char *p)
+/**
+ * @internal
+ * Appends the text between s and p to the main cursor of the object.
+ *
+ * @param o The textblock to append to.
+ * @param[in] s start of the string
+ * @param[in] p end of the string
+ */
+static void __UNUSED__
+_append_text_run(Evas_Object_Textblock *o, const char *s, const char *p)
 {
    if ((s) && (p > s))
      {
-	char *ts;
+        char *ts;
 
-	ts = alloca(p - s + 1);
-	strncpy(ts, s, p - s);
-	ts[p - s] = 0;
-	ts = _clean_white(0, 0, ts);
-	evas_textblock_cursor_text_append(o->cursor, ts);
+        ts = alloca(p - s + 1);
+        strncpy(ts, s, p - s);
+        ts[p - s] = 0;
+        ts = _clean_white(0, 0, ts);
+        evas_textblock_cursor_text_append(o->cursor, ts);
+        free(ts);
      }
 }
 
+/**
+ * @internal
+ * Prepends the text between s and p to the main cursor of the object.
+ *
+ * @param o The textblock to prepend to.
+ * @param[in] s start of the string
+ * @param[in] p end of the string
+ */
 static void
-_prepend_text_run(Evas_Object_Textblock *o, char *s, char *p)
+_prepend_text_run(Evas_Object_Textblock *o, const char *s, const char *p)
 {
    if ((s) && (p > s))
      {
-	char *ts;
+        char *ts;
 
-	ts = alloca(p - s + 1);
-	strncpy(ts, s, p - s);
-	ts[p - s] = 0;
-	ts = _clean_white(0, 0, ts);
-	evas_textblock_cursor_text_prepend(o->cursor, ts);
+        ts = alloca(p - s + 1);
+        strncpy(ts, s, p - s);
+        ts[p - s] = 0;
+        ts = _clean_white(0, 0, ts);
+        evas_textblock_cursor_text_prepend(o->cursor, ts);
+        free(ts);
      }
 }
 
 
+/**
+ * @internal
+ * Returns the numeric value of HEX chars for example for ch = 'A'
+ * the function will return 10.
+ *
+ * @param ch The HEX char.
+ * @return numeric value of HEX.
+ */
 static int
 _hex_string_get(char ch)
 {
@@ -711,6 +958,21 @@ _hex_string_get(char ch)
    return 0;
 }
 
+/**
+ * @internal
+ * Parses a string of one of the formas:
+ * 1. "#RRGGBB"
+ * 2. "#RRGGBBAA"
+ * 3. "#RGB"
+ * 4. "#RGBA"
+ * To the rgba values.
+ *
+ * @param[in] str The string to parse - NOT NULL.
+ * @param[out] r The Red value - NOT NULL.
+ * @param[out] g The Green value - NOT NULL.
+ * @param[out] b The Blue value - NOT NULL.
+ * @param[out] a The Alpha value - NOT NULL.
+ */
 static void
 _format_color_parse(const char *str, unsigned char *r, unsigned char *g, unsigned char *b, unsigned char *a)
 {
@@ -721,44 +983,47 @@ _format_color_parse(const char *str, unsigned char *r, unsigned char *g, unsigne
 
    if (slen == 7) /* #RRGGBB */
      {
-	*r = (_hex_string_get(str[1]) << 4) | (_hex_string_get(str[2]));
-	*g = (_hex_string_get(str[3]) << 4) | (_hex_string_get(str[4]));
-	*b = (_hex_string_get(str[5]) << 4) | (_hex_string_get(str[6]));
-	*a = 0xff;
+        *r = (_hex_string_get(str[1]) << 4) | (_hex_string_get(str[2]));
+        *g = (_hex_string_get(str[3]) << 4) | (_hex_string_get(str[4]));
+        *b = (_hex_string_get(str[5]) << 4) | (_hex_string_get(str[6]));
+        *a = 0xff;
      }
    else if (slen == 9) /* #RRGGBBAA */
      {
-	*r = (_hex_string_get(str[1]) << 4) | (_hex_string_get(str[2]));
-	*g = (_hex_string_get(str[3]) << 4) | (_hex_string_get(str[4]));
-	*b = (_hex_string_get(str[5]) << 4) | (_hex_string_get(str[6]));
-	*a = (_hex_string_get(str[7]) << 4) | (_hex_string_get(str[8]));
+        *r = (_hex_string_get(str[1]) << 4) | (_hex_string_get(str[2]));
+        *g = (_hex_string_get(str[3]) << 4) | (_hex_string_get(str[4]));
+        *b = (_hex_string_get(str[5]) << 4) | (_hex_string_get(str[6]));
+        *a = (_hex_string_get(str[7]) << 4) | (_hex_string_get(str[8]));
      }
    else if (slen == 4) /* #RGB */
      {
-	*r = _hex_string_get(str[1]);
-	*r = (*r << 4) | *r;
-	*g = _hex_string_get(str[2]);
-	*g = (*g << 4) | *g;
-	*b = _hex_string_get(str[3]);
-	*b = (*b << 4) | *b;
-	*a = 0xff;
+        *r = _hex_string_get(str[1]);
+        *r = (*r << 4) | *r;
+        *g = _hex_string_get(str[2]);
+        *g = (*g << 4) | *g;
+        *b = _hex_string_get(str[3]);
+        *b = (*b << 4) | *b;
+        *a = 0xff;
      }
    else if (slen == 5) /* #RGBA */
      {
-	*r = _hex_string_get(str[1]);
-	*r = (*r << 4) | *r;
-	*g = _hex_string_get(str[2]);
-	*g = (*g << 4) | *g;
-	*b = _hex_string_get(str[3]);
-	*b = (*b << 4) | *b;
-	*a = _hex_string_get(str[4]);
-	*a = (*a << 4) | *a;
+        *r = _hex_string_get(str[1]);
+        *r = (*r << 4) | *r;
+        *g = _hex_string_get(str[2]);
+        *g = (*g << 4) | *g;
+        *b = _hex_string_get(str[3]);
+        *b = (*b << 4) | *b;
+        *a = _hex_string_get(str[4]);
+        *a = (*a << 4) | *a;
      }
    *r = (*r * *a) / 255;
    *g = (*g * *a) / 255;
    *b = (*b * *a) / 255;
 }
 
+/* The refcount for the formats. */
+static int format_refcount = 0;
+/* Holders for the stringshares */
 static const char *fontstr = NULL;
 static const char *font_fallbacksstr = NULL;
 static const char *font_sizestr = NULL;
@@ -787,45 +1052,59 @@ static const char *linerelsizestr = NULL;
 static const char *linegapstr = NULL;
 static const char *linerelgapstr = NULL;
 static const char *itemstr = NULL;
+static const char *linefillstr = NULL;
 
+/**
+ * @internal
+ * Init the format strings.
+ */
 static void
 _format_command_init(void)
 {
-   if (fontstr) return;
-   fontstr = eina_stringshare_add("font");
-   font_fallbacksstr = eina_stringshare_add("font_fallbacks");
-   font_sizestr = eina_stringshare_add("font_size");
-   font_sourcestr = eina_stringshare_add("font_source");
-   colorstr = eina_stringshare_add("color");
-   underline_colorstr = eina_stringshare_add("underline_color");
-   underline2_colorstr = eina_stringshare_add("underline2_color");
-   outline_colorstr = eina_stringshare_add("outline_color");
-   shadow_colorstr = eina_stringshare_add("shadow_color");
-   glow_colorstr = eina_stringshare_add("glow_color");
-   glow2_colorstr = eina_stringshare_add("glow2_color");
-   backing_colorstr = eina_stringshare_add("backing_color");
-   strikethrough_colorstr = eina_stringshare_add("strikethrough_color");
-   alignstr = eina_stringshare_add("align");
-   valignstr = eina_stringshare_add("valign");
-   wrapstr = eina_stringshare_add("wrap");
-   left_marginstr = eina_stringshare_add("left_margin");
-   right_marginstr = eina_stringshare_add("right_margin");
-   underlinestr = eina_stringshare_add("underline");
-   strikethroughstr = eina_stringshare_add("strikethrough");
-   backingstr = eina_stringshare_add("backing");
-   stylestr = eina_stringshare_add("style");
-   tabstopsstr = eina_stringshare_add("tabstops");
-   linesizestr = eina_stringshare_add("linesize");
-   linerelsizestr = eina_stringshare_add("linerelsize");
-   linegapstr = eina_stringshare_add("linegap");
-   linerelgapstr = eina_stringshare_add("linerelgap");
-   itemstr = eina_stringshare_add("item");
+   if (format_refcount == 0)
+     {
+        fontstr = eina_stringshare_add("font");
+        font_fallbacksstr = eina_stringshare_add("font_fallbacks");
+        font_sizestr = eina_stringshare_add("font_size");
+        font_sourcestr = eina_stringshare_add("font_source");
+        colorstr = eina_stringshare_add("color");
+        underline_colorstr = eina_stringshare_add("underline_color");
+        underline2_colorstr = eina_stringshare_add("underline2_color");
+        outline_colorstr = eina_stringshare_add("outline_color");
+        shadow_colorstr = eina_stringshare_add("shadow_color");
+        glow_colorstr = eina_stringshare_add("glow_color");
+        glow2_colorstr = eina_stringshare_add("glow2_color");
+        backing_colorstr = eina_stringshare_add("backing_color");
+        strikethrough_colorstr = eina_stringshare_add("strikethrough_color");
+        alignstr = eina_stringshare_add("align");
+        valignstr = eina_stringshare_add("valign");
+        wrapstr = eina_stringshare_add("wrap");
+        left_marginstr = eina_stringshare_add("left_margin");
+        right_marginstr = eina_stringshare_add("right_margin");
+        underlinestr = eina_stringshare_add("underline");
+        strikethroughstr = eina_stringshare_add("strikethrough");
+        backingstr = eina_stringshare_add("backing");
+        stylestr = eina_stringshare_add("style");
+        tabstopsstr = eina_stringshare_add("tabstops");
+        linesizestr = eina_stringshare_add("linesize");
+        linerelsizestr = eina_stringshare_add("linerelsize");
+        linegapstr = eina_stringshare_add("linegap");
+        linerelgapstr = eina_stringshare_add("linerelgap");
+        itemstr = eina_stringshare_add("item");
+        linefillstr = eina_stringshare_add("linefill");
+     }
+   format_refcount++;
 }
 
+/**
+ * @internal
+ * Shutdown the format strings.
+ */
 static void
 _format_command_shutdown(void)
 {
-   return;
+   if (--format_refcount > 0) return;
+
    eina_stringshare_del(fontstr);
    eina_stringshare_del(font_fallbacksstr);
    eina_stringshare_del(font_sizestr);
@@ -854,8 +1133,16 @@ _format_command_shutdown(void)
    eina_stringshare_del(linegapstr);
    eina_stringshare_del(linerelgapstr);
    eina_stringshare_del(itemstr);
+   eina_stringshare_del(linefillstr);
 }
 
+/**
+ * @internal
+ * Copies str to dst while removing the \\ char, i.e unescape the escape sequences.
+ *
+ * @param[out] dst the destination string - Should not be NULL.
+ * @param[in] src the source string - Should not be NULL.
+ */
 static void
 _format_clean_param(char *dst, const char *src)
 {
@@ -871,6 +1158,15 @@ _format_clean_param(char *dst, const char *src)
    *ds = 0;
 }
 
+/**
+ * @internal
+ * Parses the cmd and parameter and adds the parsed format to fmt.
+ *
+ * @param obj the evas object - should not be NULL.
+ * @param fmt The format to populate - should not be NULL.
+ * @param[in] cmd the command to proccess, should be stringshared.
+ * @param[in] param the parameter of the command.
+ */
 static void
 _format_command(Evas_Object *obj, Evas_Object_Textblock_Format *fmt, const char *cmd, const char *param)
 {
@@ -882,231 +1178,239 @@ _format_command(Evas_Object *obj, Evas_Object_Textblock_Format *fmt, const char 
    _format_clean_param(tmp_param, param);
    if (cmd == fontstr)
      {
-	if ((!fmt->font.name) ||
-	    ((fmt->font.name) && (strcmp(fmt->font.name, tmp_param))))
-	  {
-	     if (fmt->font.name) eina_stringshare_del(fmt->font.name);
-	     fmt->font.name = eina_stringshare_add(tmp_param);
-	     new_font = 1;
-	  }
+        if ((!fmt->font.name) ||
+              ((fmt->font.name) && (strcmp(fmt->font.name, tmp_param))))
+          {
+             if (fmt->font.name) eina_stringshare_del(fmt->font.name);
+             fmt->font.name = eina_stringshare_add(tmp_param);
+             new_font = 1;
+          }
      }
    else if (cmd == font_fallbacksstr)
      {
-	if ((!fmt->font.fallbacks) ||
-	    ((fmt->font.fallbacks) && (strcmp(fmt->font.fallbacks, tmp_param))))
-	  {
-	     /* policy - when we say "fallbacks" do we prepend and use prior
-	      * fallbacks... or should we replace. for now we replace
-	      */
-	     if (fmt->font.fallbacks) eina_stringshare_del(fmt->font.fallbacks);
-	     fmt->font.fallbacks = eina_stringshare_add(tmp_param);
-	     new_font = 1;
-	  }
+        if ((!fmt->font.fallbacks) ||
+              ((fmt->font.fallbacks) && (strcmp(fmt->font.fallbacks, tmp_param))))
+          {
+             /* policy - when we say "fallbacks" do we prepend and use prior
+              * fallbacks... or should we replace. for now we replace
+              */
+             if (fmt->font.fallbacks) eina_stringshare_del(fmt->font.fallbacks);
+             fmt->font.fallbacks = eina_stringshare_add(tmp_param);
+             new_font = 1;
+          }
      }
    else if (cmd == font_sizestr)
      {
-	int v;
+        int v;
 
-	v = atoi(tmp_param);
-	if (v != fmt->font.size)
-	  {
-	     fmt->font.size = v;
-	     new_font = 1;
-	  }
+        v = atoi(tmp_param);
+        if (v != fmt->font.size)
+          {
+             fmt->font.size = v;
+             new_font = 1;
+          }
      }
    else if (cmd == font_sourcestr)
      {
-	if ((!fmt->font.source) ||
-	    ((fmt->font.source) && (strcmp(fmt->font.source, tmp_param))))
-	  {
-	     if (fmt->font.source) eina_stringshare_del(fmt->font.source);
-	     fmt->font.source = eina_stringshare_add(tmp_param);
-	     new_font = 1;
-	  }
+        if ((!fmt->font.source) ||
+              ((fmt->font.source) && (strcmp(fmt->font.source, tmp_param))))
+          {
+             if (fmt->font.source) eina_stringshare_del(fmt->font.source);
+             fmt->font.source = eina_stringshare_add(tmp_param);
+             new_font = 1;
+          }
      }
    else if (cmd == colorstr)
      _format_color_parse(tmp_param,
-			 &(fmt->color.normal.r), &(fmt->color.normal.g),
-			 &(fmt->color.normal.b), &(fmt->color.normal.a));
+           &(fmt->color.normal.r), &(fmt->color.normal.g),
+           &(fmt->color.normal.b), &(fmt->color.normal.a));
    else if (cmd == underline_colorstr)
      _format_color_parse(tmp_param,
-			 &(fmt->color.underline.r), &(fmt->color.underline.g),
-			 &(fmt->color.underline.b), &(fmt->color.underline.a));
+           &(fmt->color.underline.r), &(fmt->color.underline.g),
+           &(fmt->color.underline.b), &(fmt->color.underline.a));
    else if (cmd == underline2_colorstr)
      _format_color_parse(tmp_param,
-			 &(fmt->color.underline2.r), &(fmt->color.underline2.g),
-			 &(fmt->color.underline2.b), &(fmt->color.underline2.a));
+           &(fmt->color.underline2.r), &(fmt->color.underline2.g),
+           &(fmt->color.underline2.b), &(fmt->color.underline2.a));
    else if (cmd == outline_colorstr)
      _format_color_parse(tmp_param,
-			 &(fmt->color.outline.r), &(fmt->color.outline.g),
-			 &(fmt->color.outline.b), &(fmt->color.outline.a));
+           &(fmt->color.outline.r), &(fmt->color.outline.g),
+           &(fmt->color.outline.b), &(fmt->color.outline.a));
    else if (cmd == shadow_colorstr)
      _format_color_parse(tmp_param,
-			 &(fmt->color.shadow.r), &(fmt->color.shadow.g),
-			 &(fmt->color.shadow.b), &(fmt->color.shadow.a));
+           &(fmt->color.shadow.r), &(fmt->color.shadow.g),
+           &(fmt->color.shadow.b), &(fmt->color.shadow.a));
    else if (cmd == glow_colorstr)
      _format_color_parse(tmp_param,
-			 &(fmt->color.glow.r), &(fmt->color.glow.g),
-			 &(fmt->color.glow.b), &(fmt->color.glow.a));
+           &(fmt->color.glow.r), &(fmt->color.glow.g),
+           &(fmt->color.glow.b), &(fmt->color.glow.a));
    else if (cmd == glow2_colorstr)
      _format_color_parse(tmp_param,
-			 &(fmt->color.glow2.r), &(fmt->color.glow2.g),
-			 &(fmt->color.glow2.b), &(fmt->color.glow2.a));
+           &(fmt->color.glow2.r), &(fmt->color.glow2.g),
+           &(fmt->color.glow2.b), &(fmt->color.glow2.a));
    else if (cmd == backing_colorstr)
      _format_color_parse(tmp_param,
-			 &(fmt->color.backing.r), &(fmt->color.backing.g),
-			 &(fmt->color.backing.b), &(fmt->color.backing.a));
+           &(fmt->color.backing.r), &(fmt->color.backing.g),
+           &(fmt->color.backing.b), &(fmt->color.backing.a));
    else if (cmd == strikethrough_colorstr)
      _format_color_parse(tmp_param,
-			 &(fmt->color.strikethrough.r), &(fmt->color.strikethrough.g),
-			 &(fmt->color.strikethrough.b), &(fmt->color.strikethrough.a));
+           &(fmt->color.strikethrough.r), &(fmt->color.strikethrough.g),
+           &(fmt->color.strikethrough.b), &(fmt->color.strikethrough.a));
    else if (cmd == alignstr)
      {
-	if (!strcmp(tmp_param, "middle")) fmt->halign = 0.5;
-	else if (!strcmp(tmp_param, "center")) fmt->halign = 0.5;
-	else if (!strcmp(tmp_param, "left")) fmt->halign = 0.0;
-	else if (!strcmp(tmp_param, "right")) fmt->halign = 1.0;
-	else
-	  {
-	     char *endptr = NULL;
-	     double val = strtod(tmp_param, &endptr);
-	     if (endptr)
-	       {
-		  while (*endptr && _is_white(*endptr))
-		    endptr++;
-		  if (*endptr == '%')
-		    val /= 100.0;
-	       }
-	     fmt->halign = val;;
-	     if (fmt->halign < 0.0) fmt->halign = 0.0;
-	     else if (fmt->halign > 1.0) fmt->halign = 1.0;
-	  }
+        if (!strcmp(tmp_param, "auto"))
+          {
+             fmt->halign_auto = EINA_TRUE;
+          }
+        else
+          {
+             if (!strcmp(tmp_param, "middle")) fmt->halign = 0.5;
+             else if (!strcmp(tmp_param, "center")) fmt->halign = 0.5;
+             else if (!strcmp(tmp_param, "left")) fmt->halign = 0.0;
+             else if (!strcmp(tmp_param, "right")) fmt->halign = 1.0;
+             else
+               {
+                  char *endptr = NULL;
+                  double val = strtod(tmp_param, &endptr);
+                  if (endptr)
+                    {
+                       while (*endptr && _is_white(*endptr))
+                         endptr++;
+                       if (*endptr == '%')
+                         val /= 100.0;
+                    }
+                  fmt->halign = val;
+                  if (fmt->halign < 0.0) fmt->halign = 0.0;
+                  else if (fmt->halign > 1.0) fmt->halign = 1.0;
+               }
+             fmt->halign_auto = EINA_FALSE;
+          }
      }
    else if (cmd == valignstr)
      {
         if (!strcmp(tmp_param, "top")) fmt->valign = 0.0;
-	else if (!strcmp(tmp_param, "middle")) fmt->valign = 0.5;
-	else if (!strcmp(tmp_param, "center")) fmt->valign = 0.5;
-	else if (!strcmp(tmp_param, "bottom")) fmt->valign = 1.0;
-	else if (!strcmp(tmp_param, "baseline")) fmt->valign = -1.0;
-	else if (!strcmp(tmp_param, "base")) fmt->valign = -1.0;
-	else
-	  {
-	     char *endptr = NULL;
-	     double val = strtod(tmp_param, &endptr);
-	     if (endptr)
-	       {
-		  while (*endptr && _is_white(*endptr))
-		    endptr++;
-		  if (*endptr == '%')
-		    val /= 100.0;
-	       }
-	     fmt->valign = val;
-	     if (fmt->valign < 0.0) fmt->valign = 0.0;
-	     else if (fmt->valign > 1.0) fmt->valign = 1.0;
-	  }
+        else if (!strcmp(tmp_param, "middle")) fmt->valign = 0.5;
+        else if (!strcmp(tmp_param, "center")) fmt->valign = 0.5;
+        else if (!strcmp(tmp_param, "bottom")) fmt->valign = 1.0;
+        else if (!strcmp(tmp_param, "baseline")) fmt->valign = -1.0;
+        else if (!strcmp(tmp_param, "base")) fmt->valign = -1.0;
+        else
+          {
+             char *endptr = NULL;
+             double val = strtod(tmp_param, &endptr);
+             if (endptr)
+               {
+                  while (*endptr && _is_white(*endptr))
+                    endptr++;
+                  if (*endptr == '%')
+                    val /= 100.0;
+               }
+             fmt->valign = val;
+             if (fmt->valign < 0.0) fmt->valign = 0.0;
+             else if (fmt->valign > 1.0) fmt->valign = 1.0;
+          }
      }
    else if (cmd == wrapstr)
      {
-	if (!strcmp(tmp_param, "word"))
-	  {
-	     fmt->wrap_word = 1;
-	     fmt->wrap_char = 0;
-	  }
-	else if (!strcmp(tmp_param, "char"))
-	  {
-	     fmt->wrap_word = 0;
-	     fmt->wrap_char = 1;
-	  }
-	else
-	  {
-	     fmt->wrap_word = 0;
-	     fmt->wrap_char = 0;
-	  }
+        if (!strcmp(tmp_param, "word"))
+          {
+             fmt->wrap_word = 1;
+             fmt->wrap_char = 0;
+          }
+        else if (!strcmp(tmp_param, "char"))
+          {
+             fmt->wrap_word = 0;
+             fmt->wrap_char = 1;
+          }
+        else
+          {
+             fmt->wrap_word = 0;
+             fmt->wrap_char = 0;
+          }
      }
    else if (cmd == left_marginstr)
      {
-	if (!strcmp(tmp_param, "reset"))
-	  fmt->margin.l = 0;
-	else
-	  {
-	     if (tmp_param[0] == '+')
-	       fmt->margin.l += atoi(&(tmp_param[1]));
-	     else if (tmp_param[0] == '-')
-	       fmt->margin.l -= atoi(&(tmp_param[1]));
-	     else
-	       fmt->margin.l = atoi(tmp_param);
-	     if (fmt->margin.l < 0) fmt->margin.l = 0;
-	  }
+        if (!strcmp(tmp_param, "reset"))
+          fmt->margin.l = 0;
+        else
+          {
+             if (tmp_param[0] == '+')
+               fmt->margin.l += atoi(&(tmp_param[1]));
+             else if (tmp_param[0] == '-')
+               fmt->margin.l -= atoi(&(tmp_param[1]));
+             else
+               fmt->margin.l = atoi(tmp_param);
+             if (fmt->margin.l < 0) fmt->margin.l = 0;
+          }
      }
    else if (cmd == right_marginstr)
      {
-	if (!strcmp(tmp_param, "reset"))
-	  fmt->margin.r = 0;
-	else
-	  {
-	     if (tmp_param[0] == '+')
-	       fmt->margin.r += atoi(&(tmp_param[1]));
-	     else if (tmp_param[0] == '-')
-	       fmt->margin.r -= atoi(&(tmp_param[1]));
-	     else
-	       fmt->margin.r = atoi(tmp_param);
-	     if (fmt->margin.r < 0) fmt->margin.r = 0;
-	  }
+        if (!strcmp(tmp_param, "reset"))
+          fmt->margin.r = 0;
+        else
+          {
+             if (tmp_param[0] == '+')
+               fmt->margin.r += atoi(&(tmp_param[1]));
+             else if (tmp_param[0] == '-')
+               fmt->margin.r -= atoi(&(tmp_param[1]));
+             else
+               fmt->margin.r = atoi(tmp_param);
+             if (fmt->margin.r < 0) fmt->margin.r = 0;
+          }
      }
    else if (cmd == underlinestr)
      {
-	if (!strcmp(tmp_param, "off"))
-	  {
-	     fmt->underline = 0;
-	     fmt->underline2 = 0;
-	  }
-	else if ((!strcmp(tmp_param, "on")) ||
-		 (!strcmp(tmp_param, "single")))
-	  {
-	     fmt->underline = 1;
-	     fmt->underline2 = 0;
-	  }
-	else if (!strcmp(tmp_param, "double"))
-	  {
-	     fmt->underline = 1;
-	     fmt->underline2 = 1;
-	  }
+        if (!strcmp(tmp_param, "off"))
+          {
+             fmt->underline = 0;
+             fmt->underline2 = 0;
+          }
+        else if ((!strcmp(tmp_param, "on")) ||
+              (!strcmp(tmp_param, "single")))
+          {
+             fmt->underline = 1;
+             fmt->underline2 = 0;
+          }
+        else if (!strcmp(tmp_param, "double"))
+          {
+             fmt->underline = 1;
+             fmt->underline2 = 1;
+          }
      }
    else if (cmd == strikethroughstr)
      {
-	if (!strcmp(tmp_param, "off"))
-	  fmt->strikethrough = 0;
-	else if (!strcmp(tmp_param, "on"))
-	  fmt->strikethrough = 1;
+        if (!strcmp(tmp_param, "off"))
+          fmt->strikethrough = 0;
+        else if (!strcmp(tmp_param, "on"))
+          fmt->strikethrough = 1;
      }
    else if (cmd == backingstr)
      {
-	if (!strcmp(tmp_param, "off"))
-	  fmt->backing = 0;
-	else if (!strcmp(tmp_param, "on"))
-	  fmt->backing = 1;
+        if (!strcmp(tmp_param, "off"))
+          fmt->backing = 0;
+        else if (!strcmp(tmp_param, "on"))
+          fmt->backing = 1;
      }
    else if (cmd == stylestr)
      {
-	if (!strcmp(tmp_param, "off")) fmt->style = EVAS_TEXT_STYLE_PLAIN;
-	else if (!strcmp(tmp_param, "none")) fmt->style = EVAS_TEXT_STYLE_PLAIN;
-	else if (!strcmp(tmp_param, "plain")) fmt->style = EVAS_TEXT_STYLE_PLAIN;
-	else if (!strcmp(tmp_param, "shadow")) fmt->style = EVAS_TEXT_STYLE_SHADOW;
-	else if (!strcmp(tmp_param, "outline")) fmt->style = EVAS_TEXT_STYLE_OUTLINE;
-	else if (!strcmp(tmp_param, "soft_outline")) fmt->style = EVAS_TEXT_STYLE_SOFT_OUTLINE;
-	else if (!strcmp(tmp_param, "outline_shadow")) fmt->style = EVAS_TEXT_STYLE_OUTLINE_SHADOW;
-	else if (!strcmp(tmp_param, "outline_soft_shadow")) fmt->style = EVAS_TEXT_STYLE_OUTLINE_SOFT_SHADOW;
-	else if (!strcmp(tmp_param, "glow")) fmt->style = EVAS_TEXT_STYLE_GLOW;
-	else if (!strcmp(tmp_param, "far_shadow")) fmt->style = EVAS_TEXT_STYLE_FAR_SHADOW;
-	else if (!strcmp(tmp_param, "soft_shadow")) fmt->style = EVAS_TEXT_STYLE_SOFT_SHADOW;
-	else if (!strcmp(tmp_param, "far_soft_shadow")) fmt->style = EVAS_TEXT_STYLE_FAR_SOFT_SHADOW;
-	else fmt->style = EVAS_TEXT_STYLE_PLAIN;
+        if (!strcmp(tmp_param, "off")) fmt->style = EVAS_TEXT_STYLE_PLAIN;
+        else if (!strcmp(tmp_param, "none")) fmt->style = EVAS_TEXT_STYLE_PLAIN;
+        else if (!strcmp(tmp_param, "plain")) fmt->style = EVAS_TEXT_STYLE_PLAIN;
+        else if (!strcmp(tmp_param, "shadow")) fmt->style = EVAS_TEXT_STYLE_SHADOW;
+        else if (!strcmp(tmp_param, "outline")) fmt->style = EVAS_TEXT_STYLE_OUTLINE;
+        else if (!strcmp(tmp_param, "soft_outline")) fmt->style = EVAS_TEXT_STYLE_SOFT_OUTLINE;
+        else if (!strcmp(tmp_param, "outline_shadow")) fmt->style = EVAS_TEXT_STYLE_OUTLINE_SHADOW;
+        else if (!strcmp(tmp_param, "outline_soft_shadow")) fmt->style = EVAS_TEXT_STYLE_OUTLINE_SOFT_SHADOW;
+        else if (!strcmp(tmp_param, "glow")) fmt->style = EVAS_TEXT_STYLE_GLOW;
+        else if (!strcmp(tmp_param, "far_shadow")) fmt->style = EVAS_TEXT_STYLE_FAR_SHADOW;
+        else if (!strcmp(tmp_param, "soft_shadow")) fmt->style = EVAS_TEXT_STYLE_SOFT_SHADOW;
+        else if (!strcmp(tmp_param, "far_soft_shadow")) fmt->style = EVAS_TEXT_STYLE_FAR_SOFT_SHADOW;
+        else fmt->style = EVAS_TEXT_STYLE_PLAIN;
      }
    else if (cmd == tabstopsstr)
      {
-	fmt->tabstops = atoi(tmp_param);
-	if (fmt->tabstops < 1) fmt->tabstops = 1;
+        fmt->tabstops = atoi(tmp_param);
+        if (fmt->tabstops < 1) fmt->tabstops = 1;
      }
    else if (cmd == linesizestr)
      {
@@ -1115,18 +1419,18 @@ _format_command(Evas_Object *obj, Evas_Object_Textblock_Format *fmt, const char 
      }
    else if (cmd == linerelsizestr)
      {
-	char *endptr = NULL;
-	double val = strtod(tmp_param, &endptr);
-	if (endptr)
-	  {
-	     while (*endptr && _is_white(*endptr))
-	       endptr++;
-	     if (*endptr == '%')
-	       {
-		  fmt->linerelsize = val / 100.0;
-		  fmt->linesize = 0;
-		  if (fmt->linerelsize < 0.0) fmt->linerelsize = 0.0;
-	       }
+        char *endptr = NULL;
+        double val = strtod(tmp_param, &endptr);
+        if (endptr)
+          {
+             while (*endptr && _is_white(*endptr))
+               endptr++;
+             if (*endptr == '%')
+               {
+                  fmt->linerelsize = val / 100.0;
+                  fmt->linesize = 0;
+                  if (fmt->linerelsize < 0.0) fmt->linerelsize = 0.0;
+               }
           }
      }
    else if (cmd == linegapstr)
@@ -1136,109 +1440,162 @@ _format_command(Evas_Object *obj, Evas_Object_Textblock_Format *fmt, const char 
      }
    else if (cmd == linerelgapstr)
      {
-	char *endptr = NULL;
-	double val = strtod(tmp_param, &endptr);
-	if (endptr)
-	  {
-	     while (*endptr && _is_white(*endptr))
-	       endptr++;
-	     if (*endptr == '%')
-	       {
-		  fmt->linerelgap = val / 100.0;
-		  fmt->linegap = 0;
-		  if (fmt->linerelgap < 0.0) fmt->linerelgap = 0.0;
-	       }
+        char *endptr = NULL;
+        double val = strtod(tmp_param, &endptr);
+        if (endptr)
+          {
+             while (*endptr && _is_white(*endptr))
+               endptr++;
+             if (*endptr == '%')
+               {
+                  fmt->linerelgap = val / 100.0;
+                  fmt->linegap = 0;
+                  if (fmt->linerelgap < 0.0) fmt->linerelgap = 0.0;
+               }
+          }
+     }
+   else if (cmd == itemstr)
+     {
+        // itemstr == replacement object items in textblock - inline imges
+        // for example
+     }
+   else if (cmd == linefillstr)
+     {
+        char *endptr = NULL;
+        double val = strtod(tmp_param, &endptr);
+        if (endptr)
+          {
+             while (*endptr && _is_white(*endptr))
+               endptr++;
+             if (*endptr == '%')
+               {
+                  fmt->linefill = val / 100.0;
+                  if (fmt->linefill < 0.0) fmt->linefill = 0.0;
+               }
           }
      }
 
    if (new_font)
      {
-	void *of;
-	char *buf = NULL;
+        void *of;
+        char *buf = NULL;
 
-	of = fmt->font.font;
-	if ((fmt->font.name) && (fmt->font.fallbacks))
-	  {
-	     buf = malloc(strlen(fmt->font.name) + 1 + strlen(fmt->font.fallbacks) + 1);
-	     strcpy(buf, fmt->font.name);
-	     strcat(buf, ",");
-	     strcat(buf, fmt->font.fallbacks);
-	  }
-	else if (fmt->font.name)
-	  buf = strdup(fmt->font.name);
+        of = fmt->font.font;
+        if ((fmt->font.name) && (fmt->font.fallbacks))
+          {
+             buf = malloc(strlen(fmt->font.name) + 1 + strlen(fmt->font.fallbacks) + 1);
+             strcpy(buf, fmt->font.name);
+             strcat(buf, ",");
+             strcat(buf, fmt->font.fallbacks);
+          }
+        else if (fmt->font.name)
+          buf = strdup(fmt->font.name);
 
-	fmt->font.font = evas_font_load(obj->layer->evas,
-					buf, fmt->font.source,
-					(int)(((double)fmt->font.size) * obj->cur.scale));
-	if (buf) free(buf);
-	if (of) evas_font_free(obj->layer->evas, of);
+        fmt->font.font = evas_font_load(obj->layer->evas,
+              buf, fmt->font.source,
+              (int)(((double)fmt->font.size) * obj->cur.scale));
+        if (buf) free(buf);
+        if (of) evas_font_free(obj->layer->evas, of);
      }
 }
 
-static int
-_format_is_param(char *item)
+/**
+ * @internal
+ * Returns #EINA_TRUE if the item is a format parameter, #EINA_FALSE otherwise.
+ *
+ * @param[in] item the item to check - Not NULL.
+ */
+static Eina_Bool
+_format_is_param(const char *item)
 {
-   if (strchr(item, '=')) return 1;
-   return 0;
+   if (strchr(item, '=')) return EINA_TRUE;
+   return EINA_FALSE;
 }
 
+/**
+ * @internal
+ * Parse the format item and populate key and val with the stringshares that
+ * corrospond to the formats parsed.
+ * It expects item to be of the structure:
+ * "key=val"
+ *
+ * @param[in] item the item to parse - Not NULL.
+ * @param[out] key where to store the key at - Not NULL.
+ * @param[out] val where to store the value at - Not NULL.
+ */
 static void
-_format_param_parse(char *item, const char **key, const char **val)
+_format_param_parse(const char *item, const char **key, const char **val)
 {
-   char *p;
-   const char *k, *v;
+   const char *equal, *end;
 
-   p = strchr(item, '=');
-   *p = '\0';
-   k = eina_stringshare_add(item);
-   *key = k;
-   *p = '=';
-   p++;
-   v = eina_stringshare_add(p);
-   *val = v;
+   equal = strchr(item, '=');
+   *key = eina_stringshare_add_length(item, equal - item);
+   equal++; /* Advance after the '=' */
+   /* Null terminate before the spaces */
+   end = strchr(equal, ' ');
+   if (end)
+     {
+        *val = eina_stringshare_add_length(equal, end - equal);
+     }
+   else
+     {
+        *val = eina_stringshare_add(equal);
+     }
 }
 
-static char *
-_format_parse(char **s)
+/**
+ * @internal
+ * FIXME: comment.
+ */
+static const char *
+_format_parse(const char **s)
 {
-   char *p, *item;
-   char *s1 = NULL, *s2 = NULL;
+   const char *p, *item;
+   const char *s1 = NULL, *s2 = NULL;
 
    p = *s;
    if (*p == 0) return NULL;
    for (;;)
      {
-	if (!s1)
-	  {
-	     if (*p != ' ') s1 = p;
-	     if (*p == 0) break;
-	  }
-	else if (!s2)
-	  {
-	     if ((p > *s) && (p[-1] != '\\'))
-	       {
-		  if (*p == ' ') s2 = p;
-	       }
-	     if (*p == 0) s2 = p;
-	  }
-	p++;
-	if (s1 && s2)
-	  {
-	     item = s1;
+        if (!s1)
+          {
+             if (*p != ' ') s1 = p;
+             if (*p == 0) break;
+          }
+        else if (!s2)
+          {
+             if ((p > *s) && (p[-1] != '\\'))
+               {
+                  if (*p == ' ') s2 = p;
+               }
+             if (*p == 0) s2 = p;
+          }
+        p++;
+        if (s1 && s2)
+          {
+             item = s1;
 
-	     *s = s2;
-	     return item;
-	  }
+             *s = s2;
+             return item;
+          }
      }
    *s = p;
    return NULL;
 }
 
+/**
+ * @internal
+ * Parse the format str and populate fmt with the formats found.
+ *
+ * @param obj The evas object - Not NULL.
+ * @param[out] fmt The format to populate - Not NULL.
+ * @param[in] str the string to parse.- Not NULL.
+ */
 static void
-_format_fill(Evas_Object *obj, Evas_Object_Textblock_Format *fmt, char *str)
+_format_fill(Evas_Object *obj, Evas_Object_Textblock_Format *fmt, const char *str)
 {
-   char *s;
-   char *item;
+   const char *s;
+   const char *item;
 
    s = str;
 
@@ -1247,27 +1604,32 @@ _format_fill(Evas_Object *obj, Evas_Object_Textblock_Format *fmt, char *str)
 
    while ((item = _format_parse(&s)))
      {
-	char tmp_delim = *s;
-	*s = '\0';
-	if (_format_is_param(item))
-	  {
-	     const char *key = NULL, *val = NULL;
+        if (_format_is_param(item))
+          {
+             const char *key = NULL, *val = NULL;
 
-	     _format_param_parse(item, &key, &val);
-	     _format_command(obj, fmt, key, val);
-	     eina_stringshare_del(key);
-	     eina_stringshare_del(val);
-	  }
-	else
-	  {
-	     /* immediate - not handled here */
-	  }
-	*s = tmp_delim;
+             _format_param_parse(item, &key, &val);
+             _format_command(obj, fmt, key, val);
+             eina_stringshare_del(key);
+             eina_stringshare_del(val);
+          }
+        else
+          {
+             /* immediate - not handled here */
+          }
      }
 }
 
+/**
+ * @internal
+ * Duplicate a format and return the duplicate.
+ *
+ * @param obj The evas object - Not NULL.
+ * @param[in] fmt The format to duplicate - Not NULL.
+ * @return the copy of the format.
+ */
 static Evas_Object_Textblock_Format *
-_format_dup(Evas_Object *obj, Evas_Object_Textblock_Format *fmt)
+_format_dup(Evas_Object *obj, const Evas_Object_Textblock_Format *fmt)
 {
    Evas_Object_Textblock_Format *fmt2;
    char *buf = NULL;
@@ -1281,16 +1643,16 @@ _format_dup(Evas_Object *obj, Evas_Object_Textblock_Format *fmt)
 
    if ((fmt2->font.name) && (fmt2->font.fallbacks))
      {
-	buf = malloc(strlen(fmt2->font.name) + 1 + strlen(fmt2->font.fallbacks) + 1);
-	strcpy(buf, fmt2->font.name);
-	strcat(buf, ",");
-	strcat(buf, fmt2->font.fallbacks);
+        buf = malloc(strlen(fmt2->font.name) + 1 + strlen(fmt2->font.fallbacks) + 1);
+        strcpy(buf, fmt2->font.name);
+        strcat(buf, ",");
+        strcat(buf, fmt2->font.fallbacks);
      }
    else if (fmt2->font.name)
      buf = strdup(fmt2->font.name);
    fmt2->font.font = evas_font_load(obj->layer->evas,
-				    buf, fmt2->font.source,
-				    (int)(((double)fmt2->font.size) * obj->cur.scale));
+         buf, fmt2->font.source,
+         (int)(((double)fmt2->font.size) * obj->cur.scale));
    if (buf) free(buf);
    return fmt2;
 }
@@ -1298,12 +1660,13 @@ _format_dup(Evas_Object *obj, Evas_Object_Textblock_Format *fmt)
 
 
 
-
-
-
-
-
-
+/**
+ * @internal
+ * @typedef Ctxt
+ *
+ * A pack of information that needed to be passed around in the layout engine,
+ * packed for easier access.
+ */
 typedef struct _Ctxt Ctxt;
 
 struct _Ctxt
@@ -1311,7 +1674,8 @@ struct _Ctxt
    Evas_Object *obj;
    Evas_Object_Textblock *o;
 
-   Evas_Object_Textblock_Line *lines;
+   Evas_Object_Textblock_Paragraph *paragraphs;
+   Evas_Object_Textblock_Paragraph *par;
    Evas_Object_Textblock_Line *ln;
 
    Eina_List *format_stack;
@@ -1325,8 +1689,16 @@ struct _Ctxt
    int underline_extend;
    int have_underline, have_underline2;
    double align;
+   Eina_Bool align_auto;
 };
 
+/**
+ * @internal
+ * Adjust the ascent/descent of the format and context.
+ *
+ * @param c The context to work on - Not NUL.
+ * @param fmt The format to adjust - NOT NULL.
+ */
 static void
 _layout_format_ascent_descent_adjust(Ctxt *c, Evas_Object_Textblock_Format *fmt)
 {
@@ -1334,10 +1706,10 @@ _layout_format_ascent_descent_adjust(Ctxt *c, Evas_Object_Textblock_Format *fmt)
 
    if (fmt->font.font)
      {
-//	ascent = c->ENFN->font_max_ascent_get(c->ENDT, fmt->font.font);
-//	descent = c->ENFN->font_max_descent_get(c->ENDT, fmt->font.font);
+        //	ascent = c->ENFN->font_max_ascent_get(c->ENDT, fmt->font.font);
+        //	descent = c->ENFN->font_max_descent_get(c->ENDT, fmt->font.font);
         ascent = c->ENFN->font_ascent_get(c->ENDT, fmt->font.font);
-	descent = c->ENFN->font_descent_get(c->ENDT, fmt->font.font);
+        descent = c->ENFN->font_descent_get(c->ENDT, fmt->font.font);
         if (fmt->linesize > 0)
           {
              if ((ascent + descent) < fmt->linesize)
@@ -1353,42 +1725,126 @@ _layout_format_ascent_descent_adjust(Ctxt *c, Evas_Object_Textblock_Format *fmt)
           }
         c->maxdescent += fmt->linegap;
         c->maxdescent += ((ascent + descent) * fmt->linerelgap);
-	if (c->maxascent < ascent) c->maxascent = ascent;
-	if (c->maxdescent < descent) c->maxdescent = descent;
+        if (c->maxascent < ascent) c->maxascent = ascent;
+        if (c->maxdescent < descent) c->maxdescent = descent;
+        if (fmt->linefill > 0.0)
+          {
+             int dh;
+
+             dh = c->obj->cur.geometry.h - (c->maxascent + c->maxdescent);
+             if (dh < 0) dh = 0;
+             dh = fmt->linefill * dh;
+             c->maxdescent += dh / 2;
+             c->maxascent += dh - (dh / 2);
+             // FIXME: set flag that says "if heigh changes - reformat"
+          }
      }
 }
 
+/**
+ * @internal
+ * Create a new line using the info from the format and update the format
+ * and context.
+ *
+ * @param c The context to work on - Not NULL.
+ * @param fmt The format to use info from - NOT NULL.
+ */
 static void
 _layout_line_new(Ctxt *c, Evas_Object_Textblock_Format *fmt)
 {
    c->ln = calloc(1, sizeof(Evas_Object_Textblock_Line));
    c->align = fmt->halign;
+   c->align_auto = fmt->halign_auto;
    c->marginl = fmt->margin.l;
    c->marginr = fmt->margin.r;
-   c->lines = (Evas_Object_Textblock_Line *)eina_inlist_append(EINA_INLIST_GET(c->lines), EINA_INLIST_GET(c->ln));
+   c->par->lines = (Evas_Object_Textblock_Line *)eina_inlist_append(EINA_INLIST_GET(c->par->lines), EINA_INLIST_GET(c->ln));
    c->x = 0;
    c->maxascent = c->maxdescent = 0;
    c->ln->line_no = -1;
    _layout_format_ascent_descent_adjust(c, fmt);
 }
 
+/**
+ * @internal
+ * Create a new layout paragraph.
+ *
+ * @param c The context to work on - Not NULL.
+ */
+static void
+_layout_paragraph_new(Ctxt *c)
+{
+   c->par = calloc(1, sizeof(Evas_Object_Textblock_Paragraph));
+   c->paragraphs = (Evas_Object_Textblock_Paragraph *)eina_inlist_append(EINA_INLIST_GET(c->paragraphs), EINA_INLIST_GET(c->par));
+   c->x = 0;
+   c->par->par_no= -1;
+}
+
+/**
+ * @internal
+ * Free the layout paragraph and all of it's lines.
+ */
+static void
+_paragraph_free(const Evas_Object *obj, Evas_Object_Textblock_Paragraph *par)
+{
+   while (par->lines)
+     {
+        Evas_Object_Textblock_Line *ln;
+
+        ln = (Evas_Object_Textblock_Line *) par->lines;
+        par->lines = (Evas_Object_Textblock_Line *)eina_inlist_remove(EINA_INLIST_GET(par->lines), EINA_INLIST_GET(par->lines));
+        _line_free(obj, ln);
+     }
+   free(par);
+}
+
+/**
+ * @internal
+ * Clear all the paragraphs from the inlist pars.
+ *
+ * @param obj the evas object - Not NULL.
+ * @param pars the paragraphs to clean - Not NULL.
+ */
+static void
+_paragraphs_clear(const Evas_Object *obj, Evas_Object_Textblock_Paragraph *pars)
+{
+   Evas_Object_Textblock *o;
+   o = (Evas_Object_Textblock *)(obj->object_data);
+   while (pars)
+     {
+        Evas_Object_Textblock_Paragraph *par;
+
+        par = (Evas_Object_Textblock_Paragraph *) pars;
+        pars = (Evas_Object_Textblock_Paragraph *)eina_inlist_remove(EINA_INLIST_GET(pars), EINA_INLIST_GET(par));
+        _paragraph_free(obj, par);
+     }
+}
+
+/**
+ * @internal
+ * Push fmt to the format stack, if fmt is NULL, will fush a default item.
+ *
+ * @param c the context to work on - Not NULL.
+ * @param fmt the format to push.
+ * @see _layout_format_pop()
+ */
 static Evas_Object_Textblock_Format *
 _layout_format_push(Ctxt *c, Evas_Object_Textblock_Format *fmt)
 {
    if (fmt)
      {
-	fmt = _format_dup(c->obj, fmt);
-	c->format_stack  = eina_list_prepend(c->format_stack, fmt);
+        fmt = _format_dup(c->obj, fmt);
+        c->format_stack  = eina_list_prepend(c->format_stack, fmt);
      }
    else
      {
-	fmt = calloc(1, sizeof(Evas_Object_Textblock_Format));
-	c->format_stack  = eina_list_prepend(c->format_stack, fmt);
-	fmt->ref = 1;
-	fmt->halign = 0.0;
-	fmt->valign = -1.0;
-	fmt->style = EVAS_TEXT_STYLE_PLAIN;
-	fmt->tabstops = 32;
+        fmt = calloc(1, sizeof(Evas_Object_Textblock_Format));
+        c->format_stack  = eina_list_prepend(c->format_stack, fmt);
+        fmt->ref = 1;
+        fmt->halign = 0.0;
+        fmt->halign_auto = EINA_TRUE;
+        fmt->valign = -1.0;
+        fmt->style = EVAS_TEXT_STYLE_PLAIN;
+        fmt->tabstops = 32;
         fmt->linesize = 0;
         fmt->linerelsize = 0.0;
         fmt->linegap = 0;
@@ -1397,28 +1853,49 @@ _layout_format_push(Ctxt *c, Evas_Object_Textblock_Format *fmt)
    return fmt;
 }
 
+/**
+ * @internal
+ * Pop fmt to the format stack, if there's something in the stack free fmt
+ * and set it to point to the next item instead, else return fmt.
+ *
+ * @param c the context to work on - Not NULL.
+ * @param fmt the format to free.
+ * @return the next format in the stack, or format if there's none.
+ * @see _layout_format_pop()
+ */
 static Evas_Object_Textblock_Format *
 _layout_format_pop(Ctxt *c, Evas_Object_Textblock_Format *fmt)
 {
    if ((c->format_stack) && (c->format_stack->next))
      {
-	_format_free(c->obj, fmt);
-	c->format_stack = eina_list_remove_list(c->format_stack, c->format_stack);
-	fmt = c->format_stack->data;
+        _format_unref_free(c->obj, fmt);
+        c->format_stack = eina_list_remove_list(c->format_stack, c->format_stack);
+        fmt = c->format_stack->data;
      }
    return fmt;
 }
 
+/**
+ * @internal
+ * Parse item and fill fmt with the item.
+ *
+ * @param c the context to work on - Not NULL.
+ * @param fmt the format to fill - not null.
+ */
 static void
-_layout_format_value_handle(Ctxt *c, Evas_Object_Textblock_Format *fmt, char *item)
+_layout_format_value_handle(Ctxt *c, Evas_Object_Textblock_Format *fmt, const char *item)
 {
    const char *key = NULL, *val = NULL;
+   char *tmp;
+   tmp = alloca(strlen(item) + 1);
+   strcpy(tmp, item);
 
-   _format_param_parse(item, &key, &val);
+   _format_param_parse(tmp, &key, &val);
    if ((key) && (val)) _format_command(c->obj, fmt, key, val);
    if (key) eina_stringshare_del(key);
    if (val) eina_stringshare_del(val);
    c->align = fmt->halign;
+   c->align_auto = fmt->halign_auto;
    c->marginl = fmt->margin.l;
    c->marginr = fmt->margin.r;
 }
@@ -1430,6 +1907,42 @@ _layout_format_value_handle(Ctxt *c, Evas_Object_Textblock_Format *fmt, char *it
 #define SIZE_ABS 1
 #define SIZE_REL 2
 
+/**
+ * @internal
+ * Get the current line's alignment from the context.
+ *
+ * @param c the context to work on - Not NULL.
+ */
+static inline double
+_layout_line_align_get(Ctxt *c)
+{
+#ifdef BIDI_SUPPORT
+   if (c->align_auto && c->ln && c->ln->items)
+     {
+        if (c->ln->items->source_node &&
+              EVAS_BIDI_PARAGRAPH_DIRECTION_IS_RTL(
+                 c->ln->items->source_node->bidi_props.direction))
+          {
+             /* Align right*/
+             return 1.0;
+          }
+        else
+          {
+             /* Align left */
+             return 0.0;
+          }
+     }
+#endif
+   return c->align;
+}
+
+/**
+ * @internal
+ * Create a new line and append it to the lines in the context.
+ *
+ * @param c the context to work on - Not NULL.
+ * @param fmt the format to use.
+ */
 static void
 _layout_line_advance(Ctxt *c, Evas_Object_Textblock_Format *fmt)
 {
@@ -1441,62 +1954,62 @@ _layout_line_advance(Ctxt *c, Evas_Object_Textblock_Format *fmt)
      _layout_format_ascent_descent_adjust(c, fmt);
    EINA_INLIST_FOREACH(c->ln->items, it)
      {
-	int endx;
+        int endx;
 
-	if (it->format->font.font)
-	  it->baseline = c->ENFN->font_max_ascent_get(c->ENDT, it->format->font.font);
-	_layout_format_ascent_descent_adjust(c, it->format);
-	endx = it->x + it->w;
-	if (endx > c->ln->w) c->ln->w = endx;
+        if (it->format->font.font)
+          it->baseline = c->ENFN->font_max_ascent_get(c->ENDT, it->format->font.font);
+        _layout_format_ascent_descent_adjust(c, it->format);
+        endx = it->x + it->w;
+        if (endx > c->ln->w) c->ln->w = endx;
      }
    EINA_INLIST_FOREACH(c->ln->format_items, fi)
      {
-	int endx;
+        int endx;
 
         if (!fi->formatme) continue;
-	endx = fi->x + fi->w;
-	if (endx > c->ln->w) c->ln->w = endx;
+        endx = fi->x + fi->w;
+        if (endx > c->ln->w) c->ln->w = endx;
         switch (fi->size)
           {
-          case SIZE:
-          case SIZE_ABS:
-             switch (fi->vsize)
-               {
-               case VSIZE_FULL:
-                  if (fi->h > (c->maxdescent + c->maxascent))
-                    {
-                       c->maxascent += fi->h - (c->maxdescent + c->maxascent);
-                       fi->y = -c->maxascent;
-                    }
-                  else
-                    fi->y = -(fi->h - c->maxdescent);
-                  break;
-               case VSIZE_ASCENT:
-                  if (fi->h > c->maxascent)
-                    {
-                       c->maxascent = fi->h;
-                       fi->y = -fi->h;
-                    }
-                  else
-                    fi->y = -fi->h;
-                  break;
-               default:
-                  break;
-               }
-             break;
-          case SIZE_REL:
-             switch (fi->vsize)
-               {
-               case VSIZE_FULL:
-               case VSIZE_ASCENT:
-                  fi->y = -fi->ascent;
-                  break;
-               default:
-                  break;
-               }
-             break;
-          default:
-             break;
+           case SIZE:
+           case SIZE_ABS:
+              switch (fi->vsize)
+                {
+                 case VSIZE_FULL:
+                    if (fi->h > (c->maxdescent + c->maxascent))
+                      {
+                         c->maxascent += fi->h - (c->maxdescent + c->maxascent);
+                         fi->y = -c->maxascent;
+                      }
+                    else
+                      fi->y = -(fi->h - c->maxdescent);
+                    break;
+                 case VSIZE_ASCENT:
+                    if (fi->h > c->maxascent)
+                      {
+                         c->maxascent = fi->h;
+                         fi->y = -fi->h;
+                      }
+                    else
+                      fi->y = -fi->h;
+                    break;
+                 default:
+                    break;
+                }
+              break;
+           case SIZE_REL:
+              switch (fi->vsize)
+                {
+                 case VSIZE_FULL:
+                 case VSIZE_ASCENT:
+                    fi->y = -fi->ascent;
+                    break;
+                 default:
+                    break;
+                }
+              break;
+           default:
+              break;
           }
      }
    c->ln->y = c->y + c->o->style_pad.t;
@@ -1504,223 +2017,290 @@ _layout_line_advance(Ctxt *c, Evas_Object_Textblock_Format *fmt)
    c->ln->baseline = c->maxascent;
    if (c->have_underline2)
      {
-	if (c->maxdescent < 4) c->underline_extend = 4 - c->maxdescent;
+        if (c->maxdescent < 4) c->underline_extend = 4 - c->maxdescent;
      }
    else if (c->have_underline)
      {
-	if (c->maxdescent < 2) c->underline_extend = 2 - c->maxdescent;
+        if (c->maxdescent < 2) c->underline_extend = 2 - c->maxdescent;
      }
    c->ln->line_no = c->line_no;
    c->line_no++;
    c->y += c->maxascent + c->maxdescent;
    if (c->w >= 0)
      {
-	c->ln->x = c->marginl + c->o->style_pad.l +
-	  ((c->w - c->ln->w -
-	    c->o->style_pad.l - c->o->style_pad.r -
-	    c->marginl - c->marginr) * c->align);
-	if ((c->ln->x + c->ln->w + c->marginr - c->o->style_pad.l) > c->wmax)
-	  c->wmax = c->ln->x + c->ln->w + c->marginl + c->marginr - c->o->style_pad.l;
+        c->ln->x = c->marginl + c->o->style_pad.l +
+           ((c->w - c->ln->w -
+             c->o->style_pad.l - c->o->style_pad.r -
+             c->marginl - c->marginr) * _layout_line_align_get(c));
+        if ((c->ln->x + c->ln->w + c->marginr - c->o->style_pad.l) > c->wmax)
+          c->wmax = c->ln->x + c->ln->w + c->marginl + c->marginr - c->o->style_pad.l;
      }
    else
      {
-	c->ln->x = c->marginl + c->o->style_pad.l;
-	if ((c->ln->x + c->ln->w + c->marginr - c->o->style_pad.l) > c->wmax)
-	  c->wmax = c->ln->x + c->ln->w + c->marginl + c->marginr - c->o->style_pad.l;
+        c->ln->x = c->marginl + c->o->style_pad.l;
+        if ((c->ln->x + c->ln->w + c->marginr - c->o->style_pad.l) > c->wmax)
+          c->wmax = c->ln->x + c->ln->w + c->marginl + c->marginr - c->o->style_pad.l;
      }
    _layout_line_new(c, fmt);
 }
 
+/**
+ * @internal
+ * Create a new layout item from the string and the format.
+ *
+ * @param c the context to work on - Not NULL.
+ * @param fmt the format to use.
+ * @param str the string to use.
+ */
 static Evas_Object_Textblock_Item *
-_layout_item_new(Ctxt *c __UNUSED__, Evas_Object_Textblock_Format *fmt, char *str)
+_layout_item_new(Ctxt *c __UNUSED__, Evas_Object_Textblock_Format *fmt, const Eina_Unicode *str)
 {
    Evas_Object_Textblock_Item *it;
 
    it = calloc(1, sizeof(Evas_Object_Textblock_Item));
    it->format = fmt;
    it->format->ref++;
-   it->text = strdup(str);
+   it->text = eina_unicode_strdup(str);
    return it;
 }
 
+/**
+ * @internal
+ * Return the cutoff of the text in the text item.
+ *
+ * @param c the context to work on - Not NULL.
+ * @param fmt the format to use. - Not NULL.
+ * @param it the item to check - Not null.
+ * @return -1 on error, cutoff index on success.
+ */
 static int
 _layout_text_cutoff_get(Ctxt *c, Evas_Object_Textblock_Format *fmt, Evas_Object_Textblock_Item *it)
 {
-
    if (fmt->font.font)
-     return c->ENFN->font_last_up_to_pos(c->ENDT, fmt->font.font, it->text,
-					     c->w -
-					     c->o->style_pad.l -
-					     c->o->style_pad.r -
-					     c->marginl -
-					     c->marginr -
-					     c->x,
-					     0);
+     return c->ENFN->font_last_up_to_pos(c->ENDT, fmt->font.font, it->text, &it->bidi_props,
+           c->w -
+           c->o->style_pad.l -
+           c->o->style_pad.r -
+           c->marginl -
+           c->marginr -
+           c->x,
+           0);
    return -1;
 }
 
+/**
+ * @internal
+ * Cut the text in the item up until cut.
+ *
+ * @param c the context to work on - Not NULL.
+ * @param it the item to cut - not null.
+ * @param cut the cut index.
+ */
 static void
 _layout_item_text_cutoff(Ctxt *c __UNUSED__, Evas_Object_Textblock_Item *it, int cut)
 {
-   char *ts;
+   Eina_Unicode *ts;
 
    ts = it->text;
    ts[cut] = 0;
-   it->text = strdup(ts);
+   it->text = eina_unicode_strdup(ts);
    free(ts);
 }
 
+/**
+ * @internal
+ * Return the start of the last word up until start.
+ *
+ * @param str the string to work on.
+ * @param start the start of where to look at.
+ * @return the start of the last word up until start.
+ */
 static int
-_layout_word_start(char *str, int start)
+_layout_word_start(const Eina_Unicode *str, int start)
 {
    int p, tp, chr = 0;
 
    p = start;
-   chr = evas_common_font_utf8_get_next((unsigned char *)(str), &p);
+   chr = GET_NEXT(str, p);
    if (_is_white(chr))
      {
-	tp = p;
-	while (_is_white(chr) && (p >= 0))
-	  {
-	     tp = p;
-	     chr = evas_common_font_utf8_get_next((unsigned char *)(str), &p);
-	  }
-	return tp;
+        tp = p;
+        while (_is_white(chr) && (p >= 0))
+          {
+             tp = p;
+             chr = GET_NEXT(str, p);
+          }
+        return tp;
      }
    p = start;
    tp = p;
    while (p > 0)
      {
-	chr = evas_common_font_utf8_get_prev((unsigned char *)(str), &p);
-	if (_is_white(chr)) break;
-	tp = p;
+        chr = GET_PREV(str, p);
+        if (_is_white(chr)) break;
+        tp = p;
      }
    if (p < 0) p = 0;
    if ((p >= 0) && (_is_white(chr)))
-     evas_common_font_utf8_get_next((unsigned char *)(str), &p);
+     {
+        GET_NEXT(str, p);
+     }
    return p;
 }
 
-static int
-_layout_ends_with_space(char *str)
+/**
+ * @internal
+ * Checks if the string ends with whitespace
+ *
+ * @param str the string to work on.
+ * @return #EINA_TRUE if it does, #EINA_FALSE otherwise.
+ */
+static Eina_Bool
+_str_ends_with_whitespace(const Eina_Unicode *str)
 {
    int p, chr;
 
-   p = evas_common_font_utf8_get_last((unsigned char *)(str), strlen(str));
-   if (p < 0) return 0;
-   chr = evas_common_font_utf8_get_next((unsigned char *)(str), &p);
+   p = eina_unicode_strlen(str) - 1;
+   if (p < 0) return EINA_FALSE;
+   chr = GET_NEXT(str, p);
    return _is_white(chr);
 }
 
-static int
+/**
+ * @internal
+ * Strips trailing whitespace from the item's text.
+ *
+ * @param c the context to work with - NOT NULL.
+ * @param fmt does nothing.
+ * @param it the item to strip.
+ *
+ * @return #EINA_TRUE if it stripped, #EINA_FALSE otherwise.
+ */
+static Eina_Bool
 _layout_strip_trailing_whitespace(Ctxt *c, Evas_Object_Textblock_Format *fmt __UNUSED__, Evas_Object_Textblock_Item *it)
 {
    int p, tp, chr, adv, tw, th;
 
-   p = evas_common_font_utf8_get_last((unsigned char *)(it->text), strlen(it->text));
+   p = eina_unicode_strlen(it->text) - 1;
    tp = p;
    if (p >= 0)
      {
-	chr = evas_common_font_utf8_get_prev((unsigned char *)(it->text), &p);
-	if (_is_white(chr))
-	  {
-	     _layout_item_text_cutoff(c, it, tp);
-	     adv = 0;
-	     if (it->format->font.font)
-	       adv = c->ENFN->font_h_advance_get(c->ENDT, it->format->font.font, it->text);
-	     tw = th = 0;
-	     if (it->format->font.font)
-	       c->ENFN->font_string_size_get(c->ENDT, it->format->font.font, it->text, &tw, &th);
-	     it->w = tw;
-	     it->h = th;
-	     c->x = it->x + adv;
-	     return 1;
-	  }
+        chr = GET_PREV(it->text, p);
+        if (_is_white(chr))
+          {
+             _layout_item_text_cutoff(c, it, tp);
+             adv = 0;
+             if (it->format->font.font)
+               adv = c->ENFN->font_h_advance_get(c->ENDT, it->format->font.font, it->text, &it->bidi_props);
+             tw = th = 0;
+             if (it->format->font.font)
+               c->ENFN->font_string_size_get(c->ENDT, it->format->font.font, it->text, &it->bidi_props, &tw, &th);
+             it->w = tw;
+             it->h = th;
+             c->x = it->x + adv;
+             return EINA_TRUE;
+          }
      }
-   return 0;
+   return EINA_FALSE;
 }
 
+/**
+ * FIXME: document
+ */
 static int
 _layout_item_abort(Ctxt *c, Evas_Object_Textblock_Format *fmt, Evas_Object_Textblock_Item *it)
 {
    if (it->text) free(it->text);
-   _format_free(c->obj, it->format);
+   _format_unref_free(c->obj, it->format);
+#ifdef BIDI_SUPPORT
+   evas_bidi_props_clean(&it->bidi_props);
+#endif
    free(it);
    if (c->ln->items)
      {
-	it = (Evas_Object_Textblock_Item *)(EINA_INLIST_GET(c->ln->items))->last;
-	return _layout_strip_trailing_whitespace(c, fmt, it);
+        it = (Evas_Object_Textblock_Item *)(EINA_INLIST_GET(c->ln->items))->last;
+        return _layout_strip_trailing_whitespace(c, fmt, it);
      }
    return 0;
 }
 
-#if 0
-static char *
-_layout_next_char_jump(Ctxt *c, Evas_Object_Textblock_Item *it, char *str)
-{
-   int index;
-
-   index = 0;
-   evas_common_font_utf8_get_next((unsigned char *)str, &index);
-   if (index >= 0)
-     {
-	str = str + index;
-	_layout_item_text_cutoff(c, it, index);
-     }
-   else
-     str = NULL;
-   return str;
-}
-#endif
-
-static int
-_layout_last_item_ends_in_whitespace(Ctxt *c)
+/**
+ * @internal
+ * checks if the last item ends with a whitespace.
+ *
+ * @param c the context to work with - NOT NULL.
+ *
+ * @return #EINA_TRUE if it stripped, #EINA_FALSE otherwise.
+ */
+static Eina_Bool
+_layout_last_item_ends_with_whitespace(Ctxt *c)
 {
    Evas_Object_Textblock_Item *it;
 
-   if (!c->ln->items) return 1;
+   if (!c->ln->items) return EINA_TRUE;
    it = (Evas_Object_Textblock_Item *)(EINA_INLIST_GET(c->ln->items))->last;
-   return _layout_ends_with_space(it->text);
+   return _str_ends_with_whitespace(it->text);
 }
 
+/**
+ * @internal
+ * returns the index of the words end starting from p
+ *
+ * @param str the str to work on - NOT NULL.
+ * @param p start position - must be within strings range..
+ *
+ * @return the position of the end of the word. -1 on error.
+ */
 static int
-_layout_word_end(char *str, int p)
+_layout_word_end(const Eina_Unicode *str, int p)
 {
    int ch, tp;
 
    tp = p;
-   ch = evas_common_font_utf8_get_next((unsigned char *)str, &tp);
+   ch = GET_NEXT(str, tp);
    while ((!_is_white(ch)) && (tp >= 0) && (ch != 0))
      {
-	p = tp;
-	ch = evas_common_font_utf8_get_next((unsigned char *)str, &tp);
+        p = tp;
+        ch = GET_NEXT(str, tp);
      }
    if (ch == 0) return -1;
    return p;
 }
 
+/**
+ * @internal
+ * returns the index of the start of the next word.
+ *
+ * @param str the str to work on - NOT NULL.
+ * @param p start position - must be within strings range..
+ *
+ * @return the position of the start of the next word. -1 on error.
+ */
 static int
-_layout_word_next(char *str, int p)
+_layout_word_next(Eina_Unicode *str, int p)
 {
    int ch, tp;
 
    tp = p;
-   ch = evas_common_font_utf8_get_next((unsigned char *)str, &tp);
+   ch = GET_NEXT(str, tp);
    while ((!_is_white(ch)) && (tp >= 0) && (ch != 0))
      {
-	p = tp;
-	ch = evas_common_font_utf8_get_next((unsigned char *)str, &tp);
+        p = tp;
+        ch = GET_NEXT(str, tp);
      }
    if (ch == 0) return -1;
    while ((_is_white(ch)) && (tp >= 0) && (ch != 0))
      {
-	p = tp;
-	ch = evas_common_font_utf8_get_next((unsigned char *)str, &tp);
+        p = tp;
+        ch = GET_NEXT(str, tp);
      }
    if (ch == 0) return -1;
    return p;
 }
 
+/**
+ * FIXME: doc
+ */
 static void
 _layout_walk_back_to_item_word_redo(Ctxt *c, Evas_Object_Textblock_Item *it)
 {
@@ -1732,334 +2312,392 @@ _layout_walk_back_to_item_word_redo(Ctxt *c, Evas_Object_Textblock_Item *it)
    /* it is not appended yet */
    EINA_INLIST_REVERSE_FOREACH((EINA_INLIST_GET(c->ln->items)), pit)
      {
-	if (_layout_ends_with_space(pit->text))
-	  {
-	     break;
-	  }
-	index = evas_common_font_utf8_get_last((unsigned char *)(pit->text), strlen(pit->text));
-	index = _layout_word_start(pit->text, index);
-	if (index == 0)
-	  remove_items = eina_list_prepend(remove_items, pit);
-	else
-	  {
-	     new_it = _layout_item_new(c, pit->format, pit->text + index);
-	     new_it->source_node = pit->source_node;
-	     new_it->source_pos = pit->source_pos + index;
-	     _layout_item_text_cutoff(c, pit, index);
-	     _layout_strip_trailing_whitespace(c, pit->format, pit);
-	     break;
-	  }
+        if (_str_ends_with_whitespace(pit->text))
+          {
+             break;
+          }
+        index = eina_unicode_strlen(pit->text) - 1;
+        if (index < 0) index = 0;
+        index = _layout_word_start(pit->text, index);
+        if (index == 0)
+          remove_items = eina_list_prepend(remove_items, pit);
+        else
+          {
+             new_it = _layout_item_new(c, pit->format, pit->text + index);
+             new_it->source_node = pit->source_node;
+             new_it->source_pos = pit->source_pos + index;
+             new_it->bidi_props.start = new_it->source_pos;
+             new_it->bidi_props.props = &new_it->source_node->bidi_props;
+# ifdef BIDI_SUPPORT
+             evas_bidi_shape_string(new_it->text, &new_it->bidi_props,
+                   eina_unicode_strlen(new_it->text));
+# endif
+             _layout_item_text_cutoff(c, pit, index);
+             _layout_strip_trailing_whitespace(c, pit->format, pit);
+             break;
+          }
      }
    EINA_LIST_FOREACH(remove_items, l, data)
-     c->ln->items = (Evas_Object_Textblock_Item *)eina_inlist_remove(EINA_INLIST_GET(c->ln->items), data);
+      c->ln->items = (Evas_Object_Textblock_Item *)eina_inlist_remove(EINA_INLIST_GET(c->ln->items), data);
    /* new line now */
    if (remove_items)
      {
-	pit = remove_items->data;
-	_layout_line_advance(c, pit->format);
+        pit = remove_items->data;
+        _layout_line_advance(c, pit->format);
      }
    else
      {
-	_layout_line_advance(c, it->format);
+        _layout_line_advance(c, it->format);
      }
    if (new_it)
      {
-	/* append new_it */
-	tw = th = 0;
-	if (new_it->format->font.font)
-	  c->ENFN->font_string_size_get(c->ENDT, new_it->format->font.font, new_it->text, &tw, &th);
-	new_it->w = tw;
-	new_it->h = th;
-	inset = 0;
-	if (new_it->format->font.font)
-	  inset = c->ENFN->font_inset_get(c->ENDT, new_it->format->font.font, new_it->text);
-	new_it->inset = inset;
-	new_it->x = c->x;
-	adv = 0;
-	if (new_it->format->font.font)
-	  adv = c->ENFN->font_h_advance_get(c->ENDT, new_it->format->font.font, new_it->text);
-	c->x += adv;
-	c->ln->items = (Evas_Object_Textblock_Item *)eina_inlist_append(EINA_INLIST_GET(c->ln->items), EINA_INLIST_GET(new_it));
+        /* append new_it */
+        tw = th = 0;
+        if (new_it->format->font.font)
+          c->ENFN->font_string_size_get(c->ENDT, new_it->format->font.font, new_it->text, &it->bidi_props, &tw, &th);
+        new_it->w = tw;
+        new_it->h = th;
+        inset = 0;
+        if (new_it->format->font.font)
+          inset = c->ENFN->font_inset_get(c->ENDT, new_it->format->font.font, new_it->text);
+        new_it->inset = inset;
+        new_it->x = c->x;
+        adv = 0;
+        if (new_it->format->font.font)
+          adv = c->ENFN->font_h_advance_get(c->ENDT, new_it->format->font.font, new_it->text, &new_it->bidi_props);
+        c->x += adv;
+        c->ln->items = (Evas_Object_Textblock_Item *)eina_inlist_append(EINA_INLIST_GET(c->ln->items), EINA_INLIST_GET(new_it));
      }
    while (remove_items)
      {
-	pit = remove_items->data;
-	remove_items = eina_list_remove_list(remove_items, remove_items);
-	/* append pit */
-	pit->x = c->x;
-	adv = c->ENFN->font_h_advance_get(c->ENDT, pit->format->font.font, pit->text);
-	c->x += adv;
-	c->ln->items = (Evas_Object_Textblock_Item *)eina_inlist_append(EINA_INLIST_GET(c->ln->items), EINA_INLIST_GET(pit));
+        pit = remove_items->data;
+        remove_items = eina_list_remove_list(remove_items, remove_items);
+        /* append pit */
+        pit->x = c->x;
+        adv = c->ENFN->font_h_advance_get(c->ENDT, pit->format->font.font, pit->text, &pit->bidi_props);
+        c->x += adv;
+        c->ln->items = (Evas_Object_Textblock_Item *)eina_inlist_append(EINA_INLIST_GET(c->ln->items), EINA_INLIST_GET(pit));
      }
    if (it)
      {
-	/* append it */
-	it->x = c->x;
-	adv = 0;
-	if (it->format->font.font)
-	  adv = c->ENFN->font_h_advance_get(c->ENDT, it->format->font.font, it->text);
-	c->x += adv;
-	c->ln->items = (Evas_Object_Textblock_Item *)eina_inlist_append(EINA_INLIST_GET(c->ln->items), EINA_INLIST_GET(it));
+        /* append it */
+        it->x = c->x;
+        adv = 0;
+        if (it->format->font.font)
+          adv = c->ENFN->font_h_advance_get(c->ENDT, it->format->font.font, it->text, &it->bidi_props);
+        c->x += adv;
+        c->ln->items = (Evas_Object_Textblock_Item *)eina_inlist_append(EINA_INLIST_GET(c->ln->items), EINA_INLIST_GET(it));
      }
 }
 
+/**
+ * @internal
+ * Appends the text from node n starting at start ending at off to the layout.
+ * It uses the fmt for the formatting.
+ *
+ * @param c the current context- NOT NULL.
+ * @param fmt the format to use.
+ * @param n the text node. - Not null.
+ * @param start the start position. - in range.
+ * @param off the offset - start + offset in range. if offset is -1, it'll add everything to the end of the string if offset = 0 it'll return with doing nothing.
+ * @param repch TBD.
+ */
 static void
-_layout_text_append(Ctxt *c, Evas_Object_Textblock_Format *fmt, Evas_Object_Textblock_Node *n, const char *repch)
+_layout_text_append(Ctxt *c, Evas_Object_Textblock_Format *fmt, Evas_Object_Textblock_Node_Text *n, int start, int off, const char *repch)
 {
    int adv, inset, tw, th, new_line, empty_item;
    int wrap, twrap, ch, index, white_stripped;
-   char *str;
-   const char *tbase;
+   Eina_Unicode *alloc_str = NULL;
+   const Eina_Unicode *str = EINA_UNICODE_EMPTY_STRING;
+   const Eina_Unicode *tbase;
    Evas_Object_Textblock_Item *it;
+
+   /* FIXME: explain the algorithm. */
 
    if (n)
      {
-        if ((repch) && (eina_strbuf_length_get(n->text)))
+        if ((repch) && (eina_ustrbuf_length_get(n->unicode)))
           {
-             int i, len, chlen;
-             char *ptr;
-             
-             len = evas_common_font_utf8_get_len((unsigned char *) eina_strbuf_string_get(n->text));
-             chlen = strlen(repch);
-             str = alloca((len * chlen) + 1);
+             int i, len, ind;
+             Eina_Unicode *ptr;
+             Eina_Unicode urepch;
+
+             len = eina_ustrbuf_length_get(n->unicode);
+             str = alloca((len + 1) * sizeof(Eina_Unicode));
              tbase = str;
-             for (i = 0, ptr = str; i < len; ptr += chlen, i++)
-               memcpy(ptr, repch, chlen);
+             ind = 0;
+             urepch = evas_common_encoding_utf8_get_next(repch, &ind);
+             for (i = 0, ptr = (Eina_Unicode *)tbase; i < len; ptr++, i++)
+               *ptr = urepch;
              *ptr = 0;
           }
         else
           {
-             str = (char *)eina_strbuf_string_get(n->text);
-             tbase = str;
+             int len;
+             int orig_off = off;
+             len = eina_ustrbuf_length_get(n->unicode);
+             if (off == 0) return;
+             else if (off < 0) off = len - start;
+
+             if (start < 0)
+               {
+                  start = 0;
+               }
+             else if ((start == 0) && (off == 0) && (orig_off == -1))
+               {
+                  /* Special case that means that we need to add an empty
+                   * item */
+                  str = EINA_UNICODE_EMPTY_STRING;
+                  goto skip;
+               }
+             else if ((start >= len) || (off > len))
+               {
+                  return;
+               }
+             str = eina_ustrbuf_string_get(n->unicode);
+             alloc_str = eina_unicode_strdup(str + start);
+
+             if (off > 0)
+               {
+                  alloc_str[off] = 0;
+               }
+             str = alloc_str;
           }
      }
-   else
-     {
-        str = "";
-        tbase = str;
-     }
-//   printf("add: wrap: %i|%i, width: %i '%s'\n", fmt->wrap_word, fmt->wrap_char, c->w, str);
+skip:
+   tbase = str;
+   //   printf("add: wrap: %i|%i, width: %i '%s'\n", fmt->wrap_word, fmt->wrap_char, c->w, str);
    new_line = 0;
    empty_item = 0;
+
    while (str)
      {
-	/* if this is the first line item and it starts with spaces - remove them */
-	wrap = 0;
-	white_stripped = 0;
-/*
-	if (!c->ln->items)
-	  {
-	     twrap = wrap;
-	     ch = evas_common_font_utf8_get_next((unsigned char *)str, &wrap);
-	     while (_is_white(ch))
-	       {
-		  twrap = wrap;
-		  ch = evas_common_font_utf8_get_next((unsigned char *)str, &wrap);
-	       }
-	     str = str + twrap;
-	  }
- */
-	it = _layout_item_new(c, fmt, str);
-	it->source_node = n;
-	it->source_pos = str - tbase;
-	tw = th = 0;
-	if (fmt->font.font)
-	  c->ENFN->font_string_size_get(c->ENDT, fmt->font.font, it->text, &tw, &th);
-	if ((c->w >= 0) &&
-	    ((fmt->wrap_word) || (fmt->wrap_char)) &&
-	    ((c->x + tw) >
-	     (c->w - c->o->style_pad.l - c->o->style_pad.r -
-	      c->marginl - c->marginr)))
-	  {
-	     wrap = _layout_text_cutoff_get(c, fmt, it);
+        /* if this is the first line item and it starts with spaces - remove them */
+        wrap = 0;
+        white_stripped = 0;
+
+        it = _layout_item_new(c, fmt, str);
+        it->source_node = n;
+        it->source_pos = start + str - tbase;
+        if (it->source_node)
+          {
+             it->bidi_props.start = it->source_pos;
+             it->bidi_props.props = &it->source_node->bidi_props;
+# ifdef BIDI_SUPPORT
+             evas_bidi_shape_string(it->text, &it->bidi_props,
+                   eina_unicode_strlen(it->text));
+# endif
+          }
+        tw = th = 0;
+        if (fmt->font.font)
+          c->ENFN->font_string_size_get(c->ENDT, fmt->font.font, it->text, &it->bidi_props, &tw, &th);
+        if ((c->w >= 0) &&
+              ((fmt->wrap_word) || (fmt->wrap_char)) &&
+              ((c->x + tw) >
+               (c->w - c->o->style_pad.l - c->o->style_pad.r -
+                c->marginl - c->marginr)))
+          {
+             wrap = _layout_text_cutoff_get(c, fmt, it);
              if (wrap == 0)
-               evas_common_font_utf8_get_next((unsigned char *)str, &wrap);
-	     if (wrap > 0)
-	       {
-		  if (fmt->wrap_word)
-		    {
-		       index = wrap;
-		       ch = evas_common_font_utf8_get_next((unsigned char *)str, &index);
-		       if (!_is_white(ch))
-			 wrap = _layout_word_start(str, wrap);
-		       if (wrap > 0)
-			 {
-			    twrap = wrap;
-			    ch = evas_common_font_utf8_get_prev((unsigned char *)str, &twrap);
-			    /* the text intersects the wrap point on a whitespace char */
-			    if (_is_white(ch))
-			      {
-				 _layout_item_text_cutoff(c, it, wrap);
-				 twrap = wrap;
-				 /*we don't want to move next, that's why it's
-				  * commented out.
-				  * ch = evas_common_font_utf8_get_next((unsigned char *)str, &twrap);
-				  */
-				 str = str + twrap;
-			      }
-			    /* intersects a word */
-			    else
-			      {
-				 /* walk back to start of word */
-				 twrap = _layout_word_start(str, wrap);
-				 if (twrap != 0)
-				   {
-				      wrap = twrap;
-				      ch = evas_common_font_utf8_get_prev((unsigned char *)str, &twrap);
-				      _layout_item_text_cutoff(c, it, twrap);
-				      str = str + wrap;
-				   }
-				 else
-				   {
-				      empty_item = 1;
-				      if (it->text) free(it->text);
-				      _format_free(c->obj, it->format);
-				      free(it);
+               GET_NEXT(str, wrap);
+             if (wrap > 0)
+               {
+                  if (fmt->wrap_word)
+                    {
+                       index = wrap;
+                       ch = GET_NEXT(str, index);
+                       if (!_is_white(ch))
+                         wrap = _layout_word_start(str, wrap);
+                       if (wrap > 0)
+                         {
+                            twrap = wrap;
+                            ch = GET_PREV(str, twrap);
+                            /* the text intersects the wrap point on a whitespace char */
+                            if (_is_white(ch))
+                              {
+                                 _layout_item_text_cutoff(c, it, wrap);
+                                 twrap = wrap;
+                                 /*we don't want to move next, that's why it's
+                                  * commented out.
+                                  * ch = evas_common_font_utf8_get_next((unsigned char *)str, &twrap);
+                                  */
+                                 str += twrap;
+                              }
+                            /* intersects a word */
+                            else
+                              {
+                                 /* walk back to start of word */
+                                 twrap = _layout_word_start(str, wrap);
+                                 if (twrap != 0)
+                                   {
+                                      wrap = twrap;
+                                      ch = GET_PREV(str, twrap);
+                                      _layout_item_text_cutoff(c, it, twrap);
+                                      str += wrap;
+                                   }
+                                 else
+                                   {
+                                      empty_item = 1;
+                                      if (it->text) free(it->text);
+                                      _format_unref_free(c->obj, it->format);
+                                      free(it);
                                       if (c->ln->items)
                                         {
                                            it = (Evas_Object_Textblock_Item *)(EINA_INLIST_GET(c->ln->items))->last;
                                            _layout_strip_trailing_whitespace(c, fmt, it);
                                            twrap = _layout_word_end(str, wrap);
-					   if (twrap >= 0)
-					     {
-						ch = evas_common_font_utf8_get_next((unsigned char *)str, &twrap);
-						str = str + twrap;
-					     }
-					   else
-					     str = NULL;
+                                           if (twrap >= 0)
+                                             {
+                                                ch = GET_NEXT(str, twrap);
+                                                str += twrap;
+                                             }
+                                           else
+                                             str = NULL;
                                         }
-				   }
-			      }
-			 }
-		       else
-			 {
-			    /* wrap now is the index of the word START */
-			    index = wrap;
-			    ch = evas_common_font_utf8_get_next((unsigned char *)str, &index);
-			    if (!_is_white(ch) &&
-				(!_layout_last_item_ends_in_whitespace(c)))
-			      {
-				 _layout_walk_back_to_item_word_redo(c, it);
-				 return;
-			      }
-			    if (c->ln->items != NULL)
-			      {
-				 white_stripped = _layout_item_abort(c, fmt, it);
-				 empty_item = 1;
-			      }
-			    else
-			      {
-				 if (wrap <= 0)
-				   {
-				      wrap = 0;
-				      twrap = _layout_word_end(it->text, wrap);
-				      wrap = twrap;
-				      if (twrap >= 0)
-					{
-					   ch = evas_common_font_utf8_get_next((unsigned char *)str, &wrap);
-					   _layout_item_text_cutoff(c, it, twrap);
-					}
-				      if (wrap > 0)
-					str = str + wrap;
-				      else
-					str = NULL;
-				   }
-				 else
-				   str = NULL;
-			      }
-			 }
-		    }
-		  else if (fmt->wrap_char)
-		    {
-		       _layout_item_text_cutoff(c, it, wrap);
-		       str = str + wrap;
-		    }
-		  new_line = 1;
-	       }
-	     else
-	       {
-		  /* wrap now is the index of the word START */
-		  if (wrap <= 0)
-		    {
-		       if (wrap < 0) wrap = 0;
-		       index = wrap;
-		       ch = evas_common_font_utf8_get_next((unsigned char *)str, &index);
-		       if (!_is_white(ch) &&
-			   (!_layout_last_item_ends_in_whitespace(c)))
-			 {
-			    _layout_walk_back_to_item_word_redo(c, it);
-			    return;
-			 }
-		    }
-		  if (c->ln->items != NULL)
-		    {
-		       white_stripped = _layout_item_abort(c, fmt, it);
-		       empty_item = 1;
-		       new_line = 1;
-		    }
-		  else
-		    {
-		       if (wrap <= 0)
-			 {
-			    wrap = 0;
-			    twrap = _layout_word_end(it->text, wrap);
-			    wrap = _layout_word_next(it->text, wrap);
-			    if (twrap >= 0)
-			      _layout_item_text_cutoff(c, it, twrap);
-			    if (wrap >= 0)
-			      str = str + wrap;
-			    else
-			      str = NULL;
-			 }
-		       else
-			 str = NULL;
-		       new_line = 1;
-		    }
-	       }
-	     if (!empty_item)
-	       {
-		  tw = th = 0;
-		  if (fmt->font.font)
-		    c->ENFN->font_string_size_get(c->ENDT, fmt->font.font, it->text, &tw, &th);
-	       }
-	  }
-	else
-	  str = NULL;
-	if (empty_item) empty_item = 0;
-	else
-	  {
-	     it->w = tw;
-	     it->h = th;
-	     inset = 0;
-	     if (fmt->font.font)
-	       inset = c->ENFN->font_inset_get(c->ENDT, fmt->font.font, it->text);
-	     it->inset = inset;
-	     it->x = c->x;
-	     adv = 0;
-	     if (fmt->font.font)
-	       adv = c->ENFN->font_h_advance_get(c->ENDT, fmt->font.font, it->text);
-	     c->x += adv;
-	     c->ln->items = (Evas_Object_Textblock_Item *)eina_inlist_append(EINA_INLIST_GET(c->ln->items), EINA_INLIST_GET(it));
-	  }
-	if (new_line)
-	  {
-	     if (str)
-	       {
-		  if (!white_stripped)
-		    {
-		       index = 0;
-		       ch = evas_common_font_utf8_get_next((unsigned char *)str, &index);
-		       if (_is_white(ch)) str += index;
-		    }
-	       }
-	     new_line = 0;
-	     _layout_line_advance(c, fmt);
-	  }
+                                   }
+                              }
+                         }
+                       else
+                         {
+                            /* wrap now is the index of the word START */
+                            index = wrap;
+                            ch = GET_NEXT(str, index);
+                            if (!_is_white(ch) &&
+                                  (!_layout_last_item_ends_with_whitespace(c)))
+                              {
+                                 _layout_walk_back_to_item_word_redo(c, it);
+                                 goto end;
+                              }
+                            if (c->ln->items != NULL)
+                              {
+                                 white_stripped = _layout_item_abort(c, fmt, it);
+                                 empty_item = 1;
+                              }
+                            else
+                              {
+                                 if (wrap <= 0)
+                                   {
+                                      wrap = 0;
+                                      twrap = _layout_word_end(it->text, wrap);
+                                      wrap = twrap;
+                                      if (twrap >= 0)
+                                        {
+                                           ch = GET_NEXT(str, wrap);
+                                           _layout_item_text_cutoff(c, it, twrap);
+                                        }
+                                      if (wrap > 0)
+                                        str += wrap;
+                                      else
+                                        str = NULL;
+                                   }
+                                 else
+                                   str = NULL;
+                              }
+                         }
+                    }
+                  else if (fmt->wrap_char)
+                    {
+                       _layout_item_text_cutoff(c, it, wrap);
+                       str += wrap;
+                    }
+                  new_line = 1;
+               }
+             else
+               {
+                  /* wrap now is the index of the word START */
+                  if (wrap <= 0)
+                    {
+                       if (wrap < 0) wrap = 0;
+                       index = wrap;
+                       ch = GET_NEXT(str, index);
+                       if (!_is_white(ch) &&
+                             (!_layout_last_item_ends_with_whitespace(c)))
+                         {
+                            _layout_walk_back_to_item_word_redo(c, it);
+                            goto end;
+                         }
+                    }
+                  if (c->ln->items != NULL)
+                    {
+                       white_stripped = _layout_item_abort(c, fmt, it);
+                       empty_item = 1;
+                       new_line = 1;
+                    }
+                  else
+                    {
+                       if (wrap <= 0)
+                         {
+                            wrap = 0;
+                            twrap = _layout_word_end(it->text, wrap);
+                            wrap = _layout_word_next(it->text, wrap);
+                            if (twrap >= 0)
+                              _layout_item_text_cutoff(c, it, twrap);
+                            if (wrap >= 0)
+                              str += wrap;
+                            else
+                              str = NULL;
+                         }
+                       else
+                         str = NULL;
+                       new_line = 1;
+                    }
+               }
+             if (!empty_item)
+               {
+                  tw = th = 0;
+                  if (fmt->font.font)
+                    c->ENFN->font_string_size_get(c->ENDT, fmt->font.font, it->text, &it->bidi_props, &tw, &th);
+               }
+          }
+        else
+          str = NULL;
+        if (empty_item) empty_item = 0;
+        else
+          {
+             it->w = tw;
+             it->h = th;
+             inset = 0;
+             if (fmt->font.font)
+               inset = c->ENFN->font_inset_get(c->ENDT, fmt->font.font, it->text);
+             it->inset = inset;
+             it->x = c->x;
+             adv = 0;
+             if (fmt->font.font)
+               adv = c->ENFN->font_h_advance_get(c->ENDT, fmt->font.font, it->text, &it->bidi_props);
+             c->x += adv;
+             c->ln->items = (Evas_Object_Textblock_Item *)eina_inlist_append(EINA_INLIST_GET(c->ln->items), EINA_INLIST_GET(it));
+          }
+        if (new_line)
+          {
+             if (str)
+               {
+                  if (!white_stripped)
+                    {
+                       index = 0;
+                       ch = GET_NEXT(str, index);
+                       if (_is_white(ch)) str += index;
+                    }
+               }
+             new_line = 0;
+             _layout_line_advance(c, fmt);
+          }
      }
+end:
+   if (alloc_str) free(alloc_str);
 }
 
+/**
+ * @internal
+ * Add a format item from the format node n and the item item.
+ *
+ * @param c the current context- NOT NULL.
+ * @param n the source format node - not null.
+ * @param item the format text - not null.
+ *
+ * @return the new format item.
+ */
 static Evas_Object_Textblock_Format_Item *
-_layout_format_item_add(Ctxt *c, Evas_Object_Textblock_Node *n, char *item)
+_layout_format_item_add(Ctxt *c, Evas_Object_Textblock_Node_Format *n, const char *item)
 {
    Evas_Object_Textblock_Format_Item *fi;
 
@@ -2067,17 +2705,254 @@ _layout_format_item_add(Ctxt *c, Evas_Object_Textblock_Node *n, char *item)
    fi->item = eina_stringshare_add(item);
    fi->source_node = n;
    c->ln->format_items = (Evas_Object_Textblock_Format_Item *)eina_inlist_append(EINA_INLIST_GET(c->ln->format_items),
-										 EINA_INLIST_GET(fi));
+         EINA_INLIST_GET(fi));
    return fi;
 }
 
+/**
+ * @internal
+ * Returns true if the item is a line spearator, false otherwise
+ * @def _IS_LINE_SEPARATOR(item)
+ */
+#define _IS_LINE_SEPARATOR(item)                                             \
+   (!strcmp(item, "\n") || !strcmp(item, "\\n"))
+/**
+ * @internal
+ * Returns true if the item is a paragraph separator, false otherwise
+ * @def _IS_PARAGRAPH_SEPARATOR(item)
+ */
+#define _IS_PARAGRAPH_SEPARATOR(item)                                        \
+   (!strcmp(item, "ps")) /* Paragraph separator */
+
+/**
+ * @internal
+ * Handles a format by proccessing a format node. It returns the relevant format
+ * through _fmt and updates the padding throught style_pad_*. If needed,
+ * it creates a format item.
+ *
+ * @param obj the evas object - NOT NULL.
+ * @param c the current context- NOT NULL.
+ * @param _fmt the format that holds the result.
+ * @param n the source format node - not null.
+ * @param style_pad_l the pad to update.
+ * @param style_pad_r the pad to update.
+ * @param style_pad_t the pad to update.
+ * @param style_pad_b the pad to update.
+ */
+static void
+_layout_do_format(const Evas_Object *obj, Ctxt *c,
+      Evas_Object_Textblock_Format **_fmt, Evas_Object_Textblock_Node_Format *n,
+      int *style_pad_l, int *style_pad_r, int *style_pad_t, int *style_pad_b)
+{
+   Evas_Object_Textblock_Format *fmt = *_fmt;
+   /* FIXME: comment the algo */
+
+   const char *s;
+   const char *item;
+   int handled = 0;
+
+   s = eina_strbuf_string_get(n->format);
+   if (!strncmp(s, "+ item ", 7))
+     {
+        // one of:
+        //   item size=20x10 href=name
+        //   item relsize=20x10 href=name
+        //   item abssize=20x10 href=name
+        // 
+        // optional arguments:
+        //   vsize=full
+        //   vsize=ascent
+        // 
+        // size == item size (modifies line size) - can be multiplied by
+        //   scale factor
+        // relsize == relative size (height is current font height, width
+        //   modified accordingly keeping aspect)
+        // abssize == absolute size (modifies line size) - never mulitplied by
+        //   scale factor
+        // href == name of item - to be found and matched later and used for
+        //   positioning
+        Evas_Object_Textblock_Format_Item *fi;
+        int x2, w = 1, h = 1;
+        int vsize = 0, size = 0;
+        char *p;
+
+        // don't care
+        //href = strstr(s, " href=");
+        p = strstr(s, " vsize=");
+        if (p)
+          {
+             p += 7;
+             if (!strncmp(p, "full", 4)) vsize = VSIZE_FULL;
+             else if (!strncmp(p, "ascent", 6)) vsize = VSIZE_ASCENT;
+          }
+        p = strstr(s, " size=");
+        if (p)
+          {
+             p += 6;
+             if (sscanf(p, "%ix%i", &w, &h) == 2)
+               {
+                  w = w * obj->cur.scale;
+                  h = h * obj->cur.scale;
+                  size = SIZE;
+               }
+          }
+        else
+          {
+             p = strstr(s, " absize=");
+             if (p)
+               {
+                  p += 8;
+                  if (sscanf(p, "%ix%i", &w, &h) == 2)
+                    {
+                       size = SIZE_ABS;
+                    }
+               }
+             else
+               {
+                  p = strstr(s, " relsize=");
+                  if (p)
+                    {
+                       p += 9;
+                       if (sscanf(p, "%ix%i", &w, &h) == 2)
+                         {
+                            int sz = 1;
+                            size = SIZE_REL;
+                            if (vsize == VSIZE_FULL)
+                              {
+                                 sz = c->maxdescent + c->maxascent;
+                              }
+                            else if (vsize == VSIZE_ASCENT)
+                              {
+                                 sz = c->maxascent;
+                              }
+                            w = (w * sz) / h;
+                            h = sz;
+                         }
+                    }
+               }
+          }
+
+        x2 = c->x + w;
+
+        if (x2 >
+              (c->w - c->o->style_pad.l -
+               c->o->style_pad.r -
+               c->marginl - c->marginr))
+          {
+             _layout_line_advance(c, fmt);
+             x2 = w;
+          }
+        fi = _layout_format_item_add(c, n, NULL);
+        fi->x = c->x;
+        fi->vsize = vsize;
+        fi->size = size;
+        fi->formatme = 1;
+        fi->w = w;
+        fi->h = h;
+        fi->ascent = c->maxascent;
+        fi->descent = c->maxdescent;
+        c->x = x2;
+        handled = 1;
+     }
+   if (!handled)
+     {
+        if (s[0] == '+')
+          {
+             fmt = _layout_format_push(c, fmt);
+             s++;
+          }
+        else if (s[0] == '-')
+          {
+             fmt = _layout_format_pop(c, fmt);
+             s++;
+          }
+        while ((item = _format_parse(&s)))
+          {
+             char *tmp = alloca(s - item + 1);
+             strncpy(tmp, item, s - item);
+             tmp[s - item] = '\0';
+             if (_format_is_param(item))
+               {
+                  _layout_format_value_handle(c, fmt, item);
+               }
+             else
+               {
+                  if (_IS_PARAGRAPH_SEPARATOR(item))
+                    {
+                       Evas_Object_Textblock_Format_Item *fi;
+
+                       fi = _layout_format_item_add(c, n, item);
+                       fi->x = c->x;
+                       fi->w = 0;
+                       _layout_line_advance(c, fmt);
+
+                    }
+                  else if (_IS_LINE_SEPARATOR(item))
+                    {
+                       Evas_Object_Textblock_Format_Item *fi;
+
+                       fi = _layout_format_item_add(c, n, item);
+                       fi->x = c->x;
+                       fi->w = 0;
+                       _layout_line_advance(c, fmt);
+                    }
+                  else if ((!strcmp(item, "\t")) || (!strcmp(item, "\\t")))
+                    {
+                       Evas_Object_Textblock_Format_Item *fi;
+                       int x2;
+
+                       x2 = (fmt->tabstops * ((c->x + fmt->tabstops) / fmt->tabstops));
+                       if (x2 >
+                             (c->w - c->o->style_pad.l -
+                              c->o->style_pad.r -
+                              c->marginl - c->marginr))
+                         {
+                            _layout_line_advance(c, fmt);
+                            x2 = (fmt->tabstops * ((c->x + fmt->tabstops) / fmt->tabstops));
+                         }
+                       if (c->ln->items)
+                         {
+                            Evas_Object_Textblock_Item *it;
+
+                            it = (Evas_Object_Textblock_Item *)(EINA_INLIST_GET(c->ln->items))->last;
+                            _layout_strip_trailing_whitespace(c, fmt, it);
+                         }
+                       fi = _layout_format_item_add(c, n, item);
+                       fi->x = c->x;
+                       fi->w = x2 - c->x;
+                       c->x = x2;
+                    }
+               }
+          }
+     }
+
+   evas_text_style_pad_get(fmt->style, style_pad_l, style_pad_r, style_pad_t, style_pad_b);
+
+   if (fmt->underline2)
+     c->have_underline2 = 1;
+   else if (fmt->underline)
+     c->have_underline = 1;
+   *_fmt = fmt;
+}
+
+/**
+ * @internal
+ * Create the layout from the nodes.
+ *
+ * @param obj the evas object - NOT NULL.
+ * @param calc_only true if should only calc sizes false if should also create the layout..
+ * @param w the object's w.
+ * @param h the object's h.
+ * @param w_ret the object's calculated w.
+ * @param h_ret the object's calculated h.
+ */
 static void
 _layout(const Evas_Object *obj, int calc_only, int w, int h, int *w_ret, int *h_ret)
 {
    Evas_Object_Textblock *o;
    Ctxt ctxt, *c;
    Evas_Object_Textblock_Line *ln;
-   Evas_Object_Textblock_Node *n;
+   Evas_Object_Textblock_Node_Text *n;
    Eina_List *removes = NULL;
    Evas_Object_Textblock_Format *fmt = NULL;
    int style_pad_l = 0, style_pad_r = 0, style_pad_t = 0, style_pad_b = 0;
@@ -2087,7 +2962,7 @@ _layout(const Evas_Object *obj, int calc_only, int w, int h, int *w_ret, int *h_
    c = &ctxt;
    c->obj = (Evas_Object *)obj;
    c->o = o;
-   c->lines = c->ln = NULL;
+   c->paragraphs = c->par = NULL;
    c->format_stack = NULL;
    c->x = c->y = 0;
    c->w = w;
@@ -2100,397 +2975,257 @@ _layout(const Evas_Object *obj, int calc_only, int w, int h, int *w_ret, int *h_
    c->underline_extend = 0;
    c->line_no = 0;
    c->align = 0.0;
+   c->align_auto = EINA_TRUE;
+   c->ln = NULL;
 
-   _format_command_init();
    /* setup default base style */
    if ((c->o->style) && (c->o->style->default_tag))
      {
-	fmt = _layout_format_push(c, NULL);
-	_format_fill(c->obj, fmt, c->o->style->default_tag);
+        fmt = _layout_format_push(c, NULL);
+        _format_fill(c->obj, fmt, c->o->style->default_tag);
      }
    if (!fmt)
      {
-	_format_command_shutdown();
-	if (w_ret) *w_ret = 0;
-	if (h_ret) *h_ret = 0;
-	return;
+        if (w_ret) *w_ret = 0;
+        if (h_ret) *h_ret = 0;
+        return;
      }
    /* run through all text and format nodes generating lines */
-   if (!c->o->nodes)
+   if (!c->o->text_nodes && !c->o->format_nodes)
      {
-        if (!c->ln)
+        /* If there are no nodes and lines, do the inital creation. */
+        if (!c->par && !c->ln)
           {
+             _layout_paragraph_new(c);
              _layout_line_new(c, fmt);
-             _layout_text_append(c, fmt, NULL, NULL);
+             _layout_text_append(c, fmt, NULL, 0, 0, NULL);
              _layout_line_advance(c, fmt);
-//             printf("bl:%i | %ix%i\n", c->ln->baseline, c->ln->w, c->ln->h);
-             /*
-             tw = th = 0;
-             if (fmt->font.font)
-               {
-                  c->ENFN->font_string_size_get(c->ENDT, fmt->font.font, "", &tw, &th);
-                  c->ln->x = 0;
-                  c->ln->y = 0;
-                  c->ln->w = tw;
-                  c->ln->h = th;
-                  c->wmax = tw;
-                  c->hmax = th;
-                  _layout_format_ascent_descent_adjust(c, fmt);
-               }
-              */
           }
      }
-   EINA_INLIST_FOREACH(c->o->nodes, n)
+
+   /* Go through all the text nodes to create the layout from */
+   EINA_INLIST_FOREACH(c->o->text_nodes, n)
      {
-	if (!c->ln) _layout_line_new(c, fmt);
-	if ((n->type == NODE_FORMAT) && eina_strbuf_length_get(n->text))
-	  {
-	     char *s;
-	     char *item;
-             int handled = 0;
+        Evas_Object_Textblock_Node_Format *fnode;
+        size_t start;
+        int off;
 
-	     s = (char *)eina_strbuf_string_get(n->text);
-             if (!strncmp(s, "+ item ", 7))
+        /*FIXME-tom: A hack, so we'll only have one paragraph
+         * until full support is implemented */
+        if (!c->par)
+          {
+             _layout_paragraph_new(c); /* Each node is a paragraph */
+          }
+        if (!c->ln) _layout_line_new(c, fmt);
+
+        /* For each text node to thorugh all of it's format nodes
+         * append text from the start to the offset of the next format
+         * using the last format got. if needed it also creates format items
+         * this is the core algorithm of the layout mechanism.
+         * Skip the unicode replacement chars when there are because
+         * we don't want to print them. */
+        fnode = n->format_node;
+        start = off = 0;
+        while (fnode && (fnode->text_node == n))
+          {
+             off += fnode->offset;
+             /* No need to skip on the first run, or a non-visible one */
+             _layout_text_append(c, fmt, n, start, off, o->repch);
+             _layout_do_format(obj, c, &fmt, fnode, &style_pad_l, &style_pad_r, &style_pad_t, &style_pad_b);
+             if ((c->have_underline2) || (c->have_underline))
                {
-                  // one of:
-                  //   item size=20x10 href=name
-                  //   item relsize=20x10 href=name
-                  //   item abssize=20x10 href=name
-                  // 
-                  // optional arguments:
-                  //   vsize=full
-                  //   vsize=ascent
-                  // 
-                  // size == item size (modifies line size) - can be multiplied by
-                  //   scale factor
-                  // relsize == relative size (height is current font height, width
-                  //   modified accordingly keeping aspect)
-                  // abssize == absolute size (modifies line size) - never mulitplied by
-                  //   scale factor
-                  // href == name of item - to be found and matched later and used for
-                  //   positioning
-                  Evas_Object_Textblock_Format_Item *fi;
-                  int x2, w = 1, h = 1;
-                  int vsize = 0, size = 0;
-                  char *p;
-                  
-                  // don't care
-                  //href = strstr(s, " href=");
-                  p = strstr(s, " vsize=");
-                  if (p)
-                    {
-                       p += 7;
-                       if (!strncmp(p, "full", 4)) vsize = VSIZE_FULL;
-                       else if (!strncmp(p, "ascent", 6)) vsize = VSIZE_ASCENT;
-                    }
-                  p = strstr(s, " size=");
-                  if (p)
-                    {
-                       p += 6;
-                       if (sscanf(p, "%ix%i", &w, &h) == 2)
-                         {
-                            w = w * obj->cur.scale;
-                            h = h * obj->cur.scale;
-                            size = SIZE;
-                         }
-                    }
-                  else
-                    {
-                       p = strstr(s, " absize=");
-                       if (p)
-                         {
-                            p += 8;
-                            if (sscanf(p, "%ix%i", &w, &h) == 2)
-                              {
-                                 size = SIZE_ABS;
-                              }
-                         }
-                       else
-                         {
-                            p = strstr(s, " relsize=");
-                            if (p)
-                              {
-                                 p += 9;
-                                 if (sscanf(p, "%ix%i", &w, &h) == 2)
-                                   {
-                                      int sz = 1;
-                                      size = SIZE_REL;
-                                      if (vsize == VSIZE_FULL)
-                                        {
-                                           sz = c->maxdescent + c->maxascent;
-                                        }
-                                      else if (vsize == VSIZE_ASCENT)
-                                        {
-                                           sz = c->maxascent;
-                                        }
-                                      w = (w * sz) / h;
-                                      h = sz;
-                                   }
-                              }
-                         }
-                    }
-
-                  x2 = c->x + w;
-                  
-                  if (x2 >
-                      (c->w - c->o->style_pad.l -
-                       c->o->style_pad.r -
-                       c->marginl - c->marginr))
-                    {
-                       _layout_line_advance(c, fmt);
-                       x2 = w;
-                    }
-                  fi = _layout_format_item_add(c, n, item);
-                  fi->x = c->x;
-                  fi->vsize = vsize;
-                  fi->size = size;
-                  fi->formatme = 1;
-                  fi->w = w;
-                  fi->h = h;
-                  fi->ascent = c->maxascent;
-                  fi->descent = c->maxdescent;
-                  c->x = x2;
-                  handled = 1;
+                  if (style_pad_b < c->underline_extend)
+                    style_pad_b = c->underline_extend;
+                  c->have_underline = 0;
+                  c->have_underline2 = 0;
+                  c->underline_extend = 0;
                }
-             if (!handled)
+             start += off;
+             if (fnode->visible)
                {
-                  if (s[0] == '+')
-                    {
-                       fmt = _layout_format_push(c, fmt);
-                       s++;
-                    }
-                  else if (s[0] == '-')
-                    {
-                       fmt = _layout_format_pop(c, fmt);
-                       s++;
-                    }
-                  while ((item = _format_parse(&s)))
-                    {
-                       char tmp_delim = *s;
-                       *s = '\0';
-                       if (_format_is_param(item))
-                         {
-                            _layout_format_value_handle(c, fmt, item);
-                         }
-                       else
-                         {
-                            if ((!strcmp(item, "\n")) || (!strcmp(item, "\\n")))
-                              {
-                                 Evas_Object_Textblock_Format_Item *fi;
-                                 
-                                 fi = _layout_format_item_add(c, n, item);
-                                 fi->x = c->x;
-                                 fi->w = 0;
-                                 _layout_line_advance(c, fmt);
-                              }
-                            else if ((!strcmp(item, "\t")) || (!strcmp(item, "\\t")))
-                              {
-                                 Evas_Object_Textblock_Format_Item *fi;
-                                 int x2;
-                                 
-                                 x2 = (fmt->tabstops * ((c->x + fmt->tabstops) / fmt->tabstops));
-                                 if (x2 >
-                                     (c->w - c->o->style_pad.l -
-                                      c->o->style_pad.r -
-                                      c->marginl - c->marginr))
-                                   {
-                                      _layout_line_advance(c, fmt);
-                                      x2 = (fmt->tabstops * ((c->x + fmt->tabstops) / fmt->tabstops));
-                                   }
-                                 if (c->ln->items)
-                                   {
-                                      Evas_Object_Textblock_Item *it;
-                                      
-                                      it = (Evas_Object_Textblock_Item *)(EINA_INLIST_GET(c->ln->items))->last;
-                                      _layout_strip_trailing_whitespace(c, fmt, it);
-                                   }
-                                 fi = _layout_format_item_add(c, n, item);
-                                 fi->x = c->x;
-                                 fi->w = x2 - c->x;
-                                 c->x = x2;
-                              }
-                         }
-                       *s = tmp_delim;
-                    }
+                  off = -1;
+                  start++;
                }
-             
-	     evas_text_style_pad_get(fmt->style, &style_pad_l, &style_pad_r, &style_pad_t, &style_pad_b);
-
-	     if (fmt->underline2)
-	       c->have_underline2 = 1;
-	     else if (fmt->underline)
-	       c->have_underline = 1;
-	  }
-	else if ((n->type == NODE_TEXT) && eina_strbuf_length_get(n->text))
-	  {
-	     _layout_text_append(c, fmt, n, o->repch);
-	     if ((c->have_underline2) || (c->have_underline))
-	       {
-		  if (style_pad_b < c->underline_extend)
-		    style_pad_b = c->underline_extend;
-		  c->have_underline = 0;
-		  c->have_underline2 = 0;
-		  c->underline_extend = 0;
-	       }
-	  }
+             else
+               {
+                  off = 0;
+               }
+             fnode = _NODE_FORMAT(EINA_INLIST_GET(fnode)->next);
+          }
+        _layout_text_append(c, fmt, n, start, -1, o->repch);
      }
+   /* Advance the line so it'll calculate the size */
    if ((c->ln) && (c->ln->items) && (fmt))
      _layout_line_advance(c, fmt);
+
+   /* Clean the rest of the format stack */
    while (c->format_stack)
      {
-	fmt = c->format_stack->data;
-	c->format_stack = eina_list_remove_list(c->format_stack, c->format_stack);
-	_format_free(c->obj, fmt);
+        fmt = c->format_stack->data;
+        c->format_stack = eina_list_remove_list(c->format_stack, c->format_stack);
+        _format_unref_free(c->obj, fmt);
      }
-   EINA_INLIST_FOREACH(c->lines, ln)
+   EINA_INLIST_FOREACH(c->par->lines, ln)
      {
-	if (ln->line_no == -1)
-	  {
-	     removes = eina_list_append(removes, ln);
-	  }
-	else
-	  {
-	     if ((ln->y + ln->h) > c->hmax) c->hmax = ln->y + ln->h;
-	  }
+        if (ln->line_no == -1)
+          {
+             removes = eina_list_append(removes, ln);
+          }
+        else
+          {
+             if ((ln->y + ln->h) > c->hmax) c->hmax = ln->y + ln->h;
+          }
      }
+   /* Remove the lines we marked for removal, mostly lines added after
+    * just to force calculation of line sizes */
    while (removes)
      {
-	ln = removes->data;
-	c->lines = (Evas_Object_Textblock_Line *)eina_inlist_remove(EINA_INLIST_GET(c->lines), EINA_INLIST_GET(ln));
-	removes = eina_list_remove_list(removes, removes);
-	_line_free(obj, ln);
+        ln = removes->data;
+        c->par->lines = (Evas_Object_Textblock_Line *)eina_inlist_remove(EINA_INLIST_GET(c->par->lines), EINA_INLIST_GET(ln));
+        removes = eina_list_remove_list(removes, removes);
+        _line_free(obj, ln);
      }
 
    if (w_ret) *w_ret = c->wmax;
    if (h_ret) *h_ret = c->hmax;
    if ((o->style_pad.l != style_pad_l) || (o->style_pad.r != style_pad_r) ||
-       (o->style_pad.t != style_pad_t) || (o->style_pad.b != style_pad_b))
+         (o->style_pad.t != style_pad_t) || (o->style_pad.b != style_pad_b))
      {
-	Evas_Object_Textblock_Line *lines;
+        Evas_Object_Textblock_Line *lines;
 
-	lines = c->lines;
-	c->lines = NULL;
-	o->style_pad.l = style_pad_l;
-	o->style_pad.r = style_pad_r;
-	o->style_pad.t = style_pad_t;
-	o->style_pad.b = style_pad_b;
-	_layout(obj, calc_only, w, h, w_ret, h_ret);
-        _lines_clear(obj, lines);
-	_format_command_shutdown();
-	return;
+        lines = c->par->lines;
+        c->par->lines = NULL;
+        o->style_pad.l = style_pad_l;
+        o->style_pad.r = style_pad_r;
+        o->style_pad.t = style_pad_t;
+        o->style_pad.b = style_pad_b;
+        _layout(obj, calc_only, w, h, w_ret, h_ret);
+        _paragraphs_clear(obj, c->paragraphs);
+        return;
      }
    if (!calc_only)
      {
-	o->lines = c->lines;
-	_format_command_shutdown();
-	return;
+        o->paragraphs = c->paragraphs;
+        return;
      }
-   if (c->lines) _lines_clear(obj, c->lines);
-   _format_command_shutdown();
+   if (c->paragraphs) _paragraphs_clear(obj, c->paragraphs);
 }
 
+/**
+ * FIXME: doc
+ */
 static void
 _relayout(const Evas_Object *obj)
 {
    Evas_Object_Textblock *o;
-   Evas_Object_Textblock_Line *lines;
+   Evas_Object_Textblock_Paragraph *paragraphs;
 
    o = (Evas_Object_Textblock *)(obj->object_data);
-   lines = o->lines;
-   o->lines = NULL;
+   paragraphs = o->paragraphs;
+   o->paragraphs = NULL;
    o->formatted.valid = 0;
    o->native.valid = 0;
    _layout(obj,
-	   0,
-	   obj->cur.geometry.w, obj->cur.geometry.h,
-	   &o->formatted.w, &o->formatted.h);
+         0,
+         obj->cur.geometry.w, obj->cur.geometry.h,
+         &o->formatted.w, &o->formatted.h);
    o->formatted.valid = 1;
-   if (lines) _lines_clear(obj, lines);
+   if (paragraphs) _paragraphs_clear(obj, paragraphs);
    o->last_w = obj->cur.geometry.w;
    o->changed = 0;
    o->redraw = 1;
 }
 
+/**
+ * @internal
+ * Find the layout item and line that match the text node and position passed.
+ *
+ * @param obj the evas object - NOT NULL.
+ * @param n the text node - Not null.
+ * @param pos the position to look for - valid.
+ * @param[out] lnr the line found - not null.
+ * @param[out] itr the item found - not null.
+ * @see _find_layout_format_item_line_match()
+ */
 static void
-_find_layout_item_line_match(Evas_Object *obj, Evas_Object_Textblock_Node *n, int pos, int eol, Evas_Object_Textblock_Line **lnr, Evas_Object_Textblock_Item **itr)
+_find_layout_item_line_match(Evas_Object *obj, Evas_Object_Textblock_Node_Text *n, int pos, Evas_Object_Textblock_Line **lnr, Evas_Object_Textblock_Item **itr)
 {
    Evas_Object_Textblock_Line *ln;
-/*    Evas_Object_Textblock_Node *nn; */
    Evas_Object_Textblock *o;
 
    o = (Evas_Object_Textblock *)(obj->object_data);
-/*    EINA_INLIST_FOREACH(o->nodes, nn) */
-/*      ; */
-   if ((eol) && (n->type == NODE_TEXT))
+   if (!o->formatted.valid) _relayout(obj);
+   EINA_INLIST_FOREACH(o->paragraphs->lines, ln)
      {
-        int pos2 = pos;
-
-        evas_common_font_utf8_get_prev((unsigned char *) eina_strbuf_string_get(n->text), &pos2);
-        if (pos2 < pos) pos = pos2;
-     }
-   EINA_INLIST_FOREACH(o->lines, ln)
-     {
-	Evas_Object_Textblock_Format_Item *fit;
-	Evas_Object_Textblock_Item *it;
+        Evas_Object_Textblock_Item *it;
         Evas_Object_Textblock_Line *lnn;
 
         lnn = (Evas_Object_Textblock_Line *)(((Eina_Inlist *)ln)->next);
-	EINA_INLIST_FOREACH(ln->items, it)
-	  {
-	     if (it->source_node == n)
-	       {
+        EINA_INLIST_FOREACH(ln->items, it)
+          {
+             if (it->source_node == n)
+               {
                   Evas_Object_Textblock_Item *itn;
                   int p;
 
                   itn = (Evas_Object_Textblock_Item *)(((Eina_Inlist *)it)->next);
-                  p = (int)(it->source_pos + strlen(it->text));
-		  if ((p >= pos) ||
-                      ((p == pos) && (!lnn) &&
-                       ((!itn)  |
-                        ((itn) && (itn->source_node != n)))))
-		    {
-		       *lnr = ln;
-		       *itr = it;
-		       return;
-		    }
-	       }
-	  }
-	EINA_INLIST_FOREACH(ln->format_items, fit)
-	  {
-	     if (fit->source_node == n)
-	       {
-		  *lnr = ln;
-		  /* FIXME: Is that really what we want ? */
-		  *itr = (Evas_Object_Textblock_Item *)fit;
-		  return;
-	       }
-	  }
+                  p = (int)(it->source_pos + eina_unicode_strlen(it->text));
+                  if ((p > pos) ||
+                        ((p == pos) && (!lnn) &&
+                         ((!itn) ||
+                          ((itn) && (itn->source_node != n)))))
+                    {
+                       *lnr = ln;
+                       *itr = it;
+                       return;
+                    }
+               }
+          }
      }
 }
 
+/**
+ * @internal
+ * Find the layout format item and line that match the format node passed.
+ *
+ * @param obj the evas object - NOT NULL.
+ * @param n the text node - Not null.
+ * @param[out] lnr the line found - not null.
+ * @param[out] fir the item found - not null.
+ * @see _find_layout_item_line_match()
+ */
 static void
-_find_layout_format_item_line_match(Evas_Object *obj, Evas_Object_Textblock_Node *n, Evas_Object_Textblock_Line **lnr, Evas_Object_Textblock_Format_Item **fir)
+_find_layout_format_item_line_match(Evas_Object *obj, Evas_Object_Textblock_Node_Format *n, Evas_Object_Textblock_Line **lnr, Evas_Object_Textblock_Format_Item **fir)
 {
    Evas_Object_Textblock_Line *ln;
    Evas_Object_Textblock *o;
 
    o = (Evas_Object_Textblock *)(obj->object_data);
-   EINA_INLIST_FOREACH(o->lines, ln)
+   if (!o->formatted.valid) _relayout(obj);
+   EINA_INLIST_FOREACH(o->paragraphs->lines, ln)
      {
-	Evas_Object_Textblock_Format_Item *fi;
+        Evas_Object_Textblock_Format_Item *fi;
 
-	EINA_INLIST_FOREACH(ln->format_items, fi)
-	  {
-	     if (fi->source_node == n)
-	       {
-		  *lnr = ln;
-		  *fir = fi;
-		  return;
-	       }
-	  }
+        EINA_INLIST_FOREACH(ln->format_items, fi)
+          {
+             if (fi->source_node == n)
+               {
+                  *lnr = ln;
+                  *fir = fi;
+                  return;
+               }
+          }
      }
 }
 
+/**
+ * @internal
+ * Return the line number 'line'.
+ *
+ * @param obj the evas object - NOT NULL.
+ * @param line the line to find
+ * @return the line of line number or NULL if no line found.
+ */
 static Evas_Object_Textblock_Line *
 _find_layout_line_num(const Evas_Object *obj, int line)
 {
@@ -2498,9 +3233,9 @@ _find_layout_line_num(const Evas_Object *obj, int line)
    Evas_Object_Textblock *o;
 
    o = (Evas_Object_Textblock *)(obj->object_data);
-   EINA_INLIST_FOREACH(o->lines, ln)
+   EINA_INLIST_FOREACH(o->paragraphs->lines, ln)
      {
-	if (ln->line_no == line) return ln;
+        if (ln->line_no == line) return ln;
      }
    return NULL;
 }
@@ -2547,17 +3282,19 @@ evas_textblock_style_free(Evas_Textblock_Style *ts)
    if (!ts) return;
    if (ts->objects)
      {
-	ts->delete_me = 1;
-	return;
+        ts->delete_me = 1;
+        return;
      }
    _style_clear(ts);
    free(ts);
 }
 
 /**
- * to be documented.
- * @param ts  to be documented.
- * @param text  to be documented.
+ * Sets the style ts to the style passed as text by text.
+ * Expected a string consisting of many (or none) tag='format' pairs.
+ *
+ * @param ts  the style to set.
+ * @param text the text to parse - NOT NULL.
  * @return Returns no value.
  */
 EAPI void
@@ -2570,15 +3307,15 @@ evas_textblock_style_set(Evas_Textblock_Style *ts, const char *text)
 
    EINA_LIST_FOREACH(ts->objects, l, obj)
      {
-	Evas_Object_Textblock *o;
+        Evas_Object_Textblock *o;
 
-	o = (Evas_Object_Textblock *)(obj->object_data);
-	if (o->markup_text)
-	  {
-	     free(o->markup_text);
-	     o->markup_text = NULL;
-	     evas_object_textblock_text_markup_get(obj);
-	  }
+        o = (Evas_Object_Textblock *)(obj->object_data);
+        if (o->markup_text)
+          {
+             free(o->markup_text);
+             o->markup_text = NULL;
+             evas_object_textblock_text_markup_get(obj);
+          }
      }
 
    _style_clear(ts);
@@ -2586,113 +3323,113 @@ evas_textblock_style_set(Evas_Textblock_Style *ts, const char *text)
 
    if (ts->style_text)
      {
-	// format MUST be KEY='VALUE'[KEY='VALUE']...
-	char *p;
-	char *key_start, *key_stop, *val_start, *val_stop;
+        // format MUST be KEY='VALUE'[KEY='VALUE']...
+        char *p;
+        char *key_start, *key_stop, *val_start, *val_stop;
 
-	key_start = key_stop = val_start = val_stop = NULL;
-	p = ts->style_text;
-	while (*p)
-	  {
-	     if (!key_start)
-	       {
-		  if (!isspace(*p))
-		    key_start = p;
-	       }
-	     else if (!key_stop)
-	       {
-		  if ((*p == '=') || (isspace(*p)))
-		    key_stop = p;
-	       }
-	     else if (!val_start)
-	       {
-		  if (((*p) == '\'') && (*(p + 1)))
-		    val_start = p + 1;
-	       }
-	     else if (!val_stop)
-	       {
-		  if (((*p) == '\'') && (p > ts->style_text) && (p[-1] != '\\'))
-		    val_stop = p;
-	       }
-	     if ((key_start) && (key_stop) && (val_start) && (val_stop))
-	       {
-		  char *tags, *replaces;
-		  Evas_Object_Style_Tag *tag;
-		  size_t tag_len = key_stop - key_start;
-		  size_t replace_len = val_stop - val_start;
+        key_start = key_stop = val_start = val_stop = NULL;
+        p = ts->style_text;
+        while (*p)
+          {
+             if (!key_start)
+               {
+                  if (!isspace(*p))
+                    key_start = p;
+               }
+             else if (!key_stop)
+               {
+                  if ((*p == '=') || (isspace(*p)))
+                    key_stop = p;
+               }
+             else if (!val_start)
+               {
+                  if (((*p) == '\'') && (*(p + 1)))
+                    val_start = p + 1;
+               }
+             else if (!val_stop)
+               {
+                  if (((*p) == '\'') && (p > ts->style_text) && (p[-1] != '\\'))
+                    val_stop = p;
+               }
+             if ((key_start) && (key_stop) && (val_start) && (val_stop))
+               {
+                  char *tags, *replaces;
+                  Evas_Object_Style_Tag *tag;
+                  size_t tag_len = key_stop - key_start;
+                  size_t replace_len = val_stop - val_start;
 
-		  tags = malloc(tag_len + 1);
-		  if (tags)
-		    {
-		       memcpy(tags, key_start, tag_len);
-		       tags[tag_len] = 0;
-		    }
+                  tags = malloc(tag_len + 1);
+                  if (tags)
+                    {
+                       memcpy(tags, key_start, tag_len);
+                       tags[tag_len] = 0;
+                    }
 
-		  replaces = malloc(replace_len + 1);
-		  if (replaces)
-		    {
-		       memcpy(replaces, val_start, replace_len);
-		       replaces[replace_len] = 0;
-		    }
-		  if ((tags) && (replaces))
-		    {
-		       if (!strcmp(tags, "DEFAULT"))
-			 {
-			    ts->default_tag = replaces;
-			    free(tags);
-			 }
-		       else
-			 {
-			    tag = calloc(1, sizeof(Evas_Object_Style_Tag));
-			    if (tag)
-			      {
-				 tag->tag = tags;
-				 tag->replace = replaces;
-				 tag->tag_len = tag_len;
-				 tag->replace_len = replace_len;
-				 ts->tags = (Evas_Object_Style_Tag *)eina_inlist_append(EINA_INLIST_GET(ts->tags), EINA_INLIST_GET(tag));
-			      }
-			    else
-			      {
-				 free(tags);
-				 free(replaces);
-			      }
-			 }
-		    }
-		  else
-		    {
-		       if (tags) free(tags);
-		       if (replaces) free(replaces);
-		    }
-		  key_start = key_stop = val_start = val_stop = NULL;
-	       }
-	     p++;
-	  }
+                  replaces = malloc(replace_len + 1);
+                  if (replaces)
+                    {
+                       memcpy(replaces, val_start, replace_len);
+                       replaces[replace_len] = 0;
+                    }
+                  if ((tags) && (replaces))
+                    {
+                       if (!strcmp(tags, "DEFAULT"))
+                         {
+                            ts->default_tag = replaces;
+                            free(tags);
+                         }
+                       else
+                         {
+                            tag = calloc(1, sizeof(Evas_Object_Style_Tag));
+                            if (tag)
+                              {
+                                 tag->tag = tags;
+                                 tag->replace = replaces;
+                                 tag->tag_len = tag_len;
+                                 tag->replace_len = replace_len;
+                                 ts->tags = (Evas_Object_Style_Tag *)eina_inlist_append(EINA_INLIST_GET(ts->tags), EINA_INLIST_GET(tag));
+                              }
+                            else
+                              {
+                                 free(tags);
+                                 free(replaces);
+                              }
+                         }
+                    }
+                  else
+                    {
+                       if (tags) free(tags);
+                       if (replaces) free(replaces);
+                    }
+                  key_start = key_stop = val_start = val_stop = NULL;
+               }
+             p++;
+          }
      }
 
    EINA_LIST_FOREACH(ts->objects, l, obj)
      {
-	Evas_Object_Textblock *o;
+        Evas_Object_Textblock *o;
 
-	o = (Evas_Object_Textblock *)(obj->object_data);
-	if (o->markup_text)
-	  {
-	     char *m;
+        o = (Evas_Object_Textblock *)(obj->object_data);
+        if (o->markup_text)
+          {
+             char *m;
 
-	     m = strdup(o->markup_text);
-	     if (m)
-	       {
-		  evas_object_textblock_text_markup_set(obj, m);
-		  free(m);
-	       }
-	  }
+             m = strdup(o->markup_text);
+             if (m)
+               {
+                  evas_object_textblock_text_markup_set(obj, m);
+                  free(m);
+               }
+          }
      }
 }
 
 /**
- * to be documented.
- * @param ts  to be documented.
- * @return to be documented.
+ * Return the text of the style ts.
+ * @param ts  the style to get it's text.
+ * @return the text of the style or null on error.
  */
 EAPI const char *
 evas_textblock_style_get(const Evas_Textblock_Style *ts)
@@ -2703,9 +3440,9 @@ evas_textblock_style_get(const Evas_Textblock_Style *ts)
 
 /* textblock styles */
 /**
- * to be documented.
- * @param obj to be documented.
- * @param ts  to be documented.
+ * Set the objects style to ts.
+ * @param obj the evas object to set the style to.
+ * @param ts  the style to set.
  * @return Returns no value.
  */
 EAPI void
@@ -2725,38 +3462,30 @@ evas_object_textblock_style_set(Evas_Object *obj, Evas_Textblock_Style *ts)
      }
    if (o->style)
      {
-	Evas_Textblock_Style *old_ts;
+        Evas_Textblock_Style *old_ts;
 
-	old_ts = o->style;
-	old_ts->objects = eina_list_remove(old_ts->objects, obj);
-	if ((old_ts->delete_me) && (!old_ts->objects))
-	  evas_textblock_style_free(old_ts);
+        old_ts = o->style;
+        old_ts->objects = eina_list_remove(old_ts->objects, obj);
+        if ((old_ts->delete_me) && (!old_ts->objects))
+          evas_textblock_style_free(old_ts);
      }
    if (ts)
      {
-	ts->objects = eina_list_append(ts->objects, obj);
-	o->style = ts;
+        ts->objects = eina_list_append(ts->objects, obj);
+        o->style = ts;
      }
    else
      {
-	o->style = NULL;
+        o->style = NULL;
      }
 
-   o->formatted.valid = 0;
-   o->native.valid = 0;
-   o->changed = 1;
-   if (o->markup_text)
-     {
-	free(o->markup_text);
-	o->markup_text = NULL;
-     }
-   evas_object_change(obj);
+    _evas_textblock_changed(o, obj);
 }
 
 /**
- * to be documented.
- * @param obj  to be documented.
- * @return to be documented.
+ * Return the style of an object.
+ * @param obj  the object to get the style from.
+ * @return the style of the object.
  */
 EAPI const Evas_Textblock_Style *
 evas_object_textblock_style_get(const Evas_Object *obj)
@@ -2778,15 +3507,7 @@ evas_object_textblock_replace_char_set(Evas_Object *obj, const char *ch)
    if (o->repch) eina_stringshare_del(o->repch);
    if (ch) o->repch = eina_stringshare_add(ch);
    else o->repch = NULL;
-   o->formatted.valid = 0;
-   o->native.valid = 0;
-   o->changed = 1;
-   if (o->markup_text)
-     {
-	free(o->markup_text);
-	o->markup_text = NULL;
-     }
-   evas_object_change(obj);
+    _evas_textblock_changed(o, obj);
 }
 
 /**
@@ -2803,33 +3524,52 @@ evas_object_textblock_replace_char_get(Evas_Object *obj)
    return o->repch;
 }
 
-
+/**
+ * @internal
+ * Advance p_buff to point after the end of the string. It's used with the
+ * @ref escaped_strings[] variable.
+ *
+ * @param p_buff the pointer to the current string.
+ */
 static inline void
-_advance_after_end_of_string(const char **p_buf)
+_escaped_advance_after_end_of_string(const char **p_buf)
 {
    while (**p_buf != 0) (*p_buf)++;
    (*p_buf)++;
 }
 
+/**
+ * @internal
+ * Advance p_buff to point after the end of the string. It's used with the
+ * @ref escaped_strings[] variable. Also chec if matches.
+ * FIXME: doc.
+ *
+ * @param p_buff the pointer to the current string.
+ */
 static inline int
-_is_eq_and_advance(const char *s, const char *s_end,
-		   const char **p_m, const char *m_end)
+_escaped_is_eq_and_advance(const char *s, const char *s_end,
+      const char **p_m, const char *m_end)
 {
    for (;((s < s_end) && (*p_m < m_end)); s++, (*p_m)++)
      {
-	if (*s != **p_m)
-	  {
-	     _advance_after_end_of_string(p_m);
-	     return 0;
-	  }
+        if (*s != **p_m)
+          {
+             _escaped_advance_after_end_of_string(p_m);
+             return 0;
+          }
      }
 
    if (*p_m < m_end)
-     _advance_after_end_of_string(p_m);
+     _escaped_advance_after_end_of_string(p_m);
 
    return s == s_end;
 }
 
+/**
+ * @internal
+ *
+ * @param s the string to match
+ */
 static inline const char *
 _escaped_char_match(const char *s, int *adv)
 {
@@ -2840,33 +3580,39 @@ _escaped_char_match(const char *s, int *adv)
 
    while (map_itr < map_end)
      {
-	const char *escape;
-	int match;
+        const char *escape;
+        int match;
 
-	escape = map_itr;
-	_advance_after_end_of_string(&map_itr);
-	if (map_itr >= map_end) break;
+        escape = map_itr;
+        _escaped_advance_after_end_of_string(&map_itr);
+        if (map_itr >= map_end) break;
 
-	mc = map_itr;
-	sc = s;
-	match = 1;
-	while ((*mc) && (*sc))
-	  {
-	     if ((unsigned char)*sc < (unsigned char)*mc) return NULL;
-	     if (*sc != *mc) match = 0;
-	     mc++;
-	     sc++;
-	  }
-	if (match)
-	  {
-	     *adv = mc - map_itr;
-	     return escape;
-	  }
-	_advance_after_end_of_string(&map_itr);
+        mc = map_itr;
+        sc = s;
+        match = 1;
+        while ((*mc) && (*sc))
+          {
+             if ((unsigned char)*sc < (unsigned char)*mc) return NULL;
+             if (*sc != *mc) match = 0;
+             mc++;
+             sc++;
+          }
+        if (match)
+          {
+             *adv = mc - map_itr;
+             return escape;
+          }
+        _escaped_advance_after_end_of_string(&map_itr);
      }
    return NULL;
 }
 
+/**
+ * @internal
+ * FIXME: TBD.
+ *
+ * @param s the string to match
+ */
 static inline const char *
 _escaped_char_get(const char *s, const char *s_end)
 {
@@ -2877,18 +3623,18 @@ _escaped_char_get(const char *s, const char *s_end)
 
    while (map_itr < map_end)
      {
-	if (_is_eq_and_advance(s, s_end, &map_itr, map_end))
-	  return map_itr;
-	if (map_itr < map_end)
-	  _advance_after_end_of_string(&map_itr);
+        if (_escaped_is_eq_and_advance(s, s_end, &map_itr, map_end))
+          return map_itr;
+        if (map_itr < map_end)
+          _escaped_advance_after_end_of_string(&map_itr);
      }
    return NULL;
 }
 
 /**
- * to be documented.
- * @param escape to be documented.
- * @return to be documented.
+ * Returns the unescaped version of escape.
+ * @param escape the string to be escaped
+ * @return the unescaped version of escape
  */
 EAPI const char *
 evas_textblock_escape_string_get(const char *escape)
@@ -2898,10 +3644,11 @@ evas_textblock_escape_string_get(const char *escape)
 }
 
 /**
- * to be documented.
- * @param escape_start to be documented.
- * @param escape_end to be documented.
- * @return to be documented.
+ * Return the unescaped version of the string between start and end.
+ *
+ * @param escape_start the start of the string.
+ * @param escape_end the end of the string.
+ * @return the unescaped version of the range
  */
 EAPI const char *
 evas_textblock_escape_string_range_get(const char *escape_start, const char *escape_end)
@@ -2910,10 +3657,10 @@ evas_textblock_escape_string_range_get(const char *escape_start, const char *esc
 }
 
 /**
- * to be documented.
- * @param string to be documented.
- * @param len_ret to be documented.
- * @return to be documented.
+ * Returns the escaped version of the string.
+ * @param string to escape
+ * @param len_ret the len of the new escape
+ * @return the escaped string.
  */
 EAPI const char *
 evas_textblock_string_escape_get(const char *string, int *len_ret)
@@ -2922,9 +3669,17 @@ evas_textblock_string_escape_get(const char *string, int *len_ret)
    return _escaped_char_match(string, len_ret);
 }
 
+/**
+ * @internal
+ * Appends the escaped char beteewn s and s_end to the curosr
+ *
+ *
+ * @param s the start of the string
+ * @param s_end the end of the string.
+ */
 static inline void
 _append_escaped_char(Evas_Textblock_Cursor *cur, const char *s,
-		     const char *s_end)
+      const char *s_end)
 {
    const char *escape;
 
@@ -2933,9 +3688,17 @@ _append_escaped_char(Evas_Textblock_Cursor *cur, const char *s,
      evas_textblock_cursor_text_append(cur, escape);
 }
 
+/**
+ * @internal
+ * prepends the escaped char beteewn s and s_end to the curosr
+ *
+ *
+ * @param s the start of the string
+ * @param s_end the end of the string.
+ */
 static inline void
 _prepend_escaped_char(Evas_Textblock_Cursor *cur, const char *s,
-		     const char *s_end)
+      const char *s_end)
 {
    const char *escape;
 
@@ -2944,10 +3707,14 @@ _prepend_escaped_char(Evas_Textblock_Cursor *cur, const char *s,
      evas_textblock_cursor_text_prepend(cur, escape);
 }
 
+
 /**
- * to be documented.
- * @param obj  to be documented.
- * @param text to be documented.
+ * Sets the tetxblock's text to the markup text.
+ *
+ * @note assumes text does not include the unicode object replacement char (0xFFFC)
+ *
+ * @param obj  the textblock object.
+ * @param text the markup text to use.
  * @return Return no value.
  */
 EAPI void
@@ -2956,349 +3723,590 @@ evas_object_textblock_text_markup_set(Evas_Object *obj, const char *text)
    TB_HEAD();
    if ((text != o->markup_text) && (o->markup_text))
      {
-	free(o->markup_text);
-	o->markup_text = NULL;
+        free(o->markup_text);
+        o->markup_text = NULL;
      }
    _nodes_clear(obj);
-   o->formatted.valid = 0;
-   o->native.valid = 0;
-   o->changed = 1;
-   evas_object_change(obj);
    if (!o->style)
      {
-	if (text != o->markup_text)
-	  {
-	     if (text) o->markup_text = strdup(text);
-	  }
-	return;
+        if (text != o->markup_text)
+          {
+             if (text) o->markup_text = strdup(text);
+          }
+        return;
      }
-   evas_textblock_cursor_node_first(o->cursor);
-   if (text)
+   evas_textblock_cursor_paragraph_first(o->cursor);
+
+   evas_object_textblock_text_markup_prepend(o->cursor, text);
+   /* Point all the cursors to the starrt */
      {
-	char *s, *p;
-	char *tag_start, *tag_end, *esc_start, *esc_end;
+        Eina_List *l;
+        Evas_Textblock_Cursor *data;
 
-	tag_start = tag_end = esc_start = esc_end = NULL;
-	p = (char *)text;
-	s = p;
-	for (;;)
-	  {
-	     if ((*p == 0) ||
-		 (tag_end) || (esc_end) ||
-		 (tag_start) || (esc_start))
-	       {
-		  if (tag_end)
-		    {
-		       char *ttag;
-		       size_t ttag_len = tag_end - tag_start -1;
-
-		       ttag = malloc(ttag_len + 1);
-		       if (ttag)
-			 {
-			    const char *match;
-			    size_t replace_len;
-
-			    memcpy(ttag, tag_start + 1, ttag_len);
-			    ttag[ttag_len] = 0;
-			    match = _style_match_tag(o->style, ttag, ttag_len, &replace_len);
-			    if (match)
-			      evas_textblock_cursor_format_append(o->cursor, match);
-			    else
-			      {
-				 char *ttag2;
-
-				 ttag2 = malloc(ttag_len + 2 + 1);
-				 if (ttag2)
-				   {
-				      if (ttag[0] == '/')
-					{
-					   strcpy(ttag2, "- ");
-					   strcat(ttag2, ttag + 1);
-					}
-				      else
-					{
-					   strcpy(ttag2, "+ ");
-					   strcat(ttag2, ttag);
-					}
-				      evas_textblock_cursor_format_append(o->cursor, ttag2);
-				      free(ttag2);
-				   }
-			      }
-			    free(ttag);
-			 }
-		       tag_start = tag_end = NULL;
-		    }
-		  else if (esc_end)
-		    {
-		       _append_escaped_char(o->cursor, esc_start, esc_end);
-		       esc_start = esc_end = NULL;
-		    }
-		  else if (*p == 0)
-		    {
-		       _append_text_run(o, s, p);
-		       s = NULL;
-		    }
-		  if (*p == 0)
-		    break;
-	       }
-	     if (*p == '<')
-	       {
-		  if (!esc_start)
-		    {
-		       tag_start = p;
-		       tag_end = NULL;
-		       _append_text_run(o, s, p);
-		       s = NULL;
-		    }
-	       }
-	     else if (*p == '>')
-	       {
-		  if (tag_start)
-		    {
-		       tag_end = p;
-		       s = p + 1;
-		    }
-	       }
-	     else if (*p == '&')
-	       {
-		  if (!tag_start)
-		    {
-		       esc_start = p;
-		       esc_end = NULL;
-		       _append_text_run(o, s, p);
-		       s = NULL;
-		    }
-	       }
-	     else if (*p == ';')
-	       {
-		  if (esc_start)
-		    {
-		       esc_end = p;
-		       s = p + 1;
-		    }
-	       }
-	     p++;
-	  }
-     }
-     {
-	Eina_List *l;
-	Evas_Textblock_Cursor *data;
-
-	evas_textblock_cursor_node_first(o->cursor);
-	EINA_LIST_FOREACH(o->cursors, l, data)
-	  evas_textblock_cursor_node_first(data);
+        evas_textblock_cursor_paragraph_first(o->cursor);
+        EINA_LIST_FOREACH(o->cursors, l, data)
+           evas_textblock_cursor_paragraph_first(data);
      }
 }
 
 /**
- * to be documented.
- * @param cur  to be documented.
- * @param text to be documented.
+ * Prepends markup to the cursor cur.
+ *
+ * @note assumes text does not include the unicode object replacement char (0xFFFC)
+ *
+ * @param cur  the cursor to prepend to.
+ * @param text the markup text to prepend.
  * @return Return no value.
  */
 EAPI void
 evas_object_textblock_text_markup_prepend(Evas_Textblock_Cursor *cur, const char *text)
 {
-   Evas_Object_Textblock *o;
-
-   if (!cur) return;
-   o = (Evas_Object_Textblock *)(cur->obj->object_data);
-   if (o->markup_text)
-     {
-	free(o->markup_text);
-	o->markup_text = NULL;
-     }
-   o->formatted.valid = 0;
-   o->native.valid = 0;
-   o->changed = 1;
-   evas_object_change(cur->obj);
-   if (!o->style) return;
+   Evas_Object *obj = cur->obj;
+   TB_HEAD();
    if (text)
      {
-	char *s, *p;
-	char *tag_start, *tag_end, *esc_start, *esc_end;
+        char *s, *p;
+        char *tag_start, *tag_end, *esc_start, *esc_end;
 
-	tag_start = tag_end = esc_start = esc_end = NULL;
-	p = (char *)text;
-	s = p;
-	for (;;)
-	  {
-	     if ((*p == 0) ||
-		 (tag_end) || (esc_end) ||
-		 (tag_start) || (esc_start))
-	       {
-		  if (tag_end)
-		    {
-		       char *ttag;
-		       size_t ttag_len = tag_end - tag_start - 1;
+        tag_start = tag_end = esc_start = esc_end = NULL;
+        p = (char *)text;
+        s = p;
+        /* This loop goes through all of the mark up text until it finds format
+         * tags, escape sequences or the terminating NULL. When it finds either
+         * of those, it appends the text found up until that point to the textblock
+         * proccesses whatever found. It repeats itself until the termainating
+         * NULL is reached. */
+        for (;;)
+          {
+             /* If we got to the end of string or just finished/started tag
+              * or escape sequence handling. */
+             if ((*p == 0) ||
+                   (tag_end) || (esc_end) ||
+                   (tag_start) || (esc_start))
+               {
+                  if (tag_end)
+                    {
+                       /* If we reached to a tag ending, analyze the tag */
+                       char *ttag;
+                       size_t ttag_len = tag_end - tag_start -1;
 
-		       ttag = malloc(ttag_len + 1);
-		       if (ttag)
-			 {
-			    const char *match;
-			    size_t replace_len;
 
-			    strncpy(ttag, tag_start + 1, ttag_len);
-			    ttag[ttag_len] = 0;
-			    match = _style_match_tag(o->style, ttag, ttag_len, &replace_len);
-			    if (match)
-			      evas_textblock_cursor_format_prepend(cur, match);
-			    else
-			      {
-				 char *ttag2;
+                       ttag = malloc(ttag_len + 1);
+                       if (ttag)
+                         {
+                            const char *match;
+                            size_t replace_len;
 
-				 ttag2 = malloc(ttag_len + 2 + 1);
-				 if (ttag2)
-				   {
-				      if (ttag[0] == '/')
-					{
-					   strcpy(ttag2, "- ");
-					   strcat(ttag2, ttag + 1);
-					}
-				      else
-					{
-					   strcpy(ttag2, "+ ");
-					   strcat(ttag2, ttag);
-					}
-				      evas_textblock_cursor_format_prepend(o->cursor, ttag2);
-				      free(ttag2);
-				   }
-			      }
-			    free(ttag);
-			 }
-		       tag_start = tag_end = NULL;
-		    }
-		  else if (esc_end)
-		    {
-		       _prepend_escaped_char(cur, esc_start, esc_end);
-		       esc_start = esc_end = NULL;
-		    }
-		  else if (*p == 0)
-		    {
-		       _prepend_text_run(o, s, p);
-		       s = NULL;
-		    }
-		  if (*p == 0)
-		    break;
-	       }
-	     if (*p == '<')
-	       {
-		  if (!esc_start)
-		    {
-		       tag_start = p;
-		       tag_end = NULL;
-		       _prepend_text_run(o, s, p);
-		       s = NULL;
-		    }
-	       }
-	     else if (*p == '>')
-	       {
-		  if (tag_start)
-		    {
-		       tag_end = p;
-		       s = p + 1;
-		    }
-	       }
-	     else if (*p == '&')
-	       {
-		  if (!tag_start)
-		    {
-		       esc_start = p;
-		       esc_end = NULL;
-		       _prepend_text_run(o, s, p);
-		       s = NULL;
-		    }
-	       }
-	     else if (*p == ';')
-	       {
-		  if (esc_start)
-		    {
-		       esc_end = p;
-		       s = p + 1;
-		    }
-	       }
-	     p++;
-	  }
+                            memcpy(ttag, tag_start + 1, ttag_len);
+                            ttag[ttag_len] = 0;
+                            match = _style_match_tag(o->style, ttag, ttag_len, &replace_len);
+                            if (match)
+                              {
+                                 evas_textblock_cursor_format_prepend(o->cursor, match);
+                              }
+                            else
+                              {
+                                 char *ttag2;
+
+                                 ttag2 = malloc(ttag_len + 2 + 1);
+                                 if (ttag2)
+                                   {
+                                      if (ttag[0] == '/')
+                                        {
+                                           strcpy(ttag2, "- ");
+                                           strcat(ttag2, ttag + 1);
+                                        }
+                                      else
+                                        {
+                                           strcpy(ttag2, "+ ");
+                                           strcat(ttag2, ttag);
+                                        }
+                                      evas_textblock_cursor_format_prepend(o->cursor, ttag2);
+                                      free(ttag2);
+                                   }
+                              }
+                            free(ttag);
+                         }
+                       tag_start = tag_end = NULL;
+                    }
+                  else if (esc_end)
+                    {
+                       _prepend_escaped_char(o->cursor, esc_start, esc_end);
+                       esc_start = esc_end = NULL;
+                    }
+                  else if (*p == 0)
+                    {
+                       _prepend_text_run(o, s, p);
+                       s = NULL;
+                    }
+                  if (*p == 0)
+                    break;
+               }
+             if (*p == '<')
+               {
+                  if (!esc_start)
+                    {
+                       /* Append the text prior to this to the textblock and mark
+                        * the start of the tag */
+                       tag_start = p;
+                       tag_end = NULL;
+                       _prepend_text_run(o, s, p);
+                       s = NULL;
+                    }
+               }
+             else if (*p == '>')
+               {
+                  if (tag_start)
+                    {
+                       tag_end = p;
+                       s = p + 1;
+                    }
+               }
+             else if (*p == '&')
+               {
+                  if (!tag_start)
+                    {
+                       /* Append the text prior to this to the textblock and mark
+                        * the start of the escape sequence */
+                       esc_start = p;
+                       esc_end = NULL;
+                       _prepend_text_run(o, s, p);
+                       s = NULL;
+                    }
+               }
+             else if (*p == ';')
+               {
+                  if (esc_start)
+                    {
+                       esc_end = p;
+                       s = p + 1;
+                    }
+               }
+             /* Unicode object replcament char */
+             else if (!strncmp("\xEF\xBF\xBC", p, 3))
+               {
+                  /*FIXME: currently just remove them, maybe do something
+                   * fancier in the future, atm it breaks if this char
+                   * is inside <> */
+                  _prepend_text_run(o, s, p);
+                  p += 2; /* it's also advanced later in this loop */
+                  s = NULL;
+               }
+             p++;
+          }
      }
+    _evas_textblock_changed(o, obj);
+}
+
+
+/**
+ * @internal
+ * An helper function to markup get. Appends the format from fnode to the strbugf txt.
+ *
+ * @param o the textblock object.
+ * @param txt the strbuf to append to.
+ * @param fnode the format node to process.
+ */
+static void
+_markup_get_format_append(Evas_Object_Textblock *o, Eina_Strbuf *txt, Evas_Object_Textblock_Node_Format *fnode)
+{
+   size_t replace_len;
+   size_t tag_len;
+   const char *tag;
+   const char *replace;
+
+   replace_len = eina_strbuf_length_get(fnode->format);
+   replace = eina_strbuf_string_get(fnode->format);
+   tag = _style_match_replace(o->style, replace, replace_len, &tag_len);
+   eina_strbuf_append_char(txt, '<');
+   if (tag)
+     {
+        eina_strbuf_append_length(txt, tag, tag_len);
+     }
+   else
+     {
+        const char *s;
+        int push = 0;
+        int pop = 0;
+
+        // FIXME: need to escape
+        s = eina_strbuf_string_get(fnode->format);
+        if (*s == '+') push = 1;
+        if (*s == '-') pop = 1;
+        while ((*s == ' ') || (*s == '+') || (*s == '-')) s++;
+        if (pop) eina_strbuf_append_char(txt, '/');
+        eina_strbuf_append(txt, s);
+     }
+   eina_strbuf_append_char(txt, '>');
 }
 
 /**
- * to be documented.
- * @param obj  to be documented.
- * @return to be documented.
+ * @internal
+ * An helper function to markup get. Appends the text in text.
+ *
+ * @param txt the strbuf to append to.
+ * @param text the text to process.
+ */
+static void
+_markup_get_text_append(Eina_Strbuf *txt, const Eina_Unicode *text)
+{
+   char *p = evas_common_encoding_unicode_to_utf8(text, NULL);
+   char *base = p;
+   while (*p)
+     {
+        const char *escape;
+        int adv;
+
+        escape = _escaped_char_match(p, &adv);
+        if (escape)
+          {
+             p += adv;
+             eina_strbuf_append(txt, escape);
+          }
+        else
+          {
+             eina_strbuf_append_char(txt, *p);
+             p++;
+          }
+     }
+   free(base);
+}
+/**
+ * Return the markup of the object.
+ *
+ * @param obj the evas object.
+ * @return the markup text of the object.
  */
 EAPI const char *
 evas_object_textblock_text_markup_get(const Evas_Object *obj)
 {
-   Evas_Object_Textblock_Node *n;
+   Evas_Object_Textblock_Node_Text *n;
    Eina_Strbuf *txt = NULL;
 
    TB_HEAD_RETURN(NULL);
    if (o->markup_text) return(o->markup_text);
    txt = eina_strbuf_new();
-   EINA_INLIST_FOREACH(o->nodes, n)
+   EINA_INLIST_FOREACH(o->text_nodes, n)
      {
-	size_t replace_len = eina_strbuf_length_get(n->text);
-        if ((n->type == NODE_FORMAT) && replace_len)
-	  {
-	     size_t tag_len;
-	     const char *tag = _style_match_replace(o->style, eina_strbuf_string_get(n->text), replace_len, &tag_len);
-	     eina_strbuf_append_char(txt, '<');
-	     if (tag)
-	       {
-		  // FIXME: need to escape
-		  eina_strbuf_append_length(txt, tag, tag_len);
-	       }
-	     else
-	       {
-		  const char *s;
-		  int push = 0;
-		  int pop = 0;
+        Evas_Object_Textblock_Node_Format *fnode;
+        Eina_Unicode *text_base, *text;
+        int off;
 
-		  // FIXME: need to escape
-		  s = eina_strbuf_string_get(n->text);
-		  if (*s == '+') push = 1;
-		  if (*s == '-') pop = 1;
-		  while ((*s == ' ') || (*s == '+') || (*s == '-')) s++;
-		  if (pop) eina_strbuf_append_char(txt, '/');
-		  if (push) eina_strbuf_append(txt, "+ ");
-		  eina_strbuf_append(txt, s);
-	       }
-	     eina_strbuf_append_char(txt, '>');
-	  }
-	else if ((n->type == NODE_TEXT) && eina_strbuf_length_get(n->text))
-	  {
-	     const char *p = eina_strbuf_string_get(n->text);
-
-	     while (*p)
-	       {
-		  const char *escape;
-		  int adv;
-
-		  escape = _escaped_char_match(p, &adv);
-		  if (escape)
-		    {
-		       p += adv;
-		       eina_strbuf_append(txt, escape);
-		    }
-		  else
-		    {
-		       eina_strbuf_append_char(txt, *p);
-		       p++;
-		    }
-	       }
-	  }
+        /* For each text node to thorugh all of it's format nodes
+         * append text from the start to the offset of the next format
+         * using the last format got. if needed it also creates format items
+         * this is the core algorithm of the layout mechanism.
+         * Skip the unicode replacement chars when there are because
+         * we don't want to print them. */
+        text_base = text =
+           eina_unicode_strdup(eina_ustrbuf_string_get(n->unicode));
+        fnode = n->format_node;
+        off = 0;
+        while (fnode && (fnode->text_node == n))
+          {
+             Eina_Unicode tmp_ch;
+             off += fnode->offset;
+             /* No need to skip on the first run */
+             tmp_ch = text[off];
+             text[off] = 0; /* Null terminate the part of the string */
+             _markup_get_text_append(txt, text);
+             _markup_get_format_append(o, txt, fnode);
+             text[off] = tmp_ch; /* Restore the char */
+             text += off;
+             if (fnode->visible)
+               {
+                  off = -1;
+                  text++;
+               }
+             else
+               {
+                  off = 0;
+               }
+             fnode = _NODE_FORMAT(EINA_INLIST_GET(fnode)->next);
+          }
+        /* Add the rest, skip replacement */
+        _markup_get_text_append(txt, text);
+        free(text_base);
      }
+
+
    o->markup_text = eina_strbuf_string_steal(txt);
    eina_strbuf_free(txt);
    return o->markup_text;
 }
 
 /* cursors */
+
 /**
- * to be documented.
- * @param obj  to be documented.
- * @return to be documented.
+ * @internal
+ * Merge the current node with the next, no need to remove PS, already
+ * not there.
+ *
+ * @param o the text block object.
+ * @param to merge into to.
+ * @param from merge from from.
+ */
+static void
+_evas_textblock_nodes_merge(Evas_Object_Textblock *o, Evas_Object_Textblock_Node_Text *to,
+      Evas_Object_Textblock_Node_Text *from)
+{
+   Evas_Object_Textblock_Node_Format *itr;
+   Evas_Object_Textblock_Node_Format *pnode;
+   const Eina_Unicode *text;
+   int to_len, len;
+
+   if (!to || !from) return;
+
+   to_len = eina_ustrbuf_length_get(to->unicode);
+   text = eina_ustrbuf_string_get(from->unicode);
+   len = eina_ustrbuf_length_get(from->unicode);
+   eina_ustrbuf_append_length(to->unicode, text, len);
+
+   itr = from->format_node;
+   if (itr && (itr->text_node == from))
+     {
+        pnode = _NODE_FORMAT(EINA_INLIST_GET(itr)->prev);
+        if (pnode && (pnode->text_node == to))
+          {
+             itr->offset += to_len - _evas_textblock_node_format_pos_get(pnode);
+             itr->offset -= (pnode->visible) ? 1 : 0;
+          }
+        else
+          {
+             itr->offset += to_len;
+          }
+     }
+
+   while (itr && (itr->text_node == from))
+     {
+        itr->text_node = to;
+        itr = _NODE_FORMAT(EINA_INLIST_GET(itr)->next);
+     }
+   if (!to->format_node || (to->format_node->text_node != to))
+     {
+        to->format_node = from->format_node;
+     }
+
+   _evas_textblock_cursors_set_node(o, from, to);
+   o->text_nodes = _NODE_TEXT(eina_inlist_remove(
+            EINA_INLIST_GET(o->text_nodes), EINA_INLIST_GET(from)));
+   _evas_textblock_node_text_free(from);
+}
+
+/**
+ * @internal
+ * Merge the current node with the next, no need to remove PS, already
+ * not there.
+ *
+ * @param cur the cursor that points to the current node
+ */
+static void
+_evas_textblock_cursor_nodes_merge(Evas_Textblock_Cursor *cur)
+{
+   Evas_Object_Textblock_Node_Text *nnode;
+   Evas_Object_Textblock *o;
+   int len;
+
+   len = eina_ustrbuf_length_get(cur->node->unicode);
+
+   if (!cur) return;
+   o = (Evas_Object_Textblock *)(cur->obj->object_data);
+   nnode = _NODE_TEXT(EINA_INLIST_GET(cur->node)->next);
+   _evas_textblock_nodes_merge(o, cur->node, nnode);
+   _evas_textblock_cursors_update_offset(o->cursor, nnode, 0, len);
+   if (nnode == o->cursor->node)
+     {
+        o->cursor->node = cur->node;
+        o->cursor->pos += len;
+     }
+}
+
+/**
+ * @internal
+ * Return the format at a specific position.
+ *
+ * @param cur the cursor to the position.
+ * @return the format node at the specific postion or NULL if not found.
+ */
+static Evas_Object_Textblock_Node_Format *
+_evas_textblock_cursor_node_format_at_pos_get(const Evas_Textblock_Cursor *cur)
+{
+   Evas_Object_Textblock_Node_Format *node;
+   Evas_Object_Textblock_Node_Format *itr;
+   int position = 0;
+
+   if (!cur->node) return NULL;
+
+   node = cur->node->format_node;
+   if (!node) return NULL;
+   /* If there is no exclusive format node to this paragraph return the
+    * previous's node */
+   /* Find the main format node */
+   EINA_INLIST_FOREACH(node, itr)
+     {
+        if (itr->text_node != cur->node)
+          {
+             return NULL;
+          }
+        if ((position + itr->offset) == cur->pos)
+          {
+             return itr;
+          }
+        position += itr->offset;
+     }
+   return NULL;
+}
+
+/**
+ * @internal
+ * Return the last format node at the position of the format node n.
+ *
+ * @param n a format node at the positon.
+ * @return the last format node at the position of n.
+ */
+static Evas_Object_Textblock_Node_Format *
+_evas_textblock_node_format_last_at_off(const Evas_Object_Textblock_Node_Format *n)
+{
+   const Evas_Object_Textblock_Node_Format *nnode;
+   if (!n) return NULL;
+   nnode = n;
+   do
+     {
+        n = nnode;
+        nnode = _NODE_FORMAT(EINA_INLIST_GET(nnode)->next);
+     }
+   while (nnode && (nnode->offset == 0));
+
+   return (Evas_Object_Textblock_Node_Format *) n;
+}
+
+/**
+ * @internal
+ * Returns the visible format at a specific location.
+ *
+ * @param n a format at the specific position.
+ * @return the format node at the specific postion or NULL if not found.
+ */
+static Evas_Object_Textblock_Node_Format *
+_evas_textblock_node_visible_at_pos_get(const Evas_Object_Textblock_Node_Format *n)
+{
+   const Evas_Object_Textblock_Node_Format *nnode;
+   if (!n) return NULL;
+   /* The visible format is the last one, because it inserts a replacement
+    * char that advances the next formats. */
+
+   nnode = n;
+   do
+     {
+        n = nnode;
+        if (n->visible) return (Evas_Object_Textblock_Node_Format *) n;
+        nnode = _NODE_FORMAT(EINA_INLIST_GET(nnode)->next);
+     }
+   while (nnode && (nnode->offset == 0));
+
+   return NULL;
+}
+
+/**
+ * @internal
+ * Return the last format that applies to a specific cursor or at the specific
+ * position the cursor points to. This means either a cursor at or before the
+ * position of the cursor in the text node is returned or the previous's text
+ * node's format node.
+ *
+ * @param cur teh position to look at.
+ * @return the format node found.
+ */
+static Evas_Object_Textblock_Node_Format *
+_evas_textblock_cursor_node_format_before_or_at_pos_get(const Evas_Textblock_Cursor *cur)
+{
+   Evas_Object_Textblock_Node_Format *node, *pitr = NULL;
+   Evas_Object_Textblock_Node_Format *itr;
+   size_t position = 0;
+
+   if (!cur->node) return NULL;
+
+   node = cur->node->format_node;
+   if (!node) return NULL;
+   /* If there is no exclusive format node to this paragraph return the
+    * previous's node */
+   if (node->text_node != cur->node)
+     {
+        return node;
+     }
+   else if (node->offset > cur->pos)
+     {
+        return _NODE_FORMAT(EINA_INLIST_GET(node)->prev);
+     }
+   /* Find the main format node */
+   pitr = _NODE_FORMAT(EINA_INLIST_GET(node)->prev);
+   EINA_INLIST_FOREACH(node, itr)
+     {
+        if ((itr->text_node != cur->node) ||
+            ((position + itr->offset) > cur->pos))
+          {
+             return pitr;
+          }
+        else if ((position + itr->offset) == cur->pos)
+          {
+             return itr;
+          }
+        pitr = itr;
+        position += itr->offset;
+     }
+   return pitr;
+}
+
+/**
+ * @internal
+ * Return the last format that applies to a specific cursor or at the specific
+ * position the cursor points to. This means the format node before the
+ * position of the cursor in the text node is returned or the previous's text
+ * node's format node.
+ *
+ * @param cur teh position to look at.
+ * @return the format node found.
+ */
+static Evas_Object_Textblock_Node_Format *
+_evas_textblock_cursor_node_format_before_pos_get(const Evas_Textblock_Cursor *cur)
+{
+   Evas_Object_Textblock_Node_Format *node, *pitr = NULL;
+   Evas_Object_Textblock_Node_Format *itr;
+   size_t position = 0;
+
+   if (!cur->node) return NULL;
+
+   node = cur->node->format_node;
+   if (!node) return NULL;
+   /* If there is no exclusive format node to this paragraph return the
+    * previous's node */
+   if (node->text_node != cur->node)
+     {
+        return node;
+     }
+   else if (node->offset > cur->pos)
+     {
+        return _NODE_FORMAT(EINA_INLIST_GET(node)->prev);
+     }
+   /* Find the main format node */
+   pitr = _NODE_FORMAT(EINA_INLIST_GET(node)->prev);
+   EINA_INLIST_FOREACH(node, itr)
+     {
+        position += itr->offset;
+        if ((itr->text_node != cur->node) ||
+            (position >= cur->pos))
+          {
+             return pitr;
+          }
+        pitr = itr;
+     }
+   return pitr;
+}
+/**
+ * Return the object's main cursor.
+ *
+ * @param obj the object.
+ * @return the obj's main cursor.
  */
 EAPI const Evas_Textblock_Cursor *
 evas_object_textblock_cursor_get(const Evas_Object *obj)
@@ -3308,9 +4316,14 @@ evas_object_textblock_cursor_get(const Evas_Object *obj)
 }
 
 /**
- * to be documented.
- * @param obj  to be documented.
- * @return to be documented.
+ * Create a new cursor, associate it to the obj and init it to point
+ * to the start of the textblock. Association to the object means the cursor
+ * will be updated when the object will change.
+ *
+ * @note if you need speed and you know what you are doing, it's slightly faster to just allocate the cursor yourself and not associate it. (only people developing the actual object, and not users of the object).
+ *
+ * @param obj the object to associate to.
+ * @return the new cursor.
  */
 EAPI Evas_Textblock_Cursor *
 evas_object_textblock_cursor_new(Evas_Object *obj)
@@ -3320,16 +4333,18 @@ evas_object_textblock_cursor_new(Evas_Object *obj)
    TB_HEAD_RETURN(NULL);
    cur = calloc(1, sizeof(Evas_Textblock_Cursor));
    cur->obj = obj;
-   cur->node = o->nodes;
+   cur->node = o->text_nodes;
    cur->pos = 0;
-   cur->eol = 0;
+
    o->cursors = eina_list_append(o->cursors, cur);
    return cur;
 }
 
 /**
- * to be documented.
- * @param cur  to be documented.
+ * Free the cursor and unassociate it from the object.
+ * @note do not use it to free unassociated cursors.
+ *
+ * @param cur the cursor to free.
  * @return Returns no value.
  */
 EAPI void
@@ -3345,228 +4360,382 @@ evas_textblock_cursor_free(Evas_Textblock_Cursor *cur)
 }
 
 /**
- * to be documented.
- * @param cur  to be documented.
- * @return Returns no value.
+ * Returns true if the cursor points to a format.
+ *
+ * @param cur the cursor to check.
+ * @return Returns #EINA_TRUE if a cursor points to a format #EINA_FALSE otherwise.
  */
-EAPI void
-evas_textblock_cursor_node_first(Evas_Textblock_Cursor *cur)
+EAPI Eina_Bool
+evas_textblock_cursor_is_format(const Evas_Textblock_Cursor *cur)
 {
-   Evas_Object_Textblock *o;
-
-   if (!cur) return;
-   o = (Evas_Object_Textblock *)(cur->obj->object_data);
-   cur->node = o->nodes;
-   cur->pos = 0;
-   cur->eol = 0;
+   if (!cur || !cur->node) return EINA_FALSE;
+   if (evas_textblock_cursor_format_is_visible_get(cur)) return EINA_TRUE;
+   return (_evas_textblock_cursor_node_format_at_pos_get(cur)) ?
+      EINA_TRUE : EINA_FALSE;
 }
 
 /**
- * to be documented.
- * @param cur  to be documented.
+ * Returns the first format node.
+ *
+ * @param obj The evas, must not be NULL.
+ * @return Returns the first format node, may be null if there are none.
+ */
+EAPI const Evas_Object_Textblock_Node_Format *
+evas_textblock_node_format_first_get(const Evas_Object *obj)
+{
+   TB_HEAD_RETURN(NULL);
+   return o->format_nodes;
+}
+/**
+ * Returns the last format node.
+ *
+ * @param obj The evas textblock, must not be NULL.
+ * @return Returns the first format node, may be null if there are none.
+ */
+EAPI const Evas_Object_Textblock_Node_Format *
+evas_textblock_node_format_last_get(const Evas_Object *obj)
+{
+   TB_HEAD_RETURN(NULL);
+   if (o->format_nodes)
+     {
+        return _NODE_FORMAT(EINA_INLIST_GET(o->format_nodes)->last);
+     }
+   return NULL;
+}
+
+/**
+ * Returns the next format node (after n)
+ *
+ * @param n the current format node - not null.
+ * @return Returns the next format node, may be null.
+ */
+EAPI const Evas_Object_Textblock_Node_Format *
+evas_textblock_node_format_next_get(const Evas_Object_Textblock_Node_Format *n)
+{
+   return _NODE_FORMAT(EINA_INLIST_GET(n)->next);
+}
+
+/**
+ * Returns the prev format node (after n)
+ *
+ * @param n the current format node - not null.
+ * @return Returns the prev format node, may be null.
+ */
+EAPI const Evas_Object_Textblock_Node_Format *
+evas_textblock_node_format_prev_get(const Evas_Object_Textblock_Node_Format *n)
+{
+   return _NODE_FORMAT(EINA_INLIST_GET(n)->prev);
+}
+
+/**
+ * Sets the cursor to the start of the first text node.
+ *
+ * @param cur the cursor to update.
  * @return Returns no value.
  */
 EAPI void
-evas_textblock_cursor_node_last(Evas_Textblock_Cursor *cur)
+evas_textblock_cursor_paragraph_first(Evas_Textblock_Cursor *cur)
 {
    Evas_Object_Textblock *o;
+   if (!cur) return;
+   o = (Evas_Object_Textblock *)(cur->obj->object_data);
+   cur->node = o->text_nodes;
+   cur->pos = 0;
+
+}
+
+/**
+ * sets the cursor to the end of the last text node.
+ *
+ * @param cur the cursor to set.
+ * @return Returns no value.
+ */
+EAPI void
+evas_textblock_cursor_paragraph_last(Evas_Textblock_Cursor *cur)
+{
+   Evas_Object_Textblock *o;
+   Evas_Object_Textblock_Node_Text *node;
 
    if (!cur) return;
    o = (Evas_Object_Textblock *)(cur->obj->object_data);
-   if (o->nodes)
+   node = o->text_nodes;
+   if (node)
      {
-	cur->node = (Evas_Object_Textblock_Node *)((EINA_INLIST_GET(o->nodes))->last);
+        node = _NODE_TEXT(EINA_INLIST_GET(node)->last);
+        cur->node = node;
 	cur->pos = 0;
-        cur->eol = 0;  // 1
-	evas_textblock_cursor_char_last(cur);
+
+	evas_textblock_cursor_paragraph_char_last(cur);
      }
    else
      {
 	cur->node = NULL;
 	cur->pos = 0;
-        cur->eol = 0; // 1
+
      }
 }
 
 /**
- * to be documented.
- * @param cur  to be documented.
- * @return to be documented.
+ * Advances to the the start of the next text node
+ *
+ * @param cur the cursor to update
+ * @return #EINA_TRUE if it managed to advance a paragraph, #EINA_FALSE otherwise.
  */
 EAPI Eina_Bool
-evas_textblock_cursor_node_next(Evas_Textblock_Cursor *cur)
+evas_textblock_cursor_paragraph_next(Evas_Textblock_Cursor *cur)
 {
    if (!cur) return EINA_FALSE;
    if (!cur->node) return EINA_FALSE;
-   if ((EINA_INLIST_GET(cur->node))->next)
+   /* If there is a current text node, return the next text node (if exists)
+    * otherwise, just return False. */
+   if (cur->node)
      {
-	cur->node = (Evas_Object_Textblock_Node *)((EINA_INLIST_GET(cur->node))->next);
-	cur->pos = 0;
-        cur->eol = 0;
-	return EINA_TRUE;
+        Evas_Object_Textblock_Node_Text *nnode;
+        nnode = _NODE_TEXT(EINA_INLIST_GET(cur->node)->next);
+        if (nnode)
+          {
+             cur->node = nnode;
+             cur->pos = 0;
+
+             return EINA_TRUE;
+          }
      }
    return EINA_FALSE;
 }
 
 /**
- * to be documented.
- * @param cur  to be documented.
- * @return to be documented.
+ * Advances to the the end of the next text node
+ *
+ * @param cur the cursor to update
+ * @return #EINA_TRUE if it managed to advance a paragraph, #EINA_FALSE otherwise.
  */
 EAPI Eina_Bool
-evas_textblock_cursor_node_prev(Evas_Textblock_Cursor *cur)
+evas_textblock_cursor_paragraph_prev(Evas_Textblock_Cursor *cur)
 {
+   Evas_Object_Textblock_Node_Text *node;
    if (!cur) return EINA_FALSE;
    if (!cur->node) return EINA_FALSE;
-   if ((EINA_INLIST_GET(cur->node))->prev)
+   /* If the current node is a text node, just get the prev if any,
+    * if it's a format, get the current text node out of the format and return
+    * the prev text node if any. */
+   node = cur->node;
+   /* If there is a current text node, return the prev text node
+    * (if exists) otherwise, just return False. */
+   if (node)
      {
-	cur->node = (Evas_Object_Textblock_Node *)((EINA_INLIST_GET(cur->node))->prev);
-	evas_textblock_cursor_char_last(cur);
-	return EINA_TRUE;
+        Evas_Object_Textblock_Node_Text *pnode;
+        pnode = _NODE_TEXT(EINA_INLIST_GET(cur->node)->prev);
+        if (pnode)
+          {
+             cur->node = pnode;
+             evas_textblock_cursor_paragraph_char_last(cur);
+             return EINA_TRUE;
+          }
      }
    return EINA_FALSE;
 }
 
 /**
- * to be documented.
- * @param cur  to be documented.
- * @return to be documented.
+ * Sets the cursor to point to the place where format points to.
+ *
+ * @param cur the cursor to update.
+ * @param n the format node to update according.
+ */
+EAPI void
+evas_textblock_cursor_set_at_format(Evas_Textblock_Cursor *cur, const Evas_Object_Textblock_Node_Format *n)
+{
+   if (!cur || !n) return;
+   cur->node = n->text_node;
+   cur->pos = _evas_textblock_node_format_pos_get(n);
+}
+
+/**
+ * Advances to the next format node
+ *
+ * @param cur the cursor to be updated.
+ * @return #EINA_TRUE on success #EINA_FALSE otherwise.
+ */
+EAPI Eina_Bool
+evas_textblock_cursor_format_next(Evas_Textblock_Cursor *cur)
+{
+   Evas_Object_Textblock_Node_Format *node;
+
+   if (!cur) return EINA_FALSE;
+   if (!cur->node) return EINA_FALSE;
+   /* If the current node is a format node, just get the next if any,
+    * if it's a text, get the current format node out of the text and return
+    * the next format node if any. */
+   node = _evas_textblock_cursor_node_format_before_or_at_pos_get(cur);
+   node = _evas_textblock_node_format_last_at_off(node);
+   if (!node)
+     {
+        if (cur->node->format_node)
+          {
+             cur->node = cur->node;
+             cur->pos = _evas_textblock_node_format_pos_get(node);
+
+             return EINA_TRUE;
+          }
+     }
+   /* If there is a current text node, return the next format node (if exists)
+    * otherwise, just return False. */
+   else
+     {
+        Evas_Object_Textblock_Node_Format *nnode;
+        nnode = _NODE_FORMAT(EINA_INLIST_GET(node)->next);
+        if (nnode)
+          {
+             cur->node = nnode->text_node;
+             cur->pos = _evas_textblock_node_format_pos_get(nnode);
+
+             return EINA_TRUE;
+          }
+     }
+   return EINA_FALSE;
+}
+
+/**
+ * Advances to the previous format node.
+ *
+ * @param cur the cursor to update.
+ * @return #EINA_TRUE on success #EINA_FALSE otherwise.
+ */
+EAPI Eina_Bool
+evas_textblock_cursor_format_prev(Evas_Textblock_Cursor *cur)
+{
+   Evas_Object_Textblock_Node_Format *node;
+   if (!cur) return EINA_FALSE;
+   if (!cur->node) return EINA_FALSE;
+   /* If the current node is a format node, just get the next if any,
+    * if it's a text, get the current format node out of the text and return
+    * the next format node if any. */
+   node = _evas_textblock_cursor_node_format_before_or_at_pos_get(cur);
+   if (evas_textblock_cursor_is_format(cur))
+     {
+        if (node)
+          {
+             cur->pos = _evas_textblock_node_format_pos_get(node);
+
+             return EINA_TRUE;
+          }
+     }
+   /* If there is a current text node, return the next text node (if exists)
+    * otherwise, just return False. */
+   if (node)
+     {
+        Evas_Object_Textblock_Node_Format *pnode;
+        pnode = _NODE_FORMAT(EINA_INLIST_GET(node)->prev);
+        if (pnode)
+          {
+             cur->node = pnode->text_node;
+             cur->pos = _evas_textblock_node_format_pos_get(node);
+
+             return EINA_TRUE;
+          }
+     }
+   return EINA_FALSE;
+}
+
+/**
+ * Advances 1 char forward.
+ *
+ * @param cur the cursor to advance.
+ * @return #EINA_TRUE on success #EINA_FALSE otherwise.
  */
 EAPI Eina_Bool
 evas_textblock_cursor_char_next(Evas_Textblock_Cursor *cur)
 {
-   int index, ch;
+   int index;
+   const Eina_Unicode *text;
 
    if (!cur) return EINA_FALSE;
    if (!cur->node) return EINA_FALSE;
-   if (cur->node->type == NODE_FORMAT) return EINA_FALSE;
-   if (!eina_strbuf_length_get(cur->node->text)) return EINA_FALSE;
+
    index = cur->pos;
-
-   if (cur->node->type == NODE_TEXT)
+   text = eina_ustrbuf_string_get(cur->node->unicode);
+   GET_NEXT(text, index);
+   /* Only allow pointing a null if it's the last paragraph.
+    * because we don't have a PS there. */
+   if (text[index])
      {
-        Evas_Object_Textblock_Line *ln = NULL;
-        Evas_Object_Textblock_Item *it = NULL;
-        int pos;
-
-	_find_layout_item_line_match(cur->obj, cur->node, cur->pos, cur->eol, &ln, &it);
-        if (it)
+        cur->pos = index;
+        return EINA_TRUE;
+     }
+   else
+     {
+        if (!evas_textblock_cursor_paragraph_next(cur))
           {
-             pos = cur->pos - it->source_pos;
-             if (pos <= 0) index -= pos;
+             cur->pos = index;
+             return EINA_TRUE;
           }
         else
-          printf("TB: 'it' not found\n");
+          {
+             return EINA_FALSE;
+          }
      }
-
-   ch = evas_common_font_utf8_get_next((unsigned char *)eina_strbuf_string_get(cur->node->text), &index);
-   if ((ch == 0) || (index < 0)) return EINA_FALSE;
-   if (eina_strbuf_string_get(cur->node->text)[index] == 0) return EINA_FALSE;
-   cur->pos = index;
-   cur->eol = 0; // 1
-   return EINA_TRUE;
 }
 
 /**
- * to be documented.
- * @param cur  to be documented.
- * @return to be documented.
+ * Advances 1 char backward.
+ *
+ * @param cur the cursor to advance.
+ * @return #EINA_TRUE on success #EINA_FALSE otherwise.
  */
 EAPI Eina_Bool
 evas_textblock_cursor_char_prev(Evas_Textblock_Cursor *cur)
 {
-   int index;
-   int at_end_of_line = 0;
-   int at_start_of_line = 0;
-
    if (!cur) return EINA_FALSE;
    if (!cur->node) return EINA_FALSE;
-   if (cur->node->type == NODE_FORMAT) return EINA_FALSE;
-   if (!eina_strbuf_length_get(cur->node->text)) return EINA_FALSE;
-   index = cur->pos;
-   if (index == 0) return EINA_FALSE;
 
-   // XXX: FIXME: determine at_end_of_line and at_start_of_line
-
-   if (cur->node->type == NODE_TEXT)
+   if (cur->pos != 0)
      {
-        Evas_Object_Textblock_Line *ln = NULL;
-        Evas_Object_Textblock_Item *it = NULL;
-        int pos;
-
-	_find_layout_item_line_match(cur->obj, cur->node, cur->pos, cur->eol, &ln, &it);
-        if (it)
-          {
-             pos = cur->pos - it->source_pos;
-             if (pos <= 0) at_start_of_line = 1;
-             if (it->text)
-               {
-                  int plast;
-
-                  plast = evas_common_font_utf8_get_last((unsigned char *) it->text, strlen(it->text));
-                  if ((index - it->source_pos) == plast) at_end_of_line = 1;
-               }
-          }
-     }
-
-   if ((cur->eol) && (at_end_of_line))
-     {
-        cur->eol = 0;
+        cur->pos--;
         return EINA_TRUE;
      }
-   evas_common_font_utf8_get_prev((unsigned char *)eina_strbuf_string_get(cur->node->text), &index);
-   if (/*(ch == 0) || */(index < 0)) return EINA_FALSE;
-   cur->pos = index;
-   if (at_start_of_line)
-     cur->eol =1;
-   else
-     cur->eol = 0;
-   return EINA_TRUE;
+   return evas_textblock_cursor_paragraph_prev(cur);
 }
 
 /**
- * to be documented.
- * @param cur  to be documented.
+ * Go to the first char in the node the cursor is pointing on.
+ *
+ * @param cur the cursor to update.
  * @return Returns no value.
  */
 EAPI void
-evas_textblock_cursor_char_first(Evas_Textblock_Cursor *cur)
+evas_textblock_cursor_paragraph_char_first(Evas_Textblock_Cursor *cur)
 {
    if (!cur) return;
    cur->pos = 0;
-   cur->eol = 0;
+
 }
 
 /**
- * to be documented.
- * @param cur  to be documented.
+ * Go to the last char in a text node.
+ *
+ * @param cur the cursor to update.
  * @return Returns no value.
  */
 EAPI void
-evas_textblock_cursor_char_last(Evas_Textblock_Cursor *cur)
+evas_textblock_cursor_paragraph_char_last(Evas_Textblock_Cursor *cur)
 {
    int index;
 
    if (!cur) return;
    if (!cur->node) return;
-   if (cur->node->type == NODE_FORMAT)
-     {
-	cur->pos = 0;
-	return;
-     }
-   index = evas_common_font_utf8_get_last((unsigned char *)eina_strbuf_string_get(cur->node->text), eina_strbuf_length_get(cur->node->text));
+   index = eina_ustrbuf_length_get(cur->node->unicode) - 1;
    if (index < 0) cur->pos = 0;
    cur->pos = index;
-   cur->eol = 0; // 1
+
 }
 
 /**
- * to be documented.
- * @param cur  to be documented.
+ * Go to the start of the current line
+ *
+ * @param cur the cursor to update.
  * @return Returns no value.
  */
 EAPI void
-evas_textblock_cursor_line_first(Evas_Textblock_Cursor *cur)
+evas_textblock_cursor_line_char_first(Evas_Textblock_Cursor *cur)
 {
    Evas_Object_Textblock *o;
    Evas_Object_Textblock_Line *ln = NULL;
@@ -3577,12 +4746,20 @@ evas_textblock_cursor_line_first(Evas_Textblock_Cursor *cur)
    if (!cur->node) return;
    o = (Evas_Object_Textblock *)(cur->obj->object_data);
    if (!o->formatted.valid) _relayout(cur->obj);
-   if (cur->node->type == NODE_FORMAT)
-     _find_layout_format_item_line_match(cur->obj, cur->node, &ln, &fi);
+   if (evas_textblock_cursor_format_is_visible_get(cur))
+     {
+        _find_layout_format_item_line_match(cur->obj,
+              _evas_textblock_node_visible_at_pos_get(
+                 _evas_textblock_cursor_node_format_at_pos_get(cur)),
+              &ln, &fi);
+     }
    else
-     _find_layout_item_line_match(cur->obj, cur->node, cur->pos, cur->eol, &ln, &it);
+     {
+        _find_layout_item_line_match(cur->obj, cur->node, cur->pos, &ln, &it);
+     }
+
    if (!ln) return;
-   cur->eol = 0;
+
    it = (Evas_Object_Textblock_Item *)ln->items;
    fi = (Evas_Object_Textblock_Format_Item *)ln->format_items;
    if ((it) && (fi))
@@ -3597,18 +4774,19 @@ evas_textblock_cursor_line_first(Evas_Textblock_Cursor *cur)
      }
    else if (fi)
      {
-	cur->pos = 0;
-	cur->node = fi->source_node;
+	cur->node = fi->source_node->text_node;
+	cur->pos = _evas_textblock_node_format_pos_get(fi->source_node);
      }
 }
 
 /**
- * to be documented.
- * @param cur  to be documented.
+ * Go to the end of the current line.
+ *
+ * @param cur the cursor to update.
  * @return Returns no value.
  */
 EAPI void
-evas_textblock_cursor_line_last(Evas_Textblock_Cursor *cur)
+evas_textblock_cursor_line_char_last(Evas_Textblock_Cursor *cur)
 {
    Evas_Object_Textblock *o;
    Evas_Object_Textblock_Line *ln = NULL;
@@ -3620,11 +4798,19 @@ evas_textblock_cursor_line_last(Evas_Textblock_Cursor *cur)
    o = (Evas_Object_Textblock *)(cur->obj->object_data);
    if (!o->formatted.valid) _relayout(cur->obj);
 // kills "click below text" and up/downm arrow. disable   
-//   cur->eol = 1;
-   if (cur->node->type == NODE_FORMAT)
-     _find_layout_format_item_line_match(cur->obj, cur->node, &ln, &fi);
+
+   if (evas_textblock_cursor_format_is_visible_get(cur))
+     {
+        _find_layout_format_item_line_match(cur->obj,
+              _evas_textblock_node_visible_at_pos_get(
+                 _evas_textblock_cursor_node_format_at_pos_get(cur)),
+              &ln, &fi);
+     }
    else
-     _find_layout_item_line_match(cur->obj, cur->node, cur->pos, cur->eol, &ln, &it);
+     {
+        _find_layout_item_line_match(cur->obj, cur->node, cur->pos, &ln, &it);
+     }
+
    if (!ln) return;
    if (ln->items)
      it = (Evas_Object_Textblock_Item *)((EINA_INLIST_GET(ln->items))->last);
@@ -3645,23 +4831,339 @@ evas_textblock_cursor_line_last(Evas_Textblock_Cursor *cur)
 
 	cur->pos = it->source_pos;
 	cur->node = it->source_node;
-	index = evas_common_font_utf8_get_last((unsigned char *)it->text, strlen(it->text));
-        if ((index >= 0) && (it->text[0] != 0))
-          evas_common_font_utf8_get_next((unsigned char *)(it->text), &index);
+	index = eina_unicode_strlen(it->text) - 1;
+        if (index < 0) index = 0;
+        if (index >= 0) GET_NEXT(it->text, index);
 	if (index >= 0) cur->pos += index;
      }
    else if (fi)
      {
-	cur->pos = 0;
-        cur->eol = 0;
-	cur->node = fi->source_node;
+	cur->node = fi->source_node->text_node;
+	cur->pos = _evas_textblock_node_format_pos_get(fi->source_node);
      }
 }
 
 /**
- * to be documented.
- * @param cur  to be documented.
- * @return to be documented.
+ * @internal
+ * checks if a format (as a string) is visible.
+ *
+ * @param the string.
+ * @return #EINA_TRUE if it represents a visible format #EINA_FALSE otherwise.
+ */
+static Eina_Bool
+_evas_textblock_format_is_visible(const char *s)
+{
+   if (!s) return EINA_FALSE;
+   const char *item;
+   Eina_Bool is_opener = EINA_TRUE;
+
+   if (s[0] == '+' || s[0] == '-')
+     {
+        is_opener = (s[0] == '+') ? EINA_TRUE : EINA_FALSE;
+        s++;
+     }
+   while ((item = _format_parse(&s)))
+     {
+        char *tmp;
+        tmp = alloca(s - item + 1);
+        strncpy(tmp, item, s - item);
+        tmp[s - item] = '\0';
+        /* We care about all of the formats even after a - except for
+         * item which we don't care after a - because it's just a standard
+         * closing */
+        if (((!strcmp(item, "\n")) || (!strcmp(item, "\\n"))) ||
+              ((!strcmp(item, "\t")) || (!strcmp(item, "\\t"))) ||
+              (!strcmp(item, "ps")) ||
+              (!strncmp(item, "item", 4) && is_opener)) /*FIXME: formats like item2 will break it. */
+          return EINA_TRUE;
+     }
+   return EINA_FALSE;
+}
+
+/**
+ * Sets the cursor to the position of where the fmt points to.
+ *
+ * @param cur the cursor to update.
+ * @param fmt the format to set according to.
+ * @return nothing.
+ */
+static void __UNUSED__
+_evas_textblock_cursor_node_text_at_format(Evas_Textblock_Cursor *cur, Evas_Object_Textblock_Node_Format *fmt)
+{
+   Evas_Object_Textblock_Node_Text *text;
+   Evas_Object_Textblock_Node_Format *base_format;
+   Evas_Object_Textblock_Node_Format *itr;
+   size_t position = 0;
+
+   if (!cur || !fmt) return;
+   /* Find the main format node */
+   text = fmt->text_node;
+   cur->node = text;
+   base_format = text->format_node;
+   EINA_INLIST_FOREACH(base_format, itr)
+     {
+        if (itr == fmt)
+          {
+             break;
+          }
+        position += itr->offset;
+     }
+   cur->pos = position;
+
+}
+/**
+ * @internal
+ * Add the offset (may be negative) to the first node after fmt which is
+ * pointing to the text node tnode or to o->format_nodes if fmt is null
+ * and it points to tnode.
+ *
+ * @param o the textblock object.
+ * @param tnode the text node the format should point to.
+ * @param fmt the current format.
+ * @param offset the offest to add (may be negative).
+ */
+static void
+_evas_textblock_node_format_adjust_offset(Evas_Object_Textblock *o,
+      Evas_Object_Textblock_Node_Text *tnode,
+      Evas_Object_Textblock_Node_Format *fmt, int offset)
+{
+   if (fmt)
+     {
+        fmt = _NODE_FORMAT(EINA_INLIST_GET(fmt)->next);
+     }
+   else
+     {
+        fmt = o->format_nodes;
+     }
+   if (fmt && (tnode == fmt->text_node))
+     {
+        fmt->offset += offset;
+     }
+}
+
+/**
+ * @internal
+ * Removes a format node updating the offset of the next format node and the
+ * text nodes pointing to this node.
+ *
+ * @param o the textblock object.
+ * @param n the fromat node to remove
+ */
+static void
+_evas_textblock_node_format_remove(Evas_Object_Textblock *o, Evas_Object_Textblock_Node_Format *n, int visible_adjustment)
+{
+   /* Update the text nodes about the change */
+     {
+        Evas_Object_Textblock_Node_Format *nnode;
+        nnode = _NODE_FORMAT(EINA_INLIST_GET(n)->next);
+        /* If there's a next node that belongs to the same text node
+         * and the curret node was the main one, advance the format node */
+        if (nnode && (nnode->text_node == n->text_node))
+          {
+             if (nnode->text_node->format_node == n)
+               {
+                  nnode->text_node->format_node = nnode;
+               }
+          }
+        else
+          {
+             Evas_Object_Textblock_Node_Text *tnode;
+             /* If there's no next one update the text nodes */
+             nnode = _NODE_FORMAT(EINA_INLIST_GET(n)->prev);
+             tnode = n->text_node;
+             while (tnode && (tnode->format_node == n))
+               {
+                  tnode->format_node = nnode;
+                  tnode = _NODE_TEXT(EINA_INLIST_GET(tnode)->next);
+               }
+          }
+     }
+   _evas_textblock_node_format_adjust_offset(o, n->text_node, n,
+         n->offset - visible_adjustment);
+
+   o->format_nodes = _NODE_FORMAT(eina_inlist_remove(
+           EINA_INLIST_GET(o->format_nodes), EINA_INLIST_GET(n)));
+}
+
+/**
+ * @internal
+ * Removes all the format nodes at a location strating from n.
+ * This function updates the offset of the next format node and the
+ * text nodes pointing to it.
+ *
+ * @param o the textblock object.
+ * @param n the fromat node to remove from.
+ */
+static void
+_evas_textblock_node_format_remove_all_at_pos(Evas_Object_Textblock *o, Evas_Object_Textblock_Node_Format *n)
+{
+   Evas_Object_Textblock_Node_Format *nnode;
+   Evas_Object_Textblock_Node_Text *tnode;
+
+   nnode = n;
+   tnode = n->text_node;
+   do
+     {
+        Evas_Object_Textblock_Node_Format *curnode;
+        curnode = nnode;
+        nnode = _NODE_FORMAT(EINA_INLIST_GET(nnode)->next);
+
+        _evas_textblock_node_format_remove(o, curnode, curnode->visible);
+     }
+   while (nnode && (nnode->text_node == tnode) && (nnode->offset == 0));
+}
+
+/**
+ * @internal
+ * Removes all the format nodes between start and end in the text node n.
+ * This function updates the offset of the next format node and the
+ * text nodes pointing to it. if end == -1 end means the end of the string.
+ *
+ * @param o the textblock object.
+ * @param n the text node the positinos refer to.
+ * @param start the start of where to delete from.
+ * @param end the end of the section to delete, if end == -1 it means the end of the string.
+ */
+static void
+_evas_textblock_node_text_remove_formats_between(Evas_Object_Textblock *o,
+      Evas_Object_Textblock_Node_Text *n, int start, int end)
+{
+   Evas_Object_Textblock_Node_Format *itr;
+   int use_end = 1;
+   int offset = end - start;
+   itr = n->format_node;
+
+   if (itr)
+     start -= itr->offset;
+   if (offset < 0) offset = 0;
+   while (itr && (itr->text_node == n))
+     {
+        Evas_Object_Textblock_Node_Format *nnode;
+        int tmp_offset = 0;
+
+        /* start is negative when this gets relevant */
+        if ((offset + start <= 0) && use_end)
+          {
+             break;
+          }
+        nnode = _NODE_FORMAT(EINA_INLIST_GET(itr)->next);
+        if (nnode)
+          {
+             tmp_offset = nnode->offset;
+          }
+        if (start <= 0)
+          {
+             /* Don't do visible adjustments because we are removing the visual
+              * chars anyway and taking those into account */
+             _evas_textblock_node_format_remove(o, itr, 0);
+          }
+        start -= tmp_offset;
+        itr = nnode;
+     }
+}
+
+/**
+ * @internal
+ * Returns the first format in the range between start and end in the textblock
+ * n.
+ *
+ * @param o the textblock object.
+ * @param n the text node the positinos refer to.
+ * @param start the start of where to delete from.
+ * @param end the end of the section to delete, if end == -1 it means the end of the string.
+ */
+static Evas_Object_Textblock_Node_Format *
+_evas_textblock_node_text_get_first_format_between(
+      Evas_Object_Textblock_Node_Text *n, int start, int end)
+{
+   Evas_Object_Textblock_Node_Format *itr;
+   int use_end = 1;
+   itr = n->format_node;
+   if (end < 0) use_end = 0;
+   while (itr && (itr->text_node == n))
+     {
+        start -= itr->offset;
+        end -= itr->offset;
+        if ((end <= 0) && use_end)
+          {
+             break;
+          }
+        if (start <= 0)
+          {
+             return itr;
+          }
+        itr = _NODE_FORMAT(EINA_INLIST_GET(itr)->next);
+     }
+   return NULL;
+}
+
+/**
+ * Removes a text node and the corresponding format nodes.
+ *
+ * @param o the textblock objec.t
+ * @param n the node to remove.
+ */
+static void
+_evas_textblock_node_text_remove(Evas_Object_Textblock *o, Evas_Object_Textblock_Node_Text *n)
+{
+   Evas_Object_Textblock_Node_Format *fnode;
+   Evas_Object_Textblock_Node_Text *tnode;
+   fnode = n->format_node;
+   /* We want to get the last format node that will exist so if
+    * it's a node to be deleted get the previous one */
+   if (fnode && (fnode->text_node == n))
+     {
+        fnode = _NODE_FORMAT(EINA_INLIST_GET(fnode)->prev);
+     }
+   /* Update all the text node -> format node links
+    * go through all the text nodes starting from ours and update
+    * all the ones pointing to a format node that belongs to n */
+   tnode = _NODE_TEXT(EINA_INLIST_GET(n)->next);
+   while (tnode && tnode->format_node && (tnode->format_node->text_node = n))
+     {
+        tnode->format_node = fnode;
+        tnode = _NODE_TEXT(EINA_INLIST_GET(tnode)->next);
+     }
+   _evas_textblock_node_text_remove_formats_between(o, n, 0, -1);
+   o->text_nodes = _NODE_TEXT(eina_inlist_remove(
+           EINA_INLIST_GET(o->text_nodes), EINA_INLIST_GET(n)));
+}
+
+/**
+ * @internal
+ * Return the position where the formats starts at.
+ *
+ * @param fmt the format to return the position of.
+ * @return the position of the format in the text node it points to.
+ */
+static size_t
+_evas_textblock_node_format_pos_get(const Evas_Object_Textblock_Node_Format *fmt)
+{
+   Evas_Object_Textblock_Node_Text *text;
+   Evas_Object_Textblock_Node_Format *base_format;
+   Evas_Object_Textblock_Node_Format *itr;
+   size_t position = 0;
+
+   if (!fmt) return 0;
+   /* Find the main format node */
+   text = fmt->text_node;
+   base_format = text->format_node;
+   EINA_INLIST_FOREACH(base_format, itr)
+     {
+        if (itr == fmt)
+          {
+             break;
+          }
+        position += itr->offset;
+     }
+   return position + fmt->offset;
+}
+
+/**
+ * Return the current cursor pos.
+ *
+ * @param cur the cursor to take the position from.
+ * @return the position or -1 on error
  */
 EAPI int
 evas_textblock_cursor_pos_get(const Evas_Textblock_Cursor *cur)
@@ -3671,30 +5173,42 @@ evas_textblock_cursor_pos_get(const Evas_Textblock_Cursor *cur)
 }
 
 /**
- * to be documented.
- * @param cur to be documented.
- * @param pos to be documented.
+ * Set the cursor pos.
+ *
+ * @param cur the cursor to be set.
+ * @param pos the pos to set.
  */
 EAPI void
-evas_textblock_cursor_pos_set(Evas_Textblock_Cursor *cur, int pos)
+evas_textblock_cursor_pos_set(Evas_Textblock_Cursor *cur, int _pos)
 {
-   unsigned int len;
+   size_t len, pos;
 
    if (!cur) return;
    if (!cur->node) return;
-   if (cur->node->type == NODE_FORMAT) pos = 0;
-   len = eina_strbuf_length_get(cur->node->text);
-   if (pos < 0) pos = 0;
-   else if (pos > len) pos = len;
+   len = eina_ustrbuf_length_get(cur->node->unicode);
+   if (_pos < 0)
+     {
+        pos = 0;
+     }
+   else
+     {
+        pos = (size_t) _pos;
+     }
+
+   if (pos > len)
+     {
+        pos = len;
+     }
    cur->pos = pos;
-   cur->eol = 0;
+
 }
 
 /**
- * to be documented.
- * @param cur to be documented.
- * @param line to be documented.
- * @return to be documented.
+ * Go to the start of the line passed
+ *
+ * @param cur cursor to update.
+ * @param line numer to set.
+ * @return #EINA_TRUE on success, #EINA_FALSE on error.
  */
 EAPI Eina_Bool
 evas_textblock_cursor_line_set(Evas_Textblock_Cursor *cur, int line)
@@ -3720,29 +5234,29 @@ evas_textblock_cursor_line_set(Evas_Textblock_Cursor *cur, int line)
    if (it)
      {
 	cur->pos = it->source_pos;
-        cur->eol = 0;
+
 	cur->node = it->source_node;
      }
    else if (fi)
      {
-	cur->pos = 0;
-        cur->eol = 0;
-	cur->node = fi->source_node;
+	cur->node = fi->source_node->text_node;
+	cur->pos = _evas_textblock_node_format_pos_get(fi->source_node);
      }
    else
      {
         cur->pos = 0;
-        cur->eol = 0;
-        cur->node = o->nodes;
+
+        cur->node = o->text_nodes;
      }
    return EINA_TRUE;
 }
 
 /**
- * to be documented.
- * @param cur1 to be documented.
- * @param cur2 to be documented.
- * @return to be documented.
+ * Compare two cursors.
+ *
+ * @param cur1 the first cursor.
+ * @param cur2 the second cursor.
+ * @return -1 if cur1 < cur2, 0 if cur1 == cur2 and 1 otherwise.
  */
 EAPI int
 evas_textblock_cursor_compare(const Evas_Textblock_Cursor *cur1, const Evas_Textblock_Cursor *cur2)
@@ -3757,9 +5271,7 @@ evas_textblock_cursor_compare(const Evas_Textblock_Cursor *cur1, const Evas_Text
      {
 	if (cur1->pos < cur2->pos) return -1; /* cur1 < cur2 */
 	else if (cur1->pos > cur2->pos) return 1; /* cur2 < cur1 */
-        if ((cur1->eol) == (cur1->eol)) return 0; /* cur1 == cur2 */
-        if (cur1->eol) return 1; /* cur2 < cur1 */
-	return -1; /* cur1 < cur2 */
+	return 0;
      }
    for (l1 = EINA_INLIST_GET(cur1->node),
         l2 = EINA_INLIST_GET(cur1->node); (l1) || (l2);)
@@ -3768,16 +5280,18 @@ evas_textblock_cursor_compare(const Evas_Textblock_Cursor *cur1, const Evas_Text
 	else if (l2 == EINA_INLIST_GET(cur2->node)) return -1; /* cur1 < cur 2 */
 	else if (!l1) return -1; /* cur1 < cur 2 */
 	else if (!l2) return 1; /* cur2 < cur 1 */
-	if (l1) l1 = l1->prev;
-	if (l2) l2 = l2->next;
+	l1 = l1->prev;
+	l2 = l2->next;
      }
    return 0;
 }
 
 /**
- * to be documented.
- * @param cur to be documented.
- * @param cur_dest to be documented.
+ * Make cur_dest point to the same place as cur. Does not work if they don't
+ * point to the same object.
+ *
+ * @param cur the source cursor.
+ * @param cur_dest destination cursor.
  * @return Returns no value.
  */
 EAPI void
@@ -3788,410 +5302,213 @@ evas_textblock_cursor_copy(const Evas_Textblock_Cursor *cur, Evas_Textblock_Curs
    if (cur->obj != cur_dest->obj) return;
    cur_dest->pos = cur->pos;
    cur_dest->node = cur->node;
-   cur_dest->eol = cur->eol;
+
 }
 
 
 /* text controls */
 /**
- * to be documented.
- * @param cur to be documented.
- * @param text to be documented.
- * @return Returns no value.
+ * @internal
+ * Free a text node.
+ *
+ * @param n the text node to free
  */
-EAPI void
-evas_textblock_cursor_text_append(Evas_Textblock_Cursor *cur, const char *text)
+static void
+_evas_textblock_node_text_free(Evas_Object_Textblock_Node_Text *n)
 {
-   Evas_Object_Textblock *o;
-   Evas_Object_Textblock_Node *n, *nrel;
-   int index, ch;
-
-   if (!cur) return;
-   o = (Evas_Object_Textblock *)(cur->obj->object_data);
-   if (text)
-     {
-	Eina_List *l;
-	Evas_Textblock_Cursor *data;
-
-	if (cur != o->cursor)
-	  {
-	     if (cur->node == o->cursor->node)
-	       {
-		  if (o->cursor->pos > cur->pos)
-                    {
-                       o->cursor->pos += strlen(text);
-                    }
-	       }
-	  }
-	EINA_LIST_FOREACH(o->cursors, l, data)
-	  {
-	     if (data != cur)
-	       {
-		  if (cur->node == data->node)
-		    {
-		       if (data->pos > cur->pos)
-                         {
-                            data->pos += strlen(text);
-                         }
-		    }
-	       }
-	  }
-     }
-   n = cur->node;
-   if ((!n) || (n->type == NODE_FORMAT))
-     {
-	nrel = n;
-	n = calloc(1, sizeof(Evas_Object_Textblock_Node));
-	n->type = NODE_TEXT;
-	n->text = eina_strbuf_new();
-	if (nrel)
-	  o->nodes = (Evas_Object_Textblock_Node *)eina_inlist_append_relative(EINA_INLIST_GET(o->nodes),
-									       EINA_INLIST_GET(n),
-									       EINA_INLIST_GET(nrel));
-	else
-	  o->nodes = (Evas_Object_Textblock_Node *)eina_inlist_append(EINA_INLIST_GET(o->nodes), EINA_INLIST_GET(n));
-     }
-   cur->node = n;
-   index = cur->pos;
-   if (eina_strbuf_length_get(n->text))
-     {
-	ch = evas_common_font_utf8_get_next((unsigned char *)eina_strbuf_string_get(n->text), &index);
-	if (ch != 0)
-          {
-             cur->pos = index;
-          }
-     }
-   if (cur->pos >= (eina_strbuf_length_get(n->text) - 1))
-     eina_strbuf_append(n->text, (char *)text);
-   else
-     eina_strbuf_insert(n->text, (char *)text, cur->pos);
-// XXX: This makes no sense?
-   if (text)
-     {
-        cur->pos += strlen(text);
-     }
-   o->formatted.valid = 0;
-   o->native.valid = 0;
-   o->changed = 1;
-   if (o->markup_text)
-     {
-	free(o->markup_text);
-	o->markup_text = NULL;
-     }
-   _nodes_adjacent_merge(cur->obj, n);
-   evas_object_change(cur->obj);
+   if (!n) return;
+   eina_ustrbuf_free(n->unicode);
+   if (n->utf8)
+     free(n->utf8);
+   free(n);
 }
 
 /**
- * to be documented.
- * @param cur to be documented.
- * @param text to be documented.
+ * @internal
+ * Create a new text node
+ *
+ * @return the new text node.
+ */
+static Evas_Object_Textblock_Node_Text *
+_evas_textblock_node_text_new(void)
+{
+   Evas_Object_Textblock_Node_Text *n;
+
+   n = calloc(1, sizeof(Evas_Object_Textblock_Node_Text));
+   n->unicode = eina_ustrbuf_new();
+#ifdef BIDI_SUPPORT
+   n->bidi_props.direction = EVAS_BIDI_PARAGRAPH_NATURAL;
+#endif
+
+   return n;
+}
+
+/**
+ * @internal
+ * Break a paragraph. This does not add a PS but only splits the paragraph
+ * where a ps was just added!
+ *
+ * @param cur the cursor to break at.
+ * @param fnode the format node of the PS just added.
  * @return Returns no value.
  */
-EAPI void
-evas_textblock_cursor_text_prepend(Evas_Textblock_Cursor *cur, const char *text)
+static void
+_evas_textblock_cursor_break_paragraph(Evas_Textblock_Cursor *cur,
+                              Evas_Object_Textblock_Node_Format *fnode)
 {
    Evas_Object_Textblock *o;
-   Evas_Object_Textblock_Node *n, *nrel;
+   Evas_Object_Textblock_Node_Text *n;
 
    if (!cur) return;
    o = (Evas_Object_Textblock *)(cur->obj->object_data);
-     {
-	Eina_List *l;
-	Evas_Textblock_Cursor *data;
 
-	if (cur != o->cursor)
-	  {
-	     if (cur->node == o->cursor->node)
-	       {
-		  if ((o->cursor->node) &&
-		      (o->cursor->node->type == NODE_TEXT) &&
-		      (o->cursor->pos >= cur->pos))
-                    {
-                       o->cursor->pos += strlen(text);
-                    }
-	       }
-	  }
-	EINA_LIST_FOREACH(o->cursors, l, data)
-	  {
-	     if (data != cur)
-	       {
-		  if (cur->node == data->node)
-		    {
-		       if (data->node &&
-			   (data->node->type == NODE_TEXT) &&
-			   (data->pos >= cur->pos))
-                         {
-                            data->pos += strlen(text);
-                         }
-		    }
-	       }
-	  }
-     }
-   n = cur->node;
-   if ((!n) || (n->type == NODE_FORMAT))
+   n = _evas_textblock_node_text_new();
+   o->text_nodes = _NODE_TEXT(eina_inlist_append_relative(
+                   EINA_INLIST_GET(o->text_nodes),
+                   EINA_INLIST_GET(n),
+                   EINA_INLIST_GET(cur->node)));
+   /* Handle text and format changes. */
+   if (cur->node)
      {
-	nrel = n;
-	n = calloc(1, sizeof(Evas_Object_Textblock_Node));
-	n->type = NODE_TEXT;
-	n->text = eina_strbuf_new();
-	if (nrel)
-	  o->nodes = (Evas_Object_Textblock_Node *)eina_inlist_prepend_relative(EINA_INLIST_GET(o->nodes),
-										EINA_INLIST_GET(n),
-										EINA_INLIST_GET(nrel));
-	else
-	  o->nodes = (Evas_Object_Textblock_Node *)eina_inlist_prepend(EINA_INLIST_GET(o->nodes), EINA_INLIST_GET(n));
-     }
-   if (!n->text) n->text = eina_strbuf_new();
-   cur->node = n;
-   
-   if (text)
-     {
-        if (cur->pos > (eina_strbuf_length_get(n->text) - 1))
+        Evas_Object_Textblock_Node_Format *nnode;
+        size_t len, start;
+        const Eina_Unicode *text;
+
+        /* If there was a format node in the delete range,
+         * make it our format and update the text_node fields,
+         * otherwise, use the paragraph separator
+         * of the previous paragraph. */
+        nnode  = _NODE_FORMAT(EINA_INLIST_GET(fnode)->next);
+        if (nnode && (nnode->text_node == cur->node))
           {
-             eina_strbuf_append(n->text, (char *)text);
+             n->format_node = nnode;
+             nnode->offset--; /* We don't have to take the replacement char
+                                 into account anymore */
+             while (nnode && (nnode->text_node == cur->node))
+               {
+                  nnode->text_node = n;
+                  nnode = _NODE_FORMAT(EINA_INLIST_GET(nnode)->next);
+               }
           }
         else
           {
-             eina_strbuf_insert(n->text, (char *)text, cur->pos);
+             n->format_node = fnode;
           }
-        cur->pos += strlen(text);
-     }
-   o->formatted.valid = 0;
-   o->native.valid = 0;
-   o->changed = 1;
-   if (o->markup_text)
-     {
-	free(o->markup_text);
-	o->markup_text = NULL;
-     }
-   _nodes_adjacent_merge(cur->obj, n);
-   evas_object_change(cur->obj);
-}
 
-/**
- * to be documented.
- * @param cur to be documented.
- * @param format to be documented.
- * @return Returns no value.
- */
-EAPI void
-evas_textblock_cursor_format_append(Evas_Textblock_Cursor *cur, const char *format)
-{
-   Evas_Object_Textblock *o;
-   Evas_Object_Textblock_Node *n, *nc, *n2;
-
-   if (!cur) return;
-   if ((!format) || (format[0] == 0)) return;
-   o = (Evas_Object_Textblock *)(cur->obj->object_data);
-   nc = cur->node;
-   n = calloc(1, sizeof(Evas_Object_Textblock_Node));
-   n->type = NODE_FORMAT;
-   n->text = eina_strbuf_new();
-   eina_strbuf_append(n->text, format);
-   if (!nc)
-     {
-        o->nodes = (Evas_Object_Textblock_Node *)eina_inlist_append(EINA_INLIST_GET(o->nodes), EINA_INLIST_GET(n));
-     }
-   else if (nc->type == NODE_FORMAT)
-     {
-        o->nodes = (Evas_Object_Textblock_Node *)eina_inlist_append_relative(EINA_INLIST_GET(o->nodes),
-									     EINA_INLIST_GET(n),
-									     EINA_INLIST_GET(nc));
-     }
-   else if (nc->type == NODE_TEXT)
-     {
-	int index, ch = 0;
-
-	index = cur->pos;
-	if (eina_strbuf_length_get(nc->text))
-	  {
-	     ch = evas_common_font_utf8_get_next((unsigned char *)eina_strbuf_string_get(nc->text), &index);
-	     if (ch != 0)
-	       cur->pos = index;
-	  }
-	o->nodes = (Evas_Object_Textblock_Node *)eina_inlist_append_relative(EINA_INLIST_GET(o->nodes),
-									     EINA_INLIST_GET(n),
-									     EINA_INLIST_GET(nc));
-	if ((ch != 0) && (cur->pos < eina_strbuf_length_get(nc->text)))
-	  {
-	     n2 = calloc(1, sizeof(Evas_Object_Textblock_Node));
-	     n2->type = NODE_TEXT;
-	     n2->text = eina_strbuf_new();
-	     eina_strbuf_append(n2->text, (eina_strbuf_string_get(nc->text) + cur->pos));
-	     o->nodes = (Evas_Object_Textblock_Node *)eina_inlist_append_relative(EINA_INLIST_GET(o->nodes),
-										  EINA_INLIST_GET(n2),
-										  EINA_INLIST_GET(n));
-
-	     eina_strbuf_remove(nc->text, cur->pos, eina_strbuf_length_get(nc->text));
-	  }
-     }
-   cur->node = n;
-// XXX: This makes no sense
-   cur->pos = 0;
-   o->formatted.valid = 0;
-   o->native.valid = 0;
-   o->changed = 1;
-   if (o->markup_text)
-     {
-	free(o->markup_text);
-	o->markup_text = NULL;
-     }
-   evas_object_change(cur->obj);
-}
-
-/**
- * to be documented.
- * @param cur to be documented.
- * @param format to be documented.
- * @return Returns no value.
- */
-EAPI void
-evas_textblock_cursor_format_prepend(Evas_Textblock_Cursor *cur, const char *format)
-{
-   Evas_Object_Textblock *o;
-   Evas_Object_Textblock_Node *n, *nc, *n2;
-
-   if (!cur) return;
-   if ((!format) || (format[0] == 0)) return;
-   o = (Evas_Object_Textblock *)(cur->obj->object_data);
-   nc = cur->node;
-   n = calloc(1, sizeof(Evas_Object_Textblock_Node));
-   n->type = NODE_FORMAT;
-   n->text = eina_strbuf_new();
-   eina_strbuf_append(n->text, format);
-   if (!nc)
-     {
-	o->nodes = (Evas_Object_Textblock_Node *)eina_inlist_prepend(EINA_INLIST_GET(o->nodes), EINA_INLIST_GET(n));
-	cur->node = n;
-	cur->pos = 0;
-     }
-   else if (nc->type == NODE_FORMAT)
-     {
-        o->nodes = (Evas_Object_Textblock_Node *)eina_inlist_prepend_relative(EINA_INLIST_GET(o->nodes),
-									      EINA_INLIST_GET(n),
-									      EINA_INLIST_GET(nc));
-	cur->node = nc;
-	cur->pos = 0;
-     }
-   else if (nc->type == NODE_TEXT)
-     {
-        int len;
-
-        len = eina_strbuf_length_get(nc->text);
-	if (cur->pos == 0)
-	  o->nodes = (Evas_Object_Textblock_Node *)eina_inlist_prepend_relative(EINA_INLIST_GET(o->nodes),
-										EINA_INLIST_GET(n),
-										EINA_INLIST_GET(nc));
-	else
-	  o->nodes = (Evas_Object_Textblock_Node *)eina_inlist_append_relative(EINA_INLIST_GET(o->nodes),
-									       EINA_INLIST_GET(n),
-									       EINA_INLIST_GET(nc));
-	if ((cur->pos < len) && (cur->pos != 0))
-	  {
-	     n2 = calloc(1, sizeof(Evas_Object_Textblock_Node));
-	     n2->type = NODE_TEXT;
-	     n2->text = eina_strbuf_new();
-	     eina_strbuf_append(n2->text, 
-                                (eina_strbuf_string_get(nc->text) + cur->pos));
-	     o->nodes = (Evas_Object_Textblock_Node *)eina_inlist_append_relative(EINA_INLIST_GET(o->nodes),
-										  EINA_INLIST_GET(n2),
-										  EINA_INLIST_GET(n));
-	     eina_strbuf_remove(nc->text, cur->pos, eina_strbuf_length_get(nc->text));
-	     cur->node = n2;
-	     cur->pos = 0;
-//             cur->eol = 0;
-	  }
-	else if (cur->pos == len)
-	  {
-             if (EINA_INLIST_GET(n)->next)
-               cur->node = EINA_INLIST_GET(n)->next;
-             else
-               cur->node = n;
-             cur->pos = 0;
-//             cur->eol = 0;
-	  }
-	else
-	  {
-	     cur->node = nc;
-	     cur->pos = 0;
-//             cur->eol = 0;
-	  }
-     }
-   o->formatted.valid = 0;
-   o->native.valid = 0;
-   o->changed = 1;
-   if (o->markup_text)
-     {
-	free(o->markup_text);
-	o->markup_text = NULL;
-     }
-   evas_object_change(cur->obj);
-}
-
-/**
- * to be documented.
- * @param cur to be documented.
- * @return Returns no value.
- */
-EAPI void
-evas_textblock_cursor_node_delete(Evas_Textblock_Cursor *cur)
-{
-   Evas_Object_Textblock *o;
-   Evas_Object_Textblock_Node *n, *n2;
-
-   if (!cur) return;
-   o = (Evas_Object_Textblock *)(cur->obj->object_data);
-   n = cur->node;
-   if (eina_strbuf_length_get(n->text) && (!strcmp(eina_strbuf_string_get(n->text), "\n")) &&
-       (!(EINA_INLIST_GET(n))->next)) return;
-   n2 = (Evas_Object_Textblock_Node *)((EINA_INLIST_GET(n))->next);
-   if (n2)
-     {
-	cur->node = n2;
-	cur->pos = 0;
+        /* cur->pos now points to the PS, move after. */
+        start = cur->pos + 1;
+        text = eina_ustrbuf_string_get(cur->node->unicode);
+        len = eina_ustrbuf_length_get(cur->node->unicode) - start;
+        eina_ustrbuf_append_length(n->unicode, text + start, len);
+        eina_ustrbuf_remove(cur->node->unicode, start, start + len);
      }
    else
      {
-	n2 = (Evas_Object_Textblock_Node *)((EINA_INLIST_GET(n))->prev);
-	cur->node = n2;
-	cur->pos = 0;
-	evas_textblock_cursor_char_last(cur);
+        Evas_Object_Textblock_Node_Format *fnode;
+        fnode = o->format_nodes;
+        if (fnode)
+          {
+             fnode = _NODE_FORMAT(EINA_INLIST_GET(fnode)->last);
+          }
+        n->format_node = fnode;
      }
+}
 
+/**
+ * @internal
+ * Set the node and offset of all the curs after cur.
+ *
+ * @param cur the cursor.
+ * @param n the current textblock node.
+ * @param new_node the new node to set.
+ */
+static void
+_evas_textblock_cursors_set_node(Evas_Object_Textblock *o,
+      const Evas_Object_Textblock_Node_Text *n,
+      Evas_Object_Textblock_Node_Text *new_node)
+{
+   Eina_List *l;
+   Evas_Textblock_Cursor *data;
+
+   if (n == o->cursor->node)
      {
-	Eina_List *l;
-	Evas_Textblock_Cursor *data;
-
-	if (cur != o->cursor)
-	  {
-	     if (n == o->cursor->node)
-	       {
-		  o->cursor->node = cur->node;
-		  o->cursor->pos = cur->pos;
-                  o->cursor->eol = cur->eol;
-	       }
-	  }
-	EINA_LIST_FOREACH(o->cursors, l, data)
-	  {
-	     if (data != cur)
-	       {
-		  if (n == data->node)
-		    {
-		       data->node = cur->node;
-		       data->pos = cur->pos;
-                       data->eol = cur->eol;
-		    }
-	       }
-	  }
+        o->cursor->pos = 0;
+        o->cursor->node = new_node;
      }
+   EINA_LIST_FOREACH(o->cursors, l, data)
+     {
+        if (n == data->node)
+          {
+             data->pos = 0;
+             data->node = new_node;
+          }
+     }
+}
 
-   o->nodes = (Evas_Object_Textblock_Node *)eina_inlist_remove(EINA_INLIST_GET(o->nodes), EINA_INLIST_GET(n));
-   if (n->text) eina_strbuf_free(n->text);
-   free(n);
+/**
+ * @internal
+ * Update the offset of all the cursors after cur.
+ *
+ * @param cur the cursor.
+ * @param n the current textblock node.
+ * @param start the starting pos.
+ * @param offset how much to adjust (can be negative).
+ */
+static void
+_evas_textblock_cursors_update_offset(const Evas_Textblock_Cursor *cur,
+      const Evas_Object_Textblock_Node_Text *n,
+      size_t start, int offset)
+{
+   Eina_List *l;
+   Evas_Textblock_Cursor *data;
+   Evas_Object_Textblock *o;
+   o = (Evas_Object_Textblock *)(cur->obj->object_data);
 
-   if (n2) _nodes_adjacent_merge(cur->obj, n2);
+   if (cur != o->cursor)
+     {
+        if ((n == o->cursor->node) &&
+              (o->cursor->pos > start))
+          {
+             if ((offset < 0) && (o->cursor->pos <= (size_t) (-1 * offset)))
+               {
+                  o->cursor->pos = 0;
+               }
+             else
+               {
+                  o->cursor->pos += offset;
+               }
+          }
+     }
+   EINA_LIST_FOREACH(o->cursors, l, data)
+     {
+        if (data != cur)
+          {
+             if ((n == data->node) &&
+                   (data->pos > start))
+               {
+                  if ((offset < 0) && (data->pos <= (size_t) (-1 * offset)))
+                    {
+                       data->pos = 0;
+                    }
+                  else
+                    {
+                       data->pos += offset;
+                    }
+               }
+          }
+     }
+}
 
+/**
+ * @internal
+ * Mark and notifiy that the textblock has changed.
+ *
+ * @param o the textblock object.
+ * @param obj the evas object.
+ */
+static void
+_evas_textblock_changed(Evas_Object_Textblock *o, Evas_Object *obj)
+{
    o->formatted.valid = 0;
    o->native.valid = 0;
    o->changed = 1;
@@ -4200,105 +5517,387 @@ evas_textblock_cursor_node_delete(Evas_Textblock_Cursor *cur)
 	free(o->markup_text);
 	o->markup_text = NULL;
      }
-   evas_object_change(cur->obj);
+
+   evas_object_change(obj);
 }
 
 /**
- * to be documented.
- * @param cur to be documented.
+ * Adds text to the current cursor position and set the cursor to *before*
+ * the start of the text just added.
+ *
+ * @param cur the cursor to where to add text at.
+ * @param _text the text to add.
+ * @return Returns the len of the text added.
+ * @see evas_textblock_cursor_text_prepend()
+ */
+EAPI size_t
+evas_textblock_cursor_text_append(Evas_Textblock_Cursor *cur, const char *_text)
+{
+   Evas_Object_Textblock *o;
+   Evas_Object_Textblock_Node_Text *n;
+   Evas_Object_Textblock_Node_Format *fnode = NULL;
+   Eina_Unicode *text;
+   int len = 0;
+
+   if (!cur) return 0;
+   text = evas_common_encoding_utf8_to_unicode(_text, &len);
+   o = (Evas_Object_Textblock *)(cur->obj->object_data);
+   /* Update all the cursors after our position. */
+   _evas_textblock_cursors_update_offset(cur, cur->node, cur->pos, len);
+
+   n = cur->node;
+   if (n)
+     {
+        Evas_Object_Textblock_Node_Format *nnode;
+        if (evas_textblock_cursor_format_is_visible_get(cur))
+          {
+             fnode = _evas_textblock_cursor_node_format_before_pos_get(cur);
+          }
+        else
+          {
+             fnode = _evas_textblock_cursor_node_format_before_or_at_pos_get(cur);
+             fnode = _evas_textblock_node_format_last_at_off(fnode);
+          }
+        /* find the node after the current in the same paragraph
+         * either we find one and then take the next, or we try to get
+         * the first for the paragraph which must be after our position  */
+        if (fnode)
+          {
+             nnode = _NODE_FORMAT(EINA_INLIST_GET(fnode)->next);
+             if (nnode && (nnode->text_node == n))
+               {
+                  fnode = nnode;
+               }
+             else
+               {
+                  fnode = NULL;
+               }
+          }
+        else
+          {
+             fnode = n->format_node;
+          }
+     }
+   else
+     {
+        n = _evas_textblock_node_text_new();
+        o->text_nodes = _NODE_TEXT(eina_inlist_append(
+                   EINA_INLIST_GET(o->text_nodes),
+                   EINA_INLIST_GET(n)));
+        cur->node = n;
+     }
+
+   eina_ustrbuf_insert_length(n->unicode, text, len, cur->pos);
+   /* Advance the formats */
+   if (fnode && (fnode->text_node == cur->node))
+     fnode->offset += len;
+#ifdef BIDI_SUPPORT
+   /* Reset paragraph direction */
+   n->bidi_props.direction = EVAS_BIDI_PARAGRAPH_NATURAL;
+   evas_bidi_update_props(eina_ustrbuf_string_get(n->unicode), &n->bidi_props);
+#endif
+   _evas_textblock_changed(o, cur->obj);
+   free(text);
+   return len;
+}
+
+/**
+ * Adds text to the current cursor position and set the cursor to *after*
+ * the start of the text just added.
+ *
+ * @param cur the cursor to where to add text at.
+ * @param _text the text to add.
+ * @return Returns the len of the text added.
+ * @see evas_textblock_cursor_text_append()
+ */
+EAPI size_t
+evas_textblock_cursor_text_prepend(Evas_Textblock_Cursor *cur, const char *_text)
+{
+   size_t len;
+   /*append is essentially prepend without advancing */
+   len = evas_textblock_cursor_text_append(cur, _text);
+   cur->pos += len; /*Advance */
+   return len;
+}
+
+/**
+ * @internal
+ * Free a format node
+ *
+ * @prama n the format node to free
+ */
+static void
+_evas_textblock_node_format_free(Evas_Object_Textblock_Node_Format *n)
+{
+   if (!n) return;
+   eina_strbuf_free(n->format);
+   free(n);
+}
+
+/**
+ * @internal
+ * Create a new format node.
+ *
+ * @param format the text to create the format node from.
+ * @return Returns the new format node
+ */
+   static Evas_Object_Textblock_Node_Format *
+_evas_textblock_node_format_new(const char *format)
+{
+   Evas_Object_Textblock_Node_Format *n;
+
+   n = calloc(1, sizeof(Evas_Object_Textblock_Node_Format));
+   n->format = eina_strbuf_new();
+   eina_strbuf_append(n->format, format);
+   n->visible = _evas_textblock_format_is_visible(format);
+
+   return n;
+}
+
+/**
+ * Adds format to the current cursor position. If the format being added is a
+ * visible format, add it *before* the cursor position, otherwise, add it after.
+ * This behavior is because visible formats are like characters and invisible
+ * should be stacked in a way that the last one is added last.
+ *
+ * @param cur the cursor to where to add format at.
+ * @param format the format to add.
+ * @return Returns true if a visible format was added, false otherwise.
+ * @see evas_textblock_cursor_format_prepend()
+ */
+EAPI Eina_Bool
+evas_textblock_cursor_format_append(Evas_Textblock_Cursor *cur, const char *format)
+{
+   Evas_Object_Textblock *o;
+   Evas_Object_Textblock_Node_Format *n;
+   Eina_Bool is_visible;
+
+   if (!cur) return EINA_FALSE;
+   if ((!format) || (format[0] == 0)) return EINA_FALSE;
+   o = (Evas_Object_Textblock *)(cur->obj->object_data);
+   /* We should always have at least one text node */
+   if (!o->text_nodes)
+     {
+        evas_textblock_cursor_text_prepend(cur, "");
+     }
+
+   n = _evas_textblock_node_format_new(format);
+   is_visible = n->visible;
+   if (!cur->node)
+     {
+	o->format_nodes = _NODE_FORMAT(eina_inlist_append(
+                 EINA_INLIST_GET(o->format_nodes),
+                 EINA_INLIST_GET(n)));
+	cur->pos = 0;
+        n->text_node = (EINA_INLIST_GET(n)->prev) ?
+           _NODE_FORMAT(EINA_INLIST_GET(n)->prev)->text_node :
+           o->text_nodes;
+	cur->node = n->text_node;
+     }
+   else
+     {
+        Evas_Object_Textblock_Node_Format *fmt;
+        fmt = _evas_textblock_cursor_node_format_before_or_at_pos_get(cur);
+        n->text_node = cur->node;
+        if (!fmt)
+          {
+             o->format_nodes = _NODE_FORMAT(eina_inlist_prepend(
+                      EINA_INLIST_GET(o->format_nodes),
+                      EINA_INLIST_GET(n)));
+             n->offset = cur->pos;
+          }
+        else
+          {
+             if (evas_textblock_cursor_format_is_visible_get(cur))
+               {
+                  o->format_nodes = _NODE_FORMAT(eina_inlist_prepend_relative(
+                           EINA_INLIST_GET(o->format_nodes),
+                           EINA_INLIST_GET(n),
+                           EINA_INLIST_GET(fmt)
+                           ));
+                  n->offset = fmt->offset;
+                  if (fmt->text_node->format_node == fmt)
+                    {
+                       fmt->text_node->format_node = n;
+                    }
+               }
+             else
+               {
+                  fmt = _evas_textblock_node_format_last_at_off(fmt);
+                  o->format_nodes = _NODE_FORMAT(eina_inlist_append_relative(
+                           EINA_INLIST_GET(o->format_nodes),
+                           EINA_INLIST_GET(n),
+                           EINA_INLIST_GET(fmt)
+                           ));
+                  if (fmt->text_node != cur->node)
+                    {
+                       n->offset = cur->pos;
+                    }
+                  else
+                    {
+                       n->offset = cur->pos -
+                          _evas_textblock_node_format_pos_get(fmt);
+                    }
+               }
+          }
+        /* Adjust differently if we insert a format char */
+        if (is_visible)
+          {
+             _evas_textblock_node_format_adjust_offset(o, cur->node, n, -(n->offset - 1));
+          }
+        else
+          {
+             _evas_textblock_node_format_adjust_offset(o, cur->node, n, -n->offset);
+          }
+
+        if (!fmt || (fmt->text_node != cur->node))
+          {
+             cur->node->format_node = n;
+          }
+     }
+   if (is_visible)
+     {
+        eina_ustrbuf_insert_char(cur->node->unicode,
+              EVAS_TEXTBLOCK_REPLACEMENT_CHAR, cur->pos);
+
+        /* Advance all the cursors after our cursor */
+        _evas_textblock_cursors_update_offset(cur, cur->node, cur->pos, 1);
+     }
+
+   if (_IS_PARAGRAPH_SEPARATOR(format))
+     {
+        _evas_textblock_cursor_break_paragraph(cur, n);
+     }
+
+    _evas_textblock_changed(o, cur->obj);
+
+   return is_visible;
+}
+
+/**
+ * Adds format to the current cursor position. If the format being added is a
+ * visible format, add it *before* the cursor position, otherwise, add it after.
+ * This behavior is because visible formats are like characters and invisible
+ * should be stacked in a way that the last one is added last.
+ * If the format is visible the cursor is advanced after it.
+ *
+ * @param cur the cursor to where to add format at.
+ * @param format the format to add.
+ * @return Returns true if a visible format was added, false otherwise.
+ * @see evas_textblock_cursor_format_prepend()
+ */
+EAPI Eina_Bool
+evas_textblock_cursor_format_prepend(Evas_Textblock_Cursor *cur, const char *format)
+{
+   Eina_Bool is_visible;
+   /* append is essentially prepend without advancing */
+   is_visible = evas_textblock_cursor_format_append(cur, format);
+   if (is_visible)
+     {
+        /* Advance after the replacement char */
+        evas_textblock_cursor_char_next(cur);
+     }
+
+   return is_visible;
+}
+
+
+/**
+ * Delete the character at the location of the cursor. If there's a format
+ * pointing to this position, delete it as well.
+ *
+ * @param cur the cursor pointing to the current location.
  * @return Returns no value.
  */
 EAPI void
 evas_textblock_cursor_char_delete(Evas_Textblock_Cursor *cur)
 {
    Evas_Object_Textblock *o;
-   Evas_Object_Textblock_Node *n, *n2;
+   Evas_Object_Textblock_Node_Text *n, *n2;
+   int merge_nodes = 0;
+   const Eina_Unicode *text;
    int chr, index, ppos;
 
    if (!cur) return;
    o = (Evas_Object_Textblock *)(cur->obj->object_data);
    n = cur->node;
-   if (n->type == NODE_FORMAT)
-     {
-	evas_textblock_cursor_node_delete(cur);
-	return;
-     }
+
+   text = eina_ustrbuf_string_get(n->unicode);
    index = cur->pos;
-   chr = evas_common_font_utf8_get_next((unsigned char *)eina_strbuf_string_get(n->text), &index);
+   chr = GET_NEXT(text, index);
    if (chr == 0) return;
    ppos = cur->pos;
-   eina_strbuf_remove(n->text, cur->pos, index);
-   if (!eina_strbuf_length_get(n->text))
+   /* Remove a format node if needed, and remove the char only if the
+    * fmt node is not visible */
      {
-	evas_textblock_cursor_node_delete(cur);
-	return;
+        Evas_Object_Textblock_Node_Format *fmt;
+        fmt = _evas_textblock_cursor_node_format_at_pos_get(cur);
+        if (fmt)
+          {
+             const char *format = NULL;
+             Evas_Object_Textblock_Node_Format *itr;
+             itr = fmt;
+             do
+               {
+                  format = eina_strbuf_string_get(fmt->format);
+                  if (format && _IS_PARAGRAPH_SEPARATOR(format))
+                    {
+                       merge_nodes = 1;
+                    }
+                  itr = _NODE_FORMAT(EINA_INLIST_GET(itr)->next);
+               }
+             while (itr && (itr->text_node == fmt->text_node) &&
+                   (itr->offset == 0));
+             _evas_textblock_node_format_remove_all_at_pos(o, fmt);
+          }
+        /* If the format node is not visible (because visible nodes adjust
+         * automatically when removing them) adjust */
+        if (!evas_textblock_cursor_format_is_visible_get(cur))
+          {
+             fmt = _evas_textblock_cursor_node_format_before_or_at_pos_get(cur);
+             fmt = _evas_textblock_node_format_last_at_off(fmt);
+             _evas_textblock_node_format_adjust_offset(o, cur->node, fmt,
+                   -(index - cur->pos));
+          }
      }
-   if (cur->pos == eina_strbuf_length_get(n->text))
+   eina_ustrbuf_remove(n->unicode, cur->pos, index);
+   /* If it was a paragraph separator, we should merge the current with the
+    * next, there must be a next. */
+   if (merge_nodes)
      {
-	n2 = (Evas_Object_Textblock_Node *)((EINA_INLIST_GET(n))->next);
+        _evas_textblock_cursor_nodes_merge(cur);
+     }
+
+   if (cur->pos == eina_ustrbuf_length_get(n->unicode))
+     {
+	n2 = _NODE_TEXT(EINA_INLIST_GET(n)->next);
 	if (n2)
 	  {
 	     cur->node = n2;
 	     cur->pos = 0;
 	  }
-	else
-	  {
-	     cur->pos = 0;
-	     evas_textblock_cursor_char_last(cur);
-	  }
      }
 
-     {
-	Eina_List *l;
-	Evas_Textblock_Cursor *data;
-
-	if (cur != o->cursor)
-	  {
-	     if ((n == o->cursor->node) &&
-		 (o->cursor->pos > ppos))
-	       {
-		  o->cursor->pos -= (index - ppos);
-	       }
-	  }
-	EINA_LIST_FOREACH(o->cursors, l, data)
-	  {
-	     if (data != cur)
-	       {
-		  if ((n == data->node) &&
-		      (data->pos > ppos))
-		    {
-		       data->pos -= (index - ppos);
-		    }
-	       }
-	  }
-     }
-
-   o->formatted.valid = 0;
-   o->native.valid = 0;
-   o->changed = 1;
-   if (o->markup_text)
-     {
-	free(o->markup_text);
-	o->markup_text = NULL;
-     }
-   evas_object_change(cur->obj);
+   _evas_textblock_cursors_update_offset(cur, n, ppos, -(index - ppos));
+   _evas_textblock_changed(o, cur->obj);
 }
 
 /**
- * to be documented.
- * @param cur1 to be documented.
- * @param cur2 to be documented.
+ * Delete the range between cur1 and cur2.
+ *
+ * @param cur1 one side of the range.
+ * @param cur2 the second side of the range
  * @return Returns no value.
  */
 EAPI void
 evas_textblock_cursor_range_delete(Evas_Textblock_Cursor *cur1, Evas_Textblock_Cursor *cur2)
 {
    Evas_Object_Textblock *o;
-   Evas_Object_Textblock_Node *n1, *n2, *n, *tn;
-   int chr, index;
+   Evas_Object_Textblock_Node_Text *n1, *n2, *n;
+   Evas_Object_Textblock_Node_Format *fnode = NULL;
 
-   if (!cur1) return;
-   if (!cur2) return;
+   if (!cur1 || !cur1->node) return;
+   if (!cur2 || !cur2->node) return;
    if (cur1->obj != cur2->obj) return;
    o = (Evas_Object_Textblock *)(cur1->obj->object_data);
    if (evas_textblock_cursor_compare(cur1, cur2) > 0)
@@ -4311,508 +5910,321 @@ evas_textblock_cursor_range_delete(Evas_Textblock_Cursor *cur1, Evas_Textblock_C
      }
    n1 = cur1->node;
    n2 = cur2->node;
-   if ((!n1) || (!n2)) return;
-   index = cur2->pos;
-   chr = evas_common_font_utf8_get_next((unsigned char *)eina_strbuf_string_get(n2->text), &index);
-// XXX: why was this added? this stops sel to end and 
-//   if (chr == 0) return;
+   cur2->pos++; /* Also remove the marked char */
+
+   /* Find the first format node after cur2 */
+   fnode = _evas_textblock_cursor_node_format_before_pos_get(cur2);
+     {
+        if (fnode)
+          {
+             fnode = _evas_textblock_node_format_last_at_off(fnode);
+             Evas_Object_Textblock_Node_Text *tnode;
+             tnode = fnode->text_node;
+             fnode = _NODE_FORMAT(EINA_INLIST_GET(fnode)->next);
+             if (fnode && (tnode != fnode->text_node))
+               {
+                  fnode = NULL;
+               }
+          }
+        else
+          {
+             fnode = cur2->node->format_node;
+             if (fnode && (cur2->node != fnode->text_node))
+               {
+                  fnode = NULL;
+               }
+          }
+     }
    if (n1 == n2)
      {
-        if (n1->type == NODE_TEXT)
-	  {
-	    if (cur1->pos == cur2->pos)
-	       {
-		  evas_textblock_cursor_char_delete(cur1);
-		  evas_textblock_cursor_copy(cur1, cur2);
-		  return;
-	       }
-	     eina_strbuf_remove(n1->text, cur1->pos, index);
-	     if (!eina_strbuf_length_get(n1->text))
-	       {
-		  evas_textblock_cursor_node_delete(cur1);
-		  evas_textblock_cursor_copy(cur1, cur2);
-		  return;
-	       }
-	     if (cur1->pos >= eina_strbuf_length_get(n1->text))
-	       {
-		  n2 = (Evas_Object_Textblock_Node *)((EINA_INLIST_GET(n1))->next);
-		  if (n2)
-		    {
-		       cur1->node = n2;
-		       cur1->pos = 0;
-		    }
-		  else
-		    {
-		       cur1->pos = 0;
-		       evas_textblock_cursor_char_last(cur1);
-		    }
-	       }
-	  }
-	else
-	  evas_textblock_cursor_node_delete(cur1);
-	evas_textblock_cursor_copy(cur1, cur2);
+        _evas_textblock_node_text_remove_formats_between(o, n1, cur1->pos,
+              cur2->pos);
+        eina_ustrbuf_remove(n1->unicode, cur1->pos, cur2->pos);
+        if (fnode && (fnode->text_node == n1))
+          {
+             fnode->offset -= cur2->pos - cur1->pos;
+          }
+        _evas_textblock_cursors_update_offset(cur1, cur1->node, cur1->pos, - (cur2->pos - cur1->pos));
      }
    else
      {
-	Eina_List *removes, *format_hump = NULL;
-	Evas_Textblock_Cursor tcur;
-	Eina_Inlist *l;
+        int len;
+        n = _NODE_TEXT(EINA_INLIST_GET(n1)->next);
+        /* Remove all the text nodes between */
+        while (n && (n != n2))
+          {
+             Evas_Object_Textblock_Node_Text *nnode;
 
-	tcur.node = n2;
-	tcur.pos = 0;
-	index = cur2->pos;
-	chr = evas_common_font_utf8_get_next((unsigned char *)eina_strbuf_string_get(n2->text), &index);
-	if ((chr == 0) || (index >= eina_strbuf_length_get(n2->text)))
-	  {
-	     tcur.node = (Evas_Object_Textblock_Node *)(EINA_INLIST_GET(n2))->next;
-	     tcur.pos = 0;
-	     if (!tcur.node)
-	       {
-		  if (cur1->pos != 0)
-		    {
-		       tcur.node = n1;
-		       index = cur1->pos;
-		       chr = evas_common_font_utf8_get_prev((unsigned char *)eina_strbuf_string_get(n2->text), &index);
-		       tcur.pos = index;
-		    }
-		  else
-		    {
-		       tcur.node = (Evas_Object_Textblock_Node *)(EINA_INLIST_GET(n1))->prev;
-		       if ((tcur.node) && (tcur.node->type == NODE_TEXT))
-			 tcur.pos = evas_common_font_utf8_get_last((unsigned char *)eina_strbuf_string_get(tcur.node->text), eina_strbuf_length_get(tcur.node->text));
-		       else
-			 tcur.pos = 0;
-		    }
-	       }
-	  }
-	eina_strbuf_remove(n1->text, cur1->pos, eina_strbuf_length_get(n1->text));
-	removes = NULL;
-	for (l = (EINA_INLIST_GET(n1))->next; l != EINA_INLIST_GET(n2); l = l->next)
-	  removes = eina_list_append(removes, l);
-	format_hump = NULL;
-	if (n1->type == NODE_TEXT)
-	  {
-	     if (!eina_strbuf_length_get(n1->text))
-	       evas_textblock_cursor_node_delete(cur1);
-	  }
-	else
-	  {
-	     if (eina_strbuf_length_get(n1->text) && (eina_strbuf_string_get(n1->text)[0] == '+'))
-	       format_hump = eina_list_append(format_hump, n1);
-	     else
-	       {
-                  o->nodes = (Evas_Object_Textblock_Node *)eina_inlist_remove(EINA_INLIST_GET(o->nodes), EINA_INLIST_GET(n1));
-		  if (n1->text) eina_strbuf_free(n1->text);
-		  free(n1);
-	       }
-	  }
-	while (removes)
-	  {
-	     n = removes->data;
-	     if (n->type == NODE_TEXT)
-	       {
-		  o->nodes = (Evas_Object_Textblock_Node *)eina_inlist_remove(EINA_INLIST_GET(o->nodes), EINA_INLIST_GET(n));
-		  if (n->text) eina_strbuf_free(n->text);
-		  free(n);
-	       }
-	     else
-	       {
-		  if (eina_strbuf_string_get(n->text)[0] == '+')
-		    {
-		       format_hump = eina_list_append(format_hump, n);
-		    }
-		  else if (eina_strbuf_string_get(n->text)[0] == '-')
-		    {
-		       tn = eina_list_data_get(eina_list_last(format_hump));
-		       if (tn)
-			 {
-			    format_hump = eina_list_remove_list(format_hump, eina_list_last(format_hump));
-			    o->nodes = (Evas_Object_Textblock_Node *)eina_inlist_remove(EINA_INLIST_GET(o->nodes),
-											EINA_INLIST_GET(tn));
-			    if (tn->text) eina_strbuf_free(tn->text);
-			    free(tn);
-			    o->nodes = (Evas_Object_Textblock_Node *)eina_inlist_remove(EINA_INLIST_GET(o->nodes),
-											EINA_INLIST_GET(n));
-			    if (n->text) eina_strbuf_free(n->text);
-			    free(n);
-			 }
-		    }
-		  else
-		    {
-		       o->nodes = (Evas_Object_Textblock_Node *)eina_inlist_remove(EINA_INLIST_GET(o->nodes),
-										   EINA_INLIST_GET(n));
-		       if (n->text) eina_strbuf_free(n->text);
-		       free(n);
-		    }
-	       }
-	     removes = eina_list_remove_list(removes, removes);
-	  }
-        if (n2->type == NODE_TEXT)
-	  {
-	     eina_strbuf_remove(n2->text, 0, index);
-	     if (!eina_strbuf_length_get(n2->text))
-	       evas_textblock_cursor_node_delete(cur2);
-	  }
-	else
-	  {
-	     if (tcur.node == n2)
-	       {
-		  if ((EINA_INLIST_GET(n2))->next)
-		    {
-		       tcur.node = (Evas_Object_Textblock_Node *) (EINA_INLIST_GET(n2))->next;
-		       tcur.pos = 0;
-		    }
-		  else
-		    {
-		       tcur.node = (Evas_Object_Textblock_Node *) (EINA_INLIST_GET(n2))->next;
-		       if (tcur.node)
-			 {
-			    if (tcur.node->type == NODE_TEXT)
-			      tcur.pos = evas_common_font_utf8_get_last((unsigned char *)eina_strbuf_string_get(tcur.node->text), eina_strbuf_length_get(tcur.node->text));
-			    else
-			      tcur.pos = 0;
-			 }
-		    }
-	       }
-	     if (eina_strbuf_string_get(n2->text)[0] == '-')
-	       {
-		  o->nodes = (Evas_Object_Textblock_Node *)eina_inlist_remove(EINA_INLIST_GET(o->nodes),
-									      EINA_INLIST_GET(n2));
-		  if (n2->text) eina_strbuf_free(n2->text);
-		  free(n2);
-		  n = eina_list_data_get(eina_list_last(format_hump));
-		  if (n)
-		    {
-		       if (tcur.node == n)
-			 {
-			    if ((EINA_INLIST_GET(n))->next)
-			      {
-				 tcur.node = (Evas_Object_Textblock_Node *) (EINA_INLIST_GET(n))->next;
-				 tcur.pos = 0;
-			      }
-			    else
-			      {
-				 tcur.node = (Evas_Object_Textblock_Node *) (EINA_INLIST_GET(n))->next;
-				 if (tcur.node)
-				   {
-				      if (tcur.node->type == NODE_TEXT)
-					tcur.pos = evas_common_font_utf8_get_last((unsigned char *)eina_strbuf_string_get(tcur.node->text), eina_strbuf_length_get(tcur.node->text));
-				      else
-					tcur.pos = 0;
-				   }
-			      }
-			 }
-		       o->nodes = (Evas_Object_Textblock_Node *)eina_inlist_remove(EINA_INLIST_GET(o->nodes),
-										   EINA_INLIST_GET(n));
-		       if (n->text) eina_strbuf_free(n->text);
-		       free(n);
-		    }
-	       }
-	     else
-	       {
-		  o->nodes = (Evas_Object_Textblock_Node *)eina_inlist_remove(EINA_INLIST_GET(o->nodes),
-									      EINA_INLIST_GET(n2));
-		  if (n2->text) eina_strbuf_free(n2->text);
-		  free(n2);
-	       }
-	  }
-	if (format_hump) eina_list_free(format_hump);
-	cur1->node = tcur.node;
-	cur1->pos = tcur.pos;
-	cur2->node = tcur.node;
-	cur2->pos = tcur.pos;
+             nnode = _NODE_TEXT(EINA_INLIST_GET(n)->next);
+             _evas_textblock_node_text_remove(o, n);
+             n = nnode;
+          }
+
+        /* Remove the formats and the strings in the first and last nodes */
+        len = eina_ustrbuf_length_get(n1->unicode);
+        _evas_textblock_node_text_remove_formats_between(o, n1, cur1->pos,
+              len);
+        _evas_textblock_node_text_remove_formats_between(o, n2, 0, cur2->pos);
+        eina_ustrbuf_remove(n1->unicode, cur1->pos, len);
+        eina_ustrbuf_remove(n2->unicode, 0, cur2->pos);
+        if (fnode && (fnode->text_node == n2))
+          {
+             fnode->offset -= cur2->pos;
+          }
+        /* Merge the nodes because we removed the PS */
+        _evas_textblock_nodes_merge(o, n1, n2);
+        _evas_textblock_cursors_update_offset(cur1, cur1->node, cur1->pos, - cur1->pos);
+        _evas_textblock_cursors_update_offset(cur2, cur2->node, 0, - cur2->pos);
      }
-
-   /* FIXME: adjust cursors that are affected by the change */
-   /* this is temporary just avoiding segv's - it sets all other cursors to
-    * the same pos as cur1 and cur2
-    */
-     {
-	Eina_List *l;
-	Evas_Textblock_Cursor *data;
-
-	if ((cur1 != o->cursor) && (cur2 != o->cursor))
-	  {
-	     evas_textblock_cursor_copy(cur1, o->cursor);
-	  }
-	EINA_LIST_FOREACH(o->cursors, l, data)
-	  {
-	     if ((data != cur1) && (data != cur2))
-	       {
-		  evas_textblock_cursor_copy(cur1, data);
-	       }
-	  }
-     }
-   if (cur1->node) _nodes_adjacent_merge(cur1->obj, cur1->node);
-   if (cur2->node) _nodes_adjacent_merge(cur2->obj, cur2->node);
-
-   o->formatted.valid = 0;
-   o->native.valid = 0;
-   o->changed = 1;
-   if (o->markup_text)
-     {
-	free(o->markup_text);
-	o->markup_text = NULL;
-     }
-   evas_object_change(cur1->obj);
+   evas_textblock_cursor_copy(cur1, cur2);
+   evas_textblock_cursor_copy(cur1, o->cursor);
+   _evas_textblock_changed(o, cur1->obj);
 }
 
 /**
- * to be documented.
- * @param cur to be documented.
- * @return to be documented.
- */
-EAPI const char *
-evas_textblock_cursor_node_text_get(const Evas_Textblock_Cursor *cur)
-{
-   if (!cur) return NULL;
-   if (!cur->node) return NULL;
-   if (cur->node->type == NODE_TEXT)
-     {
-	return eina_strbuf_string_get(cur->node->text);
-     }
-   return NULL;
-}
-
-/**
- * to be documented.
- * @param cur to be documented.
- * @return to be documented.
- */
-EAPI int
-evas_textblock_cursor_node_text_length_get(const Evas_Textblock_Cursor *cur)
-{
-   if (!cur) return 0;
-   if (!cur->node) return 0;
-   if (cur->node->type == NODE_TEXT)
-     {
-	return eina_strbuf_length_get(cur->node->text);
-     }
-   return 0;
-}
-
-/**
- * to be documented.
- * @param cur to be documented.
- * @return to be documented.
- */
-EAPI const char *
-evas_textblock_cursor_node_format_get(const Evas_Textblock_Cursor *cur)
-{
-   if (!cur) return NULL;
-   if (!cur->node) return NULL;
-   if (cur->node->type == NODE_FORMAT)
-     {
-	return eina_strbuf_string_get(cur->node->text);
-     }
-   return NULL;
-}
-
-/**
- * to be documented.
- * @param cur to be documented.
- * @return to be documented.
- */
-EAPI Eina_Bool
-evas_textblock_cursor_node_format_is_visible_get(const Evas_Textblock_Cursor *cur)
-{
-   Evas_Object_Textblock_Node *n;
-
-   if (!cur) return EINA_FALSE;
-   n = cur->node;
-   if (!n) return EINA_FALSE;
-   if (n->type != NODE_FORMAT) return EINA_FALSE;
-   if (!eina_strbuf_length_get(n->text)) return EINA_FALSE;
-     {
-	char *s;
-	char *item;
-	int visible = 0;
-
-	s = (char *)eina_strbuf_string_get(n->text);
-	if (s[0] == '+' || s[0] == '-')
-	  {
-	     s++;
-	  }
-	while ((item = _format_parse(&s)))
-	  {
-	     char tmp_delim = *s;
-	     *s = '\0';
-	     if ((!strcmp(item, "\n")) || (!strcmp(item, "\\n")))
-	       visible = 1;
-	     else if ((!strcmp(item, "\t")) || (!strcmp(item, "\\t")))
-	       visible = 1;
-	     *s = tmp_delim;
-	     if (visible) return EINA_TRUE;
-	  }
-     }
-   return EINA_FALSE;
-}
-
-/**
- * to be documented.
- * @param cur1 to be documented.
- * @param cur2 to be documented.
- * @param format to be documented.
- * @return to be documented.
+ * Return the text in the range between cur1 and cur2
+ *
+ * FIXME: format is currently unused, you always get markup back.
+ *
+ * @param cur1 one side of the range.
+ * @param cur2 the other side of the range
+ * @param format to be documented
+ * @return the text in the range
+ * @see elm_entry_markup_to_utf8()
  */
 EAPI char *
-evas_textblock_cursor_range_text_get(const Evas_Textblock_Cursor *cur1, const Evas_Textblock_Cursor *cur2, Evas_Textblock_Text_Type format)
+evas_textblock_cursor_range_text_get(const Evas_Textblock_Cursor *cur1, const Evas_Textblock_Cursor *_cur2, Evas_Textblock_Text_Type format __UNUSED__)
 {
    Evas_Object_Textblock *o;
-   Evas_Object_Textblock_Node *n1, *n2, *n;
-   Eina_Strbuf *txt;
-   char *s, *ret;
-   int index;
+   Evas_Object_Textblock_Node_Text *n1, *n2, *tnode;
+   Eina_Strbuf *buf;
+   Evas_Textblock_Cursor *cur2;
+   buf = eina_strbuf_new();
 
-   if (!cur1) return NULL;
-   if (!cur2) return NULL;
-   if (cur1->obj != cur2->obj) return NULL;
+   if (!cur1 || !cur1->node) return NULL;
+   if (!_cur2 || !_cur2->node) return NULL;
+   if (cur1->obj != _cur2->obj) return NULL;
    o = (Evas_Object_Textblock *)(cur1->obj->object_data);
-   if (evas_textblock_cursor_compare(cur1, cur2) > 0)
+   if (evas_textblock_cursor_compare(cur1, _cur2) > 0)
      {
 	const Evas_Textblock_Cursor *tc;
 
 	tc = cur1;
-	cur1 = cur2;
-	cur2 = tc;
+	cur1 = _cur2;
+	_cur2 = tc;
      }
    n1 = cur1->node;
-   n2 = cur2->node;
-   index = cur2->pos;
-   if ((!n1) || (!n2)) return NULL;
-   if (n2->text)
-     evas_common_font_utf8_get_next((unsigned char *)eina_strbuf_string_get(n2->text), &index);
-   txt = eina_strbuf_new();
-   EINA_INLIST_FOREACH(n1, n)
+   n2 = _cur2->node;
+   /* Work on a local copy of the cur */
+   cur2 = alloca(sizeof(Evas_Textblock_Cursor));
+   cur2->obj = _cur2->obj;
+   evas_textblock_cursor_copy(_cur2, cur2);
+   if (cur2->pos < eina_ustrbuf_length_get(cur2->node->unicode))
      {
-	if ((n->type == NODE_TEXT) && (n->text))
-	  {
-	     s = (char *)eina_strbuf_string_get(n->text);
-	     if (format == EVAS_TEXTBLOCK_TEXT_MARKUP)
-	       {
-		  const char *p, *ps, *pe;
-
-		  if (eina_strbuf_length_get(n->text))
-		    {
-		       if ((n == n1) && (n == n2))
-			 {
-			    ps = eina_strbuf_string_get(n->text) + cur1->pos;
-			    pe = ps + index - cur1->pos;
-			 }
-		       else if (n == n1)
-			 {
-			    ps = eina_strbuf_string_get(n->text) + cur1->pos;
-			    pe = ps + strlen(ps);
-			 }
-		       else if (n == n2)
-			 {
-			    ps = eina_strbuf_string_get(n->text);
-			    pe = ps + cur2->pos + 1;
-			 }
-		       else
-			 {
-			    ps = eina_strbuf_string_get(n->text);
-			    pe = ps + strlen(ps);
-			 }
-		       p = ps;
-		       while (p < pe)
-			 {
-			    const char *escape;
-			    int adv;
-
-                            if (!*p) break;
-			    escape = _escaped_char_match(p, &adv);
-			    if (escape)
-			      {
-				 p += adv;
-				 eina_strbuf_append(txt, escape);
-			      }
-			    else
-			      {
-				 eina_strbuf_append_char(txt, *p);
-				 p++;
-			      }
-			 }
-		    }
-	       }
-	     else
-	       {
-		  if ((n == n1) && (n == n2))
-		    {
-		       s += cur1->pos;
-		       eina_strbuf_append_n(txt, s, index - cur1->pos);
-		    }
-		  else if (n == n1)
-		    {
-		       s += cur1->pos;
-		       eina_strbuf_append(txt, s);
-		    }
-		  else if (n == n2)
-		    {
-		       eina_strbuf_append_n(txt, s, index);
-		    }
-		  else
-		    {
-		       eina_strbuf_append(txt, s);
-		    }
-	       }
-	  }
-	else if (n->text)
-	  {
-	     if (format == EVAS_TEXTBLOCK_TEXT_PLAIN)
-	       {
-		  s = (char *)eina_strbuf_string_get(n->text);
-		  while (*s)
-		    {
-		       if (*s == '\n')
-			 eina_strbuf_append_char(txt, '\n');
-		       else if (*s == '\t')
-			 eina_strbuf_append_char(txt, '\t');
-		       s++;
-		    }
-	       }
-	     else if (format == EVAS_TEXTBLOCK_TEXT_MARKUP)
-	       {
-		  size_t tag_len, replace_len = eina_strbuf_length_get(n->text);
-		  const char *tag = _style_match_replace(o->style, eina_strbuf_string_get(n->text), replace_len, &tag_len);
-		  eina_strbuf_append_char(txt, '<');
-		  if (tag)
-		    {
-		       // FIXME: need to escape
-		       eina_strbuf_append_length(txt, tag, tag_len);
-		    }
-		  else
-		    {
-		       int push = 0;
-		       int pop = 0;
-
-		       // FIXME: need to escape
-		       s = (char *)eina_strbuf_string_get(n->text);
-		       if (*s == '+') push = 1;
-		       if (*s == '-') pop = 1;
-		       while ((*s == ' ') || (*s == '+') || (*s == '-')) s++;
-		       if (pop) eina_strbuf_append_char(txt, '/');
-		       if (push) eina_strbuf_append(txt, "+ ");
-		       eina_strbuf_append(txt, s);
-		    }
-		  eina_strbuf_append_char(txt, '>');
-	       }
-	  }
-	if (n == n2) break;
+        /* We want to also copy the pointed to char, only if it's not
+         * the terminating null. */
+        cur2->pos++;
      }
-   ret = eina_strbuf_string_steal(txt);
-   eina_strbuf_free(txt);
-   return ret;
+   /* Parse the text between the cursors. */
+   for (tnode = cur1->node ; tnode ;
+         tnode = _NODE_TEXT(EINA_INLIST_GET(tnode)->next))
+     {
+        Evas_Object_Textblock_Node_Format *fnode;
+        Eina_Unicode *text_base, *text;
+        int off;
+
+        text_base = text =
+           eina_unicode_strdup(eina_ustrbuf_string_get(tnode->unicode));
+        if (tnode == cur2->node)
+          {
+             fnode = _evas_textblock_node_text_get_first_format_between(tnode,
+                   cur1->pos, cur2->pos);
+          }
+        else if (tnode == cur1->node)
+          {
+             fnode = _evas_textblock_node_text_get_first_format_between(tnode,
+                   cur1->pos, -1);
+          }
+        else
+          {
+             fnode = _evas_textblock_node_text_get_first_format_between(tnode,
+                   0, -1);
+          }
+        /* Init the offset so the first one will count starting from cur1->pos
+         * and not the previous format node */
+        if ((tnode == cur1->node) && fnode)
+          {
+             off = _evas_textblock_node_format_pos_get(fnode) - cur1->pos - fnode->offset;
+             text += cur1->pos;
+          }
+        else
+          {
+             off = 0;
+          }
+        while (fnode && (fnode->text_node == tnode))
+          {
+             Eina_Unicode tmp_ch;
+             off += fnode->offset;
+             if ((tnode == cur2->node) && ((size_t) (text - text_base + off) >= cur2->pos))
+               {
+                  break;
+               }
+             /* No need to skip on the first run */
+             tmp_ch = text[off];
+             text[off] = 0; /* Null terminate the part of the string */
+             _markup_get_text_append(buf, text);
+             _markup_get_format_append(o, buf, fnode);
+             text[off] = tmp_ch; /* Restore the char */
+             text += off;
+             if (fnode->visible)
+               {
+                  off = -1;
+                  text++;
+               }
+             else
+               {
+                  off = 0;
+               }
+             fnode = _NODE_FORMAT(EINA_INLIST_GET(fnode)->next);
+          }
+        /* If we got to the last node, stop and add the rest outside */
+        if (cur2->node == tnode)
+          {
+             /* Add the rest, skip replacement */
+             /* Don't go past the second cursor pos */
+             text_base[cur2->pos] = '\0';
+             _markup_get_text_append(buf, text);
+             free(text_base);
+             break;
+          }
+        else
+          {
+             /* Add the rest, skip replacement */
+             _markup_get_text_append(buf, text);
+             free(text_base);
+          }
+     }
+   /* return the string */
+     {
+        char *ret;
+        ret = eina_strbuf_string_steal(buf);
+        eina_strbuf_free(buf);
+        return ret;
+     }
 }
 
 /**
- * to be documented.
- * @param cur to be documented.
- * @param cx to be documented.
- * @param cy to be documented.
- * @param cw to be documented.
- * @param ch to be documented.
- * @return to be documented.
+ * Return the text of the paragraph cur points to - returns the text in markup..
+ *
+ * @param cur the cursor pointing to the paragraph.
+ * @return the text on success, NULL otherwise.
+ */
+EAPI const char *
+evas_textblock_cursor_paragraph_text_get(const Evas_Textblock_Cursor *cur)
+{
+   Evas_Textblock_Cursor cur1, cur2;
+   if (!cur) return NULL;
+   if (!cur->node) return NULL;
+   if (cur->node->utf8)
+     {
+        free(cur->node->utf8);
+     }
+   cur1.obj = cur2.obj = cur->obj;
+   cur1.node = cur2.node = cur->node;
+   evas_textblock_cursor_paragraph_char_first(&cur1);
+   evas_textblock_cursor_paragraph_char_last(&cur2);
+
+   cur->node->utf8 = evas_textblock_cursor_range_text_get(&cur1, &cur2,
+         EVAS_TEXTBLOCK_TEXT_MARKUP);
+   return cur->node->utf8;
+}
+
+/**
+ * Return the length of the paragraph, cheaper the eina_unicode_strlen()
+ *
+ * @param cur the position of the paragraph.
+ * @return the length of the paragraph on success, -1 otehrwise.
+ */
+EAPI int
+evas_textblock_cursor_paragraph_text_length_get(const Evas_Textblock_Cursor *cur)
+{
+   if (!cur) return -1;
+   if (!cur->node) return -1;
+   return eina_ustrbuf_length_get(cur->node->unicode);
+}
+
+/**
+ * Return the format node at the position pointed by cur.
+ *
+ * @param cur the position to look at.
+ * @return the format node if found, NULL otherwise.
+ * @see evas_textblock_cursor_format_is_visible_get()
+ */
+EAPI const Evas_Object_Textblock_Node_Format *
+evas_textblock_cursor_format_get(const Evas_Textblock_Cursor *cur)
+{
+   if (!cur) return NULL;
+   if (!cur->node) return NULL;
+   return _evas_textblock_cursor_node_format_at_pos_get(cur);
+}
+/**
+ * Get the text format representation of the format node.
+ *
+ * @param fmt the format node.
+ * @return the textual format of the format node.
+ */
+EAPI const char *
+evas_textblock_node_format_text_get(const Evas_Object_Textblock_Node_Format *fmt)
+{
+   if (!fmt) return NULL;
+   return eina_strbuf_string_get(fmt->format);
+}
+
+/**
+ * Set the cursor to point to the position of fmt.
+ *
+ * @param cur the cursor to update
+ * @param fmt the format to update according to.
+ */
+EAPI void
+evas_textblock_cursor_at_format_set(Evas_Textblock_Cursor *cur, const Evas_Object_Textblock_Node_Format *fmt)
+{
+   if (!fmt || !cur) return;
+   cur->node = fmt->text_node;
+   cur->pos = _evas_textblock_node_format_pos_get(fmt);
+}
+
+/**
+ * Check if the current cursor position is a visible format. This way is more
+ * efficient than evas_textblock_cursor_format_get() to check for the existence
+ * of a visible format.
+ *
+ * @param cur the cursor to look at.
+ * @return #EINA_TRUE if the cursor points to a visible format, #EINA_FALSE otherwise.
+ * @see evas_textblock_cursor_format_get()
+ */
+EAPI Eina_Bool
+evas_textblock_cursor_format_is_visible_get(const Evas_Textblock_Cursor *cur)
+{
+   const Eina_Unicode *text;
+
+   if (!cur) return EINA_FALSE;
+   if (!cur->node) return EINA_FALSE;
+   text = eina_ustrbuf_string_get(cur->node->unicode);
+   return (text[cur->pos] == EVAS_TEXTBLOCK_REPLACEMENT_CHAR) ?
+              EINA_TRUE : EINA_FALSE;
+}
+
+
+/**
+ * Returns the geometry of the char at cur.
+ *
+ * @param cur the position of the char.
+ * @param cx the x of the char.
+ * @param cy the y of the char.
+ * @param cw the w of the char.
+ * @param ch the h of the char.
+ * @return line number of the char on success, -1 on error.
  */
 EAPI int
 evas_textblock_cursor_char_geometry_get(const Evas_Textblock_Cursor *cur, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch)
@@ -4828,9 +6240,10 @@ evas_textblock_cursor_char_geometry_get(const Evas_Textblock_Cursor *cur, Evas_C
    o = (Evas_Object_Textblock *)(cur->obj->object_data);
    if (!cur->node)
      {
-        if (!o->nodes)
+        if (!o->text_nodes)
           {
-             ln = o->lines;
+             if (!o->paragraphs) return -1;
+             ln = o->paragraphs->lines;
              if (!ln) return -1;
              if (cx) *cx = ln->x;
              if (cy) *cy = ln->y;
@@ -4842,13 +6255,16 @@ evas_textblock_cursor_char_geometry_get(const Evas_Textblock_Cursor *cur, Evas_C
           return -1;
      }
    if (!o->formatted.valid) _relayout(cur->obj);
-   if (cur->node->type == NODE_FORMAT)
+   if (evas_textblock_cursor_format_is_visible_get(cur))
      {
-	_find_layout_format_item_line_match(cur->obj, cur->node, &ln, &fi);
+        _find_layout_format_item_line_match(cur->obj,
+              _evas_textblock_node_visible_at_pos_get(
+                 _evas_textblock_cursor_node_format_at_pos_get(cur)),
+              &ln, &fi);
      }
    else
      {
-	_find_layout_item_line_match(cur->obj, cur->node, cur->pos, cur->eol, &ln, &it);
+        _find_layout_item_line_match(cur->obj, cur->node, cur->pos, &ln, &it);
      }
    if (!ln)
      {
@@ -4856,30 +6272,25 @@ evas_textblock_cursor_char_geometry_get(const Evas_Textblock_Cursor *cur, Evas_C
      }
    if (it)
      {
-	pos = cur->pos - it->source_pos;
-	ret = -1;
-        if (cur->eol)
-          {
-             int pos2;
+        pos = cur->pos - it->source_pos;
+        ret = -1;
 
-             pos2 = pos;
-             evas_common_font_utf8_get_next((unsigned char *)(it->text), &pos2);
-             if (pos2 > pos) pos = pos2;
-          }
         if (pos < 0) pos = 0;
-	if (it->format->font.font)
-	  ret = cur->ENFN->font_char_coords_get(cur->ENDT, it->format->font.font,
-						it->text,
-						pos,
-						&x, &y, &w, &h);
-	if (ret <= 0)
-	  {
-	     if (it->format->font.font)
-	        cur->ENFN->font_string_size_get(cur->ENDT, it->format->font.font,
-						it->text, &w, &h);
-	     x = w;
-	     y = 0;
-	     w = 0;
+        if (it->format->font.font) 
+          {
+             ret = cur->ENFN->font_char_coords_get(cur->ENDT, it->format->font.font,
+                   it->text, &it->bidi_props,
+                   pos,
+                   &x, &y, &w, &h);
+          }
+        if (ret <= 0)
+          {
+             if (it->format->font.font)
+               cur->ENFN->font_string_size_get(cur->ENDT, it->format->font.font,
+                     it->text, &it->bidi_props, &w, &h);
+             x = w;
+             y = 0;
+             w = 0;
 	  }
 	x = ln->x + it->x - it->inset + x;
 	if (x < ln->x)
@@ -4909,13 +6320,14 @@ evas_textblock_cursor_char_geometry_get(const Evas_Textblock_Cursor *cur, Evas_C
 }
 
 /**
- * to be documented.
- * @param cur to be documented.
- * @param cx to be documented.
- * @param cy to be documented.
- * @param cw to be documented.
- * @param ch to be documented.
- * @return to be documented.
+ * Returns the geometry of the line at cur.
+ *
+ * @param cur the position of the line.
+ * @param cx the x of the line.
+ * @param cy the y of the line.
+ * @param cw the w of the line.
+ * @param ch the h of the line.
+ * @return line number of the line on success, -1 on error.
  */
 EAPI int
 evas_textblock_cursor_line_geometry_get(const Evas_Textblock_Cursor *cur, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch)
@@ -4931,14 +6343,21 @@ evas_textblock_cursor_line_geometry_get(const Evas_Textblock_Cursor *cur, Evas_C
    if (!o->formatted.valid) _relayout(cur->obj);
    if (!cur->node)
      {
-        ln = o->lines;
+        ln = o->paragraphs->lines;
      }
    else
      {
-        if (cur->node->type == NODE_FORMAT)
-          _find_layout_format_item_line_match(cur->obj, cur->node, &ln, &fi);
+        if (evas_textblock_cursor_format_is_visible_get(cur))
+          {
+             _find_layout_format_item_line_match(cur->obj,
+                   _evas_textblock_node_visible_at_pos_get(
+                      _evas_textblock_cursor_node_format_at_pos_get(cur)),
+                   &ln, &fi);
+          }
         else
-          _find_layout_item_line_match(cur->obj, cur->node, cur->pos, cur->eol, &ln, &it);
+          {
+             _find_layout_item_line_match(cur->obj, cur->node, cur->pos, &ln, &it);
+          }
      }
    if (!ln) return -1;
    x = ln->x;
@@ -4953,11 +6372,12 @@ evas_textblock_cursor_line_geometry_get(const Evas_Textblock_Cursor *cur, Evas_C
 }
 
 /**
- * to be documented.
- * @param cur to be documented.
- * @param x to be documented.
- * @param y to be documented.
- * @return to be documented.
+ * Set the position of the cursor according to the X and Y coordinates.
+ *
+ * @param cur the cursor to set.
+ * @param x coord to set by.
+ * @param y coord to set by.
+ * @return #EINA_TRUE on success, #EINA_FALSE otherwise.
  */
 EAPI Eina_Bool
 evas_textblock_cursor_char_coord_set(Evas_Textblock_Cursor *cur, Evas_Coord x, Evas_Coord y)
@@ -4972,7 +6392,7 @@ evas_textblock_cursor_char_coord_set(Evas_Textblock_Cursor *cur, Evas_Coord x, E
    if (!o->formatted.valid) _relayout(cur->obj);
    x += o->style_pad.l;
    y += o->style_pad.t;
-   EINA_INLIST_FOREACH(o->lines, ln)
+   EINA_INLIST_FOREACH(o->paragraphs->lines, ln)
      {
 	if (ln->y > y) break;
 	if ((ln->y <= y) && ((ln->y + ln->h) > y))
@@ -4991,11 +6411,11 @@ evas_textblock_cursor_char_coord_set(Evas_Textblock_Cursor *cur, Evas_Coord x, E
 
 		       pos = -1;
 		       if (it->format->font.font)
-			 pos = cur->ENFN->font_char_at_coords_get(cur->ENDT,
-								  it->format->font.font,
-								  it->text,
-								  x - it->x - ln->x, 0,
-								  &cx, &cy, &cw, &ch);
+                         pos = cur->ENFN->font_char_at_coords_get(cur->ENDT,
+                               it->format->font.font,
+                               it->text, &it->bidi_props,
+                               x - it->x - ln->x, 0,
+                               &cx, &cy, &cw, &ch);
 		       if (pos < 0)
 			 return EINA_FALSE;
 		       cur->pos = pos + it->source_pos;
@@ -5008,9 +6428,10 @@ evas_textblock_cursor_char_coord_set(Evas_Textblock_Cursor *cur, Evas_Coord x, E
 		  if ((fi->x + ln->x) > x) break;
 		  if (((fi->x + ln->x) <= x) && (((fi->x + ln->x) + fi->w) > x))
 		    {
-		       cur->pos = 0;
-                       cur->eol = 0;
-		       cur->node = fi->source_node;
+                       cur->pos =
+                          _evas_textblock_node_format_pos_get(fi->source_node);
+
+		       cur->node = fi->source_node->text_node;
 		       return EINA_TRUE;
 		    }
 	       }
@@ -5018,7 +6439,7 @@ evas_textblock_cursor_char_coord_set(Evas_Textblock_Cursor *cur, Evas_Coord x, E
 	       {
 		  it = it_break;
 		  cur->pos = it->source_pos;
-                  cur->eol = 0;
+
 		  cur->node = it->source_node;
 		  return EINA_TRUE;
 	       }
@@ -5028,10 +6449,11 @@ evas_textblock_cursor_char_coord_set(Evas_Textblock_Cursor *cur, Evas_Coord x, E
 }
 
 /**
- * to be documented.
- * @param cur to be documented.
- * @param y to be documented.
- * @return to be documented.
+ * Set the cursor position according to the y coord.
+ *
+ * @param cur the cur to be set.
+ * @param y the coord to set by.
+ * @return the line number found, -1 on error.
  */
 EAPI int
 evas_textblock_cursor_line_coord_set(Evas_Textblock_Cursor *cur, Evas_Coord y)
@@ -5043,7 +6465,7 @@ evas_textblock_cursor_line_coord_set(Evas_Textblock_Cursor *cur, Evas_Coord y)
    o = (Evas_Object_Textblock *)(cur->obj->object_data);
    if (!o->formatted.valid) _relayout(cur->obj);
    y += o->style_pad.t;
-   EINA_INLIST_FOREACH(o->lines, ln)
+   EINA_INLIST_FOREACH(o->paragraphs->lines, ln)
      {
 	if (ln->y > y) break;
 	if ((ln->y <= y) && ((ln->y + ln->h) > y))
@@ -5056,10 +6478,11 @@ evas_textblock_cursor_line_coord_set(Evas_Textblock_Cursor *cur, Evas_Coord y)
 }
 
 /**
- * to be documented.
- * @param cur1 to be documented.
- * @param cur2 to be documented.
- * @return to be documented.
+ * Get the geometry of a range.
+ *
+ * @param cur1 one side of the range.
+ * @param cur2 other side of the range.
+ * @return a list of Rectangles representing the geometry of the range.
  */
 EAPI Eina_List *
 evas_textblock_cursor_range_geometry_get(const Evas_Textblock_Cursor *cur1, const Evas_Textblock_Cursor *cur2)
@@ -5080,12 +6503,14 @@ evas_textblock_cursor_range_geometry_get(const Evas_Textblock_Cursor *cur1, cons
 	cur1 = cur2;
 	cur2 = tc;
      }
+
    line = evas_textblock_cursor_char_geometry_get(cur1, &cx, &cy, &cw, &ch);
    if (line < 0) return NULL;
    line = evas_textblock_cursor_line_geometry_get(cur1, &lx, &ly, &lw, &lh);
    if (line < 0) return NULL;
    line2 = evas_textblock_cursor_line_geometry_get(cur2, NULL, NULL, NULL, NULL);
    if (line2 < 0) return NULL;
+
    if (line == line2)
      {
 	tr = calloc(1, sizeof(Evas_Textblock_Rectangle));
@@ -5170,10 +6595,13 @@ evas_textblock_cursor_format_item_geometry_get(const Evas_Textblock_Cursor *cur,
    Evas_Object_Textblock_Format_Item *fi = NULL;
    Evas_Coord x, y, w, h;
 
-   if (!cur) return 0;
+   if (!cur || !evas_textblock_cursor_format_is_visible_get(cur)) return 0;
    o = (Evas_Object_Textblock *)(cur->obj->object_data);
    if (!o->formatted.valid) _relayout(cur->obj);
-   _find_layout_format_item_line_match(cur->obj, cur->node, &ln, &fi);
+   _find_layout_format_item_line_match(cur->obj,
+         _evas_textblock_node_visible_at_pos_get(
+            _evas_textblock_cursor_node_format_at_pos_get(cur)),
+         &ln, &fi);
    if ((!ln) || (!fi)) return 0;
    x = ln->x + fi->x;
    y = ln->y + ln->baseline + fi->y;
@@ -5187,42 +6615,38 @@ evas_textblock_cursor_format_item_geometry_get(const Evas_Textblock_Cursor *cur,
 }
 
 /**
- * To be documented.
+ * Checks if the cursor points to the end of the line.
  *
- * FIXME: To be fixed.
- *
+ * @param cur the cursor to check.
+ * @return #EINA_TRUE if true, #EINA_FALSE otherwise.
  */
 EAPI Eina_Bool
 evas_textblock_cursor_eol_get(const Evas_Textblock_Cursor *cur)
 {
+   Eina_Bool ret = EINA_FALSE;
+   Evas_Textblock_Cursor cur2;
    if (!cur) return EINA_FALSE;
-   return cur->eol;
-}
 
-/**
- * To be documented.
- *
- * FIXME: To be fixed.
- *
- */
-EAPI void
-evas_textblock_cursor_eol_set(Evas_Textblock_Cursor *cur, Eina_Bool eol)
-{
-   if (!cur) return;
-   cur->eol = eol;
+   evas_textblock_cursor_copy(cur, &cur2);
+   evas_textblock_cursor_line_char_last(&cur2);
+   if (cur2.pos == cur->pos)
+     {
+        ret = EINA_TRUE;
+     }
+   return ret;
 }
-
 
 /* general controls */
 /**
- * to be documented.
- * @param obj to be documented.
- * @param line to be documented.
- * @param cx to be documented.
- * @param cy to be documented.
- * @param cw to be documented.
- * @param ch to be documented.
- * @return to be documented.
+ * Get the geometry of a line number.
+ *
+ * @param obj the object.
+ * @param line the line number.
+ * @param cx x coord of the line.
+ * @param cy y coord of the line.
+ * @param cw w coord of the line.
+ * @param ch h coord of the line.
+ * @return #EINA_TRUE on success, #EINA_FALSE otherwise.
  */
 EAPI Eina_Bool
 evas_object_textblock_line_number_geometry_get(const Evas_Object *obj, int line, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch)
@@ -5240,9 +6664,11 @@ evas_object_textblock_line_number_geometry_get(const Evas_Object *obj, int line,
 }
 
 /**
- * to be documented.
- * @param obj to be documented.
- * @return Returns no value.
+ * Clear the textblock object.
+ * @note Does *NOT* free the evas object itself.
+ *
+ * @param obj the object to clear.
+ * @return nothing.
  */
 EAPI void
 evas_object_textblock_clear(Evas_Object *obj)
@@ -5254,36 +6680,40 @@ evas_object_textblock_clear(Evas_Object *obj)
    _nodes_clear(obj);
    o->cursor->node = NULL;
    o->cursor->pos = 0;
-   o->cursor->eol = 0;
    EINA_LIST_FOREACH(o->cursors, l, cur)
      {
 	cur->node = NULL;
 	cur->pos = 0;
-        cur->eol = 0;
+
      }
-   if (o->lines)
+   if (o->paragraphs)
      {
-	_lines_clear(obj, o->lines);
-	o->lines = NULL;
+	_paragraphs_clear(obj, o->paragraphs);
+	o->paragraphs = NULL;
      }
-   o->formatted.valid = 0;
-   o->native.valid = 0;
-   o->changed = 1;
-   if (o->markup_text)
-     {
-	free(o->markup_text);
-	o->markup_text = NULL;
-     }
-   evas_object_change(obj);
-   /* FIXME: adjust cursors that are affected by the change */
+    _evas_textblock_changed(o, obj);
 }
 
 /**
- * to be documented.
- * @param obj to be documented.
- * @param w to be documented.
- * @param h to be documented.
+ * Get the formatted width. This calculates the actual size after restricting
+ * the textblock to the current size of the object.
+ * The main difference between this and @ref evas_object_textblock_size_native_get
+ * is that the "native" function does not wrapping into account
+ * it just calculates the real wdith of the objcet if it was placed on an
+ * infinite canvas, while this function gives the size after wrapping
+ * according to the size restrictions of the object.
+ *
+ * For example for a textblock containing the text: "You shall not pass!"
+ * with no margins or padding and assuming a monospace font and a size of
+ * 7x10 char widths (for simplicity) has a native size of 19x1
+ * and a formatted size of 5x4.
+ *
+ *
+ * @param obj the evas object.
+ * @param w[out] the w of the object.
+ * @param h[out] the h of the object
  * @return Returns no value.
+ * @see evas_object_textblock_size_native_get
  */
 EAPI void
 evas_object_textblock_size_formatted_get(const Evas_Object *obj, Evas_Coord *w, Evas_Coord *h)
@@ -5295,10 +6725,22 @@ evas_object_textblock_size_formatted_get(const Evas_Object *obj, Evas_Coord *w, 
 }
 
 /**
- * to be documented.
- * @param obj to be documented.
- * @param w to be documented.
- * @param h to be documented.
+ * Get the native idth. This calculates the actual size without taking account
+ * the current size of the object.
+ * The main difference between this and @ref evas_object_textblock_size_formatted_get
+ * is that the "native" function does not take wrapping into account
+ * it just calculates the real wdith of the objcet if it was placed on an
+ * infinite canvas, while the "formatted" function gives the size after
+ * wrapping text according to the size restrictions of the object.
+ *
+ * For example for a textblock containing the text: "You shall not pass!"
+ * with no margins or padding and assuming a monospace font and a size of
+ * 7x10 char widths (for simplicity) has a native size of 19x1
+ * and a formatted size of 5x4.
+ *
+ * @param obj the evas object of the textblock
+ * @param w[out] the width returned
+ * @param h[out] the height returned
  * @return Returns no value.
  */
 EAPI void
@@ -5337,10 +6779,6 @@ evas_object_textblock_style_insets_get(const Evas_Object *obj, Evas_Coord *l, Ev
    if (b) *b = o->style_pad.b;
 }
 
-/**
- * @}
- */
-
 /* all nice and private */
 static void
 evas_object_textblock_init(Evas_Object *obj)
@@ -5378,6 +6816,7 @@ evas_object_textblock_new(void)
    o = calloc(1, sizeof(Evas_Object_Textblock));
    o->magic = MAGIC_OBJ_TEXTBLOCK;
    o->cursor = calloc(1, sizeof(Evas_Textblock_Cursor));
+   _format_command_init();
    return o;
 }
 
@@ -5401,7 +6840,9 @@ evas_object_textblock_free(Evas_Object *obj)
    if (o->repch) eina_stringshare_del(o->repch);
    o->magic = 0;
    free(o);
+   _format_command_shutdown();
 }
+
 
 static void
 evas_object_textblock_render(Evas_Object *obj, void *output, void *context, void *surface, int x, int y)
@@ -5432,8 +6873,12 @@ evas_object_textblock_render(Evas_Object *obj, void *output, void *context, void
    obj->layer->evas->engine.func->context_multiplier_unset(output,
 							   context);
    clip = ENFN->context_clip_get(output, context, &cx, &cy, &cw, &ch);
+   /* If there are no paragraphs and thus there are no lines,
+    * there's nothing left to do. */
+   if (!o->paragraphs) return;
+
 #define ITEM_WALK() \
-   EINA_INLIST_FOREACH(o->lines, ln) \
+   EINA_INLIST_FOREACH(o->paragraphs->lines, ln) \
      { \
 	Evas_Object_Textblock_Item *it; \
 	\
@@ -5462,7 +6907,7 @@ evas_object_textblock_render(Evas_Object *obj, void *output, void *context, void
                   if ((obj->cur.geometry.x + x + ln->x + it->x - it->inset) > (cx + cw + 20)) \
                     break; \
                }
-             
+
 #define ITEM_WALK_END() \
 	  } \
      }
@@ -5478,19 +6923,19 @@ evas_object_textblock_render(Evas_Object *obj, void *output, void *context, void
 				(obj->cur.cache.clip.g * it->format->color.col.g * (amul)) / 65025, \
 				(obj->cur.cache.clip.b * it->format->color.col.b * (amul)) / 65025, \
 				(obj->cur.cache.clip.a * it->format->color.col.a * (amul)) / 65025);
+# define DRAW_TEXT(ox, oy) \
+   if (it->format->font.font) ENFN->font_draw(output, context, surface, it->format->font.font, \
+						 obj->cur.geometry.x + ln->x + it->x - it->inset + x + (ox), \
+						 obj->cur.geometry.y + ln->y + yoff + y + (oy), \
+						 it->w, it->h, it->w, it->h, it->text, &it->bidi_props);
+# if 0
 #define DRAW_TEXT(ox, oy) \
    if (it->format->font.font) ENFN->font_draw(output, context, surface, it->format->font.font, \
 						 obj->cur.geometry.x + ln->x + it->x - it->inset + x + (ox), \
 						 obj->cur.geometry.y + ln->y + yoff + y + (oy), \
-						 it->w, it->h, it->w, it->h, it->text);
-#if 0
-//#define DRAW_TEXT(ox, oy) \
-//   if (it->format->font.font) ENFN->font_draw(output, context, surface, it->format->font.font, \
-//						 obj->cur.geometry.x + ln->x + it->x - it->inset + x + (ox), \
-//						 obj->cur.geometry.y + ln->y + yoff + y + (oy), \
-//						 obj->cur.cache.geometry.x + ln->x + it->x - it->inset + x + (ox), \
-//						 obj->cur.cache.geometry.y + ln->y + yoff + y + (oy), \
-//						 it->w, it->h, it->w, it->h, it->text);
+						 obj->cur.cache.geometry.x + ln->x + it->x - it->inset + x + (ox), \
+						 obj->cur.cache.geometry.y + ln->y + yoff + y + (oy), \
+						 it->w, it->h, it->w, it->h, it->text, &it->bidi_props);
 #endif
 #define ITEM_WALK_LINE_SKIP_DROP() \
    if ((ln->y + ln->h) <= 0) continue; \
@@ -5553,6 +6998,8 @@ evas_object_textblock_render(Evas_Object *obj, void *output, void *context, void
 	a = it->format->color.backing.a;
      }
    ITEM_WALK_END();
+
+   /* prepare everything for text draw */
 
    /* shadows */
    ITEM_WALK();
@@ -5843,10 +7290,10 @@ evas_object_textblock_render_pre(Evas_Object *obj)
    if ((o->changed) ||
        (o->last_w != obj->cur.geometry.w))
      {
-	Evas_Object_Textblock_Line *lines;
+	Evas_Object_Textblock_Paragraph *paragraphs;
 
-	lines = o->lines;
-	o->lines = NULL;
+	paragraphs = o->paragraphs;
+	o->paragraphs = NULL;
 	o->formatted.valid = 0;
 	o->native.valid = 0;
 	_layout(obj,
@@ -5854,7 +7301,10 @@ evas_object_textblock_render_pre(Evas_Object *obj)
 		obj->cur.geometry.w, obj->cur.geometry.h,
 		&o->formatted.w, &o->formatted.h);
 	o->formatted.valid = 1;
-	if (lines) _lines_clear(obj, lines);
+        if (paragraphs)
+          {
+             _paragraphs_clear(obj, paragraphs);
+          }
 	o->last_w = obj->cur.geometry.w;
 	o->redraw = 0;
 	evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes, obj);
@@ -5978,7 +7428,7 @@ static void *evas_object_textblock_engine_data_get(Evas_Object *obj)
 }
 
 static int
-evas_object_textblock_is_opaque(Evas_Object *obj)
+evas_object_textblock_is_opaque(Evas_Object *obj __UNUSED__)
 {
    /* this returns 1 if the internal object data implies that the object is */
    /* currently fulyl opque over the entire gradient it occupies */
@@ -5986,7 +7436,7 @@ evas_object_textblock_is_opaque(Evas_Object *obj)
 }
 
 static int
-evas_object_textblock_was_opaque(Evas_Object *obj)
+evas_object_textblock_was_opaque(Evas_Object *obj __UNUSED__)
 {
    /* this returns 1 if the internal object data implies that the object was */
    /* currently fulyl opque over the entire gradient it occupies */
@@ -6020,7 +7470,7 @@ _evas_object_textblock_rehint(Evas_Object *obj)
    Evas_Object_Textblock_Line *ln;
 
    o = (Evas_Object_Textblock *)(obj->object_data);
-   EINA_INLIST_FOREACH(o->lines, ln)
+   EINA_INLIST_FOREACH(o->paragraphs->lines, ln)
      {
 	Evas_Object_Textblock_Item *it;
 
@@ -6042,3 +7492,8 @@ _evas_object_textblock_rehint(Evas_Object *obj)
    o->changed = 1;
    evas_object_change(obj);
 }
+
+/**
+ * @}
+ */
+
