@@ -1,3 +1,11 @@
+evas (1.0.0.001+svn.51480slp2+build02) unstable; urgency=low
+
+  * repackaging
+  * Git: 165.213.180.234:/git/slp/pkgs/evas
+  * Tag: evas_1.0.0.001+svn.51480slp2+build02
+
+ -- ChunEon Park <chuneon.park@samsung.com>  Sat, 11 Sep 2010 00:23:51 +0900
+
 evas (1.0.0.001+svn.51480slp2+build01) unstable; urgency=low
 
   * efl 1.0 alpha upgrade
