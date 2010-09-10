@@ -155,15 +155,20 @@ evas_new(void)
    e->hinting = EVAS_FONT_HINTING_BYTECODE;
    e->name_hash = eina_hash_string_superfast_new(NULL);
 
-   eina_array_step_set(&e->delete_objects, 256);
-   eina_array_step_set(&e->active_objects, 256);
-   eina_array_step_set(&e->restack_objects, 256);
-   eina_array_step_set(&e->render_objects, 256);
-   eina_array_step_set(&e->pending_objects, 256);
-   eina_array_step_set(&e->obscuring_objects, 256);
-   eina_array_step_set(&e->temporary_objects, 256);
-   eina_array_step_set(&e->calculate_objects, 256);
-   eina_array_step_set(&e->clip_changes, 256);
+#define EVAS_ARRAY_SET(E, Array)		\
+   eina_array_step_set(&E->Array, sizeof (E->Array), 256);
+
+   EVAS_ARRAY_SET(e, delete_objects);
+   EVAS_ARRAY_SET(e, active_objects);
+   EVAS_ARRAY_SET(e, restack_objects);
+   EVAS_ARRAY_SET(e, render_objects);
+   EVAS_ARRAY_SET(e, pending_objects);
+   EVAS_ARRAY_SET(e, obscuring_objects);
+   EVAS_ARRAY_SET(e, temporary_objects);
+   EVAS_ARRAY_SET(e, calculate_objects);
+   EVAS_ARRAY_SET(e, clip_changes);
+
+#undef EVAS_ARRAY_SET
 
    return e;
 }
@@ -1152,3 +1157,122 @@ evas_load_error_str(int error)
 	 return "Unknown error";
      }
 }
+
+/**
+ * Convert a given color from HSV to RGB format.
+ *
+ * @param h The Hue component of the color.
+ * @param s The Saturation component of the color.
+ * @param v The Value component of the color.
+ * @param r The Red component of the color.
+ * @param g The Green component of the color.
+ * @param b The Blue component of the color.
+ *
+ * This function converts a given color in HSV color format to RGB
+ * color format.
+ *
+ * @ingroup Evas_Utils
+ **/
+EAPI void
+evas_color_hsv_to_rgb(float h, float s, float v, int *r, int *g, int *b)
+{
+   evas_common_convert_color_hsv_to_rgb(h, s, v, r, g, b);
+}
+
+/**
+ * Convert a given color from RGB to HSV format.
+ *
+ * @param r The Red component of the color.
+ * @param g The Green component of the color.
+ * @param b The Blue component of the color.
+ * @param h The Hue component of the color.
+ * @param s The Saturation component of the color.
+ * @param v The Value component of the color.
+ *
+ * This function converts a given color in RGB color format to HSV
+ * color format.
+ *
+ * @ingroup Evas_Utils
+ **/
+EAPI void
+evas_color_rgb_to_hsv(int r, int g, int b, float *h, float *s, float *v)
+{
+   evas_common_convert_color_rgb_to_hsv(r, g, b, h, s, v);
+}
+
+/**
+ * Pre-multiplies a rgb triplet by an alpha factor.
+ *
+ * @param a The alpha factor.
+ * @param r The Red component of the color.
+ * @param g The Green component of the color.
+ * @param b The Blue component of the color.
+ *
+ * This function pre-multiplies a given rbg triplet by an alpha
+ * factor. Alpha factor is used to define transparency.
+ *
+ * @ingroup Evas_Utils
+ **/
+EAPI void
+evas_color_argb_premul(int a, int *r, int *g, int *b)
+{
+   evas_common_convert_color_argb_premul(a, r, g, b);
+}
+
+/**
+ * Undo pre-multiplication of a rgb triplet by an alpha factor.
+ *
+ * @param a The alpha factor.
+ * @param r The Red component of the color.
+ * @param g The Green component of the color.
+ * @param b The Blue component of the color.
+ *
+ * This function undoes pre-multiplication a given rbg triplet by an
+ * alpha factor. Alpha factor is used to define transparency.
+ *
+ * @see evas_color_argb_premul().
+ *
+ * @ingroup Evas_Utils
+ **/
+EAPI void
+evas_color_argb_unpremul(int a, int *r, int *g, int *b)
+{
+   evas_common_convert_color_argb_unpremul(a, r, g, b);
+}
+
+/**
+ * Pre-multiplies data by an alpha factor.
+ *
+ * @param data The data value.
+ * @param len  The lenght value.
+ *
+ * This function pre-multiplies a given data by an alpha
+ * factor. Alpha factor is used to define transparency.
+ *
+ * @ingroup Evas_Utils
+ **/
+EAPI void
+evas_data_argb_premul(unsigned int *data, unsigned int len)
+{
+   if (!data || (len < 1)) return;
+   evas_common_convert_argb_premul(data, len);
+}
+
+/**
+ * Undo pre-multiplication data by an alpha factor.
+ *
+ * @param data The data value.
+ * @param len  The lenght value.
+ *
+ * This function undoes pre-multiplication of a given data by an alpha
+ * factor. Alpha factor is used to define transparency.
+ *
+ * @ingroup Evas_Utils
+ **/
+EAPI void
+evas_data_argb_unpremul(unsigned int *data, unsigned int len)
+{
+   if (!data || (len < 1)) return;
+   evas_common_convert_argb_unpremul(data, len);
+}
+

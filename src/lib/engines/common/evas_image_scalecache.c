@@ -1,7 +1,3 @@
-/*
- * vim:ts=8:sw=3:sts=8:noexpandtab:cino=>5n-3f0^-2{2
- */
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
@@ -194,7 +190,7 @@ _sci_fix_newest(RGBA_Image *im)
 {
    Eina_List *l;
    Scaleitem *sci;
-   
+
    im->cache.newest_usage = 0;
    im->cache.newest_usage_count = 0;
    EINA_LIST_FOREACH(im->cache.list, l, sci)
@@ -269,8 +265,7 @@ _sci_find(RGBA_Image *im,
 
         if (eina_list_count(im->cache.list) > (max_scale_items - 1))
           return NULL;
-        sci = malloc(sizeof(Scaleitem));
-        memset(sci, 0, sizeof(Eina_Inlist));
+        sci = calloc(1, sizeof(Scaleitem));
         sci->parent_im = im;
 #ifdef EVAS_FRAME_QUEUING
         RWLKI(sci->lock);

@@ -1,7 +1,3 @@
-/*
- * vim:ts=8:sw=3:sts=8:noexpandtab:cino=>5n-3f0^-2{2
- */
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"  /* so that EAPI in Eet.h is correctly defined */
 #endif
@@ -142,9 +138,9 @@ _evas_common_rgba_image_new(void)
    im->flags = RGBA_IMAGE_NOTHING;
    im->ref = 1;
 #ifdef EVAS_FRAME_QUEUING
-   LKI(im->ref_fq_add);
-   LKI(im->ref_fq_del);
-   pthread_cond_init(&(im->cond_fq_del), NULL);
+   LKI(im->cache_entry.ref_fq_add);
+   LKI(im->cache_entry.ref_fq_del);
+   pthread_cond_init(&(im->cache_entry.cond_fq_del), NULL);
 #endif
 
    evas_common_rgba_image_scalecache_init(&im->cache_entry);
@@ -159,9 +155,9 @@ _evas_common_rgba_image_delete(Image_Entry *ie)
 #ifdef BUILD_PIPE_RENDER
    evas_common_pipe_free(im);
 # ifdef EVAS_FRAME_QUEUING
-   LKD(im->ref_fq_add);
-   LKD(im->ref_fq_del);
-   pthread_cond_destroy(&(im->cond_fq_del));
+   LKD(im->cache_entry.ref_fq_add);
+   LKD(im->cache_entry.ref_fq_del);
+   pthread_cond_destroy(&(im->cache_entry.cond_fq_del));
 # endif
 #endif   
    evas_common_rgba_image_scalecache_shutdown(&im->cache_entry);
@@ -295,6 +291,7 @@ static void
 _evas_common_rgba_image_unload(Image_Entry *im)
 {
 //   printf("unload: [%p] %s %s\n", im, im->file, im->key);
+   evas_common_rgba_image_scalecache_dirty(im);
    evas_common_rgba_image_unload(im);
 }
 

@@ -84,15 +84,4 @@ struct _Evas_Quartz_Font
    int               size;
 };
 
-typedef struct _Evas_Quartz_Gradient Evas_Quartz_Gradient;
-
-struct _Evas_Quartz_Gradient
-{
-   DATA32            *buf;
-   RGBA_Gradient     *grad;
-   Evas_Quartz_Image *im;
-   unsigned char     changed : 1;
-   int               sw, sh;
-};
-
 #endif

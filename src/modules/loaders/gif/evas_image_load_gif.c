@@ -7,9 +7,6 @@
 
 #include <gif_lib.h>
 
-#define EVAS_WINK_MODULE_NAME gif
-#include "evas_wink.h"
-
 static Eina_Bool evas_image_load_file_head_gif(Image_Entry *ie, const char *file, const char *key, int *error) EINA_ARG_NONNULL(1, 2, 4);
 static Eina_Bool evas_image_load_file_data_gif(Image_Entry *ie, const char *file, const char *key, int *error) EINA_ARG_NONNULL(1, 2, 4);
 
@@ -23,11 +20,6 @@ static Evas_Image_Load_Func evas_image_load_gif_func =
 static Eina_Bool
 evas_image_load_file_head_gif(Image_Entry *ie, const char *file, const char *key __UNUSED__, int *error)
 {
-#ifdef USE_WINK_CODEC
-   if (evas_image_load_file_head_gif_wink(ie, file, key, error) == EINA_TRUE)
-      return EINA_TRUE;
-#endif
-
    int                 fd;
    GifFileType        *gif;
    GifRecordType       rec;
@@ -119,11 +111,6 @@ evas_image_load_file_head_gif(Image_Entry *ie, const char *file, const char *key
 static Eina_Bool
 evas_image_load_file_data_gif(Image_Entry *ie, const char *file, const char *key __UNUSED__, int *error)
 {
-#ifdef USE_WINK_CODEC
-   if (evas_image_load_file_data_gif_wink(ie, file, key, error) == EINA_TRUE)
-      return EINA_TRUE;
-#endif
-
    int                 intoffset[] = { 0, 4, 2, 1 };
    int                 intjump[] = { 8, 8, 4, 2 };
    double              per;
@@ -285,14 +272,14 @@ evas_image_load_file_data_gif(Image_Entry *ie, const char *file, const char *key
                r = cmap->Colors[bg].Red;
                g = cmap->Colors[bg].Green;
                b = cmap->Colors[bg].Blue;
-               *ptr++ = 0x00ffffff & ((r << 16) | (g << 8) | b);
+               *ptr++ = 0x00ffffff & RGB_JOIN(r, g, b);
              }
            else
              {
                r = cmap->Colors[rows[i][j]].Red;
                g = cmap->Colors[rows[i][j]].Green;
                b = cmap->Colors[rows[i][j]].Blue;
-               *ptr++ = (0xff << 24) | (r << 16) | (g << 8) | b;
+               *ptr++ = ARGB_JOIN(0xff, r, g, b);
              }
            per += per_inc;
          }

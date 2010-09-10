@@ -1,18 +1,17 @@
 ##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
 ##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
-m4_define([v_maj], [0])
-m4_define([v_min], [9])
-m4_define([v_mic], [9])
-m4_define([v_rev], m4_esyscmd([(svnversion . | grep -v exported || echo 0) | awk -F : '{printf("%s\n", $1);}' | tr -d ' :MSP\n']))
+m4_define([v_maj], [1])
+m4_define([v_min], [0])
+m4_define([v_mic], [0])
+m4_define([v_rev], m4_esyscmd([(svnversion "${SVN_REPO_PATH:-.}" | grep -v export || echo 0) | awk -F : '{printf("%s\n", $1);}' | tr -d ' :MSP\n']))
 m4_if(v_rev, [0], [m4_define([v_rev], m4_esyscmd([git log 2> /dev/null | (grep -m1 git-svn-id || echo 0) | sed -e 's/.*@\([0-9]*\).*/\1/' | tr -d '\n']))])
 ##--   When released, remove the dnl on the below line
-dnl m4_undefine([v_rev])
+m4_undefine([v_rev])
 ##--   When doing snapshots - change soname. remove dnl on below line
-m4_define([relname], [ver-pre-svn-06])
-m4_define([v_rel], [-release relname])
+dnl m4_define([relname], [ver-pre-svn-07])
+dnl m4_define([v_rel], [-release relname])
 ##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
-m4_ifdef([v_rev], [m4_define([v_ver], [v_maj.v_min.v_mic.v_rev])],
-[m4_define([v_ver], [v_maj.v_min.v_mic])])
+m4_ifdef([v_rev], [m4_define([v_ver], [v_maj.v_min.v_mic.v_rev])], [m4_define([v_ver], [v_maj.v_min.v_mic])])
 m4_define([lt_rev], m4_eval(v_maj + v_min))
 m4_define([lt_cur], v_mic)
 m4_define([lt_age], v_min)
@@ -32,7 +31,7 @@ AC_CACHE_CHECK([whether the Objective C compiler works],
                 AC_LANG_POP([Objective C])])
 ])
 
-AC_INIT([evas], [v_ver], [enlightenment-devel@lists.sourceforge.net])
+AC_INIT([evas], [v_ver-alpha], [enlightenment-devel@lists.sourceforge.net])
 AC_PREREQ([2.52])
 AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_MACRO_DIR([m4])
@@ -62,6 +61,8 @@ AC_SUBST(version_info)
 AC_SUBST(release_info)
 ##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
 ##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
+VMAJ=v_maj
+AC_SUBST(VMAJ)
 
 EFL_CHECK_PATH_MAX
 
@@ -72,7 +73,7 @@ case "$host_os" in
       MODULE_ARCH="$host_os-$host_cpu"
       ;;
    *)
-      MODULE_ARCH="$host_os-$host_cpu-relname"
+      MODULE_ARCH="$host_os-$host_cpu-v_maj.v_min.v_mic"
       ;;
 esac
 AC_SUBST(MODULE_ARCH)
@@ -104,6 +105,7 @@ want_evas_engine_software_sdl="no"
 want_evas_engine_fb="no"
 want_evas_engine_directfb="no"
 want_evas_engine_software_qtopia="no"
+want_evas_engine_software_8_x11="no"
 want_evas_engine_software_16_x11="no"
 want_evas_engine_software_16_ddraw="no"
 want_evas_engine_software_16_wince="no"
@@ -146,7 +148,9 @@ case "$host_os" in
       ;;
    *)
       want_evas_engine_software_xlib="auto"
+      want_evas_engine_gl_x11="auto"
       want_evas_engine_xrender_x11="auto"
+      want_evas_engine_software_8_x11="auto"
       want_evas_engine_software_16_x11="auto"
       ;;
 esac
@@ -224,12 +228,12 @@ esac
 ## strong dependencies
 
 # Eina
-PKG_CHECK_MODULES([EINA], [eina-0])
+PKG_CHECK_MODULES([EINA], [eina >= 1.0.0])
 
 # Freetype
 PKG_CHECK_MODULES([FREETYPE], [freetype2 >= 9.3.0])
 
-requirement_evas="freetype2 eina-0 ${requirement_evas}"
+requirement_evas="freetype2 eina >= 1.0.0 ${requirement_evas}"
 
 #WinkCodec
 AC_ARG_ENABLE([winkcodec],
@@ -289,7 +293,7 @@ AC_ARG_ENABLE([fribidi],
 
 if test "x${want_fribidi}" = "xyes" -o "x${want_fribidi}" = "xauto" ; then
    PKG_CHECK_MODULES([FRIBIDI],
-      [fribidi],
+      [fribidi >= 0.19.2],
       [
        have_fribidi="yes"
        AC_DEFINE(HAVE_FRIBIDI, 1, [have fribidi support])
@@ -493,10 +497,27 @@ AC_ARG_ENABLE(gles-variety-s3c6410,
   ]
 )
 
+if test "x$gl_flavor_gles" = "xyes"; then
+  eng=""
+  if test "x$gles_variety_sgx" = "xyes"; then eng="x"$eng; fi
+  if test "x$gles_variety_s3c6410" = "xyes"; then eng="x"$eng; fi
+  if test "x$eng" = "xx"; then
+    eng=""
+  else
+     AC_MSG_ERROR(
+       [Please enable just 1 OpenGL-ES flavor. Choices are:
+          --enable-gles-variety-sgx (Most GL-ES2 GPUs with shader compiler)
+          --enable-gles-variety-s3c6410 (s3c6410 with offline shader compiler)
+        You will also need to enable the OpenGL engine for X11 with:
+          --enable-gl-x11
+       ])
+  fi
+fi
+
 #####################################################################
 ## Engines
 
-EVAS_CHECK_ENGINE([buffer], [${want_evas_engine_buffer}], [no], [Buffer])
+EVAS_CHECK_ENGINE([buffer], [${want_evas_engine_buffer}], [yes], [Buffer])
 
 EVAS_CHECK_ENGINE([software-xlib], [${want_evas_engine_software_xlib}], [yes], [Software Xlib])
 
@@ -531,6 +552,8 @@ EVAS_CHECK_ENGINE([directfb], [${want_evas_engine_directfb}], [no], [DirectFB])
 
 # disable cairo engine for the release
 #EVAS_CHECK_ENGINE([software-qtopia], [${want_evas_engine_software_qtopia}], [no], [Qtopia])
+
+EVAS_CHECK_ENGINE([software-8-x11], [${want_evas_engine_software_8_x11}], [yes], [Software X11 8 bits grayscale])
 
 EVAS_CHECK_ENGINE([software-16-x11], [${want_evas_engine_software_16_x11}], [yes], [Software X11 16 bits])
 
@@ -668,6 +691,28 @@ AC_MSG_RESULT([${have_static_software_16}])
 AM_CONDITIONAL(EVAS_STATIC_BUILD_SOFTWARE_16, test "x${have_static_software_16}" = "xyes")
 if test "x${have_static_software_16}" = "xyes"; then
    AC_DEFINE(EVAS_STATIC_BUILD_SOFTWARE_16, [1], [Build software 16 engine as part of libevas])
+fi
+
+# if software 8 x11 is enabled - build software_8 (the generic 8bit
+# engine).
+have_evas_engine_software_8="no"
+if test "x$have_evas_engine_software_8_x11" = "xyes" -o "x$have_evas_engine_software_8_x11" = "xstatic"; then
+   have_evas_engine_software_8="yes"
+fi
+AM_CONDITIONAL(BUILD_ENGINE_SOFTWARE_8, test "x$have_evas_engine_software_8" = "xyes")
+
+# if software 8 need to be build as part of libevas.so
+have_static_software_8="no"
+AC_ARG_ENABLE([static-software-8],
+   [AC_HELP_STRING([--enable-static-software-8], [Build software 8 engine as part of libevas])],
+   [have_static_software_8=${enableval}]
+)
+AC_MSG_CHECKING([Whether to build software 8 engine as part of libevas])
+AC_MSG_RESULT([${have_static_software_8}])
+
+AM_CONDITIONAL(EVAS_STATIC_BUILD_SOFTWARE_8, test "x${have_static_software_8}" = "xyes")
+if test "x${have_static_software_8}" = "xyes"; then
+   AC_DEFINE(EVAS_STATIC_BUILD_SOFTWARE_8, [1], [Build software 8 engine as part of libevas])
 fi
 
 #####################################################################
@@ -1036,25 +1081,40 @@ case $host_cpu in
 esac
 AC_MSG_CHECKING(whether to build neon code)
 AC_ARG_ENABLE(cpu-neon,
-  AC_HELP_STRING([--enable-cpu-neon], [enable neon code]),
+  AC_HELP_STRING([--enable-cpu-neon], [enable neon code - with gcc you will need these CFLAGS for it to begin to work, and even then your gcc may have broken or non-existant support: -mcpu=cortex-a8 -mfloat-abi=softfp -mfpu=neon]),
   [
-      if test "x$enableval" = "xyes" ; then
-        AC_MSG_RESULT(yes)
-        AC_DEFINE(BUILD_NEON, 1, [Build NEON Code])
-        build_cpu_neon="yes"
+     if test "x$enableval" = "xyes" ; then
+       AC_TRY_COMPILE([#include <arm_neon.h>],
+        [asm volatile ("vqadd.u8 d0, d1, d0\n")],
+        [
+          AC_MSG_RESULT(yes)
+          AC_DEFINE(BUILD_NEON, 1, [Build NEON Code])
+          build_cpu_neon="yes"
+        ],[
+          AC_MSG_RESULT(no)
+          build_cpu_neon="no"
+        ])
       else
         AC_MSG_RESULT(no)
         build_cpu_neon="no"
       fi
   ],
   [
-    AC_MSG_RESULT($build_cpu_neon)
     if test "x$build_cpu_neon" = "xyes" ; then
-      AC_DEFINE(BUILD_NEON, 1, [Build NEON Code])
+       AC_TRY_COMPILE([#include <arm_neon.h>],
+        [asm volatile ("vqadd.u8 d0, d1, d0\n")],
+        [
+          AC_MSG_RESULT(yes)
+          AC_DEFINE(BUILD_NEON, 1, [Build NEON Code])
+          build_cpu_neon="yes"
+        ],[
+          AC_MSG_RESULT(no)
+          build_cpu_neon="no"
+        ])
     fi
   ]
 )
-
+     
 #######################################
 ## C
 build_cpu_c="yes"
@@ -1407,6 +1467,7 @@ evas-opengl-sdl.pc
 evas-quartz.pc
 evas-software-buffer.pc
 evas-software-x11.pc
+evas-software-8-x11.pc
 evas-software-16-x11.pc
 evas-xrender-x11.pc
 evas-xrender-xcb.pc
@@ -1435,6 +1496,7 @@ src/lib/engines/common/evas_op_copy/Makefile
 src/lib/engines/common/evas_op_mask/Makefile
 src/lib/engines/common/evas_op_mul/Makefile
 src/lib/engines/common/evas_op_sub/Makefile
+src/lib/engines/common_8/Makefile
 src/lib/engines/common_16/Makefile
 src/modules/Makefile
 src/modules/engines/Makefile
@@ -1454,6 +1516,8 @@ src/modules/engines/gl_sdl/Makefile
 src/modules/engines/quartz/Makefile
 src/modules/engines/xrender_x11/Makefile
 src/modules/engines/software_sdl/Makefile
+src/modules/engines/software_8/Makefile
+src/modules/engines/software_8_x11/Makefile
 src/modules/engines/software_16/Makefile
 src/modules/engines/software_16_x11/Makefile
 src/modules/engines/software_16_ddraw/Makefile
@@ -1529,6 +1593,7 @@ fi
 echo "  Software Framebuffer.......: $have_evas_engine_fb"
 echo "  DirectFB...................: $have_evas_engine_directfb"
 #echo "  Software Qtopia............: $have_evas_engine_software_qtopia"
+echo "  Software 8bit grayscale....: $have_evas_engine_software_8"
 echo "  Software 16bit ............: $have_evas_engine_software_16"
 echo "  Software 16bit X11.........: $have_evas_engine_software_16_x11"
 echo "  Software 16bit Directdraw..: $have_evas_engine_software_16_ddraw"

@@ -12,9 +12,6 @@
 #include "evas_common.h"
 #include "evas_private.h"
 
-#define EVAS_WINK_MODULE_NAME wbmp
-#include "evas_wink.h"
-
 static Eina_Bool evas_image_load_file_head_wbmp(Image_Entry *ie, const char *file, const char *key, int *error) EINA_ARG_NONNULL(1, 2, 4);
 static Eina_Bool evas_image_load_file_data_wbmp(Image_Entry *ie, const char *file, const char *key, int *error) EINA_ARG_NONNULL(1, 2, 4);
 
@@ -49,10 +46,6 @@ static int read_mb(unsigned int * data, FILE * f) {
 static Eina_Bool
 evas_image_load_file_head_wbmp(Image_Entry *ie, const char *file, const char *key __UNUSED__, int *error)
 {
-#ifdef USE_WINK_CODEC
-   return evas_image_load_file_head_wbmp_wink(ie, file, key, error);
-#endif
-
    FILE          * f;
    unsigned int       type;
    unsigned char      fixed_header;
@@ -108,10 +101,6 @@ bail0:
 static Eina_Bool
 evas_image_load_file_data_wbmp(Image_Entry *ie, const char *file, const char *key __UNUSED__, int *error)
 {
-#ifdef USE_WINK_CODEC
-   return evas_image_load_file_data_wbmp_wink(ie, file, key, error);
-#endif
-
    FILE          * f;
    unsigned int       width, height;
    unsigned int       dummy;

@@ -1,3 +1,11 @@
+evas (1.0.0.001+svn.51480slp2+build01) unstable; urgency=low
+
+  * efl 1.0 alpha upgrade
+  * Git: 165.213.180.234:/git/slp/pkgs/evas
+  * Tag: evas_1.0.0.001+svn.51480slp2+build01
+
+ -- Jaehwan Kim <jae.hwan.kim@samsung.com>  Tue, 31 Aug 2010 22:42:34 +0900
+
 evas (0.9.9.060+svn.49540slp2+3build19) unstable; urgency=low
 
   * Disabled word cache.

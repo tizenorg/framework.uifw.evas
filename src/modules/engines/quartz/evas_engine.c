@@ -1,6 +1,3 @@
-/*
- * vim:ts=3:sw=3:sts=3:expandtab
- */
 #include <ApplicationServices/ApplicationServices.h>
 
 #include "evas_common.h"
@@ -92,7 +89,6 @@ eng_output_setup(CGContextRef context, int w, int h)
    evas_common_convert_init();
    evas_common_scale_init();
    evas_common_rectangle_init();
-   evas_common_gradient_init();
    evas_common_polygon_init();
    evas_common_line_init();
    evas_common_font_init();
@@ -497,231 +493,6 @@ eng_polygon_draw(void *data, void *context, void *surface, void *polygon)
    CGContextFillPath(re->ctx);
 }
 
-#pragma mark Gradient Manipulation & Drawing
-
-static void *
-eng_gradient_new(void *data)
-{
-   Evas_Quartz_Gradient *gradient = calloc(1, sizeof(Evas_Quartz_Gradient));
-   if (!gradient) return NULL;
-
-   gradient->grad = evas_common_gradient_new();
-   if (!(gradient->grad))
-   {
-      free(gradient);
-      return NULL;
-   }
-
-   gradient->changed = 1;
-   gradient->buf = NULL;
-
-   return gradient;
-}
-
-static void
-eng_gradient_free(void *data, void *gradient)
-{
-   Evas_Quartz_Gradient *gr = (Evas_Quartz_Gradient *)gradient;
-   if (!gr) return;
-   if (gr->grad) evas_common_gradient_free(gr->grad);
-   if (gr->im) eng_image_free(data, gr->im);
-   if (gr->buf) free(gr->buf);
-   free(gr);
-}
-
-static void
-eng_gradient_color_stop_add(void *data, void *gradient, int r, int g, int b, int a, int delta)
-{
-   Evas_Quartz_Gradient *gr = (Evas_Quartz_Gradient *)gradient;
-   if (!gr) return;
-   evas_common_gradient_color_stop_add(gr->grad, r, g, b, a, delta);
-   gr->changed = 1;
-}
-
-static void
-eng_gradient_alpha_stop_add(void *data, void *gradient, int a, int delta)
-{
-   Evas_Quartz_Gradient *gr = (Evas_Quartz_Gradient *)gradient;
-   if (!gr) return;
-   evas_common_gradient_alpha_stop_add(gr->grad, a, delta);
-   gr->changed = 1;
-}
-
-static void
-eng_gradient_color_data_set(void *data, void *gradient, void *map, int len, int has_alpha)
-{
-   Evas_Quartz_Gradient *gr = (Evas_Quartz_Gradient *)gradient;
-   if (!gr) return;
-   evas_common_gradient_color_data_set(gr->grad, map, len, has_alpha);
-   gr->changed = 1;
-}
-
-static void
-eng_gradient_alpha_data_set(void *data, void *gradient, void *alpha_map, int len)
-{
-   Evas_Quartz_Gradient *gr = (Evas_Quartz_Gradient *)gradient;
-   if (!gr) return;
-   evas_common_gradient_alpha_data_set(gr->grad, alpha_map, len);
-   gr->changed = 1;
-}
-
-static void
-eng_gradient_clear(void *data, void *gradient)
-{
-   Evas_Quartz_Gradient *gr = (Evas_Quartz_Gradient *)gradient;
-   if (!gr) return;
-   evas_common_gradient_clear(gr->grad);
-   gr->changed = 1;
-}
-
-static void
-eng_gradient_fill_set(void *data, void *gradient, int x, int y, int w, int h)
-{
-   Evas_Quartz_Gradient *gr = (Evas_Quartz_Gradient *)gradient;
-   if (!gr) return;
-   evas_common_gradient_fill_set(gr->grad, x, y, w, h);
-   gr->changed = 1;
-}
-
-static void
-eng_gradient_fill_angle_set(void *data, void *gradient, double angle)
-{
-   Evas_Quartz_Gradient *gr = (Evas_Quartz_Gradient *)gradient;
-   if (!gr) return;
-   evas_common_gradient_fill_angle_set(gr->grad, angle);
-   gr->changed = 1;
-}
-
-static void
-eng_gradient_fill_spread_set(void *data, void *gradient, int spread)
-{
-   Evas_Quartz_Gradient *gr = (Evas_Quartz_Gradient *)gradient;
-   if (!gr) return;
-   evas_common_gradient_fill_spread_set(gr->grad, spread);
-   gr->changed = 1;
-}
-
-static void
-eng_gradient_angle_set(void *data, void *gradient, double angle)
-{
-   Evas_Quartz_Gradient *gr = (Evas_Quartz_Gradient *)gradient;
-   if (!gr) return;
-   evas_common_gradient_map_angle_set(gr->grad, angle);
-   gr->changed = 1;
-}
-
-static void
-eng_gradient_offset_set(void *data, void *gradient, float offset)
-{
-   Evas_Quartz_Gradient *gr = (Evas_Quartz_Gradient *)gradient;
-   if (!gr) return;
-   evas_common_gradient_map_offset_set(gr->grad, offset);
-   gr->changed = 1;
-}
-
-static void
-eng_gradient_direction_set(void *data, void *gradient, int direction)
-{
-   Evas_Quartz_Gradient *gr = (Evas_Quartz_Gradient *)gradient;
-   if (!gr) return;
-   evas_common_gradient_map_direction_set(gr->grad, direction);
-   gr->changed = 1;
-}
-
-static void
-eng_gradient_type_set(void *data, void *gradient, char *name, char *params)
-{
-   Evas_Quartz_Gradient *gr = (Evas_Quartz_Gradient *)gradient;
-   if (!gr) return;
-   evas_common_gradient_type_set(gr->grad, name, params);
-   gr->changed = 1;
-}
-
-static int
-eng_gradient_is_opaque(void *data, void *context, void *gradient, int x, int y, int w, int h)
-{
-   RGBA_Draw_Context *dc = (RGBA_Draw_Context *)context;
-   RGBA_Gradient *grad;
-   if (!gradient) return 0;
-
-   grad = ((Evas_Quartz_Gradient *)gradient)->grad;
-
-   if (!grad || !grad->type.geometer) return 0;
-
-   return !(grad->type.geometer->has_alpha(grad, dc->render_op) |
-              grad->type.geometer->has_mask(grad, dc->render_op));
-}
-
-static int
-eng_gradient_is_visible(void *data, void *context, void *gradient, int x, int y, int w, int h)
-{
-   if (!gradient) return 0;
-   return 1;
-}
-
-static void
-eng_gradient_render_pre(void *data, void *context, void *gradient)
-{
-   int  len;
-   RGBA_Gradient *grad;
-
-   if (!context || !gradient) return;
-   grad = ((Evas_Quartz_Gradient *)gradient)->grad;
-   if (!grad || !grad->type.geometer) return;
-   grad->type.geometer->geom_set(grad);
-   len = grad->type.geometer->get_map_len(grad);
-   evas_common_gradient_map(context, grad, len);
-   ((Evas_Quartz_Gradient *)gradient)->changed = 1;
-}
-
-static void
-eng_gradient_render_post(void *data, void *gradient)
-{
-}
-
-static void
-eng_gradient_draw(void *data, void *context, void *surface, void *gradient, int x, int y, int w, int h)
-{
-   RGBA_Draw_Context *dc = (RGBA_Draw_Context *)context;
-   Evas_Quartz_Gradient *gr = (Evas_Quartz_Gradient *)gradient;
-
-   INF("#Gradient#");
-   INF("Fill: %i %i %i %i", gr->grad->fill.x, gr->grad->fill.y, gr->grad->fill.w, gr->grad->fill.h);
-   INF("Type: %s %s", gr->grad->type.name, gr->grad->type.params);
-   INF("XYWH: %i %i %i %i", x, y, w, h);
-   INF("Geom: %p %p", gr->grad->type.geometer, gr->grad->type.geometer->get_fill_func);
-   INF("Map: len: %d angle: %f direction: %d offset: %f", gr->grad->map.len, gr->grad->map.angle, gr->grad->map.direction, gr->grad->map.offset);
-   INF("Color: nstops: %d len: %d", gr->grad->color.nstops, gr->grad->color.len);
-   INF("Alpha: nstops: %d len: %d", gr->grad->alpha.nstops, gr->grad->alpha.len);
-   INF("");
-
-   if ((gr->sw != w) || (gr->sh != h))
-      gr->changed = 1;
-
-   if ((gr->changed) || (!gr->im))
-   {
-      if (gr->buf && ((gr->sw != w) || (gr->sh != h)))
-      {
-         free(gr->buf);
-         gr->buf = NULL;
-      }
-
-      if (!gr->buf)
-         gr->buf = calloc(w * h, 4);
-
-      eng_image_free(data, gr->im);
-      gr->im = eng_image_new_from_data(data, w, h, gr->buf, 1, EVAS_COLORSPACE_ARGB8888);
-      dc->render_op = _EVAS_RENDER_FILL;
-      evas_common_gradient_draw((RGBA_Image *) &gr->im->im->cache_entry, dc, 0, 0, w, h, gr->grad);
-      evas_common_cpu_end_opt();
-      gr->sw = w;
-      gr->sh = h;
-      gr->changed = 0;
-   }
-
-   eng_image_draw(data, context, NULL, gr->im, 0, 0, 0, 0, x, y, w, h, 0);
-}
-
 #pragma mark Image Manipulation & Drawing
 
 static void *
@@ -807,7 +578,7 @@ eng_image_data_preload_request(void *data __UNUSED__, void *image, const void *t
 {
    Evas_Quartz_Image *im = (Evas_Quartz_Image *)image;
 
-   if (!im && !im->im) return ;
+   if (!im || !im->im) return ;
    evas_cache_image_preload_data(&im->im->cache_entry, target);
 }
 
@@ -816,7 +587,7 @@ eng_image_data_preload_cancel(void *data __UNUSED__, void *image, const void *ta
 {
    Evas_Quartz_Image *im = (Evas_Quartz_Image *)image;
 
-   if (!im && !im->im) return ;
+   if (!im || !im->im) return ;
    evas_cache_image_preload_cancel(&im->im->cache_entry, target);
 }
 
@@ -1249,7 +1020,7 @@ eng_font_max_descent_get(void *data, void *font)
 }
 
 static void
-eng_font_string_size_get(void *data, void *font, const char *text, int *w, int *h)
+eng_font_string_size_get(void *data, void *font, const char *text, const Evas_BiDi_Props *intl_props, int *w, int *h)
 {
    Render_Engine *re = (Render_Engine *)data;
    Evas_Quartz_Font *loaded_font = (Evas_Quartz_Font *)font;
@@ -1279,28 +1050,28 @@ eng_font_inset_get(void *data, void *font, const char *text)
 }
 
 static int
-eng_font_h_advance_get(void *data, void *font, const char *text)
+eng_font_h_advance_get(void *data, void *font, const char *text, const Evas_BiDi_Props *intl_props)
 {
    int w;
 
-   eng_font_string_size_get(data, font, text, &w, NULL);
+   eng_font_string_size_get(data, font, text, intl_props, &w, NULL);
 
    return w + 2; // FIXME: shouldn't need a constant here. from where do we get word spacing?
    // it seems we lose the space between differently-styled text in a text block. Why?
 }
 
 static int
-eng_font_v_advance_get(void *data, void *font, const char *text)
+eng_font_v_advance_get(void *data, void *font, const char *text, const Evas_BiDi_Props *intl_props)
 {
    int h;
 
-   eng_font_string_size_get(data, font, text, NULL, &h);
+   eng_font_string_size_get(data, font, text, intl_props, NULL, &h);
 
    return h;
 }
 
 static int
-eng_font_char_coords_get(void *data, void *font, const char *text, int pos, int *cx, int *cy, int *cw, int *ch)
+eng_font_char_coords_get(void *data, void *font, const char *text, const Evas_BiDi_Props *intl_props, int pos, int *cx, int *cy, int *cw, int *ch)
 {
    Evas_Quartz_Font *loaded_font = (Evas_Quartz_Font *)font;
 
@@ -1320,7 +1091,7 @@ eng_font_char_coords_get(void *data, void *font, const char *text, int pos, int 
 }
 
 static int
-eng_font_char_at_coords_get(void *data, void *font, const char *text, int x, int y, int *cx, int *cy, int *cw, int *ch)
+eng_font_char_at_coords_get(void *data, void *font, const char *text, const Evas_BiDi_Props *intl_props, int x, int y, int *cx, int *cy, int *cw, int *ch)
 {
    // Return the index of the character at the given point, also lookup it's origin x, y, w, and h.
    Evas_Quartz_Font *loaded_font = (Evas_Quartz_Font *)font;
@@ -1332,8 +1103,8 @@ eng_font_char_at_coords_get(void *data, void *font, const char *text, int x, int
    int stringIndex = (int) CTLineGetStringIndexForPosition(line, CGPointMake(x, y));
 
    // In order to get the character's size and position, look up the position of this character and the next one
-   eng_font_char_coords_get(data, font, text, stringIndex, cx, cy, NULL, NULL);
-   eng_font_char_coords_get(data, font, text, stringIndex + 1, cw, NULL, NULL, NULL);
+   eng_font_char_coords_get(data, font, text, intl_props, stringIndex, cx, cy, NULL, NULL);
+   eng_font_char_coords_get(data, font, text, intl_props, stringIndex + 1, cw, NULL, NULL, NULL);
 
    if (cw && cx) *cw -= *cx;
    if (ch) *ch = loaded_font->size;
@@ -1359,7 +1130,7 @@ eng_font_hinting_can_hint(void *data, int hinting)
 }
 
 static void
-eng_font_draw(void *data, void *context, void *surface, void *font, int x, int y, int w, int h, int ow, int oh, const char *text)
+eng_font_draw(void *data, void *context, void *surface, void *font, int x, int y, int w, int h, int ow, int oh, const char *text, const Evas_BiDi_Props *intl_props)
 {
    Render_Engine *re = (Render_Engine *)data;
    Evas_Quartz_Context *ctxt = (Evas_Quartz_Context *)context;
@@ -1479,25 +1250,6 @@ module_open(Evas_Module *em)
    ORD(font_memory_load);
    ORD(font_string_size_get);
    ORD(font_v_advance_get);
-   ORD(gradient_new);
-   ORD(gradient_free);
-   ORD(gradient_color_stop_add);
-   ORD(gradient_alpha_stop_add);
-   ORD(gradient_color_data_set);
-   ORD(gradient_alpha_data_set);
-   ORD(gradient_clear);
-   ORD(gradient_fill_set);
-   ORD(gradient_fill_angle_set);
-   ORD(gradient_fill_spread_set);
-   ORD(gradient_angle_set);
-   ORD(gradient_offset_set);
-   ORD(gradient_direction_set);
-   ORD(gradient_type_set);
-   ORD(gradient_is_opaque);
-   ORD(gradient_is_visible);
-   ORD(gradient_render_pre);
-   ORD(gradient_render_post);
-   ORD(gradient_draw);
    ORD(image_alpha_get);
    ORD(image_alpha_set);
    ORD(image_colorspace_get);

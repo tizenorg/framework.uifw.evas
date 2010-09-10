@@ -1,7 +1,3 @@
-/*
- * vim:ts=8:sw=3:sts=8:noexpandtab:cino=>5n-3f0^-2{2
- */
-
 #include <assert.h>
 
 #include "evas_common.h"
@@ -671,14 +667,10 @@ evas_cache_engine_image_engine(Evas_Cache_Engine_Image *cache, void *engine_data
 
   on_error:
    if (!eim)
-     {
-        if (ie)
-          evas_cache_image_drop(ie);
-     }
+     evas_cache_image_drop(ie);
    else
-     {
-        evas_cache_engine_image_drop(eim);
-     }
+     evas_cache_engine_image_drop(eim);
+
    return NULL;
 }
 

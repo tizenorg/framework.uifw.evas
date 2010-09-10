@@ -17,11 +17,11 @@ Build-Depends: debhelper (>= 6), cdbs, libeet-dev (>= 1.1.0), libeina-dev (>= 0.
 Standards-Version: 3.8.1
 Homepage: http://www.enlightenment.org
 
-Package: libevas-svn-01
+Package: libevas
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, libevas-engines (>= 0.9.9.060+svn20100304), libpng12-0
-Provides: libevas0
-Conflicts: libevas0
+Provides: libevas
+Conflicts: libevas
 Description: Enlightenment DR17 advanced canvas library
  Evas is an advanced canvas library, providing six engines for rendering: X11,
  OpenGL (hardware accelerated), DirectFB, the framebuffer, Microsoft Windows
@@ -49,7 +49,7 @@ Description: Evas API Documentation
 Package: libevas-dev
 Section: libdevel
 Architecture: any
-Depends: ${misc:Depends}, libevas-svn-01 (= ${binary:Version}), libjpeg7-dev, libx11-dev,
+Depends: ${misc:Depends}, libevas (= ${binary:Version}), libjpeg7-dev, libx11-dev,
  libfreetype6-dev, libfontconfig1-dev, libeet-dev, pkg-config, libeina-dev (>= 0.0.2.060+svn20100304), libxext-dev, libpng12-dev, libfribidi-dev, libharfbuzz-dev,
  libgif-dev
 Suggests: libevas-doc
@@ -66,7 +66,7 @@ Description: Enlightenment DR17 advanced canvas library development files
 Package: libevas-dbg
 Architecture: any
 Section: debug
-Depends: ${misc:Depends}, libevas-svn-01 (= ${binary:Version})
+Depends: ${misc:Depends}, libevas (= ${binary:Version})
 Priority: extra
 Description: enlightenment advanced canvas library
  Evas is an advanced canvas library, providing six engines for rendering: X11,

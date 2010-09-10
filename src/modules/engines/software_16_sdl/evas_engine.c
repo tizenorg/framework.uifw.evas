@@ -5,7 +5,7 @@
 #include <time.h>
 #include <SDL/SDL.h>
 
-#include "evas_common.h"
+#include "evas_common.h"/* Also includes international specific stuff */
 #include "evas_engine.h"
 int _evas_engine_soft16_sdl_log_dom = -1;
 
@@ -129,7 +129,6 @@ _sdl16_output_setup(int w, int h, int rotation, int fullscreen, int noframe, int
    evas_common_convert_init();
    evas_common_scale_init();
    evas_common_rectangle_init();
-   evas_common_gradient_init();
    evas_common_polygon_init();
    evas_common_line_init();
    evas_common_font_init();
@@ -877,7 +876,7 @@ evas_engine_sdl16_image_format_get(void *data __UNUSED__, void *image __UNUSED__
 }
 
 static void
-evas_engine_sdl16_font_draw(void *data __UNUSED__, void *context, void *surface, void *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const char *text)
+evas_engine_sdl16_font_draw(void *data __UNUSED__, void *context, void *surface, void *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props)
 {
    static RGBA_Image            *im = NULL;
    SDL_Engine_Image_Entry       *eim = surface;
@@ -899,7 +898,7 @@ evas_engine_sdl16_font_draw(void *data __UNUSED__, void *context, void *surface,
                                          soft16_font_glyph_new,
                                          soft16_font_glyph_free,
                                          soft16_font_glyph_draw);
-   evas_common_font_draw(im, context, font, x, y, text);
+   evas_common_font_draw(im, context, font, x, y, text, intl_props);
    evas_common_draw_context_font_ext_set(context,
                                          NULL,
                                          NULL,

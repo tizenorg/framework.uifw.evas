@@ -1,4 +1,4 @@
-#include "evas_common.h"
+#include "evas_common.h" /* Also includes international specific stuff */
 #include "evas_private.h"
 
 /*
@@ -212,312 +212,6 @@ eng_polygon_draw(void *data __UNUSED__, void *context, void *surface, void *poly
      }
 }
 
-static void
-eng_gradient2_color_np_stop_insert(void *data __UNUSED__, void *gradient, int r, int g, int b, int a, float pos)
-{
-   evas_common_gradient2_color_np_stop_insert(gradient, r, g, b, a, pos);
-}
-
-static void
-eng_gradient2_clear(void *data __UNUSED__, void *gradient)
-{
-   evas_common_gradient2_clear(gradient);
-}
-
-static void
-eng_gradient2_fill_transform_set(void *data __UNUSED__, void *gradient, void *transform)
-{
-   evas_common_gradient2_fill_transform_set(gradient, transform);
-}
-
-static void
-eng_gradient2_fill_spread_set(void *data __UNUSED__, void *gradient, int spread)
-{
-   evas_common_gradient2_fill_spread_set(gradient, spread);
-}
-
-static void *
-eng_gradient2_linear_new(void *data __UNUSED__)
-{
-   return evas_common_gradient2_linear_new();
-}
-
-static void
-eng_gradient2_linear_free(void *data __UNUSED__, void *linear_gradient)
-{
-   evas_common_gradient2_free(linear_gradient);
-}
-
-static void
-eng_gradient2_linear_fill_set(void *data __UNUSED__, void *linear_gradient, float x0, float y0, float x1, float y1)
-{
-   evas_common_gradient2_linear_fill_set(linear_gradient, x0, y0, x1, y1);
-}
-
-static int
-eng_gradient2_linear_is_opaque(void *data __UNUSED__, void *context, void *linear_gradient, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-   RGBA_Draw_Context *dc = (RGBA_Draw_Context *)context;
-   RGBA_Gradient2 *gr = (RGBA_Gradient2 *)linear_gradient;
-
-   if (!dc || !gr || !gr->type.geometer)  return 0;
-   return !(gr->type.geometer->has_alpha(gr, dc->render_op) |
-              gr->type.geometer->has_mask(gr, dc->render_op));
-}
-
-static int
-eng_gradient2_linear_is_visible(void *data __UNUSED__, void *context, void *linear_gradient, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-   RGBA_Draw_Context *dc = (RGBA_Draw_Context *)context;
-
-   if (!dc || !linear_gradient)  return 0;
-   return 1;
-}
-
-static void
-eng_gradient2_linear_render_pre(void *data __UNUSED__, void *context, void *linear_gradient)
-{
-   RGBA_Draw_Context *dc = (RGBA_Draw_Context *)context;
-   RGBA_Gradient2 *gr = (RGBA_Gradient2 *)linear_gradient;
-   int  len;
-
-   if (!dc || !gr || !gr->type.geometer)  return;
-   gr->type.geometer->geom_update(gr);
-   len = gr->type.geometer->get_map_len(gr);
-   evas_common_gradient2_map(dc, gr, len);
-}
-
-static void
-eng_gradient2_linear_render_post(void *data __UNUSED__, void *linear_gradient __UNUSED__)
-{
-}
-
-static void
-eng_gradient2_linear_draw(void *data __UNUSED__, void *context, void *surface, void *linear_gradient, int x, int y, int w, int h)
-{
-#ifdef BUILD_PIPE_RENDER
-   if ((cpunum > 1)
-#ifdef EVAS_FRAME_QUEUING
-        && evas_common_frameq_enabled()
-#endif
-        )
-     evas_common_pipe_grad2_draw(surface, context, x, y, w, h, linear_gradient);
-   else
-#endif
-     evas_common_gradient2_draw(surface, context, x, y, w, h, linear_gradient);
-}
-
-static void *
-eng_gradient2_radial_new(void *data __UNUSED__)
-{
-   return evas_common_gradient2_radial_new();
-}
-
-static void
-eng_gradient2_radial_free(void *data __UNUSED__, void *radial_gradient)
-{
-   evas_common_gradient2_free(radial_gradient);
-}
-
-static void
-eng_gradient2_radial_fill_set(void *data __UNUSED__, void *radial_gradient, float cx, float cy, float rx, float ry)
-{
-   evas_common_gradient2_radial_fill_set(radial_gradient, cx, cy, rx, ry);
-}
-
-static int
-eng_gradient2_radial_is_opaque(void *data __UNUSED__, void *context, void *radial_gradient, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-   RGBA_Draw_Context *dc = (RGBA_Draw_Context *)context;
-   RGBA_Gradient2 *gr = (RGBA_Gradient2 *)radial_gradient;
-
-   if (!dc || !gr || !gr->type.geometer)  return 0;
-   return !(gr->type.geometer->has_alpha(gr, dc->render_op) |
-              gr->type.geometer->has_mask(gr, dc->render_op));
-}
-
-static int
-eng_gradient2_radial_is_visible(void *data __UNUSED__, void *context, void *radial_gradient, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-   RGBA_Draw_Context *dc = (RGBA_Draw_Context *)context;
-
-   if (!dc || !radial_gradient)  return 0;
-   return 1;
-}
-
-static void
-eng_gradient2_radial_render_pre(void *data __UNUSED__, void *context, void *radial_gradient)
-{
-   RGBA_Draw_Context *dc = (RGBA_Draw_Context *)context;
-   RGBA_Gradient2 *gr = (RGBA_Gradient2 *)radial_gradient;
-   int  len;
-
-   if (!dc || !gr || !gr->type.geometer)  return;
-   gr->type.geometer->geom_update(gr);
-   len = gr->type.geometer->get_map_len(gr);
-   evas_common_gradient2_map(dc, gr, len);
-}
-
-static void
-eng_gradient2_radial_render_post(void *data __UNUSED__, void *radial_gradient __UNUSED__)
-{
-}
-
-static void
-eng_gradient2_radial_draw(void *data __UNUSED__, void *context, void *surface, void *radial_gradient, int x, int y, int w, int h)
-{
-#ifdef BUILD_PIPE_RENDER
-   if ((cpunum > 1)
-#ifdef EVAS_FRAME_QUEUING
-        && evas_common_frameq_enabled()
-#endif
-        )
-     evas_common_pipe_grad2_draw(surface, context, x, y, w, h, radial_gradient);
-   else
-#endif
-     evas_common_gradient2_draw(surface, context, x, y, w, h, radial_gradient);
-}
-
-static void *
-eng_gradient_new(void *data __UNUSED__)
-{
-   return evas_common_gradient_new();
-}
-
-static void
-eng_gradient_free(void *data __UNUSED__, void *gradient)
-{
-   evas_common_gradient_free(gradient);
-}
-
-static void
-eng_gradient_color_stop_add(void *data __UNUSED__, void *gradient, int r, int g, int b, int a, int delta)
-{
-   evas_common_gradient_color_stop_add(gradient, r, g, b, a, delta);
-}
-
-static void
-eng_gradient_alpha_stop_add(void *data __UNUSED__, void *gradient, int a, int delta)
-{
-   evas_common_gradient_alpha_stop_add(gradient, a, delta);
-}
-
-static void
-eng_gradient_color_data_set(void *data __UNUSED__, void *gradient, void *map, int len, int has_alpha)
-{
-   evas_common_gradient_color_data_set(gradient, map, len, has_alpha);
-}
-
-static void
-eng_gradient_alpha_data_set(void *data __UNUSED__, void *gradient, void *alpha_map, int len)
-{
-   evas_common_gradient_alpha_data_set(gradient, alpha_map, len);
-}
-
-static void
-eng_gradient_clear(void *data __UNUSED__, void *gradient)
-{
-   evas_common_gradient_clear(gradient);
-}
-
-static void
-eng_gradient_fill_set(void *data __UNUSED__, void *gradient, int x, int y, int w, int h)
-{
-   evas_common_gradient_fill_set(gradient, x, y, w, h);
-}
-
-static void
-eng_gradient_fill_angle_set(void *data __UNUSED__, void *gradient, double angle)
-{
-   evas_common_gradient_fill_angle_set(gradient, angle);
-}
-
-static void
-eng_gradient_fill_spread_set(void *data __UNUSED__, void *gradient, int spread)
-{
-   evas_common_gradient_fill_spread_set(gradient, spread);
-}
-
-static void
-eng_gradient_angle_set(void *data __UNUSED__, void *gradient, double angle)
-{
-   evas_common_gradient_map_angle_set(gradient, angle);
-}
-
-static void
-eng_gradient_offset_set(void *data __UNUSED__, void *gradient, float offset)
-{
-   evas_common_gradient_map_offset_set(gradient, offset);
-}
-
-static void
-eng_gradient_direction_set(void *data __UNUSED__, void *gradient, int direction)
-{
-   evas_common_gradient_map_direction_set(gradient, direction);
-}
-
-static void
-eng_gradient_type_set(void *data __UNUSED__, void *gradient, char *name, char *params)
-{
-   evas_common_gradient_type_set(gradient, name, params);
-}
-
-static int
-eng_gradient_is_opaque(void *data __UNUSED__, void *context, void *gradient, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-   RGBA_Draw_Context *dc = (RGBA_Draw_Context *)context;
-   RGBA_Gradient *gr = (RGBA_Gradient *)gradient;
-
-   if (!dc || !gr || !gr->type.geometer)  return 0;
-   return !(gr->type.geometer->has_alpha(gr, dc->render_op) |
-              gr->type.geometer->has_mask(gr, dc->render_op));
-}
-
-static int
-eng_gradient_is_visible(void *data __UNUSED__, void *context, void *gradient, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
-{
-   RGBA_Draw_Context *dc = (RGBA_Draw_Context *)context;
-
-   if (!dc || !gradient)  return 0;
-   return 1;
-}
-
-static void
-eng_gradient_render_pre(void *data __UNUSED__, void *context, void *gradient)
-{
-   RGBA_Draw_Context *dc = (RGBA_Draw_Context *)context;
-   RGBA_Gradient *gr = (RGBA_Gradient *)gradient;
-   int  len;
-
-   if (!dc || !gr || !gr->type.geometer)  return;
-   gr->type.geometer->geom_set(gr);
-   len = gr->type.geometer->get_map_len(gr);
-   evas_common_gradient_map(dc, gr, len);
-}
-
-static void
-eng_gradient_render_post(void *data __UNUSED__, void *gradient __UNUSED__)
-{
-}
-
-static void
-eng_gradient_draw(void *data __UNUSED__, void *context, void *surface, void *gradient, int x, int y, int w, int h)
-{
-#ifdef BUILD_PIPE_RENDER
-   if ((cpunum > 1)
-#ifdef EVAS_FRAME_QUEUING
-        && evas_common_frameq_enabled()
-#endif
-        )
-     evas_common_pipe_grad_draw(surface, context, x, y, w, h, gradient);
-   else
-#endif   
-     {
-	evas_common_gradient_draw(surface, context, x, y, w, h, gradient);
-	evas_common_cpu_end_opt();
-     }
-}
-
 static int
 eng_image_alpha_get(void *data __UNUSED__, void *image)
 {
@@ -607,9 +301,10 @@ eng_image_colorspace_set(void *data __UNUSED__, void *image, int cspace)
    evas_cache_image_colorspace(im, cspace);
 }
 
-static void
-eng_image_native_set(void *data __UNUSED__, void *image __UNUSED__, void *native __UNUSED__)
+static void *
+eng_image_native_set(void *data __UNUSED__, void *image, void *native __UNUSED__)
 {
+   return image;
 }
 
 static void *
@@ -775,7 +470,8 @@ eng_image_draw(void *data __UNUSED__, void *context, void *surface, void *image,
 #endif
         )
      {
-        evas_common_rgba_image_scalecache_prepare(im, surface, context, smooth,
+        evas_common_rgba_image_scalecache_prepare((Image_Entry *)(im), 
+                                                  surface, context, smooth,
                                                   src_x, src_y, src_w, src_h,
                                                   dst_x, dst_y, dst_w, dst_h);
         
@@ -813,7 +509,7 @@ static void
 eng_image_map4_draw(void *data __UNUSED__, void *context, void *surface, void *image, RGBA_Map_Point *p, int smooth, int level)
 {
    RGBA_Image *im, *srf;
-   RGBA_Map_Point *pt = p;
+//   RGBA_Map_Point *pt = p;
 
    if (!image) return;
    im = image;
@@ -862,7 +558,6 @@ eng_image_map4_draw(void *data __UNUSED__, void *context, void *surface, void *i
           evas_common_map4_rgba(im, surface, context, p, smooth, level);
      }
    evas_common_cpu_end_opt();
-
 }
 
 static void *
@@ -982,55 +677,55 @@ eng_font_max_descent_get(void *data __UNUSED__, void *font)
 }
 
 static void
-eng_font_string_size_get(void *data __UNUSED__, void *font, const char *text, int *w, int *h)
+eng_font_string_size_get(void *data __UNUSED__, void *font, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props, int *w, int *h)
 {
-   evas_common_font_query_size(font, text, w, h);
+   evas_common_font_query_size(font, text, intl_props, w, h);
 }
 
 static int
-eng_font_inset_get(void *data __UNUSED__, void *font, const char *text)
+eng_font_inset_get(void *data __UNUSED__, void *font, const Eina_Unicode *text)
 {
    return evas_common_font_query_inset(font, text);
 }
 
 static int
-eng_font_h_advance_get(void *data __UNUSED__, void *font, const char *text)
+eng_font_h_advance_get(void *data __UNUSED__, void *font, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props)
 {
    int h, v;
 
-   evas_common_font_query_advance(font, text, &h, &v);
+   evas_common_font_query_advance(font, text, intl_props, &h, &v);
    return h;
 }
 
 static int
-eng_font_v_advance_get(void *data __UNUSED__, void *font, const char *text)
+eng_font_v_advance_get(void *data __UNUSED__, void *font, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props)
 {
    int h, v;
 
-   evas_common_font_query_advance(font, text, &h, &v);
+   evas_common_font_query_advance(font, text, intl_props, &h, &v);
    return v;
 }
 
 static int
-eng_font_char_coords_get(void *data __UNUSED__, void *font, const char *text, int pos, int *cx, int *cy, int *cw, int *ch)
+eng_font_char_coords_get(void *data __UNUSED__, void *font, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props, int pos, int *cx, int *cy, int *cw, int *ch)
 {
-   return evas_common_font_query_char_coords(font, text, pos, cx, cy, cw, ch);
+   return evas_common_font_query_char_coords(font, text, intl_props, pos, cx, cy, cw, ch);
 }
 
 static int
-eng_font_char_at_coords_get(void *data __UNUSED__, void *font, const char *text, int x, int y, int *cx, int *cy, int *cw, int *ch)
+eng_font_char_at_coords_get(void *data __UNUSED__, void *font, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props, int x, int y, int *cx, int *cy, int *cw, int *ch)
 {
-   return evas_common_font_query_text_at_pos(font, text, x, y, cx, cy, cw, ch);
+   return evas_common_font_query_char_at_coords(font, text, intl_props, x, y, cx, cy, cw, ch);
 }
 
 static int
-eng_font_last_up_to_pos(void *data __UNUSED__, void *font, const char *text, int x, int y)
+eng_font_last_up_to_pos(void *data __UNUSED__, void *font, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props, int x, int y)
 {
-   return evas_common_font_query_last_up_to_pos(font, text, x, y);
+   return evas_common_font_query_last_up_to_pos(font, text, intl_props, x, y);
 }
 
 static void
-eng_font_draw(void *data __UNUSED__, void *context, void *surface, void *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const char *text)
+eng_font_draw(void *data __UNUSED__, void *context, void *surface, void *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props)
 {
 #ifdef BUILD_PIPE_RENDER
    if ((cpunum > 1)
@@ -1038,11 +733,11 @@ eng_font_draw(void *data __UNUSED__, void *context, void *surface, void *font, i
         && evas_common_frameq_enabled()
 #endif
         )
-     evas_common_pipe_text_draw(surface, context, font, x, y, text);
+     evas_common_pipe_text_draw(surface, context, font, x, y, text, intl_props);
    else
 #endif   
      {
-	evas_common_font_draw(surface, context, font, x, y, text);
+	evas_common_font_draw(surface, context, font, x, y, text, intl_props);
 	evas_common_cpu_end_opt();
      }
 }
@@ -1136,49 +831,6 @@ static Evas_Func func =
      eng_polygon_point_add,
      eng_polygon_points_clear,
      eng_polygon_draw,
-     /* gradient draw funcs */
-     eng_gradient2_color_np_stop_insert,
-     eng_gradient2_clear,
-     eng_gradient2_fill_transform_set,
-     eng_gradient2_fill_spread_set,
-
-     eng_gradient2_linear_new,
-     eng_gradient2_linear_free,
-     eng_gradient2_linear_fill_set,
-     eng_gradient2_linear_is_opaque,
-     eng_gradient2_linear_is_visible,
-     eng_gradient2_linear_render_pre,
-     eng_gradient2_linear_render_post,
-     eng_gradient2_linear_draw,
-
-     eng_gradient2_radial_new,
-     eng_gradient2_radial_free,
-     eng_gradient2_radial_fill_set,
-     eng_gradient2_radial_is_opaque,
-     eng_gradient2_radial_is_visible,
-     eng_gradient2_radial_render_pre,
-     eng_gradient2_radial_render_post,
-     eng_gradient2_radial_draw,
-
-     eng_gradient_new,
-     eng_gradient_free,
-     eng_gradient_color_stop_add,
-     eng_gradient_alpha_stop_add,
-     eng_gradient_color_data_set,
-     eng_gradient_alpha_data_set,
-     eng_gradient_clear,
-     eng_gradient_fill_set,
-     eng_gradient_fill_angle_set,
-     eng_gradient_fill_spread_set,
-     eng_gradient_angle_set,
-     eng_gradient_offset_set,
-     eng_gradient_direction_set,
-     eng_gradient_type_set,
-     eng_gradient_is_opaque,
-     eng_gradient_is_visible,
-     eng_gradient_render_pre,
-     eng_gradient_render_post,
-     eng_gradient_draw,
      /* image draw funcs */
      eng_image_load,
      eng_image_new_from_data,
@@ -1238,7 +890,9 @@ static Evas_Func func =
      /* FUTURE software generic calls go here (done) */
      eng_image_map4_draw,
      eng_image_map_surface_new,
-     eng_image_map_surface_free
+     eng_image_map_surface_free,
+     NULL, // eng_image_content_hint_set - software doesnt use it
+     NULL // eng_image_content_hint_get - software doesnt use it
      /* FUTURE software generic calls go here */
 };
 
