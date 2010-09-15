@@ -1763,7 +1763,7 @@ _layout_format_ascent_descent_adjust(Ctxt *c, Evas_Object_Textblock_Format *fmt)
           }
         else if (fmt->linerelsize > 0.0)
           {
-             descent = ((ascent + descent) * fmt->linerelsize) - (ascent * fmt->linerelsize);
+			 descent = descent * fmt->linerelsize; 
              ascent = ascent * fmt->linerelsize;
           }
         c->maxdescent += fmt->linegap;
@@ -6326,7 +6326,7 @@ evas_textblock_cursor_char_geometry_get(const Evas_Textblock_Cursor *cur, Evas_C
    evas_textblock_cursor_copy(cur, &cur2);
    if (cur2.pos > 0)
      {
-       cur2.pos-;
+       cur2.pos--;
      }
 
    if (evas_textblock_cursor_format_is_visible_get(cur))
