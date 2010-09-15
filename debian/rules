@@ -6,11 +6,11 @@ include /usr/share/cdbs/1/rules/debhelper.mk
 DEB_CONFIGURE_SCRIPT := ./autogen.sh
 DEB_MAKE_CLEAN_TARGET := distclean
 ifeq (armel,$(DEB_HOST_ARCH))
-	CFLAGS += -fvisibility=hidden -ffast-math -mcpu=cortex-a8 -mfloat-abi=softfp -mfpu=neon
+	CFLAGS += -fvisibility=hidden -ffast-math -mcpu=cortex-a8 -mfloat-abi=softfp -mfpu=neon -fPIC
 else
-	CFLAGS += -fvisibility=hidden -ffast-math
+	CFLAGS += -fvisibility=hidden -ffast-math -fPIC
 endif
-LDFLAGS += -fvisibility=hidden
+LDFLAGS += -fvisibility=hidden -Wl,--hash-style=both -Wl,--as-needed
 
 DEB_DH_STRIP_ARGS := --dbg-package=libevas-dbg
 
