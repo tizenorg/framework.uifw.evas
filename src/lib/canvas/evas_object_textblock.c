@@ -30,7 +30,7 @@
  * also have the added benefit of updating automatically upon textblock changes,
  * this means that if you have a cursor pointing to a specific character, it'll
  * still point to it even after you change the whole object completely (as long
- * as the char was not deleted), this is not possible without updating, beacuse
+ * as the char was not deleted), this is not possible without updating, because
  * as mentioned, each cursor holds a character position. There are many
  * functions that handle cursors, just check out the evas_textblock_cursor*
  * functions. For creation and deletion of cursors check out:
@@ -143,19 +143,19 @@ static const char o_type[] = "textblock";
 
 /* private struct for textblock object internal data */
 /**
- * @intrenal
+ * @internal
  * @typedef Evas_Object_Textblock
  * The actual textblock object.
  */
 typedef struct _Evas_Object_Textblock             Evas_Object_Textblock;
 /**
- * @intrenal
+ * @internal
  * @typedef Evas_Object_Style_Tag
  * The structure used for finding style tags.
  */
 typedef struct _Evas_Object_Style_Tag             Evas_Object_Style_Tag;
 /**
- * @intrenal
+ * @internal
  * @typedef Evas_Object_Textblock_Node_Text
  * A text node.
  */
@@ -166,31 +166,31 @@ typedef struct _Evas_Object_Textblock_Node_Format Evas_Object_Textblock_Node_For
 */
 
 /**
- * @intrenal
+ * @internal
  * @typedef Evas_Object_Textblock_Paragraph
  * A layouting paragraph.
  */
 typedef struct _Evas_Object_Textblock_Paragraph   Evas_Object_Textblock_Paragraph;
 /**
- * @intrenal
+ * @internal
  * @typedef Evas_Object_Textblock_Line
  * A layouting line.
  */
 typedef struct _Evas_Object_Textblock_Line        Evas_Object_Textblock_Line;
 /**
- * @intrenal
+ * @internal
  * @typedef Evas_Object_Textblock_Item
  * A layouting item.
  */
 typedef struct _Evas_Object_Textblock_Item        Evas_Object_Textblock_Item;
 /**
- * @intrenal
+ * @internal
  * @typedef Evas_Object_Textblock_Format_Item
  * A layouting format item.
  */
 typedef struct _Evas_Object_Textblock_Format_Item Evas_Object_Textblock_Format_Item;
 /**
- * @intrenal
+ * @internal
  * @typedef Evas_Object_Textblock_Format
  * A textblock format.
  */
@@ -198,7 +198,7 @@ typedef struct _Evas_Object_Textblock_Format      Evas_Object_Textblock_Format;
 
 /* the current state of the formatting */
 /**
- * @intrenal
+ * @internal
  * @def GET_PREV(text, ind)
  * Gets the index of the previous char in the text text, this simply returns
  * the current char pointed to and decrements ind but ensures it stays in
@@ -206,7 +206,7 @@ typedef struct _Evas_Object_Textblock_Format      Evas_Object_Textblock_Format;
  */
 #define GET_PREV(text, ind) (((ind) > 0) ? (text[(ind)--]) : (text[ind]))
 /**
- * @intrenal
+ * @internal
  * @def GET_NEXT(text, ind)
  * Gets the index of the next in the text text, this simply returns
  * the current char pointed to and increments indd but ensures it stays in
@@ -243,13 +243,13 @@ struct _Evas_Object_Textblock_Node_Format
 };
 
 /**
- * @intrenal
+ * @internal
  * @def _NODE_TEXT(x)
  * A convinience macro for casting to a text node.
  */
 #define _NODE_TEXT(x)  ((Evas_Object_Textblock_Node_Text *) (x))
 /**
- * @intrenal
+ * @internal
  * @def _NODE_FORMAT(x)
  * A convinience macro for casting to a format node.
  */
@@ -1198,7 +1198,7 @@ _format_clean_param(char *dst, const char *src)
  *
  * @param obj the evas object - should not be NULL.
  * @param fmt The format to populate - should not be NULL.
- * @param[in] cmd the command to proccess, should be stringshared.
+ * @param[in] cmd the command to process, should be stringshared.
  * @param[in] param the parameter of the command.
  */
 static void
@@ -6095,9 +6095,13 @@ evas_textblock_cursor_range_text_get(const Evas_Textblock_Cursor *cur1, const Ev
           }
         /* Init the offset so the first one will count starting from cur1->pos
          * and not the previous format node */
-        if ((tnode == cur1->node) && fnode)
+        if (tnode == cur1->node)
           {
-             off = _evas_textblock_node_format_pos_get(fnode) - cur1->pos - fnode->offset;
+             if (fnode)
+               {
+                  off = _evas_textblock_node_format_pos_get(fnode) -
+                     cur1->pos - fnode->offset;
+               }
              text += cur1->pos;
           }
         else
@@ -6742,7 +6746,7 @@ evas_object_textblock_clear(Evas_Object *obj)
  * the textblock to the current size of the object.
  * The main difference between this and @ref evas_object_textblock_size_native_get
  * is that the "native" function does not wrapping into account
- * it just calculates the real wdith of the objcet if it was placed on an
+ * it just calculates the real width of the object if it was placed on an
  * infinite canvas, while this function gives the size after wrapping
  * according to the size restrictions of the object.
  *
@@ -6772,7 +6776,7 @@ evas_object_textblock_size_formatted_get(const Evas_Object *obj, Evas_Coord *w, 
  * the current size of the object.
  * The main difference between this and @ref evas_object_textblock_size_formatted_get
  * is that the "native" function does not take wrapping into account
- * it just calculates the real wdith of the objcet if it was placed on an
+ * it just calculates the real width of the object if it was placed on an
  * infinite canvas, while the "formatted" function gives the size after
  * wrapping text according to the size restrictions of the object.
  *
@@ -7407,7 +7411,7 @@ evas_object_textblock_render_pre(Evas_Object *obj)
 	goto done;
      }
    /* if it changed geometry - and obviously not visibility or color */
-   /* caluclate differences since we have a constant color fill */
+   /* calculate differences since we have a constant color fill */
    /* we really only need to update the differences */
    if ((obj->cur.geometry.x != obj->prev.geometry.x) ||
        (obj->cur.geometry.y != obj->prev.geometry.y) ||
