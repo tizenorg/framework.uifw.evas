@@ -1763,7 +1763,7 @@ _layout_format_ascent_descent_adjust(Ctxt *c, Evas_Object_Textblock_Format *fmt)
           }
         else if (fmt->linerelsize > 0.0)
           {
-			 descent = descent * fmt->linerelsize; 
+             descent = descent * fmt->linerelsize;
              ascent = ascent * fmt->linerelsize;
           }
         c->maxdescent += fmt->linegap;
@@ -2769,8 +2769,8 @@ _layout_format_item_add(Ctxt *c, Evas_Object_Textblock_Node_Format *n, const cha
 
 /**
  * @internal
- * Handles a format by proccessing a format node. It returns the relevant format
- * through _fmt and updates the padding throught style_pad_*. If needed,
+ * Handles a format by processing a format node. It returns the relevant format
+ * through _fmt and updates the padding through style_pad_*. If needed,
  * it creates a format item.
  *
  * @param obj the evas object - NOT NULL.
@@ -3036,7 +3036,7 @@ _layout(const Evas_Object *obj, int calc_only, int w, int h, int *w_ret, int *h_
    /* run through all text and format nodes generating lines */
    if (!c->o->text_nodes && !c->o->format_nodes)
      {
-        /* If there are no nodes and lines, do the inital creation. */
+        /* If there are no nodes and lines, do the initial creation. */
         if (!c->par && !c->ln)
           {
              _layout_paragraph_new(c);
@@ -4169,7 +4169,7 @@ _evas_textblock_cursor_nodes_merge(Evas_Textblock_Cursor *cur)
  * Return the format at a specific position.
  *
  * @param cur the cursor to the position.
- * @return the format node at the specific postion or NULL if not found.
+ * @return the format node at the specific position or NULL if not found.
  */
 static Evas_Object_Textblock_Node_Format *
 _evas_textblock_cursor_node_format_at_pos_get(const Evas_Textblock_Cursor *cur)
@@ -4204,7 +4204,7 @@ _evas_textblock_cursor_node_format_at_pos_get(const Evas_Textblock_Cursor *cur)
  * @internal
  * Return the last format node at the position of the format node n.
  *
- * @param n a format node at the positon.
+ * @param n a format node at the position.
  * @return the last format node at the position of n.
  */
 static Evas_Object_Textblock_Node_Format *
@@ -4228,7 +4228,7 @@ _evas_textblock_node_format_last_at_off(const Evas_Object_Textblock_Node_Format 
  * Returns the visible format at a specific location.
  *
  * @param n a format at the specific position.
- * @return the format node at the specific postion or NULL if not found.
+ * @return the format node at the specific position or NULL if not found.
  */
 static Evas_Object_Textblock_Node_Format *
 _evas_textblock_node_visible_at_pos_get(const Evas_Object_Textblock_Node_Format *n)
@@ -4257,7 +4257,7 @@ _evas_textblock_node_visible_at_pos_get(const Evas_Object_Textblock_Node_Format 
  * position of the cursor in the text node is returned or the previous's text
  * node's format node.
  *
- * @param cur teh position to look at.
+ * @param cur the position to look at.
  * @return the format node found.
  */
 static Evas_Object_Textblock_Node_Format *
@@ -4307,7 +4307,7 @@ _evas_textblock_cursor_node_format_before_or_at_pos_get(const Evas_Textblock_Cur
  * position of the cursor in the text node is returned or the previous's text
  * node's format node.
  *
- * @param cur teh position to look at.
+ * @param cur the position to look at.
  * @return the format node found.
  */
 static Evas_Object_Textblock_Node_Format *
@@ -4547,7 +4547,7 @@ evas_textblock_cursor_paragraph_next(Evas_Textblock_Cursor *cur)
 }
 
 /**
- * Advances to the the end of the next text node
+ * Advances to the the end of the previous text node
  *
  * @param cur the cursor to update
  * @return #EINA_TRUE if it managed to advance a paragraph, #EINA_FALSE otherwise.
