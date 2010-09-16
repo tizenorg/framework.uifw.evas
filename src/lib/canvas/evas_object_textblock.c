@@ -2459,7 +2459,7 @@ _layout_text_append(Ctxt *c, Evas_Object_Textblock_Format *fmt, Evas_Object_Text
 
    if (n)
      {
-   if ((!fmt->password)&&(repch) && (eina_strbuf_length_get(n->utf8)))
+        if ((repch) && (eina_ustrbuf_length_get(n->unicode)))
           {
              int i, len, ind;
              Eina_Unicode *ptr;
