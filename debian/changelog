@@ -1,18 +1,18 @@
-evas (1.0.0.001+svn.51480slp2+build05) unstable; urgency=low
+evas (1.0.0.001+svn.51480slp2+build06) unstable; urgency=low
 
   * repackaging for entry password. 
   * Git: 165.213.180.234:/git/slp/pkgs/evas
-  * Tag: evas_1.0.0.001+svn.51480slp2+build05
+  * Tag: evas_1.0.0.001+svn.51480slp2+build06
 
  -- ChunEon Park <chuneon.park@samsung.com>  Mon, 20 Sep 2010 20:18:48 +0900
 
-evas (1.0.0.001+svn.51480slp2+build04) unstable; urgency=low
+evas (1.0.0.001+svn.51480slp2+build05) unstable; urgency=low
 
   * [textblock] bug fix about evas_textblock_cursor_range_text_get by Tom
   * [textblock] fixed bug related to password mode
   * svn update: 51515: fixed most of the cases on which a cursor was not drawn correctly.
   * Git: 165.213.180.234:/git/slp/pkgs/evas
-  * Tag: evas_1.0.0.001+svn.51480slp2+build04
+  * Tag: evas_1.0.0.001+svn.51480slp2+build05
 
  -- Jihoon Kim <jihoon48.kim@samsung.com>  Fri, 17 Sep 2010 11:32:13 +0900
 
