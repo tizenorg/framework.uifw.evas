@@ -1053,7 +1053,6 @@ static const char *linerelsizestr = NULL;
 static const char *linegapstr = NULL;
 static const char *linerelgapstr = NULL;
 static const char *itemstr = NULL;
-static const char *visible = NULL;
 static const char *linefillstr = NULL;
 
 /**
@@ -1091,8 +1090,7 @@ _format_command_init(void)
    linerelsizestr = eina_stringshare_add("linerelsize");
    linegapstr = eina_stringshare_add("linegap");
    linerelgapstr = eina_stringshare_add("linerelgap");
-   itemstr = eina_stringshare_add("item");
-   visible = eina_stringshare_add("visible"); */
+   itemstr = eina_stringshare_add("item"); */
    if (format_refcount == 0)
      {
         fontstr = eina_stringshare_add("font");
@@ -1122,7 +1120,6 @@ _format_command_init(void)
         linerelsizestr = eina_stringshare_add("linerelsize");
         linegapstr = eina_stringshare_add("linegap");
         linerelgapstr = eina_stringshare_add("linerelgap");
-        visible = eina_stringshare_add("visible");
         itemstr = eina_stringshare_add("item");
         linefillstr = eina_stringshare_add("linefill");
      }
@@ -1166,7 +1163,6 @@ _format_command_shutdown(void)
    eina_stringshare_del(linegapstr);
    eina_stringshare_del(linerelgapstr);
    eina_stringshare_del(itemstr);
-   eina_stringshare_del(visible);
    eina_stringshare_del(linefillstr);
 }
 
@@ -1508,16 +1504,6 @@ _format_command(Evas_Object *obj, Evas_Object_Textblock_Format *fmt, const char 
                }
           }
      }
-   else if(cmd ==visible)
-   	{   		
-		int v;
-		v = atoi(tmp_param);
-		if(v==1)
-			fmt->password = 1;
-		else
-			fmt->password = 0;
-     }
-
    if (new_font)
      {
         void *of;
@@ -2448,6 +2434,8 @@ _layout_walk_back_to_item_word_redo(Ctxt *c, Evas_Object_Textblock_Item *it)
 static void
 _layout_text_append(Ctxt *c, Evas_Object_Textblock_Format *fmt, Evas_Object_Textblock_Node_Text *n, int start, int off, const char *repch)
 {
+	printf("\n\n%s\n",__FUNCTION__);
+
    int adv, inset, tw, th, new_line, empty_item;
    int wrap, twrap, ch, index, white_stripped;
    Eina_Unicode *alloc_str = NULL;
@@ -2460,7 +2448,8 @@ _layout_text_append(Ctxt *c, Evas_Object_Textblock_Format *fmt, Evas_Object_Text
    if (n)
      {
         if ((repch) && (eina_ustrbuf_length_get(n->unicode)))
-          {
+          {	
+          	printf("\n\nrepch is true %s\n",__FUNCTION__);
              int i, len, ind;
              Eina_Unicode *ptr;
              Eina_Unicode urepch;
@@ -2473,6 +2462,7 @@ _layout_text_append(Ctxt *c, Evas_Object_Textblock_Format *fmt, Evas_Object_Text
              for (i = 0, ptr = (Eina_Unicode *)tbase; i < len; ptr++, i++)
                *ptr = urepch;
              *ptr = 0;
+			 printf("\n\nrepch is true text = %s\n",ptr);
           }
         else
           {
