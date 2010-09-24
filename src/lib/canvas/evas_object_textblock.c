@@ -333,7 +333,6 @@ struct _Evas_Object_Textblock_Format
    unsigned char        underline2 : 1;
    unsigned char        strikethrough : 1;
    unsigned char        backing : 1;
-   unsigned char	password : 1; 
 };
 
 struct _Evas_Textblock_Style
@@ -2434,7 +2433,6 @@ _layout_walk_back_to_item_word_redo(Ctxt *c, Evas_Object_Textblock_Item *it)
 static void
 _layout_text_append(Ctxt *c, Evas_Object_Textblock_Format *fmt, Evas_Object_Textblock_Node_Text *n, int start, int off, const char *repch)
 {
-	printf("\n\n%s\n",__FUNCTION__);
 
    int adv, inset, tw, th, new_line, empty_item;
    int wrap, twrap, ch, index, white_stripped;
@@ -2449,7 +2447,6 @@ _layout_text_append(Ctxt *c, Evas_Object_Textblock_Format *fmt, Evas_Object_Text
      {
         if ((repch) && (eina_ustrbuf_length_get(n->unicode)))
           {	
-          	printf("\n\nrepch is true %s\n",__FUNCTION__);
              int i, len, ind;
              Eina_Unicode *ptr;
              Eina_Unicode urepch;
@@ -2462,7 +2459,6 @@ _layout_text_append(Ctxt *c, Evas_Object_Textblock_Format *fmt, Evas_Object_Text
              for (i = 0, ptr = (Eina_Unicode *)tbase; i < len; ptr++, i++)
                *ptr = urepch;
              *ptr = 0;
-			 printf("\n\nrepch is true text = %s\n",ptr);
           }
         else
           {
