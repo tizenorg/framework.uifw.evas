@@ -20,7 +20,11 @@ EAPI int
 evas_init(void)
 {
    if (++_evas_init_count != 1)
-     return _evas_init_count;
+     {
+	evas_async_events_shutdown();
+	evas_async_events_init();
+        return _evas_init_count;
+     }
 
 #ifdef HAVE_EVIL
    if (!evil_init())
