@@ -13,7 +13,7 @@ static GLXFBConfig rgba_fbconf = 0;
 #endif
 
 // fixme: something is up/wrong here - dont know what tho...
-//#define NEWGL 1
+// #define NEWGL 1
 
 static XVisualInfo *_evas_gl_x11_vi = NULL;
 static XVisualInfo *_evas_gl_x11_rgba_vi = NULL;
@@ -36,10 +36,12 @@ eng_window_new(Display *disp,
                int      rot)
 {
    Evas_GL_X11_Window *gw;
+#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
    int context_attrs[3];
    int config_attrs[40];
    int major_version, minor_version;
    int num_config, n = 0;
+#endif   
    XVisualInfo *vi_use;
    const GLubyte *vendor, *renderer, *version;
    
@@ -47,6 +49,8 @@ eng_window_new(Display *disp,
    
    gw = calloc(1, sizeof(Evas_GL_X11_Window));
    if (!gw) return NULL;
+   
+   win_count++;
    gw->disp = disp;
    gw->win = win;
    gw->screen = screen;
@@ -59,7 +63,7 @@ eng_window_new(Display *disp,
    gw->rot = rot;
 
    vi_use = _evas_gl_x11_vi;
-   if (alpha)
+   if (gw->alpha)
      {
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
         if (_evas_gl_x11_rgba_vi)
@@ -135,7 +139,7 @@ eng_window_new(Display *disp,
    config_attrs[n++] = 1;
 // FIXME: end n900 breakage   
 #endif
-   if (alpha)
+   if (gw->alpha)
      {
         config_attrs[n++] = EGL_ALPHA_SIZE;
         config_attrs[n++] = 1;
@@ -152,22 +156,28 @@ eng_window_new(Display *disp,
    config_attrs[n++] = EGL_NONE;
 # endif
    
-   gw->egl_disp= eglGetDisplay((EGLNativeDisplayType)(gw->disp));
+   gw->egl_disp = eglGetDisplay((EGLNativeDisplayType)(gw->disp));
    if (!gw->egl_disp)
      {
         printf("Error: eglGetDisplay() fail.\n");
         printf("Error: error # was: 0x%x\n", eglGetError());
+	eng_window_free(gw);
+        return NULL;
      }
    if (!eglInitialize(gw->egl_disp, &major_version, &minor_version))
      {
         printf("Error: eglInitialize() fail.\n");
         printf("Error: error # was: 0x%x\n", eglGetError());
+	eng_window_free(gw);
+        return NULL;
      }
    eglBindAPI(EGL_OPENGL_ES_API);
    if (eglGetError() != EGL_SUCCESS)
      {
         printf("Error: eglBindAPI() fail.\n");
         printf("Error: error # was: 0x%x\n", eglGetError());
+	eng_window_free(gw);
+        return NULL;
      }
    
    num_config = 0;
@@ -176,6 +186,8 @@ eng_window_new(Display *disp,
      {
         printf("Error: eglChooseConfig() fail.\n");
         printf("Error: error # was: 0x%x\n", eglGetError());
+	eng_window_free(gw);
+        return NULL;
      }
    gw->egl_surface[0] = eglCreateWindowSurface(gw->egl_disp, gw->egl_config,
                                                (EGLNativeWindowType)gw->win,
@@ -184,6 +196,8 @@ eng_window_new(Display *disp,
      {
         printf("Error: eglCreateWindowSurface() fail for 0x%x.\n", (unsigned int)gw->win);
         printf("Error: error # was: 0x%x\n", eglGetError());
+	eng_window_free(gw);
+        return NULL;
      }
    if (context == EGL_NO_CONTEXT)
      context = eglCreateContext(gw->egl_disp, gw->egl_config, NULL, 
@@ -193,6 +207,8 @@ eng_window_new(Display *disp,
      {
         printf("Error: eglCreateContext() fail.\n");
         printf("Error: error # was: 0x%x\n", eglGetError());
+	eng_window_free(gw);
+        return NULL;
      }
    if (eglMakeCurrent(gw->egl_disp, 
                       gw->egl_surface[0], 
@@ -201,6 +217,8 @@ eng_window_new(Display *disp,
      {
         printf("Error: eglMakeCurrent() fail.\n");
         printf("Error: error # was: 0x%x\n", eglGetError());
+	eng_window_free(gw);
+        return NULL;
      }
     _evas_gl_x11_window = gw;
 
@@ -210,53 +228,65 @@ eng_window_new(Display *disp,
    if (!vendor) vendor = "-UNKNOWN-";
    if (!renderer) renderer = "-UNKNOWN-";
    if (!version) version = "-UNKNOWN-";
-   fprintf(stderr, "vendor: %s\n", vendor);
-   fprintf(stderr, "renderer: %s\n", renderer);
-   fprintf(stderr, "version: %s\n", version);
-   
+   if (getenv("EVAS_GL_INFO"))
+     {
+        fprintf(stderr, "vendor: %s\n", vendor);
+        fprintf(stderr, "renderer: %s\n", renderer);
+        fprintf(stderr, "version: %s\n", version);
+     }
 // GLX   
 #else
    if (!context)
      {
 #ifdef NEWGL        
         if (indirect)
-          context = glXCreateNewContext(disp, fbconf, 
+          context = glXCreateNewContext(gw->disp, fbconf, 
                                         GLX_RGBA_TYPE, NULL, 
                                         GL_TRUE);
         else
-          context = glXCreateNewContext(disp, fbconf, 
+          context = glXCreateNewContext(gw->disp, fbconf, 
                                         GLX_RGBA_TYPE, NULL, 
                                         GL_FALSE);
 #else
         if (indirect)
-          context = glXCreateContext(disp, gw->visualinfo, NULL, GL_FALSE);
+          context = glXCreateContext(gw->disp, gw->visualinfo, NULL, GL_FALSE);
         else
-          context = glXCreateContext(disp, gw->visualinfo, NULL, GL_TRUE);
+          context = glXCreateContext(gw->disp, gw->visualinfo, NULL, GL_TRUE);
 #endif
      }
 #ifdef NEWGL
-   if ((alpha) && (!rgba_context))
+   if ((gw->alpha) && (!rgba_context))
      {
         if (indirect)
-          rgba_context = glXCreateNewContext(disp, rgba_fbconf, 
+          rgba_context = glXCreateNewContext(gw->disp, rgba_fbconf, 
                                              GLX_RGBA_TYPE, context, 
                                              GL_TRUE);
         else
-          rgba_context = glXCreateNewContext(disp, rgba_fbconf, 
+          rgba_context = glXCreateNewContext(gw->disp, rgba_fbconf, 
                                              GLX_RGBA_TYPE, context, 
                                              GL_FALSE);
      }
-   if (alpha)
-     gw->glxwin = glXCreateWindow(disp, rgba_fbconf, gw->win, NULL);
+   if (gw->alpha)
+     gw->glxwin = glXCreateWindow(gw->disp, rgba_fbconf, gw->win, NULL);
    else
-     gw->glxwin = glXCreateWindow(disp, fbconf, gw->win, NULL);
+     gw->glxwin = glXCreateWindow(gw->disp, fbconf, gw->win, NULL);
+   if (!gw->glxwin)
+     {
+	eng_window_free(gw);
+        return NULL;
+     }
    
-   if (alpha) gw->context = rgba_context;
+   if (gw->alpha) gw->context = rgba_context;
    else gw->context = context;
 #else   
    gw->context = context;
 #endif
 
+   if (!gw->context)
+     {
+	eng_window_free(gw);
+        return NULL;
+     }
    if (gw->context)
      {
         int i, j,  num;
@@ -268,6 +298,8 @@ eng_window_new(Display *disp,
                                         gw->context))
                {
                   printf("Error: glXMakeContextCurrent(%p, %p, %p, %p)\n", (void *)gw->disp, (void *)gw->win, (void *)gw->win, (void *)gw->context);
+                  eng_window_free(gw);
+                  return NULL;
                }
           }
         else
@@ -275,6 +307,8 @@ eng_window_new(Display *disp,
              if (!glXMakeCurrent(gw->disp, gw->win, gw->context))
                {
                   printf("Error: glXMakeCurrent(%p, 0x%x, %p) failed\n", (void *)gw->disp, (unsigned int)gw->win, (void *)gw->context);
+                  eng_window_free(gw);
+                  return NULL;
                }
           }
         
@@ -283,12 +317,13 @@ eng_window_new(Display *disp,
         vendor = glGetString(GL_VENDOR);
         renderer = glGetString(GL_RENDERER);
         version = glGetString(GL_VERSION);
-        
-        fprintf(stderr, "vendor: %s\n", vendor);
-        fprintf(stderr, "renderer: %s\n", renderer);
-        fprintf(stderr, "version: %s\n", version);
-        
-        if (strstr(vendor, "NVIDIA"))
+        if (getenv("EVAS_GL_INFO"))
+          {
+             fprintf(stderr, "vendor: %s\n", vendor);
+             fprintf(stderr, "renderer: %s\n", renderer);
+             fprintf(stderr, "version: %s\n", version);
+          }
+        if (strstr((const char*)vendor, "NVIDIA"))
            // FIXME: also same as tegra2 - maybe check renderer too
            // 
            // vendor: NVIDIA Corporation
@@ -308,10 +343,12 @@ eng_window_new(Display *disp,
              // noothing yet. add more cases and options over time
           }
         
-        fbc = glXGetFBConfigs(disp, screen, &num);
+        fbc = glXGetFBConfigs(gw->disp, screen, &num);
         if (!fbc)
           {
              printf("Error: glXGetFBConfigs() returned no fb configs\n");
+             eng_window_free(gw);
+             return NULL;
           }
         for (i = 0; i <= 32; i++)
           {
@@ -319,27 +356,27 @@ eng_window_new(Display *disp,
                {
                   XVisualInfo *vi;
                   int vd;
-                  int alpha, val, dbuf, stencil, depth;
+                  int alph, val, dbuf, stencil, depth;
                   int rgba;
                   
-                  vi = glXGetVisualFromFBConfig(disp, fbc[j]);
+                  vi = glXGetVisualFromFBConfig(gw->disp, fbc[j]);
                   if (!vi) continue;
                   vd = vi->depth;
                   XFree(vi);
                   
                   if (vd != i) continue;
                   
-                  glXGetFBConfigAttrib(disp, fbc[j], GLX_ALPHA_SIZE, &alpha);
-                  glXGetFBConfigAttrib(disp, fbc[j], GLX_BUFFER_SIZE, &val);
+                  glXGetFBConfigAttrib(gw->disp, fbc[j], GLX_ALPHA_SIZE, &alph);
+                  glXGetFBConfigAttrib(gw->disp, fbc[j], GLX_BUFFER_SIZE, &val);
                   
-                  if ((val != i) && ((val - alpha) != i)) continue;
+                  if ((val != i) && ((val - alph) != i)) continue;
                   
                   val = 0;
                   rgba = 0;
                   
                   if (i == 32)
                     {
-                       glXGetFBConfigAttrib(disp, fbc[j], GLX_BIND_TO_TEXTURE_RGBA_EXT, &val);
+                       glXGetFBConfigAttrib(gw->disp, fbc[j], GLX_BIND_TO_TEXTURE_RGBA_EXT, &val);
                        if (val)
                          {
                             rgba = 1;
@@ -349,41 +386,41 @@ eng_window_new(Display *disp,
                   if (!val)
                     {
                        if (rgba) continue;
-                       glXGetFBConfigAttrib(disp, fbc[j], GLX_BIND_TO_TEXTURE_RGB_EXT, &val);
+                       glXGetFBConfigAttrib(gw->disp, fbc[j], GLX_BIND_TO_TEXTURE_RGB_EXT, &val);
                        if (!val) continue;
                        gw->depth_cfg[i].tex_format = GLX_TEXTURE_FORMAT_RGB_EXT;
                     }
                   
                   dbuf = 0x7fff;
-                  glXGetFBConfigAttrib(disp, fbc[j], GLX_DOUBLEBUFFER, &val);
+                  glXGetFBConfigAttrib(gw->disp, fbc[j], GLX_DOUBLEBUFFER, &val);
                   if (val > dbuf) continue;
                   dbuf = val;
                   
                   stencil = 0x7fff;
-                  glXGetFBConfigAttrib(disp, fbc[j], GLX_STENCIL_SIZE, &val);
+                  glXGetFBConfigAttrib(gw->disp, fbc[j], GLX_STENCIL_SIZE, &val);
                   if (val > stencil) continue;
                   stencil = val;
                   
                   depth = 0x7fff;
-                  glXGetFBConfigAttrib(disp, fbc[j], GLX_DEPTH_SIZE, &val);
+                  glXGetFBConfigAttrib(gw->disp, fbc[j], GLX_DEPTH_SIZE, &val);
                   if (val > depth) continue;
                   depth = val;
                   
-                  glXGetFBConfigAttrib(disp, fbc[j], GLX_BIND_TO_MIPMAP_TEXTURE_EXT, &val);
+                  glXGetFBConfigAttrib(gw->disp, fbc[j], GLX_BIND_TO_MIPMAP_TEXTURE_EXT, &val);
                   if (val < 0) continue;
                   gw->depth_cfg[i].mipmap = val;
                   
-                  glXGetFBConfigAttrib(disp, fbc[j], GLX_Y_INVERTED_EXT, &val);
+                  glXGetFBConfigAttrib(gw->disp, fbc[j], GLX_Y_INVERTED_EXT, &val);
                   gw->depth_cfg[i].yinvert = val;
                   
-                  glXGetFBConfigAttrib(disp, fbc[j], GLX_BIND_TO_TEXTURE_TARGETS_EXT, &val);
+                  glXGetFBConfigAttrib(gw->disp, fbc[j], GLX_BIND_TO_TEXTURE_TARGETS_EXT, &val);
                   gw->depth_cfg[i].tex_target = val;
                   
                   gw->depth_cfg[i].fbc = fbc[j];
                }
           }
         XFree(fbc);
-        if (!gw->depth_cfg[DefaultDepth(disp, screen)].fbc)
+        if (!gw->depth_cfg[DefaultDepth(gw->disp, screen)].fbc)
           {
              printf("texture from pixmap not going to work\n");
           }
@@ -402,7 +439,7 @@ eng_window_new(Display *disp,
 #endif   
    evas_gl_common_context_use(gw->gl_context);
    evas_gl_common_context_resize(gw->gl_context, w, h, rot);
-   win_count++;
+   gw->surf = 1;
    return gw;
 }
 
@@ -420,10 +457,7 @@ eng_window_free(Evas_GL_X11_Window *gw)
       }
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
    if (gw->egl_surface[0] != EGL_NO_SURFACE)
-     {
-        eglDestroySurface(gw->egl_disp, gw->egl_surface[0]);
-        gw->egl_surface[0] = EGL_NO_SURFACE;
-     }
+     eglDestroySurface(gw->egl_disp, gw->egl_surface[0]);
    if (ref == 0)
      {
         if (context) eglDestroyContext(gw->egl_disp, context);
@@ -456,12 +490,15 @@ eng_window_use(Evas_GL_X11_Window *gw)
 	_evas_gl_x11_window = gw;
 // EGL / GLES
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-        if (eglMakeCurrent(gw->egl_disp, 
-                           gw->egl_surface[0], 
-                           gw->egl_surface[0],
-                           gw->egl_context[0]) == EGL_FALSE)
+        if (gw->egl_surface[0] != EGL_NO_SURFACE)
           {
-             printf("Error: eglMakeCurrent() failed!\n");
+             if (eglMakeCurrent(gw->egl_disp, 
+                                gw->egl_surface[0], 
+                                gw->egl_surface[0],
+                                gw->egl_context[0]) == EGL_FALSE)
+               {
+                  printf("Error: eglMakeCurrent() failed!\n");
+               }
           }
 // GLX        
 #else
@@ -483,6 +520,80 @@ eng_window_use(Evas_GL_X11_Window *gw)
 #endif
      }
    evas_gl_common_context_use(gw->gl_context);
+}
+
+void
+eng_window_unsurf(Evas_GL_X11_Window *gw)
+{
+   if (!gw->surf) return;
+   if (!getenv("EVAS_GL_WIN_RESURF")) return;
+   if (getenv("EVAS_GL_INFO"))
+      printf("unsurf %p\n", gw);
+#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+   if (_evas_gl_x11_window)
+      evas_gl_common_context_flush(_evas_gl_x11_window->gl_context);
+   if (_evas_gl_x11_window == gw)
+     {
+        eglMakeCurrent(gw->egl_disp, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+        if (gw->egl_surface[0] != EGL_NO_SURFACE)
+           eglDestroySurface(gw->egl_disp, gw->egl_surface[0]);
+        gw->egl_surface[0] = EGL_NO_SURFACE;
+        _evas_gl_x11_window = NULL;
+     }
+#else
+   if (gw->glxwin)
+      {
+         glXDestroyWindow(gw->disp, gw->glxwin);
+      }
+   else
+     {
+     }
+#endif
+   gw->surf = 0;
+}
+
+void
+eng_window_resurf(Evas_GL_X11_Window *gw)
+{
+   if (gw->surf) return;
+   if (getenv("EVAS_GL_INFO"))
+      printf("resurf %p\n", gw);
+#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+   gw->egl_surface[0] = eglCreateWindowSurface(gw->egl_disp, gw->egl_config,
+                                               (EGLNativeWindowType)gw->win,
+                                               NULL);
+   if (gw->egl_surface[0] == EGL_NO_SURFACE)
+     {
+        printf("Error: eglCreateWindowSurface() fail for 0x%x.\n", (unsigned int)gw->win);
+        printf("Error: error # was: 0x%x\n", eglGetError());
+        return;
+     }
+   if (eglMakeCurrent(gw->egl_disp, 
+                      gw->egl_surface[0], 
+                      gw->egl_surface[0],
+                      gw->egl_context[0]) == EGL_FALSE)
+     {
+        printf("Error: eglMakeCurrent() failed!\n");
+     }
+#else
+#ifdef NEWGL
+   if (gw->alpha)
+     gw->glxwin = glXCreateWindow(gw->disp, rgba_fbconf, gw->win, NULL);
+   else
+     gw->glxwin = glXCreateWindow(gw->disp, fbconf, gw->win, NULL);
+   if (!glXMakeContextCurrent(gw->disp, gw->glxwin, gw->glxwin, 
+                              gw->context))
+     {
+        printf("Error: glXMakeContextCurrent(%p, %p, %p, %p)\n", (void *)gw->disp, (void *)gw->win, (void *)gw->win, (void *)gw->context);
+     }
+#else   
+   if (!glXMakeCurrent(gw->disp, gw->win, gw->context))
+     {
+        printf("Error: glXMakeCurrent(%p, 0x%x, %p) failed\n", (void *)gw->disp, (unsigned int)gw->win, (void *)gw->context);
+     }
+#endif   
+#endif   
+   gw->surf = 1;
 }
 
 Visual *
