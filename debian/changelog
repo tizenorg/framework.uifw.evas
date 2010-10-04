@@ -1,3 +1,20 @@
+evas (1.0.0.001+svn.51480slp2+build09) unstable; urgency=low
+
+  * [textblock] added evas_textblock_cursor_content_get function for edje
+  entry
+  * Git: 165.213.180.234:/git/slp/pkgs/evas
+  * Tag: evas_1.0.0.001+svn.51480slp2+build09
+
+ -- Myungjae Lee <mjae.lee@samsung.com>  Wed, 29 Sep 2010 00:54:00 +0900
+
+evas (1.0.0.001+svn.51480slp2+build08) unstable; urgency=low
+
+  * repackaging 
+  * Git: 165.213.180.234:/git/slp/pkgs/evas
+  * Tag: evas_1.0.0.001+svn.51480slp2+build07
+
+ -- ChunEon Park <chuneon.park@samsung.com>  Tue, 28 Sep 2010 22:31:22 +0900
+
 evas (1.0.0.001+svn.51480slp2+build06) unstable; urgency=low
 
   * repackaging for entry password. 

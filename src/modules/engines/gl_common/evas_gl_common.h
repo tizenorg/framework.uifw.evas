@@ -161,6 +161,7 @@ struct _Evas_GL_Shared
    int references;
    int w, h;
    int rot;
+   int mflip;
 };
 
 #define RTYPE_RECT  1
