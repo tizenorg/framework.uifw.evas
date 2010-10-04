@@ -392,6 +392,7 @@ evas_object_del(Evas_Object *obj)
      }
    obj->layer->evas->pointer.mouse_grabbed -= obj->mouse_grabbed;
    obj->mouse_grabbed = 0;
+   obj->mouse_in = 0;
    evas_object_hide(obj);
    evas_object_grabs_cleanup(obj);
    while (obj->clip.clipees) evas_object_clip_unset(obj->clip.clipees->data);
@@ -1137,7 +1138,8 @@ evas_object_hide(Evas_Object *obj)
 	evas_object_recalc_clippees(obj);
 	if (!evas_event_passes_through(obj))
 	  {
-	     if (!obj->smart.smart)
+	     if ((!obj->smart.smart) ||
+                 ((obj->cur.map) && (obj->cur.map->count == 4) && (obj->cur.usemap)))
 	       {
 		  if (evas_object_is_in_output_rect(obj,
 						    obj->layer->evas->pointer.x,
@@ -1300,9 +1302,9 @@ evas_object_anti_alias_set(Evas_Object *obj, Eina_Bool anti_alias)
    return;
    MAGIC_CHECK_END();
    if (obj->delete_me) return;
-   if (obj->cur.anti_alias == !!anti_alias)
-     return;
-   obj->cur.anti_alias = !!anti_alias;
+   anti_alias = !!anti_alias;
+   if (obj->cur.anti_alias == anti_alias)return;
+   obj->cur.anti_alias = anti_alias;
    evas_object_change(obj);
 }
 
@@ -1337,8 +1339,7 @@ evas_object_scale_set(Evas_Object *obj, double scale)
    return;
    MAGIC_CHECK_END();
    if (obj->delete_me) return;
-   if (obj->cur.scale == scale)
-     return;
+   if (obj->cur.scale == scale) return;
    obj->cur.scale = scale;
    evas_object_change(obj);
    if (obj->func->scale_update) obj->func->scale_update(obj);
