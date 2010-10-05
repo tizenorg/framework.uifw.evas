@@ -714,6 +714,8 @@ evas_gl_common_texture_update(Evas_GL_Texture *tex, RGBA_Image *im)
           }
      }
    if (!tex->pt) return;
+   if (!im->image.data) return;
+
    fmt = tex->pt->format;
    glBindTexture(GL_TEXTURE_2D, tex->pt->texture);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");

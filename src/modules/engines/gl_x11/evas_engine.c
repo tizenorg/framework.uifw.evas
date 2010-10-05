@@ -837,10 +837,12 @@ eng_image_alpha_set(void *data, void *image, int has_alpha)
    if (im->references > 1)
      {
         Evas_GL_Image *im_new;
-        
-        im_new = evas_gl_common_image_new_from_copied_data(im->gc, im->im->cache_entry.w, im->im->cache_entry.h, im->im->image.data,
-                                                           eng_image_alpha_get(data, image),
-                                                           eng_image_colorspace_get(data, image));
+       
+        im_new = evas_gl_common_image_new_from_copied_data  
+	   (im->gc, im->im->cache_entry.w, im->im->cache_entry.h,   
+	       im->im->image.data,  
+	       eng_image_alpha_get(data, image),  
+               eng_image_colorspace_get(data, image)); 
         if (!im_new) return im;
         evas_gl_common_image_free(im);
         im = im_new;
@@ -1479,9 +1481,11 @@ eng_image_data_get(void *data, void *image, int to_write, DATA32 **image_data)
 	       {
 		  Evas_GL_Image *im_new;
 
-   		  im_new = evas_gl_common_image_new_from_copied_data(im->gc, im->im->cache_entry.w, im->im->cache_entry.h, im->im->image.data,
-   								     eng_image_alpha_get(data, image),
-   								     eng_image_colorspace_get(data, image));
+		  im_new = evas_gl_common_image_new_from_copied_data  
+		     (im->gc, im->im->cache_entry.w, im->im->cache_entry.h,  
+		         im->im->image.data,  
+		         eng_image_alpha_get(data, image),  
+		         eng_image_colorspace_get(data, image));    
    		  if (!im_new)
    		    {
    		       *image_data = NULL;
