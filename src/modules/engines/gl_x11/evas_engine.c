@@ -1683,7 +1683,11 @@ eng_image_stride_get(void *data, void *image, int *stride)
    Render_Engine *re = (Render_Engine *)data;
    Evas_GL_Image *im = image;
    *stride = im->w;
-   if ((im->tex) && (im->tex->pt->dyn.img)) *stride = im->tex->pt->dyn.w;
+   if ((im->tex) && (im->tex->pt->dyn.img))
+     {
+        *stride = im->tex->pt->dyn.w * 4;
+        // FIXME: for other image formats (yuv etc.) different stride needed
+     }
 }
 
 static void

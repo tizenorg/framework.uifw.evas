@@ -324,12 +324,14 @@ _evas_gl_common_viewport_set(Evas_GL_Context *gc)
 
    if ((!gc->change.size) || 
        ((gc->shared->w == w) && (gc->shared->h == h) &&
-           (gc->shared->rot == rot)))
+           (gc->shared->rot == rot) &&
+       	   (gc->shared->mflip == m )))
       return;
    
    gc->shared->w = w;
-   gc->shared->h = h;
+   gc->shared->h = h;   
    gc->shared->rot = rot;
+   gc->shared->mflip = m;
    gc->change.size = 0;
 
    if ((rot == 0) || (rot == 180))

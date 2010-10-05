@@ -685,6 +685,7 @@ evas_gl_common_texture_dynamic_new(Evas_GL_Context *gc, Evas_GL_Image *im)
         return NULL;
      }
    
+   tex->pt->references++;
    return tex;
 }
 
