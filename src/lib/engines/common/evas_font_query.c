@@ -64,7 +64,7 @@ evas_common_font_query_kerning(RGBA_Font_Int* fi,
  */
 
 EAPI void
-evas_common_font_query_size(RGBA_Font *fn, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props, int *w, int *h)
+evas_common_font_query_size(RGBA_Font *fn, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props __UNUSED__, int *w, int *h)
 {
    int use_kerning;
    int pen_x, pen_y;
@@ -624,7 +624,7 @@ end:
  */
 
 EAPI int
-evas_common_font_query_last_up_to_pos(RGBA_Font *fn, const Eina_Unicode *in_text, const Evas_BiDi_Props *intl_props, int x, int y)
+evas_common_font_query_last_up_to_pos(RGBA_Font *fn, const Eina_Unicode *in_text, const Evas_BiDi_Props *intl_props __UNUSED__, int x, int y)
 {
    int use_kerning;
    int pen_x, pen_y;

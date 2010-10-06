@@ -9,8 +9,14 @@ evas_gl_common_image_all_unload(Evas_GL_Context *gc)
    EINA_LIST_FOREACH(gc->shared->images, l, im)
      {
         if (im->im) evas_cache_image_unload_data(&im->im->cache_entry);
-        if (im->tex) evas_gl_common_texture_free(im->tex);
-        im->tex = NULL;
+        if (im->tex)
+          {
+             if (!im->tex->pt->dyn.img)
+               {
+                  evas_gl_common_texture_free(im->tex);
+                  im->tex = NULL;
+               }
+          }
      }
 }
 
@@ -527,8 +533,8 @@ evas_gl_common_image_draw(Evas_GL_Context *gc, Evas_GL_Image *im, int sx, int sy
    
    im->tex->im = im;
    if ((!gc->dc->cutout.rects) || 
-       ((gc->shared->info.cutout_max > 0) &&
-           (gc->dc->cutout.active > gc->shared->info.cutout_max)))
+       ((gc->shared->info.tune.cutout.max > 0) &&
+           (gc->dc->cutout.active > gc->shared->info.tune.cutout.max)))
      {
         if (gc->dc->clip.use)
           {
