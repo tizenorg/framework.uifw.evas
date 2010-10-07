@@ -831,31 +831,37 @@ AC_ARG_ENABLE(pthreads,
 #######################################
 ## Pipe Renderer
 build_pipe_render="no"
-AC_MSG_CHECKING(whether to build Threaded Pipe Rendering support)
-AC_ARG_ENABLE(pipe-render,
-  AC_HELP_STRING([--enable-pipe-render], [enable threaded pipe rendering support]),
-  [ build_pipe_render=$enableval ]
-)
-AC_MSG_RESULT($build_pipe_render)
-
-AC_MSG_CHECKING(whether we can build Threaded Pipe Rendering support)
-if test \( "x$build_pipe_render" = "xyes" -o "x$build_pipe_render" = "xauto" \); then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(BUILD_PIPE_RENDER, 1, [Build pipe render support])
-  build_pipe_render="yes"
-  need_pthreads="yes"
-else
-  AC_MSG_RESULT(no)
-  build_pipe_render="no"
-fi
+dnl
+dnl ... DISABLED! some testing has shown that this seems to have some
+dnl nasty bugs on both x86 and arm (tegra2 dual core tested), so just
+dnl disabling this for now until it can be fixed
+dnl 
+dnl AC_MSG_CHECKING(whether to build Threaded Pipe Rendering support)
+dnl AC_ARG_ENABLE(pipe-render,
+dnl   AC_HELP_STRING([--enable-pipe-render], [enable threaded pipe rendering support]),
+dnl   [ build_pipe_render=$enableval ]
+dnl )
+dnl AC_MSG_RESULT($build_pipe_render)
+dnl 
+dnl AC_MSG_CHECKING(whether we can build Threaded Pipe Rendering support)
+dnl if test \( "x$build_pipe_render" = "xyes" -o "x$build_pipe_render" = "xauto" \); then
+dnl   AC_MSG_RESULT(yes)
+dnl   AC_DEFINE(BUILD_PIPE_RENDER, 1, [Build pipe render support])
+dnl   build_pipe_render="yes"
+dnl   need_pthreads="yes"
+dnl else
+dnl   AC_MSG_RESULT(no)
+dnl   build_pipe_render="no"
+dnl fi
 
 #######################################
 ## Async Renderer
 build_async_render="no"
+
 AC_MSG_CHECKING(whether to build Asynchronously Threaded Pipe Rendering support)
 AC_ARG_ENABLE(async-render,
-  AC_HELP_STRING([--enable-async-render], [enable asynchronously threaded pipe rendering support]),
-  [ build_async_render=$enableval ]
+ AC_HELP_STRING([--enable-async-render], [enable asynchronously threaded pipe rendering support]),
+ [ build_async_render=$enableval ]
 )
 AC_MSG_RESULT($build_async_render)
 
@@ -1637,7 +1643,12 @@ echo "Features:"
 echo "  MAGIC_DEBUG.............: $want_evas_magic_debug"
 echo "  Cache Server............: $want_evas_cserve"
 echo
-echo "  Threaded Pipe Rendering.: $build_pipe_render"
+dnl
+dnl ... DISABLED! some testing has shown that this seems to have some
+dnl nasty bugs on both x86 and arm (tegra2 dual core tested), so just
+dnl disabling this for now until it can be fixed
+dnl 
+dnl echo "  Threaded Pipe Rendering.: $build_pipe_render"
 echo "  Async Pipe Rendering....: $build_async_render"
 echo "  Async Events............: $build_async_events"
 echo "  Async Image Preload.....: $build_async_preload"
