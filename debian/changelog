@@ -3,7 +3,7 @@ evas (1.0.0.001+svn.51480slp2+build12) unstable; urgency=low
   * [SVN Merge] rev from 51648 to 51738, and rev 51741
   * [eng_image_size_set] fix resize bug for the dynamic texture.
   * Git: 165.213.180.234:/git/slp/pkgs/evas
-  * Tag: evas_1.0.0.001+svn.51480slp2+build11
+  * Tag: evas_1.0.0.001+svn.51480slp2+build12
 
  -- Gwanglim Lee <gl77.lee@samsung.com>  Thu, 07 Oct 2010 22:06:26 +0900
 
