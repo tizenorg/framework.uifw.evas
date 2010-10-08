@@ -1,3 +1,11 @@
+evas (1.0.0.001+svn.51480slp2+build13) unstable; urgency=low
+
+  * [Patch Rollback] Rollbacked below patch. [SVN 53093 Merge]
+  * Git: 165.213.180.234:/git/slp/pkgs/evas
+  * Tag: evas_1.0.0.001+svn.51480slp2+build13
+
+ -- Juyung Seo <juyung.seo@samsung.com>  Fri, 08 Oct 2010 20:53:37 +0900
+
 evas (1.0.0.001+svn.51480slp2+build12) unstable; urgency=low
 
   * [SVN Merge] rev from 51648 to 51738, and rev 51741
