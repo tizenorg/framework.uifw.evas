@@ -1491,7 +1491,6 @@ src/bin/Makefile
 src/lib/Makefile
 src/lib/canvas/Makefile
 src/lib/file/Makefile
-src/lib/imaging/Makefile
 src/lib/cache/Makefile
 src/lib/cserve/Makefile
 src/lib/engines/Makefile
