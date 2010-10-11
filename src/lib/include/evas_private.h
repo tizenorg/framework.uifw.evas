@@ -226,24 +226,6 @@ struct _Evas_Callbacks
    Eina_Inlist *callbacks;
    int               walking_list;
    unsigned char     deletions_waiting : 1;
-/*
-   Eina_Inlist *down;
-   Eina_Inlist *up;
-   Eina_Inlist *move;
-   Eina_Inlist *in;
-   Eina_Inlist *out;
-   Eina_Inlist *wheel;
-   Eina_Inlist *key_down;
-   Eina_Inlist *key_up;
-   Eina_Inlist *free;
-   Eina_Inlist *obj_focus_in;
-   Eina_Inlist *obj_focus_out;
-   Eina_Inlist *obj_show;
-   Eina_Inlist *obj_hide;
-   Eina_Inlist *obj_move;
-   Eina_Inlist *obj_resize;
-   Eina_Inlist *obj_restack;
- */
 };
 
 struct _Evas
@@ -257,9 +239,6 @@ struct _Evas
       int            mouse_grabbed;
       DATA32         button;
       Evas_Coord     x, y;
-
-////      Evas_Coord         canvas_x, canvas_y;
-
       struct {
 	 Eina_List *in;
       } object;
@@ -329,6 +308,7 @@ struct _Evas
    unsigned int   last_timestamp;
    int            last_mouse_down_counter;
    int            last_mouse_up_counter;
+   int            nochange;
    Evas_Font_Hinting_Flags hinting;
    unsigned char  changed : 1;
    unsigned char  delete_me : 1;
@@ -403,34 +383,28 @@ struct _Evas_Object
 {
    EINA_INLIST;
 
-   DATA32            magic;
-
-   const char       *type;
-   Evas_Layer       *layer;
-
+   DATA32                   magic;
+   const char              *type;
+   Evas_Layer              *layer;
    struct {
+      Evas_Map             *map;
+      Evas_Object          *clipper;
+      Evas_Object          *map_parent;
+      double                scale;
+      Evas_Coord_Rectangle  geometry;
       struct {
-/*
 	 struct {
-	    int            x, y, w, h;
-	    int            validity;
-	 } geometry;
- */
-	 struct {
-	    int            x, y, w, h;
-	    unsigned char  r, g, b, a;
-	    Eina_Bool      visible : 1;
-	    Eina_Bool      dirty : 1;
+	    Evas_Coord      x, y, w, h;
+	    unsigned char   r, g, b, a;
+	    Eina_Bool       visible : 1;
+	    Eina_Bool       dirty : 1;
 	 } clip;
       } cache;
-      double scale;
-      Evas_Map *map;
-      Evas_Coord_Rectangle geometry;
+      short                 layer;
       struct {
 	 unsigned char  r, g, b, a;
       } color;
-      Evas_Object      *clipper;
-      short             layer;
+
       Eina_Bool         usemap : 1;
       Eina_Bool         visible : 1;
       Eina_Bool         have_clipees : 1;
@@ -473,6 +447,7 @@ struct _Evas_Object
 
    int                         last_event;
 
+   unsigned char               delete_me;
    Evas_Object_Pointer_Mode    pointer_mode : 1;
 
    Eina_Bool                   store : 1;
@@ -482,6 +457,7 @@ struct _Evas_Object
    Eina_Bool                   repeat_events : 1;
    Eina_Bool                   restack : 1;
    Eina_Bool                   changed : 1;
+   Eina_Bool                   changed_move : 1;
    Eina_Bool                   is_active : 1;
    
    Eina_Bool                   render_pre : 1;
@@ -495,8 +471,7 @@ struct _Evas_Object
    
    Eina_Bool                   precise_is_inside : 1;
    Eina_Bool                   havemap_parent : 1;
-
-   unsigned char               delete_me;
+   Eina_Bool                   is_static_clip : 1;
 };
 
 struct _Evas_Func_Node
