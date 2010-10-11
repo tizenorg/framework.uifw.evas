@@ -230,7 +230,7 @@ struct _Evas_Object_Textblock_Node_Text
    Eina_UStrbuf                       *unicode;
    char *                              utf8;
    Evas_Object_Textblock_Node_Format  *format_node;
-   Evas_BiDi_Paragraph_Props           bidi_props;
+   Evas_BiDi_Paragraph_Props          *bidi_props;
 };
 
 struct _Evas_Object_Textblock_Node_Format
@@ -1952,7 +1952,7 @@ _layout_line_align_get(Ctxt *c)
      {
         if (c->ln->items->source_node &&
               EVAS_BIDI_PARAGRAPH_DIRECTION_IS_RTL(
-                 c->ln->items->source_node->bidi_props.direction))
+                 c->ln->items->source_node->bidi_props))
           {
              /* Align right*/
              return 1.0;
@@ -2358,7 +2358,7 @@ _layout_walk_back_to_item_word_redo(Ctxt *c, Evas_Object_Textblock_Item *it)
              new_it->source_node = pit->source_node;
              new_it->source_pos = pit->source_pos + index;
              new_it->bidi_props.start = new_it->source_pos;
-             new_it->bidi_props.props = &new_it->source_node->bidi_props;
+             new_it->bidi_props.props = new_it->source_node->bidi_props;
 # ifdef BIDI_SUPPORT
              evas_bidi_shape_string(new_it->text, &new_it->bidi_props,
                    eina_unicode_strlen(new_it->text));
@@ -2513,7 +2513,7 @@ skip:
         if (it->source_node)
           {
              it->bidi_props.start = it->source_pos;
-             it->bidi_props.props = &it->source_node->bidi_props;
+             it->bidi_props.props = it->source_node->bidi_props;
 # ifdef BIDI_SUPPORT
              evas_bidi_shape_string(it->text, &it->bidi_props,
                    eina_unicode_strlen(it->text));
@@ -4094,12 +4094,6 @@ _evas_textblock_nodes_merge(Evas_Object_Textblock *o, Evas_Object_Textblock_Node
    text = eina_ustrbuf_string_get(from->unicode);
    len = eina_ustrbuf_length_get(from->unicode);
    eina_ustrbuf_append_length(to->unicode, text, len);
-#ifdef BIDI_SUPPORT
-        /* Reset paragraph direction */
-   to->bidi_props.direction = EVAS_BIDI_PARAGRAPH_NATURAL;
-   evas_bidi_update_props(eina_ustrbuf_string_get(to->unicode),
-         &to->bidi_props);
-#endif
 
    itr = from->format_node;
    if (itr && (itr->text_node == from))
@@ -5532,6 +5526,10 @@ _evas_textblock_node_text_free(Evas_Object_Textblock_Node_Text *n)
    eina_ustrbuf_free(n->unicode);
    if (n->utf8)
      free(n->utf8);
+#ifdef BIDI_SUPPORT
+   if (&n->bidi_props)
+     evas_bidi_paragraph_props_unref(n->bidi_props);
+#endif
    free(n);
 }
 
@@ -5549,7 +5547,8 @@ _evas_textblock_node_text_new(void)
    n = calloc(1, sizeof(Evas_Object_Textblock_Node_Text));
    n->unicode = eina_ustrbuf_new();
 #ifdef BIDI_SUPPORT
-   n->bidi_props.direction = EVAS_BIDI_PARAGRAPH_NATURAL;
+   n->bidi_props = evas_bidi_paragraph_props_new();
+   n->bidi_props->direction = EVAS_BIDI_PARAGRAPH_NATURAL;
 #endif
 
    return n;
@@ -5614,13 +5613,13 @@ _evas_textblock_cursor_break_paragraph(Evas_Textblock_Cursor *cur,
         eina_ustrbuf_append_length(n->unicode, text + start, len);
         eina_ustrbuf_remove(cur->node->unicode, start, start + len);
 #ifdef BIDI_SUPPORT
-        /* Reset paragraph direction */
-        n->bidi_props.direction = EVAS_BIDI_PARAGRAPH_NATURAL;
-        evas_bidi_update_props(eina_ustrbuf_string_get(n->unicode),
-              &n->bidi_props);
-        cur->node->bidi_props.direction = EVAS_BIDI_PARAGRAPH_NATURAL;
-        evas_bidi_update_props(eina_ustrbuf_string_get(cur->node->unicode),
-              &cur->node->bidi_props);
+   evas_bidi_paragraph_props_unref(n->bidi_props);
+   n->bidi_props = evas_bidi_paragraph_props_get(
+         eina_ustrbuf_string_get(n->unicode));
+
+   evas_bidi_paragraph_props_unref(cur->node->bidi_props);
+   cur->node->bidi_props = evas_bidi_paragraph_props_get(
+         eina_ustrbuf_string_get(cur->node->unicode));
 #endif
      }
    else
@@ -5813,9 +5812,8 @@ evas_textblock_cursor_text_append(Evas_Textblock_Cursor *cur, const char *_text)
    if (fnode && (fnode->text_node == cur->node))
      fnode->offset += len;
 #ifdef BIDI_SUPPORT
-   /* Reset paragraph direction */
-   n->bidi_props.direction = EVAS_BIDI_PARAGRAPH_NATURAL;
-   evas_bidi_update_props(eina_ustrbuf_string_get(n->unicode), &n->bidi_props);
+   evas_bidi_paragraph_props_unref(n->bidi_props);
+   n->bidi_props = evas_bidi_paragraph_props_get(eina_ustrbuf_string_get(n->unicode));
 #endif
    _evas_textblock_changed(o, cur->obj);
    free(text);
@@ -5984,11 +5982,13 @@ evas_textblock_cursor_format_append(Evas_Textblock_Cursor *cur, const char *form
         /* Adjust differently if we insert a format char */
         if (is_visible)
           {
-             _evas_textblock_node_format_adjust_offset(o, cur->node, n, -(n->offset - 1));
+             _evas_textblock_node_format_adjust_offset(o, cur->node, n,
+                   -(n->offset - 1));
           }
         else
           {
-             _evas_textblock_node_format_adjust_offset(o, cur->node, n, -n->offset);
+             _evas_textblock_node_format_adjust_offset(o, cur->node, n,
+                   -n->offset);
           }
 
         if (!fmt || (fmt->text_node != cur->node))
@@ -6100,6 +6100,10 @@ evas_textblock_cursor_char_delete(Evas_Textblock_Cursor *cur)
      {
         _evas_textblock_cursor_nodes_merge(cur);
      }
+#ifdef BIDI_SUPPORT
+   evas_bidi_paragraph_props_unref(n->bidi_props);
+   n->bidi_props = evas_bidi_paragraph_props_get(eina_ustrbuf_string_get(n->unicode));
+#endif
 
    if (cur->pos == eina_ustrbuf_length_get(n->unicode))
      {
@@ -6195,11 +6199,15 @@ evas_textblock_cursor_range_delete(Evas_Textblock_Cursor *cur1, Evas_Textblock_C
      {
         _evas_textblock_nodes_merge(o, n1);
      }
+#ifdef BIDI_SUPPORT
+   evas_bidi_paragraph_props_unref(n1->bidi_props);
+   n1->bidi_props = evas_bidi_paragraph_props_get(
+         eina_ustrbuf_string_get(n1->unicode));
+#endif
    evas_textblock_cursor_copy(cur1, cur2);
    evas_textblock_cursor_copy(cur1, o->cursor);
    _evas_textblock_changed(o, cur1->obj);
 }
-
 
 /**
  * Return the content of the cursor.
@@ -6320,7 +6328,8 @@ evas_textblock_cursor_range_text_get(const Evas_Textblock_Cursor *cur1, const Ev
           {
              Eina_Unicode tmp_ch;
              off += fnode->offset;
-             if ((tnode == cur2->node) && ((size_t) (text - text_base + off) >= cur2->pos))
+             if ((tnode == cur2->node) &&
+                   ((size_t) (text - text_base + off) >= cur2->pos))
                {
                   break;
                }
@@ -6470,6 +6479,68 @@ evas_textblock_cursor_format_is_visible_get(const Evas_Textblock_Cursor *cur)
               EINA_TRUE : EINA_FALSE;
 }
 
+/**
+ * Returns the geometry of the cursor. Depends on the type of cursor requested.
+ * This should be used instead of char_geometry_get because there are weird
+ * special cases with BiDi text.
+ * in '_' cursor mode (i.e a line below the char) it's the same as char_geometry
+ * get, except for the case of the last char of a line which depends on the
+ * paragraph direction.
+ *
+ * in '|' cursor mode (i.e a line between two chars) it is very varyable.
+ * For example consider the following visual string:
+ * "abcCBA" (ABC are rtl chars), a cursor pointing on A should actually draw
+ * a '|' between the c and the C.
+ *
+ * @param cur the cursor.
+ * @param cx the x of the cursor
+ * @param cy the y of the cursor
+ * @param cw the w of the cursor
+ * @param ch the h of the cursor
+ * @return line number of the char on success, -1 on error.
+ */
+EAPI int
+evas_textblock_cursor_geometry_get(const Evas_Textblock_Cursor *cur, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch, Evas_Textblock_Cursor_Type ctype)
+{
+   if (ctype == EVAS_TEXTBLOCK_CURSOR_UNDER)
+     {
+        return evas_textblock_cursor_char_geometry_get(cur, cx, cy, cw, ch);
+     }
+   else if (ctype == EVAS_TEXTBLOCK_CURSOR_BEFORE)
+     {
+        /*FIXME: Rough sketch, not yet implemented - VERY buggy. */
+        /* In the case of a "before cursor", we should get the coordinates
+         * of just after the previous char (which in bidi text may not be
+         * just before the current char). */
+        Evas_Coord x, y, h, w;
+        int ret;
+
+        if (cur->pos > 0)
+          {
+             Evas_Textblock_Cursor cur2;
+             cur2.obj = cur->obj;
+             evas_textblock_cursor_copy(cur, &cur2);
+             cur2.pos--;
+             ret = evas_textblock_cursor_char_geometry_get(&cur2, &x, &y, &w, &h);
+          }
+        else
+          {
+             ret = evas_textblock_cursor_char_geometry_get(cur, &x, &y, &w, &h);
+             w = 0;
+          }
+        if (ret > 0)
+          {
+             if (cx) *cx = x + w;
+             if (cy) *cy = y + h;
+             if (cw) *cw = 0;
+             if (ch) *ch = 0;
+          }
+        return ret;
+     }
+
+   return -1;
+}
+
 
 /**
  * Returns the geometry of the char at cur.
@@ -6554,20 +6625,11 @@ evas_textblock_cursor_char_geometry_get(const Evas_Textblock_Cursor *cur, Evas_C
                    pos,
                    &x, &y, &w, &h);
           }
-        if (ret <= 0)
-          {
-             if (it->format->font.font)
-               cur->ENFN->font_string_size_get(cur->ENDT, it->format->font.font,
-                     it->text, &it->bidi_props, &w, &h);
-             x = w;
-             y = 0;
-             w = 0;
-	  }
-	x = ln->x + it->x - it->inset + x;
+	x += ln->x + it->x - it->inset;
 	if (x < ln->x)
 	  {
-	     x = ln->x;
 	     w -= (ln->x - x);
+	     x = ln->x;
 	  }
 	y = ln->y;
 	h = ln->h;

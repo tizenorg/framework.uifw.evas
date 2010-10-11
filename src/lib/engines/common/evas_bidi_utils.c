@@ -100,7 +100,7 @@ evas_bidi_shape_string(Eina_Unicode *eina_ustr, const Evas_BiDi_Props *bidi_prop
 {
    FriBidiChar *ustr, *base_ustr = NULL;
 
-   if (!EVAS_BIDI_IS_BIDI_PROP(bidi_props->props))
+   if (!bidi_props->props)
      return EINA_FALSE;
 
    /* The size of fribidichar is different than eina_unicode, convert */
@@ -155,9 +155,11 @@ evas_bidi_shape_string(Eina_Unicode *eina_ustr, const Evas_BiDi_Props *bidi_prop
  * @param bidi_props the bidi_props to update.
  * @return returns the length of the string on success, a negative value on error.
  */
-int
-evas_bidi_update_props(const Eina_Unicode *eina_ustr, Evas_BiDi_Paragraph_Props *bidi_props)
+
+Evas_BiDi_Paragraph_Props *
+evas_bidi_paragraph_props_get(const Eina_Unicode *eina_ustr)
 {
+   Evas_BiDi_Paragraph_Props *bidi_props = NULL;
    EvasBiDiCharType *char_types = NULL;
    EvasBiDiLevel *embedding_levels = NULL;
    const FriBidiChar *ustr;
@@ -165,7 +167,7 @@ evas_bidi_update_props(const Eina_Unicode *eina_ustr, Evas_BiDi_Paragraph_Props 
    size_t len;
 
    if (!eina_ustr)
-      return -2;
+      return NULL;
 
 
    len = eina_unicode_strlen(eina_ustr);
@@ -187,6 +189,7 @@ evas_bidi_update_props(const Eina_Unicode *eina_ustr, Evas_BiDi_Paragraph_Props 
         len = -1;
         goto cleanup;
      }
+   bidi_props = evas_bidi_paragraph_props_new();
 
    /* Prep work for reordering */
    char_types = (EvasBiDiCharType *) malloc(sizeof(EvasBiDiCharType) * len);
@@ -225,75 +228,33 @@ evas_bidi_update_props(const Eina_Unicode *eina_ustr, Evas_BiDi_Paragraph_Props 
      }
    bidi_props->char_types = char_types;
    
-   bidi_props->len = len;
 
    if (base_ustr) free(base_ustr);
 
 
-   return len;
+   return bidi_props;
 
 /* Cleanup */
 cleanup:
    if (char_types) free(char_types);
    if (embedding_levels) free(embedding_levels);
    if (base_ustr) free(base_ustr);
-   evas_bidi_paragraph_props_clean(bidi_props); /*Mark that we don't need bidi handling */
-   return len;
+   if (bidi_props) evas_bidi_paragraph_props_unref(bidi_props); /* Clean up the bidi props */
+   return NULL;
 }
 
-int
-evas_bidi_update_props_dup(const Evas_BiDi_Props *src, Evas_BiDi_Props *dst)
+/**
+ * @internal
+ * Copies dst to src and refs (doesn't copy) the paragraph props.
+ *
+ * @param src the props to copy
+ * @param dst the props to copy to.
+ */
+void
+evas_bidi_props_copy_and_ref(const Evas_BiDi_Props *src, Evas_BiDi_Props *dst)
 {
    dst->start = src->start;
-   dst->props = NULL;
-   if (!src->props) return 1;
-   dst->props = malloc(sizeof(Evas_BiDi_Paragraph_Props));
-   if (!dst->props) return 0;
-   if (src->props->len > 0)
-     {
-        if (src->props->char_types)
-          {
-             dst->props->char_types = 
-                malloc(sizeof(EvasBiDiCharType) * src->props->len);
-             if (!dst->props->char_types)
-               {
-                  free(dst->props);
-                  dst->props = NULL;
-                  dst->start = 0;
-                  return 0;
-               }
-             memcpy(dst->props->char_types, src->props->char_types, 
-                    sizeof(EvasBiDiCharType) * src->props->len);
-          }
-        else
-           dst->props->char_types = NULL;
-        if (src->props->embedding_levels)
-          {
-             dst->props->embedding_levels = 
-                malloc(sizeof(EvasBiDiLevel) * src->props->len);
-             if (!dst->props->embedding_levels)
-               {
-                  if (dst->props->char_types) free(dst->props->char_types);
-                  free(dst->props);
-                  dst->props = NULL;
-                  dst->start = 0;
-                  return 0;
-               }
-             memcpy(dst->props->embedding_levels, src->props->embedding_levels,
-                    sizeof(EvasBiDiLevel) * src->props->len);
-          }
-        else
-           dst->props->embedding_levels = NULL;
-     }
-   else
-     {
-        dst->props->char_types = NULL;
-        dst->props->embedding_levels = NULL;
-        dst->props->len = 0;
-     }     
-   dst->props->len = src->props->len;
-   dst->props->direction = src->props->direction;
-   return 1;
+   dst->props = evas_bidi_paragraph_props_ref(src->props);
 }
 
 /**
@@ -312,7 +273,7 @@ evas_bidi_props_reorder_line(Eina_Unicode *eina_ustr, const Evas_BiDi_Props *int
    FriBidiChar *ustr, *base_ustr = NULL;
    size_t len;
 
-   if (!EVAS_BIDI_IS_BIDI_PROP(intl_props->props))
+   if (!intl_props->props)
      return EINA_FALSE;
 
    len = eina_unicode_strlen(eina_ustr);
@@ -329,7 +290,7 @@ evas_bidi_props_reorder_line(Eina_Unicode *eina_ustr, const Evas_BiDi_Props *int
 
 
    if (_v_to_l) {
-      int i;
+      size_t i;
       v_to_l = *_v_to_l = calloc(len, sizeof(EvasBiDiStrIndex));
       if (!v_to_l)
         {
@@ -406,11 +367,56 @@ evas_bidi_position_logical_to_visual(EvasBiDiStrIndex *v_to_l, int len, EvasBiDi
  * @return #EINA_TRUE if true, #EINA_FALSE otherwise.
  */
 Eina_Bool
-evas_bidi_is_rtl_char(EvasBiDiLevel *embedded_level_list, EvasBiDiStrIndex index)
+evas_bidi_is_rtl_char(const Evas_BiDi_Props *bidi_props, EvasBiDiStrIndex index)
 {
-   if(!embedded_level_list || index < 0)
+   if(!bidi_props || !bidi_props->props || index < 0)
       return EINA_FALSE;
-   return (FRIBIDI_IS_RTL(embedded_level_list[index])) ? EINA_TRUE : EINA_FALSE;
+   return (FRIBIDI_IS_RTL(
+            bidi_props->props->embedding_levels[index + bidi_props->start]))
+      ? EINA_TRUE : EINA_FALSE;
+}
+Evas_BiDi_Paragraph_Props *
+evas_bidi_paragraph_props_new(void)
+{
+   Evas_BiDi_Paragraph_Props *ret;
+   ret = calloc(1, sizeof(Evas_BiDi_Paragraph_Props));
+   ret->direction = EVAS_BIDI_PARAGRAPH_NATURAL;
+   ret->refcount = 1;
+   return ret;
+}
+/**
+ * @internal
+ * Refs the bidi props.
+ *
+ * @param bidi_props the props to ref.
+ */
+Evas_BiDi_Paragraph_Props *
+evas_bidi_paragraph_props_ref(Evas_BiDi_Paragraph_Props *bidi_props)
+{
+   if (!bidi_props) return NULL;
+
+   bidi_props->refcount++;
+   return bidi_props;
+}
+
+/**
+ * @internal
+ * Unrefs and potentially frees the props.
+ *
+ * @param bidi_props the properties to unref
+ */
+void
+evas_bidi_paragraph_props_unref(Evas_BiDi_Paragraph_Props *bidi_props)
+{
+   if (!bidi_props) return;
+   BIDILOCK();
+
+   if (--bidi_props->refcount == 0)
+     {
+        evas_bidi_paragraph_props_clean(bidi_props);
+        free(bidi_props);
+     }
+   BIDIUNLOCK();
 }
 
 /**
@@ -436,9 +442,10 @@ void
 evas_bidi_props_clean(Evas_BiDi_Props *bidi_props)
 {
    if (!bidi_props) return;
-   evas_bidi_paragraph_props_clean(bidi_props->props);
+   evas_bidi_paragraph_props_unref(bidi_props->props);
    bidi_props->props = NULL;
 }
+
 /**
  * @}
  */
