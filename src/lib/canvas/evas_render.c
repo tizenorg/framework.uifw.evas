@@ -3,6 +3,7 @@
 
 // debug rendering
 //#define REND_DGB 1
+#define STDOUT_DBG 1
 
 #ifdef REND_DGB
 static FILE *dbf = NULL;
@@ -12,7 +13,11 @@ rend_dbg(const char *txt)
 {
    if (!dbf)
      {
+#ifdef STDOUT_DBG
+        dbf = stdout;
+#else           
         dbf = fopen("EVAS-RENDER-DEBUG.log", "w");
+#endif        
         if (!dbf) return;
      }
    fputs(txt, dbf);
@@ -135,7 +140,8 @@ _evas_render_has_map(Evas_Object *obj)
 static Eina_Bool
 _evas_render_had_map(Evas_Object *obj)
 {
-   return ((!obj->prev.map) && (obj->prev.usemap));
+//   return ((!obj->prev.map) && (obj->prev.usemap));
+   return ((!obj->cur.map) && (obj->prev.usemap));
 }
 
 static Eina_Bool
@@ -198,15 +204,23 @@ _evas_render_phase1_direct(Evas *e,
              obj->func->render_pre(obj);
              if (obj->pre_render_done)
                {
-                  if ((obj->smart.smart) && _evas_render_has_map(obj))
+                  RD("      pre-render-done smart:%p|%p  [%p, %i] | [%p, %i] has_map:%i had_map:%i\n",
+                     obj->smart.smart, 
+                     evas_object_smart_members_get_direct(obj),
+                     obj->cur.map, obj->cur.usemap,
+                     obj->prev.map, obj->prev.usemap,
+                     _evas_render_has_map(obj),
+                     _evas_render_had_map(obj));
+                  if ((obj->smart.smart) && 
+                      (_evas_render_has_map(obj)))
                     {
-                       RD("    has map + smart\n");
+                       RD("      has map + smart\n");
                        _evas_render_prev_cur_clip_cache_add(e, obj);
                     }
                }
              else if (_evas_render_had_map(obj))
                {
-                  RD("    no pre-render done\n");
+                  RD("      no pre-render done\n");
                   _evas_render_prev_cur_clip_cache_add(e, obj);
                }
           }
@@ -686,6 +700,12 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
 
              EINA_INLIST_FOREACH(evas_object_smart_members_get_direct(obj), obj2)
                {
+                  if (!evas_object_is_visible(obj2) &&
+                      !evas_object_was_visible(obj2))
+                    {
+                       obj2->changed = 0;
+                       continue;
+                    }
                   if (obj2->changed)
                     {
                        obj2->changed  = 0;
@@ -699,14 +719,15 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
           {
              if (obj->changed)
                {
-                  changed = 1;
                   obj->changed = 0;
+                  changed = 1;
                }
           }
 
         // clear surface before re-render
         if ((changed) && (obj->cur.map->surface))
           {
+             int off_x2, off_y2;
              RDI(level);
              RD("        children redraw\n");
              // FIXME: calculate "changes" within map surface and only clear
@@ -727,8 +748,8 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
                   e->engine.func->context_free(e->engine.data.output, ctx);
                }
              ctx = e->engine.func->context_new(e->engine.data.output);
-             off_x = -obj->cur.geometry.x;
-             off_y = -obj->cur.geometry.y;
+             off_x2 = -obj->cur.geometry.x;
+             off_y2 = -obj->cur.geometry.y;
              if (obj->smart.smart)
                {
                   EINA_INLIST_FOREACH
@@ -736,7 +757,7 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
                     {
                        clean_them |= evas_render_mapped(e, obj2, ctx,
 							obj->cur.map->surface,
-							off_x, off_y, 1
+							off_x2, off_y2, 1
 #ifdef REND_DGB
 							, level + 1
 #endif
@@ -750,22 +771,22 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
                   w = obj->cur.map->surface_w;
                   h = obj->cur.map->surface_h;
                   RECTS_CLIP_TO_RECT(x, y, w, h,
-                                     obj->cur.geometry.x + off_x,
-                                     obj->cur.geometry.y + off_y,
+                                     obj->cur.geometry.x + off_x2,
+                                     obj->cur.geometry.y + off_y2,
                                      obj->cur.geometry.w,
                                      obj->cur.geometry.h);
                   if (!obj->cur.map)
                     {
                        RECTS_CLIP_TO_RECT(x, y, w, h,
-                                          obj->cur.cache.clip.x + off_x,
-                                          obj->cur.cache.clip.y + off_y,
+                                          obj->cur.cache.clip.x + off_x2,
+                                          obj->cur.cache.clip.y + off_y2,
                                           obj->cur.cache.clip.w,
                                           obj->cur.cache.clip.h);
                     }
                   e->engine.func->context_clip_set(e->engine.data.output,
                                                    ctx, x, y, w, h);
                   obj->func->render(obj, e->engine.data.output, ctx,
-                                    obj->cur.map->surface, off_x, off_y);
+                                    obj->cur.map->surface, off_x2, off_y2);
                }
              e->engine.func->context_free(e->engine.data.output, ctx);
              rendered = 1;
@@ -780,6 +801,27 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
                (e->engine.data.output, obj->cur.map->surface,
                 0, 0, obj->cur.map->surface_w, obj->cur.map->surface_h);
           }
+        if ((obj->cur.map->surface) && (obj->smart.smart))
+          {
+             if (obj->cur.clipper)
+               {
+                  int x, y, w, h;
+                  Evas_Object *tobj;
+                  obj->cur.cache.clip.dirty = 1;
+                  tobj = obj->cur.map_parent;
+                  obj->cur.map_parent = obj->cur.clipper->cur.map_parent;
+                  evas_object_clip_recalc(obj);
+                  obj->cur.map_parent = tobj;
+                  x = obj->cur.cache.clip.x;
+                  y = obj->cur.cache.clip.y;
+                  w = obj->cur.cache.clip.w;
+                  h = obj->cur.cache.clip.h;
+                  e->engine.func->context_clip_set(e->engine.data.output,
+                                                   e->engine.data.context,
+                                                   x + off_x, y + off_y, w, h);
+               }
+          }
+        if (obj->cur.cache.clip.visible)
         obj->layer->evas->engine.func->image_map4_draw
           (e->engine.data.output, e->engine.data.context, surface,
            obj->cur.map->surface, pts, obj->cur.map->smooth, 0);

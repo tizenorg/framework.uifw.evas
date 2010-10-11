@@ -70,42 +70,85 @@ evas_object_clippers_was_visible(Evas_Object *obj)
  * 
  */
 
+#define MAP_ACROSS 1
 static void
-evas_object_child_map_across_mark(Evas_Object *obj, Eina_List *clippers, 
-                                  Eina_Bool map)
+evas_object_child_map_across_mark(Evas_Object *obj, Evas_Object *map_obj, Eina_Bool force)
 {
-#if 0
-   if (map)
+#ifdef MAP_ACROSS
+   if ((obj->cur.map_parent != map_obj) || force)
+     {
+        obj->cur.map_parent = map_obj;
+        obj->cur.cache.clip.dirty = 1;
+        evas_object_clip_recalc(obj);
+        if (obj->smart.smart)
+          {
+             Evas_Object *obj2;
+             EINA_INLIST_FOREACH(evas_object_smart_members_get_direct(obj), obj2)
      {
         // if obj->cur.clipper is in clippers list, then set 
-        // obj->cur.clip_across_map to 1
+                  if ((obj2->cur.map) && (obj2->cur.usemap)) continue;
+                  evas_object_child_map_across_mark(obj2, map_obj, force);
      }
-   else
+          }
+        else if (obj->clip.clipees)
      {
+             Eina_List *l;
+             Evas_Object *obj2;
+             EINA_LIST_FOREACH(obj->clip.clipees, l, obj2)
+                evas_object_child_map_across_mark(obj2, map_obj, force);
+          }
      }
 #endif   
 }
 
 void
+evas_object_clip_across_check(Evas_Object *obj)
+{
+#ifdef MAP_ACROSS
+   if (!obj->cur.clipper) return;
+   if (obj->cur.clipper->cur.map_parent != obj->cur.map_parent)
+      evas_object_child_map_across_mark(obj, obj->cur.map_parent, 1);
+#endif   
+}
+   
+void
+evas_object_clip_across_clippees_check(Evas_Object *obj)
+{
+#ifdef MAP_ACROSS
+   Eina_List *l;
+   Evas_Object *obj2;
+
+   if (!obj->clip.clipees) return;
+// schloooooooooooow:
+//   evas_object_child_map_across_mark(obj, obj->cur.map_parent, 1);
+// buggy:
+   evas_object_child_map_across_mark(obj, obj->cur.map_parent, 0);
+   if (obj->cur.cache.clip.dirty)
+     {
+	EINA_LIST_FOREACH(obj->clip.clipees, l, obj2)
+           evas_object_clip_across_clippees_check(obj2);
+     }
+#endif   
+}
+
+// this function is called on an object when map is enabled or disabled on it
+// thus creating a "map boundary" at that point.
+// 
+// FIXME: flip2 test broken in elm - might be show/hide of clips
+void
 evas_object_mapped_clip_across_mark(Evas_Object *obj)
 {
-   return;
-#if 0
-   Eina_Bool map = 0;
-   
-   if ((obj->cur.map) && (obj->cur.usemap)) map = 1;
-   if (map)
-     {
-        Eina_List *list = NULL;
-        
-        // FIXME: list = build list of all clippers that are children of obj
-        // up until any obj that has map applied to it. if map is applied
-        // tghen we must assume this has been run before o9n that obj and
-        // its children etc.
-        evas_object_child_map_across_mark(obj, list, map);
-     }
+#ifdef MAP_ACROSS
+   if ((obj->cur.map) && (obj->cur.usemap))
+      evas_object_child_map_across_mark(obj, obj, 0);
    else
-      evas_object_child_map_across_mark(obj, NULL, map);
+     {
+        if (obj->smart.parent)
+           evas_object_child_map_across_mark
+           (obj, obj->smart.parent->cur.map_parent, 0);
+        else
+           evas_object_child_map_across_mark(obj, NULL, 0); 
+    }
 #endif   
 }
 
@@ -220,7 +263,8 @@ evas_object_clip_set(Evas_Object *obj, Evas_Object *clip)
    evas_object_change(obj);
    evas_object_clip_dirty(obj);
    evas_object_recalc_clippees(obj);
-   if (!obj->smart.smart)
+   if ((!obj->smart.smart) && 
+       (!((obj->cur.map) && (obj->cur.usemap))))
      {
 	if (evas_object_is_in_output_rect(obj,
 					  obj->layer->evas->pointer.x,
@@ -231,6 +275,7 @@ evas_object_clip_set(Evas_Object *obj, Evas_Object *clip)
 				     obj->layer->evas->last_timestamp,
 				     NULL);
      }
+   evas_object_clip_across_check(obj);
 }
 
 /**
@@ -321,7 +366,8 @@ evas_object_clip_unset(Evas_Object *obj)
    evas_object_change(obj);
    evas_object_clip_dirty(obj);
    evas_object_recalc_clippees(obj);
-   if (!obj->smart.smart)
+   if ((!obj->smart.smart) && 
+       (!((obj->cur.map) && (obj->cur.usemap))))
      {
 	if (evas_object_is_in_output_rect(obj,
 					  obj->layer->evas->pointer.x,
@@ -332,6 +378,7 @@ evas_object_clip_unset(Evas_Object *obj)
                                      obj->layer->evas->last_timestamp,
 				     NULL);
      }
+   evas_object_clip_across_check(obj);
 }
 
 /**
