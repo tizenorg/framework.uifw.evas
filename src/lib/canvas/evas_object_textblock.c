@@ -333,6 +333,7 @@ struct _Evas_Object_Textblock_Format
    unsigned char        underline2 : 1;
    unsigned char        strikethrough : 1;
    unsigned char        backing : 1;
+   unsigned char        password : 1; 
 };
 
 struct _Evas_Textblock_Style
@@ -1054,6 +1055,7 @@ static const char *linerelsizestr = NULL;
 static const char *linegapstr = NULL;
 static const char *linerelgapstr = NULL;
 static const char *itemstr = NULL;
+static const char *passwordstr = NULL;
 static const char *linefillstr = NULL;
 
 /**
@@ -1121,6 +1123,7 @@ _format_command_init(void)
         linerelsizestr = eina_stringshare_add("linerelsize");
         linegapstr = eina_stringshare_add("linegap");
         linerelgapstr = eina_stringshare_add("linerelgap");
+        passwordstr = eina_stringshare_add("password");
         itemstr = eina_stringshare_add("item");
         linefillstr = eina_stringshare_add("linefill");
      }
@@ -1164,6 +1167,7 @@ _format_command_shutdown(void)
    eina_stringshare_del(linegapstr);
    eina_stringshare_del(linerelgapstr);
    eina_stringshare_del(itemstr);
+   eina_stringshare_del(passwordstr);
    eina_stringshare_del(linefillstr);
 }
 
@@ -1505,7 +1509,14 @@ _format_command(Evas_Object *obj, Evas_Object_Textblock_Format *fmt, const char 
                }
           }
      }
-
+   else if (cmd == passwordstr)
+     {
+        if (!strcmp(tmp_param, "off"))
+          fmt->password = 0;
+        else if (!strcmp(tmp_param, "on"))
+          fmt->password = 1;
+     }
+   
    if (new_font)
      {
         void *of;
@@ -1880,6 +1891,7 @@ _layout_format_push(Ctxt *c, Evas_Object_Textblock_Format *fmt)
         fmt->linerelsize = 0.0;
         fmt->linegap = 0;
         fmt->linerelgap = 0.0;
+        fmt->password = 1;
      }
    return fmt;
 }
@@ -2447,44 +2459,44 @@ _layout_text_append(Ctxt *c, Evas_Object_Textblock_Format *fmt, Evas_Object_Text
 
    if (n)
      {
-        if ((repch) && (eina_ustrbuf_length_get(n->unicode)))
+     	//svn[52485]: Please remove this comment when this revision is merged. 
+        int len;
+        int orig_off = off;
+        len = eina_ustrbuf_length_get(n->unicode);
+        if (off == 0) return;
+        else if (off < 0) off = len - start;
+
+        if (start < 0)
           {
-             int i, len, ind;
+             start = 0;
+          }
+        else if ((start == 0) && (off == 0) && (orig_off == -1))
+          {
+             /* Special case that means that we need to add an empty
+              * item */
+             str = EINA_UNICODE_EMPTY_STRING;
+             goto skip;
+          }
+        else if ((start >= len) || (start + off > len))
+          {
+             return;
+          }
+        if ((fmt->password) && (repch) && (eina_ustrbuf_length_get(n->unicode)))
+          {
+             int i, ind;
              Eina_Unicode *ptr;
              Eina_Unicode urepch;
 
-             len = eina_ustrbuf_length_get(n->unicode);
-             str = alloca((len + 1) * sizeof(Eina_Unicode));
+             str = alloca((off + 1) * sizeof(Eina_Unicode));
              tbase = str;
              ind = 0;
              urepch = evas_common_encoding_utf8_get_next(repch, &ind);
-             for (i = 0, ptr = (Eina_Unicode *)tbase; i < len; ptr++, i++)
+             for (i = 0, ptr = (Eina_Unicode *)tbase; i < off; ptr++, i++)
                *ptr = urepch;
              *ptr = 0;
           }
         else
           {
-             int len;
-             int orig_off = off;
-             len = eina_ustrbuf_length_get(n->unicode);
-             if (off == 0) return;
-             else if (off < 0) off = len - start;
-
-             if (start < 0)
-               {
-                  start = 0;
-               }
-             else if ((start == 0) && (off == 0) && (orig_off == -1))
-               {
-                  /* Special case that means that we need to add an empty
-                   * item */
-                  str = EINA_UNICODE_EMPTY_STRING;
-                  goto skip;
-               }
-             else if ((start >= len) || (off > len))
-               {
-                  return;
-               }
              str = eina_ustrbuf_string_get(n->unicode);
              alloc_str = eina_unicode_strdup(str + start);
 
@@ -4456,6 +4468,74 @@ EAPI const Evas_Object_Textblock_Node_Format *
 evas_textblock_node_format_prev_get(const Evas_Object_Textblock_Node_Format *n)
 {
    return _NODE_FORMAT(EINA_INLIST_GET(n)->prev);
+}
+
+//svn[52484]: Please remove this comment when this revision is merged. 
+/**
+ * Remove a format node and it's match. i.e, removes a <tag> </tag> pair.
+ * Assumes the node is the first part of <tag> i.e, this won't work if
+ * n is a closing tag.
+ *
+ * @param obj the evas object of the textblock - not null.
+ * @param n the current format node - not null.
+ */
+EAPI void
+evas_textblock_node_format_remove_pair(Evas_Object *obj,
+      Evas_Object_Textblock_Node_Format *n)
+{
+   Evas_Object_Textblock_Node_Text *tnode;
+   Evas_Object_Textblock_Node_Format *fmt, *pnode;
+   int level;
+   TB_HEAD();
+
+   if (!n) return;
+
+   pnode = NULL;
+   fmt = n;
+   tnode = fmt->text_node;
+   level = 0;
+
+   do
+     {
+        const char *fstr = eina_strbuf_string_get(fmt->format);
+
+        if (fstr && (*fstr == '+'))
+          {
+             level++;
+          }
+        else if (fstr && (*fstr == '-'))
+          {
+             level--;
+          }
+
+        pnode = fmt;
+        fmt = _NODE_FORMAT(EINA_INLIST_GET(fmt)->next);
+     }
+   while (fmt && (level > 0));
+
+   if (n->visible)
+     {
+        size_t index = _evas_textblock_node_format_pos_get(n);
+        const char *format = eina_strbuf_string_get(n->format);
+        Evas_Textblock_Cursor cur;
+        cur.obj = obj;
+
+        eina_ustrbuf_remove(n->text_node->unicode, index, index + 1);
+        if (format && _IS_PARAGRAPH_SEPARATOR(format))
+          {
+             evas_textblock_cursor_set_at_format(&cur, n);
+             _evas_textblock_cursor_nodes_merge(&cur);
+          }
+        _evas_textblock_cursors_update_offset(&cur, n->text_node, index, -1);
+     }
+   //[svn: 53092]: Please remove this comment when this revision is merged.
+   _evas_textblock_node_format_remove(o, n, 0);
+   if (pnode && (pnode != n))
+     {
+        /* pnode can never be visible! (it's the closing format) */
+        _evas_textblock_node_format_remove(o, pnode, 0);
+     }
+   _evas_textblock_changed(o, obj);
 }
 
 /**
