@@ -133,6 +133,12 @@ extern EAPI int _evas_log_dom_global;
 
 # include <pthread.h>
 # include <sched.h>
+#ifdef __linux__
+# include <sys/time.h>
+# include <sys/resource.h>
+# include <errno.h>
+#endif
+
 # define LK(x)  pthread_mutex_t x
 #ifndef EVAS_FRAME_QUEUING
 # define LKI(x) pthread_mutex_init(&(x), NULL);
