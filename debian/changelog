@@ -1,3 +1,11 @@
+evas (1.0.0.001+svn.51480slp2+build16) unstable; urgency=low
+
+  * [Last character show - Password feature]
+  * Git: 165.213.180.234:/git/slp/pkgs/evas
+  * Tag: evas_1.0.0.001+svn.51480slp2+build16
+
+ -- ChunEon Park <chuneon.park@samsung.com>  Thu, 14 Oct 2010 16:26:19 +0900
+
 evas (1.0.0.001+svn.51480slp2+build15) unstable; urgency=low
 
   * [Last character show - Password feature]
