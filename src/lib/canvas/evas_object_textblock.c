@@ -1065,36 +1065,7 @@ static const char *linefillstr = NULL;
 static void
 _format_command_init(void)
 {
-  /* if (fontstr) return;
-   fontstr = eina_stringshare_add("font");
-   font_fallbacksstr = eina_stringshare_add("font_fallbacks");
-   font_sizestr = eina_stringshare_add("font_size");
-   font_sourcestr = eina_stringshare_add("font_source");
-   colorstr = eina_stringshare_add("color");
-   underline_colorstr = eina_stringshare_add("underline_color");
-   underline2_colorstr = eina_stringshare_add("underline2_color");
-   outline_colorstr = eina_stringshare_add("outline_color");
-   shadow_colorstr = eina_stringshare_add("shadow_color");
-   glow_colorstr = eina_stringshare_add("glow_color");
-   glow2_colorstr = eina_stringshare_add("glow2_color");
-   backing_colorstr = eina_stringshare_add("backing_color");
-   strikethrough_colorstr = eina_stringshare_add("strikethrough_color");
-   alignstr = eina_stringshare_add("align");
-   valignstr = eina_stringshare_add("valign");
-   wrapstr = eina_stringshare_add("wrap");
-   left_marginstr = eina_stringshare_add("left_margin");
-   right_marginstr = eina_stringshare_add("right_margin");
-   underlinestr = eina_stringshare_add("underline");
-   strikethroughstr = eina_stringshare_add("strikethrough");
-   backingstr = eina_stringshare_add("backing");
-   stylestr = eina_stringshare_add("style");
-   tabstopsstr = eina_stringshare_add("tabstops");
-   linesizestr = eina_stringshare_add("linesize");
-   linerelsizestr = eina_stringshare_add("linerelsize");
-   linegapstr = eina_stringshare_add("linegap");
-   linerelgapstr = eina_stringshare_add("linerelgap");
-   itemstr = eina_stringshare_add("item"); */
-   if (format_refcount == 0)
+     if (format_refcount == 0)
      {
         fontstr = eina_stringshare_add("font");
         font_fallbacksstr = eina_stringshare_add("font_fallbacks");
@@ -6277,8 +6248,11 @@ evas_textblock_cursor_range_delete(Evas_Textblock_Cursor *cur1, Evas_Textblock_C
 
    if (should_merge)
      {
+        /* We call this function instead of the cursor one because we already
+         * updated the cursors */
         _evas_textblock_nodes_merge(o, n1);
      }
+
 #ifdef BIDI_SUPPORT
    evas_bidi_paragraph_props_unref(n1->bidi_props);
    n1->bidi_props = evas_bidi_paragraph_props_get(

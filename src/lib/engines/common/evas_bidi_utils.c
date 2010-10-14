@@ -105,7 +105,8 @@ evas_bidi_shape_string(Eina_Unicode *eina_ustr, const Evas_BiDi_Props *bidi_prop
 
    /* The size of fribidichar is different than eina_unicode, convert */
    /*FIXME: Make this comparison at compile time and compile out
-    * unwanted code. - In all of this source file. */
+    * unwanted code. - In all of this source file. (including the actual
+    * function declerations. */
    if (sizeof(Eina_Unicode) != sizeof(FriBidiChar))
      {
         base_ustr = ustr = calloc(len + 1, sizeof(FriBidiChar));
@@ -145,15 +146,11 @@ evas_bidi_shape_string(Eina_Unicode *eina_ustr, const Evas_BiDi_Props *bidi_prop
 
 /**
  * @internal
- * Updates the bidi properties according to ustr. First checks to see if the
- * passed has rtl chars, if not, it cleans intl_props and returns.
- * Otherwise, it essentially frees the old fields, allocates new fields, and
- * populates them.
- * On error: bidi_props is cleaned.
+ * Allocates bidi properties according to ustr. First checks to see if the
+ * passed has rtl chars, if not, it returns NULL.
  *
  * @param ustr The string to update according to.
- * @param bidi_props the bidi_props to update.
- * @return returns the length of the string on success, a negative value on error.
+ * @return returns allocated paragraph props on success, NULL otherwise.
  */
 
 Evas_BiDi_Paragraph_Props *
@@ -261,7 +258,7 @@ evas_bidi_props_copy_and_ref(const Evas_BiDi_Props *src, Evas_BiDi_Props *dst)
  * @internal
  * Reorders ustr according to the bidi props.
  *
- * @param ustr the string to reorder.
+ * @param ustr the string to reorder. - Null is ok, will just populate the map.
  * @param intl_props the intl properties to rerorder according to.
  * @param _v_to_l The visual to logical map to populate - if NULL it won't populate it.
  * @return #EINA_FALSE on success, #EINA_TRUE on error.
@@ -362,7 +359,7 @@ evas_bidi_position_logical_to_visual(EvasBiDiStrIndex *v_to_l, int len, EvasBiDi
  * Checks if the char is rtl oriented. I.e even a neutral char can become rtl
  * if surrounded by rtl chars.
  *
- * @param embedded_level_list the bidi embedding list.
+ * @param bidi_props The bidi properties
  * @param index the index of the string.
  * @return #EINA_TRUE if true, #EINA_FALSE otherwise.
  */
@@ -394,8 +391,10 @@ Evas_BiDi_Paragraph_Props *
 evas_bidi_paragraph_props_ref(Evas_BiDi_Paragraph_Props *bidi_props)
 {
    if (!bidi_props) return NULL;
+   BIDILOCK();
 
    bidi_props->refcount++;
+   BIDIUNLOCK();
    return bidi_props;
 }
 

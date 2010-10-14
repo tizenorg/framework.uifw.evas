@@ -1791,12 +1791,13 @@ evas_gl_common_context_image_map4_push(Evas_GL_Context *gc,
                                        RGBA_Map_Point *p,
                                        int clip, int cx, int cy, int cw, int ch,
                                        int r, int g, int b, int a,
-                                       Eina_Bool smooth, Eina_Bool tex_only)
+                                       Eina_Bool smooth, Eina_Bool tex_only,
+                                       Eina_Bool yuv)
 {
-   int pnum, nv, nc, nu, nu2, nt, i;
+   int pnum, nv, nc, nu, nu2, nu3, nt, i;
    const int points[6] = { 0, 1, 2, 0, 2, 3 };
    int x = 0, y = 0, w = 0, h = 0, px = 0, py = 0;
-   GLfloat tx[4], ty[4];
+   GLfloat tx[4], ty[4], t2x[4], t2y[4];
    Eina_Bool blend = 1;
    DATA32 cmul;
    GLuint prog = gc->shared->shader.img.prog;
@@ -1808,6 +1809,22 @@ evas_gl_common_context_image_map4_push(Evas_GL_Context *gc,
        (A_VAL(&(p[2].col)) < 0xff) || (A_VAL(&(p[3].col)) < 0xff))
      blend = 1;
    
+   if (yuv)
+     {
+        prog = gc->shared->shader.yuv.prog;
+        if ((a == 255) && (r == 255) && (g == 255) && (b == 255))
+          {
+             if ((p[0].col == 0xffffffff) && (p[1].col == 0xffffffff) &&
+                 (p[2].col == 0xffffffff) && (p[3].col == 0xffffffff))
+                prog = gc->shared->shader.yuv_nomul.prog;
+             else
+                prog = gc->shared->shader.yuv.prog;
+          }
+        else
+           prog = gc->shared->shader.yuv.prog;
+     }
+   else
+     {
    if (tex_only)
      {
         if (tex->pt->dyn.img)
@@ -1866,8 +1883,9 @@ evas_gl_common_context_image_map4_push(Evas_GL_Context *gc,
                prog = gc->shared->shader.img.prog;
           }
      }
+   }
    
-   /*xxx*/ shader_array_flush(gc);
+//   /*xxx*/ shader_array_flush(gc);
 again:
    pn = gc->state.top_pipe;
 #ifdef GLPIPES
@@ -1875,6 +1893,11 @@ again:
      {
         gc->pipe[pn].region.type = RTYPE_MAP;
         gc->pipe[pn].shader.cur_tex = tex->pt->texture;
+        if (yuv)
+          {
+             gc->pipe[pn].shader.cur_texu = tex->ptu->texture;
+             gc->pipe[pn].shader.cur_texv = tex->ptv->texture;
+          }
         gc->pipe[pn].shader.cur_prog = prog;
         gc->pipe[pn].shader.smooth = smooth;
         gc->pipe[pn].shader.blend = blend;
@@ -1888,8 +1911,16 @@ again:
         gc->pipe[pn].array.use_vertex = 1;
         gc->pipe[pn].array.use_color = 1;
         gc->pipe[pn].array.use_texuv = 1;
+        if (yuv)
+          {
+             gc->pipe[pn].array.use_texuv2 = 1;
+             gc->pipe[pn].array.use_texuv3 = 1;
+          }
+        else
+          {
         gc->pipe[pn].array.use_texuv2 = 0;
         gc->pipe[pn].array.use_texuv3 = 0;
+          }
      }
    else
      {
@@ -1927,6 +1958,11 @@ again:
              gc->state.top_pipe = pn;
              gc->pipe[pn].region.type = RTYPE_MAP;
              gc->pipe[pn].shader.cur_tex = tex->pt->texture;
+             if (yuv)
+               {
+                  gc->pipe[pn].shader.cur_texu = tex->ptu->texture;
+                  gc->pipe[pn].shader.cur_texv = tex->ptv->texture;
+               }
              gc->pipe[pn].shader.cur_prog = prog;
              gc->pipe[pn].shader.smooth = smooth;
              gc->pipe[pn].shader.blend = blend;
@@ -1940,8 +1976,16 @@ again:
              gc->pipe[pn].array.use_vertex = 1;
              gc->pipe[pn].array.use_color = 1;
              gc->pipe[pn].array.use_texuv = 1;
+             if (yuv)
+               {
+                  gc->pipe[pn].array.use_texuv2 = 1;
+                  gc->pipe[pn].array.use_texuv3 = 1;
+               }
+             else
+               {
              gc->pipe[pn].array.use_texuv2 = 0;
              gc->pipe[pn].array.use_texuv3 = 0;
+               }
          }
      }
    if ((tex->im) && (tex->im->native.data))
@@ -2011,8 +2055,16 @@ again:
    gc->pipe[pn].array.use_vertex = 1;
    gc->pipe[pn].array.use_color = 1;
    gc->pipe[pn].array.use_texuv = 1;
+   if (yuv)
+     {
+        gc->pipe[pn].array.use_texuv2 = 1;
+        gc->pipe[pn].array.use_texuv3 = 1;
+     }
+   else
+     {
    gc->pipe[pn].array.use_texuv2 = 0;
    gc->pipe[pn].array.use_texuv3 = 0;
+     }
 #endif   
    
    x = w = (p[points[0]].x >> FP);
@@ -2029,6 +2081,11 @@ again:
         py = (p[points[i]].y >> FP);
         if      (py < y) y = py;
         else if (py > h) h = py;
+        if (yuv)
+          {
+             t2x[i] = ((((double)p[i].u / 2) / FP1)) / (double)tex->ptu->w;
+             t2y[i] = ((((double)p[i].v / 2) / FP1)) / (double)tex->ptu->h;
+          }
      }
    w = w - x;
    h = h - y;
@@ -2037,7 +2094,7 @@ again:
    
    pnum = gc->pipe[pn].array.num;
    nv = pnum * 3; nc = pnum * 4; nu = pnum * 2; nu2 = pnum * 2;
-   nt = pnum * 4;
+   nu2 = pnum * 2; nu3 = pnum * 2; nt = pnum * 4;
    gc->pipe[pn].array.num += 6;
    array_alloc(gc, pn);
 
@@ -2058,6 +2115,15 @@ again:
         PUSH_TEXUV(pn,
                    tx[points[i]],
                    ty[points[i]]);
+        if (yuv)
+          {
+             PUSH_TEXUV2(pn,
+                         t2x[points[i]],
+                         t2y[points[i]]);
+             PUSH_TEXUV3(pn,
+                         t2x[points[i]],
+                         t2y[points[i]]);
+          }
         
         PUSH_COLOR(pn,
                    R_VAL(&cl),
