@@ -1170,7 +1170,7 @@ _format_clean_param(char *dst, const char *src)
  *
  * @param obj the evas object - should not be NULL.
  * @param fmt The format to populate - should not be NULL.
- * @param[in] cmd the command to process, should be stringshared.
+ * @param[in] cmd the command to proccess, should be stringshared.
  * @param[in] param the parameter of the command.
  */
 static void
@@ -1934,6 +1934,7 @@ _layout_line_align_get(Ctxt *c)
    if (c->align_auto && c->ln && c->ln->items)
      {
         if (c->ln->items->source_node &&
+
               EVAS_BIDI_PARAGRAPH_DIRECTION_IS_RTL(
                  c->ln->items->source_node->bidi_props))
           {
@@ -4101,6 +4102,11 @@ _evas_textblock_nodes_merge(Evas_Object_Textblock *o, Evas_Object_Textblock_Node
      {
         to->format_node = from->format_node;
      }
+#ifdef BIDI_SUPPORT
+   evas_bidi_paragraph_props_unref(to->bidi_props);
+   to->bidi_props = evas_bidi_paragraph_props_get(
+         eina_ustrbuf_string_get(to->unicode));
+#endif
 
    _evas_textblock_cursors_set_node(o, from, to);
    _evas_textblock_node_text_remove(o, from);
@@ -6054,11 +6060,20 @@ evas_textblock_cursor_format_append(Evas_Textblock_Cursor *cur, const char *form
 
         /* Advance all the cursors after our cursor */
         _evas_textblock_cursors_update_offset(cur, cur->node, cur->pos, 1);
-     }
 
-   if (_IS_PARAGRAPH_SEPARATOR(format))
-     {
-        _evas_textblock_cursor_break_paragraph(cur, n);
+        if (_IS_PARAGRAPH_SEPARATOR(format))
+          {
+             _evas_textblock_cursor_break_paragraph(cur, n);
+          }
+        else
+          {
+#ifdef BIDI_SUPPORT
+             evas_bidi_paragraph_props_unref(cur->node->bidi_props);
+             cur->node->bidi_props = evas_bidi_paragraph_props_get(
+                   eina_ustrbuf_string_get(cur->node->unicode));
+#endif
+          }
+
      }
 
     _evas_textblock_changed(o, cur->obj);

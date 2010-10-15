@@ -329,7 +329,7 @@ _evas_gl_common_viewport_set(Evas_GL_Context *gc)
       return;
    
    gc->shared->w = w;
-   gc->shared->h = h;   
+   gc->shared->h = h;
    gc->shared->rot = rot;
    gc->shared->mflip = m;
    gc->change.size = 0;
@@ -463,8 +463,8 @@ evas_gl_common_context_new(void)
              // FIXME: there should be an extension name/string to check for
              // not just symbols in the lib
              i = 0;
-             if (getenv("EVAS_GL_NO_MAP_IMAGE_SEC"))
-                i = atoi(getenv("EVAS_GL_NO_MAP_IMAGE_SEC"));
+             s = getenv("EVAS_GL_NO_MAP_IMAGE_SEC");
+             if (s) i = atoi(s);
              if (!i)
                {
                   // test for all needed symbols - be "conservative" and
@@ -483,6 +483,15 @@ evas_gl_common_context_new(void)
                       &(shared->info.max_texture_units));
         glGetIntegerv(GL_MAX_TEXTURE_SIZE,
                       &(shared->info.max_texture_size));
+        shared->info.max_vertex_elements = 6 * 10000;
+#ifdef GL_MAX_ELEMENTS_VERTICES
+        glGetIntegerv(GL_MAX_ELEMENTS_VERTICES,
+                      &(shared->info.max_vertex_elements));
+#endif
+        s = getenv("EVAS_GL_VERTEX_MAX");
+        if (s) shared->info.max_vertex_elements = atoi(s);
+        if (shared->info.max_vertex_elements < 6)
+           shared->info.max_vertex_elements = 6;
         
         // magic numbers that are a result of imperical testing and getting
         // "best case" performance across a range of systems
@@ -551,6 +560,7 @@ evas_gl_common_context_new(void)
                    (int)shared->info.bgra,
                    (double)shared->info.anisotropic,
                    (int)shared->info.sec_image_map,
+                   (int)shared->info.max_vertex_elements,
                    
                    (int)shared->info.tune.cutout.max,
                    (int)shared->info.tune.pipes.max,
@@ -738,7 +748,6 @@ evas_gl_common_context_free(Evas_GL_Context *gc)
         free(gc->shared);
         shared = NULL;
      }
-   
    if (gc == _evas_gl_common_context) _evas_gl_common_context = NULL;
    free(gc);
 }
@@ -1011,6 +1020,19 @@ pipe_region_expand(Evas_GL_Context *gc, int n,
    gc->pipe[n].region.h = y2 - y1;
 }
 
+static Eina_Bool
+vertex_array_size_check(Evas_GL_Context *gc, int pn, int n)
+{
+   return 1;
+// this fixup breaks for expedite test 32. why?
+   if ((gc->pipe[pn].array.num + n) > gc->shared->info.max_vertex_elements)
+     {
+        shader_array_flush(gc);
+        return 0;
+     }
+   return 1;
+}
+
 void
 evas_gl_common_context_line_push(Evas_GL_Context *gc, 
                                  int x1, int y1, int x2, int y2,
@@ -1026,6 +1048,7 @@ evas_gl_common_context_line_push(Evas_GL_Context *gc,
    if (gc->dc->render_op == EVAS_RENDER_COPY) blend = 0;
    
    shader_array_flush(gc);
+   vertex_array_size_check(gc, gc->state.top_pipe, 2);
    pn = gc->state.top_pipe;
    gc->pipe[pn].shader.cur_tex = 0;
    gc->pipe[pn].shader.cur_prog = prog;
@@ -1046,7 +1069,7 @@ evas_gl_common_context_line_push(Evas_GL_Context *gc,
    
    pnum = gc->pipe[pn].array.num;
    nv = pnum * 3; nc = pnum * 4; nu = pnum * 2; nt = pnum * 4;
-   gc->pipe[pn].array.num += 1;
+   gc->pipe[pn].array.num += 2;
    array_alloc(gc, pn);
   
    PUSH_VERTEX(pn, x1, y1, 0);
@@ -1080,6 +1103,7 @@ evas_gl_common_context_rectangle_push(Evas_GL_Context *gc,
    if (gc->dc->render_op == EVAS_RENDER_COPY) blend = 0;
    
 again:
+   vertex_array_size_check(gc, gc->state.top_pipe, 6);
    pn = gc->state.top_pipe;
 #ifdef GLPIPES
    if ((pn == 0) && (gc->pipe[pn].array.num == 0))
@@ -1252,6 +1276,7 @@ evas_gl_common_context_image_push(Evas_GL_Context *gc,
      }
 
 again:
+   vertex_array_size_check(gc, gc->state.top_pipe, 6);
    pn = gc->state.top_pipe;
 #ifdef GLPIPES
    if ((pn == 0) && (gc->pipe[pn].array.num == 0))
@@ -1451,6 +1476,7 @@ evas_gl_common_context_font_push(Evas_GL_Context *gc,
    int pn = 0;
 
 again:
+   vertex_array_size_check(gc, gc->state.top_pipe, 6);
    pn = gc->state.top_pipe;
 #ifdef GLPIPES
    if ((pn == 0) && (gc->pipe[pn].array.num == 0))
@@ -1619,6 +1645,7 @@ evas_gl_common_context_yuv_push(Evas_GL_Context *gc,
      prog = gc->shared->shader.yuv.prog;
    
 again:
+   vertex_array_size_check(gc, gc->state.top_pipe, 6);
    pn = gc->state.top_pipe;
 #ifdef GLPIPES
    if ((pn == 0) && (gc->pipe[pn].array.num == 0))
@@ -1802,7 +1829,7 @@ evas_gl_common_context_image_map4_push(Evas_GL_Context *gc,
    DATA32 cmul;
    GLuint prog = gc->shared->shader.img.prog;
    int pn = 0;
-
+   
    if (!tex->alpha) blend = 0;
    if (a < 255) blend = 1;
    if ((A_VAL(&(p[0].col)) < 0xff) || (A_VAL(&(p[1].col)) < 0xff) ||
@@ -1825,68 +1852,69 @@ evas_gl_common_context_image_map4_push(Evas_GL_Context *gc,
      }
    else
      {
-   if (tex_only)
-     {
-        if (tex->pt->dyn.img)
+        if (tex_only)
           {
-             if ((a == 255) && (r == 255) && (g == 255) && (b == 255))
+             if (tex->pt->dyn.img)
                {
-                  if ((p[0].col == 0xffffffff) && (p[1].col == 0xffffffff) &&
-                      (p[2].col == 0xffffffff) && (p[3].col == 0xffffffff))
-                     prog = gc->shared->shader.img_nomul.prog;
+                  if ((a == 255) && (r == 255) && (g == 255) && (b == 255))
+                    {
+                       if ((p[0].col == 0xffffffff) && (p[1].col == 0xffffffff) &&
+                           (p[2].col == 0xffffffff) && (p[3].col == 0xffffffff))
+                          prog = gc->shared->shader.img_nomul.prog;
+                       else
+                          prog = gc->shared->shader.img.prog;
+                    }
                   else
                      prog = gc->shared->shader.img.prog;
                }
              else
-                prog = gc->shared->shader.img.prog;
-          }
-        else
-          {
-             if ((a == 255) && (r == 255) && (g == 255) && (b == 255))
                {
-                  if ((p[0].col == 0xffffffff) && (p[1].col == 0xffffffff) &&
-                      (p[2].col == 0xffffffff) && (p[3].col == 0xffffffff))
-                     prog = gc->shared->shader.tex_nomul.prog;
+                  if ((a == 255) && (r == 255) && (g == 255) && (b == 255))
+                    {
+                       if ((p[0].col == 0xffffffff) && (p[1].col == 0xffffffff) &&
+                           (p[2].col == 0xffffffff) && (p[3].col == 0xffffffff))
+                          prog = gc->shared->shader.tex_nomul.prog;
+                       else
+                          prog = gc->shared->shader.tex.prog;
+                    }
                   else
                      prog = gc->shared->shader.tex.prog;
                }
-             else
-                prog = gc->shared->shader.tex.prog;
-          }
-     }
-   else
-     {
-        if (tex->gc->shared->info.bgra)
-          {
-             if ((a == 255) && (r == 255) && (g == 255) && (b == 255))
-               {
-                  if ((p[0].col == 0xffffffff) && (p[1].col == 0xffffffff) &&
-                      (p[2].col == 0xffffffff) && (p[3].col == 0xffffffff))
-                    prog = gc->shared->shader.img_bgra_nomul.prog;
-                  else
-                    prog = gc->shared->shader.img_bgra.prog;
-               }
-             else
-               prog = gc->shared->shader.img_bgra.prog;
           }
         else
           {
-             if ((a == 255) && (r == 255) && (g == 255) && (b == 255))
+             if (tex->gc->shared->info.bgra)
                {
-                  if ((p[0].col == 0xffffffff) && (p[1].col == 0xffffffff) &&
-                      (p[2].col == 0xffffffff) && (p[3].col == 0xffffffff))
-                    prog = gc->shared->shader.img_nomul.prog;
+                  if ((a == 255) && (r == 255) && (g == 255) && (b == 255))
+                    {
+                       if ((p[0].col == 0xffffffff) && (p[1].col == 0xffffffff) &&
+                           (p[2].col == 0xffffffff) && (p[3].col == 0xffffffff))
+                          prog = gc->shared->shader.img_bgra_nomul.prog;
+                       else
+                          prog = gc->shared->shader.img_bgra.prog;
+                    }
                   else
-                    prog = gc->shared->shader.img.prog;
+                     prog = gc->shared->shader.img_bgra.prog;
                }
              else
-               prog = gc->shared->shader.img.prog;
+               {
+                  if ((a == 255) && (r == 255) && (g == 255) && (b == 255))
+                    {
+                       if ((p[0].col == 0xffffffff) && (p[1].col == 0xffffffff) &&
+                           (p[2].col == 0xffffffff) && (p[3].col == 0xffffffff))
+                          prog = gc->shared->shader.img_nomul.prog;
+                       else
+                          prog = gc->shared->shader.img.prog;
+                    }
+                  else
+                     prog = gc->shared->shader.img.prog;
+               }
           }
      }
-   }
    
 //   /*xxx*/ shader_array_flush(gc);
 again:
+   vertex_array_size_check(gc, gc->state.top_pipe, 6);
    pn = gc->state.top_pipe;
 #ifdef GLPIPES
    if ((pn == 0) && (gc->pipe[pn].array.num == 0))
@@ -1918,8 +1946,8 @@ again:
           }
         else
           {
-        gc->pipe[pn].array.use_texuv2 = 0;
-        gc->pipe[pn].array.use_texuv3 = 0;
+             gc->pipe[pn].array.use_texuv2 = 0;
+             gc->pipe[pn].array.use_texuv3 = 0;
           }
      }
    else
@@ -1983,8 +2011,8 @@ again:
                }
              else
                {
-             gc->pipe[pn].array.use_texuv2 = 0;
-             gc->pipe[pn].array.use_texuv3 = 0;
+                  gc->pipe[pn].array.use_texuv2 = 0;
+                  gc->pipe[pn].array.use_texuv3 = 0;
                }
          }
      }
@@ -2062,8 +2090,8 @@ again:
      }
    else
      {
-   gc->pipe[pn].array.use_texuv2 = 0;
-   gc->pipe[pn].array.use_texuv3 = 0;
+        gc->pipe[pn].array.use_texuv2 = 0;
+        gc->pipe[pn].array.use_texuv3 = 0;
      }
 #endif   
    
@@ -2219,7 +2247,7 @@ shader_array_flush(Evas_GL_Context *gc)
                case EVAS_RENDER_MASK: /**< d = d*sa */
                case EVAS_RENDER_MUL: /**< d = d*s */
                default:
-                     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+                  glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
                   GLERR(__FUNCTION__, __FILE__, __LINE__, "");
                   break;
                }
