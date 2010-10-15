@@ -446,6 +446,10 @@ struct _Evas_Object
 
    int                         last_event;
 
+   struct {  
+      int                      in_move, in_resize;  
+   } doing; 	       
+   
    unsigned char               delete_me;
    Evas_Object_Pointer_Mode    pointer_mode : 1;
 
