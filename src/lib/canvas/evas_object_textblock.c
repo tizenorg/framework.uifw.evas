@@ -1170,7 +1170,7 @@ _format_clean_param(char *dst, const char *src)
  *
  * @param obj the evas object - should not be NULL.
  * @param fmt The format to populate - should not be NULL.
- * @param[in] cmd the command to proccess, should be stringshared.
+ * @param[in] cmd the command to process, should be stringshared.
  * @param[in] param the parameter of the command.
  */
 static void
