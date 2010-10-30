@@ -426,8 +426,8 @@ evas_object_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
    obj->doing.in_move++;
    if (obj->smart.smart)
      {
-	if (obj->smart.smart->smart_class->move)
-	   obj->smart.smart->smart_class->move(obj, x, y);
+       if (obj->smart.smart->smart_class->move)
+	  obj->smart.smart->smart_class->move(obj, x, y);
      }
    obj->cur.geometry.x = x;
    obj->cur.geometry.y = y;
@@ -477,7 +477,7 @@ evas_object_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
  *       @endcode
  *       This is more evident in images, but text, textblock, lines
  *       and polygons will behave similarly. Check their specific APIs
- *       to know how to achive your desired behavior.
+ *       to know how to achieve your desired behavior.
  *
  * @ingroup Evas_Object_Group_Basic
  */
@@ -495,7 +495,7 @@ evas_object_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
    if (obj->doing.in_resize > 0)
      {
         WRN("evas_object_resize() called on object %p when in the middle of resizing the same object", obj);
-	return;
+        return;
      }
    if ((obj->cur.geometry.w == w) && (obj->cur.geometry.h == h)) return;
    if (obj->layer->evas->events_frozen <= 0)
@@ -509,7 +509,7 @@ evas_object_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
    obj->doing.in_resize++;
    if (obj->smart.smart)
      {
-	if (obj->smart.smart->smart_class->resize)
+       if (obj->smart.smart->smart_class->resize)
 	  obj->smart.smart->smart_class->resize(obj, w, h);
      }
    obj->cur.geometry.w = w;
@@ -517,7 +517,7 @@ evas_object_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
 ////   obj->cur.cache.geometry.validity = 0;
    evas_object_change(obj);
    evas_object_clip_dirty(obj);
-   obj->doing.in_resize--; 
+   obj->doing.in_resize--;
    /* NB: evas_object_recalc_clippees was here previously ( < 08/07/2009) */
    if (obj->layer->evas->events_frozen <= 0)
      {
@@ -1210,7 +1210,7 @@ evas_object_color_set(Evas_Object *obj, int r, int g, int b, int a)
    obj->cur.color.g = g;
    obj->cur.color.b = b;
    evas_object_clip_dirty(obj);
-   if ((obj->cur.color.a == 0) && (a == 0)) return;
+   if ((obj->cur.color.a == 0) && (a == 0) && (obj->cur.render_op == EVAS_RENDER_BLEND)) return;
    obj->cur.color.a = a;
    evas_object_change(obj);
 }
