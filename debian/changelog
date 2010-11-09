@@ -1,3 +1,11 @@
+evas (1.0.0.001+svn.51480slp2+build20) unstable; urgency=low
+
+  * add libsm-dev dependency - requested by Mike
+  * Git: 165.213.180.234:/git/slp/pkgs/evas
+  * Tag: evas_1.0.0.001+svn.51480slp2+build20
+
+ -- Jaehwan Kim <jae.hwan.kim@samsung.com>  Tue, 09 Nov 2010 11:18:04 +0900
+
 evas (1.0.0.001+svn.51480slp2+build19) unstable; urgency=low
 
   * bugfix text selection range
