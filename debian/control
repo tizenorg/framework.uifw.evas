@@ -7,7 +7,7 @@ Uploaders: Albin Tonnerre <albin.tonnerre@gmail.com>,
  Niv Sardi <xaiki@debian.org>, Xavier Oswald <x.oswald@free.fr>,
  Jan Lübbe <jluebbe@debian.org>,
  Nikita V. Youshchenko <yoush@debian.org>,
- ChunEon Park <chuneon.park@samsung.com>, Hyoyoung Chang <hyoyoung.chang@samsung.com>
+ ChunEon Park <chuneon.park@samsung.com>, Hyoyoung Chang <hyoyoung.chang@samsung.com>, WooHyun Jung <wh0705.jung@samsung.com>
 Build-Depends: debhelper (>= 6), cdbs, libeet-dev (>= 1.1.0), libeina-dev (>= 0.0.2.060+svn20100304),
  libfreetype6-dev, libpng12-dev | libpng-dev, libx11-dev, libxrender-dev,
  x11proto-xext-dev, zlib1g, libjpeg7-dev,

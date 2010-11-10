@@ -1,3 +1,11 @@
+evas (1.0.0.001+svn.51480slp2+build22) unstable; urgency=low
+
+  * SVN(54355) merged - add FLAG_ON_SCROLL.
+  * Git: 165.213.180.234:/git/slp/pkgs/evas
+  * Tag: evas_1.0.0.001+svn.51480slp2+build22 
+
+ -- WooHyun Jung <wh0705.jung@samsung.com>  Wed, 10 Nov 2010 10:26:52 +0900
+
 evas (1.0.0.001+svn.51480slp2+build21) unstable; urgency=low
 
   * SVN(54157) merged - Fixed the bug about searching the glyph.
