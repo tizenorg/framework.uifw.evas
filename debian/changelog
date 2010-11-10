@@ -1,3 +1,11 @@
+evas (1.0.0.001+svn.51480slp2+build21) unstable; urgency=low
+
+  * SVN(54157) merged - Fixed the bug about searching the glyph.
+  * Git: 165.213.180.234:/git/slp/pkgs/evas
+  * Tag: evas_1.0.0.001+svn.51480slp2+build21
+
+ -- MyoungWoon Kim <myoungwoon.kim@samsung.com>  Wed, 10 Nov 2010 09:16:46 +0900
+
 evas (1.0.0.001+svn.51480slp2+build20) unstable; urgency=low
 
   * add libsm-dev dependency - requested by Mike
