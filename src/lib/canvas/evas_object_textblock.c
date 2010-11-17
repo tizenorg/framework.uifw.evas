@@ -2512,9 +2512,11 @@ skip:
                (c->w - c->o->style_pad.l - c->o->style_pad.r -
                 c->marginl - c->marginr)))
           {
+             int orig_wrap;
              wrap = _layout_text_cutoff_get(c, fmt, it);
              if (wrap == 0)
                GET_NEXT(str, wrap);
+             orig_wrap = wrap;
              if (wrap > 0)
                {
                   if (fmt->wrap_word)
@@ -2590,6 +2592,7 @@ skip:
                               }
                             else
                               {
+/*
                                  if (wrap <= 0)
                                    {
                                       wrap = 0;
@@ -2606,7 +2609,10 @@ skip:
                                         str = NULL;
                                    }
                                  else
-                                   str = NULL;
+                                   str = NULL;*/
+                                 wrap = twrap = orig_wrap;
+                                 _layout_item_text_cutoff(c, it, wrap);
+                                 str += wrap;
                               }
                          }
                     }
@@ -2653,7 +2659,6 @@ skip:
                               str = NULL;
                          }
                        else
-                         str = NULL;
                        new_line = 1;
                     }
                }
