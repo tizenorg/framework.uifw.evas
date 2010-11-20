@@ -1715,7 +1715,7 @@ eng_image_stride_get(void *data, void *image, int *stride)
 {
    Render_Engine *re = (Render_Engine *)data;
    Evas_GL_Image *im = image;
-   *stride = im->w;
+   *stride = im->w * 4;
    if ((im->tex) && (im->tex->pt->dyn.img))
      {
         *stride = im->tex->pt->dyn.w * 4;

@@ -1,3 +1,12 @@
+evas (1.0.0.001+svn.51480slp2+build24) unstable; urgency=low
+
+  * SVN(54087) merged - fixed case of stride value being wrong
+  in the evas GL engine.
+  * Git: 165.213.180.234:/git/slp/pkgs/evas
+  * Tag: evas_1.0.0.001+svn.51480slp2+build24
+
+ -- Gwanglim Lee <gl77.lee@samsung.com>  Sat, 20 Nov 2010 18:59:51 +0900
+
 evas (1.0.0.001+svn.51480slp2+build23) unstable; urgency=low
 
   * [textblock] apply wordwrap patch from tom
