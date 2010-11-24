@@ -1,3 +1,14 @@
+evas (1.0.0.001+svn.51480slp2+build25) unstable; urgency=low
+
+  * [evas_main.c] rollback evas_async_reinit due to upstream patch.
+  * rebuild evas GL engine to apply new linker option.
+    + Previous: -lGLESv2 -lEGL -lIMGegl -lsrv_um -lpvr2d -ldri2
+    + Current: -lGLESv2 -lEGL
+  * Git: 165.213.180.234:/git/slp/pkgs/evas
+  * Tag: evas_1.0.0.001+svn.51480slp2+build25
+
+ -- Gwanglim Lee <gl77.lee@samsung.com>  Wed, 24 Nov 2010 14:13:30 +0900
+
 evas (1.0.0.001+svn.51480slp2+build24) unstable; urgency=low
 
   * SVN(54087) merged - fixed case of stride value being wrong
