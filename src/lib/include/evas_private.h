@@ -1,10 +1,6 @@
 #ifndef EVAS_PRIVATE_H
 #define EVAS_PRIVATE_H
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
@@ -292,7 +288,7 @@ struct _Evas
    Eina_Array     clip_changes;
 
    Eina_List     *post_events; // free me on evas_free
-   
+
    Evas_Callbacks *callbacks;
 
    int            delete_grabs;
@@ -362,21 +358,24 @@ struct _Evas_Size_Hints
 
 struct _Evas_Map_Point
 {
-   Evas_Coord x, y, z;
+   Evas_Coord x, y, z, px, py;
    double u, v;
    unsigned char r, g, b, a;
 };
 
 struct _Evas_Map
 {
-   int count; // num of points
-   Evas_Coord_Rectangle normal_geometry; // bounding box of map geom actually
-   void *surface; // surface holding map if needed
-   int surface_w, surface_h; // current surface w & h alloc
-   Evas_Coord mx, my; // mouse x, y after conversion to map space
-   Eina_Bool alpha : 1;
-   Eina_Bool smooth : 1;
-   Evas_Map_Point points[]; // actual points
+   int                   count; // num of points
+   Evas_Coord_Rectangle  normal_geometry; // bounding box of map geom actually
+   void                 *surface; // surface holding map if needed
+   int                   surface_w, surface_h; // current surface w & h alloc
+   Evas_Coord            mx, my; // mouse x, y after conversion to map space
+   struct {
+      Evas_Coord         px, py, z0, foc;
+   } persp;
+   Eina_Bool             alpha : 1;
+   Eina_Bool             smooth : 1;
+   Evas_Map_Point        points[]; // actual points
 };
 
 struct _Evas_Object
@@ -384,8 +383,10 @@ struct _Evas_Object
    EINA_INLIST;
 
    DATA32                   magic;
+
    const char              *type;
    Evas_Layer              *layer;
+
    struct {
       Evas_Map             *map;
       Evas_Object          *clipper;
@@ -402,40 +403,39 @@ struct _Evas_Object
       } cache;
       short                 layer;
       struct {
-	 unsigned char  r, g, b, a;
+	 unsigned char      r, g, b, a;
       } color;
-
-      Eina_Bool         usemap : 1;
-      Eina_Bool         visible : 1;
-      Eina_Bool         have_clipees : 1;
-      Eina_Bool         anti_alias : 1;
-      Evas_Render_Op    render_op : 4;
+      Eina_Bool             usemap : 1;
+      Eina_Bool             visible : 1;
+      Eina_Bool             have_clipees : 1;
+      Eina_Bool             anti_alias : 1;
+      Evas_Render_Op        render_op : 4;
    } cur, prev;
 
    char                       *name;
 
-   Evas_Intercept_Func *interceptors;
+   Evas_Intercept_Func        *interceptors;
 
    struct {
-      Eina_List *elements;
+      Eina_List               *elements;
    } data;
 
-   Eina_List *grabs;
+   Eina_List                  *grabs;
 
-   Evas_Callbacks *callbacks;
+   Evas_Callbacks             *callbacks;
 
    struct {
-      Eina_List   *clipees;
-      Eina_List   *changes;
+      Eina_List               *clipees;
+      Eina_List               *changes;
    } clip;
 
-   const Evas_Object_Func *func;
+   const Evas_Object_Func     *func;
 
-   void             *object_data;
+   void                       *object_data;
 
    struct {
-      Evas_Smart       *smart;
-      Evas_Object      *parent;
+      Evas_Smart              *smart;
+      Evas_Object             *parent;
    } smart;
 
    Evas_Size_Hints            *size_hints;
@@ -445,12 +445,13 @@ struct _Evas_Object
    int                         mouse_grabbed;
 
    int                         last_event;
-
-   struct {  
-      int                      in_move, in_resize;  
-   } doing; 	       
    
+   struct {
+      int                      in_move, in_resize;
+   } doing;
+
    unsigned char               delete_me;
+
    Evas_Object_Pointer_Mode    pointer_mode : 1;
 
    Eina_Bool                   store : 1;
@@ -462,7 +463,7 @@ struct _Evas_Object
    Eina_Bool                   changed : 1;
    Eina_Bool                   changed_move : 1;
    Eina_Bool                   is_active : 1;
-   
+
    Eina_Bool                   render_pre : 1;
    Eina_Bool                   rect_del : 1;
    Eina_Bool                   mouse_in : 1;
@@ -471,9 +472,8 @@ struct _Evas_Object
    Eina_Bool                   focused : 1;
    Eina_Bool                   in_layer : 1;
    Eina_Bool                   no_propagate : 1;
-   
+
    Eina_Bool                   precise_is_inside : 1;
-   Eina_Bool                   havemap_parent : 1;
    Eina_Bool                   is_static_clip : 1;
 };
 
@@ -544,7 +544,7 @@ struct _Evas_Object_Func
    int  (*was_inside) (Evas_Object *obj, Evas_Coord x, Evas_Coord y);
 
    void (*coords_recalc) (Evas_Object *obj);
-   
+
    void (*scale_update) (Evas_Object *obj);
 
    int (*has_opaque_rect) (Evas_Object *obj);
@@ -739,6 +739,7 @@ void evas_object_smart_member_lower(Evas_Object *member);
 void evas_object_smart_member_stack_above(Evas_Object *member, Evas_Object *other);
 void evas_object_smart_member_stack_below(Evas_Object *member, Evas_Object *other);
 const Eina_Inlist *evas_object_smart_members_get_direct(const Evas_Object *obj);
+void _evas_object_smart_members_all_del(Evas_Object *obj);
 void evas_call_smarts_calculate(Evas *e);
 void *evas_mem_calloc(int size);
 void _evas_post_event_callback_call(Evas *e);
@@ -819,7 +820,8 @@ void evas_render_object_recalc(Evas_Object *obj);
 
 Eina_Bool evas_map_inside_get(const Evas_Map *m, Evas_Coord x, Evas_Coord y);
 Eina_Bool evas_map_coords_get(const Evas_Map *m, Evas_Coord x, Evas_Coord y, Evas_Coord *mx, Evas_Coord *my, int grab);
-       
+
+         
 #define EVAS_API_OVERRIDE(func, api, prefix) \
      (api)->func = prefix##func
 

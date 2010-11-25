@@ -62,15 +62,15 @@ SUBDIRS += bmp
 endif
 endif
 
-if BUILD_LOADER_WBMP
-if !EVAS_STATIC_BUILD_WBMP
-SUBDIRS += wbmp
-endif
-endif
-
 if BUILD_LOADER_TGA
 if !EVAS_STATIC_BUILD_TGA
 SUBDIRS += tga
+endif
+endif
+
+if BUILD_LOADER_WBMP
+if !EVAS_STATIC_BUILD_WBMP
+SUBDIRS += wbmp
 endif
 endif
 

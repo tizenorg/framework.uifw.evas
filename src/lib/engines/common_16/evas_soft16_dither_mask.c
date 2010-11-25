@@ -213,12 +213,12 @@ _soft16_convert_from_rgba_scanline(const DATA32 *src, DATA16 *dst,
 }
 
 void
-soft16_image_convert_from_rgba(Soft16_Image *im, const DATA32 *src)
+evas_common_soft16_image_convert_from_rgba(Soft16_Image *im, const DATA32 *src)
 {
    const DATA32 *sp;
    DATA16 *dp;
    DATA8 *ap;
-   int y;
+   unsigned int y;
 
    sp = src;
    dp = im->pixels;
@@ -279,11 +279,11 @@ _soft16_convert_from_rgb_scanline(const DATA32 *src, DATA16 *dst, const int y,
 }
 
 void
-soft16_image_convert_from_rgb(Soft16_Image *im, const DATA32 *src)
+evas_common_soft16_image_convert_from_rgb(Soft16_Image *im, const DATA32 *src)
 {
    const DATA32 *sp;
    DATA16 *dp;
-   int y;
+   unsigned int y;
 
    sp = src;
    dp = im->pixels;

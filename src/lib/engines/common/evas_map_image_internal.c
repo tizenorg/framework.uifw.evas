@@ -3,7 +3,7 @@ static void
 FUNC_NAME(RGBA_Image *src, RGBA_Image *dst,
           RGBA_Draw_Context *dc,
           RGBA_Map_Point *p, 
-          int smooth, int level)
+          int smooth, int level __UNUSED__) // level unused for now - for future use
 {
    int i;
    int c, cx, cy, cw, ch;
@@ -64,11 +64,11 @@ FUNC_NAME(RGBA_Image *src, RGBA_Image *dst,
    for (i = 0; i < 4; i++)
      {
         if (p[i].u < 0) p[i].u = 0;
-        else if (p[i].u > (src->cache_entry.w << FP))
+        else if (p[i].u > (int)(src->cache_entry.w << FP))
           p[i].u = src->cache_entry.w << FP;
         
         if (p[i].v < 0) p[i].v = 0;
-        else if (p[i].v > (src->cache_entry.h << FP))
+        else if (p[i].v > (int)(src->cache_entry.h << FP))
           p[i].v = src->cache_entry.h << FP;
      }
    

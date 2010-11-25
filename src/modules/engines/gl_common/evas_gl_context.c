@@ -3,6 +3,9 @@
 #define GLPIPES 1
 
 static int sym_done = 0;
+int _evas_engine_GL_common_log_dom = -1;
+
+typedef void    (*glsym_func_void) ();
 
 void (*glsym_glGenFramebuffers)      (GLsizei a, GLuint *b) = NULL;
 void (*glsym_glBindFramebuffer)      (GLenum a, GLuint b) = NULL;
@@ -12,6 +15,11 @@ void (*glsym_glDeleteFramebuffers)   (GLsizei a, const GLuint *b) = NULL;
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
 // just used for finding symbols :)
 typedef void (*_eng_fn) (void);
+
+typedef _eng_fn       (*secsym_func_eng_fn) ();
+typedef unsigned int  (*secsym_func_uint) ();
+typedef void         *(*secsym_func_void_ptr) ();
+
 static _eng_fn  (*secsym_eglGetProcAddress)          (const char *a) = NULL;
 
 void          *(*secsym_eglCreateImage)               (void *a, void *b, GLenum c, void *d, const int *e) = NULL;
@@ -22,10 +30,12 @@ unsigned int   (*secsym_eglUnmapImageSEC)             (void *a, void *b) = NULL;
 unsigned int   (*secsym_eglGetImageAttribSEC)         (void *a, void *b, int c, int *d) = NULL;
 #endif
 
+static int dbgflushnum = -1;
+
 static void
 sym_missing(void)
 {
-   printf("EVAS ERROR - GL symbols missing!\n");
+   ERR("GL symbols missing!");
 }
 
 static void
@@ -35,68 +45,65 @@ gl_symbols(void)
    sym_done = 1;
 
 #ifdef _EVAS_ENGINE_SDL_H
-# define FINDSYM(dst, sym) if (!dst) dst = SDL_GL_GetProcAddress(sym)
+# define FINDSYM(dst, sym, typ) if (!dst) dst = (typ)SDL_GL_GetProcAddress(sym)
 #else
-# define FINDSYM(dst, sym) if (!dst) dst = dlsym(RTLD_DEFAULT, sym)
+# define FINDSYM(dst, sym, typ) if (!dst) dst = (typ)dlsym(RTLD_DEFAULT, sym)
 #endif
-#define FALLBAK(dst) if (!dst) dst = (void *)sym_missing;
+#define FALLBAK(dst, typ) if (!dst) dst = (typ)sym_missing;
    
-   FINDSYM(glsym_glGenFramebuffers, "glGenFramebuffers");
-   FINDSYM(glsym_glGenFramebuffers, "glGenFramebuffersEXT");
-   FINDSYM(glsym_glGenFramebuffers, "glGenFramebuffersARB");
-   FALLBAK(glsym_glGenFramebuffers);
+   FINDSYM(glsym_glGenFramebuffers, "glGenFramebuffers", glsym_func_void);
+   FINDSYM(glsym_glGenFramebuffers, "glGenFramebuffersEXT", glsym_func_void);
+   FINDSYM(glsym_glGenFramebuffers, "glGenFramebuffersARB", glsym_func_void);
+   FALLBAK(glsym_glGenFramebuffers, glsym_func_void);
    
-   FINDSYM(glsym_glBindFramebuffer, "glBindFramebuffer");
-   FINDSYM(glsym_glBindFramebuffer, "glBindFramebufferEXT");
-   FINDSYM(glsym_glBindFramebuffer, "glBindFramebufferARB");
-   FALLBAK(glsym_glBindFramebuffer);
+   FINDSYM(glsym_glBindFramebuffer, "glBindFramebuffer", glsym_func_void);
+   FINDSYM(glsym_glBindFramebuffer, "glBindFramebufferEXT", glsym_func_void);
+   FINDSYM(glsym_glBindFramebuffer, "glBindFramebufferARB", glsym_func_void);
+   FALLBAK(glsym_glBindFramebuffer, glsym_func_void);
    
-   FINDSYM(glsym_glFramebufferTexture2D, "glFramebufferTexture2D");
-   FINDSYM(glsym_glFramebufferTexture2D, "glFramebufferTexture2DEXT");
-   FINDSYM(glsym_glFramebufferTexture2D, "glFramebufferTexture2DARB");
-   FALLBAK(glsym_glFramebufferTexture2D);
+   FINDSYM(glsym_glFramebufferTexture2D, "glFramebufferTexture2D", glsym_func_void);
+   FINDSYM(glsym_glFramebufferTexture2D, "glFramebufferTexture2DEXT", glsym_func_void);
+   FINDSYM(glsym_glFramebufferTexture2D, "glFramebufferTexture2DARB", glsym_func_void);
+   FALLBAK(glsym_glFramebufferTexture2D, glsym_func_void);
 
-   FINDSYM(glsym_glDeleteFramebuffers, "glDeleteFramebuffers");
-   FINDSYM(glsym_glDeleteFramebuffers, "glDeleteFramebuffersEXT");
-   FINDSYM(glsym_glDeleteFramebuffers, "glDeleteFramebuffersARB");
-   FALLBAK(glsym_glDeleteFramebuffers);
+   FINDSYM(glsym_glDeleteFramebuffers, "glDeleteFramebuffers", glsym_func_void);
+   FINDSYM(glsym_glDeleteFramebuffers, "glDeleteFramebuffersEXT", glsym_func_void);
+   FINDSYM(glsym_glDeleteFramebuffers, "glDeleteFramebuffersARB", glsym_func_void);
+   FALLBAK(glsym_glDeleteFramebuffers, glsym_func_void);
 
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
 #undef FINDSYM
-#define FINDSYM(dst, sym) \
-   if ((!dst) && (secsym_eglGetProcAddress)) dst = secsym_eglGetProcAddress(sym); \
-   if (!dst) dst = dlsym(RTLD_DEFAULT, sym)
+#define FINDSYM(dst, sym, typ) \
+   if ((!dst) && (secsym_eglGetProcAddress)) dst = (typ)secsym_eglGetProcAddress(sym); \
+   if (!dst) dst = (typ)dlsym(RTLD_DEFAULT, sym)
 // yes - gl core looking for egl stuff. i know it's odd. a reverse-layer thing
 // but it will work as the egl/glx layer calls gl core common stuff and thus
 // these symbols will work. making the glx/egl + x11 layer do this kind-of is
 // wrong as this is not x11 (output) layer specific like the native surface
 // stuff. this is generic zero-copy textures for gl
 
-   FINDSYM(secsym_eglGetProcAddress, "eglGetProcAddress");
-   FINDSYM(secsym_eglGetProcAddress, "eglGetProcAddressEXT");
-   FINDSYM(secsym_eglGetProcAddress, "eglGetProcAddressARB");
-   FINDSYM(secsym_eglGetProcAddress, "eglGetProcAddressKHR");
+   FINDSYM(secsym_eglGetProcAddress, "eglGetProcAddress", secsym_func_eng_fn);
+   FINDSYM(secsym_eglGetProcAddress, "eglGetProcAddressEXT", secsym_func_eng_fn);
+   FINDSYM(secsym_eglGetProcAddress, "eglGetProcAddressARB", secsym_func_eng_fn);
+   FINDSYM(secsym_eglGetProcAddress, "eglGetProcAddressKHR", secsym_func_eng_fn);
    
-   FINDSYM(secsym_eglCreateImage, "eglCreateImage");
-   FINDSYM(secsym_eglCreateImage, "eglCreateImageEXT");
-   FINDSYM(secsym_eglCreateImage, "eglCreateImageARB");
-   FINDSYM(secsym_eglCreateImage, "eglCreateImageKHR");
+   FINDSYM(secsym_eglCreateImage, "eglCreateImage", secsym_func_void_ptr);
+   FINDSYM(secsym_eglCreateImage, "eglCreateImageEXT", secsym_func_void_ptr);
+   FINDSYM(secsym_eglCreateImage, "eglCreateImageARB", secsym_func_void_ptr);
+   FINDSYM(secsym_eglCreateImage, "eglCreateImageKHR", secsym_func_void_ptr);
    
-   FINDSYM(secsym_eglDestroyImage, "eglDestroyImage");
-   FINDSYM(secsym_eglDestroyImage, "eglDestroyImageEXT");
-   FINDSYM(secsym_eglDestroyImage, "eglDestroyImageARB");
-   FINDSYM(secsym_eglDestroyImage, "eglDestroyImageKHR");
+   FINDSYM(secsym_eglDestroyImage, "eglDestroyImage", secsym_func_uint);
+   FINDSYM(secsym_eglDestroyImage, "eglDestroyImageEXT", secsym_func_uint);
+   FINDSYM(secsym_eglDestroyImage, "eglDestroyImageARB", secsym_func_uint);
+   FINDSYM(secsym_eglDestroyImage, "eglDestroyImageKHR", secsym_func_uint);
    
-   FINDSYM(secsym_glEGLImageTargetTexture2DOES, "glEGLImageTargetTexture2DOES");
+   FINDSYM(secsym_glEGLImageTargetTexture2DOES, "glEGLImageTargetTexture2DOES", glsym_func_void);
    
-   FINDSYM(secsym_eglMapImageSEC, "eglMapImageSEC");
-//   FALLBAK(secsym_eglMapImageSEC);
+   FINDSYM(secsym_eglMapImageSEC, "eglMapImageSEC", secsym_func_void_ptr);
    
-   FINDSYM(secsym_eglUnmapImageSEC, "eglUnmapImageSEC");
-//   FALLBAK(secsym_eglUnmapImageSEC);
+   FINDSYM(secsym_eglUnmapImageSEC, "eglUnmapImageSEC", secsym_func_uint);
    
-   FINDSYM(secsym_eglGetImageAttribSEC, "eglGetImageAttribSEC");
-//   FALLBAK(secsym_eglGetImageAttribSEC);
+   FINDSYM(secsym_eglGetImageAttribSEC, "eglGetImageAttribSEC", secsym_func_uint);
 #endif   
 }
 
@@ -108,93 +115,63 @@ static Evas_GL_Shared *shared = NULL;
 void
 glerr(int err, const char *file, const char *func, int line, const char *op)
 {
-   fprintf(stderr, "GLERR: %s:%i %s(), %s: ", file, line, func, op);
+   const char *errmsg;
+   char buf[32];
+
    switch (err)
      {
      case GL_INVALID_ENUM:
-        fprintf(stderr, "GL_INVALID_ENUM\n");
+        errmsg = "GL_INVALID_ENUM";
         break;
      case GL_INVALID_VALUE:
-        fprintf(stderr, "GL_INVALID_VALUE\n");
+        errmsg = "GL_INVALID_VALUE";
         break;
      case GL_INVALID_OPERATION:
-        fprintf(stderr, "GL_INVALID_OPERATION\n");
+        errmsg = "GL_INVALID_OPERATION";
         break;
      case GL_OUT_OF_MEMORY:
-        fprintf(stderr, "GL_OUT_OF_MEMORY\n");
+        errmsg = "GL_OUT_OF_MEMORY";
         break;
      default:
-        fprintf(stderr, "0x%x\n", err);
+        snprintf(buf, sizeof(buf), "%#x", err);
+        errmsg = buf;
      }
+
+   eina_log_print(_evas_engine_GL_common_log_dom, EINA_LOG_LEVEL_ERR,
+                  file, func, line, "%s: %s", op, errmsg);
 }
 
 static void
-matrix_ident(GLfloat *m)
-{
-   memset(m, 0, 16 * sizeof(GLfloat));
-   m[0] = m[5] = m[10] = m[15] = 1.0;
-   //------------------------
-   // 1 0 0 0
-   // 0 1 0 0
-   // 0 0 1 0
-   // 0 0 0 1
-}
-
-static void
-matrix_ortho(GLfloat *m, 
-             GLfloat l, GLfloat r, 
-             GLfloat t, GLfloat b, 
+matrix_ortho(GLfloat *m,
+             GLfloat l, GLfloat r,
+             GLfloat t, GLfloat b,
              GLfloat near, GLfloat far,
-             int rot, int w, int h)
+             int rot, int vw, int vh,
+             int foc, GLfloat orth)
 {
    GLfloat rotf;
    GLfloat cosv, sinv;
    GLfloat tx, ty;
    
-//   rot = 180;
-   //------------------------
-   m[0] = 2.0 / (r - l);
-   m[1] = 0.0;
-   m[2] = 0.0;
-   m[3] = 0.0;
-
-   //------------------------
-   m[4] = 0.0;
-   m[5] = 2.0 / (t - b);
-   m[6] = 0.0;
-   m[7] = 0.0;
-   
-   //------------------------
-   m[8] = 0.0;
-   m[9] = 0.0;
-   m[10] = -(2.0 / (far - near));
-   m[11] = 0.0;
-   
-   //------------------------
-   m[12] = -((r + l) / (r - l));
-   m[13] = -((t + b) / (t - b));
-   m[14] = -((near + far) / (far - near));
-   m[15] = 1.0;
-
-   // rot
    rotf = (((rot / 90) & 0x3) * M_PI) / 2.0;
-
-   tx = 0.0;
-   ty = 0.0;
+   
+   tx = -0.5 * (1.0 - orth);
+   ty = -0.5 * (1.0 - orth);
+   
    if (rot == 90)
      {
-        tx = -(w * 1.0);
-        ty = -(h * 0.0);
+        tx += -(vw * 1.0);
+        ty += -(vh * 0.0);
      }
    if (rot == 180)
      {
-        tx = -(w * 1.0);
-        ty = -(h * 1.0);
+        tx += -(vw * 1.0);
+        ty += -(vh * 1.0);
      }
    if (rot == 270)
      {
-        tx = -(w * 0.0);
-        ty = -(h * 1.0);
+        tx += -(vw * 0.0);
+        ty += -(vh * 1.0);
      }
    
    cosv = cos(rotf);
@@ -202,14 +179,23 @@ matrix_ortho(GLfloat *m,
    
    m[0] = (2.0 / (r - l)) * ( cosv);
    m[1] = (2.0 / (r - l)) * ( sinv);
+   m[2] = 0.0;
+   m[3] = 0.0;
    
    m[4] = (2.0 / (t - b)) * (-sinv);
    m[5] = (2.0 / (t - b)) * ( cosv);
+   m[6] = 0.0;
+   m[7] = 0.0;
    
-   m[12] += (m[0] * tx) + (m[4] * ty);
-   m[13] += (m[1] * tx) + (m[5] * ty);
-   m[14] += (m[2] * tx) + (m[6] * ty);
-   m[15] += (m[3] * tx) + (m[7] * ty);
+   m[8] = 0.0;
+   m[9] = 0.0;
+   m[10] = -(2.0 / (far - near));
+   m[11] = 1.0 / (GLfloat)foc;
+   
+   m[12] = (m[0] * tx) + (m[4] * ty) - ((r + l) / (r - l));
+   m[13] = (m[1] * tx) + (m[5] * ty) - ((t + b) / (t - b));
+   m[14] = (m[2] * tx) + (m[6] * ty) - ((near + far) / (far - near));
+   m[15] = (m[3] * tx) + (m[7] * ty) + orth;
 }
 
 static int
@@ -304,8 +290,9 @@ static void
 _evas_gl_common_viewport_set(Evas_GL_Context *gc)
 {
    GLfloat proj[16];
-   int w = 1, h = 1, m = 1, rot = 1;
+   int w = 1, h = 1, m = 1, rot = 1, foc = 0;
 
+   foc = gc->foc;
    // surface in pipe 0 will be the same as all pipes
    if ((gc->pipe[0].shader.surface == gc->def_surface) ||
        (!gc->pipe[0].shader.surface))
@@ -321,28 +308,107 @@ _evas_gl_common_viewport_set(Evas_GL_Context *gc)
         rot = 0;
         m = -1;
      }
-
+   
    if ((!gc->change.size) || 
        ((gc->shared->w == w) && (gc->shared->h == h) &&
-           (gc->shared->rot == rot) &&
-       	   (gc->shared->mflip == m )))
+           (gc->shared->rot == rot) && (gc->shared->foc == gc->foc) &&
+           (gc->shared->mflip == m)))
       return;
    
    gc->shared->w = w;
    gc->shared->h = h;
    gc->shared->rot = rot;
    gc->shared->mflip = m;
+   gc->shared->foc = foc;
+   gc->shared->z0 = gc->z0;
+   gc->shared->px = gc->px;
+   gc->shared->py = gc->py;
    gc->change.size = 0;
 
-   if ((rot == 0) || (rot == 180))
-     glViewport(0, 0, w, h);
+   if (foc == 0)
+     {
+        if ((rot == 0) || (rot == 180))
+           glViewport(0, 0, w, h);
+        else
+           glViewport(0, 0, h, w);
+        GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+        // std matrix
+        if (m == 1)
+           matrix_ortho(proj, 
+                        0, w, 0, h, 
+                        -1000000.0, 1000000.0,
+                        rot, w, h,
+                        1, 1.0);
+        // v flipped matrix for render-to-texture
+        else
+           matrix_ortho(proj, 
+                        0, w, h, 0, 
+                        -1000000.0, 1000000.0,
+                        rot, w, h,
+                        1, 1.0);
+     }
    else
-     glViewport(0, 0, h, w);
-   GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   
-   matrix_ident(proj);
-   if (m == 1) matrix_ortho(proj, 0, w, 0, h, -1.0, 1.0, rot, w, h);
-   else matrix_ortho(proj, 0, w, h, 0, -1.0, 1.0, rot, w, h);
+     {
+        int px, py, vx, vy, vw = 0, vh = 0, ax = 0, ay = 0, ppx = 0, ppy = 0;
+        
+        px = gc->shared->px;
+        py = gc->shared->py;
+        
+        if      ((rot == 0  ) || (rot == 90 )) ppx = px;
+        else if ((rot == 180) || (rot == 270)) ppx = w - px;
+        if      ((rot == 0  ) || (rot == 270)) ppy = py;
+        else if ((rot == 90 ) || (rot == 180)) ppy = h - py;
+        
+        vx = ((w / 2) - ppx);
+        if (vx >= 0)
+          {
+             vw = w + (2 * vx);
+             if      ((rot == 0  ) || (rot == 90 )) ax = 2 * vx;
+             else if ((rot == 180) || (rot == 270)) ax = 0;
+          }
+        else
+          {
+             vw = w - (2 * vx);
+             if      ((rot == 0  ) || (rot == 90 )) ax = 0;
+             else if ((rot == 180) || (rot == 270)) ax = ppx - px;
+             vx = 0;
+          }
+        
+        vy = ((h / 2) - ppy);
+        if (vy < 0)
+          {
+             vh = h - (2 * vy);
+             if      ((rot == 0  ))                                 ay = 0;
+             else if ((rot == 90 ) || (rot == 180) || (rot == 270)) ay = ppy - py;
+             vy = -vy;
+          }
+        else
+          {
+             vh = h + (2 * vy);
+             if      ((rot == 0  ) || (rot == 270)) ay = 2 * vy;
+             else if ((rot == 90 ) || (rot == 180)) ay = 0;
+             vy = 0;
+          }
+        
+        if (m == -1) ay = vy * 2;
+        
+        if ((rot == 0) || (rot == 180))
+           glViewport(-2 * vx, -2 * vy, vw, vh);
+        else
+           glViewport(-2 * vy, -2 * vx, vh, vw);
+        if (m == 1)
+           matrix_ortho(proj, 0, vw, 0, vh,
+                        -1000000.0, 1000000.0,
+                        rot, vw, vh,
+                        foc, 0.0);
+        else
+           matrix_ortho(proj, 0, vw, vh, 0,
+                        -1000000.0, 1000000.0,
+                        rot, vw, vh,
+                        foc, 0.0);
+        gc->shared->ax = ax;
+        gc->shared->ay = ay;
+     }
    
    glUseProgram(gc->shared->shader.rect.prog);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
@@ -764,14 +830,13 @@ void
 evas_gl_common_context_newframe(Evas_GL_Context *gc)
 {
    int i;
-   static int dbgflushnum = -1;
 
    if (dbgflushnum < 0)
      {
         dbgflushnum = 0;
-        if (getenv("DBGEVAS")) dbgflushnum = 1;
+        if (getenv("EVAS_GL_DBG")) dbgflushnum = 1;
      }
-   if (dbgflushnum) printf("prev-flushnum: %i\n", gc->flushnum);
+   if (dbgflushnum) printf("----prev-flushnum: %i -----------------------------------\n", gc->flushnum);
    
    gc->flushnum = 0;
    gc->state.current.cur_prog = 0;
@@ -779,10 +844,6 @@ evas_gl_common_context_newframe(Evas_GL_Context *gc)
    gc->state.current.cur_texu = 0;
    gc->state.current.cur_texv = 0;
    gc->state.current.render_op = 0;
-   gc->state.current.cx = 0;
-   gc->state.current.cy = 0;
-   gc->state.current.cw = 0;
-   gc->state.current.ch = 0;
    gc->state.current.smooth = 0;
    gc->state.current.blend = 0;
    gc->state.current.clip = 0;
@@ -873,6 +934,7 @@ void
 evas_gl_common_context_resize(Evas_GL_Context *gc, int w, int h, int rot)
 {
    if ((gc->w == w) && (gc->h == h) && (gc->rot == rot)) return;
+   evas_gl_common_context_flush(gc);
    gc->change.size = 1;
    gc->rot = rot;
    gc->w = w;
@@ -887,6 +949,19 @@ evas_gl_common_context_target_surface_set(Evas_GL_Context *gc,
    if (surface == gc->pipe[0].shader.surface) return;
    
    evas_gl_common_context_flush(gc);
+   
+   gc->state.current.cur_prog = -1;
+   gc->state.current.cur_tex = -1;
+   gc->state.current.cur_texu = -1;
+   gc->state.current.cur_texv = -1;
+   gc->state.current.render_op = -1;
+   gc->state.current.smooth = -1;
+   gc->state.current.blend = -1;
+   gc->state.current.clip = -1;
+   gc->state.current.cx = -1;
+   gc->state.current.cy = -1;
+   gc->state.current.cw = -1;
+   gc->state.current.ch = -1;
 
    gc->pipe[0].shader.surface = surface;
    gc->change.size = 1;
@@ -1810,8 +1885,6 @@ again:
      }
 }
 
-// FIXME: we don't handle mapped yuv!!!! :(
-// FIXME: we don't handle clipped maps right :(
 void
 evas_gl_common_context_image_map4_push(Evas_GL_Context *gc,
                                        Evas_GL_Texture *tex,
@@ -1829,13 +1902,23 @@ evas_gl_common_context_image_map4_push(Evas_GL_Context *gc,
    DATA32 cmul;
    GLuint prog = gc->shared->shader.img.prog;
    int pn = 0;
-   
+   int flat = 0;
+
    if (!tex->alpha) blend = 0;
    if (a < 255) blend = 1;
    if ((A_VAL(&(p[0].col)) < 0xff) || (A_VAL(&(p[1].col)) < 0xff) ||
        (A_VAL(&(p[2].col)) < 0xff) || (A_VAL(&(p[3].col)) < 0xff))
      blend = 1;
    
+   if ((p[0].z == p[1].z) && (p[1].z == p[2].z) && (p[2].z == p[3].z))
+      flat = 1;
+
+   if (!clip) cx = cy = cw = ch = 0;
+   
+   if (!flat)
+     {
+        if (p[0].foc <= 0) flat = 1;
+     }
    if (yuv)
      {
         prog = gc->shared->shader.yuv.prog;
@@ -1912,7 +1995,16 @@ evas_gl_common_context_image_map4_push(Evas_GL_Context *gc,
           }
      }
    
-//   /*xxx*/ shader_array_flush(gc);
+   if (!flat)
+     {
+        shader_array_flush(gc);
+        gc->foc = p[0].foc >> FP;
+        gc->z0 = p[0].z0 >> FP;
+        gc->px = p[0].px >> FP;
+        gc->py = p[0].py >> FP;
+        gc->change.size = 1;
+        _evas_gl_common_viewport_set(gc);
+     }
 again:
    vertex_array_size_check(gc, gc->state.top_pipe, 6);
    pn = gc->state.top_pipe;
@@ -2129,17 +2221,28 @@ again:
    if ((tex->im) && (tex->im->native.data) && (!tex->im->native.yinvert))
      {
         // FIXME: handle yinvert
-        fprintf(stderr, "EVAS GL ENGINE ERROR: not handling inverted y case for map4\n");
+        ERR("not handling inverted y case for map4");
      }
    
    cmul = ARGB_JOIN(a, r, g, b);
    for (i = 0; i < 6; i++)
      {
         DATA32 cl = MUL4_SYM(cmul, p[points[i]].col);
-        PUSH_VERTEX(pn,
-                    (p[points[i]].x >> FP), 
-                    (p[points[i]].y >> FP),
-                    0);
+        if (flat)
+          {
+             PUSH_VERTEX(pn,
+                         (p[points[i]].x >> FP), 
+                         (p[points[i]].y >> FP),
+                         0);
+          }
+        else
+          {
+             PUSH_VERTEX(pn,
+                         (p[points[i]].x3 >> FP) + gc->shared->ax, 
+                         (p[points[i]].y3 >> FP) + gc->shared->ay,
+                         (p[points[i]].z >> FP) 
+                         + (gc->shared->foc - gc->shared->z0));
+          }
         PUSH_TEXUV(pn,
                    tx[points[i]],
                    ty[points[i]]);
@@ -2159,6 +2262,16 @@ again:
                    B_VAL(&cl),
                    A_VAL(&cl));
      }
+   if (!flat)
+     {
+        shader_array_flush(gc);
+        gc->foc = 0;
+        gc->z0 = 0;
+        gc->px = 0;
+        gc->py = 0;
+        gc->change.size = 1;
+        _evas_gl_common_viewport_set(gc);
+     }
 }
 
 void
@@ -2170,12 +2283,22 @@ evas_gl_common_context_flush(Evas_GL_Context *gc)
 static void
 shader_array_flush(Evas_GL_Context *gc)
 {
-   int i;
+   int i, gw, gh, setclip, cy, fbo = 0, done = 0;
    
+   gw = gc->w;
+   gh = gc->h;
+   if (!((gc->pipe[0].shader.surface == gc->def_surface) ||
+         (!gc->pipe[0].shader.surface)))
+     {
+        gw = gc->pipe[0].shader.surface->w;
+        gh = gc->pipe[0].shader.surface->h;
+        fbo = 1;
+     }
    for (i = 0; i < gc->shared->info.tune.pipes.max; i++)
      {
         if (gc->pipe[i].array.num <= 0) break;
-
+        setclip = 0;
+        done++;
         gc->flushnum++;
         GLERR(__FUNCTION__, __FILE__, __LINE__, "<flush err>");
         if (gc->pipe[i].shader.cur_prog != gc->state.current.cur_prog)
@@ -2305,36 +2428,38 @@ shader_array_flush(Evas_GL_Context *gc)
                   GLERR(__FUNCTION__, __FILE__, __LINE__, "");
                }
           }
-        /* hmmm this breaks things. must find out why!   
-         if (gc->pipe[i].shader.clip != gc->state.current.clip)
-         {
-         if (gc->pipe[i].shader.clip)
-         glEnable(GL_SCISSOR_TEST);
-         else
-         {
-         glDisable(GL_SCISSOR_TEST);
-         //             glScissor(0, 0, 0, 0);
-         }
-         }
-         if (gc->pipe[i].shader.clip)
-         {
-         if ((gc->pipe[i].shader.cx != gc->state.current.cx) ||
-         (gc->pipe[i].shader.cx != gc->state.current.cx) ||
-         (gc->pipe[i].shader.cx != gc->state.current.cx) ||
-         (gc->pipe[i].shader.cx != gc->state.current.cx))
-         {
-         glScissor(gc->pipe[i].shader.cx, 
-         gc->h - gc->pipe[i].shader.cy - gc->pipe[i].shader.ch,
-         gc->pipe[i].shader.cw,
-         gc->pipe[i].shader.ch);
-         }
-         //                    gc->pipe[i].clip.x,
-         //                    gc->h - gc->pipe[i].clip.y - gc->pipe[i].clip.h,
-         //                    gc->pipe[i].clip.w,
-         //                    gc->pipe[i].clip.h);
-         * 
-         }
-         */
+        if (gc->pipe[i].shader.clip != gc->state.current.clip)
+          {
+             
+             if (gc->pipe[i].shader.clip)
+               {
+                  cy = gh - gc->pipe[i].shader.cy - gc->pipe[i].shader.ch;
+                  if (fbo) cy = gc->pipe[i].shader.cy;
+                  glEnable(GL_SCISSOR_TEST);
+                  glScissor(gc->pipe[i].shader.cx, cy,
+                            gc->pipe[i].shader.cw, gc->pipe[i].shader.ch);
+                  setclip = 1;
+               }
+             else
+               {
+                  glDisable(GL_SCISSOR_TEST);
+                  glScissor(0, 0, 0, 0);
+               }
+          }
+        if ((gc->pipe[i].shader.clip) && (!setclip))
+          {
+             if ((gc->pipe[i].shader.cx != gc->state.current.cx) ||
+                 (gc->pipe[i].shader.cy != gc->state.current.cy) ||
+                 (gc->pipe[i].shader.cw != gc->state.current.cw) ||
+                 (gc->pipe[i].shader.ch != gc->state.current.ch))
+               {
+                  cy = gh - gc->pipe[i].shader.cy - gc->pipe[i].shader.ch;
+                  if (fbo) cy = gc->pipe[i].shader.cy;
+                  glScissor(gc->pipe[i].shader.cx, cy,
+                            gc->pipe[i].shader.cw, gc->pipe[i].shader.ch);
+               }
+          }
+
         glVertexAttribPointer(SHAD_VERTEX, 3, GL_SHORT, GL_FALSE, 0, gc->pipe[i].array.vertex);
         GLERR(__FUNCTION__, __FILE__, __LINE__, "");
         glVertexAttribPointer(SHAD_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, gc->pipe[i].array.color);
@@ -2400,7 +2525,21 @@ shader_array_flush(Evas_GL_Context *gc)
                   glDisableVertexAttribArray(SHAD_TEXUV3);
                   GLERR(__FUNCTION__, __FILE__, __LINE__, "");
                }
-             
+             if (dbgflushnum)
+               {
+                  const char *types[6] = 
+                    {"----", "RECT", "IMAG", "FONT", "YUV-", "MAP"};
+                  printf("  DRAW#%3i %4i -> %p[%4ix%4i] @ %4ix%4i -{ tex %4i type %s }-\n",
+                         i,
+                         gc->pipe[i].array.num / 6, 
+                         gc->pipe[0].shader.surface,
+                         gc->pipe[0].shader.surface->w,
+                         gc->pipe[0].shader.surface->h,
+                         gw, gh,
+                         gc->pipe[i].shader.cur_tex,
+                         types[gc->pipe[i].region.type]
+                        );
+               }
              glDrawArrays(GL_TRIANGLES, 0, gc->pipe[i].array.num);
              GLERR(__FUNCTION__, __FILE__, __LINE__, "");
           }
@@ -2415,16 +2554,16 @@ shader_array_flush(Evas_GL_Context *gc)
              gc->pipe[i].array.im = NULL;
           }
         
-        gc->state.current.cur_prog = gc->pipe[i].shader.cur_prog;
-        gc->state.current.cur_tex = gc->pipe[i].shader.cur_tex;
-        gc->state.current.blend = gc->pipe[i].shader.blend;
-        gc->state.current.smooth = gc->pipe[i].shader.smooth;
+        gc->state.current.cur_prog  = gc->pipe[i].shader.cur_prog;
+        gc->state.current.cur_tex   = gc->pipe[i].shader.cur_tex;
+        gc->state.current.blend     = gc->pipe[i].shader.blend;
+        gc->state.current.smooth    = gc->pipe[i].shader.smooth;
         gc->state.current.render_op = gc->pipe[i].shader.render_op;
-        gc->state.current.clip = gc->pipe[i].shader.clip;
-        gc->state.current.cx = gc->pipe[i].shader.cx;
-        gc->state.current.cy = gc->pipe[i].shader.cy;
-        gc->state.current.cw = gc->pipe[i].shader.cw;
-        gc->state.current.ch = gc->pipe[i].shader.ch;
+        gc->state.current.clip      = gc->pipe[i].shader.clip;
+        gc->state.current.cx        = gc->pipe[i].shader.cx;
+        gc->state.current.cy        = gc->pipe[i].shader.cy;
+        gc->state.current.cw        = gc->pipe[i].shader.cw;
+        gc->state.current.ch        = gc->pipe[i].shader.ch;
         
         if (gc->pipe[i].array.vertex) free(gc->pipe[i].array.vertex);
         if (gc->pipe[i].array.color) free(gc->pipe[i].array.color);
@@ -2447,5 +2586,31 @@ shader_array_flush(Evas_GL_Context *gc)
         gc->pipe[i].region.h = 0;
         gc->pipe[i].region.type = 0;
      }
-    gc->state.top_pipe = 0;
+   gc->state.top_pipe = 0;
+   if (dbgflushnum)
+     {
+        if (done > 0) printf("DONE (pipes): %i\n", done);
+     }
+}
+
+Eina_Bool
+evas_gl_common_module_open(void)
+{
+   if (_evas_engine_GL_common_log_dom < 0)
+     _evas_engine_GL_common_log_dom = eina_log_domain_register
+       ("evas-gl_common", EVAS_DEFAULT_LOG_COLOR);
+   if (_evas_engine_GL_common_log_dom < 0)
+     {
+        EINA_LOG_ERR("Can not create a module log domain.");
+        return EINA_FALSE;
+     }
+   return EINA_TRUE;
+}
+
+void
+evas_gl_common_module_close(void)
+{
+   if (_evas_engine_GL_common_log_dom < 0) return;
+   eina_log_domain_unregister(_evas_engine_GL_common_log_dom);
+   _evas_engine_GL_common_log_dom = -1;
 }

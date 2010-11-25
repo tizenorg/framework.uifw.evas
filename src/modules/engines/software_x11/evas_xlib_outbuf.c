@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 #include <sys/time.h>
 #include <sys/utsname.h>
 
@@ -23,7 +27,7 @@ struct _Outbuf_Region
 static Eina_List *shmpool = NULL;
 static int shmsize = 0;
 static int shmmemlimit = 10 * 1024 * 1024;
-static int shmcountlimit = 32;
+static const unsigned int shmcountlimit = 32;
 
 #ifdef EVAS_FRAME_QUEUING
 static LK(lock_shmpool);
@@ -346,18 +350,14 @@ evas_software_xlib_outbuf_setup_x(int w, int h, int rot, Outbuf_Depth depth,
 	   evas_software_xlib_x_output_buffer_free(xob, 1);
 	   if (!conv_func)
 	     {
-		printf(".[ Evas Error ].\n"
-		       " {\n"
-		       "  At depth         %i:\n"
-		       "  RGB format mask: %08x, %08x, %08x\n"
-		       "  Palette mode:    %i\n"
-		       "  Not supported by compiled in converters!\n"
-		       " }\n",
-		       buf->priv.x11.xlib.depth,
-		       buf->priv.mask.r,
-		       buf->priv.mask.g,
-		       buf->priv.mask.b,
-		       buf->priv.pal ? buf->priv.pal->colors : -1);
+                ERR("At depth: %i, RGB format mask: %08x %08x %08x, "
+                    "Palette mode: %i. "
+                    "Not supported by compiled in converters!",
+                    buf->priv.x11.xlib.depth,
+                    buf->priv.mask.r,
+                    buf->priv.mask.g,
+                    buf->priv.mask.b,
+                    buf->priv.pal ? (int)buf->priv.pal->colors : -1);
 	     }
 	}
       evas_software_xlib_outbuf_drawable_set(buf, draw);
@@ -1089,9 +1089,8 @@ evas_software_xlib_outbuf_alpha_get(Outbuf *buf)
 
 #ifdef EVAS_FRAME_QUEUING
 void
-evas_software_xlib_outbuf_set_priv(Outbuf *buf, void *cur, void *prev)
+evas_software_xlib_outbuf_set_priv(Outbuf *buf, void *cur, void *prev __UNUSED__)
 {
    buf->priv.pending_writes = (Eina_List *)cur;
 }
-
 #endif

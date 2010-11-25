@@ -86,16 +86,16 @@ static void
 raster(TIFFRGBAImage_Extra * img, uint32 * rast,
        uint32 x, uint32 y, uint32 w, uint32 h)
 {
-   int                 image_width, image_height;
+   unsigned int        image_width, image_height;
    uint32             *pixel, pixel_value;
-   int                 i, j, dy, rast_offset;
+   int                 i, dy, rast_offset;
    DATA32             *buffer_pixel, *buffer = evas_cache_image_pixels(img->image);
    int                 alpha_premult = 0;
 
    image_width = img->image->w;
    image_height = img->image->h;
 
-   dy = h > y ? -1 : y - h;
+   dy = h > y ? -1 : ((int)y - (int)h);
 
    /* rast seems to point to the beginning of the last strip processed */
    /* so you need use negative offsets. Bizzare. Someone please check this */
@@ -106,12 +106,14 @@ raster(TIFFRGBAImage_Extra * img, uint32 * rast,
      alpha_premult = 1;
    for (i = y, rast_offset = 0; i > dy; i--, rast_offset--)
      {
+        unsigned int j;
+
         pixel = rast + (rast_offset * image_width);
         buffer_pixel = buffer + ((((image_height - 1) - i) * image_width) + x);
 
         for (j = 0; j < w; j++)
           {
-	     int a, r, g, b;
+	     unsigned int a, r, g, b;
 
              pixel_value = (*(pixel++));
 	     a = TIFFGetA(pixel_value);
@@ -149,11 +151,11 @@ evas_image_load_file_head_tiff(Image_Entry *ie, const char *file, const char *ke
    if (fread(&magic_number, sizeof(uint16), 1, ffile) != 1)
      {
         fclose(ffile);
-	*error = EVAS_LOAD_ERROR_GENERIC;
+	*error = EVAS_LOAD_ERROR_UNKNOWN_FORMAT;
 	return EINA_FALSE;
      }
    /* Apparently rewind(f) isn't sufficient */
-   fseek(ffile, (long)0, SEEK_SET);
+   fseek(ffile, 0, SEEK_SET);
 
    if ((magic_number != TIFF_BIGENDIAN) /* Checks if actually tiff file */
        && (magic_number != TIFF_LITTLEENDIAN))
@@ -231,7 +233,12 @@ evas_image_load_file_data_tiff(Image_Entry *ie, const char *file, const char *ke
 	return EINA_FALSE;
      }
 
-   fread(&magic_number, sizeof(uint16), 1, ffile);
+   if (fread(&magic_number, sizeof(uint16), 1, ffile) != 1)
+     {
+        fclose(ffile);
+	*error = EVAS_LOAD_ERROR_CORRUPT_FILE;
+	return EINA_FALSE;
+     }
    /* Apparently rewind(f) isn't sufficient */
    fseek(ffile, (long)0, SEEK_SET);
 
@@ -239,7 +246,7 @@ evas_image_load_file_data_tiff(Image_Entry *ie, const char *file, const char *ke
        && (magic_number != TIFF_LITTLEENDIAN))
      {
         fclose(ffile);
-	*error = EVAS_LOAD_ERROR_GENERIC;
+	*error = EVAS_LOAD_ERROR_CORRUPT_FILE;
 	return EINA_FALSE;
      }
 
@@ -363,10 +370,11 @@ static int
 module_open(Evas_Module *em)
 {
    if (!em) return 0;
-   _evas_loader_tiff_log_dom = eina_log_domain_register("EvasLoaderTiff", EVAS_DEFAULT_LOG_COLOR);
+   _evas_loader_tiff_log_dom = eina_log_domain_register
+     ("evas-tiff", EVAS_DEFAULT_LOG_COLOR);
    if (_evas_loader_tiff_log_dom < 0)
      {
-        EINA_LOG_ERR("Impossible to create a log domain for the LoaderTiff loader.\n");
+        EINA_LOG_ERR("Can not create a module log domain.");
         return 0;
      }
    em->functions = (void *)(&evas_image_load_tiff_func);
@@ -374,7 +382,7 @@ module_open(Evas_Module *em)
 }
 
 static void
-module_close(Evas_Module *em)
+module_close(Evas_Module *em __UNUSED__)
 {
    eina_log_domain_unregister(_evas_loader_tiff_log_dom);
 }

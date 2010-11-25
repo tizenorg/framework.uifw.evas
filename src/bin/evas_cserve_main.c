@@ -331,7 +331,7 @@ _img_dealloc(Image_Entry *ie)
 }
 
 static int
-_img_surface_alloc(Image_Entry *ie, int w, int h)
+_img_surface_alloc(Image_Entry *ie, unsigned int w, unsigned int h)
 {
    Img *img = (Img *)ie;
 
@@ -374,41 +374,41 @@ _img_load(Image_Entry *ie)
 }
 
 static void
-_img_unload(Image_Entry *ie)
+_img_unload(Image_Entry *ie __UNUSED__)
 {
 }
 
 static void
-_img_dirty_region(Image_Entry *ie, int x, int y, int w, int h)
+_img_dirty_region(Image_Entry *ie __UNUSED__, unsigned int x __UNUSED__, unsigned int y __UNUSED__, unsigned int w __UNUSED__, unsigned int h __UNUSED__)
 {
 }
 
 static int
-_img_dirty(Image_Entry *dst, const Image_Entry *src)
-{
-   return 0;
-}
-
-static int
-_img_size_set(Image_Entry *dst, const Image_Entry *src, int w, int h)
+_img_dirty(Image_Entry *dst __UNUSED__, const Image_Entry *src __UNUSED__)
 {
    return 0;
 }
 
 static int
-_img_copied_data(Image_Entry *ie, int w, int h, DATA32 *image_data, int alpha, int cspace)
+_img_size_set(Image_Entry *dst __UNUSED__, const Image_Entry *src __UNUSED__, unsigned int w __UNUSED__, unsigned int h __UNUSED__)
 {
    return 0;
 }
 
 static int
-_img_data(Image_Entry *ie, int w, int h, DATA32 *image_data, int alpha, int cspace)
+_img_copied_data(Image_Entry *ie __UNUSED__, unsigned int w __UNUSED__, unsigned int h __UNUSED__, DATA32 *image_data __UNUSED__, int alpha __UNUSED__, int cspace __UNUSED__)
 {
    return 0;
 }
 
 static int
-_img_color_space(Image_Entry *ie, int cspace)
+_img_data(Image_Entry *ie __UNUSED__, unsigned int w __UNUSED__, unsigned int h __UNUSED__, DATA32 *image_data __UNUSED__, int alpha __UNUSED__, int cspace __UNUSED__)
+{
+   return 0;
+}
+
+static int
+_img_color_space(Image_Entry *ie __UNUSED__, int cspace __UNUSED__)
 {
    return 0;
 }
@@ -420,7 +420,7 @@ _img_load_data(Image_Entry *ie)
 }
 
 static int
-_img_mem_size_get(Image_Entry *ie)
+_img_mem_size_get(Image_Entry *ie __UNUSED__)
 {
    return 1;
 }
@@ -433,23 +433,23 @@ img_init(void)
         _img_alloc,//Image_Entry *(*alloc)(void);
           _img_dealloc,//void         (*dealloc)(Image_Entry *im);
         /* The cache provide some helpers for surface manipulation. */
-          _img_surface_alloc,//int          (*surface_alloc)(Image_Entry *im, int w, int h);
+          _img_surface_alloc,//int          (*surface_alloc)(Image_Entry *im, unsigned int w, unsigned int h);
           _img_surface_delete,//void         (*surface_delete)(Image_Entry *im);
           _img_surface_pixels,//DATA32      *(*surface_pixels)(Image_Entry *im);
         /* The cache is doing the allocation and deallocation, you must just do the rest. */
           _img_load,//int          (*constructor)(Image_Entry *im);
           _img_unload,//void         (*destructor)(Image_Entry *im);
-          _img_dirty_region,//void         (*dirty_region)(Image_Entry *im, int x, int y, int w, int h);
+          _img_dirty_region,//void         (*dirty_region)(Image_Entry *im, unisnged int x, unisnged int y, unisnged int w, unsigned int h);
         /* Only called when references > 0. Need to provide a fresh copie of im. */
         /* The destination surface does have a surface, but no allocated pixel data. */
           _img_dirty,//int          (*dirty)(Image_Entry *dst, const Image_Entry *src);
         /* Only called when references == 1. We will call drop on im'. */
         /* The destination surface does not have any surface. */
-          _img_size_set,//int          (*size_set)(Image_Entry *dst, const Image_Entry *src, int w, int h);
+          _img_size_set,//int          (*size_set)(Image_Entry *dst, const Image_Entry *src, unisnged int w, unisnged int h);
         /* The destination surface does not have any surface. */
-          _img_copied_data,//int          (*copied_data)(Image_Entry *dst, int w, int h, DATA32 *image_data, int alpha, int cspace);
+          _img_copied_data,//int          (*copied_data)(Image_Entry *dst, unisnged int w, unisnged int h, DATA32 *image_data, int alpha, int cspace);
         /* The destination surface does not have any surface. */
-          _img_data,//int          (*data)(Image_Entry *dst, int w, int h, DATA32 *image_data, int alpha, int cspace);
+          _img_data,//int          (*data)(Image_Entry *dst, unsigned int w, unisgned int h, DATA32 *image_data, int alpha, int cspace);
           _img_color_space,//int          (*color_space)(Image_Entry *dst, int cspace);
         /* This function need to update im->w and im->h. */
           _img_load_data,//int          (*load)(Image_Entry *im);
@@ -563,7 +563,8 @@ img_free(Img *img)
         if (tmp) strshr_freeme = tmp;
         else
           {
-             printf("realloc of strshr_freeme failed for %i items\n", strshr_freeme_alloc);
+             ERR("realloc of strshr_freeme failed for %i items",
+                 strshr_freeme_alloc);
              strshr_freeme_alloc -= 32;
              strshr_freeme_count -= 3;
              return;
@@ -952,7 +953,7 @@ load_data_thread(void *data)
 #endif
 
 static int
-message(void *fdata, Server *s, Client *c, int opcode, int size, unsigned char *data)
+message(void *fdata __UNUSED__, Server *s __UNUSED__, Client *c, int opcode, int size, unsigned char *data)
 {
    // copy data into  local aligned buffer... in case.
    unsigned char *tdata = alloca(size + 16);
@@ -1202,7 +1203,7 @@ message(void *fdata, Server *s, Client *c, int opcode, int size, unsigned char *
                     c->client_main->data = eina_list_remove(c->client_main->data, img);
                   else
                     c->data = eina_list_remove(c->data, img);
-                  // FIXME: preload doesnt work async
+                  // FIXME: preload doesn't work async
                   img_preload(img);
                   LKU(img->lock);
                }
@@ -1453,13 +1454,13 @@ parse_args(int argc, char **argv)
 static int exit_flag = 0;
 
 static void
-exit_handler(int x, siginfo_t *info, void *data)
+exit_handler(int x __UNUSED__, siginfo_t *info __UNUSED__, void *data __UNUSED__)
 {
    exit_flag = 1;
 }
 
 static void
-pipe_handler(int x, siginfo_t *info, void *data)
+pipe_handler(int x __UNUSED__, siginfo_t *info __UNUSED__, void *data __UNUSED__)
 {
 }
 
@@ -1527,14 +1528,15 @@ main(int argc, char **argv)
    
    unsetenv("EVAS_CSERVE");
 
-   DBG("eina init...");
    eina_init();
-   _evas_cserve_bin_log_dom = eina_log_domain_register("Evas_cserve_bin", CSERVE_BIN_DEFAULT_COLOR);
-   if(_evas_cserve_bin_log_dom < 0) {
-     DBG("Problem with eina_log : impossible to create a log domain");
-     eina_shutdown();
-     exit(1);
-   }
+   _evas_cserve_bin_log_dom = eina_log_domain_register
+     ("evas_cserve_bin", CSERVE_BIN_DEFAULT_COLOR);
+   if (_evas_cserve_bin_log_dom < 0)
+     {
+        EINA_LOG_ERR("impossible to create a log domain.");
+        eina_shutdown();
+        exit(1);
+     }
 
    DBG("evas init...");
    evas_init();

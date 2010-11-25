@@ -625,7 +625,7 @@ evas_image_load_file_xpm(Image_Entry *ie, const char *file, const char *key __UN
              if (!tl) break;
 	     line = tl;
           }
-        if (((ptr) && ((ptr - evas_cache_image_pixels(ie)) >= (w * h * sizeof(DATA32)))) ||
+        if (((ptr) && ((ptr - evas_cache_image_pixels(ie)) >= (w * h * (int)sizeof(DATA32)))) ||
             ((context > 1) && (count >= pixels)))
 	  break;
      }
@@ -655,10 +655,11 @@ static int
 module_open(Evas_Module *em)
 {
    if (!em) return 0;
-   _evas_loader_xpm_log_dom = eina_log_domain_register("EvasLoaderXpm", EVAS_DEFAULT_LOG_COLOR);
+   _evas_loader_xpm_log_dom = eina_log_domain_register
+     ("evas-xpm", EVAS_DEFAULT_LOG_COLOR);
    if (_evas_loader_xpm_log_dom < 0)
      {
-        EINA_LOG_ERR("Impossible to create a log domain for the LoaderXpm loader.\n");
+        EINA_LOG_ERR("Can not create a module log domain.");
         return 0;
      }
    em->functions = (void *)(&evas_image_load_xpm_func);
@@ -666,7 +667,7 @@ module_open(Evas_Module *em)
 }
 
 static void
-module_close(Evas_Module *em)
+module_close(Evas_Module *em __UNUSED__)
 {
    eina_log_domain_unregister(_evas_loader_xpm_log_dom);
 }

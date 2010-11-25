@@ -120,12 +120,12 @@ static void
 _tmp_out_alloc(Render_Engine *re)
 {
    Tilebuf_Rect *r;
-   int w = 0, h = 0;
+   unsigned int w = 0, h = 0;
 
    EINA_INLIST_FOREACH(re->rects, r)
      {
-	if (r->w > w) w = r->w;
-	if (r->h > h) h = r->h;
+	if (r->w > (int)w) w = r->w;
+	if (r->h > (int)h) h = r->h;
      }
 
    if (re->tmp_out)
@@ -287,7 +287,7 @@ eng_setup(Evas *e, void *in)
      e->engine.data.context =
      e->engine.func->context_new(e->engine.data.output);
    /* check if the display can do shm */
-   re->shm = evas_software_x11_x_can_do_shm(re->disp);
+   re->shm = evas_software_16_x11_x_can_do_shm(re->disp);
 
    return 1;
 }
@@ -302,7 +302,7 @@ eng_output_free(void *data)
 // NOTE: XrmGetDatabase() result is shared per connection, do not free it.
 //   if (re->xrdb) XrmDestroyDatabase(re->xrdb);
    
-   if (re->shbuf) evas_software_x11_x_output_buffer_free(re->shbuf, 0);
+   if (re->shbuf) evas_software_16_x11_x_output_buffer_free(re->shbuf, 0);
    if (re->clip_rects) XDestroyRegion(re->clip_rects);
    if (re->gc) XFreeGC(re->disp, re->gc);
    if (re->tb) evas_common_tilebuf_free(re->tb);
@@ -332,7 +332,7 @@ eng_output_resize(void *data, int w, int h)
      evas_common_tilebuf_set_tile_size(re->tb, TILESIZE, TILESIZE);
    if (re->shbuf)
      {
-        evas_software_x11_x_output_buffer_free(re->shbuf, 0);
+        evas_software_16_x11_x_output_buffer_free(re->shbuf, 0);
 	re->shbuf = NULL;
      }
    if (re->clip_rects)
@@ -400,7 +400,7 @@ _output_buffer_alloc(Render_Engine *re)
 	h = re->w;
      }
 
-   re->shbuf = evas_software_x11_x_output_buffer_new
+   re->shbuf = evas_software_16_x11_x_output_buffer_new
      (re->disp, DefaultVisual(re->disp, DefaultScreen(re->disp)),
       DefaultDepth(re->disp, DefaultScreen(re->disp)),
       w, h, 1, NULL);
@@ -555,7 +555,8 @@ _tmp_out_process(Render_Engine *re, int out_x, int out_y, int w, int h)
    d = re->shbuf->im;
    s = re->tmp_out;
 
-   if ((w < 1) || (h < 1) || (out_x >= d->cache_entry.w) || (out_y >= d->cache_entry.h))
+   if ((w < 1) || (h < 1) ||
+       (out_x >= (int)d->cache_entry.w) || (out_y >= (int)d->cache_entry.h))
      return;
 
    if (re->rot == 90)
@@ -625,7 +626,7 @@ eng_output_flush(void *data)
      }
    else return;
 
-   evas_software_x11_x_output_buffer_paste
+   evas_software_16_x11_x_output_buffer_paste
      (re->shbuf, re->draw, re->gc, 0, 0, re->shbuf->im->cache_entry.w, re->shbuf->im->cache_entry.h, 1);
    XSetClipMask(re->disp, re->gc, None);
 }
@@ -638,7 +639,7 @@ eng_output_idle_flush(void *data)
    re = (Render_Engine *)data;
    if (re->shbuf)
      {
-	evas_software_x11_x_output_buffer_free(re->shbuf, 0);
+	evas_software_16_x11_x_output_buffer_free(re->shbuf, 0);
 	re->shbuf = NULL;
      }
    if (re->clip_rects)
@@ -673,11 +674,12 @@ module_open(Evas_Module *em)
    if (!em) return 0;
    /* get whatever engine module we inherit from */
    if (!_evas_module_engine_inherit(&pfunc, "software_16")) return 0;
-   _evas_engine_soft16_x11_log_dom = eina_log_domain_register("EvasSoft16X11", EVAS_DEFAULT_LOG_COLOR);
-   if(_evas_engine_soft16_x11_log_dom < 0) 
+   _evas_engine_soft16_x11_log_dom = eina_log_domain_register
+     ("evas-software_16_x11", EVAS_DEFAULT_LOG_COLOR);
+   if (_evas_engine_soft16_x11_log_dom < 0)
      {
-       EINA_LOG_ERR("Impossible to create a log domain for the Soft16_X11 engine.\n");
-       return 0;
+        EINA_LOG_ERR("Can not create a module log domain.");
+        return 0;
      }
 
    /* store it for later use */
@@ -704,7 +706,7 @@ module_open(Evas_Module *em)
 }
 
 static void
-module_close(Evas_Module *em)
+module_close(Evas_Module *em __UNUSED__)
 {
   eina_log_domain_unregister(_evas_engine_soft16_x11_log_dom);
   if (xrdb_user.db)

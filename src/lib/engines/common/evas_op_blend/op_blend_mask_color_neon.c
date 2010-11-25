@@ -14,22 +14,6 @@
 #endif
 
 
-#define NEONDEBUG 0
-
-
-#if NEONDEBUG
-#define DEBUG_FNCOUNT(x)	\
-	do {			\
-	static int _foo = 0;		\
-	if (_foo++%10000 ==0)		\
-		printf("%s %+d %s: %d (%s)\n",__FILE__,__LINE__,__FUNCTION__,\
-				_foo, x " optimised");\
-	} while (0)
-#else
-#define	DEBUG_FNCOUNT(x)	((void)x)
-#endif
-
-
 /* blend mask x color -> dst */
 
 #ifdef BUILD_NEON

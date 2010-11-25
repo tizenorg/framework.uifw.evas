@@ -4,7 +4,7 @@
 
 struct ext_loader_s
 {
-   const char *extention;
+   const char *extension;
    const char *loader;
 };
 
@@ -29,13 +29,13 @@ static const struct ext_loader_s loaders[] =
    { "ppm", "pmaps" },
    { "pnm", "pmaps" },
    { "bmp", "bmp" },
-   { "wbmp", "wbmp" },
-   { "tga", "tga" }
+   { "tga", "tga" },
+   { "wbmp", "wbmp" }
 };
 
 static const char *loaders_name[] =
 {
-  "png", "jpeg", "eet", "xpm", "tiff", "gif", "svg", "pmaps", "edb", "bmp", "wbmp", "tga"
+  "png", "jpeg", "eet", "xpm", "tiff", "gif", "svg", "pmaps", "edb", "bmp", "tga", "wbmp"
 };
 
 struct evas_image_foreach_loader_data
@@ -76,7 +76,7 @@ evas_common_load_rgba_image_module_from_file(Image_Entry *ie)
    const char           *loader = NULL;
    Evas_Module          *em;
    char                 *dot;
-   int                   i;
+   unsigned int          i;
    int                   ret = EVAS_LOAD_ERROR_NONE;
    struct evas_image_foreach_loader_data fdata;
 
@@ -99,7 +99,7 @@ evas_common_load_rgba_image_module_from_file(Image_Entry *ie)
      {
 	for (i = 0, ++dot; i < (sizeof (loaders) / sizeof (struct ext_loader_s)); ++i)
 	  {
-	     if (!strcasecmp(dot, loaders[i].extention))
+	     if (!strcasecmp(dot, loaders[i].extension))
 	       {
 		  loader = loaders[i].loader;
 		  DBG("known loader '%s' handles extension '%s' of file '%s'",

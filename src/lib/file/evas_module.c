@@ -1,5 +1,5 @@
-#ifndef _GNU_SOURCE
-# define _GNU_SOURCE
+#ifdef HAVE_CONFIG_H
+# include <config.h>
 #endif
 
 #include <string.h>
@@ -99,6 +99,7 @@ EVAS_EINA_STATIC_MODULE_DEFINE(engine, directfb);
 EVAS_EINA_STATIC_MODULE_DEFINE(engine, fb);
 EVAS_EINA_STATIC_MODULE_DEFINE(engine, gl_glew);
 EVAS_EINA_STATIC_MODULE_DEFINE(engine, gl_x11);
+EVAS_EINA_STATIC_MODULE_DEFINE(engine, gl_sdl);
 EVAS_EINA_STATIC_MODULE_DEFINE(engine, quartz);
 EVAS_EINA_STATIC_MODULE_DEFINE(engine, software_16);
 EVAS_EINA_STATIC_MODULE_DEFINE(engine, software_16_ddraw);
@@ -116,7 +117,6 @@ EVAS_EINA_STATIC_MODULE_DEFINE(engine, software_x11);
 EVAS_EINA_STATIC_MODULE_DEFINE(engine, xrender_x11);
 EVAS_EINA_STATIC_MODULE_DEFINE(image_loader, xpm);
 EVAS_EINA_STATIC_MODULE_DEFINE(image_loader, bmp);
-EVAS_EINA_STATIC_MODULE_DEFINE(image_loader, wbmp);
 EVAS_EINA_STATIC_MODULE_DEFINE(image_loader, tiff);
 EVAS_EINA_STATIC_MODULE_DEFINE(image_loader, svg);
 EVAS_EINA_STATIC_MODULE_DEFINE(image_loader, png);
@@ -125,6 +125,8 @@ EVAS_EINA_STATIC_MODULE_DEFINE(image_loader, jpeg);
 EVAS_EINA_STATIC_MODULE_DEFINE(image_loader, gif);
 EVAS_EINA_STATIC_MODULE_DEFINE(image_loader, eet);
 EVAS_EINA_STATIC_MODULE_DEFINE(image_loader, edb);
+EVAS_EINA_STATIC_MODULE_DEFINE(image_loader, tga);
+EVAS_EINA_STATIC_MODULE_DEFINE(image_loader, wbmp);
 EVAS_EINA_STATIC_MODULE_DEFINE(image_saver, edb);
 EVAS_EINA_STATIC_MODULE_DEFINE(image_saver, eet);
 EVAS_EINA_STATIC_MODULE_DEFINE(image_saver, jpeg);
@@ -155,6 +157,9 @@ static const struct {
 #endif
 #ifdef EVAS_STATIC_BUILD_GL_X11
   EVAS_EINA_STATIC_MODULE_USE(engine, gl_x11),
+#endif
+#ifdef EVAS_STATIC_BUILD_GL_SDL
+  EVAS_EINA_STATIC_MODULE_USE(engine, gl_sdl),
 #endif
 #ifdef EVAS_STATIC_BUILD_QUARTZ
   EVAS_EINA_STATIC_MODULE_USE(engine, quartz),
@@ -207,9 +212,6 @@ static const struct {
 #ifdef EVAS_STATIC_BUILD_BMP
   EVAS_EINA_STATIC_MODULE_USE(image_loader, bmp),
 #endif
-#ifdef EVAS_STATIC_BUILD_WBMP
-  EVAS_EINA_STATIC_MODULE_USE(image_loader, wbmp),
-#endif
 #ifdef EVAS_STATIC_BUILD_TIFF
   EVAS_EINA_STATIC_MODULE_USE(image_loader, tiff),
 #endif
@@ -233,6 +235,12 @@ static const struct {
 #endif
 #ifdef EVAS_STATIC_BUILD_EDB
   EVAS_EINA_STATIC_MODULE_USE(image_loader, edb),
+#endif
+#ifdef EVAS_STATIC_BUILD_TGA
+  EVAS_EINA_STATIC_MODULE_USE(image_loader, tga),
+#endif
+#ifdef EVAS_STATIC_BUILD_WBMP
+  EVAS_EINA_STATIC_MODULE_USE(image_loader, wbmp),
 #endif
 #ifdef EVAS_STATIC_BUILD_EDB
   EVAS_EINA_STATIC_MODULE_USE(image_saver, edb),
@@ -277,9 +285,9 @@ evas_module_register(const Evas_Module_Api *module, Evas_Module_Type type)
 {
    Evas_Module *em;
 
-   if (type < 0 || type > 3) return EINA_FALSE;
-   if (module->version != EVAS_MODULE_API_VERSION) return EINA_FALSE;
+   if ((unsigned int)type > 3) return EINA_FALSE;
    if (!module) return EINA_FALSE;
+   if (module->version != EVAS_MODULE_API_VERSION) return EINA_FALSE;
 
    em = eina_hash_find(evas_modules[type], module->name);
    if (em) return EINA_FALSE;
@@ -305,7 +313,7 @@ evas_module_unregister(const Evas_Module_Api *module, Evas_Module_Type type)
 {
    Evas_Module *em;
 
-   if (type < 0 || type > 3) return EINA_FALSE;
+   if ((unsigned int)type > 3) return EINA_FALSE;
    if (!module) return EINA_FALSE;
 
    em = eina_hash_find(evas_modules[type], module->name);
@@ -347,7 +355,7 @@ evas_module_find_type(Evas_Module_Type type, const char *name)
    Eina_Module *en;
    Eina_List *l;
 
-   if (type < 0 || type > 3) return NULL;
+   if ((unsigned int)type > 3) return NULL;
 
    em = eina_hash_find(evas_modules[type], name);
    if (em) return em;
@@ -390,7 +398,8 @@ evas_module_find_type(Evas_Module_Type type, const char *name)
 Evas_Module *
 evas_module_engine_get(int render_method)
 {
-   if (render_method <= 0 || render_method > eina_array_count_get(evas_engines))
+   if ((render_method <= 0) ||
+       ((unsigned int)render_method > eina_array_count_get(evas_engines)))
      return NULL;
    return eina_array_data_get(evas_engines, render_method - 1);
 }
@@ -530,9 +539,13 @@ evas_module_shutdown(void)
      eina_module_free(en);
 
    eina_hash_free(evas_modules[EVAS_MODULE_TYPE_ENGINE]);
+   evas_modules[EVAS_MODULE_TYPE_ENGINE] = NULL;
    eina_hash_free(evas_modules[EVAS_MODULE_TYPE_IMAGE_LOADER]);
+   evas_modules[EVAS_MODULE_TYPE_IMAGE_LOADER] = NULL;
    eina_hash_free(evas_modules[EVAS_MODULE_TYPE_IMAGE_SAVER]);
+   evas_modules[EVAS_MODULE_TYPE_IMAGE_SAVER] = NULL;
    eina_hash_free(evas_modules[EVAS_MODULE_TYPE_OBJECT]);
+   evas_modules[EVAS_MODULE_TYPE_OBJECT] = NULL;
 
    EINA_LIST_FREE(evas_module_paths, path)
      free(path);

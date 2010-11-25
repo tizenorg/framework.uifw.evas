@@ -214,18 +214,18 @@ server_parse(Server *s, Client *c)
    int *ints;
    unsigned char *data, *newbuf;
 
-   if (c->inbufsize < sizeof(int)) return 0;
+   if (c->inbufsize < (int)sizeof(int)) return 0;
    ints = (int *)((c->inbuf));
    if ((ints[0] < 0) || (ints[0] > (1024 * 1024)))
      return 0;
-   if (c->inbufsize < (ints[0] + (sizeof(int) * 3)))
+   if (c->inbufsize < (ints[0] + ((int)sizeof(int) * 3)))
      {
         return 0;
      }
    data = c->inbuf + (sizeof(int) * 3);
    if (ints[2] != (c->req_from + 1))
      {
-        ERR("EEK! sequence number mismatch from client with pid: %i\n"
+        ERR("EEK! sequence number mismatch from client with pid: %i."
                "---- num %i is not 1 more than %i"
                ,
                c->pid, ints[2], c->req_from);

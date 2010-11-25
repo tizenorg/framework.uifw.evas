@@ -327,9 +327,9 @@ fi
 
 ])
 
-dnl use: EVAS_CHECK_LOADER_DEP_WBMP(loader, want_static[, ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
+dnl use: EVAS_CHECK_LOADER_DEP_TGA(loader, want_static[, ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
 
-AC_DEFUN([EVAS_CHECK_LOADER_DEP_WBMP],
+AC_DEFUN([EVAS_CHECK_LOADER_DEP_TGA],
 [
 
 have_dep="yes"
@@ -347,9 +347,9 @@ fi
 
 ])
 
-dnl use: EVAS_CHECK_LOADER_DEP_TGA(loader, want_static[, ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
+dnl use: EVAS_CHECK_LOADER_DEP_WBMP(loader, want_static[, ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
 
-AC_DEFUN([EVAS_CHECK_LOADER_DEP_TGA],
+AC_DEFUN([EVAS_CHECK_LOADER_DEP_WBMP],
 [
 
 have_dep="yes"

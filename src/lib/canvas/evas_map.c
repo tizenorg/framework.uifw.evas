@@ -70,9 +70,10 @@ static inline Evas_Map *
 _evas_map_new(int count)
 {
    int i;
-   Evas_Map *m = calloc(1, sizeof(Evas_Map) + count * sizeof(Evas_Map_Point));
+   Evas_Map *m = calloc(1, sizeof(Evas_Map) + (count * sizeof(Evas_Map_Point)));
    if (!m) return NULL;
    m->count = count;
+   m->persp.foc = 0;
    m->alpha = 1;
    m->smooth = 1;
    for (i = 0; i < count; i++)
@@ -96,6 +97,7 @@ _evas_map_copy(Evas_Map *dst, const Evas_Map *src)
    memcpy(dst->points, src->points, src->count * sizeof(Evas_Map_Point));
    dst->smooth = src->smooth;
    dst->alpha = src->alpha;
+   dst->persp = src->persp;
    return EINA_TRUE;
 }
 
@@ -107,6 +109,7 @@ _evas_map_dup(const Evas_Map *orig)
    memcpy(copy->points, orig->points, orig->count * sizeof(Evas_Map_Point));
    copy->smooth = orig->smooth;
    copy->alpha = orig->alpha;
+   copy->persp = orig->persp;
    return copy;
 }
 
@@ -333,7 +336,7 @@ evas_object_map_enable_get(const Evas_Object *obj)
 
 
 /**
- * Set the map sourc eobject
+ * Set the map source object
  * 
  * This sets the object from which the map is taken - can be any object that
  * has map enabled on it.
@@ -349,10 +352,11 @@ evas_object_map_source_set(Evas_Object *obj, Evas_Object *src)
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    return;
    MAGIC_CHECK_END();
+   (void)src; /* method still needs to be implemented. */
 }
 
 /**
- * get the map source object
+ * Get the map source object
  * 
  * See evas_object_map_source_set()
  * 
@@ -381,7 +385,7 @@ evas_object_map_source_get(const Evas_Object *obj)
  * image that is mapped to that map vertex/point. The u corresponds to the x
  * coordinate of this mapped point and v, the y coordinate. Note that these
  * coordinates describe a bounding region to sample. If you have a 200x100
- * source image and wannt to display it at 200x100 with proper pixel
+ * source image and want to display it at 200x100 with proper pixel
  * precision, then do:
  * 
  * @code
@@ -399,7 +403,7 @@ evas_object_map_source_get(const Evas_Object *obj)
  * @endcode
  * 
  * Note that the map points a uv coordinates match the image geometry. If
- * the @p map parameter is NULL, the sotred map will be freed and geometry
+ * the @p map parameter is NULL, the stored map will be freed and geometry
  * prior to enabling/setting a map will be restored.
  *
  * @param obj object to change transformation map
@@ -444,14 +448,16 @@ evas_object_map_set(Evas_Object *obj, const Evas_Map *map)
    if (!obj->cur.map)
      {
         obj->cur.map = _evas_map_dup(map);
-        obj->prev.map = NULL;
         if (obj->cur.usemap)
            evas_object_mapped_clip_across_mark(obj);
      }
    else
      {
-	_evas_map_copy(obj->cur.map, map);
-        obj->prev.map = NULL;
+        Evas_Map *omap = obj->cur.map;
+        obj->cur.map = _evas_map_new(4);
+        memcpy(obj->cur.map, omap, sizeof(Evas_Map) + (4 * sizeof(Evas_Map_Point)));
+        _evas_map_copy(obj->cur.map, map);
+        free(omap);
      }
    _evas_map_calc_map_geometry(obj);
 }
@@ -647,8 +653,8 @@ evas_map_point_coord_set(Evas_Map *m, int idx, Evas_Coord x, Evas_Coord y, Evas_
    if (!m) return;
    if (idx >= m->count) return;
    p = m->points + idx;
-   p->x = x;
-   p->y = y;
+   p->x = p->px = x;
+   p->y = p->py = y;
    p->z = z;
 }
 
@@ -831,6 +837,15 @@ _evas_map_util_points_populate(Evas_Map *m, const Evas_Coord x, const Evas_Coord
    p[3].z = z;
    p[3].u = 0.0;
    p[3].v = h;
+
+   p[0].px = p[0].x;
+   p[0].py = p[0].y;
+   p[1].px = p[1].x;
+   p[1].py = p[1].y;
+   p[2].px = p[2].x;
+   p[2].py = p[2].y;
+   p[3].px = p[3].x;
+   p[3].py = p[3].y;
 }
 
 /**
@@ -992,8 +1007,8 @@ evas_map_util_points_color_set(Evas_Map *m, int r, int g, int b, int a)
  *
  * @param m map to change.
  * @param degrees amount of degrees from 0.0 to 360.0 to rotate.
- * @param cx rotation's center horizontal positon.
- * @param cy rotation's center vertical positon.
+ * @param cx rotation's center horizontal position.
+ * @param cy rotation's center vertical position.
  *
  * @see evas_map_point_coord_set()
  * @see evas_map_util_zoom()
@@ -1022,6 +1037,8 @@ evas_map_util_rotate(Evas_Map *m, double degrees, Evas_Coord cx, Evas_Coord cy)
 
         p->x = x + cx;
         p->y = y + cy;
+        p->px = p->x;
+        p->py = p->y;
      }
 }
 
@@ -1037,8 +1054,8 @@ evas_map_util_rotate(Evas_Map *m, double degrees, Evas_Coord cx, Evas_Coord cy)
  * @param m map to change.
  * @param zoomx horizontal zoom to use.
  * @param zoomy vertical zoom to use.
- * @param cx zooming center horizontal positon.
- * @param cy zooming center vertical positon.
+ * @param cx zooming center horizontal position.
+ * @param cy zooming center vertical position.
  *
  * @see evas_map_point_coord_set()
  * @see evas_map_util_rotate()
@@ -1064,6 +1081,8 @@ evas_map_util_zoom(Evas_Map *m, double zoomx, double zoomy, Evas_Coord cx, Evas_
 
         p->x = x + cx;
         p->y = y + cy;
+        p->px = p->x;
+        p->py = p->y;
      }
 }
 
@@ -1081,9 +1100,9 @@ evas_map_util_zoom(Evas_Map *m, double zoomx, double zoomy, Evas_Coord cx, Evas_
  * @param dx amount of degrees from 0.0 to 360.0 to rotate arount X axis.
  * @param dy amount of degrees from 0.0 to 360.0 to rotate arount Y axis.
  * @param dz amount of degrees from 0.0 to 360.0 to rotate arount Z axis.
- * @param cx rotation's center horizontal positon.
- * @param cy rotation's center vertical positon.
- * @param cz rotation's center vertical positon.
+ * @param cx rotation's center horizontal position.
+ * @param cy rotation's center vertical position.
+ * @param cz rotation's center vertical position.
  */
 EAPI void
 evas_map_util_3d_rotate(Evas_Map *m, double dx, double dy, double dz, 
@@ -1133,6 +1152,8 @@ evas_map_util_3d_rotate(Evas_Map *m, double dx, double dy, double dz,
         p->x = x + cx;
         p->y = y + cy;
         p->z = z + cz;
+        p->px = p->x;
+        p->py = p->y;
      }
 }
 
@@ -1236,7 +1257,7 @@ evas_map_util_3d_lighting(Evas_Map *m,
 
 /**
  * Apply a perspective transform to the map
- * 
+* 
  * This applies a given perspective (3D) to the map coordinates. X, Y and Z
  * values are used. The px and py points specify the "infinite distance" point
  * in the 3D conversion (where all lines converge to like when artists draw
@@ -1267,6 +1288,10 @@ evas_map_util_3d_perspective(Evas_Map *m,
    p = m->points;
    p_end = p + m->count;
 
+   m->persp.px = px;
+   m->persp.py = py;
+   m->persp.z0 = z0;
+   m->persp.foc = foc;
    for (; p < p_end; p++)
      {
         Evas_Coord x, y, zz;

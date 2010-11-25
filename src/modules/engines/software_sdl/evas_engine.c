@@ -11,8 +11,7 @@
 int _evas_engine_soft_sdl_log_dom = -1;
 /* #define DEBUG_SDL */
 
-static Evas_Func	func = {};
-static Evas_Func	pfunc = {};
+static Evas_Func func, pfunc;
 
 static void*                     _sdl_output_setup	(int w, int h, int fullscreen, int noframe, int alpha, int hwsurface);
 
@@ -22,7 +21,7 @@ static void                      _sdl_image_delete      (Engine_Image_Entry *eim
 static int                       _sdl_image_constructor (Engine_Image_Entry*, void* data);
 static void                      _sdl_image_destructor  (Engine_Image_Entry *eim);
 
-static void                      _sdl_image_dirty_region(Engine_Image_Entry *eim, int x, int y, int w, int h);
+static void                      _sdl_image_dirty_region(Engine_Image_Entry *eim, unsigned int x, unsigned int y, unsigned int w, unsigned int h);
 
 static int                       _sdl_image_dirty       (Engine_Image_Entry *dst, const Engine_Image_Entry *src);
 
@@ -281,7 +280,7 @@ evas_engine_sdl_output_redraws_next_update_push	(void *data, void *surface __UNU
 }
 
 static void
-_sdl_image_dirty_region(Engine_Image_Entry *eim, int x, int y, int w, int h)
+_sdl_image_dirty_region(Engine_Image_Entry *eim, unsigned int x, unsigned int y, unsigned int w, unsigned int h)
 {
    SDL_Engine_Image_Entry       *dst;
    RGBA_Image *im;
@@ -862,11 +861,12 @@ static int module_open(Evas_Module *em)
    if (!em) return 0;
    /* get whatever engine module we inherit from */
    if (!_evas_module_engine_inherit(&pfunc, "software_generic")) return 0;
-   _evas_engine_soft_sdl_log_dom = eina_log_domain_register("EvasSoftSdl",EVAS_DEFAULT_LOG_COLOR);
-   if(_evas_engine_soft_sdl_log_dom < 0) 
+   _evas_engine_soft_sdl_log_dom = eina_log_domain_register
+     ("evas-software_sdl", EVAS_DEFAULT_LOG_COLOR);
+   if (_evas_engine_soft_sdl_log_dom < 0)
      {
-       EINA_LOG_ERR("Impossible to create a log domain for the SoftSdl engine.\n");
-       return 0;
+        EINA_LOG_ERR("Can not create a module log domain.");
+        return 0;
      }
    /* store it for later use */
    func = pfunc;
@@ -924,7 +924,7 @@ static int module_open(Evas_Module *em)
    return 1;
 }
 
-static void module_close(Evas_Module *em)
+static void module_close(Evas_Module *em __UNUSED__)
 {
   eina_log_domain_unregister(_evas_engine_soft_sdl_log_dom);
 }
@@ -1188,14 +1188,14 @@ _sdl_image_debug(const char* context, Engine_Image_Entry* eie)
    DBG("*** %s image (%p) ***", context, eim);
    if (eim)
      {
-        DBG ("* W: %i\n* H: %i\n* R: %i", eim->cache_entry.w, eim->cache_entry.h, eim->cache_entry.references);
+        DBG("W: %i, H: %i, R: %i", eim->cache_entry.w, eim->cache_entry.h, eim->cache_entry.references);
         if (eim->cache_entry.src)
-          DBG ("* Pixels: %p\n* SDL Surface: %p",((RGBA_Image*) eim->cache_entry.src)->image.data, eim->surface);
+          DBG("Pixels: %p, SDL Surface: %p",((RGBA_Image*) eim->cache_entry.src)->image.data, eim->surface);
         if (eim->surface)
-          DBG ("* Surface->pixels: %p", eim->surface->pixels);
-	DBG ("* Key: %s", eim->cache_entry.cache_key);
-        DBG ("* Reference: %i", eim->cache_entry.references);
+          DBG("Surface->pixels: %p", eim->surface->pixels);
+	DBG("Key: %s", eim->cache_entry.cache_key);
+        DBG("Reference: %i", eim->cache_entry.references);
      }
-   DBG ("*** ***");
+   DBG("*** ***");
 }
 #endif

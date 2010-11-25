@@ -16,22 +16,23 @@ _evas_draw_line_aa(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, int x
 
 
 #define IN_RANGE(x, y, w, h) \
-( ((unsigned)(x) < (w)) && ((unsigned)(y) < (h)) )
+  ( x > 0 && y > 0 &&((unsigned)(x) < (unsigned)(w)) && ((unsigned)(y) < (unsigned)(h)) )
 
-#define IN_RECT(x, y, rx, ry, rw, rh) \
-( ((unsigned)((x) - (rx)) < (rw)) && ((unsigned)((y) - (ry)) < (rh)) )
+#define IN_RECT(x, y, rx, ry, rw, rh)                   \
+  ( ((unsigned)((x) - (rx)) < (unsigned)(rw)) &&        \
+    ((unsigned)((y) - (ry)) < (unsigned)(rh)) )
 
-#define EXCHANGE_POINTS(x0, y0, x1, y1) \
-{ \
-	int _tmp = y0; \
-  \
-	y0 = y1;   \
-	y1 = _tmp; \
-  \
-	_tmp = x0; \
-	x0 = x1;   \
-	x1 = _tmp; \
-}
+#define EXCHANGE_POINTS(x0, y0, x1, y1)         \
+  {                                             \
+     int _tmp = y0;                             \
+                                                \
+     y0 = y1;                                   \
+     y1 = _tmp;                                 \
+                                                \
+     _tmp = x0;                                 \
+     x0 = x1;                                   \
+     x1 = _tmp;                                 \
+  }
 
 
 EAPI void
@@ -295,153 +296,151 @@ _evas_draw_simple_line(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, i
 }
 
 
-#define SETUP_LINE_SHALLOW		\
-	if (x0 > x1)							\
-	  {									\
-	   EXCHANGE_POINTS(x0, y0, x1, y1)				\
-	   dx = -dx;							\
-	   dy = -dy;							\
-	  }									\
-										\
-	px = x0;								\
-	py = y0;								\
-										\
-	p0_in = (IN_RANGE(x0 , y0 , clw, clh) ? 1 : 0);		\
-	p1_in = (IN_RANGE(x1 , y1 , clw, clh) ? 1 : 0);		\
-										\
-	dely = 1;								\
-	dh = dstw;								\
-	if (dy < 0)								\
-	  {									\
-	   dely = -1;							\
-	   dh = -dstw;							\
-	  }									\
-										\
-	dyy = ((dy) << 16) / (dx);						\
-										\
-	if (!p0_in)								\
-	  {									\
-	   dxx = ((dx) << 16) / (dy);					\
-	   if (px < 0)							\
-	     {								\
-		x = -px;  px = 0;						\
-		yy = x * dyy;						\
-		y = yy >> 16;						\
-	        if (!a_a)							\
-                   y += (yy - (y << 16)) >> 15;			\
-		py += y;							\
-		if ((dely > 0) && (py >= clh))			\
-		   return;							\
-		else if ((dely < 0) && (py < -1))			\
-		   return;							\
-	     }								\
-										\
-	   y = 0;								\
-	   if ((dely > 0) && (py < -1))				\
-		y = (-1 - py);						\
-	   else if ((dely < 0) && (py >= clh))			\
-		y = (clh - 1 - py);					\
-										\
-	   xx = y * dxx;							\
-	   x = xx >> 16;							\
-	   if (!a_a)							\
-              x += (xx - (x << 16)) >> 15;			\
-	   px += x;								\
-	   if (px >= clw) return;					\
-										\
-	   yy = x * dyy;							\
-	   y = yy >> 16;							\
-	   if (!a_a)							\
-              y += (yy - (y << 16)) >> 15;			\
-	   py += y;								\
-	   if ((dely > 0) && (py >= clh))				\
-		 return;							\
-	   else if ((dely < 0) && (py < -1))			\
-		 return;							\
-	  }									\
-										\
-	p = data + (dstw * py) + px;					\
-										\
-	x = px - x0;							\
-	yy = x * dyy;							\
-	prev_y = (yy >> 16);						\
-										\
-	rx = MIN(x1 + 1, clw);						\
-	by = clh - 1;
+#define SETUP_LINE_SHALLOW                                              \
+  if (x0 > x1)                                                          \
+    {									\
+       EXCHANGE_POINTS(x0, y0, x1, y1);                                 \
+       dx = -dx;							\
+       dy = -dy;							\
+    }									\
+                                                                        \
+  px = x0;								\
+  py = y0;								\
+                                                                        \
+  p0_in = (IN_RANGE(x0 , y0 , clw, clh) ? 1 : 0);                       \
+  p1_in = (IN_RANGE(x1 , y1 , clw, clh) ? 1 : 0);                       \
+                                                                        \
+  dely = 1;								\
+  dh = dstw;								\
+  if (dy < 0)								\
+    {									\
+       dely = -1;							\
+       dh = -dstw;							\
+    }									\
+                                                                        \
+  dyy = ((dy) << 16) / (dx);						\
+                                                                        \
+  if (!p0_in)								\
+    {									\
+       dxx = ((dx) << 16) / (dy);					\
+       if (px < 0)							\
+         {								\
+            x = -px;  px = 0;						\
+            yy = x * dyy;						\
+            y = yy >> 16;						\
+            if (!a_a)							\
+              y += (yy - (y << 16)) >> 15;                              \
+            py += y;							\
+            if ((dely > 0) && (py >= clh))                              \
+              return;							\
+            else if ((dely < 0) && (py < -1))                           \
+              return;							\
+         }								\
+                                                                        \
+       y = 0;								\
+       if ((dely > 0) && (py < 0))                                      \
+         y = (-1 - py);                                                 \
+       else if ((dely < 0) && (py >= clh))                              \
+         y = (clh - 1 - py);                                            \
+                                                                        \
+       xx = y * dxx;							\
+       x = xx >> 16;							\
+       if (!a_a)							\
+         x += (xx - (x << 16)) >> 15;                                   \
+       px += x;								\
+       if (px >= clw) return;                                           \
+                                                                        \
+       yy = x * dyy;							\
+       y = yy >> 16;							\
+       if (!a_a)							\
+         y += (yy - (y << 16)) >> 15;                                   \
+       py += y;                                                         \
+       if ((dely > 0) && (py >= clh))                                   \
+         return;							\
+       else if ((dely < 0) && (py < -1))                                \
+         return;							\
+    }									\
+                                                                        \
+  p = data + (dstw * py) + px;                                          \
+                                                                        \
+  x = px - x0;                                                          \
+  yy = x * dyy;                                                         \
+  prev_y = (yy >> 16);                                                  \
+                                                                        \
+  rx = MIN(x1 + 1, clw);						\
+  by = clh - 1;
 
 
-#define SETUP_LINE_STEEP		\
-   if (y0 > y1)								\
-     {									\
-	EXCHANGE_POINTS(x0, y0, x1, y1)				\
-	dx = -dx;								\
-	dy = -dy;								\
-     }									\
-										\
-   px = x0;									\
-   py = y0;									\
-										\
-   p0_in = (IN_RANGE(x0 , y0 , clw, clh) ? 1 : 0);		\
-   p1_in = (IN_RANGE(x1 , y1 , clw, clh) ? 1 : 0);		\
-										\
-   delx = 1;								\
-   if (dx < 0)								\
-	delx = -1;								\
-										\
-   dxx = ((dx) << 16) / (dy);						\
-										\
-   if (!p0_in)								\
-     {									\
-	dyy = ((dy) << 16) / (dx);						\
-										\
-	if (py < 0)								\
-	  {									\
+#define SETUP_LINE_STEEP                                                \
+  if (y0 > y1)								\
+    {									\
+       EXCHANGE_POINTS(x0, y0, x1, y1);                                 \
+       dx = -dx;                                                        \
+       dy = -dy;                                                        \
+    }									\
+                                                                        \
+  px = x0;                                                              \
+  py = y0;                                                              \
+                                                                        \
+  p0_in = (IN_RANGE(x0 , y0 , clw, clh) ? 1 : 0);                       \
+  p1_in = (IN_RANGE(x1 , y1 , clw, clh) ? 1 : 0);                       \
+                                                                        \
+  delx = 1;								\
+  if (dx < 0)								\
+    delx = -1;								\
+                                                                        \
+  dxx = ((dx) << 16) / (dy);						\
+                                                                        \
+  if (!p0_in)								\
+    {									\
+       dyy = ((dy) << 16) / (dx);                                       \
+                                                                        \
+       if (py < 0)                                                      \
+         {                                                              \
 	   y = -py;  py = 0;						\
-	   xx = y * dxx;							\
-	   x = xx >> 16;							\
+	   xx = y * dxx;                                                \
+	   x = xx >> 16;                                                \
 	   if (!a_a)							\
-              x += (xx - (x << 16)) >> 15;			\
-	   px += x;								\
+             x += (xx - (x << 16)) >> 15;                               \
+	   px += x;                                                     \
 	   if ((delx > 0) && (px >= clw))				\
-		return;							\
-	   else if ((delx < 0) && (px < -1))			\
-		return;							\
-	  }									\
-										\
-	x = 0;								\
-	if ((delx > 0) && (px < -1))					\
-	   x = (-1 - px);							\
-	else if ((delx < 0) && (px >= clw))				\
-	   x = (clw - 1 - px);						\
-										\
-	yy = x * dyy;							\
-	y = yy >> 16;							\
-	if (!a_a)								\
-           y += (yy - (y << 16)) >> 15;				\
-	py += y;								\
-	if (py >= clh) return;						\
-										\
-	xx = y * dxx;							\
-	x = xx >> 16;							\
-        if (!a_a)								\
-           x += (xx - (x << 16)) >> 15;				\
-	px += x;								\
-	if ((delx > 0) && (px >= clw))				\
-	   return;								\
-	else if ((delx < 0) && (px < -1))				\
-	   return;								\
-     }									\
-										\
-   p = data + (dstw * py) + px;					\
-										\
-   y = py - y0;								\
-   xx = y * dxx;								\
-   prev_x = (xx >> 16);							\
-										\
-   by = MIN(y1 + 1, clh);						\
-   rx = clw - 1;
-
-
+             return;							\
+	   else if ((delx < 0) && (px < -1))                            \
+             return;							\
+         }                                                              \
+                                                                        \
+       x = 0;								\
+       if ((delx > 0) && (px < -1))					\
+         x = (-1 - px);							\
+       else if ((delx < 0) && (px >= clw))				\
+         x = (clw - 1 - px);						\
+                                                                        \
+       yy = x * dyy;							\
+       y = yy >> 16;							\
+       if (!a_a)                                                        \
+         y += (yy - (y << 16)) >> 15;                                   \
+       py += y;								\
+       if (py >= clh) return;						\
+                                                                        \
+       xx = y * dxx;							\
+       x = xx >> 16;							\
+       if (!a_a)                                                        \
+         x += (xx - (x << 16)) >> 15;                                   \
+       px += x;								\
+       if ((delx > 0) && (px >= clw))                                   \
+         return;                                                        \
+       else if ((delx < 0) && (px < -1))				\
+         return;                                                        \
+    }									\
+                                                                        \
+  p = data + (dstw * py) + px;                                          \
+                                                                        \
+  y = py - y0;								\
+  xx = y * dxx;								\
+  prev_x = (xx >> 16);							\
+                                                                        \
+  by = MIN(y1 + 1, clh);						\
+  rx = clw - 1;
 
 static void
 _evas_draw_line(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, int x1, int y1)
@@ -484,7 +483,7 @@ _evas_draw_line(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, int x1, 
    /* shallow: x-parametric */
    if ((dy < dx) || (dy < -dx))
      {
-	SETUP_LINE_SHALLOW
+	SETUP_LINE_SHALLOW;
 
 	while (px < rx)
 	  {
@@ -501,6 +500,10 @@ _evas_draw_line(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, int x1, 
 		if ((py < 0) && (dely < 0)) return;
 		if ((py > by) && (dely > 0)) return;
 	      }
+            if (!p0_in)
+              {
+                 if (py < 0) goto next_x;
+              }
 #ifdef EVAS_SLI
 	     if (((py) % dc->sli.h) == dc->sli.y)
 #endif
@@ -508,6 +511,7 @@ _evas_draw_line(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, int x1, 
 		  if (IN_RANGE(px, py, clw, clh))
 		    pfunc(0, 255, color, p);
 	       }
+          next_x:
 	    yy += dyy;
 	    px++;
 	    p++;
@@ -517,7 +521,7 @@ _evas_draw_line(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, int x1, 
 
    /* steep: y-parametric */
 
-   SETUP_LINE_STEEP
+   SETUP_LINE_STEEP;
 
    while (py < by)
      {
@@ -534,6 +538,10 @@ _evas_draw_line(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, int x1, 
 	    if ((px < 0) && (delx < 0)) return;
 	    if ((px > rx) && (delx > 0)) return;
 	  }
+        if (!p0_in)
+          {
+             if (px < 0) goto next_y;
+          }
 #ifdef EVAS_SLI
 	if (((py) % dc->sli.h) == dc->sli.y)
 #endif
@@ -541,6 +549,7 @@ _evas_draw_line(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, int x1, 
 	     if (IN_RANGE(px, py, clw, clh))
 	       pfunc(0, 255, color, p);
 	  }
+     next_y:
 	xx += dxx;
 	py++;
 	p += dstw;
@@ -560,7 +569,7 @@ _evas_draw_line_aa(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, int x
    RGBA_Gfx_Pt_Func pfunc;
 
    if (y0 > y1)
-      EXCHANGE_POINTS(x0, y0, x1, y1)
+     EXCHANGE_POINTS(x0, y0, x1, y1);
    dx = x1 - x0;
    dy = y1 - y0;
 
@@ -579,7 +588,7 @@ _evas_draw_line_aa(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, int x
    clw = dc->clip.w;
    clh = dc->clip.h;
 
-   data = dst->image.data;
+   data = evas_cache_image_pixels(&dst->cache_entry);
    dstw = dst->cache_entry.w;
 
    data += (dstw * cly) + clx;
@@ -591,7 +600,7 @@ _evas_draw_line_aa(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, int x
    /* shallow: x-parametric */
    if ((dy < dx) || (dy < -dx))
      {
-	SETUP_LINE_SHALLOW
+	SETUP_LINE_SHALLOW;
 
 	while (px < rx)
 	  {
@@ -606,17 +615,23 @@ _evas_draw_line_aa(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, int x
 	      }
 	    if (!p1_in)
 	      {
-		if ((py < -1) && (dely < 0)) return;
+		if ((py < 0) && (dely < 0)) return;
 		if ((py > by) && (dely > 0)) return;
 	      }
-	    if ((unsigned)(px) < clw)
+            if (!p0_in)
+              {
+                 if (py < 0) goto next_x;
+              }
+	    if (px < clw)
 	      {
 		aa = ((yy - (y << 16)) >> 8);
-		if ((unsigned)(py) < clh)
+		if ((py) < clh)
 		   pfunc(0, 255 - aa, color, p);
-		if ((unsigned)(py + 1) < clh)
+		if ((py + 1) < clh)
 		   pfunc(0, aa, color, p + dstw);
 	      }
+
+          next_x:
 	    yy += dyy;
 	    px++;
 	    p++;
@@ -625,8 +640,7 @@ _evas_draw_line_aa(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, int x
      }
 
    /* steep: y-parametric */
-
-   SETUP_LINE_STEEP
+   SETUP_LINE_STEEP;
 
    while (py < by)
      {
@@ -641,17 +655,22 @@ _evas_draw_line_aa(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, int x
 	  }
 	if (!p1_in)
 	  {
-	    if ((px < -1) && (delx < 0)) return;
+	    if ((px < 0) && (delx < 0)) return;
 	    if ((px > rx) && (delx > 0)) return;
 	  }
-	if ((unsigned)(py) < clh)
+        if (!p0_in)
+          {
+             if (px < 0) goto next_y;
+          }
+	if (py < clh)
 	  {
 	    aa = ((xx - (x << 16)) >> 8);
-	    if ((unsigned)(px) < clw)
+	    if ((px) < clw)
 		pfunc(0, 255 - aa, color, p);
-	    if ((unsigned)(px + 1) < clw)
+	    if ((px + 1) < clw)
 		pfunc(0, aa, color, p + 1);
 	  }
+     next_y:
 	xx += dxx;
 	py++;
 	p += dstw;

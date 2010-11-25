@@ -24,7 +24,16 @@ struct _Evas_Object_Box_Accessor
  * @{
  */
 
-static const char _evas_object_box_type[] = "Evas_Object_Box";
+#define _evas_object_box_type "Evas_Object_Box"
+#define SIG_CHILD_ADDED "child,added"
+#define SIG_CHILD_REMOVED "child,removed"
+
+static const Evas_Smart_Cb_Description _signals[] = 
+{
+   {SIG_CHILD_ADDED, ""},
+   {SIG_CHILD_REMOVED, ""},
+   {NULL, NULL}
+};
 
 
 static void _sizing_eval(Evas_Object *obj);
@@ -125,12 +134,12 @@ _on_child_del(void *data, Evas *evas __UNUSED__, Evas_Object *o, void *einfo __U
 
    if ((!api) || (!api->remove))
      {
-	fputs("no api->remove\n", stderr);
+	ERR("no api->remove");
 	return;
      }
 
    if (!api->remove(box, priv, o))
-     fputs("child removal failed\n", stderr);
+     ERR("child removal failed");
    evas_object_smart_changed(box);
 }
 
@@ -157,14 +166,14 @@ _evas_object_box_option_new(Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Obj
    api = priv->api;
    if ((!api) || (!api->option_new))
      {
-	fputs("no api->option_new\n", stderr);
+	ERR("no api->option_new");
 	return NULL;
      }
 
    opt = api->option_new(o, priv, child);
    if (!opt)
      {
-	fputs("option_new failed\n", stderr);
+	ERR("option_new failed");
 	return NULL;
      }
 
@@ -192,8 +201,7 @@ _evas_object_box_option_callbacks_register(Evas_Object *o, Evas_Object_Box_Data 
 
    if ((!api) || (!api->option_free))
      {
-	fputs("WARNING: api->option_free not set (may cause memory leaks,"
-	      " segfaults)\n", stderr);
+        WRN("api->option_free not set (may cause memory leaks, segfaults)");
         return NULL;
      }
 
@@ -237,6 +245,8 @@ _evas_object_box_append_default(Evas_Object *o, Evas_Object_Box_Data *priv, Evas
      return NULL;
 
    priv->children = eina_list_append(priv->children, opt);
+   priv->children_changed = EINA_TRUE;
+   evas_object_smart_callback_call(o, SIG_CHILD_ADDED, opt);
 
    return opt;
 }
@@ -251,6 +261,8 @@ _evas_object_box_prepend_default(Evas_Object *o, Evas_Object_Box_Data *priv, Eva
      return NULL;
 
    priv->children = eina_list_prepend(priv->children, opt);
+   priv->children_changed = EINA_TRUE;
+   evas_object_smart_callback_call(o, SIG_CHILD_ADDED, opt);
 
    return opt;
 }
@@ -273,6 +285,8 @@ _evas_object_box_insert_before_default(Evas_Object *o, Evas_Object_Box_Data *pri
 
 	     priv->children = eina_list_prepend_relative
 	       (priv->children, new_opt, opt);
+             priv->children_changed = EINA_TRUE;
+             evas_object_smart_callback_call(o, SIG_CHILD_ADDED, new_opt);
 	     return new_opt;
 	  }
      }
@@ -298,6 +312,8 @@ _evas_object_box_insert_after_default(Evas_Object *o, Evas_Object_Box_Data *priv
 
 	     priv->children = eina_list_append_relative
 		(priv->children, new_opt, opt);
+             priv->children_changed = EINA_TRUE;
+             evas_object_smart_callback_call(o, SIG_CHILD_ADDED, new_opt);
 	     return new_opt;
 	  }
      }
@@ -320,6 +336,8 @@ _evas_object_box_insert_at_default(Evas_Object *o, Evas_Object_Box_Data *priv, E
 	  return NULL;
 
         priv->children = eina_list_prepend(priv->children, new_opt);
+        priv->children_changed = EINA_TRUE;
+        evas_object_smart_callback_call(o, SIG_CHILD_ADDED, new_opt);
         return new_opt;
      }
 
@@ -337,6 +355,8 @@ _evas_object_box_insert_at_default(Evas_Object *o, Evas_Object_Box_Data *priv, E
 
 	     priv->children = eina_list_prepend_relative
 	       (priv->children, new_opt, opt);
+             priv->children_changed = EINA_TRUE;
+             evas_object_smart_callback_call(o, SIG_CHILD_ADDED, new_opt);
 	     return new_opt;
 	  }
      }
@@ -355,8 +375,7 @@ _evas_object_box_remove_default(Evas_Object *o, Evas_Object_Box_Data *priv, Evas
 
    if ((!api) || (!api->option_free))
      {
-	fputs("WARNING: api->option_free not set (may cause memory leaks,"
-	      " segfaults)\n", stderr);
+	ERR("api->option_free not set (may cause memory leaks, segfaults)");
 	return NULL;
      }
 
@@ -368,6 +387,8 @@ _evas_object_box_remove_default(Evas_Object *o, Evas_Object_Box_Data *priv, Evas
 	  {
 	     priv->children = eina_list_remove(priv->children, opt);
 	     api->option_free(o, priv, opt);
+             priv->children_changed = EINA_TRUE;
+             evas_object_smart_callback_call(o, SIG_CHILD_REMOVED, obj);
 
 	     return obj;
 	  }
@@ -388,15 +409,14 @@ _evas_object_box_remove_at_default(Evas_Object *o, Evas_Object_Box_Data *priv, u
 
    if ((!api) || (!api->option_free))
      {
-	WRN("api->option_free not set (may cause memory leaks,"
-	      " segfaults)\n");
+	WRN("api->option_free not set (may cause memory leaks, segfaults)");
         return NULL;
      }
 
    node = eina_list_nth_list(priv->children, pos);
    if (!node)
      {
-	ERR("No item to be removed at position %d\n", pos);
+	ERR("No item to be removed at position %d", pos);
 	return NULL;
      }
 
@@ -405,6 +425,8 @@ _evas_object_box_remove_at_default(Evas_Object *o, Evas_Object_Box_Data *priv, u
 
    priv->children = eina_list_remove_list(priv->children, node);
    api->option_free(o, priv, opt);
+   priv->children_changed = EINA_TRUE;
+   evas_object_smart_callback_call(o, SIG_CHILD_REMOVED, obj);
    return obj;
 }
 
@@ -422,7 +444,7 @@ _evas_object_box_smart_add(Evas_Object *o)
 	priv = (Evas_Object_Box_Data *)calloc(1, sizeof(*priv));
 	if (!priv)
 	  {
-	     ERR("Could not allocate object private data.\n");
+	     ERR("Could not allocate object private data.");
 	     return;
 	  }
 
@@ -458,8 +480,7 @@ _evas_object_box_smart_del(Evas_Object *o)
    api = priv->api;
    if ((!api) || (!api->option_free))
      {
-	WRN("api->option_free not set (may cause memory leaks,"
-	      " segfaults)\n");
+	WRN("api->option_free not set (may cause memory leaks, segfaults)");
         return;
      }
 
@@ -497,6 +518,7 @@ _evas_object_box_smart_calculate(Evas_Object *o)
            priv->layouting = 1;
            priv->layout.cb(o, priv, priv->layout.data);
            priv->layouting = 0;
+           priv->children_changed = EINA_FALSE;
        }
    else
      ERR("No layout function set for %p box.", o);
@@ -509,6 +531,7 @@ _evas_object_box_smart_set_user(Evas_Object_Box_Api *api)
    api->base.del = _evas_object_box_smart_del;
    api->base.resize = _evas_object_box_smart_resize;
    api->base.calculate = _evas_object_box_smart_calculate;
+   api->base.callbacks = _signals;
 
    api->append = _evas_object_box_append_default;
    api->prepend = _evas_object_box_prepend_default;
@@ -570,7 +593,8 @@ evas_object_box_smart_set(Evas_Object_Box_Api *api)
 EAPI const Evas_Object_Box_Api *
 evas_object_box_smart_class_get(void)
 {
-   static Evas_Object_Box_Api _sc = EVAS_OBJECT_BOX_API_INIT_NAME_VERSION(_evas_object_box_type);
+   static Evas_Object_Box_Api _sc = 
+     EVAS_OBJECT_BOX_API_INIT_NAME_VERSION(_evas_object_box_type);
    static const Evas_Object_Box_Api *class = NULL;
 
    if (class)
@@ -592,7 +616,8 @@ evas_object_box_layout_set(Evas_Object *o, Evas_Object_Box_Layout cb, const void
 {
    EVAS_OBJECT_BOX_DATA_GET_OR_RETURN(o, priv);
 
-   if ((priv->layout.cb == cb) && (priv->layout.data == data) && (priv->layout.free_data == free_data))
+   if ((priv->layout.cb == cb) && (priv->layout.data == data) && 
+       (priv->layout.free_data == free_data))
      return;
 
    if (priv->layout.data && priv->layout.free_data)
@@ -777,7 +802,7 @@ _evas_object_box_layout_horizontal_weight_apply(Evas_Object_Box_Data *priv, Evas
  * properties apply for padding/positioning relative to the overall
  * height of the box. Finally, there is the @c weight_x property,
  * which, if set to a non-zero value, tells the container that the
- * child width is not pre-defined.  If the container can't accomodate
+ * child width is not pre-defined.  If the container can't accommodate
  * all its children, it sets the widths of the children *with weights*
  * to sizes as small as they can all fit into it.  If the size
  * required by the children is less than the available, the box
@@ -1043,10 +1068,11 @@ evas_object_box_layout_vertical(Evas_Object *o, Evas_Object_Box_Data *priv, void
 
         off_y = padding_t;
         new_w = child_w;
-        if (new_w > top_w) top_w = new_w;
 
         _layout_set_offset_and_expand_dimension_space_max_bounded
 	  (child_w, &new_w, w, max_w, &off_x, align_x, padding_l, padding_r);
+
+        if (new_w > top_w) top_w = new_w;
 
 	if (new_w != child_w)
 	  evas_object_resize(opt->obj, new_w, child_h);

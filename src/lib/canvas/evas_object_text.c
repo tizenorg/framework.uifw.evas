@@ -326,7 +326,7 @@ EAPI void
 evas_object_text_text_set(Evas_Object *obj, const char *_text)
 {
    Evas_Object_Text *o;
-   int is, was;
+   int is, was, len;
    Eina_Unicode *text;
    
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
@@ -337,7 +337,7 @@ evas_object_text_text_set(Evas_Object *obj, const char *_text)
    return;
    MAGIC_CHECK_END();
 
-   text = evas_common_encoding_utf8_to_unicode(_text, NULL);
+   text = evas_common_encoding_utf8_to_unicode(_text, &len);
 
    if (!text) text = eina_unicode_strdup(EINA_UNICODE_EMPTY_STRING);
    if ((o->cur.text) && (text) && (!eina_unicode_strcmp(o->cur.text, text)))
@@ -353,6 +353,7 @@ evas_object_text_text_set(Evas_Object *obj, const char *_text)
 #ifdef BIDI_SUPPORT
    evas_bidi_paragraph_props_unref(o->cur.intl_props.props);
    o->cur.intl_props.props = evas_bidi_paragraph_props_get(text);
+   evas_bidi_shape_string(text, &o->cur.intl_props, len);
 #endif
    if (o->cur.text) eina_ustringshare_del(o->cur.text);
    if (o->cur.utf8_text) eina_stringshare_del(o->cur.utf8_text);
@@ -607,7 +608,6 @@ evas_object_text_char_pos_get(const Evas_Object *obj, int pos, Evas_Coord *cx, E
    Evas_Object_Text *o;
    int l = 0, r = 0, t = 0, b = 0;
    int ret, x = 0, y = 0, w = 0, h = 0;
-   int inset;
 
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    return EINA_FALSE;
@@ -618,13 +618,11 @@ evas_object_text_char_pos_get(const Evas_Object *obj, int pos, Evas_Coord *cx, E
    MAGIC_CHECK_END();
    if (!o->engine_data) return EINA_FALSE;
    if (!o->cur.text) return EINA_FALSE;
-   inset =
-     ENFN->font_inset_get(ENDT, o->engine_data, o->cur.text);
    ret = ENFN->font_char_coords_get(ENDT, o->engine_data, o->cur.text, &o->cur.intl_props,
 				    pos, &x, &y, &w, &h);
    evas_text_style_pad_get(o->cur.style, &l, &r, &t, &b);
    y += o->max_ascent - t;
-   x -= inset + l;
+   x -= l;
    if (x < 0)
      {
 	w += x;
@@ -650,7 +648,7 @@ evas_object_text_char_pos_get(const Evas_Object *obj, int pos, Evas_Coord *cx, E
 /**
  * Returns the logical position of the last char in the text
  * up to the pos given. this is NOT the position of the last char
- * because of the possibilty of RTL in the text.
+ * because of the possibility of RTL in the text.
  * To be documented.
  *
  * FIXME: To be fixed.
@@ -660,7 +658,6 @@ EAPI int
 evas_object_text_last_up_to_pos(const Evas_Object *obj, Evas_Coord x, Evas_Coord y)
 {
    Evas_Object_Text *o;
-   int inset;
 
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    return -1;
@@ -671,12 +668,10 @@ evas_object_text_last_up_to_pos(const Evas_Object *obj, Evas_Coord x, Evas_Coord
    MAGIC_CHECK_END();
    if (!o->engine_data) return -1;
    if (!o->cur.text) return -1;
-   inset =
-     ENFN->font_inset_get(ENDT, o->engine_data, o->cur.text);
    return ENFN->font_last_up_to_pos(ENDT,
 				       o->engine_data,
 				       o->cur.text, &o->cur.intl_props,
-				       x + inset,
+				       x,
 				       y - o->max_ascent);	
 }
 
@@ -692,7 +687,6 @@ evas_object_text_char_coords_get(const Evas_Object *obj, Evas_Coord x, Evas_Coor
    Evas_Object_Text *o;
    int l = 0, r = 0, t = 0, b = 0;
    int ret, rx = 0, ry = 0, rw = 0, rh = 0;
-   int inset;
 
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    return -1;
@@ -703,18 +697,16 @@ evas_object_text_char_coords_get(const Evas_Object *obj, Evas_Coord x, Evas_Coor
    MAGIC_CHECK_END();
    if (!o->engine_data) return -1;
    if (!o->cur.text) return -1;
-   inset =
-     ENFN->font_inset_get(ENDT, o->engine_data, o->cur.text);
    ret = ENFN->font_char_at_coords_get(ENDT,
 				       o->engine_data,
 				       o->cur.text, &o->cur.intl_props,
-				       x + inset,
+				       x,
 				       y - o->max_ascent,
 				       &rx, &ry,
 				       &rw, &rh);
    evas_text_style_pad_get(o->cur.style, &l, &r, &t, &b);
    ry += o->max_ascent - t;
-   rx -= inset + l;
+   rx -= l;
    if (rx < 0)
      {
 	rw += rx;
@@ -1324,9 +1316,21 @@ evas_font_available_list_free(Evas *e, Eina_List *available)
 }
 
 /**
- * To be documented.
+ * Gets the next character in the string
  *
- * FIXME: To be fixed.
+ * Given the UTF-8 string in @p str, and starting byte position in @p pos,
+ * this function will place in @p decoded the decoded code point at @p pos
+ * and return the byte index for the next character in the string.
+ *
+ * The only boundary check done is that @p pos must be >= 0. Other than that,
+ * no checks are performed, so passing an index value that's not within the
+ * length of the string will result in undefined behavior.
+ *
+ * @param str The UTF-8 string
+ * @param pos The byte index where to start
+ * @param decoded Address where to store the decoded code point. Optional.
+ *
+ * @return The byte index of the next character
  *
  * @ingroup Evas_Utils
  */
@@ -1344,9 +1348,21 @@ evas_string_char_next_get(const char *str, int pos, int *decoded)
 }
 
 /**
- * To be documented.
+ * Gets the previous character in the string
  *
- * FIXME: To be fixed.
+ * Given the UTF-8 string in @p str, and starting byte position in @p pos,
+ * this function will place in @p decoded the decoded code point at @p pos
+ * and return the byte index for the previous character in the string.
+ *
+ * The only boundary check done is that @p pos must be >= 1. Other than that,
+ * no checks are performed, so passing an index value that's not within the
+ * length of the string will result in undefined behavior.
+ *
+ * @param str The UTF-8 string
+ * @param pos The byte index where to start
+ * @param decoded Address where to store the decoded code point. Optional.
+ *
+ * @return The byte index of the previous character
  *
  * @ingroup Evas_Utils
  */
@@ -1497,9 +1513,9 @@ evas_object_text_new(void)
    o = calloc(1, sizeof(Evas_Object_Text));
    o->magic = MAGIC_OBJ_TEXT;
    o->prev = o->cur;
-#ifdef BIDI_SUPPORT   
+#ifdef BIDI_SUPPORT
    o->cur.intl_props.props = evas_bidi_paragraph_props_new();
-#endif   
+#endif
    return o;
 }
 
@@ -1519,9 +1535,9 @@ evas_object_text_free(Evas_Object *obj)
    if (o->cur.font) eina_stringshare_del(o->cur.font);
    if (o->cur.source) eina_stringshare_del(o->cur.source);
    if (o->engine_data) evas_font_free(obj->layer->evas, o->engine_data);
-#ifdef BIDI_SUPPORT   
+#ifdef BIDI_SUPPORT
    evas_bidi_props_clean(&o->cur.intl_props);
-#endif   
+#endif
    o->magic = 0;
    free(o);
 }
@@ -1615,8 +1631,7 @@ evas_object_text_render(Evas_Object *obj, void *output, void *context, void *sur
 		     context, \
 		     surface, \
 		     o->engine_data, \
-		     obj->cur.cache.geometry.x + x + sl + ox - \
-		     ENFN->font_inset_get(ENDT, o->engine_data, o->cur.text), \
+		     obj->cur.cache.geometry.x + x + sl + ox, \
 		     obj->cur.cache.geometry.y + y + st + oy + \
 		     (int) \
 		     (((o->max_ascent * obj->cur.cache.geometry.h) / obj->cur.geometry.h) - 0.5), \

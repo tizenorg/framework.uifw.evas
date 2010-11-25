@@ -93,7 +93,7 @@ struct _Evas_BiDi_Props {
    (((x) &&                                \
      ((x->direction == EVAS_BIDI_PARAGRAPH_RTL) ||   \
       (x->direction == EVAS_BIDI_PARAGRAPH_WRTL))) ?   \
-                 EINA_TRUE : EINA_FALSE)
+    EINA_TRUE : EINA_FALSE)
 
 
 # define evas_bidi_position_visual_to_logical(list, position) \
@@ -128,10 +128,13 @@ evas_bidi_paragraph_props_clean(Evas_BiDi_Paragraph_Props *bidi_props) EINA_ARG_
 
 Evas_BiDi_Paragraph_Props *
 evas_bidi_paragraph_props_ref(Evas_BiDi_Paragraph_Props *bidi_props) EINA_ARG_NONNULL(1);
+
 void
 evas_bidi_paragraph_props_unref(Evas_BiDi_Paragraph_Props *bidi_props) EINA_ARG_NONNULL(1);
+
 Evas_BiDi_Paragraph_Props *
 evas_bidi_paragraph_props_new(void) EINA_MALLOC EINA_WARN_UNUSED_RESULT;
+
 #endif
 /**
  * @}

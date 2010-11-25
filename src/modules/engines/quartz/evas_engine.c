@@ -926,13 +926,13 @@ quartz_font_from_ats(ATSFontContainerRef container, int size)
    font = CTFontCreateWithPlatformFont(fonts[0], size, NULL, NULL);
 
    loaded_font = calloc(1, sizeof(Evas_Quartz_Font));
-   if (!font || !loaded_font)               
-     {                                     
-	   if (loaded_font) free(loaded_font);
-	   if (fonts) free(fonts);            
-	   if (font) CFRelease(font);         
-	   return NULL;                       
-     }                                     
+   if (!font || !loaded_font)
+      {
+         if (loaded_font) free(loaded_font);
+         if (fonts) free(fonts);
+         if (font) CFRelease(font);
+         return NULL;
+      }
 
    keys[0] = kCTFontAttributeName;
    values[0] = font;
@@ -1217,11 +1217,12 @@ module_open(Evas_Module *em)
 
    if (!_evas_module_engine_inherit(&func, "software_generic")) return 0;
 
-   _evas_engine_quartz_log_dom = eina_log_domain_register("EvasQuartz", EVAS_DEFAULT_LOG_COLOR);
-   if(_evas_engine_quartz_log_dom < 0)
+   _evas_engine_quartz_log_dom = eina_log_domain_register
+     ("evas-quartz", EVAS_DEFAULT_LOG_COLOR);
+   if (_evas_engine_quartz_log_dom < 0)
      {
-       EINA_LOG_ERR("Impossible to create a log domain for the Quartz engine.\n");
-       return 0;
+        EINA_LOG_ERR("Can not create a module log domain.");
+        return 0;
      }
 
    #define ORD(f) EVAS_API_OVERRIDE(f, &func, eng_)

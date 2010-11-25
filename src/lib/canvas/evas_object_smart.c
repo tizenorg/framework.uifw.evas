@@ -362,6 +362,14 @@ evas_object_smart_members_get_direct(const Evas_Object *obj)
    return o->contained;
 }
 
+void
+_evas_object_smart_members_all_del(Evas_Object *obj)
+{
+   Evas_Object_Smart *o = (Evas_Object_Smart *)(obj->object_data);
+   while (o->contained)
+      evas_object_del((Evas_Object *)(o->contained));
+}
+
 /**
  * Instantiates a new smart object described by @p s.
  *
@@ -477,7 +485,7 @@ evas_object_smart_callback_del(Evas_Object *obj, const char *event, void (*func)
  * @param event_info an event specific struct of info to pass to the callback
  *
  * This should be called internally in the smart object when some specific
- * event has occured. The documentation for the smart object should include
+ * event has occurred. The documentation for the smart object should include
  * a list of possible events and what type of @p event_info to expect.
  *
  * @ingroup Evas_Smart_Object_Group

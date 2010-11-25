@@ -167,6 +167,7 @@ evas_bidi_paragraph_props_get(const Eina_Unicode *eina_ustr)
       return NULL;
 
 
+
    len = eina_unicode_strlen(eina_ustr);
    /* The size of fribidichar s different than eina_unicode, convert */
    if (sizeof(Eina_Unicode) != sizeof(FriBidiChar))
@@ -186,6 +187,7 @@ evas_bidi_paragraph_props_get(const Eina_Unicode *eina_ustr)
         len = -1;
         goto cleanup;
      }
+
    bidi_props = evas_bidi_paragraph_props_new();
 
    /* Prep work for reordering */
@@ -224,7 +226,6 @@ evas_bidi_paragraph_props_get(const Eina_Unicode *eina_ustr)
         free(bidi_props->char_types);
      }
    bidi_props->char_types = char_types;
-   
 
    if (base_ustr) free(base_ustr);
 
@@ -372,6 +373,7 @@ evas_bidi_is_rtl_char(const Evas_BiDi_Props *bidi_props, EvasBiDiStrIndex index)
             bidi_props->props->embedding_levels[index + bidi_props->start]))
       ? EINA_TRUE : EINA_FALSE;
 }
+
 Evas_BiDi_Paragraph_Props *
 evas_bidi_paragraph_props_new(void)
 {
@@ -379,8 +381,10 @@ evas_bidi_paragraph_props_new(void)
    ret = calloc(1, sizeof(Evas_BiDi_Paragraph_Props));
    ret->direction = EVAS_BIDI_PARAGRAPH_NATURAL;
    ret->refcount = 1;
+
    return ret;
 }
+
 /**
  * @internal
  * Refs the bidi props.
@@ -418,6 +422,7 @@ evas_bidi_paragraph_props_unref(Evas_BiDi_Paragraph_Props *bidi_props)
    BIDIUNLOCK();
 }
 
+
 /**
  * @internal
  * Cleans the paragraph properties.
@@ -444,7 +449,6 @@ evas_bidi_props_clean(Evas_BiDi_Props *bidi_props)
    evas_bidi_paragraph_props_unref(bidi_props->props);
    bidi_props->props = NULL;
 }
-
 /**
  * @}
  */

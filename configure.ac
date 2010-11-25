@@ -31,13 +31,14 @@ AC_CACHE_CHECK([whether the Objective C compiler works],
                 AC_LANG_POP([Objective C])])
 ])
 
-AC_INIT([evas], [v_ver-alpha], [enlightenment-devel@lists.sourceforge.net])
+AC_INIT([evas], [v_ver.beta2], [enlightenment-devel@lists.sourceforge.net])
 AC_PREREQ([2.52])
 AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 AC_ISC_POSIX
+AC_GNU_SOURCE
 
 AM_INIT_AUTOMAKE([1.6 dist-bzip2])
 AM_CONFIG_HEADER([config.h])
@@ -79,11 +80,6 @@ esac
 AC_SUBST(MODULE_ARCH)
 AC_DEFINE_UNQUOTED(MODULE_ARCH, "$MODULE_ARCH", "Module architecture")
 
-# weird debian etch bug where pthread_barrier doesn't work without adding
-# this.
-CFLAGS="${CFLAGS=} -D_GNU_SOURCE"
-AC_SUBST(CFLAGS)
-
 want_fontconfig="auto"
 want_fribidi="auto"
 want_evas_cserve="yes"
@@ -120,8 +116,8 @@ want_evas_image_loader_svg="yes"
 want_evas_image_loader_tiff="yes"
 want_evas_image_loader_xpm="yes"
 want_evas_image_loader_bmp="yes"
-want_evas_image_loader_wbmp="yes"
 want_evas_image_loader_tga="yes"
+want_evas_image_loader_wbmp="yes"
 
 want_evas_font_loader_eet="yes"
 
@@ -149,9 +145,11 @@ case "$host_os" in
    *)
       want_evas_engine_software_xlib="auto"
       want_evas_engine_gl_x11="auto"
-      want_evas_engine_xrender_x11="auto"
-      want_evas_engine_software_8_x11="auto"
-      want_evas_engine_software_16_x11="auto"
+      want_evas_engine_fb="auto"
+### no - not ready/usable/complete
+#      want_evas_engine_software_8_x11="auto"
+#      want_evas_engine_xrender_x11="auto"
+#      want_evas_engine_software_16_x11="auto"
       ;;
 esac
 
@@ -234,18 +232,6 @@ PKG_CHECK_MODULES([EINA], [eina >= 1.0.0])
 PKG_CHECK_MODULES([FREETYPE], [freetype2 >= 9.3.0])
 
 requirement_evas="freetype2 eina >= 1.0.0 ${requirement_evas}"
-
-#WinkCodec
-AC_ARG_ENABLE([winkcodec],
-		AS_HELP_STRING([--enable-winkcodec],
-			[enable/disable wink codec (default: no)]),
-		[WINK=$enableval], [WINK=no])
-
-#if test "x${WINK}" = "xyes" ; then
-#	PKG_CHECK_MODULES([LIBWINK],[wink])
-#	AC_DEFINE(USE_WINK_CODEC, 1, [use wink codec])
-#	requirement_evas="wink ${requirement_evas}"
-#fi
 
 ## optional dependencies
 
@@ -546,11 +532,11 @@ EVAS_CHECK_ENGINE([software-sdl], [${want_evas_engine_software_sdl}], [no], [Sof
 
 EVAS_CHECK_ENGINE([gl-sdl], [${want_evas_engine_gl_sdl}], [yes], [OpenGL SDL])
 
-EVAS_CHECK_ENGINE([fb], [${want_evas_engine_fb}], [no], [Framebuffer])
+EVAS_CHECK_ENGINE([fb], [${want_evas_engine_fb}], [yes], [Framebuffer])
 
 EVAS_CHECK_ENGINE([directfb], [${want_evas_engine_directfb}], [no], [DirectFB])
 
-# disable cairo engine for the release
+# disable qtopia engine for the release
 #EVAS_CHECK_ENGINE([software-qtopia], [${want_evas_engine_software_qtopia}], [no], [Qtopia])
 
 EVAS_CHECK_ENGINE([software-8-x11], [${want_evas_engine_software_8_x11}], [yes], [Software X11 8 bits grayscale])
@@ -754,9 +740,9 @@ EVAS_CHECK_IMAGE_LOADER([XPM], [${want_evas_image_loader_xpm}])
 
 EVAS_CHECK_IMAGE_LOADER([BMP], [${want_evas_image_loader_bmp}])
 
-EVAS_CHECK_IMAGE_LOADER([WBMP], [${want_evas_image_loader_wbmp}])
-
 EVAS_CHECK_IMAGE_LOADER([TGA], [${want_evas_image_loader_tga}])
+
+EVAS_CHECK_IMAGE_LOADER([WBMP], [${want_evas_image_loader_wbmp}])
 
 
 #####################################################################
@@ -1083,7 +1069,7 @@ case $host_cpu in
 esac
 AC_MSG_CHECKING(whether to build neon code)
 AC_ARG_ENABLE(cpu-neon,
-  AC_HELP_STRING([--enable-cpu-neon], [enable neon code - with gcc you will need these CFLAGS for it to begin to work, and even then your gcc may have broken or non-existant support: -mcpu=cortex-a8 -mfloat-abi=softfp -mfpu=neon]),
+  AC_HELP_STRING([--enable-cpu-neon], [enable neon code - with gcc you will need these CFLAGS for it to begin to work, and even then your gcc may have broken or non-existent support: -mcpu=cortex-a8 -mfloat-abi=softfp -mfpu=neon]),
   [
      if test "x$enableval" = "xyes" ; then
        AC_TRY_COMPILE([#include <arm_neon.h>],
@@ -1532,10 +1518,10 @@ src/modules/loaders/png/Makefile
 src/modules/loaders/tiff/Makefile
 src/modules/loaders/xpm/Makefile
 src/modules/loaders/bmp/Makefile
-src/modules/loaders/wbmp/Makefile
 src/modules/loaders/tga/Makefile
 src/modules/loaders/svg/Makefile
 src/modules/loaders/pmaps/Makefile
+src/modules/loaders/wbmp/Makefile
 src/modules/savers/Makefile
 src/modules/savers/edb/Makefile
 src/modules/savers/eet/Makefile
@@ -1565,13 +1551,16 @@ if test "x$build_pthreads" = "xno" ; then
     echo "  needs thread support."
     exit 1
   fi
-  if test "x$build_async_preload" = "xyes" ; then
-    echo "ERROR: PThreads off, but Async Preload on. Async Preload"
+  if test "x$build_pipe_render" = "xyes" ; then
+    echo "ERROR: PThreads off, but pipe rendering on. Pipe rendering"
     echo "  needs thread support."
     exit 1
   fi
-  if test "x$build_pipe_render" = "xyes" ; then
-    echo "ERROR: PThreads off, but pipe rendering on. Pipe rendering"
+fi
+
+if test "x${has_pthreads}" = "xno" ; then
+  if test "x$build_async_preload" = "xyes" ; then
+    echo "ERROR: PThreads off, but Async Preload on. Async Preload"
     echo "  needs thread support."
     exit 1
   fi
@@ -1634,6 +1623,7 @@ echo "  SVG.....................: $have_evas_image_loader_svg"
 echo "  TIFF....................: $have_evas_image_loader_tiff"
 echo "  XPM.....................: $have_evas_image_loader_xpm"
 echo "  BMP.....................: $have_evas_image_loader_bmp"
+echo "  TGA.....................: $have_evas_image_loader_tga"
 echo "  WBMP....................: $have_evas_image_loader_wbmp"
 echo
 echo "Font Sourcing Systems:"
@@ -1662,7 +1652,7 @@ dnl ... DISABLED! some testing has shown that this seems to have some
 dnl nasty bugs on both x86 and arm (tegra2 dual core tested), so just
 dnl disabling this for now until it can be fixed
 dnl 
-dnl echo "  Threaded Pipe Rendering.: $build_pipe_render"
+echo "  Threaded Pipe Rendering.: $build_pipe_render"
 echo "  Async Pipe Rendering....: $build_async_render"
 echo "  Async Events............: $build_async_events"
 echo "  Async Image Preload.....: $build_async_preload"

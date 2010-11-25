@@ -2,10 +2,6 @@
 # include <config.h>
 #endif
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
 #ifdef HAVE_EVIL
 # include <Evil.h>
 #endif
@@ -556,7 +552,7 @@ module_open(Evas_Module *em)
 }
 
 static void
-module_close(Evas_Module *em)
+module_close(Evas_Module *em __UNUSED__)
 {
 }
 

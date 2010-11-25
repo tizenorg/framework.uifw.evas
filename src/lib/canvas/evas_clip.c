@@ -68,6 +68,8 @@ evas_object_clippers_was_visible(Evas_Object *obj)
  * breaks in logic, or nasty re-work of apps or4 the whole concept of clipping,
  * smart objects and maps... and that will have to wait for evas 2.0
  * 
+ * the below does clip fixups etc. in the even a clip spans a map boundary.
+ * not pretty, but necessary.
  */
 
 #define MAP_ACROSS 1
@@ -83,17 +85,19 @@ evas_object_child_map_across_mark(Evas_Object *obj, Evas_Object *map_obj, Eina_B
         if (obj->smart.smart)
           {
              Evas_Object *obj2;
+             
              EINA_INLIST_FOREACH(evas_object_smart_members_get_direct(obj), obj2)
-     {
-        // if obj->cur.clipper is in clippers list, then set 
+               {
+                  // if obj has its own map - skip it. already done
                   if ((obj2->cur.map) && (obj2->cur.usemap)) continue;
                   evas_object_child_map_across_mark(obj2, map_obj, force);
-     }
+               }
           }
         else if (obj->clip.clipees)
-     {
+          {
              Eina_List *l;
              Evas_Object *obj2;
+             
              EINA_LIST_FOREACH(obj->clip.clipees, l, obj2)
                 evas_object_child_map_across_mark(obj2, map_obj, force);
           }
@@ -110,7 +114,7 @@ evas_object_clip_across_check(Evas_Object *obj)
       evas_object_child_map_across_mark(obj, obj->cur.map_parent, 1);
 #endif   
 }
-   
+
 void
 evas_object_clip_across_clippees_check(Evas_Object *obj)
 {

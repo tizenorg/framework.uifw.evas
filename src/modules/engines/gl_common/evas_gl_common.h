@@ -200,6 +200,9 @@ struct _Evas_GL_Shared
    int w, h;
    int rot;
    int mflip;
+   // persp map
+   int foc, z0, px, py;
+   int ax, ay;
 };
 
 #define RTYPE_RECT  1
@@ -215,7 +218,8 @@ struct _Evas_GL_Context
    int                references;
    int                w, h;
    int                rot;
-   RGBA_Draw_Context  *dc;
+   int                foc, z0, px, py;
+   RGBA_Draw_Context *dc;
    
    Evas_GL_Shared     *shared;
 
@@ -227,9 +231,9 @@ struct _Evas_GL_Context
          GLuint          cur_tex, cur_texu, cur_texv;
          int             render_op;
          int             cx, cy, cw, ch;
-         Eina_Bool       smooth : 1;
-         Eina_Bool       blend : 1;
-         Eina_Bool       clip : 1;
+         int             smooth;
+         int             blend;
+         int             clip;
       } current;
    } state;
    
@@ -248,9 +252,9 @@ struct _Evas_GL_Context
          GLuint          cur_tex, cur_texu, cur_texv;
          int             render_op;
          int             cx, cy, cw, ch;
-         Eina_Bool       smooth : 1;
-         Eina_Bool       blend : 1;
-         Eina_Bool       clip : 1;
+         int             smooth;
+         int             blend;
+         int             clip;
       } shader;
       struct {
          int num, alloc;
@@ -443,30 +447,30 @@ void              evas_gl_common_shader_program_shutdown(Evas_GL_Program *p);
 void              evas_gl_common_rect_draw(Evas_GL_Context *gc, int x, int y, int w, int h);
 
 Evas_GL_Texture  *evas_gl_common_texture_new(Evas_GL_Context *gc, RGBA_Image *im);
-Evas_GL_Texture  *evas_gl_common_texture_native_new(Evas_GL_Context *gc, int w, int h, int alpha, Evas_GL_Image *im);
-Evas_GL_Texture  *evas_gl_common_texture_render_new(Evas_GL_Context *gc, int w, int h, int alpha);
+Evas_GL_Texture  *evas_gl_common_texture_native_new(Evas_GL_Context *gc, unsigned int w, unsigned int h, int alpha, Evas_GL_Image *im);
+Evas_GL_Texture  *evas_gl_common_texture_render_new(Evas_GL_Context *gc, unsigned int w, unsigned int h, int alpha);
 Evas_GL_Texture  *evas_gl_common_texture_dynamic_new(Evas_GL_Context *gc, Evas_GL_Image *im);
 void              evas_gl_common_texture_update(Evas_GL_Texture *tex, RGBA_Image *im);
 void              evas_gl_common_texture_free(Evas_GL_Texture *tex);
-Evas_GL_Texture  *evas_gl_common_texture_alpha_new(Evas_GL_Context *gc, DATA8 *pixels, int w, int h, int fh);
-void              evas_gl_common_texture_alpha_update(Evas_GL_Texture *tex, DATA8 *pixels, int w, int h, int fh);
-Evas_GL_Texture  *evas_gl_common_texture_yuv_new(Evas_GL_Context *gc, DATA8 **rows, int w, int h);
-void              evas_gl_common_texture_yuv_update(Evas_GL_Texture *tex, DATA8 **rows, int w, int h);
+Evas_GL_Texture  *evas_gl_common_texture_alpha_new(Evas_GL_Context *gc, DATA8 *pixels, unsigned int w, unsigned int h, int fh);
+void              evas_gl_common_texture_alpha_update(Evas_GL_Texture *tex, DATA8 *pixels, unsigned int w, unsigned int h, int fh);
+Evas_GL_Texture  *evas_gl_common_texture_yuv_new(Evas_GL_Context *gc, DATA8 **rows, unsigned int w, unsigned int h);
+void              evas_gl_common_texture_yuv_update(Evas_GL_Texture *tex, DATA8 **rows, unsigned int w, unsigned int h);
 
 void              evas_gl_common_image_all_unload(Evas_GL_Context *gc);
 
 Evas_GL_Image    *evas_gl_common_image_load(Evas_GL_Context *gc, const char *file, const char *key, Evas_Image_Load_Opts *lo, int *error);
-Evas_GL_Image    *evas_gl_common_image_new_from_data(Evas_GL_Context *gc, int w, int h, DATA32 *data, int alpha, int cspace);
-Evas_GL_Image    *evas_gl_common_image_new_from_copied_data(Evas_GL_Context *gc, int w, int h, DATA32 *data, int alpha, int cspace);
-Evas_GL_Image    *evas_gl_common_image_new(Evas_GL_Context *gc, int w, int h, int alpha, int cspace);
+Evas_GL_Image    *evas_gl_common_image_new_from_data(Evas_GL_Context *gc, unsigned int w, unsigned int h, DATA32 *data, int alpha, int cspace);
+Evas_GL_Image    *evas_gl_common_image_new_from_copied_data(Evas_GL_Context *gc, unsigned int w, unsigned int h, DATA32 *data, int alpha, int cspace);
+Evas_GL_Image    *evas_gl_common_image_new(Evas_GL_Context *gc, unsigned int w, unsigned int h, int alpha, int cspace);
 Evas_GL_Image    *evas_gl_common_image_alpha_set(Evas_GL_Image *im, int alpha);
 void              evas_gl_common_image_native_enable(Evas_GL_Image *im);
 void              evas_gl_common_image_native_disable(Evas_GL_Image *im);
 void              evas_gl_common_image_scale_hint_set(Evas_GL_Image *im, int hint);
 void              evas_gl_common_image_content_hint_set(Evas_GL_Image *im, int hint);
 void              evas_gl_common_image_free(Evas_GL_Image *im);
-Evas_GL_Image    *evas_gl_common_image_surface_new(Evas_GL_Context *gc, int w, int h, int alpha);
-void              evas_gl_common_image_dirty(Evas_GL_Image *im, int x, int y, int w, int h);
+Evas_GL_Image    *evas_gl_common_image_surface_new(Evas_GL_Context *gc, unsigned int w, unsigned int h, int alpha);
+void              evas_gl_common_image_dirty(Evas_GL_Image *im, unsigned int x, unsigned int y, unsigned int w, unsigned int h);
 void              evas_gl_common_image_map4_draw(Evas_GL_Context *gc, Evas_GL_Image *im, RGBA_Map_Point *p, int smooth, int level);
 void              evas_gl_common_image_draw(Evas_GL_Context *gc, Evas_GL_Image *im, int sx, int sy, int sw, int sh, int dx, int dy, int dw, int dh, int smooth);
 
@@ -480,18 +484,18 @@ void              evas_gl_common_poly_draw(Evas_GL_Context *gc, Evas_GL_Polygon 
 
 void              evas_gl_common_line_draw(Evas_GL_Context *gc, int x1, int y1, int x2, int y2);
 
-void (*glsym_glGenFramebuffers)      (GLsizei a, GLuint *b);
-void (*glsym_glBindFramebuffer)      (GLenum a, GLuint b);
-void (*glsym_glFramebufferTexture2D) (GLenum a, GLenum b, GLenum c, GLuint d, GLint e);
-void (*glsym_glDeleteFramebuffers)   (GLsizei a, const GLuint *b);
+extern void (*glsym_glGenFramebuffers)      (GLsizei a, GLuint *b);
+extern void (*glsym_glBindFramebuffer)      (GLenum a, GLuint b);
+extern void (*glsym_glFramebufferTexture2D) (GLenum a, GLenum b, GLenum c, GLuint d, GLint e);
+extern void (*glsym_glDeleteFramebuffers)   (GLsizei a, const GLuint *b);
 
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-void          *(*secsym_eglCreateImage)               (void *a, void *b, GLenum c, void *d, const int *e);
-unsigned int   (*secsym_eglDestroyImage)              (void *a, void *b);
-void           (*secsym_glEGLImageTargetTexture2DOES) (int a, void *b);
-void          *(*secsym_eglMapImageSEC)               (void *a, void *b);
-unsigned int   (*secsym_eglUnmapImageSEC)             (void *a, void *b);
-unsigned int   (*secsym_eglGetImageAttribSEC)         (void *a, void *b, int c, int *d);
+extern void          *(*secsym_eglCreateImage)               (void *a, void *b, GLenum c, void *d, const int *e);
+extern unsigned int   (*secsym_eglDestroyImage)              (void *a, void *b);
+extern void           (*secsym_glEGLImageTargetTexture2DOES) (int a, void *b);
+extern void          *(*secsym_eglMapImageSEC)               (void *a, void *b);
+extern unsigned int   (*secsym_eglUnmapImageSEC)             (void *a, void *b);
+extern unsigned int   (*secsym_eglGetImageAttribSEC)         (void *a, void *b, int c, int *d);
 #endif
 
 #define GL_ERRORS 1
@@ -505,5 +509,8 @@ unsigned int   (*secsym_eglGetImageAttribSEC)         (void *a, void *b, int c, 
 #else
 # define GLERR(fn, fl, ln, op)
 #endif
+
+Eina_Bool evas_gl_common_module_open(void);
+void      evas_gl_common_module_close(void);
 
 #endif

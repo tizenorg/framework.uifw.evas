@@ -508,12 +508,10 @@ eng_image_draw(void *data __UNUSED__, void *context, void *surface, void *image,
 static void
 eng_image_map4_draw(void *data __UNUSED__, void *context, void *surface, void *image, RGBA_Map_Point *p, int smooth, int level)
 {
-   RGBA_Image *im, *srf;
-//   RGBA_Map_Point *pt = p;
+   RGBA_Image *im;
 
    if (!image) return;
    im = image;
-   srf = surface;
    if ((p[0].x == p[3].x) &&
        (p[1].x == p[2].x) &&
        (p[0].y == p[1].y) &&
@@ -522,12 +520,12 @@ eng_image_map4_draw(void *data __UNUSED__, void *context, void *surface, void *i
        (p[0].y <= p[2].y) &&
        (p[0].u == 0) &&
        (p[0].v == 0) &&
-       (p[1].u == (im->cache_entry.w << FP)) &&
+       (p[1].u == (int)(im->cache_entry.w << FP)) &&
        (p[1].v == 0) &&
-       (p[2].u == (im->cache_entry.w << FP)) &&
-       (p[2].v == (im->cache_entry.h << FP)) &&
+       (p[2].u == (int)(im->cache_entry.w << FP)) &&
+       (p[2].v == (int)(im->cache_entry.h << FP)) &&
        (p[3].u == 0) &&
-       (p[3].v == (im->cache_entry.h << FP)) &&
+       (p[3].v == (int)(im->cache_entry.h << FP)) &&
        (p[0].col == 0xffffffff) &&
        (p[1].col == 0xffffffff) &&
        (p[2].col == 0xffffffff) &&
@@ -891,8 +889,8 @@ static Evas_Func func =
      eng_image_map4_draw,
      eng_image_map_surface_new,
      eng_image_map_surface_free,
-     NULL, // eng_image_content_hint_set - software doesnt use it
-     NULL // eng_image_content_hint_get - software doesnt use it
+     NULL, // eng_image_content_hint_set - software doesn't use it
+     NULL // eng_image_content_hint_get - software doesn't use it
      /* FUTURE software generic calls go here */
 };
 
@@ -908,11 +906,12 @@ static int
 module_open(Evas_Module *em)
 {
    if (!em) return 0;
-   _evas_soft_gen_log_dom = eina_log_domain_register("EvasSoftGeneric", EVAS_DEFAULT_LOG_COLOR);
+   _evas_soft_gen_log_dom = eina_log_domain_register
+     ("evas-software_generic", EVAS_DEFAULT_LOG_COLOR);
    if(_evas_soft_gen_log_dom<0)
      {
-       EINA_LOG_ERR("Evas SoftGen : Impossible to create a log domain for the software generic engine.\n");
-       return 0;
+        EINA_LOG_ERR("Can not create a module log domain.");
+        return 0;
      }
    em->functions = (void *)(&func);
    cpunum = eina_cpu_count();
@@ -920,7 +919,7 @@ module_open(Evas_Module *em)
 }
 
 static void
-module_close(Evas_Module *em)
+module_close(Evas_Module *em __UNUSED__)
 {
   eina_log_domain_unregister(_evas_soft_gen_log_dom);
 }

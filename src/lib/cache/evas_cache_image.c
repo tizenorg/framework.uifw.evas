@@ -43,6 +43,46 @@ static void _evas_cache_image_entry_preload_remove(Image_Entry *ie, const void *
        eina_stringshare_del(Var);  \
        Var = NULL;                 \
     }
+//#define CACHEDUMP 1
+
+#ifdef CACHEDUMP
+static void
+_dump_img(Image_Entry *im, const char *type)
+{
+  printf("%s: %4i: %4ikb, %4ix%4i alloc[%4ix%4i] [%s] [%s]\n",
+         type,
+         im->references,
+         (im->allocated.w * im->allocated.h * 4) / 1024,
+         im->w, im->h, im->allocated.w, im->allocated.h,
+         im->file, im->key);
+}
+
+static Eina_Bool
+_dump_cache_active(__UNUSED__ const Eina_Hash *hash, __UNUSED__ const void *key, void *data, void *fdata __UNUSED__)
+{
+  Image_Entry *im = data;
+ 
+  _dump_img(im, "ACTIVE");
+   return EINA_TRUE;
+}
+
+static void
+_dump_cache(Evas_Cache_Image *cache)
+{
+  Image_Entry *im;
+  
+  printf("--CACHE DUMP----------------------------------------------------\n");
+  printf("%cache: %ikb / %ikb\n",
+         cache->usage / 1024,
+         cache->limit / 1024);
+  printf("................................................................\n");
+  EINA_INLIST_FOREACH(cache->lru_nodata, im)
+    _dump_img(im, "NODATA");
+  EINA_INLIST_FOREACH(cache->lru, im)
+    _dump_img(im, "DATA  ");
+  eina_hash_foreach(cache->activ, _dump_cache_active, NULL);
+}
+#endif
 
 static void _evas_cache_image_entry_delete(Evas_Cache_Image *cache, Image_Entry *ie);
 
@@ -213,9 +253,9 @@ _evas_cache_image_entry_delete(Evas_Cache_Image *cache, Image_Entry *ie)
      }
 #endif
 
-   cache->func.destructor(ie);
-
    _evas_cache_image_remove_activ(cache, ie);
+
+   cache->func.destructor(ie);
 
    if (ie->cache_key)
      {
@@ -322,7 +362,8 @@ _evas_cache_image_entry_new(Evas_Cache_Image *cache,
 static void
 _evas_cache_image_entry_surface_alloc__locked(Evas_Cache_Image *cache,
 					      Image_Entry *ie,
-					      int wmin, int hmin)
+					      unsigned int wmin,
+                                              unsigned int hmin)
 {
    if (ie->allocated.w == wmin && ie->allocated.h == hmin)
      return ;
@@ -539,7 +580,7 @@ evas_cache_image_get(Evas_Cache_Image *cache)
 }
 
 EAPI void
-evas_cache_image_set(Evas_Cache_Image *cache, int limit)
+evas_cache_image_set(Evas_Cache_Image *cache, unsigned int limit)
 {
    assert(cache != NULL);
 #ifdef EVAS_FRAME_QUEUING
@@ -977,7 +1018,7 @@ evas_cache_image_data_not_needed(Image_Entry *im)
 }
 
 EAPI Image_Entry *
-evas_cache_image_dirty(Image_Entry *im, int x, int y, int w, int h)
+evas_cache_image_dirty(Image_Entry *im, unsigned int x, unsigned int y, unsigned int w, unsigned int h)
 {
    Image_Entry *im_dirty = im;
    Evas_Cache_Image *cache;
@@ -1129,7 +1170,7 @@ evas_cache_image_alone(Image_Entry *im)
 }
 
 EAPI Image_Entry *
-evas_cache_image_copied_data(Evas_Cache_Image *cache, int w, int h, DATA32 *image_data, int alpha, int cspace)
+evas_cache_image_copied_data(Evas_Cache_Image *cache, unsigned int w, unsigned int h, DATA32 *image_data, int alpha, int cspace)
 {
    Image_Entry *im;
 
@@ -1166,7 +1207,7 @@ evas_cache_image_copied_data(Evas_Cache_Image *cache, int w, int h, DATA32 *imag
 }
 
 EAPI Image_Entry *
-evas_cache_image_data(Evas_Cache_Image *cache, int w, int h, DATA32 *image_data, int alpha, int cspace)
+evas_cache_image_data(Evas_Cache_Image *cache, unsigned int w, unsigned int h, DATA32 *image_data, int alpha, int cspace)
 {
    Image_Entry *im;
 
@@ -1200,7 +1241,7 @@ evas_cache_image_data(Evas_Cache_Image *cache, int w, int h, DATA32 *image_data,
 }
 
 EAPI void
-evas_cache_image_surface_alloc(Image_Entry *im, int w, int h)
+evas_cache_image_surface_alloc(Image_Entry *im, unsigned int w, unsigned int h)
 {
    Evas_Cache_Image *cache;
 
@@ -1220,7 +1261,7 @@ evas_cache_image_surface_alloc(Image_Entry *im, int w, int h)
 }
 
 EAPI Image_Entry *
-evas_cache_image_size_set(Image_Entry *im, int w, int h)
+evas_cache_image_size_set(Image_Entry *im, unsigned int w, unsigned int h)
 {
    Evas_Cache_Image *cache;
    Image_Entry *new;
@@ -1447,10 +1488,14 @@ EAPI int
 evas_cache_image_flush(Evas_Cache_Image *cache)
 {
    assert(cache);
+   assert(cache->usage >= 0);
 
-   if (cache->limit == -1) return -1;
+#ifdef CACHEDUMP
+  _dump_cache(cache);
+#endif  
+   if (cache->limit == (unsigned int)-1) return -1;
 
-   while ((cache->lru) && (cache->limit < cache->usage))
+   while ((cache->lru) && (cache->limit < (unsigned int)cache->usage))
      {
         Image_Entry *im;
 
@@ -1458,7 +1503,7 @@ evas_cache_image_flush(Evas_Cache_Image *cache)
         _evas_cache_image_entry_delete(cache, im);
      }
 
-   while ((cache->lru_nodata) && (cache->limit < cache->usage))
+   while ((cache->lru_nodata) && (cache->limit < (unsigned int)cache->usage))
      {
         Image_Entry *im;
 

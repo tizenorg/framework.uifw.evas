@@ -145,7 +145,7 @@ server_read(Server *s, int channel, int *opcode, int *size)
    if ((*size < 0) || (*size > (1024 * 1024))) return NULL;
    if (ints[2] != (s->ch[channel].req_from + 1))
      {
-        ERR("EEK! sequence number mismatch from serer with pid: %i\n"
+        ERR("EEK! sequence number mismatch from serer with pid: %i. "
                "---- num %i is not 1 more than %i"
                ,
                s->pid, ints[2], s->ch[channel].req_from);
@@ -515,7 +515,8 @@ evas_cserve_raw_info_get(void)
    if (!cserve) return NULL;
    if (!server_send(cserve, 0, OP_GETINFO, 0, NULL)) return NULL;
    rep = (Op_Getinfo_Reply *)server_read(cserve, 0, &opcode, &size);
-   if ((rep) && (opcode == OP_GETINFO) && (size >= sizeof(Op_Getinfo_Reply)))
+   if ((rep) && (opcode == OP_GETINFO) &&
+       (size >= (int)sizeof(Op_Getinfo_Reply)))
      {
         return rep;
      }

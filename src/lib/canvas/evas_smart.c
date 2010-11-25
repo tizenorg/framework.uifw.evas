@@ -249,7 +249,7 @@ evas_smart_cb_descriptions_resize(Evas_Smart_Cb_Description_Array *a, unsigned i
      }
    else
      {
-	fprintf(stderr, "ERROR: realloc failed!\n");
+	ERR("realloc failed!");
 	return 0;
      }
 }
@@ -307,7 +307,7 @@ evas_smart_cb_descriptions_fix(Evas_Smart_Cb_Description_Array *a)
 	  }
      }
 
-   evas_smart_cb_descriptions_resize(a, a->size - (j - i));
+   evas_smart_cb_descriptions_resize(a, i + 1);
 }
 
 static void
@@ -328,7 +328,7 @@ _evas_smart_class_callbacks_create(Evas_Smart *s)
    for (n = 0, sc = s->smart_class; sc; sc = sc->parent)
      {
 	const Evas_Smart_Cb_Description *d;
-	for (d = sc->callbacks; d->name; d++)
+	for (d = sc->callbacks; d && d->name; d++)
 	  s->callbacks.array[n++] = d;
      }
    evas_smart_cb_descriptions_fix(&s->callbacks);

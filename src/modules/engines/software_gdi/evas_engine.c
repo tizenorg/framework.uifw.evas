@@ -25,10 +25,10 @@ _output_setup(int          width,
               int          height,
               int          rot,
               HWND         window,
-              HBITMAP      mask,
               int          depth,
-              unsigned int layered,
-              unsigned int fullscreen)
+              unsigned int borderless,
+              unsigned int fullscreen,
+              unsigned int region)
 {
    Render_Engine *re;
 
@@ -59,7 +59,7 @@ _output_setup(int          width,
 
    re->ob = evas_software_gdi_outbuf_setup(width, height, rot,
                                            OUTBUF_DEPTH_INHERIT,
-                                           window, mask, depth, layered, fullscreen,
+                                           window, depth, borderless, fullscreen, region,
                                            0, 0);
    if (!re->ob)
      {
@@ -122,10 +122,10 @@ eng_setup(Evas *e, void *in)
                                            e->output.h,
                                            info->info.rotation,
                                            info->info.window,
-                                           info->info.mask,
                                            info->info.depth,
-                                           info->info.layered,
-                                           info->info.fullscreen);
+                                           info->info.borderless,
+                                           info->info.fullscreen,
+                                           info->info.region);
    else
      {
 	int ponebuf = 0;
@@ -138,10 +138,10 @@ eng_setup(Evas *e, void *in)
                                                 info->info.rotation,
                                                 OUTBUF_DEPTH_INHERIT,
                                                 info->info.window,
-                                                info->info.mask,
                                                 info->info.depth,
-                                                info->info.layered,
+                                                info->info.borderless,
                                                 info->info.fullscreen,
+                                                info->info.region,
                                                 0, 0);
 	re->ob->onebuf = ponebuf;
      }
@@ -332,11 +332,12 @@ module_open(Evas_Module *em)
    /* get whatever engine module we inherit from */
    if (!_evas_module_engine_inherit(&pfunc, "software_generic")) return 0;
 
-   _evas_engine_soft_gdi_log_dom = eina_log_domain_register("EvasSoftGDI",EVAS_DEFAULT_LOG_COLOR);
-   if(_evas_engine_soft_gdi_log_dom < 0)
+   _evas_engine_soft_gdi_log_dom = eina_log_domain_register
+     ("evas-software_gdi", EVAS_DEFAULT_LOG_COLOR);
+   if (_evas_engine_soft_gdi_log_dom < 0)
      {
-       EINA_LOG_ERR("Impossible to create a log domain for the Soft_GDI engine.\n");
-       return 0;
+        EINA_LOG_ERR("Can not create a module log domain.");
+        return 0;
      }
    /* store it for later use */
    func = pfunc;
@@ -365,6 +366,7 @@ static void
 module_close(Evas_Module *em)
 {
   eina_log_domain_unregister(_evas_engine_soft_gdi_log_dom);
+  _evas_engine_soft_gdi_log_dom = -1;
 }
 
 static Evas_Module_Api evas_modapi =

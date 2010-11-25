@@ -247,7 +247,7 @@ eng_output_idle_flush(void *data)
 }
 
 static Eina_Bool
-eng_canvas_alpha_get(void *data, void *context)
+eng_canvas_alpha_get(void *data, void *context __UNUSED__)
 {
    Render_Engine *re;
 
@@ -262,11 +262,13 @@ module_open(Evas_Module *em)
    if (!em) return 0;
    /* get whatever engine module we inherit from */
    if (!_evas_module_engine_inherit(&pfunc, "software_generic")) return 0;
-   _evas_engine_fb_log_dom = eina_log_domain_register("Evas_fb_engine", EVAS_DEFAULT_LOG_COLOR);
-   if (_evas_engine_fb_log_dom < 0) {
-     EINA_LOG_ERR("Impossible to create a log domain for FB engine.\n");
-     return 0;
-   }
+   _evas_engine_fb_log_dom = eina_log_domain_register
+     ("evas-fb", EVAS_DEFAULT_LOG_COLOR);
+   if (_evas_engine_fb_log_dom < 0)
+     {
+        EINA_LOG_ERR("Can not create a module log domain.");
+        return 0;
+     }
 
    /* store it for later use */
    func = pfunc;
@@ -292,7 +294,7 @@ module_open(Evas_Module *em)
 }
 
 static void
-module_close(Evas_Module *em)
+module_close(Evas_Module *em __UNUSED__)
 {
   eina_log_domain_unregister(_evas_engine_fb_log_dom);
 }

@@ -75,9 +75,9 @@ evas_engine_[]$1[]_libs=""
 AC_PATH_X
 AC_PATH_XTRA
 
-AC_CHECK_HEADERS([X11/X.h X11/extensions/Xrender.h],
+AC_CHECK_HEADERS([X11/Xlib.h X11/extensions/Xrender.h],
    [have_dep="yes"],
-   [have_dep="no"])
+   [have_dep="no"; break;])
 
 if test "x${have_dep}" = "xyes" ; then
    AC_CHECK_LIB([X11], [XCreateImage], [have_dep="yes"], [have_dep="no"])
@@ -125,16 +125,37 @@ evas_engine_[]$1[]_libs=""
 AC_PATH_X
 AC_PATH_XTRA
 
-AC_CHECK_HEADERS([GL/gl.h GL/glx.h X11/X.h],
+AC_CHECK_HEADER([GL/gl.h],
    [have_dep="yes"],
-   [have_dep="no"])
+   [have_dep="no"],
+   [
+#include <GL/gl.h>
+#include <GL/glext.h>
+#include <GL/glx.h>
+#include <X11/Xlib.h>
+#include <X11/Xatom.h>
+#include <X11/Xutil.h>
+#include <X11/extensions/Xrender.h>
+#include <X11/Xresource.h>
+   ])
+
+gl_pt_lib="";
+have_gl_pt="no"
+AC_CHECK_LIB([pthread], [pthread_create], [have_gl_pt="yes"], [have_gl_pt="no"])
+if test "x$have_gl_pt" = "xyes" ; then
+   gl_pt_lib=" -lpthread"
+fi
 
 if test "x${have_dep}" = "xyes" ; then
    AC_CHECK_LIB([X11], [XCreateColormap], [have_dep="yes"], [have_dep="no"])
 fi
 
 if test "x${have_dep}" = "xyes" ; then
-   AC_CHECK_LIB([GL], [glXCreateContext], [have_dep="yes"], [have_dep="no"])
+   AC_CHECK_LIB([Xrender], [XRenderCreatePicture], [have_dep="yes"], [have_dep="no"])
+fi
+
+if test "x${have_dep}" = "xyes" ; then
+   AC_CHECK_LIB([GL], [glXCreateContext], [have_dep="yes"], [have_dep="no"], -lX11 -lXext -lXrender -lm $gl_pt_lib)
 fi
 
 if test "x$gl_flavor_gles" = "xyes" ; then
@@ -150,8 +171,8 @@ if test "x${have_dep}" = "xyes" ; then
       x_libs="${x_libs:--L${x_libraries:-$x_dir/lib}} -lX11 -lXext -lXrender"
    fi
    evas_engine_[]$1[]_cflags="-I/usr/include ${x_cflags}"
-   evas_engine_[]$1[]_libs="${x_libs} -lGL -lpthread"
-   evas_engine_gl_common_libs="-lGL -lpthread"
+   evas_engine_[]$1[]_libs="${x_libs} -lGL $gl_pt_lib"
+   evas_engine_gl_common_libs="-lGL $gl_pt_lib"
 else
    if test "x$2" = "xyes" ; then
       x_libs="${x_libs} -lX11 -lXext -lXrender"
@@ -160,14 +181,29 @@ else
       x_cflags=${x_cflags:--I${x_includes:-$x_dir/include}}
       x_libs="${x_libs:--L${x_libraries:-$x_dir/lib}} -lX11 -lXext -lXrender"
    fi
-   AC_CHECK_HEADERS([EGL/egl.h X11/X.h X11/Xlib.h X11/extensions/Xrender.h], [have_egl="yes"])
+   AC_CHECK_HEADER([GLES2/gl2.h],
+      [have_egl="yes"],
+      [have_egl="no"],
+      [
+#include <GLES2/gl2.h>
+#include <GLES2/gl2ext.h>
+#include <EGL/egl.h>
+#include <X11/Xlib.h>
+#include <X11/Xatom.h>
+#include <X11/Xutil.h>
+#include <X11/extensions/Xrender.h>
+#include <X11/Xresource.h>
+      ])
    if test "x${have_egl}" = "xyes" ; then
-      AC_CHECK_LIB(GLESv2, glTexImage2D, [have_glesv2="yes"], , -lEGL ${x_libs} -lpthread -lm)
+      AC_CHECK_LIB(GLESv2, glTexImage2D, [have_glesv2="yes"], , -lEGL ${x_libs} -lm $gl_pt_lib)
       if test "x${have_glesv2}" = "xyes" ; then
          evas_engine_[]$1[]_cflags="${x_cflags}"
-         evas_engine_[]$1[]_libs="${x_libs} -lGLESv2 -lpthread -lm -lEGL"
-         evas_engine_gl_common_libs="-lGLESv2 -lpthread -lm"
+         evas_engine_[]$1[]_libs="${x_libs} -lGLESv2 -lEGL -lm $gl_pt_lib"
+         evas_engine_gl_common_libs="-lGLESv2 -lm $gl_pt_lib"
          have_dep="yes"
+         gl_flavor_gles="no"
+         AC_DEFINE(GLES_VARIETY_SGX, 1, [Imagination SGX GLES2 support])
+         gles_variety_sgx="yes"
       fi
    fi
 fi
@@ -372,7 +408,7 @@ AC_CHECK_HEADERS([d3d9.h d3dx9.h],
     have_dep="yes"
     evas_engine_[]$1[]_libs="-ld3d9 -ld3dx9 -lgdi32"
    ],
-   [have_dep="no"]
+   [have_dep="no"; break]
 )
 
 AC_SUBST([evas_engine_$1_cflags])
@@ -400,7 +436,7 @@ AC_REQUIRE([EVAS_MAYBE_GET_OBJCPP])
 AS_IF([test "x${rw_cv_prog_objc_works}" = "xyes"],
 [
    AC_LANG_PUSH([Objective C]) 
-   AC_CHECK_HEADERS([/System/Library/Frameworks/Cocoa.framework/Headers/Cocoa.h],
+   AC_CHECK_HEADER([/System/Library/Frameworks/Cocoa.framework/Headers/Cocoa.h],
       [
        have_dep="yes"
        evas_engine_[]$1[]_libs="-framework Cocoa"
@@ -441,7 +477,7 @@ AC_CHECK_HEADERS([GL/gl.h GL/glew.h],
     have_dep="yes"
     evas_engine_[]$1[]_libs="-lglew32 -lopengl32 -lgdi32"
    ],
-   [have_dep="no"]
+   [have_dep="no"; break;]
 )
 
 AC_SUBST([evas_engine_$1_cflags])
@@ -510,9 +546,20 @@ PKG_CHECK_MODULES([SDL],
    ]
 )
 
-AC_CHECK_HEADERS([GL/gl.h],
+gl_pt_lib="";
+have_gl_pt="no"
+AC_CHECK_LIB([pthread], [pthread_create], [have_gl_pt="yes"], [have_gl_pt="no"])
+if test "x$have_gl_pt" = "xyes" ; then
+   gl_pt_lib=" -lpthread"
+fi
+
+AC_CHECK_HEADER([GL/gl.h],
    [have_dep="yes"],
-   [have_dep="no"])
+   [have_dep="no"],
+   [
+#include <GL/gl.h>
+#include <GL/glext.h>
+   ])
 
 if test "x$gl_flavor_gles" = "xyes" ; then
   have_dep=no
@@ -520,17 +567,26 @@ fi
 
 if test "x${have_dep}" = "xyes" ; then
    evas_engine_[]$1[]_cflags="${SDL_CFLAGS}"
-   evas_engine_[]$1[]_libs="${SDL_LIBS} -lGL -lpthread"
-   evas_engine_gl_common_libs="-lGL -lpthread"
+   evas_engine_[]$1[]_libs="${SDL_LIBS} -lGL -lm $gl_pt_lib"
+   evas_engine_gl_common_libs="-lGL -lm $gl_pt_lib"
 else
-   AC_CHECK_HEADERS([SDL/SDL_opengles.h EGL/egl.h], [have_egl="yes"])
+   AC_CHECK_HEADER([SDL/SDL_opengles.h],
+      [have_egl="yes"],
+      [have_egl="no"],
+      [
+#include <SDL/SDL_opengles.h>
+#include <EGL/egl.h>
+      ])
    if test "x${have_egl}" = "xyes" ; then
-      AC_CHECK_LIB(GLESv2, glTexImage2D, [have_glesv2="yes"], , -lEGL -lpthread -lm)
+      AC_CHECK_LIB(GLESv2, glTexImage2D, [have_glesv2="yes"], , -lEGL -lm $gl_pt_lib)
       if test "x${have_glesv2}" = "xyes" ; then
          evas_engine_[]$1[]_cflags="${SDL_CFLAGS}"
-         evas_engine_[]$1[]_libs="${SDL_LIBS} -lGLESv2 -lpthread -lm -lEGL"
-         evas_engine_gl_common_libs="-lGLESv2 -lpthread -lm"
+         evas_engine_[]$1[]_libs="${SDL_LIBS} -lGLESv2 -lEGL -lm $gl_pt_lib"
+         evas_engine_gl_common_libs="-lGLESv2 -lm $gl_pt_lib"
          have_dep="yes"
+         gl_flavor_gles="no"
+         AC_DEFINE(GLES_VARIETY_SGX, 1, [Imagination SGX GLES2 support])
+         gles_variety_sgx="yes"
       fi
    fi
 fi

@@ -27,6 +27,7 @@ struct _Render_Engine
    } xr; // xres - dpi
    
    int w, h;
+   int vsync;
 };
 
 static int initted = 0;
@@ -39,6 +40,10 @@ static int gl_wins = 0;
 #endif
 typedef void (*_eng_fn) (void);
 
+typedef _eng_fn (*glsym_func_eng_fn) ();
+typedef void    (*glsym_func_void) ();
+typedef void   *(*glsym_func_void_ptr) ();
+
 _eng_fn  (*glsym_eglGetProcAddress)            (const char *a) = NULL;
 void     (*glsym_eglBindTexImage)              (EGLDisplay a, EGLSurface b, int c) = NULL;
 void     (*glsym_eglReleaseTexImage)           (EGLDisplay a, EGLSurface b, int c) = NULL;
@@ -47,6 +52,11 @@ void     (*glsym_eglDestroyImage)              (EGLDisplay a, void *b) = NULL;
 void     (*glsym_glEGLImageTargetTexture2DOES) (int a, void *b)  = NULL;
 #else
 typedef void (*_eng_fn) (void);
+
+typedef _eng_fn (*glsym_func_eng_fn) ();
+typedef void    (*glsym_func_void) ();
+typedef int     (*glsym_func_int) ();
+typedef XID     (*glsym_func_xid) ();
 
 _eng_fn  (*glsym_glXGetProcAddress)  (const char *a) = NULL;
 void     (*glsym_glXBindTexImage)    (Display *a, GLXDrawable b, int c, int *d) = NULL;
@@ -66,68 +76,68 @@ _sym_init(void)
    if (done) return;
    
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-#define FINDSYM(dst, sym) \
-   if ((!dst) && (glsym_eglGetProcAddress)) dst = glsym_eglGetProcAddress(sym); \
-   if (!dst) dst = dlsym(RTLD_DEFAULT, sym)
+#define FINDSYM(dst, sym, typ) \
+   if ((!dst) && (glsym_eglGetProcAddress)) dst = (typ)glsym_eglGetProcAddress(sym); \
+   if (!dst) dst = (typ)dlsym(RTLD_DEFAULT, sym)
    
-   FINDSYM(glsym_eglGetProcAddress, "eglGetProcAddress");
-   FINDSYM(glsym_eglGetProcAddress, "eglGetProcAddressEXT");
-   FINDSYM(glsym_eglGetProcAddress, "eglGetProcAddressARB");
-   FINDSYM(glsym_eglGetProcAddress, "eglGetProcAddressKHR");
+   FINDSYM(glsym_eglGetProcAddress, "eglGetProcAddress", glsym_func_eng_fn);
+   FINDSYM(glsym_eglGetProcAddress, "eglGetProcAddressEXT", glsym_func_eng_fn);
+   FINDSYM(glsym_eglGetProcAddress, "eglGetProcAddressARB", glsym_func_eng_fn);
+   FINDSYM(glsym_eglGetProcAddress, "eglGetProcAddressKHR", glsym_func_eng_fn);
    
-   FINDSYM(glsym_eglBindTexImage, "eglBindTexImage");
-   FINDSYM(glsym_eglBindTexImage, "eglBindTexImageEXT");
-   FINDSYM(glsym_eglBindTexImage, "eglBindTexImageARB");
-   FINDSYM(glsym_eglBindTexImage, "eglBindTexImageKHR");
+   FINDSYM(glsym_eglBindTexImage, "eglBindTexImage", glsym_func_void);
+   FINDSYM(glsym_eglBindTexImage, "eglBindTexImageEXT", glsym_func_void);
+   FINDSYM(glsym_eglBindTexImage, "eglBindTexImageARB", glsym_func_void);
+   FINDSYM(glsym_eglBindTexImage, "eglBindTexImageKHR", glsym_func_void);
    
-   FINDSYM(glsym_eglReleaseTexImage, "eglReleaseTexImage");
-   FINDSYM(glsym_eglReleaseTexImage, "eglReleaseTexImageEXT");
-   FINDSYM(glsym_eglReleaseTexImage, "eglReleaseTexImageARB");
-   FINDSYM(glsym_eglReleaseTexImage, "eglReleaseTexImageKHR");
+   FINDSYM(glsym_eglReleaseTexImage, "eglReleaseTexImage", glsym_func_void);
+   FINDSYM(glsym_eglReleaseTexImage, "eglReleaseTexImageEXT", glsym_func_void);
+   FINDSYM(glsym_eglReleaseTexImage, "eglReleaseTexImageARB", glsym_func_void);
+   FINDSYM(glsym_eglReleaseTexImage, "eglReleaseTexImageKHR", glsym_func_void);
    
-   FINDSYM(glsym_eglCreateImage, "eglCreateImage");
-   FINDSYM(glsym_eglCreateImage, "eglCreateImageEXT");
-   FINDSYM(glsym_eglCreateImage, "eglCreateImageARB");
-   FINDSYM(glsym_eglCreateImage, "eglCreateImageKHR");
+   FINDSYM(glsym_eglCreateImage, "eglCreateImage", glsym_func_void_ptr);
+   FINDSYM(glsym_eglCreateImage, "eglCreateImageEXT", glsym_func_void_ptr);
+   FINDSYM(glsym_eglCreateImage, "eglCreateImageARB", glsym_func_void_ptr);
+   FINDSYM(glsym_eglCreateImage, "eglCreateImageKHR", glsym_func_void_ptr);
 
-   FINDSYM(glsym_eglDestroyImage, "eglDestroyImage");
-   FINDSYM(glsym_eglDestroyImage, "eglDestroyImageEXT");
-   FINDSYM(glsym_eglDestroyImage, "eglDestroyImageARB");
-   FINDSYM(glsym_eglDestroyImage, "eglDestroyImageKHR");
+   FINDSYM(glsym_eglDestroyImage, "eglDestroyImage", glsym_func_void);
+   FINDSYM(glsym_eglDestroyImage, "eglDestroyImageEXT", glsym_func_void);
+   FINDSYM(glsym_eglDestroyImage, "eglDestroyImageARB", glsym_func_void);
+   FINDSYM(glsym_eglDestroyImage, "eglDestroyImageKHR", glsym_func_void);
 
-   FINDSYM(glsym_glEGLImageTargetTexture2DOES, "glEGLImageTargetTexture2DOES");
+   FINDSYM(glsym_glEGLImageTargetTexture2DOES, "glEGLImageTargetTexture2DOES", glsym_func_void);
 #else
-#define FINDSYM(dst, sym) \
-   if ((!dst) && (glsym_glXGetProcAddress)) dst = glsym_glXGetProcAddress(sym); \
-   if (!dst) dst = dlsym(RTLD_DEFAULT, sym)
+#define FINDSYM(dst, sym, typ) \
+   if ((!dst) && (glsym_glXGetProcAddress)) dst = (typ)glsym_glXGetProcAddress(sym); \
+   if (!dst) dst = (typ)dlsym(RTLD_DEFAULT, sym)
 
-   FINDSYM(glsym_glXGetProcAddress, "glXGetProcAddress");
-   FINDSYM(glsym_glXGetProcAddress, "glXGetProcAddressEXT");
-   FINDSYM(glsym_glXGetProcAddress, "glXGetProcAddressARB");
+   FINDSYM(glsym_glXGetProcAddress, "glXGetProcAddress", glsym_func_eng_fn);
+   FINDSYM(glsym_glXGetProcAddress, "glXGetProcAddressEXT", glsym_func_eng_fn);
+   FINDSYM(glsym_glXGetProcAddress, "glXGetProcAddressARB", glsym_func_eng_fn);
    
-   FINDSYM(glsym_glXBindTexImage, "glXBindTexImage");
-   FINDSYM(glsym_glXBindTexImage, "glXBindTexImageEXT");
-   FINDSYM(glsym_glXBindTexImage, "glXBindTexImageARB");
+   FINDSYM(glsym_glXBindTexImage, "glXBindTexImage", glsym_func_void);
+   FINDSYM(glsym_glXBindTexImage, "glXBindTexImageEXT", glsym_func_void);
+   FINDSYM(glsym_glXBindTexImage, "glXBindTexImageARB", glsym_func_void);
 
-   FINDSYM(glsym_glXReleaseTexImage, "glXReleaseTexImage");
-   FINDSYM(glsym_glXReleaseTexImage, "glXReleaseTexImageEXT");
-   FINDSYM(glsym_glXReleaseTexImage, "glXReleaseTexImageARB");
+   FINDSYM(glsym_glXReleaseTexImage, "glXReleaseTexImage", glsym_func_void);
+   FINDSYM(glsym_glXReleaseTexImage, "glXReleaseTexImageEXT", glsym_func_void);
+   FINDSYM(glsym_glXReleaseTexImage, "glXReleaseTexImageARB", glsym_func_void);
 
-   FINDSYM(glsym_glXGetVideoSync, "glXGetVideoSyncSGI");
+   FINDSYM(glsym_glXGetVideoSync, "glXGetVideoSyncSGI", glsym_func_int);
    
-   FINDSYM(glsym_glXWaitVideoSync, "glXWaitVideoSyncSGI");
+   FINDSYM(glsym_glXWaitVideoSync, "glXWaitVideoSyncSGI", glsym_func_int);
 
-   FINDSYM(glsym_glXCreatePixmap, "glXCreatePixmap");
-   FINDSYM(glsym_glXCreatePixmap, "glXCreatePixmapEXT");
-   FINDSYM(glsym_glXCreatePixmap, "glXCreatePixmapARB");
+   FINDSYM(glsym_glXCreatePixmap, "glXCreatePixmap", glsym_func_xid);
+   FINDSYM(glsym_glXCreatePixmap, "glXCreatePixmapEXT", glsym_func_xid);
+   FINDSYM(glsym_glXCreatePixmap, "glXCreatePixmapARB", glsym_func_xid);
    
-   FINDSYM(glsym_glXDestroyPixmap, "glXDestroyPixmap");
-   FINDSYM(glsym_glXDestroyPixmap, "glXDestroyPixmapEXT");
-   FINDSYM(glsym_glXDestroyPixmap, "glXDestroyPixmapARB");
+   FINDSYM(glsym_glXDestroyPixmap, "glXDestroyPixmap", glsym_func_void);
+   FINDSYM(glsym_glXDestroyPixmap, "glXDestroyPixmapEXT", glsym_func_void);
+   FINDSYM(glsym_glXDestroyPixmap, "glXDestroyPixmapARB", glsym_func_void);
    
-   FINDSYM(glsym_glXQueryDrawable, "glXQueryDrawable");
-   FINDSYM(glsym_glXQueryDrawable, "glXQueryDrawableEXT");
-   FINDSYM(glsym_glXQueryDrawable, "glXQueryDrawableARB");
+   FINDSYM(glsym_glXQueryDrawable, "glXQueryDrawable", glsym_func_void);
+   FINDSYM(glsym_glXQueryDrawable, "glXQueryDrawableEXT", glsym_func_void);
+   FINDSYM(glsym_glXQueryDrawable, "glXQueryDrawableARB", glsym_func_void);
 #endif
 }
 
@@ -212,7 +222,7 @@ _re_wincheck(Render_Engine *re)
    eng_window_resurf(re->win);
    if (!re->win->surf)
      {
-        fprintf(stderr, "ERROR: GL engine can't re-create window surface!\n");
+        ERR("GL engine can't re-create window surface!");
      }
    return 0;
 }
@@ -386,25 +396,6 @@ eng_setup(Evas *e, void *in)
                   eng_window_use(re->win);
                   evas_gl_common_context_resize(re->win->gl_context, re->win->w, re->win->h, re->win->rot);
                }
-		    // added by gl77.lee
-		    else if (info->no_swap == 1)
-		      {
-		         info->num_deferred_swaps = 0;
-		      }
-		    else if (info->no_swap == 0)
-		      {
-		         if (info->num_deferred_swaps > 0)
-		           {
-	#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-		              if (re->win->egl_disp && re->win->egl_surface[0])
-		                eglSwapBuffers(re->win->egl_disp, re->win->egl_surface[0]);
-	#else
-		              if (re->win->disp && re->win->win)
-		                 glXSwapBuffers(re->win->disp, re->win->win);
-	#endif
-		              info->num_deferred_swaps = 0;
-		           }
-			}
           }
      }
    if (!re->win)
@@ -428,6 +419,7 @@ eng_setup(Evas *e, void *in)
      e->engine.func->context_new(e->engine.data.output);
    eng_window_use(re->win);
    
+   re->vsync = 0;
    if (re->win->alpha)
      {
         glClearColor(0.0, 0.0, 0.0, 0.0);
@@ -479,11 +471,8 @@ eng_output_resize(void *data, int w, int h)
 }
 
 static void
-eng_output_tile_size_set(void *data, int w __UNUSED__, int h __UNUSED__)
+eng_output_tile_size_set(void *data __UNUSED__, int w __UNUSED__, int h __UNUSED__)
 {
-//   Render_Engine *re;
-//
-//   re = (Render_Engine *)data;
 }
 
 static void
@@ -521,11 +510,8 @@ eng_output_redraws_rect_add(void *data, int x, int y, int w, int h)
 }
 
 static void
-eng_output_redraws_rect_del(void *data, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
+eng_output_redraws_rect_del(void *data __UNUSED__, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
 {
-//   Render_Engine *re;
-//
-//   re = (Render_Engine *)data;
 }
 
 static void
@@ -577,6 +563,8 @@ get_time(void)
 }
 #endif
 
+static int safe_native = -1;
+
 static void
 eng_output_redraws_next_update_push(void *data, void *surface __UNUSED__, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
 {
@@ -592,6 +580,21 @@ eng_output_redraws_next_update_push(void *data, void *surface __UNUSED__, int x 
    re->win->draw.redraw = 0;
    re->win->draw.drew = 1;
    evas_gl_common_context_flush(re->win->gl_context);
+   if (safe_native == -1)
+     {
+        const char *s = getenv("EVAS_GL_SAFE_NATIVE");
+        safe_native = 0;
+        if (s) safe_native = atoi(s);
+        else
+          {
+             s = (const char *)glGetString(GL_RENDERER);
+             if (s)
+               {
+                  if (strstr(s, "PowerVR SGX 540"))
+                     safe_native = 1;
+               }
+          }
+     }
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
    // this is needed to make sure all previous rendering is flushed to
    // buffers/surfaces
@@ -600,8 +603,8 @@ eng_output_redraws_next_update_push(void *data, void *surface __UNUSED__, int x 
    ta = t0 - pt;
    pt = t0;
 #endif
-   // to avoid rendering performance drop - gl77.lee 100518
-   //eglWaitNative(EGL_CORE_NATIVE_ENGINE); // previous rendering should be done and swapped
+   // previous rendering should be done and swapped
+   if (!safe_native) eglWaitNative(EGL_CORE_NATIVE_ENGINE);
 #ifdef FRAMECOUNT
    double t1 = get_time();
    tb = t1 - t0;
@@ -612,7 +615,8 @@ eng_output_redraws_next_update_push(void *data, void *surface __UNUSED__, int x 
 //        printf("Error:  eglWaitNative(EGL_CORE_NATIVE_ENGINE) fail.\n");
 //     }
 #else
-   glXWaitGL();
+   // previous rendering should be done and swapped
+   if (!safe_native) glXWaitX();
 #endif
 //x//   printf("frame -> push\n");
 }
@@ -633,18 +637,14 @@ eng_output_flush(void *data)
 #ifdef FRAMECOUNT
    double t0 = get_time();
 #endif
-   // Don't need to set swap interval for every frame. - gl77.lee 100831
-   //if (re->info->vsync)
-   //   eglSwapInterval(re->win->egl_disp, 1);
-   //else
-   //   eglSwapInterval(re->win->egl_disp, 0);
-   if (re->info->no_swap)
+   if (!re->vsync)
      {
-        glFlush();
-        re->info->num_deferred_swaps++;
+        if (re->info->vsync) eglSwapInterval(re->win->egl_disp, 1);
+        else eglSwapInterval(re->win->egl_disp, 0);
+        re->vsync = 1;
      }
-   else
-     eglSwapBuffers(re->win->egl_disp, re->win->egl_surface[0]);
+   eglSwapBuffers(re->win->egl_disp, re->win->egl_surface[0]);
+   if (!safe_native) eglWaitGL();
 #ifdef FRAMECOUNT
    double t1 = get_time();
    printf("%1.5f\n", t1 - t0);
@@ -670,25 +670,22 @@ eng_output_flush(void *data)
      {
         re->info->callback.pre_swap(re->info->callback.data, re->evas);
      }
+/*   
    if ((1)
 //       (re->win->draw.x1 == 0) && 
 //       (re->win->draw.y1 == 0) &&
 //       (re->win->draw.x2 == (re->win->w - 1)) &&
 //       (re->win->draw.y2 == (re->win->h - 1))
        )
+ */
      {
-        // added by gl77.lee
-        if (re->info->no_swap)
-          {
-             glFlush();
-             re->info->num_deferred_swaps++;
-          }
-        else
-          glXSwapBuffers(re->win->disp, re->win->win);
+        glXSwapBuffers(re->win->disp, re->win->win);
+        if (!safe_native) glXWaitGL();
      }
+/*   
    else
      {
-// FIXME: this doesnt work.. why oh why?        
+// FIXME: this doesn't work.. why oh why?        
         int sx, sy, sw, sh;
         
         // fimxe - reset when done
@@ -710,6 +707,7 @@ eng_output_flush(void *data)
         glDrawBuffer(GL_BACK);
         glFlush();
      }
+ */
    if (re->info->callback.post_swap)
      {
         re->info->callback.post_swap(re->info->callback.data, re->evas);
@@ -744,7 +742,7 @@ eng_output_dump(void *data)
 }
 
 static void
-eng_context_cutout_add(void *data, void *context, int x, int y, int w, int h)
+eng_context_cutout_add(void *data __UNUSED__, void *context, int x, int y, int w, int h)
 {
 //   Render_Engine *re;
 //
@@ -754,7 +752,7 @@ eng_context_cutout_add(void *data, void *context, int x, int y, int w, int h)
 }
 
 static void
-eng_context_cutout_clear(void *data, void *context)
+eng_context_cutout_clear(void *data __UNUSED__, void *context)
 {
 //   Render_Engine *re;
 //
@@ -818,7 +816,7 @@ eng_polygon_draw(void *data, void *context, void *surface __UNUSED__, void *poly
 }
 
 static int
-eng_image_alpha_get(void *data, void *image)
+eng_image_alpha_get(void *data __UNUSED__, void *image)
 {
 //   Render_Engine *re;
    Evas_GL_Image *im;
@@ -830,7 +828,7 @@ eng_image_alpha_get(void *data, void *image)
 }
 
 static int
-eng_image_colorspace_get(void *data, void *image)
+eng_image_colorspace_get(void *data __UNUSED__, void *image)
 {
 //   Render_Engine *re;
    Evas_GL_Image *im;
@@ -870,12 +868,12 @@ eng_image_alpha_set(void *data, void *image, int has_alpha)
    if (im->references > 1)
      {
         Evas_GL_Image *im_new;
-       
-        im_new = evas_gl_common_image_new_from_copied_data  
-	   (im->gc, im->im->cache_entry.w, im->im->cache_entry.h,   
-	       im->im->image.data,  
-	       eng_image_alpha_get(data, image),  
-               eng_image_colorspace_get(data, image)); 
+        
+        im_new = evas_gl_common_image_new_from_copied_data
+           (im->gc, im->im->cache_entry.w, im->im->cache_entry.h, 
+               im->im->image.data,
+               eng_image_alpha_get(data, image),
+               eng_image_colorspace_get(data, image));
         if (!im_new) return im;
         evas_gl_common_image_free(im);
         im = im_new;
@@ -888,7 +886,7 @@ eng_image_alpha_set(void *data, void *image, int has_alpha)
 }
 
 static void *
-eng_image_border_set(void *data, void *image, int l __UNUSED__, int r __UNUSED__, int t __UNUSED__, int b __UNUSED__)
+eng_image_border_set(void *data __UNUSED__, void *image, int l __UNUSED__, int r __UNUSED__, int t __UNUSED__, int b __UNUSED__)
 {
 //   Render_Engine *re;
 //
@@ -897,7 +895,7 @@ eng_image_border_set(void *data, void *image, int l __UNUSED__, int r __UNUSED__
 }
 
 static void
-eng_image_border_get(void *data, void *image __UNUSED__, int *l __UNUSED__, int *r __UNUSED__, int *t __UNUSED__, int *b __UNUSED__)
+eng_image_border_get(void *data __UNUSED__, void *image __UNUSED__, int *l __UNUSED__, int *r __UNUSED__, int *t __UNUSED__, int *b __UNUSED__)
 {
 //   Render_Engine *re;
 //
@@ -905,7 +903,7 @@ eng_image_border_get(void *data, void *image __UNUSED__, int *l __UNUSED__, int 
 }
 
 static char *
-eng_image_comment_get(void *data, void *image, char *key __UNUSED__)
+eng_image_comment_get(void *data __UNUSED__, void *image, char *key __UNUSED__)
 {
 //   Render_Engine *re;
    Evas_GL_Image *im;
@@ -918,7 +916,7 @@ eng_image_comment_get(void *data, void *image, char *key __UNUSED__)
 }
 
 static char *
-eng_image_format_get(void *data, void *image)
+eng_image_format_get(void *data __UNUSED__, void *image)
 {
 //   Render_Engine *re;
    Evas_GL_Image *im;
@@ -1015,10 +1013,10 @@ _native_bind_cb(void *data, void *image)
           {
              glsym_glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, n->egl_surface);
              if (eglGetError() != EGL_SUCCESS)
-                printf("Error:  glEGLImageTargetTexture2DOES() fail.\n");
+               ERR("glEGLImageTargetTexture2DOES() failed.");
           }
         else
-           printf("Try glEGLImageTargetTexture2DOES on EGL with no support\n");
+          ERR("Try glEGLImageTargetTexture2DOES on EGL with no support");
      }
 #else
 # ifdef GLX_BIND_TO_TEXTURE_TARGETS_EXT
@@ -1031,7 +1029,7 @@ _native_bind_cb(void *data, void *image)
         GLERR(__FUNCTION__, __FILE__, __LINE__, "");
      }
    else
-      printf("Try glXBindTexImage on GLX with no support\n");
+     ERR("Try glXBindTexImage on GLX with no support");
 # endif
 #endif
 }
@@ -1055,7 +1053,7 @@ _native_unbind_cb(void *data, void *image)
         GLERR(__FUNCTION__, __FILE__, __LINE__, "");
      }
    else
-      printf("Try glXReleaseTexImage on GLX with no support\n");
+     ERR("Try glXReleaseTexImage on GLX with no support");
 # endif
 #endif
 }
@@ -1078,10 +1076,10 @@ _native_free_cb(void *data, void *image)
              glsym_eglDestroyImage(re->win->egl_disp,
                                    n->egl_surface);
              if (eglGetError() != EGL_SUCCESS)
-                printf("Error:  eglDestroyImage() fail.\n");
+               ERR("eglDestroyImage() failed.");
           }
         else
-           printf("Try eglDestroyImage on EGL with no support\n");
+          ERR("Try eglDestroyImage on EGL with no support");
      }
 #else
 # ifdef GLX_BIND_TO_TEXTURE_TARGETS_EXT
@@ -1096,7 +1094,7 @@ _native_free_cb(void *data, void *image)
                   GLERR(__FUNCTION__, __FILE__, __LINE__, "");
                }
              else
-                printf("Try glXReleaseTexImage on GLX with no support\n");
+               ERR("Try glXReleaseTexImage on GLX with no support");
           }
         if (glsym_glXDestroyPixmap)
           {
@@ -1104,7 +1102,7 @@ _native_free_cb(void *data, void *image)
              GLERR(__FUNCTION__, __FILE__, __LINE__, "");
           }
         else
-           printf("Try glXDestroyPixmap on GLX with no support\n");
+           ERR("Try glXDestroyPixmap on GLX with no support");
         n->glx_pixmap = 0;
      }
 # endif
@@ -1136,8 +1134,8 @@ eng_image_native_set(void *data, void *image, void *native)
         pm = ns->data.x11.pixmap;
         if (im->native.data)
           {
-             Evas_Native_Surface *n = im->native.data;
-             if ((n->data.x11.visual == vis) && (n->data.x11.pixmap == pm))
+             Evas_Native_Surface *ens = im->native.data;
+             if ((ens->data.x11.visual == vis) && (ens->data.x11.pixmap == pm))
                 return im;
           }
      }
@@ -1202,7 +1200,7 @@ eng_image_native_set(void *data, void *image, void *native)
              
              if (!eglChooseConfig(re->win->egl_disp, config_attrs, 
                                   &egl_config, 1, &num_config))
-                printf("ERROR: eglChooseConfig() failed for pixmap 0x%x, num_config = %i\n", (unsigned int)pm, num_config);
+               ERR("eglChooseConfig() failed for pixmap 0x%x, num_config = %i", (unsigned int)pm, num_config);
              n->pixmap = pm;
              n->visual = vis;
              if (glsym_eglCreateImage)
@@ -1212,9 +1210,9 @@ eng_image_native_set(void *data, void *image, void *native)
                                                       (void *)pm,
                                                       NULL);
              else
-                printf("Try eglCreateImage on EGL with no support\n");
+               ERR("Try eglCreateImage on EGL with no support");
              if (!n->egl_surface)
-                printf("ERROR: eglCreatePixmapSurface() for 0x%x failed\n", (unsigned int)pm);
+               ERR("eglCreatePixmapSurface() for 0x%x failed", (unsigned int)pm);
              im->native.yinvert     = 1;
              im->native.loose       = 0;
              im->native.data        = n;
@@ -1242,8 +1240,8 @@ eng_image_native_set(void *data, void *image, void *native)
         if (n)
           {
              int pixmap_att[20];
-             int target = 0;
-             int i = 0;
+             unsigned int target = 0;
+             unsigned int i = 0;
 
              eina_hash_add(re->win->gl_context->shared->native_hash, &pmid, im);
              if ((re->win->depth_cfg[depth].tex_target &
@@ -1255,12 +1253,12 @@ eng_image_native_set(void *data, void *image, void *native)
              else if ((re->win->depth_cfg[depth].tex_target &
                        GLX_TEXTURE_RECTANGLE_BIT_EXT))
                {
-                  printf("rect!!! (not handled)\n");
+                  ERR("rect!!! (not handled)");
                   target = GLX_TEXTURE_RECTANGLE_EXT;
                }
              if (!target)
                {
-                  printf("broken text-from-pixmap\n");
+                  ERR("broken text-from-pixmap");
                   if (!(re->win->depth_cfg[depth].tex_target &
                         GLX_TEXTURE_2D_BIT_EXT))
                      target = GLX_TEXTURE_RECTANGLE_EXT;
@@ -1293,14 +1291,14 @@ eng_image_native_set(void *data, void *image, void *native)
                                                       n->pixmap, 
                                                       pixmap_att);
              else
-                printf("Try glXCreatePixmap on GLX with no support\n");
+               ERR("Try glXCreatePixmap on GLX with no support");
              if (n->glx_pixmap)
                {
 //                  printf("%p: new native texture for %x | %4i x %4i @ %2i = %p\n",
 //                         n, pm, w, h, depth, n->glx_pixmap);
                   if (!target)
                     {
-                       printf("no target :(\n");
+                       ERR("no target :(");
                        if (glsym_glXQueryDrawable)
                           glsym_glXQueryDrawable(re->win->disp,
                                                  n->pixmap, 
@@ -1323,11 +1321,11 @@ eng_image_native_set(void *data, void *image, void *native)
                     {
                        im->native.target = GL_TEXTURE_2D;
                        im->native.mipmap = 0;
-                       printf("still unknown target\n");
+                       ERR("still unknown target");
                     }
                }
              else
-                printf("ERROR: GLX Pixmap create fail\n");
+               ERR("GLX Pixmap create fail");
              im->native.yinvert     = re->win->depth_cfg[depth].yinvert;
              im->native.loose       = re->win->detected.loose_binding;
              im->native.data        = n;
@@ -1345,9 +1343,8 @@ eng_image_native_set(void *data, void *image, void *native)
 }
 
 static void *
-eng_image_native_get(void *data, void *image)
+eng_image_native_get(void *data __UNUSED__, void *image)
 {
-   Render_Engine *re = (Render_Engine *)data;
    Evas_GL_Image *im = image;
    Native *n;
    if (!im) return NULL;
@@ -1403,7 +1400,7 @@ eng_image_free(void *data, void *image)
 }
 
 static void
-eng_image_size_get(void *data, void *image, int *w, int *h)
+eng_image_size_get(void *data __UNUSED__, void *image, int *w, int *h)
 {
    if (!image)
      {
@@ -1434,9 +1431,9 @@ eng_image_size_set(void *data, void *image, int w, int h)
    if ((im->tex) && (im->tex->pt->dyn.img))
      {
         evas_gl_common_texture_free(im->tex);
+        im->tex = NULL;
         im->w = w;
         im->h = h;
-        im->tex = NULL;
         im->tex = evas_gl_common_texture_dynamic_new(im->gc, im);
         return image;
      }
@@ -1444,7 +1441,9 @@ eng_image_size_set(void *data, void *image, int w, int h)
    if ((eng_image_colorspace_get(data, image) == EVAS_COLORSPACE_YCBCR422P601_PL) ||
        (eng_image_colorspace_get(data, image) == EVAS_COLORSPACE_YCBCR422P709_PL))
      w &= ~0x1;
-   if ((im_old) && (im_old->im->cache_entry.w == w) && (im_old->im->cache_entry.h == h))
+   if ((im_old) &&
+       ((int)im_old->im->cache_entry.w == w) &&
+       ((int)im_old->im->cache_entry.h == h))
      return image;
    if (im_old)
      {
@@ -1514,11 +1513,11 @@ eng_image_data_get(void *data, void *image, int to_write, DATA32 **image_data)
 	       {
 		  Evas_GL_Image *im_new;
 
-		  im_new = evas_gl_common_image_new_from_copied_data  
-		     (im->gc, im->im->cache_entry.w, im->im->cache_entry.h,  
-		         im->im->image.data,  
-		         eng_image_alpha_get(data, image),  
-		         eng_image_colorspace_get(data, image));    
+   		  im_new = evas_gl_common_image_new_from_copied_data
+                     (im->gc, im->im->cache_entry.w, im->im->cache_entry.h,
+                         im->im->image.data,
+                         eng_image_alpha_get(data, image),
+                         eng_image_colorspace_get(data, image));
    		  if (!im_new)
    		    {
    		       *image_data = NULL;
@@ -1672,13 +1671,49 @@ eng_image_scale_hint_get(void *data __UNUSED__, void *image)
 static void
 eng_image_map4_draw(void *data __UNUSED__, void *context, void *surface, void *image, RGBA_Map_Point *p, int smooth, int level)
 {
+   Evas_GL_Image *gim = image;
    Render_Engine *re;
    
    re = (Render_Engine *)data;
+   if (!image) return;
    eng_window_use(re->win);
    evas_gl_common_context_target_surface_set(re->win->gl_context, surface);
    re->win->gl_context->dc = context;
-   evas_gl_common_image_map4_draw(re->win->gl_context, image, p, smooth, level);
+   if ((p[0].x == p[3].x) &&
+       (p[1].x == p[2].x) &&
+       (p[0].y == p[1].y) &&
+       (p[3].y == p[2].y) &&
+       (p[0].x <= p[1].x) &&
+       (p[0].y <= p[2].y) &&
+       (p[0].u == 0) &&
+       (p[0].v == 0) &&
+       (p[1].u == (gim->w << FP)) &&
+       (p[1].v == 0) &&
+       (p[2].u == (gim->w << FP)) &&
+       (p[2].v == (gim->h << FP)) &&
+       (p[3].u == 0) &&
+       (p[3].v == (gim->h << FP)) &&
+       (p[0].col == 0xffffffff) &&
+       (p[1].col == 0xffffffff) &&
+       (p[2].col == 0xffffffff) &&
+       (p[3].col == 0xffffffff))
+     {
+        int dx, dy, dw, dh;
+        
+        dx = p[0].x >> FP;
+        dy = p[0].y >> FP;
+        dw = (p[2].x >> FP) - dx;
+        dh = (p[2].y >> FP) - dy;
+        eng_image_draw
+           (data, context, surface, image,
+               0, 0, gim->w, gim->h,
+               dx, dy, dw, dh, smooth);
+     }
+   else
+     {
+        evas_gl_common_image_map4_draw(re->win->gl_context, image, p,
+                                       smooth, level);
+     }
 }
 
 static void *
@@ -1711,9 +1746,8 @@ eng_image_content_hint_get(void *data __UNUSED__, void *image)
 }
 
 static void
-eng_image_stride_get(void *data, void *image, int *stride)
+eng_image_stride_get(void *data __UNUSED__, void *image, int *stride)
 {
-   Render_Engine *re = (Render_Engine *)data;
    Evas_GL_Image *im = image;
    *stride = im->w * 4;
    if ((im->tex) && (im->tex->pt->dyn.img))
@@ -1772,13 +1806,15 @@ module_open(Evas_Module *em)
      }
 
    if (!em) return 0;
+   if (!evas_gl_common_module_open()) return 0;
    /* get whatever engine module we inherit from */
    if (!_evas_module_engine_inherit(&pfunc, "software_generic")) return 0;
    if (_evas_engine_GL_X11_log_dom < 0)
-     _evas_engine_GL_X11_log_dom = eina_log_domain_register("EvasEngineGLX11", EVAS_DEFAULT_LOG_COLOR);
+     _evas_engine_GL_X11_log_dom = eina_log_domain_register
+       ("evas-gl_x11", EVAS_DEFAULT_LOG_COLOR);
    if (_evas_engine_GL_X11_log_dom < 0)
      {
-        EINA_LOG_ERR("Impossible to create a log domain for GL X11 engine.\n");
+        EINA_LOG_ERR("Can not create a module log domain.");
         return 0;
      }
    /* store it for later use */
@@ -1850,7 +1886,7 @@ module_open(Evas_Module *em)
 }
 
 static void
-module_close(Evas_Module *em)
+module_close(Evas_Module *em __UNUSED__)
 {
     eina_log_domain_unregister(_evas_engine_GL_X11_log_dom);
     if (xrdb_user.db)
@@ -1860,6 +1896,7 @@ module_close(Evas_Module *em)
 	 xrdb_user.last_mtime = 0;
 	 xrdb_user.db = NULL;
       }
+    evas_gl_common_module_close();
 }
 
 static Evas_Module_Api evas_modapi =

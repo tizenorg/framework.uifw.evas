@@ -38,15 +38,15 @@ extern "C" {
 #define EVAS_VERSION_MAJOR 1
 #define EVAS_VERSION_MINOR 0
 
-   typedef struct _Evas_Version
-     {
-        int major;
-        int minor;
-        int micro;
-        int revision;
-     } Evas_Version;
-   
-   EAPI extern Evas_Version *evas_version;
+typedef struct _Evas_Version
+{
+   int major;
+   int minor;
+   int micro;
+   int revision;
+} Evas_Version;
+
+EAPI extern Evas_Version *evas_version;
 
 /**
  * @file
@@ -57,6 +57,14 @@ extern "C" {
  * @todo finish api documentation
  */
 
+/* BiDi exposed stuff */
+   /*FIXME: document */
+typedef enum _Evas_BiDi_Direction
+{
+   EVAS_BIDI_DIRECTION_NATURAL,
+   EVAS_BIDI_DIRECTION_LTR,
+   EVAS_BIDI_DIRECTION_RTL
+} Evas_BiDi_Direction;
 
 /**
  * Identifier of callbacks to be used with object or canvas.
@@ -105,7 +113,8 @@ typedef enum _Evas_Callback_Type
    EVAS_CALLBACK_RENDER_FLUSH_PRE, /**< Called just before rendering is updated on the canvas target */
    EVAS_CALLBACK_RENDER_FLUSH_POST, /**< Called just after rendering is updated on the canvas target */
 
-
+   EVAS_CALLBACK_CANVAS_OBJECT_FOCUS_IN, /**< Canvas object got focus */
+   EVAS_CALLBACK_CANVAS_OBJECT_FOCUS_OUT, /**< Canvas object lost focus */
 
    /* the following id no event number, but a sentinel: */
    EVAS_CALLBACK_LAST /**< keep as last element/sentinel -- not really an event */
@@ -128,7 +137,7 @@ typedef enum _Evas_Event_Flags
 {
    EVAS_EVENT_FLAG_NONE = 0, /**< No fancy flags set */
    EVAS_EVENT_FLAG_ON_HOLD = (1 << 0), /**< This event is being delivered but should be put "on hold" until the on hold flag is unset. the event should be used for informational purposes and maybe some indications visually, but not actually perform anything */
-   EVAS_EVENT_FLAG_ON_SCROLL = (1 << 1) /**< This event flag indicates the event occurs while scrolling; for exameple, DOWN event occurs during scrolling; the event should be used for informational purposes and maybe some indications visually, but not actually perform anything */ 
+   EVAS_EVENT_FLAG_ON_SCROLL = (1 << 1) /**< This event flag indicates the event occurs while scrolling; for exameple, DOWN event occurs during scrolling; the event should be used for informational purposes and maybe some indications visually, but not actually perform anything */
 } Evas_Event_Flags; /**< Flags for Events */
 
 /**
@@ -198,7 +207,7 @@ typedef struct _Evas_Smart_Cb_Description    Evas_Smart_Cb_Description;
  * @see evas_map_dup()
  * @ingroup Evas_Object_Group_Map
  */
-typedef struct _Evas_Map              Evas_Map;
+typedef struct _Evas_Map            Evas_Map;
 
 /**
  * @typedef Evas
@@ -207,25 +216,25 @@ typedef struct _Evas_Map              Evas_Map;
  * @see evas_free()
  * @ingroup Evas_Canvas
  */
-typedef struct _Evas Evas;
+typedef struct _Evas                Evas;
 
 /**
  * @typedef Evas_Object
  * An Evas Object handle.
  * @ingroup Evas_Object_Group
  */
-typedef struct _Evas_Object Evas_Object;
+typedef struct _Evas_Object         Evas_Object;
 
-typedef void Evas_Performance; /**< An Evas Performance handle */
-typedef struct _Evas_Modifier Evas_Modifier; /**< An Evas Modifier */
-typedef struct _Evas_Lock Evas_Lock; /**< An Evas Lock */
-typedef struct _Evas_Smart Evas_Smart; /**< An Evas Smart Object handle */
+typedef void                        Evas_Performance; /**< An Evas Performance handle */
+typedef struct _Evas_Modifier       Evas_Modifier; /**< An Evas Modifier */
+typedef struct _Evas_Lock           Evas_Lock; /**< An Evas Lock */
+typedef struct _Evas_Smart          Evas_Smart; /**< An Evas Smart Object handle */
 typedef struct _Evas_Native_Surface Evas_Native_Surface; /**< A generic datatype for engine specific native surface information */
-typedef unsigned long long Evas_Modifier_Mask; /**< An Evas modifier mask type */
+typedef unsigned long long          Evas_Modifier_Mask; /**< An Evas modifier mask type */
 
-typedef int           Evas_Coord;
-typedef int           Evas_Font_Size;
-typedef int           Evas_Angle;
+typedef int                         Evas_Coord;
+typedef int                         Evas_Font_Size;
+typedef int                         Evas_Angle;
 
 struct _Evas_Coord_Rectangle /**< A rectangle in Evas_Coord */
 {
@@ -272,7 +281,6 @@ typedef enum _Evas_Aspect_Control
    EVAS_ASPECT_CONTROL_BOTH = 4
 } Evas_Aspect_Control;
 
-
 typedef struct _Evas_Pixel_Import_Source Evas_Pixel_Import_Source; /**< A source description of pixels for importing pixels */
 typedef struct _Evas_Engine_Info      Evas_Engine_Info; /**< A generic Evas Engine information structure */
 typedef struct _Evas_Device           Evas_Device; /**< A source device handle - where the event came from */
@@ -289,25 +297,44 @@ typedef struct _Evas_Event_Key_Down   Evas_Event_Key_Down; /**< Event structure 
 typedef struct _Evas_Event_Key_Up     Evas_Event_Key_Up; /**< Event structure for #EVAS_CALLBACK_KEY_UP event callbacks */
 typedef struct _Evas_Event_Hold       Evas_Event_Hold; /**< Event structure for #EVAS_CALLBACK_HOLD event callbacks */
 
-/* load error identifiers, see evas_load_error_str() */
-#define EVAS_LOAD_ERROR_NONE                       0 /**< No error on load */
-#define EVAS_LOAD_ERROR_GENERIC                    1 /**< A non-specific error occured */
-#define EVAS_LOAD_ERROR_DOES_NOT_EXIST             2 /**< File (or file path) does not exist */
-#define EVAS_LOAD_ERROR_PERMISSION_DENIED          3 /**< Permission deinied to an existing file (or path) */
-#define EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED 4 /**< Allocation of resources failure prevented load */
-#define EVAS_LOAD_ERROR_CORRUPT_FILE               5 /**< File corrupt (but was detected as a known format) */
-#define EVAS_LOAD_ERROR_UNKNOWN_FORMAT             6 /**< File is not a known format */
+typedef enum _Evas_Load_Error
+{
+   EVAS_LOAD_ERROR_NONE = 0, /**< No error on load */
+   EVAS_LOAD_ERROR_GENERIC = 1, /**< A non-specific error occurred */
+   EVAS_LOAD_ERROR_DOES_NOT_EXIST = 2, /**< File (or file path) does not exist */
+   EVAS_LOAD_ERROR_PERMISSION_DENIED = 3, /**< Permission deinied to an existing file (or path) */
+   EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED = 4, /**< Allocation of resources failure prevented load */
+   EVAS_LOAD_ERROR_CORRUPT_FILE = 5, /**< File corrupt (but was detected as a known format) */
+   EVAS_LOAD_ERROR_UNKNOWN_FORMAT = 6 /**< File is not a known format */
+} Evas_Load_Error; /**< Load error you can get from loading of files - see evas_load_error_str() too */
 
-#define EVAS_ALLOC_ERROR_NONE                      0 /**< No allocation error */
-#define EVAS_ALLOC_ERROR_FATAL                     1 /**< Allocation failed despite attempts to free up memory */
-#define EVAS_ALLOC_ERROR_RECOVERED                 2 /**< Allocation succeeded, but extra memory had to be found by freeing up speculative resources */
+typedef enum _Evas_Alloc_Error
+{
+   EVAS_ALLOC_ERROR_NONE = 0, /**< No allocation error */
+   EVAS_ALLOC_ERROR_FATAL = 1, /**< Allocation failed despite attempts to free up memory */
+   EVAS_ALLOC_ERROR_RECOVERED = 2 /**< Allocation succeeded, but extra memory had to be found by freeing up speculative resources */
+} Evas_Alloc_Error; /**< Possible allocation errors returned by evas_alloc_error() */
+   
+typedef enum _Evas_Fill_Spread
+{
+   EVAS_TEXTURE_REFLECT = 0, /**< image fill tiling mode - tiling reflects */
+   EVAS_TEXTURE_REPEAT = 1, /**< tiling repeats */
+   EVAS_TEXTURE_RESTRICT = 2, /**< tiling clamps - range offset ignored */
+   EVAS_TEXTURE_RESTRICT_REFLECT = 3, /**< tiling clamps and any range offset reflects */
+   EVAS_TEXTURE_RESTRICT_REPEAT = 4, /**< tiling clamps and any range offset repeats */
+   EVAS_TEXTURE_PAD = 5 /**< tiling extends with end values */
+} Evas_Fill_Spread; /**< Fill types used for evas_object_image_fill_spread_set() */
 
-#define EVAS_TEXT_INVALID -1
-#define EVAS_TEXT_SPECIAL -2
+typedef enum _Evas_Pixel_Import_Pixel_Format
+{
+   EVAS_PIXEL_FORMAT_NONE = 0, /**< No pixel format */
+   EVAS_PIXEL_FORMAT_ARGB32 = 1, /**< ARGB 32bit pixel format with A in the high byte per 32bit pixel word */
+   EVAS_PIXEL_FORMAT_YUV420P_601 = 2 /**< YUV 420 Planar format with CCIR 601 color encoding wuth contiguous planes in the order Y, U and V */
+} Evas_Pixel_Import_Pixel_Format; /**< Pixel format for import call. See evas_object_image_pixels_import() */
 
 struct _Evas_Pixel_Import_Source
 {
-   int format; /**< pixel format type ie ARGB32, YUV420P_601 etc. */
+   Evas_Pixel_Import_Pixel_Format format; /**< pixel format type ie ARGB32, YUV420P_601 etc. */
    int w, h; /**< width and height of source in pixels */
    void **rows; /**< an array of pointers (size depends on format) pointing to left edge of each scanline */
 };
@@ -317,7 +344,7 @@ struct _Evas_Native_Surface
    union {
       struct {
          void *visual;
-         long  pixmap;
+         unsigned long  pixmap;
       } x11;
       struct { /* padding data for future use - have space for 8 pointers */
          void *d[8];
@@ -328,19 +355,10 @@ struct _Evas_Native_Surface
 #define EVAS_LAYER_MIN -32768 /**< bottom-most layer number */
 #define EVAS_LAYER_MAX 32767  /**< top-most layer number */
 
-#define EVAS_PIXEL_FORMAT_NONE                     0 /**< No pixel format */
-#define EVAS_PIXEL_FORMAT_ARGB32                   1 /**< ARGB 32bit pixel format with A in the high byte per 32bit pixel word */
-#define EVAS_PIXEL_FORMAT_YUV420P_601              2 /**< YUV 420 Planar format with CCIR 601 color encoding wuth contiguous planes in the order Y, U and V */
-
-#define EVAS_COLOR_SPACE_ARGB                      0 /**< ARGB color space */
-#define EVAS_COLOR_SPACE_AHSV                      1 /**< AHSV color space */
-
-#define EVAS_TEXTURE_REFLECT            0 /**< image fill tiling mode - tiling reflects */
-#define EVAS_TEXTURE_REPEAT             1 /**< tiling repeats */
-#define EVAS_TEXTURE_RESTRICT           2 /**< tiling clamps - range offset ignored */
-#define EVAS_TEXTURE_RESTRICT_REFLECT   3 /**< tiling clamps and any range offset reflects */
-#define EVAS_TEXTURE_RESTRICT_REPEAT    4 /**< tiling clamps and any range offset repeats */
-#define EVAS_TEXTURE_PAD                5 /**< tiling extends with end values */
+#define EVAS_COLOR_SPACE_ARGB 0 /**< Not used for anything */
+#define EVAS_COLOR_SPACE_AHSV 1 /**< Not used for anything */
+#define EVAS_TEXT_INVALID -1 /**< Not used for anything */
+#define EVAS_TEXT_SPECIAL -2 /**< Not used for anything */
 
 #define EVAS_HINT_EXPAND  1.0 /**< Use with evas_object_size_hint_weight_set(), evas_object_size_hint_weight_get(), evas_object_size_hint_expand_set(), evas_object_size_hint_expand_get() */
 #define EVAS_HINT_FILL   -1.0 /**< Use with evas_object_size_hint_align_set(), evas_object_size_hint_align_get(), evas_object_size_hint_fill_set(), evas_object_size_hint_fill_get() */
@@ -621,7 +639,7 @@ typedef void      (*Evas_Async_Events_Put_Cb)(void *target, Evas_Callback_Type t
    EAPI int               evas_init                         (void);
    EAPI int               evas_shutdown                     (void);
 
-   EAPI int               evas_alloc_error                  (void);
+   EAPI Evas_Alloc_Error  evas_alloc_error                  (void);
 
    EAPI int               evas_async_events_fd_get          (void) EINA_WARN_UNUSED_RESULT EINA_PURE;
    EAPI int               evas_async_events_process         (void);
@@ -644,6 +662,7 @@ typedef void      (*Evas_Async_Events_Put_Cb)(void *target, Evas_Callback_Type t
    EAPI Eina_Bool         evas_focus_state_get              (const Evas *e) EINA_PURE;
    EAPI void              evas_nochange_push                (Evas *e);
    EAPI void              evas_nochange_pop                 (Evas *e);
+         
    EAPI void              evas_data_attach_set              (Evas *e, void *data) EINA_ARG_NONNULL(1);
    EAPI void             *evas_data_attach_get              (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
 
@@ -696,7 +715,7 @@ typedef void      (*Evas_Async_Events_Put_Cb)(void *target, Evas_Callback_Type t
    EAPI int               evas_output_method_get            (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
 
    EAPI Evas_Engine_Info *evas_engine_info_get              (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
-   EAPI int               evas_engine_info_set              (Evas *e, Evas_Engine_Info *info) EINA_ARG_NONNULL(1);
+   EAPI Eina_Bool         evas_engine_info_set              (Evas *e, Evas_Engine_Info *info) EINA_ARG_NONNULL(1);
 
 /**
  * @defgroup Evas_Output_Size Output and Viewport Resizing Functions
@@ -736,7 +755,6 @@ typedef void      (*Evas_Async_Events_Put_Cb)(void *target, Evas_Callback_Type t
    EAPI int               evas_pointer_button_down_mask_get (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
    EAPI Eina_Bool         evas_pointer_inside_get           (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
    EAPI void              evas_sync(Evas *e) EINA_ARG_NONNULL(1);
-
 
 /**
  * @defgroup Evas_Event_Freezing_Group Event Freezing Functions
@@ -804,7 +822,6 @@ typedef void      (*Evas_Async_Events_Put_Cb)(void *target, Evas_Callback_Type t
    EAPI void              evas_image_cache_set              (Evas *e, int size) EINA_ARG_NONNULL(1);
    EAPI int               evas_image_cache_get              (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
 
-
 /**
  * @defgroup Evas_Font_Group Font Functions
  *
@@ -812,16 +829,16 @@ typedef void      (*Evas_Async_Events_Put_Cb)(void *target, Evas_Callback_Type t
  *
  * @ingroup Evas_Canvas
  */
-   EAPI void              evas_font_hinting_set             (Evas *e, Evas_Font_Hinting_Flags hinting) EINA_ARG_NONNULL(1);
-   EAPI Evas_Font_Hinting_Flags evas_font_hinting_get       (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
-   EAPI Eina_Bool         evas_font_hinting_can_hint        (const Evas *e, Evas_Font_Hinting_Flags hinting) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void                     evas_font_hinting_set        (Evas *e, Evas_Font_Hinting_Flags hinting) EINA_ARG_NONNULL(1);
+   EAPI Evas_Font_Hinting_Flags  evas_font_hinting_get        (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI Eina_Bool                evas_font_hinting_can_hint   (const Evas *e, Evas_Font_Hinting_Flags hinting) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
 
-   EAPI void              evas_font_cache_flush             (Evas *e) EINA_ARG_NONNULL(1);
-   EAPI void              evas_font_cache_set               (Evas *e, int size) EINA_ARG_NONNULL(1);
-   EAPI int               evas_font_cache_get               (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void                     evas_font_cache_flush        (Evas *e) EINA_ARG_NONNULL(1);
+   EAPI void                     evas_font_cache_set          (Evas *e, int size) EINA_ARG_NONNULL(1);
+   EAPI int                      evas_font_cache_get          (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
 
-   EAPI Eina_List        *evas_font_available_list          (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
-   EAPI void              evas_font_available_list_free     (Evas *e, Eina_List *available) EINA_ARG_NONNULL(1);
+   EAPI Eina_List               *evas_font_available_list     (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void                     evas_font_available_list_free(Evas *e, Eina_List *available) EINA_ARG_NONNULL(1);
 
 /**
  * @defgroup Evas_Font_Path_Group Font Path Functions
@@ -886,7 +903,6 @@ typedef void      (*Evas_Async_Events_Put_Cb)(void *target, Evas_Callback_Type t
    EAPI Evas_Object      *evas_object_above_get             (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
    EAPI Evas_Object      *evas_object_below_get             (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
 
-
 /**
  * @defgroup Evas_Object_Group_Events Object Events
  *
@@ -899,16 +915,16 @@ typedef void      (*Evas_Async_Events_Put_Cb)(void *target, Evas_Callback_Type t
  *
  * @ingroup Evas_Object_Group
  */
-   EAPI void              evas_object_event_callback_add    (Evas_Object *obj, Evas_Callback_Type type, Evas_Object_Event_Cb func, const void *data) EINA_ARG_NONNULL(1, 3);
-  EAPI void             *evas_object_event_callback_del    (Evas_Object *obj, Evas_Callback_Type type, Evas_Object_Event_Cb func) EINA_ARG_NONNULL(1, 3);
+   EAPI void              evas_object_event_callback_add     (Evas_Object *obj, Evas_Callback_Type type, Evas_Object_Event_Cb func, const void *data) EINA_ARG_NONNULL(1, 3);
+   EAPI void             *evas_object_event_callback_del     (Evas_Object *obj, Evas_Callback_Type type, Evas_Object_Event_Cb func) EINA_ARG_NONNULL(1, 3);
    EAPI void             *evas_object_event_callback_del_full(Evas_Object *obj, Evas_Callback_Type type, Evas_Object_Event_Cb func, const void *data) EINA_ARG_NONNULL(1, 3);
 
-   EAPI void              evas_object_pass_events_set       (Evas_Object *obj, Eina_Bool pass) EINA_ARG_NONNULL(1);
-   EAPI Eina_Bool         evas_object_pass_events_get       (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
-   EAPI void              evas_object_repeat_events_set     (Evas_Object *obj, Eina_Bool repeat) EINA_ARG_NONNULL(1);
-   EAPI Eina_Bool         evas_object_repeat_events_get     (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
-   EAPI void              evas_object_propagate_events_set  (Evas_Object *obj, Eina_Bool prop) EINA_ARG_NONNULL(1);
-   EAPI Eina_Bool         evas_object_propagate_events_get  (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void              evas_object_pass_events_set        (Evas_Object *obj, Eina_Bool pass) EINA_ARG_NONNULL(1);
+   EAPI Eina_Bool         evas_object_pass_events_get        (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void              evas_object_repeat_events_set      (Evas_Object *obj, Eina_Bool repeat) EINA_ARG_NONNULL(1);
+   EAPI Eina_Bool         evas_object_repeat_events_get      (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void              evas_object_propagate_events_set   (Evas_Object *obj, Eina_Bool prop) EINA_ARG_NONNULL(1);
+   EAPI Eina_Bool         evas_object_propagate_events_get   (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
 
 /**
  * @defgroup Evas_Object_Group_Map UV Mapping (Rotation, Perspecitve, 3D...)
@@ -943,18 +959,16 @@ typedef void      (*Evas_Async_Events_Put_Cb)(void *target, Evas_Callback_Type t
    EAPI void              evas_object_map_set               (Evas_Object *obj, const Evas_Map *map);
    EAPI const Evas_Map   *evas_object_map_get               (const Evas_Object *obj);
 
-   EAPI void              evas_map_util_points_populate_from_object_full   (Evas_Map *m, const Evas_Object *obj, Evas_Coord z);
-   EAPI void              evas_map_util_points_populate_from_object        (Evas_Map *m, const Evas_Object *obj);
-   EAPI void              evas_map_util_points_populate_from_geometry      (Evas_Map *m, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h, Evas_Coord z);
-
-   EAPI void              evas_map_util_points_color_set                   (Evas_Map *m, int r, int g, int b, int a);
-
-   EAPI void              evas_map_util_rotate              (Evas_Map *m, double degrees, Evas_Coord cx, Evas_Coord cy);
-   EAPI void              evas_map_util_zoom                (Evas_Map *m, double zoomx, double zoomy, Evas_Coord cx, Evas_Coord cy);
-   EAPI void              evas_map_util_3d_rotate           (Evas_Map *m, double dx, double dy, double dz, Evas_Coord cx, Evas_Coord cy, Evas_Coord cz);
-   EAPI void              evas_map_util_3d_lighting         (Evas_Map *m, Evas_Coord lx, Evas_Coord ly, Evas_Coord lz, int lr, int lg, int lb, int ar, int ag, int ab);
-   EAPI void              evas_map_util_3d_perspective      (Evas_Map *m, Evas_Coord px, Evas_Coord py, Evas_Coord z0, Evas_Coord foc);
-   EAPI Eina_Bool         evas_map_util_clockwise_get       (Evas_Map *m);
+   EAPI void              evas_map_util_points_populate_from_object_full(Evas_Map *m, const Evas_Object *obj, Evas_Coord z);
+   EAPI void              evas_map_util_points_populate_from_object     (Evas_Map *m, const Evas_Object *obj);
+   EAPI void              evas_map_util_points_populate_from_geometry   (Evas_Map *m, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h, Evas_Coord z);
+   EAPI void              evas_map_util_points_color_set                (Evas_Map *m, int r, int g, int b, int a);
+   EAPI void              evas_map_util_rotate                          (Evas_Map *m, double degrees, Evas_Coord cx, Evas_Coord cy);
+   EAPI void              evas_map_util_zoom                            (Evas_Map *m, double zoomx, double zoomy, Evas_Coord cx, Evas_Coord cy);
+   EAPI void              evas_map_util_3d_rotate                       (Evas_Map *m, double dx, double dy, double dz, Evas_Coord cx, Evas_Coord cy, Evas_Coord cz);
+   EAPI void              evas_map_util_3d_lighting                     (Evas_Map *m, Evas_Coord lx, Evas_Coord ly, Evas_Coord lz, int lr, int lg, int lb, int ar, int ag, int ab);
+   EAPI void              evas_map_util_3d_perspective                  (Evas_Map *m, Evas_Coord px, Evas_Coord py, Evas_Coord z0, Evas_Coord foc);
+   EAPI Eina_Bool         evas_map_util_clockwise_get                   (Evas_Map *m);
 
    EAPI Evas_Map         *evas_map_new                      (int count);
    EAPI void              evas_map_smooth_set               (Evas_Map *m, Eina_Bool enabled);
@@ -974,7 +988,7 @@ typedef void      (*Evas_Async_Events_Put_Cb)(void *target, Evas_Callback_Type t
  * @defgroup Evas_Object_Group_Size_Hints Size Hints
  *
  * Objects may carry hints so another object that acts as a manager
- * (see @ref Evas_Smart_Object_Group) may know how to proper position
+ * (see @ref Evas_Smart_Object_Group) may know how to properly position
  * and resize the object. The Size Hints provide a common interface
  * that is recommended as the protocol for such information.
  *
@@ -1003,27 +1017,28 @@ typedef void      (*Evas_Async_Events_Put_Cb)(void *target, Evas_Callback_Type t
  *
  * @ingroup Evas_Object_Group
  */
-   EAPI void              evas_object_data_set              (Evas_Object *obj, const char *key, const void *data) EINA_ARG_NONNULL(1, 2);
-   EAPI void             *evas_object_data_get              (const Evas_Object *obj, const char *key) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2) EINA_PURE;
-   EAPI void             *evas_object_data_del              (Evas_Object *obj, const char *key) EINA_ARG_NONNULL(1, 2);
+   EAPI void                      evas_object_data_set             (Evas_Object *obj, const char *key, const void *data) EINA_ARG_NONNULL(1, 2);
+   EAPI void                     *evas_object_data_get             (const Evas_Object *obj, const char *key) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2) EINA_PURE;
+   EAPI void                     *evas_object_data_del             (Evas_Object *obj, const char *key) EINA_ARG_NONNULL(1, 2);
 
-   EAPI void              evas_object_pointer_mode_set      (Evas_Object *obj, Evas_Object_Pointer_Mode setting) EINA_ARG_NONNULL(1);
-   EAPI Evas_Object_Pointer_Mode evas_object_pointer_mode_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void                      evas_object_pointer_mode_set     (Evas_Object *obj, Evas_Object_Pointer_Mode setting) EINA_ARG_NONNULL(1);
+   EAPI Evas_Object_Pointer_Mode  evas_object_pointer_mode_get     (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
 
-   EAPI void              evas_object_anti_alias_set        (Evas_Object *obj, Eina_Bool antialias) EINA_ARG_NONNULL(1);
-   EAPI Eina_Bool         evas_object_anti_alias_get        (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void                      evas_object_anti_alias_set       (Evas_Object *obj, Eina_Bool antialias) EINA_ARG_NONNULL(1);
+   EAPI Eina_Bool                 evas_object_anti_alias_get       (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
 
-   EAPI void              evas_object_scale_set             (Evas_Object *obj, double scale) EINA_ARG_NONNULL(1);
-   EAPI double            evas_object_scale_get             (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void                      evas_object_scale_set            (Evas_Object *obj, double scale) EINA_ARG_NONNULL(1);
+   EAPI double                    evas_object_scale_get            (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
 
-   EAPI void              evas_object_render_op_set         (Evas_Object *obj, Evas_Render_Op op) EINA_ARG_NONNULL(1);
-   EAPI Evas_Render_Op    evas_object_render_op_get         (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void                      evas_object_render_op_set        (Evas_Object *obj, Evas_Render_Op op) EINA_ARG_NONNULL(1);
+   EAPI Evas_Render_Op            evas_object_render_op_get        (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
 
-   EAPI void              evas_object_precise_is_inside_set (Evas_Object *obj, Eina_Bool precise) EINA_ARG_NONNULL(1);
-   EAPI Eina_Bool         evas_object_precise_is_inside_get (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
-   EAPI void              evas_object_static_clip_set       (Evas_Object *obj, Eina_Bool is_static_clip) EINA_ARG_NONNULL(1);
-   EAPI Eina_Bool         evas_object_static_clip_get       (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void                      evas_object_precise_is_inside_set(Evas_Object *obj, Eina_Bool precise) EINA_ARG_NONNULL(1);
+   EAPI Eina_Bool                 evas_object_precise_is_inside_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
 
+   EAPI void                      evas_object_static_clip_set      (Evas_Object *obj, Eina_Bool is_static_clip) EINA_ARG_NONNULL(1);
+   EAPI Eina_Bool                 evas_object_static_clip_get      (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+         
 /**
  * @defgroup Evas_Object_Group_Find Finding Objects
  *
@@ -1200,60 +1215,59 @@ typedef void (*Evas_Object_Intercept_Clip_Unset_Cb) (void *data, Evas_Object *ob
  */
 typedef void (*Evas_Object_Image_Pixels_Get_Cb) (void *data, Evas_Object *o);
    
-   EAPI Evas_Object      *evas_object_image_add             (Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
-   EAPI Evas_Object      *evas_object_image_filled_add      (Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+   EAPI Evas_Object             *evas_object_image_add                    (Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+   EAPI Evas_Object             *evas_object_image_filled_add             (Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
-   EAPI void              evas_object_image_file_set        (Evas_Object *obj, const char *file, const char *key) EINA_ARG_NONNULL(1, 2);
-   EAPI void              evas_object_image_file_get        (const Evas_Object *obj, const char **file, const char **key) EINA_ARG_NONNULL(1, 2);
-   EAPI void              evas_object_image_border_set      (Evas_Object *obj, int l, int r, int t, int b) EINA_ARG_NONNULL(1);
-   EAPI void              evas_object_image_border_get      (const Evas_Object *obj, int *l, int *r, int *t, int *b) EINA_ARG_NONNULL(1);
-   EAPI void              evas_object_image_border_center_fill_set(Evas_Object *obj, Evas_Border_Fill_Mode fill) EINA_ARG_NONNULL(1);
-   EAPI Evas_Border_Fill_Mode evas_object_image_border_center_fill_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
-   EAPI void              evas_object_image_filled_set      (Evas_Object *obj, Eina_Bool setting) EINA_ARG_NONNULL(1);
-   EAPI Eina_Bool         evas_object_image_filled_get      (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
-   EAPI void              evas_object_image_border_scale_set(Evas_Object *obj, double scale);
-   EAPI double            evas_object_image_border_scale_get(const Evas_Object *obj);
-   EAPI void              evas_object_image_fill_set        (Evas_Object *obj, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h) EINA_ARG_NONNULL(1);
-   EAPI void              evas_object_image_fill_get        (const Evas_Object *obj, Evas_Coord *x, Evas_Coord *y, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1);
-   EAPI void              evas_object_image_fill_spread_set   (Evas_Object *obj, int tile_mode) EINA_ARG_NONNULL(1);
-   EAPI int               evas_object_image_fill_spread_get   (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
-   EAPI void              evas_object_image_size_set        (Evas_Object *obj, int w, int h) EINA_ARG_NONNULL(1);
-   EAPI void              evas_object_image_size_get        (const Evas_Object *obj, int *w, int *h) EINA_ARG_NONNULL(1);
-   EAPI int               evas_object_image_stride_get      (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
-   EAPI int               evas_object_image_load_error_get  (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
-   EAPI void              evas_object_image_data_set        (Evas_Object *obj, void *data) EINA_ARG_NONNULL(1);
-   EAPI void             *evas_object_image_data_convert    (Evas_Object *obj, Evas_Colorspace to_cspace) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
-   EAPI void             *evas_object_image_data_get        (const Evas_Object *obj, Eina_Bool for_writing) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
-   EAPI void              evas_object_image_data_copy_set   (Evas_Object *obj, void *data) EINA_ARG_NONNULL(1);
-   EAPI void              evas_object_image_data_update_add (Evas_Object *obj, int x, int y, int w, int h) EINA_ARG_NONNULL(1);
-   EAPI void              evas_object_image_alpha_set       (Evas_Object *obj, Eina_Bool has_alpha) EINA_ARG_NONNULL(1);
-   EAPI Eina_Bool         evas_object_image_alpha_get       (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
-   EAPI void              evas_object_image_smooth_scale_set(Evas_Object *obj, Eina_Bool smooth_scale) EINA_ARG_NONNULL(1);
-   EAPI Eina_Bool         evas_object_image_smooth_scale_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
-   EAPI void              evas_object_image_preload         (Evas_Object *obj, Eina_Bool cancel) EINA_ARG_NONNULL(1);
-   EAPI void              evas_object_image_reload          (Evas_Object *obj) EINA_ARG_NONNULL(1);
-   EAPI Eina_Bool         evas_object_image_save            (const Evas_Object *obj, const char *file, const char *key, const char *flags)  EINA_ARG_NONNULL(1, 2);
-   EAPI Eina_Bool         evas_object_image_pixels_import          (Evas_Object *obj, Evas_Pixel_Import_Source *pixels) EINA_ARG_NONNULL(1, 2);
-   EAPI void              evas_object_image_pixels_get_callback_set(Evas_Object *obj, Evas_Object_Image_Pixels_Get_Cb func, void *data) EINA_ARG_NONNULL(1, 2);
-   EAPI void              evas_object_image_pixels_dirty_set       (Evas_Object *obj, Eina_Bool dirty) EINA_ARG_NONNULL(1);
-   EAPI Eina_Bool         evas_object_image_pixels_dirty_get       (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
-   EAPI void              evas_object_image_load_dpi_set           (Evas_Object *obj, double dpi) EINA_ARG_NONNULL(1);
-   EAPI double            evas_object_image_load_dpi_get           (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
-   EAPI void              evas_object_image_load_size_set          (Evas_Object *obj, int w, int h) EINA_ARG_NONNULL(1);
-   EAPI void              evas_object_image_load_size_get          (const Evas_Object *obj, int *w, int *h) EINA_ARG_NONNULL(1);
-   EAPI void              evas_object_image_load_scale_down_set    (Evas_Object *obj, int scale_down) EINA_ARG_NONNULL(1);
-   EAPI int               evas_object_image_load_scale_down_get    (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
-   EAPI void              evas_object_image_load_region_set        (Evas_Object *obj, int x, int y, int w, int h) EINA_ARG_NONNULL(1);
-   EAPI void              evas_object_image_load_region_get        (const Evas_Object *obj, int *x, int *y, int *w, int *h) EINA_ARG_NONNULL(1);
-
-   EAPI void              evas_object_image_colorspace_set         (Evas_Object *obj, Evas_Colorspace cspace) EINA_ARG_NONNULL(1);
-   EAPI Evas_Colorspace   evas_object_image_colorspace_get         (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
-   EAPI void                 evas_object_image_native_surface_set  (Evas_Object *obj, Evas_Native_Surface *surf) EINA_ARG_NONNULL(1, 2);
-   EAPI Evas_Native_Surface *evas_object_image_native_surface_get  (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
-   EAPI void                  evas_object_image_scale_hint_set     (Evas_Object *obj, Evas_Image_Scale_Hint hint) EINA_ARG_NONNULL(1);
-   EAPI Evas_Image_Scale_Hint evas_object_image_scale_hint_get     (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
-   EAPI void                    evas_object_image_content_hint_set (Evas_Object *obj, Evas_Image_Content_Hint hint) EINA_ARG_NONNULL(1);
-   EAPI Evas_Image_Content_Hint evas_object_image_content_hint_get (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void                     evas_object_image_file_set               (Evas_Object *obj, const char *file, const char *key) EINA_ARG_NONNULL(1, 2);
+   EAPI void                     evas_object_image_file_get               (const Evas_Object *obj, const char **file, const char **key) EINA_ARG_NONNULL(1, 2);
+   EAPI void                     evas_object_image_border_set             (Evas_Object *obj, int l, int r, int t, int b) EINA_ARG_NONNULL(1);
+   EAPI void                     evas_object_image_border_get             (const Evas_Object *obj, int *l, int *r, int *t, int *b) EINA_ARG_NONNULL(1);
+   EAPI void                     evas_object_image_border_center_fill_set (Evas_Object *obj, Evas_Border_Fill_Mode fill) EINA_ARG_NONNULL(1);
+   EAPI Evas_Border_Fill_Mode    evas_object_image_border_center_fill_get (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void                     evas_object_image_filled_set             (Evas_Object *obj, Eina_Bool setting) EINA_ARG_NONNULL(1);
+   EAPI Eina_Bool                evas_object_image_filled_get             (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void                     evas_object_image_border_scale_set       (Evas_Object *obj, double scale);
+   EAPI double                   evas_object_image_border_scale_get       (const Evas_Object *obj);
+   EAPI void                     evas_object_image_fill_set               (Evas_Object *obj, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h) EINA_ARG_NONNULL(1);
+   EAPI void                     evas_object_image_fill_get               (const Evas_Object *obj, Evas_Coord *x, Evas_Coord *y, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1);
+   EAPI void                     evas_object_image_fill_spread_set        (Evas_Object *obj, Evas_Fill_Spread spread) EINA_ARG_NONNULL(1);
+   EAPI Evas_Fill_Spread         evas_object_image_fill_spread_get        (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void                     evas_object_image_size_set               (Evas_Object *obj, int w, int h) EINA_ARG_NONNULL(1);
+   EAPI void                     evas_object_image_size_get               (const Evas_Object *obj, int *w, int *h) EINA_ARG_NONNULL(1);
+   EAPI int                      evas_object_image_stride_get             (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI Evas_Load_Error          evas_object_image_load_error_get         (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void                     evas_object_image_data_set               (Evas_Object *obj, void *data) EINA_ARG_NONNULL(1);
+   EAPI void                    *evas_object_image_data_convert           (Evas_Object *obj, Evas_Colorspace to_cspace) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void                    *evas_object_image_data_get               (const Evas_Object *obj, Eina_Bool for_writing) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void                     evas_object_image_data_copy_set          (Evas_Object *obj, void *data) EINA_ARG_NONNULL(1);
+   EAPI void                     evas_object_image_data_update_add        (Evas_Object *obj, int x, int y, int w, int h) EINA_ARG_NONNULL(1);
+   EAPI void                     evas_object_image_alpha_set              (Evas_Object *obj, Eina_Bool has_alpha) EINA_ARG_NONNULL(1);
+   EAPI Eina_Bool                evas_object_image_alpha_get              (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void                     evas_object_image_smooth_scale_set       (Evas_Object *obj, Eina_Bool smooth_scale) EINA_ARG_NONNULL(1);
+   EAPI Eina_Bool                evas_object_image_smooth_scale_get       (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void                     evas_object_image_preload                (Evas_Object *obj, Eina_Bool cancel) EINA_ARG_NONNULL(1);
+   EAPI void                     evas_object_image_reload                 (Evas_Object *obj) EINA_ARG_NONNULL(1);
+   EAPI Eina_Bool                evas_object_image_save                   (const Evas_Object *obj, const char *file, const char *key, const char *flags)  EINA_ARG_NONNULL(1, 2);
+   EAPI Eina_Bool                evas_object_image_pixels_import          (Evas_Object *obj, Evas_Pixel_Import_Source *pixels) EINA_ARG_NONNULL(1, 2);
+   EAPI void                     evas_object_image_pixels_get_callback_set(Evas_Object *obj, Evas_Object_Image_Pixels_Get_Cb func, void *data) EINA_ARG_NONNULL(1, 2);
+   EAPI void                     evas_object_image_pixels_dirty_set       (Evas_Object *obj, Eina_Bool dirty) EINA_ARG_NONNULL(1);
+   EAPI Eina_Bool                evas_object_image_pixels_dirty_get       (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void                     evas_object_image_load_dpi_set           (Evas_Object *obj, double dpi) EINA_ARG_NONNULL(1);
+   EAPI double                   evas_object_image_load_dpi_get           (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void                     evas_object_image_load_size_set          (Evas_Object *obj, int w, int h) EINA_ARG_NONNULL(1);
+   EAPI void                     evas_object_image_load_size_get          (const Evas_Object *obj, int *w, int *h) EINA_ARG_NONNULL(1);
+   EAPI void                     evas_object_image_load_scale_down_set    (Evas_Object *obj, int scale_down) EINA_ARG_NONNULL(1);
+   EAPI int                      evas_object_image_load_scale_down_get    (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void                     evas_object_image_load_region_set        (Evas_Object *obj, int x, int y, int w, int h) EINA_ARG_NONNULL(1);
+   EAPI void                     evas_object_image_load_region_get        (const Evas_Object *obj, int *x, int *y, int *w, int *h) EINA_ARG_NONNULL(1);
+   EAPI void                     evas_object_image_colorspace_set         (Evas_Object *obj, Evas_Colorspace cspace) EINA_ARG_NONNULL(1);
+   EAPI Evas_Colorspace          evas_object_image_colorspace_get         (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void                     evas_object_image_native_surface_set     (Evas_Object *obj, Evas_Native_Surface *surf) EINA_ARG_NONNULL(1, 2);
+   EAPI Evas_Native_Surface     *evas_object_image_native_surface_get     (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void                     evas_object_image_scale_hint_set         (Evas_Object *obj, Evas_Image_Scale_Hint hint) EINA_ARG_NONNULL(1);
+   EAPI Evas_Image_Scale_Hint    evas_object_image_scale_hint_get         (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void                     evas_object_image_content_hint_set       (Evas_Object *obj, Evas_Image_Content_Hint hint) EINA_ARG_NONNULL(1);
+   EAPI Evas_Image_Content_Hint  evas_object_image_content_hint_get       (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
 
 /**
  * @defgroup Evas_Object_Text Text Object Functions
@@ -1307,7 +1321,6 @@ typedef void (*Evas_Object_Image_Pixels_Get_Cb) (void *data, Evas_Object *o);
    EAPI void              evas_object_text_outline_color_get(const Evas_Object *obj, int *r, int *g, int *b, int *a) EINA_ARG_NONNULL(1);
    EAPI void              evas_object_text_style_pad_get    (const Evas_Object *obj, int *l, int *r, int *t, int *b) EINA_ARG_NONNULL(1);
 
-
 /**
  * @defgroup Evas_Object_Textblock Textblock Object Functions
  *
@@ -1346,6 +1359,7 @@ typedef void (*Evas_Object_Image_Pixels_Get_Cb) (void *data, Evas_Object *o);
 	EVAS_TEXTBLOCK_CURSOR_UNDER,
 	EVAS_TEXTBLOCK_CURSOR_BEFORE
      } Evas_Textblock_Cursor_Type;
+
    EAPI Evas_Object                 *evas_object_textblock_add(Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
    EAPI const char                  *evas_textblock_escape_string_get(const char *escape) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
@@ -1379,7 +1393,6 @@ typedef void (*Evas_Object_Image_Pixels_Get_Cb) (void *data, Evas_Object *o);
    EAPI const Evas_Object_Textblock_Node_Format *evas_textblock_node_format_last_get(const Evas_Object *obj) EINA_ARG_NONNULL(1);
    EAPI const Evas_Object_Textblock_Node_Format *evas_textblock_node_format_next_get(const Evas_Object_Textblock_Node_Format *n) EINA_ARG_NONNULL(1);
    EAPI const Evas_Object_Textblock_Node_Format *evas_textblock_node_format_prev_get(const Evas_Object_Textblock_Node_Format *n) EINA_ARG_NONNULL(1);
-   //svn[52484]: Please remove this comment when this revision is merged. 
    EAPI void                         evas_textblock_node_format_remove_pair(Evas_Object *obj, Evas_Object_Textblock_Node_Format *n) EINA_ARG_NONNULL(1, 2);
    EAPI void                         evas_textblock_cursor_set_at_format(Evas_Textblock_Cursor *cur, const Evas_Object_Textblock_Node_Format *n) EINA_ARG_NONNULL(1, 2);
    EAPI const Evas_Object_Textblock_Node_Format *evas_textblock_cursor_format_get(const Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
@@ -1401,8 +1414,8 @@ typedef void (*Evas_Object_Image_Pixels_Get_Cb) (void *data, Evas_Object *o);
    EAPI int                          evas_textblock_cursor_compare(const Evas_Textblock_Cursor *cur1, const Evas_Textblock_Cursor *cur2) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2) EINA_PURE;
    EAPI void                         evas_textblock_cursor_copy(const Evas_Textblock_Cursor *cur, Evas_Textblock_Cursor *cur_dest) EINA_ARG_NONNULL(1, 2);
 
-   EAPI size_t                       evas_textblock_cursor_text_append(Evas_Textblock_Cursor *cur, const char *text) EINA_ARG_NONNULL(1, 2);
-   EAPI size_t                       evas_textblock_cursor_text_prepend(Evas_Textblock_Cursor *cur, const char *text) EINA_ARG_NONNULL(1, 2);
+   EAPI int                          evas_textblock_cursor_text_append(Evas_Textblock_Cursor *cur, const char *text) EINA_ARG_NONNULL(1, 2);
+   EAPI int                          evas_textblock_cursor_text_prepend(Evas_Textblock_Cursor *cur, const char *text) EINA_ARG_NONNULL(1, 2);
 
    EAPI Eina_Bool                    evas_textblock_cursor_format_append(Evas_Textblock_Cursor *cur, const char *format) EINA_ARG_NONNULL(1, 2);
    EAPI Eina_Bool                    evas_textblock_cursor_format_prepend(Evas_Textblock_Cursor *cur, const char *format) EINA_ARG_NONNULL(1, 2);
@@ -1413,8 +1426,9 @@ typedef void (*Evas_Object_Image_Pixels_Get_Cb) (void *data, Evas_Object *o);
    EAPI const char                  *evas_textblock_cursor_paragraph_text_get(const Evas_Textblock_Cursor *cur) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
    EAPI int                          evas_textblock_cursor_paragraph_text_length_get(const Evas_Textblock_Cursor *cur) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
    EAPI char                        *evas_textblock_cursor_range_text_get(const Evas_Textblock_Cursor *cur1, const Evas_Textblock_Cursor *cur2, Evas_Textblock_Text_Type format) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2) EINA_PURE;
-   EAPI int                          evas_textblock_cursor_geometry_get(const Evas_Textblock_Cursor *cur, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch, Evas_Textblock_Cursor_Type ctype) EINA_ARG_NONNULL(1);
    EAPI char                        *evas_textblock_cursor_content_get(const Evas_Textblock_Cursor *cur) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+
+   EAPI int                          evas_textblock_cursor_geometry_get(const Evas_Textblock_Cursor *cur, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch, Evas_BiDi_Direction *dir, Evas_Textblock_Cursor_Type ctype) EINA_ARG_NONNULL(1);
    EAPI int                          evas_textblock_cursor_char_geometry_get(const Evas_Textblock_Cursor *cur, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch) EINA_ARG_NONNULL(1);
    EAPI int                          evas_textblock_cursor_line_geometry_get(const Evas_Textblock_Cursor *cur, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch) EINA_ARG_NONNULL(1);
    EAPI Eina_Bool                    evas_textblock_cursor_char_coord_set(Evas_Textblock_Cursor *cur, Evas_Coord x, Evas_Coord y) EINA_ARG_NONNULL(1);
@@ -1485,9 +1499,7 @@ typedef void (*Evas_Object_Image_Pixels_Get_Cb) (void *data, Evas_Object *o);
 struct _Evas_Smart_Class
 {
    const char *name; /**< the string name of the class */
-
-   int version;
-
+   int         version;
    void  (*add)         (Evas_Object *o);
    void  (*del)         (Evas_Object *o);
    void  (*move)        (Evas_Object *o, Evas_Coord x, Evas_Coord y);
@@ -1501,12 +1513,10 @@ struct _Evas_Smart_Class
    void  (*member_add)  (Evas_Object *o, Evas_Object *child);
    void  (*member_del)  (Evas_Object *o, Evas_Object *child);
 
-   const Evas_Smart_Class *parent; /**< this class inherits from this parent */
+   const Evas_Smart_Class          *parent; /**< this class inherits from this parent */
    const Evas_Smart_Cb_Description *callbacks; /**< callbacks at this level, NULL terminated */
-
-   void *interfaces; /**< to be used in a future near you */
-
-   const void *data;
+   void                            *interfaces; /**< to be used in a future near you */
+   const void                      *data;
 };
 
 /**
@@ -1716,25 +1726,23 @@ struct _Evas_Smart_Cb_Description
  * @param priv_type The type of the data to allocate
  * @ingroup Evas_Smart_Group
  */
-#define EVAS_SMART_DATA_ALLOC(o, priv_type)			\
-  priv_type *priv;						\
-  priv = evas_object_smart_data_get(o);			\
-  if (!priv)							\
-    {								\
-       priv = (priv_type *)calloc(1, sizeof(priv_type));	\
-       if (!priv)						\
-	 return;						\
-       evas_object_smart_data_set(o, priv);			\
-    }
+#define EVAS_SMART_DATA_ALLOC(o, priv_type) \
+   priv_type *priv; \
+   priv = evas_object_smart_data_get(o); \
+   if (!priv) { \
+      priv = (priv_type *)calloc(1, sizeof(priv_type)); \
+      if (!priv) return; \
+      evas_object_smart_data_set(o, priv); \
+   }
 
-   EAPI void              evas_smart_free                   (Evas_Smart *s) EINA_ARG_NONNULL(1);
-   EAPI Evas_Smart       *evas_smart_class_new              (const Evas_Smart_Class *sc) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
-   EAPI const Evas_Smart_Class *evas_smart_class_get        (const Evas_Smart *s) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void                             evas_smart_free                     (Evas_Smart *s) EINA_ARG_NONNULL(1);
+   EAPI Evas_Smart                      *evas_smart_class_new                (const Evas_Smart_Class *sc) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+   EAPI const Evas_Smart_Class          *evas_smart_class_get                (const Evas_Smart *s) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
 
-   EAPI void             *evas_smart_data_get               (const Evas_Smart *s) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void                            *evas_smart_data_get                 (const Evas_Smart *s) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
    EAPI const Evas_Smart_Cb_Description *evas_smart_callback_description_find(const Evas_Smart *s, const char *name) EINA_ARG_NONNULL(1, 2) EINA_PURE;
 
-   EAPI Eina_Bool         evas_smart_class_inherit_full      (Evas_Smart_Class *sc, const Evas_Smart_Class *parent_sc, unsigned int parent_sc_size) EINA_ARG_NONNULL(1, 2);
+   EAPI Eina_Bool                        evas_smart_class_inherit_full       (Evas_Smart_Class *sc, const Evas_Smart_Class *parent_sc, unsigned int parent_sc_size) EINA_ARG_NONNULL(1, 2);
   /**
    * @def evas_smart_class_inherit
    * Easy to use version of evas_smart_class_inherit_full().
@@ -1778,13 +1786,13 @@ struct _Evas_Smart_Cb_Description
    EAPI Eina_Bool         evas_object_smart_callbacks_descriptions_set(Evas_Object *obj, const Evas_Smart_Cb_Description *descriptions) EINA_ARG_NONNULL(1);
    EAPI void              evas_object_smart_callbacks_descriptions_get(const Evas_Object *obj, const Evas_Smart_Cb_Description ***class_descriptions, unsigned int *class_count, const Evas_Smart_Cb_Description ***instance_descriptions, unsigned int *instance_count) EINA_ARG_NONNULL(1);
    EAPI void              evas_object_smart_callback_description_find(const Evas_Object *obj, const char *name, const Evas_Smart_Cb_Description **class_description, const Evas_Smart_Cb_Description **instance_description) EINA_ARG_NONNULL(1, 2);
+
    EAPI void              evas_object_smart_changed         (Evas_Object *obj) EINA_ARG_NONNULL(1);
    EAPI void              evas_object_smart_need_recalculate_set(Evas_Object *obj, Eina_Bool value) EINA_ARG_NONNULL(1);
    EAPI Eina_Bool         evas_object_smart_need_recalculate_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
    EAPI void              evas_object_smart_calculate       (Evas_Object *obj) EINA_ARG_NONNULL(1);
 
    EAPI void              evas_smart_objects_calculate      (Evas *e);
-
 
 /**
  * @defgroup Evas_Smart_Object_Clipped Clipped Smart Object
@@ -1811,14 +1819,14 @@ struct _Evas_Smart_Cb_Description
   struct _Evas_Object_Smart_Clipped_Data
   {
      Evas_Object *clipper;
-     Evas *evas;
+     Evas        *evas;
   };
 
-   EAPI Evas_Object *evas_object_smart_clipped_clipper_get(Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
-   EAPI void evas_object_smart_clipped_smart_set(Evas_Smart_Class *sc) EINA_ARG_NONNULL(1);
-   EAPI const Evas_Smart_Class *evas_object_smart_clipped_class_get(void) EINA_CONST;
+   EAPI Evas_Object            *evas_object_smart_clipped_clipper_get   (Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void                    evas_object_smart_clipped_smart_set     (Evas_Smart_Class *sc) EINA_ARG_NONNULL(1);
+   EAPI const Evas_Smart_Class *evas_object_smart_clipped_class_get     (void) EINA_CONST;
 
-   EAPI void evas_object_smart_move_children_relative(Evas_Object *obj, Evas_Coord dx, Evas_Coord dy) EINA_ARG_NONNULL(1);
+   EAPI void                    evas_object_smart_move_children_relative(Evas_Object *obj, Evas_Coord dx, Evas_Coord dy) EINA_ARG_NONNULL(1);
 
 /**
  * @defgroup Evas_Object_Box Box (Sequence) Smart Object.
@@ -1850,7 +1858,7 @@ struct _Evas_Smart_Cb_Description
  * @ingroup Evas_Object_Box
  */
    typedef struct _Evas_Object_Box_Option     Evas_Object_Box_Option;
-   typedef void (*Evas_Object_Box_Layout)(Evas_Object *o, Evas_Object_Box_Data *priv, void *user_data);
+   typedef void (*Evas_Object_Box_Layout) (Evas_Object *o, Evas_Object_Box_Data *priv, void *user_data);
 
 /**
  * @def EVAS_OBJECT_BOX_API_VERSION
@@ -1869,21 +1877,21 @@ struct _Evas_Smart_Cb_Description
  */
    struct _Evas_Object_Box_Api
    {
-      Evas_Smart_Class base;
-      int version;
-      Evas_Object_Box_Option *(*append)(Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object *child);
-      Evas_Object_Box_Option *(*prepend)(Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object *child);
-      Evas_Object_Box_Option *(*insert_before)(Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object *child, const Evas_Object *reference);
-      Evas_Object_Box_Option *(*insert_after)(Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object *child, const Evas_Object *reference);
-      Evas_Object_Box_Option *(*insert_at)(Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object *child, unsigned int pos);
-      Evas_Object            *(*remove)(Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object *child);
-      Evas_Object            *(*remove_at)(Evas_Object *o, Evas_Object_Box_Data *priv, unsigned int pos);
-      Eina_Bool               (*property_set)(Evas_Object *o, Evas_Object_Box_Option *opt, int property, va_list args);
-      Eina_Bool               (*property_get)(Evas_Object *o, Evas_Object_Box_Option *opt, int property, va_list args);
+      Evas_Smart_Class          base;
+      int                       version;
+      Evas_Object_Box_Option *(*append)           (Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object *child);
+      Evas_Object_Box_Option *(*prepend)          (Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object *child);
+      Evas_Object_Box_Option *(*insert_before)    (Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object *child, const Evas_Object *reference);
+      Evas_Object_Box_Option *(*insert_after)     (Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object *child, const Evas_Object *reference);
+      Evas_Object_Box_Option *(*insert_at)        (Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object *child, unsigned int pos);
+      Evas_Object            *(*remove)           (Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object *child);
+      Evas_Object            *(*remove_at)        (Evas_Object *o, Evas_Object_Box_Data *priv, unsigned int pos);
+      Eina_Bool               (*property_set)     (Evas_Object *o, Evas_Object_Box_Option *opt, int property, va_list args);
+      Eina_Bool               (*property_get)     (Evas_Object *o, Evas_Object_Box_Option *opt, int property, va_list args);
       const char             *(*property_name_get)(Evas_Object *o, int property);
-      int                     (*property_id_get)(Evas_Object *o, const char *name);
-      Evas_Object_Box_Option *(*option_new)(Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object *child);
-      void                    (*option_free)(Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object_Box_Option *opt);
+      int                     (*property_id_get)  (Evas_Object *o, const char *name);
+      Evas_Object_Box_Option *(*option_new)       (Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object *child);
+      void                    (*option_free)      (Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object_Box_Option *opt);
    };
 
 /**
@@ -1961,72 +1969,72 @@ struct _Evas_Smart_Cb_Description
  */
    struct _Evas_Object_Box_Data
    {
-      Evas_Object_Smart_Clipped_Data base;
-      const Evas_Object_Box_Api *api;
+      Evas_Object_Smart_Clipped_Data   base;
+      const Evas_Object_Box_Api       *api;
       struct {
-	 double h, v;
+	 double                        h, v;
       } align;
       struct {
-	 Evas_Coord h, v;
+	 Evas_Coord                    h, v;
       } pad;
-      Eina_List *children;
+      Eina_List                       *children;
       struct {
-	 Evas_Object_Box_Layout cb;
-	 void *data;
-	 void (*free_data)(void *data);
+	 Evas_Object_Box_Layout        cb;
+	 void                         *data;
+	 void                        (*free_data)(void *data);
       } layout;
-      Eina_Bool layouting : 1;
+      Eina_Bool                        layouting : 1;
+      Eina_Bool                        children_changed : 1;
    };
 
    struct _Evas_Object_Box_Option
    {
       Evas_Object *obj;
-      Eina_Bool max_reached:1;
-      Eina_Bool min_reached:1;
-      Evas_Coord alloc_size;
+      Eina_Bool    max_reached:1;
+      Eina_Bool    min_reached:1;
+      Evas_Coord   alloc_size;
    };
 
-   EAPI void evas_object_box_smart_set(Evas_Object_Box_Api *api) EINA_ARG_NONNULL(1);
-   EAPI const Evas_Object_Box_Api *evas_object_box_smart_class_get(void) EINA_CONST;
-   EAPI void evas_object_box_layout_set(Evas_Object *o, Evas_Object_Box_Layout cb, const void *data, void (*free_data)(void *data)) EINA_ARG_NONNULL(1, 2);
+   EAPI void                       evas_object_box_smart_set                             (Evas_Object_Box_Api *api) EINA_ARG_NONNULL(1);
+   EAPI const Evas_Object_Box_Api *evas_object_box_smart_class_get                       (void) EINA_CONST;
+   EAPI void                       evas_object_box_layout_set                            (Evas_Object *o, Evas_Object_Box_Layout cb, const void *data, void (*free_data)(void *data)) EINA_ARG_NONNULL(1, 2);
 
-   EAPI Evas_Object *evas_object_box_add(Evas *evas) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
-   EAPI Evas_Object *evas_object_box_add_to(Evas_Object *parent) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+   EAPI Evas_Object               *evas_object_box_add                                   (Evas *evas) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+   EAPI Evas_Object               *evas_object_box_add_to                                (Evas_Object *parent) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
-   EAPI void evas_object_box_layout_horizontal(Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
-   EAPI void evas_object_box_layout_vertical(Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
-   EAPI void evas_object_box_layout_homogeneous_vertical(Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
-   EAPI void evas_object_box_layout_homogeneous_horizontal(Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
-   EAPI void evas_object_box_layout_homogeneous_max_size_horizontal(Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
-   EAPI void evas_object_box_layout_homogeneous_max_size_vertical(Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
-   EAPI void evas_object_box_layout_flow_horizontal(Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
-   EAPI void evas_object_box_layout_flow_vertical(Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
-   EAPI void evas_object_box_layout_stack(Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
+   EAPI void                       evas_object_box_layout_horizontal                     (Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
+   EAPI void                       evas_object_box_layout_vertical                       (Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
+   EAPI void                       evas_object_box_layout_homogeneous_vertical           (Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
+   EAPI void                       evas_object_box_layout_homogeneous_horizontal         (Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
+   EAPI void                       evas_object_box_layout_homogeneous_max_size_horizontal(Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
+   EAPI void                       evas_object_box_layout_homogeneous_max_size_vertical  (Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
+   EAPI void                       evas_object_box_layout_flow_horizontal                (Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
+   EAPI void                       evas_object_box_layout_flow_vertical                  (Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
+   EAPI void                       evas_object_box_layout_stack                          (Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
 
-   EAPI void   evas_object_box_align_set(Evas_Object *o, double horizontal, double vertical) EINA_ARG_NONNULL(1);
-   EAPI void   evas_object_box_align_get(const Evas_Object *o, double *horizontal, double *vertical) EINA_ARG_NONNULL(1);
-   EAPI void   evas_object_box_padding_set(Evas_Object *o, Evas_Coord horizontal, Evas_Coord vertical) EINA_ARG_NONNULL(1);
-   EAPI void   evas_object_box_padding_get(const Evas_Object *o, Evas_Coord *horizontal, Evas_Coord *vertical) EINA_ARG_NONNULL(1);
+   EAPI void                       evas_object_box_align_set                             (Evas_Object *o, double horizontal, double vertical) EINA_ARG_NONNULL(1);
+   EAPI void                       evas_object_box_align_get                             (const Evas_Object *o, double *horizontal, double *vertical) EINA_ARG_NONNULL(1);
+   EAPI void                       evas_object_box_padding_set                           (Evas_Object *o, Evas_Coord horizontal, Evas_Coord vertical) EINA_ARG_NONNULL(1);
+   EAPI void                       evas_object_box_padding_get                           (const Evas_Object *o, Evas_Coord *horizontal, Evas_Coord *vertical) EINA_ARG_NONNULL(1);
 
-   EAPI Evas_Object_Box_Option *evas_object_box_append(Evas_Object *o, Evas_Object *child) EINA_ARG_NONNULL(1, 2);
-   EAPI Evas_Object_Box_Option *evas_object_box_prepend(Evas_Object *o, Evas_Object *child) EINA_ARG_NONNULL(1, 2);
-   EAPI Evas_Object_Box_Option *evas_object_box_insert_before(Evas_Object *o, Evas_Object *child, const Evas_Object *reference) EINA_ARG_NONNULL(1, 2, 3);
-   EAPI Evas_Object_Box_Option *evas_object_box_insert_after(Evas_Object *o, Evas_Object *child, const Evas_Object *referente) EINA_ARG_NONNULL(1, 2, 3);
-   EAPI Evas_Object_Box_Option *evas_object_box_insert_at(Evas_Object *o, Evas_Object *child, unsigned int pos) EINA_ARG_NONNULL(1, 2);
-   EAPI Eina_Bool               evas_object_box_remove(Evas_Object *o, Evas_Object *child) EINA_ARG_NONNULL(1, 2);
-   EAPI Eina_Bool               evas_object_box_remove_at(Evas_Object *o, unsigned int pos) EINA_ARG_NONNULL(1);
-   EAPI Eina_Bool               evas_object_box_remove_all(Evas_Object *o, Eina_Bool clear) EINA_ARG_NONNULL(1);
-   EAPI Eina_Iterator          *evas_object_box_iterator_new(const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
-   EAPI Eina_Accessor          *evas_object_box_accessor_new(const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
-   EAPI Eina_List              *evas_object_box_children_get(const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+   EAPI Evas_Object_Box_Option    *evas_object_box_append                                (Evas_Object *o, Evas_Object *child) EINA_ARG_NONNULL(1, 2);
+   EAPI Evas_Object_Box_Option    *evas_object_box_prepend                               (Evas_Object *o, Evas_Object *child) EINA_ARG_NONNULL(1, 2);
+   EAPI Evas_Object_Box_Option    *evas_object_box_insert_before                         (Evas_Object *o, Evas_Object *child, const Evas_Object *reference) EINA_ARG_NONNULL(1, 2, 3);
+   EAPI Evas_Object_Box_Option    *evas_object_box_insert_after                          (Evas_Object *o, Evas_Object *child, const Evas_Object *referente) EINA_ARG_NONNULL(1, 2, 3);
+   EAPI Evas_Object_Box_Option    *evas_object_box_insert_at                             (Evas_Object *o, Evas_Object *child, unsigned int pos) EINA_ARG_NONNULL(1, 2);
+   EAPI Eina_Bool                  evas_object_box_remove                                (Evas_Object *o, Evas_Object *child) EINA_ARG_NONNULL(1, 2);
+   EAPI Eina_Bool                  evas_object_box_remove_at                             (Evas_Object *o, unsigned int pos) EINA_ARG_NONNULL(1);
+   EAPI Eina_Bool                  evas_object_box_remove_all                            (Evas_Object *o, Eina_Bool clear) EINA_ARG_NONNULL(1);
+   EAPI Eina_Iterator             *evas_object_box_iterator_new                          (const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+   EAPI Eina_Accessor             *evas_object_box_accessor_new                          (const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+   EAPI Eina_List                 *evas_object_box_children_get                          (const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
-   EAPI const char *evas_object_box_option_property_name_get(Evas_Object *o, int property) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
-   EAPI int         evas_object_box_option_property_id_get(Evas_Object *o, const char *name) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2) EINA_PURE;
-   EAPI Eina_Bool   evas_object_box_option_property_set(Evas_Object *o, Evas_Object_Box_Option *opt, int property, ...) EINA_ARG_NONNULL(1, 2);
-   EAPI Eina_Bool   evas_object_box_option_property_vset(Evas_Object *o, Evas_Object_Box_Option *opt, int property, va_list args) EINA_ARG_NONNULL(1, 2);
-   EAPI Eina_Bool   evas_object_box_option_property_get(Evas_Object *o, Evas_Object_Box_Option *opt, int property, ...) EINA_ARG_NONNULL(1, 2);
-   EAPI Eina_Bool   evas_object_box_option_property_vget(Evas_Object *o, Evas_Object_Box_Option *opt, int property, va_list args) EINA_ARG_NONNULL(1, 2);
-
+   EAPI const char                *evas_object_box_option_property_name_get              (Evas_Object *o, int property) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI int                        evas_object_box_option_property_id_get                (Evas_Object *o, const char *name) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2) EINA_PURE;
+   EAPI Eina_Bool                  evas_object_box_option_property_set                   (Evas_Object *o, Evas_Object_Box_Option *opt, int property, ...) EINA_ARG_NONNULL(1, 2);
+   EAPI Eina_Bool                  evas_object_box_option_property_vset                  (Evas_Object *o, Evas_Object_Box_Option *opt, int property, va_list args) EINA_ARG_NONNULL(1, 2);
+   EAPI Eina_Bool                  evas_object_box_option_property_get                   (Evas_Object *o, Evas_Object_Box_Option *opt, int property, ...) EINA_ARG_NONNULL(1, 2);
+   EAPI Eina_Bool                  evas_object_box_option_property_vget                  (Evas_Object *o, Evas_Object_Box_Option *opt, int property, va_list args) EINA_ARG_NONNULL(1, 2);
 
 /**
  * @defgroup Evas_Object_Table Table Smart Object.
@@ -2039,25 +2047,24 @@ struct _Evas_Smart_Cb_Description
  *
  * @ingroup Evas_Smart_Object_Group
  */
-   EAPI Evas_Object *evas_object_table_add(Evas *evas) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
-   EAPI Evas_Object *evas_object_table_add_to(Evas_Object *parent) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
-   EAPI void         evas_object_table_homogeneous_set(Evas_Object *o, Evas_Object_Table_Homogeneous_Mode homogeneous) EINA_ARG_NONNULL(1);
-   EAPI Evas_Object_Table_Homogeneous_Mode evas_object_table_homogeneous_get(const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
-   EAPI void         evas_object_table_padding_set(Evas_Object *o, Evas_Coord horizontal, Evas_Coord vertical) EINA_ARG_NONNULL(1);
-   EAPI void         evas_object_table_padding_get(const Evas_Object *o, Evas_Coord *horizontal, Evas_Coord *vertical) EINA_ARG_NONNULL(1);
-   EAPI void         evas_object_table_align_set(Evas_Object *o, double horizontal, double vertical) EINA_ARG_NONNULL(1);
-   EAPI void         evas_object_table_align_get(const Evas_Object *o, double *horizontal, double *vertical) EINA_ARG_NONNULL(1);
+   EAPI Evas_Object                        *evas_object_table_add             (Evas *evas) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+   EAPI Evas_Object                        *evas_object_table_add_to          (Evas_Object *parent) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+   EAPI void                                evas_object_table_homogeneous_set (Evas_Object *o, Evas_Object_Table_Homogeneous_Mode homogeneous) EINA_ARG_NONNULL(1);
+   EAPI Evas_Object_Table_Homogeneous_Mode  evas_object_table_homogeneous_get (const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void                                evas_object_table_padding_set     (Evas_Object *o, Evas_Coord horizontal, Evas_Coord vertical) EINA_ARG_NONNULL(1);
+   EAPI void                                evas_object_table_padding_get     (const Evas_Object *o, Evas_Coord *horizontal, Evas_Coord *vertical) EINA_ARG_NONNULL(1);
+   EAPI void                                evas_object_table_align_set       (Evas_Object *o, double horizontal, double vertical) EINA_ARG_NONNULL(1);
+   EAPI void                                evas_object_table_align_get       (const Evas_Object *o, double *horizontal, double *vertical) EINA_ARG_NONNULL(1);
 
-   EAPI Eina_Bool    evas_object_table_pack(Evas_Object *o, Evas_Object *child, unsigned short col, unsigned short row, unsigned short colspan, unsigned short rowspan) EINA_ARG_NONNULL(1, 2);
-   EAPI Eina_Bool    evas_object_table_unpack(Evas_Object *o, Evas_Object *child) EINA_ARG_NONNULL(1, 2);
-   EAPI void         evas_object_table_clear(Evas_Object *o, Eina_Bool clear) EINA_ARG_NONNULL(1);
+   EAPI Eina_Bool                           evas_object_table_pack            (Evas_Object *o, Evas_Object *child, unsigned short col, unsigned short row, unsigned short colspan, unsigned short rowspan) EINA_ARG_NONNULL(1, 2);
+   EAPI Eina_Bool                           evas_object_table_unpack          (Evas_Object *o, Evas_Object *child) EINA_ARG_NONNULL(1, 2);
+   EAPI void                                evas_object_table_clear           (Evas_Object *o, Eina_Bool clear) EINA_ARG_NONNULL(1);
 
-   EAPI void         evas_object_table_col_row_size_get(const Evas_Object *o, int *cols, int *rows) EINA_ARG_NONNULL(1);
-   EAPI Eina_Iterator *evas_object_table_iterator_new(const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
-   EAPI Eina_Accessor *evas_object_table_accessor_new(const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
-   EAPI Eina_List     *evas_object_table_children_get(const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
-   EAPI Evas_Object   *evas_object_table_child_get(const Evas_Object *o, unsigned short col, unsigned short row) EINA_ARG_NONNULL(1);
-
+   EAPI void                                evas_object_table_col_row_size_get(const Evas_Object *o, int *cols, int *rows) EINA_ARG_NONNULL(1);
+   EAPI Eina_Iterator                      *evas_object_table_iterator_new    (const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+   EAPI Eina_Accessor                      *evas_object_table_accessor_new    (const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+   EAPI Eina_List                          *evas_object_table_children_get    (const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+   EAPI Evas_Object                        *evas_object_table_child_get       (const Evas_Object *o, unsigned short col, unsigned short row) EINA_ARG_NONNULL(1);
 
 /**
  * @defgroup Evas_Cserve Shared Image Cache Server
@@ -2065,10 +2072,10 @@ struct _Evas_Smart_Cb_Description
  * Provides client-server infrastructure to share bitmaps across
  * multiple processes, saving data and processing power.
  */
-   typedef struct _Evas_Cserve_Stats Evas_Cserve_Stats;
+   typedef struct _Evas_Cserve_Stats       Evas_Cserve_Stats;
    typedef struct _Evas_Cserve_Image_Cache Evas_Cserve_Image_Cache;
-   typedef struct _Evas_Cserve_Image Evas_Cserve_Image;
-   typedef struct _Evas_Cserve_Config Evas_Cserve_Config;
+   typedef struct _Evas_Cserve_Image       Evas_Cserve_Image;
+   typedef struct _Evas_Cserve_Config      Evas_Cserve_Config;
 
 /**
  * Statistics about server that shares cached bitmaps.
@@ -2076,12 +2083,12 @@ struct _Evas_Smart_Cb_Description
  */
    struct _Evas_Cserve_Stats
      {
-        int saved_memory; /**< current saved memory, in bytes */
-        int wasted_memory; /**< current wasted memory, in bytes */
-        int saved_memory_peak; /**< peak of saved memory, in bytes */
-        int wasted_memory_peak; /**< peak of wasted memory, in bytes */
-        double saved_time_image_header_load;
-        double saved_time_image_data_load;
+        int    saved_memory; /**< current saved memory, in bytes */
+        int    wasted_memory; /**< current wasted memory, in bytes */
+        int    saved_memory_peak; /**< peak of saved memory, in bytes */
+        int    wasted_memory_peak; /**< peak of wasted memory, in bytes */
+        double saved_time_image_header_load; /**< time, in seconds, saved in header loads by sharing cached loads instead */
+        double saved_time_image_data_load; /**< time, in seconds, saved in data loads by sharing cached loads instead */
      };
 
 /**
@@ -2091,8 +2098,8 @@ struct _Evas_Smart_Cb_Description
    struct _Evas_Cserve_Image_Cache
      {
         struct {
-           int mem_total;
-           int count;
+           int     mem_total;
+           int     count;
         } active, cached;
         Eina_List *images;
      };
@@ -2104,20 +2111,20 @@ struct _Evas_Smart_Cb_Description
    struct _Evas_Cserve_Image
      {
         const char *file, *key;
-        int w, h;
-        time_t file_mod_time;
-        time_t file_checked_time;
-        time_t cached_time;
-        int refcount;
-        int data_refcount;
-        int memory_footprint;
-        double head_load_time;
-        double data_load_time;
-        Eina_Bool alpha : 1;
-        Eina_Bool data_loaded : 1;
-        Eina_Bool active : 1;
-        Eina_Bool dead : 1;
-        Eina_Bool useless : 1;
+        int         w, h;
+        time_t      file_mod_time;
+        time_t      file_checked_time;
+        time_t      cached_time;
+        int         refcount;
+        int         data_refcount;
+        int         memory_footprint;
+        double      head_load_time;
+        double      data_load_time;
+        Eina_Bool   alpha : 1;
+        Eina_Bool   data_loaded : 1;
+        Eina_Bool   active : 1;
+        Eina_Bool   dead : 1;
+        Eina_Bool   useless : 1;
      };
 
 /**
@@ -2139,14 +2146,13 @@ struct _Evas_Smart_Cb_Description
    EAPI Eina_Bool         evas_cserve_config_set                 (const Evas_Cserve_Config *config) EINA_WARN_UNUSED_RESULT EINA_PURE;
    EAPI void              evas_cserve_disconnect                 (void);
 
-
 /**
  * @defgroup Evas_Utils General Utilities
  *
  * Some functions that are handy but are not specific of canvas or
  * objects.
  */
-   EAPI const char *evas_load_error_str(int error);
+   EAPI const char       *evas_load_error_str               (Evas_Load_Error error);
 
 /* Evas utility routines for color space conversions */
 /* hsv color space has h in the range 0.0 to 360.0, and s,v in the range 0.0 to 1.0 */
@@ -2191,7 +2197,7 @@ struct _Evas_Smart_Cb_Description
    
    EAPI Eina_Bool            evas_object_key_grab           (Evas_Object *obj, const char *keyname, Evas_Modifier_Mask modifiers, Evas_Modifier_Mask not_modifiers, Eina_Bool exclusive) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2);
    EAPI void                 evas_object_key_ungrab         (Evas_Object *obj, const char *keyname, Evas_Modifier_Mask modifiers, Evas_Modifier_Mask not_modifiers) EINA_ARG_NONNULL(1, 2);
-   
+
 #ifdef __cplusplus
 }
 #endif

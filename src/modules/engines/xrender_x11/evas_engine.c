@@ -121,7 +121,7 @@ struct _Render_Engine
 
    Ximage_Info *(*ximage_info_get)(Display *connection, Drawable draw, Visual *vis);
    void (*ximage_info_free)(Ximage_Info *xinf);
-   void (*ximage_info_pool_flush)(Ximage_Info *xinf, int max_num, int max_mem);
+   void (*ximage_info_pool_flush)(Ximage_Info *xinf, unsigned int max_num, unsigned int max_mem);
    Ximage_Image *(*ximage_new)(Ximage_Info *xinf, int w, int h, int depth);
    void (*ximage_free)(Ximage_Image *xim);
    void (*ximage_put)(Ximage_Image *xim, Drawable draw, int x, int y, int w, int h);
@@ -476,7 +476,7 @@ eng_setup(Evas *e, void *in)
 #endif /* BUILD_ENGINE_XRENDER_XCB */
 
         if (!re)
-          return;
+          return 0;
 
 	re->tb = evas_common_tilebuf_new(e->output.w, e->output.h);
 	if (re->tb)
@@ -485,7 +485,7 @@ eng_setup(Evas *e, void *in)
 	resize = 0;
      }
    re = e->engine.data.output;
-   if (!re) return;
+   if (!re) return 0;
 
    if (!e->engine.data.context) e->engine.data.context = e->engine.func->context_new(e->engine.data.output);
 
@@ -1131,12 +1131,12 @@ eng_image_draw(void *data, void *context, void *surface, void *image, int src_x,
 }
 
 static void
-eng_image_scale_hint_set(void *data __UNUSED__, void *image, int hint)
+eng_image_scale_hint_set(void *data __UNUSED__, void *image __UNUSED__, int hint __UNUSED__)
 {
 }
 
 static int
-eng_image_scale_hint_get(void *data __UNUSED__, void *image)
+eng_image_scale_hint_get(void *data __UNUSED__, void *image __UNUSED__)
 {
    return EVAS_IMAGE_SCALE_HINT_NONE;
 }
@@ -1204,11 +1204,9 @@ eng_font_draw(void *data, void *context, void *surface, void *font, int x, int y
 }
 
 static Eina_Bool
-eng_canvas_alpha_get(void *data, void *context)
+eng_canvas_alpha_get(void *data, void *context __UNUSED__)
 {
-   Render_Engine        *re;
-
-   re = (Render_Engine *)data;
+   Render_Engine *re = (Render_Engine *)data;
    return (re->destination_alpha) || (re->x11.mask);
 }
 
@@ -1228,11 +1226,12 @@ module_open(Evas_Module *em)
    if (!em) return 0;
    /* get whatever engine module we inherit from */
    if (!_evas_module_engine_inherit(&pfunc, "software_generic")) return 0;
-   _evas_xrender_xcb_log_dom = eina_log_domain_register("EvasSoftXrender", EVAS_DEFAULT_LOG_COLOR);
-   if(_evas_xrender_xcb_log_dom < 0)
+   _evas_xrender_xcb_log_dom = eina_log_domain_register
+     ("evas-xrender_x11", EVAS_DEFAULT_LOG_COLOR);
+   if (_evas_xrender_xcb_log_dom < 0)
      {
-       EINA_LOG_ERR("Impossible to create a log domain for the Software Xrender engine.\n");
-       return 0;
+        EINA_LOG_ERR("Can not create a module log domain.");
+        return 0;
      }
    /* store it for later use */
    func = pfunc;
@@ -1297,7 +1296,7 @@ module_open(Evas_Module *em)
 }
 
 static void
-module_close(Evas_Module *em)
+module_close(Evas_Module *em __UNUSED__)
 {
   eina_log_domain_unregister(_evas_xrender_xcb_log_dom);
 #ifdef BUILD_ENGINE_SOFTWARE_XLIB

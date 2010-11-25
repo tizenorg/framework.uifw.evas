@@ -252,15 +252,12 @@ evas_load_fontconfig(Evas *evas, FcFontSet *set, int size)
 }
 #endif
 
-/* Rollback
-// [SVN 53093 Merge] Please delete this comment when you merge 53093.
 struct _FcPattern {   
    int             num;
    int             size;
    intptr_t        elts_offset;
    int             ref;
 };
-*/
 
 void *
 evas_font_load(Evas *evas, const char *name, const char *source, int size)
@@ -458,7 +455,7 @@ evas_font_load(Evas *evas, const char *name, const char *source, int size)
    fonts = eina_list_free(fonts);
 
 #ifdef HAVE_FONTCONFIG
-
+   
    if (!font) /* Search using fontconfig */
      {
 	FcResult res;
@@ -476,15 +473,13 @@ evas_font_load(Evas *evas, const char *name, const char *source, int size)
 	     p_nm = NULL;
 	  }
 	else
-			 // [SVN 53093 Merge] Please delete this comment when you merge 53093.
           {
-          	 // Rollback
-             font = evas_load_fontconfig(evas, set, size);
              // FIXME: this i think is a bugfix for a rare bug... but i'm
              // not sure 100%. it seems that way from fc. if trim is set
              // to FcTrue...
-             //FcPatternReference(p_nm); /* we have to reference count the pat */
-             //font = evas_load_fontconfig(evas, set, size);
+             //  ok - not a bugfix... but there is something going on somewhere that's wierd?
+//             FcPatternReference(p_nm); /* we have to reference count the pat */
+             font = evas_load_fontconfig(evas, set, size);
           }
      }
 #endif

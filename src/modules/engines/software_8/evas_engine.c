@@ -185,14 +185,14 @@ static void
 eng_rectangle_draw(void *data __UNUSED__, void *context, void *surface, int x,
                    int y, int w, int h)
 {
-   soft8_rectangle_draw(surface, context, x, y, w, h);
+   evas_common_soft8_rectangle_draw(surface, context, x, y, w, h);
 }
 
 static void
 eng_line_draw(void *data __UNUSED__, void *context, void *surface, int x1,
               int y1, int x2, int y2)
 {
-   soft8_line_draw(surface, context, x1, y1, x2, y2);
+   evas_common_soft8_line_draw(surface, context, x1, y1, x2, y2);
 }
 
 static void *
@@ -213,7 +213,7 @@ static void
 eng_polygon_draw(void *data __UNUSED__, void *context, void *surface,
                  void *polygon, int x, int y)
 {
-   soft8_polygon_draw(surface, context, polygon, x, y);
+   evas_common_soft8_polygon_draw(surface, context, polygon, x, y);
 }
 
 static int
@@ -239,7 +239,7 @@ eng_image_alpha_set(void *data __UNUSED__, void *image, int have_alpha)
    if (!image)
       return NULL;
    have_alpha = !!have_alpha;
-   image = soft8_image_alpha_set(image, have_alpha);
+   image = evas_common_soft8_image_alpha_set(image, have_alpha);
    return image;
 }
 
@@ -278,11 +278,12 @@ eng_image_colorspace_set(void *data __UNUSED__, void *image __UNUSED__,
    NOT_IMPLEMENTED();
 }
 
-static void
-eng_image_native_set(void *data __UNUSED__, void *image __UNUSED__,
+static void *
+eng_image_native_set(void *data __UNUSED__, void *image,
                      void *native __UNUSED__)
 {
    NOT_IMPLEMENTED();
+   return image;
 }
 
 static void *
@@ -468,7 +469,7 @@ eng_image_draw(void *data __UNUSED__, void *context, void *surface, void *image,
    im = (Soft8_Image *) image;
 
    evas_cache_image_load_data(&im->cache_entry);
-   soft8_image_draw(im, surface, context,
+   evas_common_soft8_image_draw(im, surface, context,
                     src_x, src_y, src_w, src_h,
                     dst_x, dst_y, dst_w, dst_h, smooth);
 }
@@ -613,7 +614,7 @@ eng_font_last_up_to_pos(void *data __UNUSED__, void *font, const Eina_Unicode *t
 
 static void
 eng_font_draw(void *data __UNUSED__, void *context, void *surface, void *font,
-              int x, int y, int w, int h, int ow, int oh, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props)
+              int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props)
 {
    evas_common_font_draw(surface, context, font, x, y, text, intl_props);
    evas_common_draw_context_font_ext_set(context, NULL, NULL, NULL, NULL);
@@ -762,12 +763,13 @@ static Evas_Func func = {
    eng_image_scale_hint_set,
    eng_image_scale_hint_get,
    /* more font draw functions */
-   eng_font_last_up_to_pos
-       /* FUTURE software generic calls go here */
-//   ORD(image_map4_draw);
-//   ORD(image_map_surface_new);
-//   ORD(image_map_surface_free);
-       /* FUTURE software generic calls go here */
+   eng_font_last_up_to_pos,
+   NULL, //   ORD(image_map4_draw);
+   NULL, //   ORD(image_map_surface_new);
+   NULL, //   ORD(image_map_surface_free);
+   NULL, // eng_image_content_hint_set - software doesn't use it
+   NULL // eng_image_content_hint_get - software doesn't use it
+   /* FUTURE software generic calls go here */
 };
 
 /*
@@ -783,12 +785,11 @@ module_open(Evas_Module * em)
 {
    if (!em)
       return 0;
-   _evas_soft8_log_dom =
-       eina_log_domain_register("Soft8Engine", EVAS_DEFAULT_LOG_COLOR);
+   _evas_soft8_log_dom = eina_log_domain_register
+     ("evas-software_8", EVAS_DEFAULT_LOG_COLOR);
    if (_evas_soft8_log_dom < 0)
      {
-        EINA_LOG_ERR
-            ("Impossible to create a log domain for the soft8 Engine.\n");
+        EINA_LOG_ERR("Can not create a module log domain.");
         return 0;
      }
    em->functions = (void *)(&func);
@@ -797,7 +798,7 @@ module_open(Evas_Module * em)
 }
 
 static void
-module_close(Evas_Module * em)
+module_close(Evas_Module * em __UNUSED__)
 {
    eina_log_domain_unregister(_evas_soft8_log_dom);
 }

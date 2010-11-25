@@ -2,40 +2,31 @@
 #include "evas_private.h"
 
 static void
-_evas_event_havemap_adjust(Evas_Object *obj, Evas_Coord *x, Evas_Coord *y)
+_evas_event_havemap_adjust(Evas_Object *obj, Evas_Coord *x, Evas_Coord *y, Eina_Bool mouse_grabbed)
 {
-   Evas_Object *pmap;
-   
-   if (!obj->havemap_parent) return;
-   pmap = obj->smart.parent;
-   if (!pmap) return;
-   while (pmap)
+   if (obj->smart.parent)
+      _evas_event_havemap_adjust(obj->smart.parent, x, y, mouse_grabbed);
+
+   if ((!obj->cur.map) || (!obj->cur.map->count == 4) || (!obj->cur.usemap))
+      return;
+
+   if (obj->cur.map)
      {
-        if ((pmap->cur.map) && (pmap->cur.map->count == 4) && (pmap->cur.usemap))
-          break;
-        pmap = pmap->smart.parent;
-     }
-   if (!pmap) return;
-   evas_map_coords_get(pmap->cur.map, *x, *y, x, y, obj->mouse_grabbed);
-   if (pmap->cur.map)
-     {
-        *x += pmap->cur.map->normal_geometry.x;
-        *y += pmap->cur.map->normal_geometry.y;
+        evas_map_coords_get(obj->cur.map, *x, *y, x, y, mouse_grabbed);
+        *x += obj->cur.geometry.x;
+        *y += obj->cur.geometry.y;
      }
 }
 
 static Eina_List *
 _evas_event_object_list_in_get(Evas *e, Eina_List *in,
-                               const Eina_Inlist *list, Evas_Object *stop, 
-                               int x, int y, int *no_rep, int parmap)
+                               const Eina_Inlist *list, Evas_Object *stop,
+                               int x, int y, int *no_rep)
 {
    Evas_Object *obj;
    if (!list) return in;
    EINA_INLIST_REVERSE_FOREACH(list, obj)
      {
-        if (parmap) obj->havemap_parent = 1;
-        else obj->havemap_parent = 0;
-        
 	if (obj == stop)
 	  {
 	     *no_rep = 1;
@@ -50,7 +41,7 @@ _evas_event_object_list_in_get(Evas *e, Eina_List *in,
                {
                   int norep;
                   int inside;
-                  
+
                   norep = 0;
                   if (((obj->cur.map) && (obj->cur.map->count == 4) && (obj->cur.usemap)))
                     {
@@ -60,28 +51,25 @@ _evas_event_object_list_in_get(Evas *e, Eina_List *in,
                             if (!evas_map_coords_get(obj->cur.map, x, y,
                                                      &(obj->cur.map->mx),
                                                      &(obj->cur.map->my), 0))
-                               inside = 0;
+                              {
+                                 inside = 0;
+                              }
                             else
-                               parmap = 1;
-                         }
-                       else
-                         inside = 0;
-                       if (inside)
-                         {
-                            in = _evas_event_object_list_in_get
-                              (e, in,
-                               evas_object_smart_members_get_direct(obj),
-                               stop, 
-                               obj->cur.geometry.x + obj->cur.map->mx, 
-                               obj->cur.geometry.y + obj->cur.map->my, 
-                               &norep, parmap);
+                              {
+                                 in = _evas_event_object_list_in_get
+                                    (e, in,
+                                     evas_object_smart_members_get_direct(obj),
+                                     stop,
+                                     obj->cur.geometry.x + obj->cur.map->mx,
+                                     obj->cur.geometry.y + obj->cur.map->my, &norep);
+                              }
                          }
                     }
                   else
                     {
                        in = _evas_event_object_list_in_get
-                         (e, in, evas_object_smart_members_get_direct(obj),
-                          stop, x, y, &norep, parmap);
+                          (e, in, evas_object_smart_members_get_direct(obj),
+                           stop, x, y, &norep);
                     }
                   if (norep)
                     {
@@ -96,18 +84,18 @@ _evas_event_object_list_in_get(Evas *e, Eina_List *in,
                   if (((obj->cur.map) && (obj->cur.map->count == 4) && (obj->cur.usemap)))
                     {
                        inside = evas_object_is_in_output_rect(obj, x, y, 1, 1);
-                       if (inside)
+                       if ((inside) && (!evas_map_coords_get(obj->cur.map, x, y,
+                                                             &(obj->cur.map->mx),
+                                                             &(obj->cur.map->my), 0)))
                          {
-                            if (!evas_map_coords_get(obj->cur.map, x, y,
-                                                     &(obj->cur.map->mx),
-                                                     &(obj->cur.map->my), 0))
-                              inside = 0;
+                            inside = 0;
                          }
-                       else
-                         inside = 0;
                     }
                   else
-                    inside = evas_object_is_in_output_rect(obj, x, y, 1, 1);
+                    {
+                       inside = evas_object_is_in_output_rect(obj, x, y, 1, 1);
+                    }
+
                   if (inside && ((!obj->precise_is_inside) ||
                                  (evas_object_is_inside(obj, x, y))))
                     {
@@ -139,7 +127,7 @@ evas_event_objects_event_list(Evas *e, Evas_Object *stop, int x, int y)
 	norep = 0;
 	in = _evas_event_object_list_in_get(e, in, 
                                             EINA_INLIST_GET(lay->objects), 
-                                            stop, x, y, &norep, 0);
+                                            stop, x, y, &norep);
 	if (norep) return in;
      }
    return in;
@@ -328,7 +316,7 @@ evas_event_feed_mouse_down(Evas *e, int b, Evas_Button_Flags flags, unsigned int
         
         ev.canvas.x = e->pointer.x;
         ev.canvas.y = e->pointer.y;
-        _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y);
+        _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y, obj->mouse_grabbed);
 	if (obj->pointer_mode != EVAS_OBJECT_POINTER_MODE_NOGRAB)
 	  {
 	     obj->mouse_grabbed++;
@@ -399,7 +387,7 @@ evas_event_feed_mouse_up(Evas *e, int b, Evas_Button_Flags flags, unsigned int t
 	  {
              ev.canvas.x = e->pointer.x;
              ev.canvas.y = e->pointer.y;
-             _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y);
+             _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y, obj->mouse_grabbed);
 	     if ((obj->pointer_mode != EVAS_OBJECT_POINTER_MODE_NOGRAB) &&
 		 (obj->mouse_in) && (obj->mouse_grabbed > 0))
 	       {
@@ -447,17 +435,17 @@ evas_event_feed_mouse_up(Evas *e, int b, Evas_Button_Flags flags, unsigned int t
 	       {
                   ev.canvas.x = e->pointer.x;
                   ev.canvas.y = e->pointer.y;
-                  _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y);
+                  _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y, obj->mouse_grabbed);
 		  if ((!eina_list_data_find(ins, obj)) ||
 		      (!e->pointer.inside))
 		    {
                        if (obj->mouse_in)
                          {
-		           obj->mouse_in = 0;
-		           if (e->events_frozen <= 0)
-			     evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_OUT, &ev);
-		         }
-                     }
+                            obj->mouse_in = 0;
+                            if (e->events_frozen <= 0)
+                               evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_OUT, &ev);
+                         }
+		    }
 		  if (e->delete_me) break;
 	       }
              _evas_post_event_callback_call(e);
@@ -485,14 +473,14 @@ evas_event_feed_mouse_up(Evas *e, int b, Evas_Button_Flags flags, unsigned int t
 	       {
                   ev.canvas.x = e->pointer.x;
                   ev.canvas.y = e->pointer.y;
-                  _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y);
+                  _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y, obj->mouse_grabbed);
 		  if (!eina_list_data_find(e->pointer.object.in, obj))
 		    {
                        if (!obj->mouse_in)
                          {
-		           obj->mouse_in = 1;
-		           if (e->events_frozen <= 0)
-			     evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_IN, &ev);
+                            obj->mouse_in = 1;
+                            if (e->events_frozen <= 0)
+                               evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_IN, &ev);
                          }
 		    }
 		  if (e->delete_me) break;
@@ -606,7 +594,7 @@ evas_event_feed_mouse_wheel(Evas *e, int direction, int z, unsigned int timestam
      {
         ev.canvas.x = e->pointer.x;
         ev.canvas.y = e->pointer.y;
-        _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y);
+        _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y, obj->mouse_grabbed);
 	if (e->events_frozen <= 0)
 	  evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_WHEEL, &ev);
 	if (e->delete_me) break;
@@ -689,7 +677,7 @@ evas_event_feed_mouse_move(Evas *e, int x, int y, unsigned int timestamp, const 
 	       {
                   ev.cur.canvas.x = e->pointer.x;
                   ev.cur.canvas.y = e->pointer.y;
-                  _evas_event_havemap_adjust(obj, &ev.cur.canvas.x, &ev.cur.canvas.y);
+                  _evas_event_havemap_adjust(obj, &ev.cur.canvas.x, &ev.cur.canvas.y, obj->mouse_grabbed);
 		  if ((obj->cur.visible) &&
 		      (evas_object_clippers_is_visible(obj)) &&
 		      (!evas_event_passes_through(obj)) &&
@@ -734,19 +722,19 @@ evas_event_feed_mouse_move(Evas *e, int x, int y, unsigned int timestamp, const 
 		    {
                        ev.canvas.x = e->pointer.x;
                        ev.canvas.y = e->pointer.y;
-                       _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y);
+                       _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y, obj->mouse_grabbed);
 		       e->pointer.object.in = eina_list_remove(e->pointer.object.in, obj);
                        if (obj->mouse_in)
                          {
-                           obj->mouse_in = 0;
-                           if (!obj->delete_me)
-                             {
-                               if (e->events_frozen <= 0)
-                                  evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_OUT, &ev);
-                             }
-		         }
-	              }
-                  }
+                            obj->mouse_in = 0;
+                            if (!obj->delete_me)
+                              {
+                                 if (e->events_frozen <= 0)
+                                    evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_OUT, &ev);
+                              }
+                         }
+		    }
+	       }
              _evas_post_event_callback_call(e);
 	  }
      }
@@ -821,7 +809,7 @@ evas_event_feed_mouse_move(Evas *e, int x, int y, unsigned int timestamp, const 
 		    {
                        ev.cur.canvas.x = e->pointer.x;
                        ev.cur.canvas.y = e->pointer.y;
-                       _evas_event_havemap_adjust(obj, &ev.cur.canvas.x, &ev.cur.canvas.y);
+                       _evas_event_havemap_adjust(obj, &ev.cur.canvas.x, &ev.cur.canvas.y, obj->mouse_grabbed);
 		       if (e->events_frozen <= 0)
 			 evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_MOVE, &ev);
 		    }
@@ -831,14 +819,14 @@ evas_event_feed_mouse_move(Evas *e, int x, int y, unsigned int timestamp, const 
 	       {
                   if (obj->mouse_in)
                     {
-		      obj->mouse_in = 0;
-                      ev2.canvas.x = e->pointer.x;
-                      ev2.canvas.y = e->pointer.y;
-                      _evas_event_havemap_adjust(obj, &ev2.canvas.x, &ev2.canvas.y);
-		      if (e->events_frozen <= 0)
-		         evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_OUT, &ev2);
-	            }
-               }
+                       obj->mouse_in = 0;
+                       ev2.canvas.x = e->pointer.x;
+                       ev2.canvas.y = e->pointer.y;
+                       _evas_event_havemap_adjust(obj, &ev2.canvas.x, &ev2.canvas.y, obj->mouse_grabbed);
+                       if (e->events_frozen <= 0)
+                          evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_OUT, &ev2);
+                    }
+	       }
 	     if (e->delete_me) break;
 	  }
         _evas_post_event_callback_call(e);
@@ -851,15 +839,15 @@ evas_event_feed_mouse_move(Evas *e, int x, int y, unsigned int timestamp, const 
 	  {
              ev3.canvas.x = e->pointer.x;
              ev3.canvas.y = e->pointer.y;
-             _evas_event_havemap_adjust(obj, &ev3.canvas.x, &ev3.canvas.y);
+             _evas_event_havemap_adjust(obj, &ev3.canvas.x, &ev3.canvas.y, obj->mouse_grabbed);
 	     /* if its not in the old list of ins send an enter event */
 	     if (!eina_list_data_find(e->pointer.object.in, obj))
 	       {
                   if (!obj->mouse_in)
                     {
-		      obj->mouse_in = 1;
-		      if (e->events_frozen <= 0)
-		         evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_IN, &ev3);
+                       obj->mouse_in = 1;
+                       if (e->events_frozen <= 0)
+                          evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_IN, &ev3);
                     }
 	       }
 	     if (e->delete_me) break;
@@ -923,14 +911,14 @@ evas_event_feed_mouse_in(Evas *e, unsigned int timestamp, const void *data)
      {
         ev.canvas.x = e->pointer.x;
         ev.canvas.y = e->pointer.y;
-        _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y);
+        _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y, obj->mouse_grabbed);
 	if (!eina_list_data_find(e->pointer.object.in, obj))
 	  {
              if (!obj->mouse_in)
                {
-	         obj->mouse_in = 1;
-	         if (e->events_frozen <= 0)
-	           evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_IN, &ev);
+                  obj->mouse_in = 1;
+                  if (e->events_frozen <= 0)
+                     evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_IN, &ev);
                }
 	  }
 	if (e->delete_me) break;
@@ -995,15 +983,15 @@ evas_event_feed_mouse_out(Evas *e, unsigned int timestamp, const void *data)
 	  {
              ev.canvas.x = e->pointer.x;
              ev.canvas.y = e->pointer.y;
-             _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y);
+             _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y, obj->mouse_grabbed);
              if (obj->mouse_in)
                {
-                 obj->mouse_in = 0;
-                 if (!obj->delete_me)
-                   {
-                     if (e->events_frozen <= 0)
-                        evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_OUT, &ev);
-                   }
+                  obj->mouse_in = 0;
+                  if (!obj->delete_me)
+                    {
+                       if (e->events_frozen <= 0)
+                          evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_OUT, &ev);
+                    }
                }
 	    if (e->delete_me) break;
 	  }
@@ -1064,7 +1052,7 @@ evas_event_feed_multi_down(Evas *e,
         ev.canvas.y = y;
         ev.canvas.xsub = fx;
         ev.canvas.ysub = fy;
-        _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y);
+        _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y, obj->mouse_grabbed);
         if (x != ev.canvas.x) 
           ev.canvas.xsub = ev.canvas.x; // fixme - lost precision
         if (y != ev.canvas.y)
@@ -1127,7 +1115,7 @@ evas_event_feed_multi_up(Evas *e,
         ev.canvas.y = y;
         ev.canvas.xsub = fx;
         ev.canvas.ysub = fy;
-        _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y);
+        _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y, obj->mouse_grabbed);
         if (x != ev.canvas.x) 
           ev.canvas.xsub = ev.canvas.x; // fixme - lost precision
         if (y != ev.canvas.y)
@@ -1199,7 +1187,7 @@ evas_event_feed_multi_move(Evas *e,
                   ev.cur.canvas.y = y;
                   ev.cur.canvas.xsub = fx;
                   ev.cur.canvas.ysub = fy;
-                  _evas_event_havemap_adjust(obj, &ev.cur.canvas.x, &ev.cur.canvas.y);
+                  _evas_event_havemap_adjust(obj, &ev.cur.canvas.x, &ev.cur.canvas.y, obj->mouse_grabbed);
                   if (x != ev.cur.canvas.x) 
                     ev.cur.canvas.xsub = ev.cur.canvas.x; // fixme - lost precision
                   if (y != ev.cur.canvas.y)
@@ -1261,7 +1249,7 @@ evas_event_feed_multi_move(Evas *e,
                   ev.cur.canvas.y = y;
                   ev.cur.canvas.xsub = fx;
                   ev.cur.canvas.ysub = fy;
-                  _evas_event_havemap_adjust(obj, &ev.cur.canvas.x, &ev.cur.canvas.y);
+                  _evas_event_havemap_adjust(obj, &ev.cur.canvas.x, &ev.cur.canvas.y, obj->mouse_grabbed);
                   if (x != ev.cur.canvas.x) 
                     ev.cur.canvas.xsub = ev.cur.canvas.x; // fixme - lost precision
                   if (y != ev.cur.canvas.y)
@@ -1584,7 +1572,7 @@ evas_object_pass_events_get(const Evas_Object *obj)
  * callbacks, but also to be repeated on the next lower object in the
  * stack.
  *
- * If @p repeat is false, events occuring on @p obj will be processed
+ * If @p repeat is false, events occurring on @p obj will be processed
  * normally.
  */
 EAPI void
@@ -1634,7 +1622,7 @@ evas_object_repeat_events_get(const Evas_Object *obj)
  * This function has no effect if @p obj is not a member of a smart
  * object.
  *
- * If @p prop is true, events occuring on this object will propagate on
+ * If @p prop is true, events occurring on this object will propagate on
  * to the smart object of which @p obj is a member.
  *
  * If @p prop is false, events for which callbacks are set on the member
@@ -1654,7 +1642,7 @@ evas_object_propagate_events_set(Evas_Object *obj, Eina_Bool prop)
 /**
  * Determine whether an object is set to propagate events.
  * @param obj
- * @return propogate events state
+ * @return propagate events state
  */
 EAPI Eina_Bool
 evas_object_propagate_events_get(const Evas_Object *obj)

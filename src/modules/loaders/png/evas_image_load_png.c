@@ -2,10 +2,6 @@
 # include <config.h>
 #endif
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
 #include <stdio.h>
 #include <png.h>
 #include <setjmp.h>
@@ -150,7 +146,11 @@ evas_image_load_file_data_png(Image_Entry *ie, const char *file, const char *key
      }
 
    /* if we havent read the header before, set the header data */
-   E_FREAD(buf, 1, PNG_BYTES_TO_CHECK, f);
+   if (E_FREAD(buf, PNG_BYTES_TO_CHECK, 1, f) != 1)
+     {
+	*error = EVAS_LOAD_ERROR_CORRUPT_FILE;
+        goto close_file;
+     }
    if (png_sig_cmp(buf, 0, PNG_BYTES_TO_CHECK))
      {
 	*error = EVAS_LOAD_ERROR_CORRUPT_FILE;
@@ -256,7 +256,7 @@ module_open(Evas_Module *em)
 }
 
 static void
-module_close(Evas_Module *em)
+module_close(Evas_Module *em __UNUSED__)
 {
 }
 

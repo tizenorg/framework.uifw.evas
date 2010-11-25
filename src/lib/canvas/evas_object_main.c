@@ -1,8 +1,6 @@
 #include "evas_common.h"
 #include "evas_private.h"
 
-// [SVN 53434 Merge] Please delete this comment when you merge 53434.
-
 static Eina_Inlist *
 get_layer_objects(Evas_Layer *l)
 {
@@ -1637,7 +1635,7 @@ evas_object_precise_is_inside_get(const Evas_Object *obj)
  * Set a hint flag on the object that this is used as a static "clipper".
  * 
  * This is a hint to evas that this object is used as a big static clipper
- * andshouldnt be moved with children and otherwise considered specially. The
+ * and shouldnt be moved with children and otherwise considered specially. The
  * Default is off.
  * 
  * @param obj The given object.
@@ -1670,3 +1668,4 @@ evas_object_static_clip_get(const Evas_Object *obj)
    MAGIC_CHECK_END();
    return obj->is_static_clip;
 }
+

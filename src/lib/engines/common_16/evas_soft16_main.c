@@ -6,21 +6,21 @@ static int               reference = 0;
 static Image_Entry      *_evas_common_soft16_image_new(void);
 static void              _evas_common_soft16_image_delete(Image_Entry *ie);
 
-static int               _evas_common_soft16_image_surface_alloc(Image_Entry *ie, int w, int h);
+static int               _evas_common_soft16_image_surface_alloc(Image_Entry *ie, unsigned int w, unsigned int h);
 static void              _evas_common_soft16_image_surface_delete(Image_Entry *ie);
 static DATA32		*_evas_common_soft16_image_surface_pixels(Image_Entry *ie);
 
 static int               _evas_common_load_soft16_image_from_file(Image_Entry *ie);
 static void              _evas_common_soft16_image_unload(Image_Entry *ie);
 
-static void              _evas_common_soft16_image_dirty_region(Image_Entry *im, int x, int y, int w, int h);
+static void              _evas_common_soft16_image_dirty_region(Image_Entry *im, unsigned int x, unsigned int y, unsigned int w, unsigned int h);
 static int               _evas_common_soft16_image_dirty(Image_Entry *ie_dst, const Image_Entry *ie_src);
 
 static int               _evas_common_soft16_image_ram_usage(Image_Entry *ie);
 
-static int               _evas_common_soft16_image_size_set(Image_Entry *ie_dst, const Image_Entry *ie_im, int w, int h);
-static int               _evas_common_soft16_image_from_copied_data(Image_Entry* ie_dst, int w, int h, DATA32 *image_data, int alpha, int cspace);
-static int               _evas_common_soft16_image_from_data(Image_Entry* ie_dst, int w, int h, DATA32 *image_data, int alpha, int cspace);
+static int               _evas_common_soft16_image_size_set(Image_Entry *ie_dst, const Image_Entry *ie_im, unsigned int w, unsigned int h);
+static int               _evas_common_soft16_image_from_copied_data(Image_Entry* ie_dst, unsigned int w, unsigned int h, DATA32 *image_data, int alpha, int cspace);
+static int               _evas_common_soft16_image_from_data(Image_Entry* ie_dst, unsigned int w, unsigned int h, DATA32 *image_data, int alpha, int cspace);
 static int               _evas_common_soft16_image_colorspace_set(Image_Entry* ie_dst, int cspace);
 
 static int               _evas_common_load_soft16_image_data_from_file(Image_Entry *ie);
@@ -112,7 +112,7 @@ _evas_common_soft16_image_delete(Image_Entry *ie)
 }
 
 static int
-_evas_common_soft16_image_surface_alloc(Image_Entry *ie, int w, int h)
+_evas_common_soft16_image_surface_alloc(Image_Entry *ie, unsigned int w, unsigned int h)
 {
    Soft16_Image *im = (Soft16_Image *) ie;
 
@@ -181,7 +181,7 @@ _evas_common_soft16_image_unload(Image_Entry *ie __UNUSED__)
 }
 
 static void
-_evas_common_soft16_image_dirty_region(Image_Entry *im __UNUSED__, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__)
+_evas_common_soft16_image_dirty_region(Image_Entry *im __UNUSED__, unsigned int x __UNUSED__, unsigned int y __UNUSED__, unsigned int w __UNUSED__, unsigned int h __UNUSED__)
 {
 }
 
@@ -211,7 +211,7 @@ _evas_common_soft16_image_ram_usage(Image_Entry *ie)
 }
 
 static int
-_evas_common_soft16_image_size_set(Image_Entry *ie_dst, const Image_Entry *ie_im, int w __UNUSED__, int h __UNUSED__)
+_evas_common_soft16_image_size_set(Image_Entry *ie_dst, const Image_Entry *ie_im, unsigned int w __UNUSED__, unsigned int h __UNUSED__)
 {
    Soft16_Image *dst = (Soft16_Image *) ie_dst;
    Soft16_Image *im = (Soft16_Image *) ie_im;
@@ -222,7 +222,7 @@ _evas_common_soft16_image_size_set(Image_Entry *ie_dst, const Image_Entry *ie_im
 }
 
 static int
-_evas_common_soft16_image_from_data(Image_Entry* ie_dst, int w, int h, DATA32 *image_data, int alpha, int cspace __UNUSED__)
+_evas_common_soft16_image_from_data(Image_Entry* ie_dst, unsigned int w, unsigned int h, DATA32 *image_data, int alpha, int cspace __UNUSED__)
 {
    Soft16_Image *im = (Soft16_Image *) ie_dst;
 
@@ -245,7 +245,7 @@ _evas_common_soft16_image_from_data(Image_Entry* ie_dst, int w, int h, DATA32 *i
 }
 
 static int
-_evas_common_soft16_image_from_copied_data(Image_Entry* ie_dst, int w __UNUSED__, int h, DATA32 *image_data, int alpha __UNUSED__, int cspace __UNUSED__)
+_evas_common_soft16_image_from_copied_data(Image_Entry* ie_dst, unsigned int w __UNUSED__, unsigned int h, DATA32 *image_data, int alpha __UNUSED__, int cspace __UNUSED__)
 {
    Soft16_Image *im = (Soft16_Image *) ie_dst;
 
@@ -284,9 +284,9 @@ _evas_common_load_soft16_image_data_from_file(Image_Entry *ie)
 
         sp = im->source->image.data;
         if (im->alpha)
-          soft16_image_convert_from_rgba(im, sp);
+          evas_common_soft16_image_convert_from_rgba(im, sp);
         else
-          soft16_image_convert_from_rgb(im, sp);
+          evas_common_soft16_image_convert_from_rgb(im, sp);
      }
    evas_cache_image_drop(&im->source->cache_entry);
    im->cache_entry.info.module = NULL;
@@ -297,14 +297,14 @@ _evas_common_load_soft16_image_data_from_file(Image_Entry *ie)
 }
 
 /* Soft16_Image * */
-/* soft16_image_new(int w, int h, int stride, int have_alpha, DATA16 *pixels, */
+/* evas_common_soft16_image_new(int w, int h, int stride, int have_alpha, DATA16 *pixels, */
 /* 		 int copy) */
 /* { */
 /*    Soft16_Image *im; */
 
 /*    if (stride < 0) stride = _calc_stride(w); */
 
-/*    im = soft16_image_alloc(w, h, stride, have_alpha, copy); */
+/*    im = evas_common_soft16_image_alloc(w, h, stride, have_alpha, copy); */
 /*    if (!im) return NULL; */
 
 /*    if (pixels) */
@@ -337,8 +337,8 @@ _get_clip(const RGBA_Draw_Context *dc, const Soft16_Image *im,
 	     clip->h += clip->y;
 	     clip->y = 0;
 	  }
-	if ((clip->x + clip->w) > im->cache_entry.w) clip->w = im->cache_entry.w - clip->x;
-	if ((clip->y + clip->h) > im->cache_entry.h) clip->h = im->cache_entry.h - clip->y;
+	if ((clip->x + clip->w) > (int)im->cache_entry.w) clip->w = im->cache_entry.w - clip->x;
+	if ((clip->y + clip->h) > (int)im->cache_entry.h) clip->h = im->cache_entry.h - clip->y;
      }
    else
      {
@@ -460,13 +460,13 @@ _soft16_image_draw_sampled_int(Soft16_Image *src, Soft16_Image *dst,
      return;
 
    if ((dr.w == sr.w) && (dr.h == sr.h))
-     soft16_image_draw_unscaled(src, dst, dc, sr, dr, cr);
+     evas_common_soft16_image_draw_unscaled(src, dst, dc, sr, dr, cr);
    else
-     soft16_image_draw_scaled_sampled(src, dst, dc, sr, dr, cr);
+     evas_common_soft16_image_draw_scaled_sampled(src, dst, dc, sr, dr, cr);
 }
 
 EAPI void
-soft16_image_draw(Soft16_Image *src, Soft16_Image *dst,
+evas_common_soft16_image_draw(Soft16_Image *src, Soft16_Image *dst,
 		  RGBA_Draw_Context *dc,
 		  int src_region_x, int src_region_y,
 		  int src_region_w, int src_region_h,
@@ -522,7 +522,7 @@ soft16_image_draw(Soft16_Image *src, Soft16_Image *dst,
 }
 
 EAPI Soft16_Image *
-soft16_image_alpha_set(Soft16_Image *im, int have_alpha)
+evas_common_soft16_image_alpha_set(Soft16_Image *im, int have_alpha)
 {
    Soft16_Image   *new_im;
 
@@ -540,7 +540,7 @@ soft16_image_alpha_set(Soft16_Image *im, int have_alpha)
 }
 
 /* Soft16_Image * */
-/* soft16_image_size_set(Soft16_Image *old_im, int w, int h) */
+/* evas_common_soft16_image_size_set(Soft16_Image *old_im, int w, int h) */
 /* { */
 /*    Soft16_Image *new_im; */
 /*    DATA16 *dp, *sp; */
@@ -548,7 +548,7 @@ soft16_image_alpha_set(Soft16_Image *im, int have_alpha)
 
 /*    if ((old_im->cache_entry.w == w) && (old_im->cache_entry.h == h)) return old_im; */
 
-/*    new_im = soft16_image_new(w, h, -1, old_im->flags.have_alpha, NULL, 1); */
+/*    new_im = evas_common_soft16_image_new(w, h, -1, old_im->flags.have_alpha, NULL, 1); */
 
 /*    if (old_im->cache_entry.w < new_im->cache_entry.w) */
 /*      cw = old_im->cache_entry.w; */

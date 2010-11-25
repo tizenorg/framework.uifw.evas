@@ -203,18 +203,21 @@ evas_free(Evas *e)
    if (e->walking_list == 0) evas_render_idle_flush(e);
    
    if (e->walking_list > 0) return;
-   if (!e->callbacks) return;
-   if (e->callbacks->deletions_waiting) return;
-   
-   e->callbacks->deletions_waiting = 0;
-   evas_event_callback_list_post_free(&e->callbacks->callbacks);
-   if (!e->callbacks->callbacks)
+
+   if (e->callbacks)
      {
-        free(e->callbacks);
-	e->callbacks = NULL;
+	if (e->callbacks->deletions_waiting) return;
+
+	e->callbacks->deletions_waiting = 0;
+	evas_event_callback_list_post_free(&e->callbacks->callbacks);
+	if (!e->callbacks->callbacks)
+	  {
+	     free(e->callbacks);
+	     e->callbacks = NULL;
+	  }
+
+	_evas_post_event_callback_free(e);
      }
-   
-   _evas_post_event_callback_free(e);
    
    del = 1;
    e->walking_list++;
@@ -404,19 +407,19 @@ evas_engine_info_get(const Evas *e)
  *
  * @param   e    The pointer to the Evas Canvas
  * @param   info The pointer to the Engine Info to use
- * @return  1 if no error occured, 0 otherwise
+ * @return  1 if no error occurred, 0 otherwise
  * @ingroup Evas_Output_Method
  */
-EAPI int
+EAPI Eina_Bool
 evas_engine_info_set(Evas *e, Evas_Engine_Info *info)
 {
    MAGIC_CHECK(e, Evas, MAGIC_EVAS);
-   return 0;
+   return EINA_FALSE;
    MAGIC_CHECK_END();
-   if (!info) return 0;
-   if (info != e->engine.info) return 0;
-   if (info->magic != e->engine.info_magic) return 0;
-   return e->engine.func->setup(e, info);
+   if (!info) return EINA_FALSE;
+   if (info != e->engine.info) return EINA_FALSE;
+   if (info->magic != e->engine.info_magic) return EINA_FALSE;
+   return (Eina_Bool)e->engine.func->setup(e, info);
 }
 
 /**
@@ -1116,14 +1119,14 @@ evas_focus_state_get(const Evas *e)
 }
 
 /**
-* Push the nochange flag up 1
-*
-* This tells evas, that while the nochange flag is greater than 0, do not
-* mark objects as "changed" when making changes.
-*
-* @param e The evas to change information.
-* @ingroup Evas_Canvas
-*/
+ * Push the nochange flag up 1
+ *
+ * This tells evas, that while the nochange flag is greater than 0, do not
+ * mark objects as "changed" when making changes.
+ * 
+ * @param e The evas to change information.
+ * @ingroup Evas_Canvas
+ */
 EAPI void
 evas_nochange_push(Evas *e)
 {
@@ -1131,14 +1134,14 @@ evas_nochange_push(Evas *e)
 }
 
 /**
-* Pop the nochange flag down 1
-*
-* This tells evas, that while the nochange flag is greater than 0, do not
-* mark objects as "changed" when making changes.
-*
-* @param e The evas to change information.
-* @ingroup Evas_Canvas
-*/
+ * Pop the nochange flag down 1
+ *
+ * This tells evas, that while the nochange flag is greater than 0, do not
+ * mark objects as "changed" when making changes.
+ * 
+ * @param e The evas to change information.
+ * @ingroup Evas_Canvas
+ */
 EAPI void
 evas_nochange_pop(Evas *e)
 {
@@ -1166,14 +1169,14 @@ _evas_unwalk(Evas *e)
  * @ingroup Evas_Utils
  */
 EAPI const char *
-evas_load_error_str(int error)
+evas_load_error_str(Evas_Load_Error error)
 {
    switch (error)
      {
       case EVAS_LOAD_ERROR_NONE:
 	 return "No error on load";
       case EVAS_LOAD_ERROR_GENERIC:
-	 return "A non-specific error occured";
+	 return "A non-specific error occurred";
       case EVAS_LOAD_ERROR_DOES_NOT_EXIST:
 	 return "File (or file path) does not exist";
       case EVAS_LOAD_ERROR_PERMISSION_DENIED:
@@ -1275,7 +1278,7 @@ evas_color_argb_unpremul(int a, int *r, int *g, int *b)
  * Pre-multiplies data by an alpha factor.
  *
  * @param data The data value.
- * @param len  The lenght value.
+ * @param len  The length value.
  *
  * This function pre-multiplies a given data by an alpha
  * factor. Alpha factor is used to define transparency.
@@ -1293,7 +1296,7 @@ evas_data_argb_premul(unsigned int *data, unsigned int len)
  * Undo pre-multiplication data by an alpha factor.
  *
  * @param data The data value.
- * @param len  The lenght value.
+ * @param len  The length value.
  *
  * This function undoes pre-multiplication of a given data by an alpha
  * factor. Alpha factor is used to define transparency.
@@ -1306,4 +1309,3 @@ evas_data_argb_unpremul(unsigned int *data, unsigned int len)
    if (!data || (len < 1)) return;
    evas_common_convert_argb_unpremul(data, len);
 }
-

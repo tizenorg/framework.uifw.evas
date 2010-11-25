@@ -64,24 +64,24 @@ evas_gl_common_image_load(Evas_GL_Context *gc, const char *file, const char *key
 }
 
 Evas_GL_Image *
-evas_gl_common_image_new_from_data(Evas_GL_Context *gc, int w, int h, DATA32 *data, int alpha, int cspace)
+evas_gl_common_image_new_from_data(Evas_GL_Context *gc, unsigned int w, unsigned int h, DATA32 *data, int alpha, int cspace)
 {
    Evas_GL_Image *im;
    Eina_List *l;
 
    if (data)
-     {	   
+     {
         EINA_LIST_FOREACH(gc->shared->images, l, im)
           {
-	     if (((void *)(im->im->image.data) == (void *)data) &&
-	         (im->im->cache_entry.w == w) &&
-	         (im->im->cache_entry.h == h))
-	       {
-	          gc->shared->images = eina_list_remove_list(gc->shared->images, l);
-	          gc->shared->images = eina_list_prepend(gc->shared->images, im);
-	          im->references++;
-	          return im;
-	       }
+             if (((void *)(im->im->image.data) == (void *)data) &&
+                 (im->im->cache_entry.w == w) &&
+                 (im->im->cache_entry.h == h))
+               {
+                  gc->shared->images = eina_list_remove_list(gc->shared->images, l);
+                  gc->shared->images = eina_list_prepend(gc->shared->images, im);
+                  im->references++;
+                  return im;
+               }
           }
      }
    im = calloc(1, sizeof(Evas_GL_Image));
@@ -118,7 +118,7 @@ evas_gl_common_image_new_from_data(Evas_GL_Context *gc, int w, int h, DATA32 *da
 }
 
 Evas_GL_Image *
-evas_gl_common_image_new_from_copied_data(Evas_GL_Context *gc, int w, int h, DATA32 *data, int alpha, int cspace)
+evas_gl_common_image_new_from_copied_data(Evas_GL_Context *gc, unsigned int w, unsigned int h, DATA32 *data, int alpha, int cspace)
 {
    Evas_GL_Image *im;
 
@@ -159,7 +159,7 @@ evas_gl_common_image_new_from_copied_data(Evas_GL_Context *gc, int w, int h, DAT
 }
 
 Evas_GL_Image *
-evas_gl_common_image_new(Evas_GL_Context *gc, int w, int h, int alpha, int cspace)
+evas_gl_common_image_new(Evas_GL_Context *gc, unsigned int w, unsigned int h, int alpha, int cspace)
 {
    Evas_GL_Image *im;
 
@@ -362,7 +362,7 @@ evas_gl_common_image_free(Evas_GL_Image *im)
 }
 
 Evas_GL_Image *
-evas_gl_common_image_surface_new(Evas_GL_Context *gc, int w, int h, int alpha)
+evas_gl_common_image_surface_new(Evas_GL_Context *gc, unsigned int w, unsigned int h, int alpha)
 {
    Evas_GL_Image *im;
 
@@ -380,7 +380,7 @@ evas_gl_common_image_surface_new(Evas_GL_Context *gc, int w, int h, int alpha)
 }
 
 void
-evas_gl_common_image_dirty(Evas_GL_Image *im, int x, int y, int w, int h)
+evas_gl_common_image_dirty(Evas_GL_Image *im, unsigned int x, unsigned int y, unsigned int w, unsigned int h)
 {
    if ((w == 0) && (h == 0) && (x == 0) && (y == 0))
      {
@@ -456,14 +456,14 @@ _evas_gl_common_image_update(Evas_GL_Context *gc, Evas_GL_Image *im)
         if (!im->tex) return;
         break;
       default:
-        printf("unhandled img format\n");
+         ERR("unhandled img format colorspace=%d", im->cs.space);
 	break;
     }
 }
 
 void
 evas_gl_common_image_map4_draw(Evas_GL_Context *gc, Evas_GL_Image *im, 
-                               RGBA_Map_Point *p, int smooth, int level)
+                               RGBA_Map_Point *p, int smooth, int level __UNUSED__)
 {
    RGBA_Draw_Context *dc;
    int r, g, b, a;

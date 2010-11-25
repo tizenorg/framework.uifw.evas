@@ -246,9 +246,7 @@ evas_object_image_file_set(Evas_Object *obj, const char *file, const char *key)
 	  obj->layer->evas->engine.func->image_stride_get(obj->layer->evas->engine.data.output,
 							  o->engine_data, &stride);
 	else
-	  // Start- [SVN 52948 Merge] Please delete this comment when you merge 52948: stride should be in bytes - to allow for various image formats by seok.j.jeong
 	  stride = w * 4;
-	  // End- [SVN 52948 Merge] Please delete this comment when you merge 52948: stride should be in bytes - to allow for various image formats by seok.j.jeong
 	o->cur.has_alpha = obj->layer->evas->engine.func->image_alpha_get(obj->layer->evas->engine.data.output,
 									  o->engine_data);
 	o->cur.cspace = obj->layer->evas->engine.func->image_colorspace_get(obj->layer->evas->engine.data.output,
@@ -643,7 +641,7 @@ evas_object_image_fill_get(const Evas_Object *obj, Evas_Coord *x, Evas_Coord *y,
  * EVAS_TEXTURE_RESTRICT, or EVAS_TEXTURE_PAD.
  */
 EAPI void
-evas_object_image_fill_spread_set(Evas_Object *obj, int spread)
+evas_object_image_fill_spread_set(Evas_Object *obj, Evas_Fill_Spread spread)
 {
    Evas_Object_Image *o;
 
@@ -654,7 +652,7 @@ evas_object_image_fill_spread_set(Evas_Object *obj, int spread)
    MAGIC_CHECK(o, Evas_Object_Image, MAGIC_OBJ_IMAGE);
    return;
    MAGIC_CHECK_END();
-   if (spread == o->cur.spread) return;
+   if (spread == (Evas_Fill_Spread)o->cur.spread) return;
    o->cur.spread = spread;
    o->changed = 1;
    evas_object_change(obj);
@@ -667,7 +665,7 @@ evas_object_image_fill_spread_set(Evas_Object *obj, int spread)
  * @param   obj The given evas image object.
  * @return  The current spread mode of the image object.
  */
-EAPI int
+EAPI Evas_Fill_Spread
 evas_object_image_fill_spread_get(const Evas_Object *obj)
 {
    Evas_Object_Image *o;
@@ -679,7 +677,7 @@ evas_object_image_fill_spread_get(const Evas_Object *obj)
    MAGIC_CHECK(o, Evas_Object_Image, MAGIC_OBJ_IMAGE);
    return EVAS_TEXTURE_REPEAT;
    MAGIC_CHECK_END();
-   return o->cur.spread;
+   return (Evas_Fill_Spread)o->cur.spread;
 }
 
 /**
@@ -699,7 +697,7 @@ EAPI void
 evas_object_image_size_set(Evas_Object *obj, int w, int h)
 {
    Evas_Object_Image *o;
-   int stride;
+   int stride = 0;
 
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    return;
@@ -740,14 +738,10 @@ evas_object_image_size_set(Evas_Object *obj, int w, int h)
            (obj->layer->evas->engine.data.output,
                o->engine_data, &stride);
         else
-	  // Start- [SVN 52948 Merge] Please delete this comment when you merge 52948: stride should be in bytes - to allow for various image formats by seok.j.jeong
            stride = w * 4;
-	  // end- [SVN 52948 Merge] Please delete this comment when you merge 52948: stride should be in bytes - to allow for various image formats by seok.j.jeong
      }
    else
-	  // Start- [SVN 52948 Merge] Please delete this comment when you merge 52948: stride should be in bytes - to allow for various image formats by seok.j.jeong
       stride = w * 4;
-	  // End- [SVN 52948 Merge] Please delete this comment when you merge 52948: stride should be in bytes - to allow for various image formats by seok.j.jeong
    o->cur.image.stride = stride;
 
 /* FIXME - in engine call above
@@ -823,7 +817,7 @@ evas_object_image_stride_get(const Evas_Object *obj)
  *         the @c EVAS_LOAD_ERROR_* values.  @c EVAS_LOAD_ERROR_NONE is
  *         returned if there was no error.
  */
-EAPI int
+EAPI Evas_Load_Error
 evas_object_image_load_error_get(const Evas_Object *obj)
 {
    Evas_Object_Image *o;
@@ -934,9 +928,7 @@ evas_object_image_data_set(Evas_Object *obj, void *data)
                 (obj->layer->evas->engine.data.output,
                     o->engine_data, &stride);
              else
-	          // Start- [SVN 52948 Merge] Please delete this comment when you merge 52948: stride should be in bytes - to allow for various image formats by seok.j.jeong
                 stride = o->cur.image.w * 4;
-	          // End- [SVN 52948 Merge] Please delete this comment when you merge 52948: stride should be in bytes - to allow for various image formats by seok.j.jeong
              o->cur.image.stride = stride;
          }
      }
@@ -1022,9 +1014,7 @@ evas_object_image_data_get(const Evas_Object *obj, Eina_Bool for_writing)
            (obj->layer->evas->engine.data.output,
                o->engine_data, &stride);
         else
-	    // Start- [SVN 52948 Merge] Please delete this comment when you merge 52948: stride should be in bytes - to allow for various image formats by seok.j.jeong
            stride = o->cur.image.w * 4;
-	    // End- [SVN 52948 Merge] Please delete this comment when you merge 52948: stride should be in bytes - to allow for various image formats by seok.j.jeong
         o->cur.image.stride = stride;
      }
    o->pixels_checked_out++;
@@ -1143,9 +1133,7 @@ evas_object_image_data_copy_set(Evas_Object *obj, void *data)
            (obj->layer->evas->engine.data.output,
                o->engine_data, &stride);
         else
-	    // Start- [SVN 52948 Merge] Please delete this comment when you merge 52948: stride should be in bytes - to allow for various image formats by seok.j.jeong
            stride = o->cur.image.w * 4;
-	    // End- [SVN 52948 Merge] Please delete this comment when you merge 52948: stride should be in bytes - to allow for various image formats by seok.j.jeong
         o->cur.image.stride = stride;
      }
    o->pixels_checked_out = 0;
@@ -1236,9 +1224,7 @@ evas_object_image_alpha_set(Evas_Object *obj, Eina_Bool has_alpha)
            (obj->layer->evas->engine.data.output,
                o->engine_data, &stride);
         else
-	    // Start- [SVN 52948 Merge] Please delete this comment when you merge 52948: stride should be in bytes - to allow for various image formats by seok.j.jeong
            stride = o->cur.image.w * 4;
-	    // End- [SVN 52948 Merge] Please delete this comment when you merge 52948: stride should be in bytes - to allow for various image formats by seok.j.jeong
         o->cur.image.stride = stride;
      }
    evas_object_image_data_update_add(obj, 0, 0, o->cur.image.w, o->cur.image.h);
@@ -1848,7 +1834,7 @@ evas_object_image_colorspace_set(Evas_Object *obj, Evas_Colorspace cspace)
    MAGIC_CHECK_END();
 
 #ifdef EVAS_FRAME_QUEUING
-   if (o->cur.cspace != cspace)
+   if ((Evas_Colorspace)o->cur.cspace != cspace)
      {
         if (o->engine_data)
           evas_common_pipe_op_image_flush(o->engine_data);
@@ -1980,9 +1966,7 @@ evas_object_image_scale_hint_set(Evas_Object *obj, Evas_Image_Scale_Hint hint)
            (obj->layer->evas->engine.data.output,
                o->engine_data, &stride);
         else
-	    // Start- [SVN 52948 Merge] Please delete this comment when you merge 52948: stride should be in bytes - to allow for various image formats by seok.j.jeong
            stride = o->cur.image.w * 4;
-	    // End- [SVN 52948 Merge] Please delete this comment when you merge 52948: stride should be in bytes - to allow for various image formats by seok.j.jeong
         o->cur.image.stride = stride;
      }
 }
@@ -2050,9 +2034,7 @@ evas_object_image_content_hint_set(Evas_Object *obj, Evas_Image_Content_Hint hin
            (obj->layer->evas->engine.data.output,
                o->engine_data, &stride);
         else
-	    // Start- [SVN 52948 Merge] Please delete this comment when you merge 52948: stride should be in bytes - to allow for various image formats by seok.j.jeong
            stride = o->cur.image.w * 4;
-	    // End- [SVN 52948 Merge] Please delete this comment when you merge 52948: stride should be in bytes - to allow for various image formats by seok.j.jeong
         o->cur.image.stride = stride;
      }
 }
@@ -2261,7 +2243,7 @@ evas_object_image_load(Evas_Object *obj)
    if (o->engine_data)
      {
 	int w, h;
-	int stride;
+	int stride = 0;
 
 	obj->layer->evas->engine.func->image_size_get
            (obj->layer->evas->engine.data.output,
@@ -2271,9 +2253,7 @@ evas_object_image_load(Evas_Object *obj)
            (obj->layer->evas->engine.data.output,
                o->engine_data, &stride);
 	else
-	  // Start- [SVN 52948 Merge] Please delete this comment when you merge 52948: stride should be in bytes - to allow for various image formats by seok.j.jeong
 	  stride = w * 4;
-	  // End- [SVN 52948 Merge] Please delete this comment when you merge 52948: stride should be in bytes - to allow for various image formats by seok.j.jeong
 	o->cur.has_alpha = obj->layer->evas->engine.func->image_alpha_get
            (obj->layer->evas->engine.data.output,
                o->engine_data);
@@ -2462,13 +2442,19 @@ evas_object_image_render(Evas_Object *obj, void *output, void *context, void *su
 	     p = obj->cur.map->points;
 	     p_end = p + 4;
 	     pt = pts;
-
+             
+             pts[0].px = obj->cur.map->persp.px << FP;
+             pts[0].py = obj->cur.map->persp.py << FP;
+             pts[0].foc = obj->cur.map->persp.foc << FP;
+             pts[0].z0 = obj->cur.map->persp.z0 << FP;
              // draw geom +x +y
              for (; p < p_end; p++, pt++)
                {
                   pt->x = (p->x + x) << FP;
                   pt->y = (p->y + y) << FP;
                   pt->z = (p->z)     << FP;
+                  pt->x3 = p->px << FP;
+                  pt->y3 = p->py << FP;
                   pt->u = p->u * FP1;
                   pt->v = p->v * FP1;
                   pt->col = ARGB_JOIN(p->a, p->r, p->g, p->b);
@@ -3136,7 +3122,6 @@ evas_object_image_is_inside(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
 
    switch (o->cur.cspace)
      {
-    // Start- [SVN 52948 Merge] Please delete this comment when you merge 52948: stride should be in bytes - to allow for various image formats by seok.j.jeong
      case EVAS_COLORSPACE_ARGB8888:
         data = ((DATA32*)(data) + ((y * (stride >> 2)) + x));
         a = (*((DATA32*)(data)) >> 24) & 0xff;
@@ -3149,7 +3134,6 @@ evas_object_image_is_inside(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
      default:
         return 1;
         break;
-    // End- [SVN 52948 Merge] Please delete this comment when you merge 52948: stride should be in bytes - to allow for various image formats by seok.j.jeong
      }
 
    return (a != 0);
@@ -3221,9 +3205,7 @@ evas_object_image_data_convert_internal(Evas_Object_Image *o, void *data, Evas_C
 	  out = evas_common_convert_argb8888_to(data,
 						o->cur.image.w,
 						o->cur.image.h,
-	    // Start- [SVN 52948 Merge] Please delete this comment when you merge 52948: stride should be in bytes - to allow for various image formats by seok.j.jeong
 						o->cur.image.stride >> 2,
-	    // End- [SVN 52948 Merge] Please delete this comment when you merge 52948: stride should be in bytes - to allow for various image formats by seok.j.jeong
 						o->cur.has_alpha,
 						to_cspace);
 	  break;
@@ -3231,9 +3213,7 @@ evas_object_image_data_convert_internal(Evas_Object_Image *o, void *data, Evas_C
 	  out = evas_common_convert_rgb565_a5p_to(data,
 						  o->cur.image.w,
 						  o->cur.image.h,
-	    // Start- [SVN 52948 Merge] Please delete this comment when you merge 52948: stride should be in bytes - to allow for various image formats by seok.j.jeong
 						  o->cur.image.stride >> 1,
-	    // End- [SVN 52948 Merge] Please delete this comment when you merge 52948: stride should be in bytes - to allow for various image formats by seok.j.jeong
 						  o->cur.has_alpha,
 						  to_cspace);
 	  break;
