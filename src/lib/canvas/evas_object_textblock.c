@@ -1865,7 +1865,7 @@ _layout_format_push(Ctxt *c, Evas_Object_Textblock_Format *fmt)
         fmt->linerelsize = 0.0;
         fmt->linegap = 0;
         fmt->linerelgap = 0.0;
-        fmt->password = 0;
+        fmt->password = 1;
      }
    return fmt;
 }
