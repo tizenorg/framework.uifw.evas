@@ -5732,6 +5732,10 @@ evas_textblock_cursor_text_append(Evas_Textblock_Cursor *cur, const char *_text)
                     }
                }
           }
+        else
+          {
+             fnode = n->format_node;
+          }
      }
    else
      {
