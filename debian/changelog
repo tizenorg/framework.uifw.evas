@@ -1,12 +1,3 @@
-evas (1.0.0.001+svn.51480slp2+build26) unstable; urgency=low
-
-  * [SVN 54790 Merge]
-  * Update to SVN Revision 54790.
-  * Git: 165.213.180.234:/git/slp/pkgs/evas
-  * Tag: evas_1.0.0.001+svn.51480slp2+build26
-
- -- Juyung Seo <juyung.seo@samsung.com>  Fri, 26 Nov 2010 15:15:40 +0900
-
 evas (1.0.0.001+svn.51480slp2+build22) unstable; urgency=low
 
   * SVN(54355) merged - add FLAG_ON_SCROLL.
