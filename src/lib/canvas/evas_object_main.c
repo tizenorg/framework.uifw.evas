@@ -1,13 +1,11 @@
 #include "evas_common.h"
 #include "evas_private.h"
 
-EVAS_MEMPOOL(_mp_obj);
-EVAS_MEMPOOL(_mp_sh);
-
 static Eina_Inlist *
 get_layer_objects(Evas_Layer *l)
 {
-   if ((!l) || (!l->objects)) return NULL;
+   if( !l || !l->objects ) return NULL;
+
    return (EINA_INLIST_GET(l->objects));
 }
 
@@ -17,11 +15,9 @@ evas_object_new(Evas *e __UNUSED__)
 {
    Evas_Object *obj;
 
-   EVAS_MEMPOOL_INIT(_mp_obj, "evas_object", Evas_Object, 512, NULL);
-   obj = EVAS_MEMPOOL_ALLOC(_mp_obj, Evas_Object);
+   obj = calloc(1, sizeof(Evas_Object));
    if (!obj) return NULL;
-   EVAS_MEMPOOL_PREP(_mp_obj, obj, Evas_Object);
-  
+
    obj->magic = MAGIC_OBJ;
    obj->cur.scale = 1.0;
    obj->prev.scale = 1.0;
@@ -55,11 +51,8 @@ evas_object_free(Evas_Object *obj, int clean_layer)
 	free(node);
      }
    obj->magic = 0;
-   if (obj->size_hints)
-     {
-       EVAS_MEMPOOL_FREE(_mp_sh, obj->size_hints);
-     }
-   EVAS_MEMPOOL_FREE(_mp_obj, obj);
+   if (obj->size_hints) free(obj->size_hints);
+   free(obj);
 }
 
 void
@@ -594,10 +587,7 @@ _evas_object_size_hint_alloc(Evas_Object *obj)
 {
    if (obj->size_hints) return;
 
-   EVAS_MEMPOOL_INIT(_mp_sh, "evas_size_hints", Evas_Size_Hints, 512, );
-   obj->size_hints = EVAS_MEMPOOL_ALLOC(_mp_sh, Evas_Size_Hints);
-   if (!obj->size_hints) return;
-   EVAS_MEMPOOL_PREP(_mp_sh, obj->size_hints, Evas_Size_Hints);
+   obj->size_hints = calloc(1, sizeof(Evas_Size_Hints));
    obj->size_hints->max.w = -1;
    obj->size_hints->max.h = -1;
    obj->size_hints->align.x = 0.5;
