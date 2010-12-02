@@ -1,3 +1,12 @@
+evas (1.0.0.001+svn.55064slp2+build03) unstable; urgency=low
+
+  * [SVN 55064 Merge]
+  * Update to SVN Revision 55064.
+  * Git: 165.213.180.234:/git/slp/pkgs/evas
+  * Tag: evas_1.0.0.001+svn.55064slp2+build03
+
+ -- MyoungWoon Kim <myoungwoon.kim@samsung.com>  Thu, 02 Dec 2010 14:19:20 +0900
+
 evas (1.0.0.001+svn.55064slp2+build02) unstable; urgency=low
 
   * Rollback to evas_1.0.0.001+svn.51480slp2+build26.
