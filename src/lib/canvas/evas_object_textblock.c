@@ -785,6 +785,7 @@ static const char escape_strings[] =
 "&bull;\0"     "\xe2\x80\xa2\0"
 ;
 
+EVAS_MEMPOOL(_mp_obj);
 
 /**
  * @internal
@@ -2527,7 +2528,8 @@ skip:
                               str = NULL;
                          }
                        else
-                         new_line = 1;
+                         str = NULL;
+                       new_line = 1;
                     }
                }
              if (!empty_item)
@@ -5719,7 +5721,7 @@ evas_textblock_cursor_text_append(Evas_Textblock_Cursor *cur, const char *_text)
          * the first for the paragraph which must be after our position  */
         if (fnode)
           {
-             if(!evas_textblock_cursor_format_is_visible_get(cur))
+             if (!evas_textblock_cursor_format_is_visible_get(cur))
                {
                   nnode = _NODE_FORMAT(EINA_INLIST_GET(fnode)->next);
                   if (nnode && (nnode->text_node == n))
@@ -7184,7 +7186,10 @@ evas_object_textblock_new(void)
    Evas_Object_Textblock *o;
 
    /* alloc obj private data */
-   o = calloc(1, sizeof(Evas_Object_Textblock));
+   EVAS_MEMPOOL_INIT(_mp_obj, "evas_object_textblock", Evas_Object_Textblock, 64, NULL);
+   o = EVAS_MEMPOOL_ALLOC(_mp_obj, Evas_Object_Textblock);
+   if (!o) return NULL;
+   EVAS_MEMPOOL_PREP(_mp_obj, o, Evas_Object_Textblock);
    o->magic = MAGIC_OBJ_TEXTBLOCK;
    o->cursor = calloc(1, sizeof(Evas_Textblock_Cursor));
    _format_command_init();
@@ -7210,8 +7215,8 @@ evas_object_textblock_free(Evas_Object *obj)
      }
    if (o->repch) eina_stringshare_del(o->repch);
    o->magic = 0;
-   free(o);
-   _format_command_shutdown();
+   EVAS_MEMPOOL_FREE(_mp_obj, o);
+  _format_command_shutdown();
 }
 
 
