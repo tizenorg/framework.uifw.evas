@@ -10,7 +10,7 @@ ifeq (armel,$(DEB_HOST_ARCH))
 else
 	CFLAGS += -fvisibility=hidden -ffast-math -fPIC
 endif
-LDFLAGS += -fvisibility=hidden -Wl,--hash-style=both -Wl,--as-needed
+LDFLAGS += -fvisibility=hidden -Wl,--hash-style=both -lm -ldl -Wl,--as-needed
 
 DEB_DH_STRIP_ARGS := --dbg-package=libevas-dbg
 
