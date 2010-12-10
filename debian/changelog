@@ -1,3 +1,12 @@
+evas (1.0.0.001+svn.55064slp2+build06) unstable; urgency=low
+
+  * [debian/rules] removed -lm -ldl options
+    + fixed '--as-needed' bug in opengl-es-mali400mp driver.
+  * Git: 165.213.180.234:slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.55064slp2+build06
+
+ -- Gwanglim Lee <gl77.lee@samsung.com>  Sat, 11 Dec 2010 01:09:54 +0900
+
 evas (1.0.0.001+svn.55064slp2+build05) unstable; urgency=low
 
   * [debian/rules] Added -lm -ldl in front of as-needed.
