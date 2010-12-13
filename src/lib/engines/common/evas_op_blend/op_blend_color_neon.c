@@ -6,6 +6,7 @@ _op_blend_c_dp_neon(DATA32 *s __UNUSED__, DATA8 *m __UNUSED__, DATA32 c, DATA32 
 	DATA32 *e, *tmp = 0;
 #define AP	"B_C_DP"
    asm volatile (
+	".fpu neon					\n\t"
 	"vdup.u32	q6, %[c]			\n\t"
 	"vmov.i8	q5, #1				\n\t"
 	"vmvn.u8	q7,q6				\n\t"
@@ -28,7 +29,7 @@ _op_blend_c_dp_neon(DATA32 *s __UNUSED__, DATA8 *m __UNUSED__, DATA32 c, DATA32 
 		"vld1.32	d0[0], [%[d]]		\n\t"
 		// Only touch d1
 		"vmull.u8	q0, d0, d14		\n\t"
-		"vshrn.u16	d0, q0, #8		\n\t"
+		"vqrshrn.u16	d0, q0, #8		\n\t"
 		"vadd.u8	d0, d12, d0		\n\t"
 		"vst1.32	d0[0], [%[d]]		\n\t"
 
@@ -47,7 +48,7 @@ _op_blend_c_dp_neon(DATA32 *s __UNUSED__, DATA8 *m __UNUSED__, DATA32 c, DATA32 
 	AP "dualloopint:					\n\t"
 		"vldr.32	d0, [%[d]]		\n\t"
 		"vmull.u8	q1, d0, d14		\n\t"
-		"vshrn.u16	d0, q1, #8		\n\t"
+		"vqrshrn.u16	d0, q1, #8		\n\t"
 		"vqadd.u8	d0, d0, d12		\n\t"
 
 		"vstm		%[d]!, {d0}		\n\t"
@@ -70,10 +71,10 @@ _op_blend_c_dp_neon(DATA32 *s __UNUSED__, DATA8 *m __UNUSED__, DATA32 c, DATA32 
 		"vmull.u8	q4, d2, d14		\n\t"
 		"vmull.u8	q5, d3, d15		\n\t"
 
-		"vshrn.u16	d0, q2, #8		\n\t"
-		"vshrn.u16	d1, q3, #8		\n\t"
-		"vshrn.u16	d2, q4, #8		\n\t"
-		"vshrn.u16	d3, q5, #8		\n\t"
+		"vqrshrn.u16	d0, q2, #8		\n\t"
+		"vqrshrn.u16	d1, q3, #8		\n\t"
+		"vqrshrn.u16	d2, q4, #8		\n\t"
+		"vqrshrn.u16	d3, q5, #8		\n\t"
 
 		"vqadd.u8	q0, q6, q0		\n\t"
 		"vqadd.u8	q1, q6, q1		\n\t"
@@ -95,7 +96,7 @@ _op_blend_c_dp_neon(DATA32 *s __UNUSED__, DATA8 *m __UNUSED__, DATA32 c, DATA32 
 	AP "dualloop2int:					\n\t"
 		"vldr.64	d0, [%[d]]		\n\t"
 		"vmull.u8	q1, d0, d14		\n\t"
-		"vshrn.u16	d0, q1, #8		\n\t"
+		"vqrshrn.u16	d0, q1, #8		\n\t"
 		"vqadd.u8	d0, d0, d12		\n\t"
 
 		"vstr.64	d0, [%[d]]		\n\t"
@@ -111,7 +112,7 @@ _op_blend_c_dp_neon(DATA32 *s __UNUSED__, DATA8 *m __UNUSED__, DATA32 c, DATA32 
 	AP "singleloop2:					\n\t"
 		"vld1.32	d0[0], [%[d]]		\n\t"
 		"vmull.u8	q1, d0, d14		\n\t"
-		"vshrn.u16	d0, q1, #8		\n\t"
+		"vqrshrn.u16	d0, q1, #8		\n\t"
 		"vqadd.u8	d0, d0, d12		\n\t"
 
 		"vst1.32	d0[0], [%[d]]		\n\t"

@@ -31,7 +31,7 @@ AC_CACHE_CHECK([whether the Objective C compiler works],
                 AC_LANG_POP([Objective C])])
 ])
 
-AC_INIT([evas], [v_ver.beta2], [enlightenment-devel@lists.sourceforge.net])
+AC_INIT([evas], [v_ver.beta3], [enlightenment-devel@lists.sourceforge.net])
 AC_PREREQ([2.52])
 AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_MACRO_DIR([m4])
@@ -1063,17 +1063,18 @@ fi
 ## NEON
 build_cpu_neon="no"
 case $host_cpu in
-  armv7*)
+  arm*)
     build_cpu_neon="yes"
     ;;
 esac
 AC_MSG_CHECKING(whether to build neon code)
 AC_ARG_ENABLE(cpu-neon,
-  AC_HELP_STRING([--enable-cpu-neon], [enable neon code - with gcc you will need these CFLAGS for it to begin to work, and even then your gcc may have broken or non-existent support: -mcpu=cortex-a8 -mfloat-abi=softfp -mfpu=neon]),
+  AC_HELP_STRING([--enable-cpu-neon], [build neon code, the code will be
+	  checked at run time to see if the CPU supports it]),
   [
      if test "x$enableval" = "xyes" ; then
-       AC_TRY_COMPILE([#include <arm_neon.h>],
-        [asm volatile ("vqadd.u8 d0, d1, d0\n")],
+       AC_TRY_COMPILE([],
+        [asm volatile (".fpu neon\nvqadd.u8 d0, d1, d0\n")],
         [
           AC_MSG_RESULT(yes)
           AC_DEFINE(BUILD_NEON, 1, [Build NEON Code])
