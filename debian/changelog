@@ -4,7 +4,7 @@ evas (1.0.0.001+svn.55375slp2+build01) unstable; urgency=low
   * Git: 165.213.180.234:slp/pkgs/e/evas
   * Tag: evas_1.0.0.001+svn.55375slp2+build01
 
- -- Juyung Seo <Juyung Seo@samsung.com>  Tue, 14 Dec 2010 17:46:15 +0900
+ -- Juyung Seo <juyung.seo@samsung.com>  Tue, 14 Dec 2010 17:46:15 +0900
 
 evas (1.0.0.001+svn.55064slp2+build08) unstable; urgency=low
 
