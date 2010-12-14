@@ -191,6 +191,8 @@ _evas_render_phase1_direct(Evas *e,
                            Eina_Array *render_objects)
 {
    unsigned int i;
+   Eina_List *l;
+   Evas_Object *proxy;
 
    RD("  [--- PHASE 1 DIRECT\n");
    for (i = 0; i < render_objects->count; i++)
@@ -201,12 +203,20 @@ _evas_render_phase1_direct(Evas *e,
         RD("    OBJ [%p] changed %i\n", obj, obj->changed);
 	if (obj->changed)
           {
+             /* Flag need redraw on proxy too */
              evas_object_clip_recalc(obj);
              obj->func->render_pre(obj);
+             if (obj->proxy.proxies)
+               {
+                  RD("      has proxies:\n");
+                  obj->proxy.redraw = 1;
+                  EINA_LIST_FOREACH(obj->proxy.proxies, l, proxy)
+                     proxy->func->render_pre(proxy);
+               }
              if (obj->pre_render_done)
                {
                   RD("      pre-render-done smart:%p|%p  [%p, %i] | [%p, %i] has_map:%i had_map:%i\n",
-                     obj->smart.smart, 
+                     obj->smart.smart,
                      evas_object_smart_members_get_direct(obj),
                      obj->cur.map, obj->cur.usemap,
                      obj->prev.map, obj->prev.usemap,
@@ -647,7 +657,10 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
 
    // set render_pre - for child objs that may not have gotten it.
    obj->pre_render_done = 1;
-
+   RD("          Hasmap: %p (%d) %p %d -> %d\n",obj->func->can_map,
+                  obj->func->can_map ? obj->func->can_map(obj): -1,
+                  obj->cur.map, obj->cur.usemap,
+                  _evas_render_has_map(obj));
    if (_evas_render_has_map(obj))
      {
         const Evas_Map_Point *p, *p_end;
@@ -674,7 +687,7 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
         pts[0].z0 = obj->cur.map->persp.z0 << FP;
         
         p = obj->cur.map->points;
-        p_end = p + 4;
+        p_end = p + obj->cur.map->count;
         pt = pts;
         for (; p < p_end; p++, pt++)
           {
@@ -687,6 +700,12 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
              pt->v = p->v * FP1;
              pt->col = ARGB_JOIN(p->a, p->r, p->g, p->b);
           }
+        /* Copy last for software engine */
+        if (obj->cur.map->count & 0x1)
+          {
+            pts[obj->cur.map->count] = pts[obj->cur.map->count - 1];
+          }
+
 
         if (obj->cur.map->surface)
           {
@@ -862,9 +881,10 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
                }
           }
         if (obj->cur.cache.clip.visible)
-           obj->layer->evas->engine.func->image_map4_draw
+           obj->layer->evas->engine.func->image_map_draw
            (e->engine.data.output, e->engine.data.context, surface,
-            obj->cur.map->surface, pts, obj->cur.map->smooth, 0);
+            obj->cur.map->surface, obj->cur.map->count, pts,
+            obj->cur.map->smooth, 0);
         // FIXME: needs to cache these maps and
         // keep them only rendering updates
 //        obj->layer->evas->engine.func->image_map_surface_free
@@ -1213,6 +1233,17 @@ evas_render_updates_internal(Evas *e,
                                                     obj->cur.cache.clip.w,
                                                     obj->cur.cache.clip.h);
                               }
+                            if (obj->cur.mask)
+                               e->engine.func->context_mask_set(e->engine.data.output,
+                                                                e->engine.data.context,
+                                                                obj->cur.mask->func->engine_data_get(obj->cur.mask),
+                                                                obj->cur.mask->cur.geometry.x,
+                                                                obj->cur.mask->cur.geometry.y,
+                                                                obj->cur.mask->cur.geometry.w,
+                                                                obj->cur.mask->cur.geometry.h);
+                            else
+                               e->engine.func->context_mask_unset(e->engine.data.output,
+                                                                e->engine.data.context);
                             if (obj->cur.clipper)
                                e->engine.func->context_clip_set(e->engine.data.output,
                                                                 e->engine.data.context,
@@ -1220,6 +1251,8 @@ evas_render_updates_internal(Evas *e,
                             else
                                e->engine.func->context_clip_unset(e->engine.data.output,
                                                                   e->engine.data.context);
+
+
 #if 1 /* FIXME: this can slow things down... figure out optimum... coverage */
 			    for (j = offset; j < e->temporary_objects.count; ++j)
 			      {
@@ -1605,3 +1638,6 @@ evas_render_object_recalc(Evas_Object *obj)
 	obj->changed = 1;
      }
 }
+
+
+/* vim:set ts=8 sw=3 sts=3 expandtab cino=>5n-2f0^-2{2(0W1st0 :*/

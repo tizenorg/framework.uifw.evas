@@ -21,11 +21,9 @@ evas_object_new(Evas *e __UNUSED__)
    obj = EVAS_MEMPOOL_ALLOC(_mp_obj, Evas_Object);
    if (!obj) return NULL;
    EVAS_MEMPOOL_PREP(_mp_obj, obj, Evas_Object);
-  
    obj->magic = MAGIC_OBJ;
    obj->cur.scale = 1.0;
    obj->prev.scale = 1.0;
-
    return obj;
 }
 
@@ -386,6 +384,8 @@ evas_object_del(Evas_Object *obj)
    evas_object_hide(obj);
    evas_object_grabs_cleanup(obj);
    while (obj->clip.clipees) evas_object_clip_unset(obj->clip.clipees->data);
+   while (obj->proxy.proxies)
+	   evas_object_image_source_unset(obj->proxy.proxies->data);
    if (obj->cur.clipper) evas_object_clip_unset(obj);
    if (obj->smart.smart) evas_object_smart_del(obj);
    evas_object_map_set(obj, NULL);

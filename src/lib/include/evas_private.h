@@ -390,6 +390,7 @@ struct _Evas_Object
    struct {
       Evas_Map             *map;
       Evas_Object          *clipper;
+      Evas_Object          *mask;
       Evas_Object          *map_parent;
       double                scale;
       Evas_Coord_Rectangle  geometry;
@@ -437,6 +438,13 @@ struct _Evas_Object
       Evas_Smart              *smart;
       Evas_Object             *parent;
    } smart;
+
+   struct {
+      Eina_List               *proxies;
+      void                    *surface;
+      int		       w,h;
+      Eina_Bool                redraw;
+   } proxy;
 
    Evas_Size_Hints            *size_hints;
 
@@ -578,6 +586,8 @@ struct _Evas_Func
    void (*context_clip_clip)               (void *data, void *context, int x, int y, int w, int h);
    void (*context_clip_unset)              (void *data, void *context);
    int  (*context_clip_get)                (void *data, void *context, int *x, int *y, int *w, int *h);
+   void (*context_mask_set)	           (void *data, void *context, void *mask, int x, int y, int w, int h);
+   void (*context_mask_unset)	           (void *data, void *context);
    void (*context_color_set)               (void *data, void *context, int r, int g, int b, int a);
    int  (*context_color_get)               (void *data, void *context, int *r, int *g, int *b, int *a);
    void (*context_multiplier_set)          (void *data, void *context, int r, int g, int b, int a);
@@ -621,6 +631,7 @@ struct _Evas_Func
    char *(*image_format_get)               (void *data, void *image);
    void (*image_colorspace_set)            (void *data, void *image, int cspace);
    int  (*image_colorspace_get)            (void *data, void *image);
+   void (*image_mask_create)               (void *data, void *image);
    void *(*image_native_set)               (void *data, void *image, void *native);
    void *(*image_native_get)               (void *data, void *image);
 
@@ -660,7 +671,7 @@ struct _Evas_Func
    int  (*image_scale_hint_get)            (void *data, void *image);
    int  (*font_last_up_to_pos)             (void *data, void *font, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props, int x, int y);
 
-   void (*image_map4_draw)                 (void *data, void *context, void *surface, void *image, RGBA_Map_Point *p, int smooth, int level);
+   void (*image_map_draw)                  (void *data, void *context, void *surface, void *image, int npoints, RGBA_Map_Point *p, int smooth, int level);
    void *(*image_map_surface_new)          (void *data, int w, int h, int alpha);
    void (*image_map_surface_free)          (void *data, void *surface);
 

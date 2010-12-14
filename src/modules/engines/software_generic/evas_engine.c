@@ -97,6 +97,24 @@ eng_context_multiplier_get(void *data __UNUSED__, void *context, int *r, int *g,
 }
 
 static void
+eng_context_mask_set(void *data __UNUSED__, void *context, void *mask, int x, int y, int w, int h)
+{
+   evas_common_draw_context_set_mask(context, mask, x, y, w, h);
+}
+
+static void
+eng_context_mask_unset(void *data __UNUSED__, void *context)
+{
+   evas_common_draw_context_unset_mask(context);
+}
+
+static void *
+eng_context_mask_get(void *data __UNUSED__, void *context)
+{
+   return ((RGBA_Draw_Context *)context)->mask.mask;
+}
+
+static void
 eng_context_cutout_add(void *data __UNUSED__, void *context, int x, int y, int w, int h)
 {
    evas_common_draw_context_add_cutout(context, x, y, w, h);
@@ -238,6 +256,31 @@ eng_image_colorspace_get(void *data __UNUSED__, void *image)
    im = image;
    return im->space;
 }
+
+static void
+eng_image_mask_create(void *data __UNUSED__, void *image)
+{
+   RGBA_Image *im;
+   int sz;
+   uint8_t *dst,*end;
+   uint32_t *src;
+
+   if (!image) return;
+   im = image;
+   if (im->mask.mask && !im->mask.dirty) return;
+
+   if (im->mask.mask) free(im->mask.mask);
+   sz = im->cache_entry.w * im->cache_entry.h;
+   im->mask.mask = malloc(sz);
+   dst = im->mask.mask;
+   if (!im->image.data)
+      evas_cache_image_load_data(&im->cache_entry);
+   src = im->image.data;
+   for (end = dst + sz ; dst < end ; dst ++, src ++)
+      *dst = *src >> 24;
+   im->mask.dirty = 0;
+}
+
 
 static void *
 eng_image_alpha_set(void *data __UNUSED__, void *image, int has_alpha)
@@ -428,7 +471,6 @@ eng_image_data_put(void *data, void *image, DATA32 *image_data)
 		  if (!im->cs.no_free) free(im->cs.data);
 	       }
 	     im->cs.data = image_data;
-	     evas_common_image_colorspace_dirty(im);
 	  }
         break;
       default:
@@ -470,11 +512,11 @@ eng_image_draw(void *data __UNUSED__, void *context, void *surface, void *image,
 #endif
         )
      {
-        evas_common_rgba_image_scalecache_prepare((Image_Entry *)(im), 
+        evas_common_rgba_image_scalecache_prepare((Image_Entry *)(im),
                                                   surface, context, smooth,
                                                   src_x, src_y, src_w, src_h,
                                                   dst_x, dst_y, dst_w, dst_h);
-        
+
         evas_common_pipe_image_draw(im, surface, context, smooth,
                                     src_x, src_y, src_w, src_h,
                                     dst_x, dst_y, dst_w, dst_h);
@@ -491,7 +533,7 @@ eng_image_draw(void *data __UNUSED__, void *context, void *surface, void *image,
         evas_common_rgba_image_scalecache_do(&im->cache_entry, surface, context, smooth,
                                              src_x, src_y, src_w, src_h,
                                              dst_x, dst_y, dst_w, dst_h);
-/*        
+/*
 	if (smooth)
 	  evas_common_scale_rgba_in_to_out_clip_smooth(im, surface, context,
 						       src_x, src_y, src_w, src_h,
@@ -506,12 +548,14 @@ eng_image_draw(void *data __UNUSED__, void *context, void *surface, void *image,
 }
 
 static void
-eng_image_map4_draw(void *data __UNUSED__, void *context, void *surface, void *image, RGBA_Map_Point *p, int smooth, int level)
+eng_image_map_draw(void *data __UNUSED__, void *context, void *surface, void *image, int npoints, RGBA_Map_Point *p, int smooth, int level)
 {
    RGBA_Image *im;
 
    if (!image) return;
+   if (npoints < 3) return;
    im = image;
+
    if ((p[0].x == p[3].x) &&
        (p[1].x == p[2].x) &&
        (p[0].y == p[1].y) &&
@@ -550,12 +594,18 @@ eng_image_map4_draw(void *data __UNUSED__, void *context, void *surface, void *i
        && evas_common_frameq_enabled()
 # endif
         )
-          evas_common_pipe_map4_draw(im, surface, context, p, smooth, level);
+          evas_common_pipe_map_draw(im, surface, context, npoints, p, smooth, level);
         else
 #endif
-          evas_common_map4_rgba(im, surface, context, p, smooth, level);
+          evas_common_map_rgba(im, surface, context, npoints, p, smooth, level);
      }
    evas_common_cpu_end_opt();
+
+   if (npoints > 4)
+     {
+        eng_image_map_draw(data, context, surface, image, npoints - 2, p + 2,
+			smooth, level);
+     }
 }
 
 static void *
@@ -808,6 +858,8 @@ static Evas_Func func =
      eng_context_clip_clip,
      eng_context_clip_unset,
      eng_context_clip_get,
+     eng_context_mask_set,
+     eng_context_mask_unset,
      eng_context_color_set,
      eng_context_color_get,
      eng_context_multiplier_set,
@@ -851,6 +903,7 @@ static Evas_Func func =
      eng_image_format_get,
      eng_image_colorspace_set,
      eng_image_colorspace_get,
+     eng_image_mask_create,
      eng_image_native_set,
      eng_image_native_get,
      /* image cache funcs */
@@ -886,7 +939,7 @@ static Evas_Func func =
      /* more font draw functions */
      eng_font_last_up_to_pos,
      /* FUTURE software generic calls go here (done) */
-     eng_image_map4_draw,
+     eng_image_map_draw,
      eng_image_map_surface_new,
      eng_image_map_surface_free,
      NULL, // eng_image_content_hint_set - software doesn't use it
