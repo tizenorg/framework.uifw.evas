@@ -25,6 +25,7 @@ _op_blend_mas_c_dp_neon(DATA32 *s __UNUSED__, DATA8 *m, DATA32 c, DATA32 *d, int
 
 #define AP "blend_mas_c_dp_"
      asm volatile (
+	".fpu neon						\n\t"
 	"	vdup.i32	q15, %[c]			\n\t"
 	"	vmov.i8		q14,	#1			\n\t"
 
@@ -40,12 +41,12 @@ _op_blend_mas_c_dp_neon(DATA32 *s __UNUSED__, DATA8 *m, DATA32 c, DATA32 *d, int
 	"	vld1.32		d4[0],	[%[d]]			\n\t"
 	"	vdup.u8		d0,	d0[0]			\n\t"
 	"	vmull.u8	q4,	d0, d30			\n\t"
-	"	vshrn.u16	d12,	q4, #8			\n\t"
+	"	vqrshrn.u16	d12,	q4, #8			\n\t"
 	"	vmvn.u16	d14,	d12			\n\t"
 	"	vshr.u32	d16,	d14, #24		\n\t"
 	"	vmul.u32	d16,	d16, d28		\n\t"
 	"	vmull.u8	q7,	d16, d4			\n\t"
-	"	vshrn.u16	d0,	q7, #8			\n\t"
+	"	vqrshrn.u16	d0,	q7, #8			\n\t"
 	"	vqadd.u8	d0, 	d0, d12			\n\t"
 	"	vst1.32		d0[0],	[%[d]]!			\n\t"
 
@@ -64,12 +65,12 @@ _op_blend_mas_c_dp_neon(DATA32 *s __UNUSED__, DATA8 *m, DATA32 c, DATA32 *d, int
 	"	vmovl.u8	q0,	d0			\n\t"
 	"	vmul.u32	q0,	q14			\n\t"
 	"	vmull.u8	q4,	d0, d30			\n\t"
-	"	vshrn.u16	d12,	q4, #8			\n\t"
+	"	vqrshrn.u16	d12,	q4, #8			\n\t"
 	"	vmvn.u16	d14,	d12			\n\t"
 	"	vshr.u32	d16,	d14, #24		\n\t"
 	"	vmul.u32	d16,	d16, d28		\n\t"
 	"	vmull.u8	q7,	d16, d4			\n\t"
-	"	vshrn.u16	d0,	q7, #8			\n\t"
+	"	vqrshrn.u16	d0,	q7, #8			\n\t"
 	"	vqadd.u8	q0, 	q0, q6			\n\t"
 	"	vstm		%[d]!,	{d0}			\n\t"
 
@@ -104,8 +105,8 @@ _op_blend_mas_c_dp_neon(DATA32 *s __UNUSED__, DATA8 *m, DATA32 c, DATA32 *d, int
 	"	vmull.u8	q5,	d1, d31			\n\t"
 
 	// Shorten
-	"	vshrn.u16	d12,	q4, #8			\n\t"
-	"	vshrn.u16	d13,	q5, #8			\n\t"
+	"	vqrshrn.u16	d12,	q4, #8			\n\t"
+	"	vqrshrn.u16	d13,	q5, #8			\n\t"
 
 	// extract negated alpha
 	"	vmvn.u16	q7,	q6			\n\t"
@@ -116,8 +117,8 @@ _op_blend_mas_c_dp_neon(DATA32 *s __UNUSED__, DATA8 *m, DATA32 c, DATA32 *d, int
 	"	vmull.u8	q7,	d16, d4			\n\t"
 	"	vmull.u8	q8,	d17, d5			\n\t"
 
-	"	vshrn.u16	d0,	q7, #8			\n\t"
-	"	vshrn.u16	d1,	q8, #8			\n\t"
+	"	vqrshrn.u16	d0,	q7, #8			\n\t"
+	"	vqrshrn.u16	d1,	q8, #8			\n\t"
 
 	// Add
 	"	vqadd.u8	q0, 	q0, q6			\n\t"
@@ -151,12 +152,12 @@ _op_blend_mas_c_dp_neon(DATA32 *s __UNUSED__, DATA8 *m, DATA32 c, DATA32 *d, int
 	"	vmovl.u8	q0,	d0			\n\t"
 	"	vmul.u32	q0,	q14			\n\t"
 	"	vmull.u8	q4,	d0, d30			\n\t"
-	"	vshrn.u16	d12,	q4, #8			\n\t"
+	"	vqrshrn.u16	d12,	q4, #8			\n\t"
 	"	vmvn.u16	d14,	d12			\n\t"
 	"	vshr.u32	d16,	d14, #24		\n\t"
 	"	vmul.u32	d16,	d16, d28		\n\t"
 	"	vmull.u8	q7,	d16, d4			\n\t"
-	"	vshrn.u16	d0,	q7, #8			\n\t"
+	"	vqrshrn.u16	d0,	q7, #8			\n\t"
 	"	vqadd.u8	q0, 	q0, q6			\n\t"
 	"	vstm		%[d]!,	{d0}			\n\t"
 
@@ -168,12 +169,12 @@ _op_blend_mas_c_dp_neon(DATA32 *s __UNUSED__, DATA8 *m, DATA32 c, DATA32 *d, int
 	"	vld1.32		d4[0],	[%[d]]			\n\t"
 	"	vdup.u8		d0,	d0[0]			\n\t"
 	"	vmull.u8	q4,	d0, d30			\n\t"
-	"	vshrn.u16	d12,	q4, #8			\n\t"
+	"	vqrshrn.u16	d12,	q4, #8			\n\t"
 	"	vmvn.u16	d14,	d12			\n\t"
 	"	vshr.u32	d16,	d14, #24		\n\t"
 	"	vmul.u32	d16,	d16, d28		\n\t"
 	"	vmull.u8	q7,	d16, d4			\n\t"
-	"	vshrn.u16	d0,	q7, #8			\n\t"
+	"	vqrshrn.u16	d0,	q7, #8			\n\t"
 	"	vqadd.u8	q0, 	q0, q6			\n\t"
 	"	vst1.32		d0[0],	[%[d]]!			\n\t"
 
@@ -205,6 +206,7 @@ _op_blend_mas_can_dp_neon(DATA32 *s __UNUSED__, DATA8 *m, DATA32 c, DATA32 *d, i
 
 #define AP	"_blend_mas_can_dp_neon_"
      asm volatile (
+		".fpu neon				\n\t"
 		"vdup.u32	q9,	%[c]		\n\t"
 		"vmov.i8	q15,	#1		\n\t"
 		"vmov.i8	q14,	#0		\n\t"
