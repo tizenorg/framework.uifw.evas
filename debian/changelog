@@ -1,3 +1,11 @@
+evas (1.0.0.001+svn.55064slp2+build07) unstable; urgency=low
+
+  * [SVN EFL Migration] evas in SLP is merged into SVN r55375
+  * Git: 165.213.180.234:slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.55064slp2+build07
+
+ -- Juyung Seo <juyung.seo@samsung.com>  Tue, 14 Dec 2010 14:51:30 +0900
+
 evas (1.0.0.001+svn.55064slp2+build06) unstable; urgency=low
 
   * [debian/rules] removed -lm -ldl options
