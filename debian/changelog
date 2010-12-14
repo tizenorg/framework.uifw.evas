@@ -1,3 +1,11 @@
+evas (1.0.0.001+svn.55064slp2+build08) unstable; urgency=low
+
+  * merged image masking code (brett's work)
+  * Git: 165.213.180.234:slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.55064slp2+build08
+
+ -- ChunEon Park <chuneon.park@samsung.com>  Tue, 14 Dec 2010 15:50:37 +0900
+
 evas (1.0.0.001+svn.55064slp2+build07) unstable; urgency=low
 
   * [SVN EFL Migration] evas in SLP is merged into SVN r55375
