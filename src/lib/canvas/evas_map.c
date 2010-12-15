@@ -37,35 +37,9 @@ _evas_map_calc_map_geometry(Evas_Object *obj)
 {
    Evas_Coord x1, x2, y1, y2;
    const Evas_Map_Point *p, *p_end;
-   Eina_Bool ch = EINA_FALSE;
+   int ch;
 
    if (!obj->cur.map) return;
-   if (obj->prev.map)
-     {
-       if (obj->prev.map->count == obj->cur.map->count)
-	 {
-	   const Evas_Map_Point *p2;
-
-	   p = obj->cur.map->points;
-	   p_end = p + obj->cur.map->count;
-	   p2 = obj->cur.map->points;
-
-	   for (; p < p_end; p++, p2++)
-	     if (p->a != p2->a ||
-		 p->r != p2->r ||
-		 p->g != p2->g ||
-		 p->b != p2->b)
-	       {
-		 ch = 1;
-		 break;
-	       }
-		
-	 }
-       else
-	 {
-	   ch = 1;
-	 }
-     }
 
    p = obj->cur.map->points;
    p_end = p + obj->cur.map->count;
@@ -81,6 +55,7 @@ _evas_map_calc_map_geometry(Evas_Object *obj)
         if (p->y < y1) y1 = p->y;
         if (p->y > y2) y2 = p->y;
      }
+   ch = 0;
    if (obj->cur.map->normal_geometry.x != x1) ch = 1;
    if (obj->cur.map->normal_geometry.y != y1) ch = 1;
    if (obj->cur.map->normal_geometry.w != (x2 - x1)) ch = 1;
