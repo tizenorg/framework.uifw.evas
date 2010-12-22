@@ -4167,6 +4167,7 @@ _evas_textblock_cursor_node_format_before_or_at_pos_get(const Evas_Textblock_Cur
  * @param cur the position to look at.
  * @return the format node found.
  */
+#if 0 // not used anymore?
 static Evas_Object_Textblock_Node_Format *
 _evas_textblock_cursor_node_format_before_pos_get(const Evas_Textblock_Cursor *cur)
 {
@@ -4202,6 +4203,8 @@ _evas_textblock_cursor_node_format_before_pos_get(const Evas_Textblock_Cursor *c
      }
    return pitr;
 }
+#endif
+
 /**
  * Return the object's main cursor.
  *
@@ -4860,9 +4863,10 @@ evas_textblock_cursor_line_char_last(Evas_Textblock_Cursor *cur)
 static Eina_Bool
 _evas_textblock_format_is_visible(const char *s)
 {
-   if (!s) return EINA_FALSE;
    const char *item;
    Eina_Bool is_opener = EINA_TRUE;
+
+   if (!s) return EINA_FALSE;
 
    if (s[0] == '+' || s[0] == '-')
      {
