@@ -1432,6 +1432,7 @@ evas_object_image_reload(Evas_Object *obj)
    if (o->engine_data)
      o->engine_data = obj->layer->evas->engine.func->image_dirty_region(obj->layer->evas->engine.data.output, o->engine_data, 0, 0, o->cur.image.w, o->cur.image.h);
    evas_object_image_unload(obj, 1);
+   evas_object_inform_call_image_unloaded(obj);
    evas_object_image_load(obj);
    o->prev.file = NULL;
    o->prev.key = NULL;
@@ -1715,6 +1716,7 @@ evas_object_image_load_dpi_set(Evas_Object *obj, double dpi)
    if (o->cur.file)
      {
 	evas_object_image_unload(obj, 0);
+        evas_object_inform_call_image_unloaded(obj);
 	evas_object_image_load(obj);
 	o->changed = 1;
 	evas_object_change(obj);
@@ -1773,6 +1775,7 @@ evas_object_image_load_size_set(Evas_Object *obj, int w, int h)
    if (o->cur.file)
      {
 	evas_object_image_unload(obj, 0);
+        evas_object_inform_call_image_unloaded(obj);
 	evas_object_image_load(obj);
 	o->changed = 1;
 	evas_object_change(obj);
@@ -1831,6 +1834,7 @@ evas_object_image_load_scale_down_set(Evas_Object *obj, int scale_down)
    if (o->cur.file)
      {
 	evas_object_image_unload(obj, 0);
+        evas_object_inform_call_image_unloaded(obj);
 	evas_object_image_load(obj);
 	o->changed = 1;
 	evas_object_change(obj);
@@ -1881,6 +1885,7 @@ evas_object_image_load_region_set(Evas_Object *obj, int x, int y, int w, int h)
    if (o->cur.file)
      {
 	evas_object_image_unload(obj, 0);
+        evas_object_inform_call_image_unloaded(obj);
 	evas_object_image_load(obj);
 	o->changed = 1;
 	evas_object_change(obj);
@@ -2217,6 +2222,7 @@ evas_image_cache_reload(Evas *e)
 	     if (o->magic == MAGIC_OBJ_IMAGE)
 	       {
 		  evas_object_image_unload(obj, 1);
+                  evas_object_inform_call_image_unloaded(obj);
 	       }
 	  }
      }
@@ -2457,8 +2463,13 @@ evas_object_image_unload(Evas_Object *obj, Eina_Bool dirty)
                o->cur.image.w, o->cur.image.h);
      }
    if (o->engine_data)
-     obj->layer->evas->engine.func->image_free(obj->layer->evas->engine.data.output,
-					       o->engine_data);
+     {
+        obj->layer->evas->engine.func->image_data_preload_cancel(obj->layer->evas->engine.data.output,
+                                                                 o->engine_data,
+                                                                 obj);
+        obj->layer->evas->engine.func->image_free(obj->layer->evas->engine.data.output,
+                                                  o->engine_data);
+     }
    o->engine_data = NULL;
    o->load_error = EVAS_LOAD_ERROR_NONE;
    o->cur.has_alpha = 1;

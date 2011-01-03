@@ -5323,8 +5323,19 @@ _evas_textblock_node_format_pos_get(const Evas_Object_Textblock_Node_Format *fmt
 EAPI int
 evas_textblock_cursor_pos_get(const Evas_Textblock_Cursor *cur)
 {
+   Evas_Object_Textblock *o;
+   Evas_Object_Textblock_Node_Text *n;
+   size_t npos = 0;
+
    if (!cur) return -1;
-   return cur->pos;
+   o = (Evas_Object_Textblock *)(cur->obj->object_data);
+   n = o->text_nodes;
+   while (n != cur->node)
+     {
+        npos += eina_ustrbuf_length_get(n->unicode);
+        n = _NODE_TEXT(EINA_INLIST_GET(n)->next);
+     }
+   return npos + cur->pos;
 }
 
 /**
@@ -5336,11 +5347,13 @@ evas_textblock_cursor_pos_get(const Evas_Textblock_Cursor *cur)
 EAPI void
 evas_textblock_cursor_pos_set(Evas_Textblock_Cursor *cur, int _pos)
 {
-   size_t len, pos;
+   Evas_Object_Textblock *o;
+   Evas_Object_Textblock_Node_Text *n;
+   size_t pos;
 
    if (!cur) return;
-   if (!cur->node) return;
-   len = eina_ustrbuf_length_get(cur->node->unicode);
+   o = (Evas_Object_Textblock *)(cur->obj->object_data);
+
    if (_pos < 0)
      {
         pos = 0;
@@ -5350,11 +5363,28 @@ evas_textblock_cursor_pos_set(Evas_Textblock_Cursor *cur, int _pos)
         pos = (size_t) _pos;
      }
 
-   if (pos > len)
+   n = o->text_nodes;
+   while (n && (pos >= eina_ustrbuf_length_get(n->unicode)))
      {
-        pos = len;
+        pos -= eina_ustrbuf_length_get(n->unicode);
+        n = _NODE_TEXT(EINA_INLIST_GET(n)->next);
      }
-   cur->pos = pos;
+
+   if (n)
+     {
+        cur->node = n;
+        cur->pos = pos;
+     }
+   else
+     {
+        Evas_Object_Textblock_Node_Text *last_n;
+
+        last_n = _NODE_TEXT(EINA_INLIST_GET(o->text_nodes)->last);
+        cur->node = last_n;
+	cur->pos = 0;
+
+        evas_textblock_cursor_paragraph_char_last(cur);
+     }
 
 }
 
