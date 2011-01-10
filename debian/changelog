@@ -1,3 +1,11 @@
+evas (1.0.0.001+svn.55757slp2+build02) unstable; urgency=low
+
+  * Apply SVN revision 55977 for fps
+  * Git: 165.213.180.234:slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.55757slp2+build02
+
+ -- Jaehwan Kim <jae.hwan.kim@samsung.com>  Mon, 10 Jan 2011 14:27:38 +0900
+
 evas (1.0.0.001+svn.55757slp2+build01) unstable; urgency=low
 
   * [SVN EFL Migration] evas in SLP is merged with SVN r55757
