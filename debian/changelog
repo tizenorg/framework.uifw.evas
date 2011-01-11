@@ -1,3 +1,11 @@
+evas (1.0.0.001+svn.55757slp2+build03) unstable; urgency=low
+
+  * Apply SVN revision 56020 for fixing the bug of evas_object_textblock
+  * Git: 165.213.180.234:slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.55757slp2+build03 
+
+ -- MyoungWoon Kim <myoungwoon.kim@samsung.com>  Tue, 11 Jan 2011 10:50:02 +0900
+
 evas (1.0.0.001+svn.55757slp2+build02) unstable; urgency=low
 
   * Apply SVN revision 55977 for fps
