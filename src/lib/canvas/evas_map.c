@@ -43,28 +43,29 @@ _evas_map_calc_map_geometry(Evas_Object *obj)
    /*
    if (obj->prev.map)
      {
-       if (obj->prev.map->count == obj->cur.map->count)
-	 {
-	   const Evas_Map_Point *p2;
-
-	   p = obj->cur.map->points;
-	   p_end = p + obj->cur.map->count;
-	   p2 = obj->prev.map->points;
-
-	   for (; p < p_end; p++, p2++)
-	     if (p->a != p2->a ||
-		 p->r != p2->r ||
-		 p->g != p2->g ||
-		 p->b != p2->b)
-	       {
-		 ch = 1;
-		 break;
-	       }
-	 }
-       else
-	 {
-	   ch = 1;
-	 }
+        // FIXME: this causes an infinite loop somewhere... hard to debug
+        if (obj->prev.map->count == obj->cur.map->count)
+          {
+             const Evas_Map_Point *p2;
+             
+             p = obj->cur.map->points;
+             p_end = p + obj->cur.map->count;
+             p2 = obj->prev.map->points;
+             
+             for (; p < p_end; p++, p2++)
+               {
+                  if ((p->a != p2->a) ||
+                      (p->r != p2->r) ||
+                      (p->g != p2->g) ||
+                      (p->b != p2->b))
+                    {
+                       ch = 1;
+                       break;
+                    }
+               }
+          }
+        else
+           ch = 1;
      }
    */
 
@@ -488,6 +489,7 @@ evas_object_map_set(Evas_Object *obj, const Evas_Map *map)
         obj->cur.map = _evas_map_new(map->count);
         memcpy(obj->cur.map, omap, sizeof(Evas_Map) + (map->count * sizeof(Evas_Map_Point)));
         _evas_map_copy(obj->cur.map, map);
+        if (obj->prev.map == omap) obj->prev.map = NULL;
         free(omap);
      }
    else
