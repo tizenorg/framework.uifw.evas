@@ -358,7 +358,7 @@ struct _Evas_Size_Hints
 
 struct _Evas_Map_Point
 {
-   Evas_Coord x, y, z, px, py;
+   double x, y, z, px, py;
    double u, v;
    unsigned char r, g, b, a;
 };
@@ -468,9 +468,9 @@ struct _Evas_Object
    Eina_Bool                   parent_cache_valid : 1;
    Eina_Bool                   repeat_events : 1;
    Eina_Bool                   restack : 1;
-   Eina_Bool                   changed : 1;
-   Eina_Bool                   changed_move : 1;
    Eina_Bool                   is_active : 1;
+   Eina_Bool                   precise_is_inside : 1;
+   Eina_Bool                   is_static_clip : 1;
 
    Eina_Bool                   render_pre : 1;
    Eina_Bool                   rect_del : 1;
@@ -481,8 +481,10 @@ struct _Evas_Object
    Eina_Bool                   in_layer : 1;
    Eina_Bool                   no_propagate : 1;
 
-   Eina_Bool                   precise_is_inside : 1;
-   Eina_Bool                   is_static_clip : 1;
+   Eina_Bool                   changed : 1;
+   Eina_Bool                   changed_move : 1;
+   Eina_Bool                   changed_move_only : 1;
+   Eina_Bool                   changed_nomove : 1;
 };
 
 struct _Evas_Func_Node
