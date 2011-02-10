@@ -1,3 +1,11 @@
+evas (1.0.0.001+svn.56240slp2+build03) unstable; urgency=low
+
+  * [textblock & encoding] 56806 & 56808 are updated
+  * Git: 165.213.180.234:slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.56240slp2+build03 
+
+ -- WooHyun Jung <wh0705.jung@samsung.com>  Thu, 10 Feb 2011 11:37:25 +0900
+
 evas (1.0.0.001+svn.56240slp2+build02) unstable; urgency=low
 
   * [textblock & encoding] 56806 & 56808 are updated
