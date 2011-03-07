@@ -2,11 +2,11 @@
 ##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
 m4_define([v_maj], [1])
 m4_define([v_min], [0])
-m4_define([v_mic], [0])
+m4_define([v_mic], [999])
 m4_define([v_rev], m4_esyscmd([(svnversion "${SVN_REPO_PATH:-.}" | grep -v export || echo 0) | awk -F : '{printf("%s\n", $1);}' | tr -d ' :MSP\n']))
 m4_if(v_rev, [0], [m4_define([v_rev], m4_esyscmd([git log 2> /dev/null | (grep -m1 git-svn-id || echo 0) | sed -e 's/.*@\([0-9]*\).*/\1/' | tr -d '\n']))])
 ##--   When released, remove the dnl on the below line
-m4_undefine([v_rev])
+dnl m4_undefine([v_rev])
 ##--   When doing snapshots - change soname. remove dnl on below line
 dnl m4_define([relname], [ver-pre-svn-07])
 dnl m4_define([v_rel], [-release relname])
@@ -21,17 +21,17 @@ m4_define([lt_age], v_min)
 # rw_PROG_OBJC_WORKS
 # Check whether the Objective C compiler works.
 AC_DEFUN([rw_PROG_OBJC_WORKS],
-[AC_REQUIRE([AC_PROG_OBJC])dnl
+[m4_ifdef([AC_PROG_OBJC], [AC_REQUIRE([AC_PROG_OBJC])dnl
 AC_CACHE_CHECK([whether the Objective C compiler works],
                [rw_cv_prog_objc_works],
                [AC_LANG_PUSH([Objective C])
                 AC_LINK_IFELSE([AC_LANG_PROGRAM([], [])],
                                [rw_cv_prog_objc_works=yes],
                                [rw_cv_prog_objc_works=no])
-                AC_LANG_POP([Objective C])])
+                AC_LANG_POP([Objective C])])], [rw_cv_prog_objc_works=no])
 ])
 
-AC_INIT([evas], [v_ver.beta3], [enlightenment-devel@lists.sourceforge.net])
+AC_INIT([evas], [v_ver], [enlightenment-devel@lists.sourceforge.net])
 AC_PREREQ([2.52])
 AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_MACRO_DIR([m4])
@@ -89,6 +89,7 @@ AC_DEFINE_UNQUOTED(MODULE_ARCH, "$MODULE_ARCH", "Module architecture")
 
 want_fontconfig="auto"
 want_fribidi="auto"
+want_harfbuzz="auto"
 want_evas_cserve="yes"
 
 want_evas_engine_buffer="yes"
@@ -193,9 +194,9 @@ m4_ifdef([AC_PROG_OBJC],
     _AM_DEPENDENCIES(OBJC)
    ],
    [
-    AC_CHECK_TOOL([OBJC], [gcc])
-    AC_SUBST([OBJC])
-    AC_SUBST([OBJCFLAGS])
+    dnl#AC_CHECK_TOOL([OBJC], [gcc])
+    dnl#AC_SUBST([OBJC])
+    dnl#AC_SUBST([OBJCFLAGS])
    ])
 
 rw_PROG_OBJC_WORKS
@@ -301,6 +302,68 @@ fi
 
 if test "x${have_fribidi}" = "xno"; then
   HAS_BIDI=0
+fi
+
+# harfbuzz support
+have_harfbuzz="no"
+have_harfbuzz_glib="no"
+have_harfbuzz_ft="no"
+AC_ARG_ENABLE([harfbuzz],
+   AC_HELP_STRING([--disable-harfbuzz],
+      [disable complex text shaping and layouting support. @<:@default=enabled@:>@]),
+   [
+    if test "x${enableval}" = "xyes" ; then
+       want_harfbuzz="yes"
+    else
+       want_harfbuzz="no"
+    fi
+   ])
+
+if test "x${want_harfbuzz}" = "xyes" -o "x${want_harfbuzz}" = "xauto" ; then
+   PKG_CHECK_MODULES([HARFBUZZ],
+      [harfbuzz >= 0.2],
+      [
+       have_harfbuzz="yes"
+       requirement_evas="harfbuzz ${requirement_evas}"
+      ],
+      [
+       if test "x$want_harfbuzz" = "xyes" -a "x$use_strict" = "xyes" ; then
+          AC_MSG_ERROR([Harfbuzz not found (strict dependencies checking)])
+       fi
+      ])
+   if test "x$have_harfbuzz" = "xyes" ; then
+
+      CPPFLAGS_SAVE="$CPPFLAGS"
+      CPPFLAGS="$CPPFLAGS $HARFBUZZ_CFLAGS $FREETYPE_CFLAGS"
+# must have for usage with harfbuzz although harfbuzz may not have it.
+
+      AC_CHECK_HEADER(hb-ft.h,
+          [
+           have_harfbuzz_ft="yes"
+           #Depend on harfbuzz ft for harfbuzz support
+           AC_DEFINE(HAVE_HARFBUZZ, 1, [have harfbuzz support])
+          ],
+          [
+           if test "x$want_harfbuzz" = "xyes" -a "x$use_strict" = "xyes" ; then
+              AC_MSG_ERROR([Harfbuzz-ft not found (strict dependencies checking)])
+           fi
+           have_harfbuzz="no"
+          ])
+# nice to have if harfbuzz has it
+      AC_CHECK_HEADER(hb-glib.h,
+          [
+           have_harfbuzz_glib="yes"
+           AC_DEFINE(HAVE_HARFBUZZ_GLIB, 1, [have harfbuzz glib support])
+          ],
+          [
+           have_harfbuzz_glib="no"
+          ])
+      CPPFLAGS="$CPPFLAGS_SAVE"
+   fi
+fi
+
+if test "x${have_harfbuzz}" = "xno"; then
+  HAS_HARFBUZZ=0
 fi
 
 ### Checks for header files
@@ -734,6 +797,7 @@ case "$host_os" in
       ;;
    *)
       if test "x${have_evas_image_loader_jpeg}" = "xyes" ; then
+         AC_DEFINE(EVAS_BUILD_SAVER_JPEG, [1], [Build JPEG saver])
          have_evas_image_saver_jpeg="yes"
       fi
       ;;
@@ -1644,7 +1708,10 @@ echo "  EET.....................: $have_evas_font_loader_eet"
 echo
 echo "Font Searching Systems:"
 echo "  Fontconfig..............: $have_fontconfig"
+echo
+echo "Font Rendering Helpers:"
 echo "  Fribidi.................: $have_fribidi"
+echo "  Harfbuzz................: $have_harfbuzz"
 # FIXME: add non freetype2 font engine support
 # FIXME: make freetype2 optional
 echo

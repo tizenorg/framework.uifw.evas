@@ -618,7 +618,7 @@ evas_engine_sdl_image_draw(void *data, void *context, void *surface, void *image
 }
 
 static void
-evas_engine_sdl_image_map4_draw(void *data __UNUSED__, void *context, void *surface, void *image, RGBA_Map_Point *p, int smooth, int level)
+evas_engine_sdl_image_map_draw(void *data __UNUSED__, void *context, void *surface, void *image, int npoints, RGBA_Map_Point *p, int smooth, int level)
 {
    SDL_Engine_Image_Entry *eim = image;
    SDL_Engine_Image_Entry *dst = surface;
@@ -641,8 +641,8 @@ evas_engine_sdl_image_map4_draw(void *data __UNUSED__, void *context, void *surf
 	_SDL_UPDATE_PIXELS(eim);
      }
 
-   evas_common_map4_rgba((RGBA_Image*) eim->cache_entry.src,
-			 (RGBA_Image*) dst->cache_entry.src, context, p, smooth, level);
+   evas_common_map_rgba((RGBA_Image*) eim->cache_entry.src,
+			 (RGBA_Image*) dst->cache_entry.src, context, npoints, p, smooth, level);
    evas_common_cpu_end_opt();
 
    if (mustlock_im)
@@ -738,7 +738,7 @@ evas_engine_sdl_image_format_get(void *data __UNUSED__, void *image __UNUSED__)
 }
 
 static void
-evas_engine_sdl_font_draw(void *data __UNUSED__, void *context, void *surface, void *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props)
+evas_engine_sdl_font_draw(void *data __UNUSED__, void *context, void *surface, void *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const Eina_Unicode *text, const Evas_Text_Props *intl_props)
 {
    SDL_Engine_Image_Entry       *eim = surface;
    int                           mustlock_im = 0;
@@ -903,7 +903,7 @@ static int module_open(Evas_Module *em)
    ORD(image_border_set);
    ORD(image_border_get);
    ORD(image_draw);
-   ORD(image_map4_draw);
+   ORD(image_map_draw);
    ORD(image_map_surface_new);
    ORD(image_map_surface_free);
    ORD(image_comment_get);

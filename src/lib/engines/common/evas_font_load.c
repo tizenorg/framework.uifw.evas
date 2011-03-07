@@ -4,6 +4,7 @@
 #include <assert.h>
 
 #include "evas_font_private.h" /* for Frame-Queuing support */
+#include "evas_font_ot.h"
 
 extern FT_Library         evas_ft_lib;
 
@@ -44,7 +45,11 @@ _evas_common_font_source_free(RGBA_Font_Source *fs)
    FTLOCK();
    FT_Done_Face(fs->ft.face);
    FTUNLOCK();
+#ifdef OT_SUPPORT
+   evas_common_font_ot_unload_face(fs);
+#endif
    if (fs->name) eina_stringshare_del(fs->name);
+   if (fs->file) eina_stringshare_del(fs->file);
    free(fs);
 }
 
@@ -131,6 +136,9 @@ evas_common_font_source_memory_load(const char *name, const void *data, int data
       free(fs);
       return NULL;
     }
+#ifdef OT_SUPPORT
+  evas_common_font_ot_load_face(fs);
+#endif
    FTUNLOCK();
    fs->ft.orig_upem = fs->ft.face->units_per_EM;
    fs->references = 1;
@@ -151,7 +159,7 @@ evas_common_font_source_load(const char *name)
    fs->current_size = 0;
    fs->ft.face = NULL;
    fs->name = eina_stringshare_add(name);
-   fs->file = fs->name;
+   fs->file = eina_stringshare_ref(fs->name);
    fs->ft.orig_upem = 0;
    fs->references = 1;
    eina_hash_direct_add(fonts_src, fs->name, fs);
@@ -164,6 +172,9 @@ evas_common_font_source_unload(RGBA_Font_Source *fs)
    FTLOCK();
    FT_Done_Face(fs->ft.face);
    fs->ft.face = NULL;
+#ifdef OT_SUPPORT
+   evas_common_font_ot_unload_face(fs);
+#endif
    FTUNLOCK();
 }
 
@@ -213,6 +224,9 @@ evas_common_font_source_load_complete(RGBA_Font_Source *fs)
 	fs->ft.face = NULL;
 	return error;
      }
+#ifdef OT_SUPPORT
+   evas_common_font_ot_load_face(fs);
+#endif
    FTUNLOCK();
    fs->ft.orig_upem = fs->ft.face->units_per_EM;
    return error;

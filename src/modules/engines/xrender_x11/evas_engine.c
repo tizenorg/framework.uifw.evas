@@ -1172,7 +1172,7 @@ eng_image_cache_get(void *data)
 }
 
 static void
-eng_font_draw(void *data, void *context, void *surface, void *font, int x, int y, int w, int h, int ow __UNUSED__, int oh __UNUSED__, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props)
+eng_font_draw(void *data, void *context, void *surface, void *font, int x, int y, int w, int h, int ow __UNUSED__, int oh __UNUSED__, const Eina_Unicode *text, const Evas_Text_Props *intl_props)
 {
    Render_Engine        *re;
    RGBA_Image           *im;
@@ -1286,7 +1286,7 @@ module_open(Evas_Module *em)
    ORD(image_scale_hint_set);
    ORD(image_scale_hint_get);
 
-//   ORD(image_map4_draw);
+//   ORD(image_map_draw);
 //   ORD(image_map_surface_new);
 //   ORD(image_map_surface_free);
    

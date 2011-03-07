@@ -1037,7 +1037,7 @@ evas_engine_dfb_output_idle_flush(void *data)
  * memory.
  */
 static void
-evas_engine_dfb_font_draw(void *data, void *context, void *surface, void *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props)
+evas_engine_dfb_font_draw(void *data, void *context, void *surface, void *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const Eina_Unicode *text, const Evas_Text_Props *intl_props)
 {
    DirectFB_Engine_Image_Entry *eim = surface;
    IDirectFBSurface *screen;
@@ -1551,7 +1551,7 @@ evas_engine_dfb_image_draw(void *data, void *context, void *surface, void *image
 #endif
 
 static void
-evas_engine_dfb_image_map4_draw(void *data __UNUSED__, void *context, void *surface, void *image, RGBA_Map_Point *p, int smooth, int level)
+evas_engine_dfb_image_map_draw(void *data __UNUSED__, void *context, void *surface, void *image, int npoints, RGBA_Map_Point *p, int smooth, int level)
 {
    Render_Engine *re = (Render_Engine*) data;
    DirectFB_Engine_Image_Entry *deie = image;
@@ -1570,7 +1570,7 @@ evas_engine_dfb_image_map4_draw(void *data __UNUSED__, void *context, void *surf
    if (!_dfb_lock_and_sync_image(deie->surface, src, DSLF_READ))
      goto error_src;
 
-   evas_common_map4_rgba(src, dst, context, p, smooth, level);
+   evas_common_map_rgba(src, dst, context, 4, p, smooth, level);
    evas_common_cpu_end_opt();
 
    screen->Unlock(screen);
@@ -1718,7 +1718,7 @@ module_open(Evas_Module *em)
    ORD(image_scale_hint_set);
    ORD(image_scale_hint_get);
 
-   ORD(image_map4_draw);
+   ORD(image_map_draw);
    ORD(image_map_surface_new);
    ORD(image_map_surface_free);
 
