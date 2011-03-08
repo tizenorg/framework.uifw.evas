@@ -1,3 +1,11 @@
+evas (1.0.0.001+svn.57457slp2+build05) unstable; urgency=low
+
+  * Package Upload : Rollback
+  * Git: 165.213.180.234:/slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.57457slp2+build05
+
+ -- WooHyun Jung <wh0705.jung@samsung.com>  Tue, 08 Mar 2011 14:46:55 +0900
+
 evas (1.0.0.001+svn.57457slp2+build04) unstable; urgency=low
 
   * Package Upload : Rollback
