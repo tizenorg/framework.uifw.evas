@@ -816,7 +816,7 @@ evas_engine_sdl16_image_draw(void *data __UNUSED__, void *context, void *surface
 }
 
 static void
-evas_engine_sdl16_image_map_draw(void *data __UNUSED__, void *context __UNUSED__, void *surface __UNUSED__, void *image __UNUSED__, int npoints __UNUSED__, RGBA_Map_Point *p __UNUSED__, int smooth __UNUSED__, int level __UNUSED__)
+evas_engine_sdl16_image_map4_draw(void *data __UNUSED__, void *context __UNUSED__, void *surface __UNUSED__, void *image __UNUSED__, RGBA_Map_Point *p __UNUSED__, int smooth __UNUSED__, int level __UNUSED__)
 {
 }
 
@@ -873,7 +873,7 @@ evas_engine_sdl16_image_format_get(void *data __UNUSED__, void *image __UNUSED__
 }
 
 static void
-evas_engine_sdl16_font_draw(void *data __UNUSED__, void *context, void *surface, void *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const Eina_Unicode *text, const Evas_Text_Props *intl_props)
+evas_engine_sdl16_font_draw(void *data __UNUSED__, void *context, void *surface, void *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props)
 {
    static RGBA_Image            *im = NULL;
    SDL_Engine_Image_Entry       *eim = surface;
@@ -1074,7 +1074,7 @@ module_open(Evas_Module *em)
    ORD(image_border_set);
    ORD(image_border_get);
    ORD(image_draw);
-   ORD(image_map_draw);
+   ORD(image_map4_draw);
    ORD(image_cache_flush);
    ORD(image_cache_set);
    ORD(image_cache_get);

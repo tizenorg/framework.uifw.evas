@@ -62,7 +62,6 @@ struct _Evas_Object_Table_Data
    Eina_Bool hints_changed : 1;
    Eina_Bool expand_h : 1;
    Eina_Bool expand_v : 1;
-   Eina_Bool is_mirrored : 1;
 };
 
 struct _Evas_Object_Table_Iterator
@@ -516,14 +515,7 @@ _evas_object_table_calculate_layout_homogeneous(Evas_Object *o, Evas_Object_Tabl
 
 	_evas_object_table_calculate_cell(opt, &cx, &cy, &cw, &ch);
 
-        if (priv->is_mirrored)
-          {
-             evas_object_move(opt->obj, x + w - (cx - x + cw), cy);
-          }
-        else
-          {
-             evas_object_move(child, cx, cy);
-          }
+	evas_object_move(child, cx, cy);
 	evas_object_resize(child, cw, ch);
      }
 }
@@ -790,25 +782,18 @@ _evas_object_table_calculate_layout_regular(Evas_Object *o, Evas_Object_Table_Da
      {
 	Evas_Object *child = opt->obj;
 	Evas_Coord cx, cy, cw, ch;
-
+        
 	cx = x + opt->col * (priv->pad.h);
 	cx += _evas_object_table_sum_sizes(cols, 0, opt->col);
 	cw = _evas_object_table_sum_sizes(cols, opt->col, opt->end_col);
-
+        
 	cy = y + opt->row * (priv->pad.v);
 	cy += _evas_object_table_sum_sizes(rows, 0, opt->row);
 	ch = _evas_object_table_sum_sizes(rows, opt->row, opt->end_row);
-
+        
 	_evas_object_table_calculate_cell(opt, &cx, &cy, &cw, &ch);
-
-        if (priv->is_mirrored)
-          {
-             evas_object_move(opt->obj, x + w - (cx - x + cw), cy);
-          }
-        else
-          {
-             evas_object_move(child, cx, cy);
-          }
+        
+	evas_object_move(child, cx, cy);
 	evas_object_resize(child, cw, ch);
      }
 
@@ -1391,43 +1376,6 @@ evas_object_table_child_get(const Evas_Object *o, unsigned short col, unsigned s
       if (opt->col == col && opt->row == row)
          return opt->obj;
    return NULL;
-}
-
-/**
- * Gets the mirrored mode of the table. In mirrored mode the table items go
- * from right to left instead of left to right. That is, 1,1 is top right, not
- * to left.
- *
- * @param obj The table object.
- * @return EINA_TRUE if it's a mirrored table, EINA_FALSE otherwise.
- * @since 1.1.0
- */
-EAPI Eina_Bool
-evas_object_table_mirrored_get(const Evas_Object *obj)
-{
-   EVAS_OBJECT_TABLE_DATA_GET_OR_RETURN_VAL(obj, priv, EINA_FALSE);
-
-   return priv->is_mirrored;
-}
-
-/**
- * Sets the mirrored mode of the table. In mirrored mode the table items go
- * from right to left instead of left to right. That is, 1,1 is top right, not
- * to left.
- *
- * @param obj The table object.
- * @param mirrored the mirrored mode to set
- * @since 1.1.0
- */
-EAPI void
-evas_object_table_mirrored_set(Evas_Object *obj, Eina_Bool mirrored)
-{
-   EVAS_OBJECT_TABLE_DATA_GET_OR_RETURN(obj, priv);
-   if (priv->is_mirrored != mirrored)
-     {
-        priv->is_mirrored = mirrored;
-        _evas_object_table_smart_calculate_regular(obj, priv);
-     }
 }
 
 /**

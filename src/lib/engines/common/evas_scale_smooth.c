@@ -2,24 +2,24 @@
 #include "evas_scale_smooth.h"
 #include "evas_blend_private.h"
 
-#define SCALE_CALC_X_POINTS(P, SW, DW, CX, CW) \
-  P = alloca((CW + 1) * sizeof (int));         \
-  scale_calc_x_points(P, SW, DW, CX, CW);
+#define SCALE_CALC_X_POINTS(P, SW, DW)		\
+  P = alloca((DW + 1) * sizeof (int));		\
+  scale_calc_x_points(P, SW, DW);
 
-#define SCALE_CALC_Y_POINTS(P, SRC, SW, SH, DH, CY, CH) \
-  P = alloca((CH + 1) * sizeof (DATA32 *));             \
-  scale_calc_y_points(P, SRC, SW, SH, DH, CY, CH);
+#define SCALE_CALC_Y_POINTS(P, SRC, SW, SH, DH)	\
+  P = alloca((DH + 1) * sizeof (DATA32 *));	\
+  scale_calc_y_points(P, SRC, SW, SH, DH);
 
-#define SCALE_CALC_A_POINTS(P, S, D, C, CC) \
-  P = alloca(CC * sizeof (int));            \
-  scale_calc_a_points(P, S, D, C, CC);
+#define SCALE_CALC_A_POINTS(P, S, D)		\
+  P = alloca(D * sizeof (int));			\
+  scale_calc_a_points(P, S, D);
 
-static void scale_calc_y_points(DATA32 **p, DATA32 *src, int sw, int sh, int dh, int cy, int ch);
-static void scale_calc_x_points(int *p, int sw, int dw, int cx, int cw);
-static void scale_calc_a_points(int *p, int s, int d, int c, int cc);
+static void scale_calc_y_points(DATA32** p, DATA32 *src, int sw, int sh, int dh);
+static void scale_calc_x_points(int *p, int sw, int dw);
+static void scale_calc_a_points(int *p, int s, int d);
 
 static void
-scale_calc_y_points(DATA32** p, DATA32 *src, int sw, int sh, int dh, int cy, int ch)
+scale_calc_y_points(DATA32** p, DATA32 *src, int sw, int sh, int dh)
 {
    int i, val, inc;
 
@@ -27,16 +27,14 @@ scale_calc_y_points(DATA32** p, DATA32 *src, int sw, int sh, int dh, int cy, int
    inc = (sh << 16) / dh;
    for (i = 0; i < dh; i++)
      {
-        if ((i >= cy) && (i < (cy + ch)))
-           p[i - cy] = src + ((val >> 16) * sw);
+	p[i] = src + ((val >> 16) * sw);
 	val += inc;
      }
-   if ((i >= cy) && (i < (cy + ch)))
-      p[i - cy] = p[i - cy - 1];
+   p[i] = p[i - 1];
 }
 
 static void
-scale_calc_x_points(int *p, int sw, int dw, int cx, int cw)
+scale_calc_x_points(int *p, int sw, int dw)
 {
    int i, val, inc;
 
@@ -44,16 +42,14 @@ scale_calc_x_points(int *p, int sw, int dw, int cx, int cw)
    inc = (sw << 16) / dw;
    for (i = 0; i < dw; i++)
      {
-        if ((i >= cx) && (i < (cx + cw)))
-           p[i - cx] = val >> 16;
+	p[i] = val >> 16;
 	val += inc;
      }
-   if ((i >= cx) && (i < (cx + cw)))
-      p[i - cx] = p[i - cx - 1];
+   p[i] = p[i - 1];
 }
 
 static void
-scale_calc_a_points(int *p, int s, int d, int c, int cc)
+scale_calc_a_points(int *p, int s, int d)
 {
    int i, val, inc;
 
@@ -63,11 +59,8 @@ scale_calc_a_points(int *p, int s, int d, int c, int cc)
 	inc = (s << 16) / d;
 	for (i = 0; i < d; i++)
 	  {
-             if ((i >= c) && (i < (c + cc)))
-               {
-                  p[i - c] = (val >> 8) - ((val >> 8) & 0xffffff00);
-                  if ((val >> 16) >= (s - 1)) p[i - c] = 0;
-               }
+	     p[i] = (val >> 8) - ((val >> 8) & 0xffffff00);
+	     if ((val >> 16) >= (s - 1)) p[i] = 0;
 	     val += inc;
 	  }
      }
@@ -81,11 +74,11 @@ scale_calc_a_points(int *p, int s, int d, int c, int cc)
 	for (i = 0; i < d; i++)
 	  {
 	     ap = ((0x100 - ((val >> 8) & 0xff)) * Cp) >> 8;
-             if ((i >= c) && (i < (c + cc)))
-                p[i - c] = ap | (Cp << 16);
+	     p[i] = ap | (Cp << 16);
 	     val += inc;
 	  }
      }
+//   sleep(1);
 }
 
 #ifdef BUILD_SCALE_SMOOTH

@@ -311,10 +311,6 @@ evas_object_image_file_get(const Evas_Object *obj, const char **file, const char
 /**
  * Set the source object on a proxy object.
  *
- * The source must be another object.  The proxy will have the same base
- * appearance of the source object.  Obviously other effects may be applied to
- * the proxy, such as a map to create a reflection of the original object.
- *
  * Any existing source object will be removed.  Setting the src to NULL clears
  * the proxy object.
  *
@@ -341,8 +337,7 @@ evas_object_image_source_set(Evas_Object *obj, Evas_Object *src)
    if (o->cur.source == src) return EINA_TRUE;
 
    /* Kill the image if any */
-   if (o->cur.file || o->cur.key)
-      evas_object_image_file_set(obj, NULL, NULL);
+   evas_object_image_file_set(obj, NULL, NULL);
 
    if (o->cur.source)
      {
@@ -1757,7 +1752,7 @@ evas_object_image_load_dpi_get(const Evas_Object *obj)
  *
  * @param obj The given canvas object.
  * @param w The new width of the canvas image given.
- * @param h The new height of the canvas image given.
+ * @param h Th new height of the canvas image given.
  *
  * This function sets a new size for the given canvas image.
  *
@@ -2145,39 +2140,6 @@ evas_object_image_content_hint_set(Evas_Object *obj, Evas_Image_Content_Hint hin
            stride = o->cur.image.w * 4;
         o->cur.image.stride = stride;
      }
-}
-
-/**
- * Enable an image to be used as an alpha mask.
- *
- * This will set any flags, and discard any excess image data not used as an
- * alpha mask.
- *
- * Note there is little point in using a image as alpha mask unless it has an
- * alpha channel.
- *
- * @param obj Object to use as an alpha mask.
- * @param ismask Use image as alphamask, must be true.
- */
-EAPI void
-evas_object_image_alpha_mask_set(Evas_Object *obj, Eina_Bool ismask)
-{
-   Evas_Object_Image *o;
-
-   if (!ismask) return;
-
-   MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
-   return;
-   MAGIC_CHECK_END();
-   o = (Evas_Object_Image *)(obj->object_data);
-   MAGIC_CHECK(o, Evas_Object_Image, MAGIC_OBJ_IMAGE);
-   return;
-   MAGIC_CHECK_END();
-
-   /* Convert to A8 if not already */
-
-   /* done */
-
 }
 
 /**
@@ -2736,11 +2698,10 @@ evas_object_image_render(Evas_Object *obj, void *output, void *context, void *su
    obj->layer->evas->engine.func->context_render_op_set(output, context,
 							obj->cur.render_op);
 
-   if (0)
-        printf("Proxy: %p Source: %p Surface %p Redraw %s Type %s/%s %p %d %d\n",
-               obj, o->cur.source,o->cur.source->proxy.surface,
-               o->cur.source->proxy.redraw?"yep ":"nope",o->cur.source->type,
-               o_type,obj->cur.map,obj->cur.map->count, obj->cur.usemap);
+   if (0)// o->cur.source)
+        printf("Proxy: %p Source: %p Surface %p Redraw %s Type %s\n",obj,
+               o->cur.source,o->cur.source->proxy.surface,
+               o->cur.source->proxy.redraw?"yep":"nope",o->cur.source->type);
 
    if (!o->cur.source)
      {
@@ -2796,7 +2757,7 @@ evas_object_image_render(Evas_Object *obj, void *output, void *context, void *su
 	     p = obj->cur.map->points;
 	     p_end = p + obj->cur.map->count;
 	     pt = pts;
-
+             
              pts[0].px = obj->cur.map->persp.px << FP;
              pts[0].py = obj->cur.map->persp.py << FP;
              pts[0].foc = obj->cur.map->persp.foc << FP;
@@ -2812,10 +2773,6 @@ evas_object_image_render(Evas_Object *obj, void *output, void *context, void *su
                   pt->fz = p->z;
                   pt->u = p->u * FP1;
                   pt->v = p->v * FP1;
-                  if      (pt->u < 0) pt->u = 0;
-                  else if (pt->u > (o->cur.image.w * FP1)) pt->u = (imagew * FP1);
-                  if      (pt->v < 0) pt->v = 0;
-                  else if (pt->v > (o->cur.image.h * FP1)) pt->v = (imageh * FP1);
                   pt->col = ARGB_JOIN(p->a, p->r, p->g, p->b);
               }
 	     if (obj->cur.map->count & 0x1)
@@ -2832,12 +2789,9 @@ evas_object_image_render(Evas_Object *obj, void *output, void *context, void *su
              obj->layer->evas->engine.func->image_scale_hint_set(output,
                                                                  pixels,
                                                                  o->scale_hint);
-             /* This is technically a bug here: If the value is recreated
-              * (which is returned)it may be a new object, however exactly 0
-              * of all the evas engines do this. */
-             obj->layer->evas->engine.func->image_border_set(output, pixels,
-                                                                         o->cur.border.l, o->cur.border.r,
-                                                                         o->cur.border.t, o->cur.border.b);
+             o->engine_data = obj->layer->evas->engine.func->image_border_set(output, pixels,
+                                                                              o->cur.border.l, o->cur.border.r,
+                                                                              o->cur.border.t, o->cur.border.b);
              idx = evas_object_image_figure_x_fill(obj, o->cur.fill.x, o->cur.fill.w, &idw);
              idy = evas_object_image_figure_y_fill(obj, o->cur.fill.y, o->cur.fill.h, &idh);
              if (idw < 1) idw = 1;

@@ -13,7 +13,7 @@ AM_CPPFLAGS	     = -I. \
 		       @FREETYPE_CFLAGS@ @VALGRIND_CFLAGS@ \
 		       @EET_CFLAGS@ @pthread_cflags@ \
 		       @WIN32_CFLAGS@ @EINA_CFLAGS@ \
-                       @FRIBIDI_CFLAGS@ @HARFBUZZ_CFLAGS@
+                       @FRIBIDI_CFLAGS@
 
 noinst_LTLIBRARIES      = libevas_engine_common.la
 libevas_engine_common_la_SOURCES  = \
@@ -39,6 +39,7 @@ evas_convert_grypal_6.c \
 evas_convert_yuv.c \
 evas_cpu.c \
 evas_draw_main.c \
+evas_encoding.c \
 evas_font_draw.c \
 evas_font_load.c \
 evas_font_main.c \
@@ -58,10 +59,7 @@ evas_scale_span.c \
 evas_tiler.c \
 evas_regionbuf.c \
 evas_pipe.c \
-language/evas_bidi_utils.c \
-language/evas_language_utils.c \
-evas_text_utils.c \
-evas_font_ot.c \
+evas_bidi_utils.c \
 evas_map_image.c \
 evas_map_image.h
 
@@ -81,6 +79,7 @@ evas_convert_rgb_32.h \
 evas_convert_rgb_8.h \
 evas_convert_yuv.h \
 evas_draw.h \
+evas_encoding.h \
 evas_font.h \
 evas_font_private.h \
 evas_image.h \
@@ -99,10 +98,7 @@ evas_scale_smooth_scaler_noscale.c \
 evas_scale_smooth_scaler_up.c \
 evas_scale_span.h \
 evas_pipe.h \
-language/evas_bidi_utils.h \
-language/evas_language_utils.h \
-evas_text_utils.h \
-evas_font_ot.h \
+evas_bidi_utils.h \
 evas_map_image_internal.c \
 evas_map_image_core.c \
 evas_map_image_loop.c

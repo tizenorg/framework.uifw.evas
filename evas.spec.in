@@ -26,7 +26,6 @@
 %bcond_with    module_engine_software_xcb
 %bcond_with    module_engine_xrender_x11
 %bcond_with    module_engine_xrender_xcb
-%bcond_with    module_loader_gif
 %bcond_with    module_loader_svg
 
 ## enabled features
@@ -38,6 +37,7 @@
 %bcond_without module_saver_png
 %bcond_without module_loader_jpeg
 %bcond_without module_saver_jpeg
+%bcond_without module_loader_gif
 %bcond_without module_loader_tiff
 %bcond_without module_saver_tiff
 %bcond_without module_loader_eet
@@ -267,7 +267,6 @@ Software X11 rendering engine module for Evas
 %package module_engine_software_x11
 Summary: Software X11 rendering engine module for Evas
 Group: System Environment/Libraries
-BuildRequires: libX11-devel, libICE-devel, libXext-devel
 Requires: evas-module_engine_software_generic
 Requires: evas
 %description module_engine_software_x11
@@ -298,8 +297,8 @@ Framebuffer rendering engine module for Evas
 %package module_engine_xrender_x11
 Summary: XRender rendering engine module for Evas
 Group: System Environment/Libraries
-#BuildSuggests: xorg-x11-devel, XFree86-devel, xrender-devel
-BuildRequires: libXrender-devel
+#BuildSuggests: xorg-x11-devel, XFree86-devel
+BuildRequires: xrender-devel
 Requires: evas-module_engine_software_generic
 Requires: evas
 %description module_engine_xrender_x11
@@ -384,7 +383,7 @@ Software XCB X11 rendering engine module for Evas
 %package module_engine_xrender_xcb
 Summary: Xrender XCB X11 rendering engine module for Evas
 Group: System Environment/Libraries
-BuildRequires: libxcb-devel
+BuildRequires: xcb-devel
 Requires: evas-module_engine_xrender_x11
 Requires: evas
 %description module_engine_xrender_xcb
@@ -392,7 +391,7 @@ Xrender XCB X11 rendering engine module for Evas
 %endif
 
 %prep
-%setup -q
+%setup -q -n %{name}-%{version}
 
 %build
 %{configure} --prefix=%{_prefix} --x-libraries=%{_prefix}/X11R6/%{_lib} \
@@ -451,7 +450,7 @@ test "x$RPM_BUILD_ROOT" != "x/" && rm -rf $RPM_BUILD_ROOT
 %{_libdir}/*.la
 %{_libdir}/*.a
 %{_libdir}/pkgconfig/*
-%{_includedir}/evas-1/*.h
+%{_includedir}/*.h
 %{_datadir}/evas/examples/*.c
 %files module_engine_software_generic
 %defattr(-, root, root)
