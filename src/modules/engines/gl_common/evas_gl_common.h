@@ -126,6 +126,8 @@ struct _Evas_GL_Shared
 {
    Eina_List          *images;
    
+   int                 images_size;
+   
    struct {
       GLint max_texture_units;
       GLint max_texture_size;
@@ -356,6 +358,7 @@ struct _Evas_GL_Image
    } native;
 
    int scale_hint, content_hint;
+   int csize;
    
    unsigned char    dirty : 1;
    unsigned char    cached : 1;
@@ -448,14 +451,15 @@ void             evas_gl_common_context_yuv_push(Evas_GL_Context *gc,
                                                  int x, int y, int w, int h,
                                                  int r, int g, int b, int a,
                                                  Eina_Bool smooth);
-void             evas_gl_common_context_image_map4_push(Evas_GL_Context *gc,
-                                                        Evas_GL_Texture *tex,
-                                                        RGBA_Map_Point *p,
-                                                        int clip, int cx, int cy, int cw, int ch,
-                                                        int r, int g, int b, int a,
-                                                        Eina_Bool smooth, 
-                                                        Eina_Bool tex_only,
-                                                        Eina_Bool yuv);
+void             evas_gl_common_context_image_map_push(Evas_GL_Context *gc,
+                                                       Evas_GL_Texture *tex,
+                                                       int npoints,
+                                                       RGBA_Map_Point *p,
+                                                       int clip, int cx, int cy, int cw, int ch,
+                                                       int r, int g, int b, int a,
+                                                       Eina_Bool smooth, 
+                                                       Eina_Bool tex_only,
+                                                       Eina_Bool yuv);
 void              evas_gl_common_context_flush(Evas_GL_Context *gc);
 
 int               evas_gl_common_shader_program_init(Evas_GL_Program *p,
@@ -480,6 +484,8 @@ void              evas_gl_common_texture_yuv_update(Evas_GL_Texture *tex, DATA8 
 
 void              evas_gl_common_image_all_unload(Evas_GL_Context *gc);
 
+void              evas_gl_common_image_ref(Evas_GL_Image *im);
+void              evas_gl_common_image_unref(Evas_GL_Image *im);
 Evas_GL_Image    *evas_gl_common_image_load(Evas_GL_Context *gc, const char *file, const char *key, Evas_Image_Load_Opts *lo, int *error);
 Evas_GL_Image    *evas_gl_common_image_new_from_data(Evas_GL_Context *gc, unsigned int w, unsigned int h, DATA32 *data, int alpha, int cspace);
 Evas_GL_Image    *evas_gl_common_image_new_from_copied_data(Evas_GL_Context *gc, unsigned int w, unsigned int h, DATA32 *data, int alpha, int cspace);
@@ -489,10 +495,11 @@ void              evas_gl_common_image_native_enable(Evas_GL_Image *im);
 void              evas_gl_common_image_native_disable(Evas_GL_Image *im);
 void              evas_gl_common_image_scale_hint_set(Evas_GL_Image *im, int hint);
 void              evas_gl_common_image_content_hint_set(Evas_GL_Image *im, int hint);
+void              evas_gl_common_image_cache_flush(Evas_GL_Context *gc);
 void              evas_gl_common_image_free(Evas_GL_Image *im);
 Evas_GL_Image    *evas_gl_common_image_surface_new(Evas_GL_Context *gc, unsigned int w, unsigned int h, int alpha);
 void              evas_gl_common_image_dirty(Evas_GL_Image *im, unsigned int x, unsigned int y, unsigned int w, unsigned int h);
-void              evas_gl_common_image_map4_draw(Evas_GL_Context *gc, Evas_GL_Image *im, RGBA_Map_Point *p, int smooth, int level);
+void              evas_gl_common_image_map_draw(Evas_GL_Context *gc, Evas_GL_Image *im, int npoints, RGBA_Map_Point *p, int smooth, int level);
 void              evas_gl_common_image_draw(Evas_GL_Context *gc, Evas_GL_Image *im, int sx, int sy, int sw, int sh, int dx, int dy, int dw, int dh, int smooth);
 
 void             *evas_gl_font_texture_new(void *gc, RGBA_Font_Glyph *fg);

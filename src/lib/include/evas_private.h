@@ -11,7 +11,9 @@
 
 #include "../file/evas_module.h"
 #include "../file/evas_path.h"
-#include "../engines/common/evas_bidi_utils.h"
+#include "../engines/common/evas_text_utils.h"
+#include "../engines/common/language/evas_bidi_utils.h"
+#include "../engines/common/language/evas_language_utils.h"
 
 #ifdef EVAS_MAGIC_DEBUG
 /* complain when peole pass in wrong object types etc. */
@@ -53,6 +55,7 @@ typedef struct _Evas_Post_Callback          Evas_Post_Callback;
 #define MAGIC_OBJ_TEXT             0x71777776
 #define MAGIC_OBJ_SMART            0x71777777
 #define MAGIC_OBJ_TEXTBLOCK        0x71777778
+#define MAGIC_OBJ_PROXY	           0x71777779
 #define MAGIC_SMART                0x72777770
 #define MAGIC_OBJ_SHAPE            0x72777773
 #define MAGIC_OBJ_CONTAINER        0x72777774
@@ -650,13 +653,13 @@ struct _Evas_Func
    int  (*font_descent_get)                (void *data, void *font);
    int  (*font_max_ascent_get)             (void *data, void *font);
    int  (*font_max_descent_get)            (void *data, void *font);
-   void (*font_string_size_get)            (void *data, void *font, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props, int *w, int *h);
-   int  (*font_inset_get)                  (void *data, void *font, const Eina_Unicode *text);
-   int  (*font_h_advance_get)              (void *data, void *font, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props);
-   int  (*font_v_advance_get)              (void *data, void *font, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props);
-   int  (*font_char_coords_get)            (void *data, void *font, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props, int pos, int *cx, int *cy, int *cw, int *ch);
-   int  (*font_char_at_coords_get)         (void *data, void *font, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props, int x, int y, int *cx, int *cy, int *cw, int *ch);
-   void (*font_draw)                       (void *data, void *context, void *surface, void *font, int x, int y, int w, int h, int ow, int oh, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props);
+   void (*font_string_size_get)            (void *data, void *font, const Eina_Unicode *text, const Evas_Text_Props *intl_props, int *w, int *h);
+   int  (*font_inset_get)                  (void *data, void *font, const Evas_Text_Props *text_props);
+   int  (*font_h_advance_get)              (void *data, void *font, const Eina_Unicode *text, const Evas_Text_Props *intl_props);
+   int  (*font_v_advance_get)              (void *data, void *font, const Eina_Unicode *text, const Evas_Text_Props *intl_props);
+   int  (*font_char_coords_get)            (void *data, void *font, const Eina_Unicode *text, const Evas_Text_Props *intl_props, int pos, int *cx, int *cy, int *cw, int *ch);
+   int  (*font_char_at_coords_get)         (void *data, void *font, const Eina_Unicode *text, const Evas_Text_Props *intl_props, int x, int y, int *cx, int *cy, int *cw, int *ch);
+   void (*font_draw)                       (void *data, void *context, void *surface, void *font, int x, int y, int w, int h, int ow, int oh, const Eina_Unicode *text, const Evas_Text_Props *intl_props);
 
    void (*font_cache_flush)                (void *data);
    void (*font_cache_set)                  (void *data, int bytes);
@@ -671,7 +674,7 @@ struct _Evas_Func
 
    void (*image_scale_hint_set)            (void *data, void *image, int hint);
    int  (*image_scale_hint_get)            (void *data, void *image);
-   int  (*font_last_up_to_pos)             (void *data, void *font, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props, int x, int y);
+   int  (*font_last_up_to_pos)             (void *data, void *font, const Eina_Unicode *text, const Evas_Text_Props *intl_props, int x, int y);
 
    void (*image_map_draw)                  (void *data, void *context, void *surface, void *image, int npoints, RGBA_Map_Point *p, int smooth, int level);
    void *(*image_map_surface_new)          (void *data, int w, int h, int alpha);
@@ -679,6 +682,8 @@ struct _Evas_Func
 
    void (*image_content_hint_set)          (void *data, void *surface, int hint);
    int  (*image_content_hint_get)          (void *data, void *surface);
+   int  (*font_pen_coords_get)            (void *data, void *font, const Eina_Unicode *text, const Evas_Text_Props *intl_props, int pos, int *cpen_x, int *cy, int *cadv, int *ch);
+   Eina_Bool (*font_text_props_info_create)                (void *data __UNUSED__, void *font, Eina_Unicode *text, Evas_Text_Props *intl_props, const Evas_BiDi_Paragraph_Props *par_props, size_t pos, size_t len);
 };
 
 struct _Evas_Image_Load_Func
@@ -838,7 +843,7 @@ Eina_Bool evas_map_coords_get(const Evas_Map *m, Evas_Coord x, Evas_Coord y, Eva
 /****************************************************************************/
 /*****************************************/
 /********************/
-//#define MPOOL 1
+#define MPOOL 1
 
 #ifdef MPOOL 
 typedef struct _Evas_Mempool Evas_Mempool;
