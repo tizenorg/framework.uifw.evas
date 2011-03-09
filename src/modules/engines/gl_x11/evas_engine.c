@@ -1225,13 +1225,13 @@ eng_image_native_set(void *data, void *image, void *native)
       if (im2 == im) return im;
       if (im2)
         {
-          n = im2->native.data;
-          if (n)
-            {
-              im2->references++;
-              evas_gl_common_image_free(im);
-              return im2;
-            }
+           n = im2->native.data;
+           if (n)
+             {
+                evas_gl_common_image_ref(im2);
+                evas_gl_common_image_free(im);
+                return im2;
+             }
         }
     }
   else if (ns->type == EVAS_NATIVE_SURFACE_OPENGL)
@@ -1762,6 +1762,11 @@ eng_image_map_draw(void *data __UNUSED__, void *context, void *surface, void *im
    eng_window_use(re->win);
    evas_gl_common_context_target_surface_set(re->win->gl_context, surface);
    re->win->gl_context->dc = context;
+   if (npoints != 4)
+     {
+        // FIXME: nash - you didnt fix this
+        abort();
+     }
    if ((p[0].x == p[3].x) &&
        (p[1].x == p[2].x) &&
        (p[0].y == p[1].y) &&
@@ -1787,15 +1792,13 @@ eng_image_map_draw(void *data __UNUSED__, void *context, void *surface, void *im
         dy = p[0].y >> FP;
         dw = (p[2].x >> FP) - dx;
         dh = (p[2].y >> FP) - dy;
-        eng_image_draw
-           (data, context, surface, image,
-               0, 0, gim->w, gim->h,
-               dx, dy, dw, dh, smooth);
+        eng_image_draw(data, context, surface, image,
+                       0, 0, gim->w, gim->h, dx, dy, dw, dh, smooth);
      }
    else
      {
-        evas_gl_common_image_map4_draw(re->win->gl_context, image, p,
-                                       smooth, level);
+        evas_gl_common_image_map_draw(re->win->gl_context, image, npoints, p,
+                                      smooth, level);
      }
 }
 
@@ -1829,6 +1832,42 @@ eng_image_content_hint_get(void *data __UNUSED__, void *image)
 }
 
 static void
+eng_image_cache_flush(void *data __UNUSED__)
+{
+   Render_Engine *re;
+   int tmp_size;
+   
+   re = (Render_Engine *)data;
+   
+   tmp_size = evas_common_image_get_cache();
+   evas_common_image_set_cache(0);
+   evas_common_rgba_image_scalecache_flush();
+   evas_gl_common_image_cache_flush(re->win->gl_context);
+   evas_common_image_set_cache(tmp_size);
+}
+
+static void
+eng_image_cache_set(void *data __UNUSED__, int bytes)
+{
+   Render_Engine *re;
+   
+   re = (Render_Engine *)data;
+   evas_common_image_set_cache(bytes);
+   evas_common_rgba_image_scalecache_size_set(bytes);
+   evas_gl_common_image_cache_flush(re->win->gl_context);
+}
+
+static int
+eng_image_cache_get(void *data __UNUSED__)
+{
+   Render_Engine *re;
+   
+   re = (Render_Engine *)data;
+   return evas_common_image_get_cache();
+}
+
+
+static void
 eng_image_stride_get(void *data __UNUSED__, void *image, int *stride)
 {
    Evas_GL_Image *im = image;
@@ -1841,7 +1880,7 @@ eng_image_stride_get(void *data __UNUSED__, void *image, int *stride)
 }
 
 static void
-eng_font_draw(void *data, void *context, void *surface, void *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const Eina_Unicode *text, const Evas_BiDi_Props *intl_props)
+eng_font_draw(void *data, void *context, void *surface, void *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const Eina_Unicode *text, const Evas_Text_Props *intl_props)
 {
    Render_Engine *re;
 
@@ -1963,6 +2002,10 @@ module_open(Evas_Module *em)
    
    ORD(image_content_hint_set);
    ORD(image_content_hint_get);
+
+   ORD(image_cache_flush);
+   ORD(image_cache_set);
+   ORD(image_cache_get);
    
    /* now advertise out own api */
    em->functions = (void *)(&func);
