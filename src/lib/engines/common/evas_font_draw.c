@@ -496,7 +496,7 @@ evas_common_font_draw_internal(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font
 #else
    (void) use_kerning;
 #endif
-
+/*
    if (fi->src->current_size != fi->size)
      {
         FTLOCK();
@@ -504,7 +504,7 @@ evas_common_font_draw_internal(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font
         FTUNLOCK();
         fi->src->current_size = fi->size;
      }
-
+*/
 
    im = dst->image.data;
    /* Load the glyph according to the first letter of the script, preety
@@ -521,6 +521,14 @@ evas_common_font_draw_internal(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font
         if (!*tmp && (tmp > text)) tmp--;
         evas_common_font_glyph_search(fn, &fi, *tmp);
      }
+   if (fi->src->current_size != fi->size)
+     {
+        FTLOCK();
+        FT_Activate_Size(fi->ft.size);
+        FTUNLOCK();
+        fi->src->current_size = fi->size;
+     }
+
    EVAS_FONT_WALK_TEXT_VISUAL_START()
      {
         FT_UInt index;
@@ -535,6 +543,14 @@ evas_common_font_draw_internal(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font
          * the use of harfbuzz */
         index =
            evas_common_font_glyph_search(fn, &fi, text[EVAS_FONT_WALK_POS]);
+
+        if (fi->src->current_size != fi->size)
+          {
+             FTLOCK();
+             FT_Activate_Size(fi->ft.size);
+             FTUNLOCK();
+             fi->src->current_size = fi->size;
+          }
 #endif
         LKL(fi->ft_mutex);
         fg = evas_common_font_int_cache_glyph_get(fi, index);
@@ -825,6 +841,14 @@ evas_font_word_prerender(RGBA_Draw_Context *dc, const Eina_Unicode *in_text, con
         evas_common_font_glyph_search(fn, &fi, *tmp);
      }
 
+   if (fi->src->current_size != fi->size)
+     {
+        FTLOCK();
+        FT_Activate_Size(fi->ft.size);
+        FTUNLOCK();
+        fi->src->current_size = fi->size;
+     }
+
    /* First pass: Work out how big and populate */
    /* It's a bit hackish to use index and fg here as they are internal,
     * but that'll have to be good enough ATM */
@@ -842,6 +866,14 @@ evas_font_word_prerender(RGBA_Draw_Context *dc, const Eina_Unicode *in_text, con
          * the use of harfbuzz */
         index =
            evas_common_font_glyph_search(fn, &fi, text[EVAS_FONT_WALK_POS]);
+
+        if (fi->src->current_size != fi->size)
+          {
+             FTLOCK();
+             FT_Activate_Size(fi->ft.size);
+             FTUNLOCK();
+             fi->src->current_size = fi->size;
+          }
 #endif
         LKL(fi->ft_mutex);
         fg = evas_common_font_int_cache_glyph_get(fi, index);
