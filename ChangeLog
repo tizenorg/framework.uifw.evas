@@ -135,3 +135,65 @@
 2011-02-27  Vincent Torri
 
 	* Fixed static linking of the bmp, wbmp and tga loaders
+
+2011-03-07  Mike Blumenkrantz
+
+        * Fix segv when trying to set gl viewpoint with NULL ctx
+
+2011-03-08  Carsten Haitzler (The Rasterman)
+
+	* Fix problem with different x vsync api between SGI and EXT flavor
+        as they have the same base name, but different prototypes
+        * Add evas_object_ref() and evas_object_unref() to defer
+        deletion of objects until all references are removed
+
+2011-03-09  Carsten Haitzler (The Rasterman)
+
+	* Fix bug with evas_object_del() calling DEL callback BEFORE
+        the HIDE one.
+
+2011-03-10  Sung W. Park
+
+	* Fix bug with yinvert handling of native surfaces.
+
+2011-03-10  Carsten Haitzler (The Rasterman)
+
+	* Fix issue with loading alpha BMP's with "check if all pixel alpha
+        are 0 or not and then force alpha off if all are 0". This
+        means you can never have a 100% empty/transparent BMP though
+        in 32bpp mode.
+
+2011-03-11  Carsten Haitzler (The Rasterman)
+
+	* Add ICO loader to evas (also can load CUR cursor files in theory)
+
+2011-03-14  Carsten Haitzler (The Rasterman)
+
+	* Add "load from memory" API: evas_object_image_memfile_set() by
+        popular demand. Can load an image format from a memory address.
+
+2011-03-15  Cedric BAIL
+
+	* Fix issues with clipping and map.
+
+2011-03-18  Jiyoun Park
+
+	* Fix wrong call to free when using mempool for Evas_Object.
+
+2011-03-19  Carsten Haitzler (The Rasterman)
+
+	* Caching and timestamp checker for image files made much more
+        pedantic and it checks not just modified timestamp but also
+        inode number, size, and on linux, the nanonsecond resolution
+        timestamp as well.
+
+2011-03-19  Brett Nash (nash)
+
+	* Proxy: Bypass the clip on smart clipped objects.  This is probably
+	what you want if you are using proxies, as it means clips don't cause
+	the object to be invisible by the proxy.
+
+2011-03-22  Gustavo Sverzut Barbieri (k-s)
+
+	* Fix build of GL and static modules.
+	* Fix ico loader static build.

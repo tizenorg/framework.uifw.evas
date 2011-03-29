@@ -2023,7 +2023,7 @@ _layout_format_push(Ctxt *c, Evas_Object_Textblock_Format *fmt)
  * @param c the context to work on - Not NULL.
  * @param fmt the format to free.
  * @return the next format in the stack, or format if there's none.
- * @see _layout_format_pop()
+ * @see _layout_format_push()
  */
 static Evas_Object_Textblock_Format *
 _layout_format_pop(Ctxt *c, Evas_Object_Textblock_Format *fmt)
@@ -2183,6 +2183,8 @@ _layout_line_order(Ctxt *c __UNUSED__, Evas_Object_Textblock_Line *line)
      }
 
    if (v_to_l) free(v_to_l);
+#else
+   line = NULL;
 #endif
 }
 
@@ -2818,11 +2820,14 @@ skip:
                    ti->parent.text_node->bidi_props, ti->parent.text_pos);
              evas_common_text_props_script_set (&ti->text_props,
                    ti->text);
-             c->ENFN->font_text_props_info_create(c->ENDT,
-                   ti->parent.format->font.font,
-                   ti->text, &ti->text_props,
-                   ti->parent.text_node->bidi_props,
-                   ti->parent.text_pos, tmp_len);
+             if (ti->parent.format->font.font)
+               {
+                  c->ENFN->font_text_props_info_create(c->ENDT,
+                        ti->parent.format->font.font,
+                        ti->text, &ti->text_props,
+                        ti->parent.text_node->bidi_props,
+                        ti->parent.text_pos, tmp_len);
+               }
           }
         str += tmp_len;
         cur_len -= tmp_len;
@@ -6533,6 +6538,9 @@ _evas_textblock_cursor_is_at_the_end(const Evas_Textblock_Cursor *cur)
  * This behavior is because visible formats are like characters and invisible
  * should be stacked in a way that the last one is added last.
  *
+ * This function works with native formats, that means that style defined
+ * tags like <br> won't work here. For those kind of things use markup prepend.
+ *
  * @param cur the cursor to where to add format at.
  * @param format the format to add.
  * @return Returns true if a visible format was added, false otherwise.
@@ -6662,6 +6670,9 @@ evas_textblock_cursor_format_append(Evas_Textblock_Cursor *cur, const char *form
  * This behavior is because visible formats are like characters and invisible
  * should be stacked in a way that the last one is added last.
  * If the format is visible the cursor is advanced after it.
+ *
+ * This function works with native formats, that means that style defined
+ * tags like <br> won't work here. For those kind of things use markup prepend.
  *
  * @param cur the cursor to where to add format at.
  * @param format the format to add.
