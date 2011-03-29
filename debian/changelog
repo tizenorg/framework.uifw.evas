@@ -1,3 +1,11 @@
+evas (1.0.0.001+svn.58050slp2+build01) unstable; urgency=low
+
+  * [SVN EFL Migration] evas in SLP is merged with SVN r58050
+  * Git: 165.213.180.234:slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.58050slp2+build01
+
+ -- Shinwoo Kim <cinoo.kim@samsung.com>  Tue, 29 Mar 2011 18:55:20 +0900
+
 evas (1.0.0.001+svn.57457slp2+build11) unstable; urgency=low
 
   * Package Upload
