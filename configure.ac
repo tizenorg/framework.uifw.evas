@@ -126,7 +126,6 @@ want_evas_image_loader_xpm="yes"
 want_evas_image_loader_bmp="yes"
 want_evas_image_loader_tga="yes"
 want_evas_image_loader_wbmp="yes"
-want_evas_image_loader_ico="yes"
 
 want_evas_font_loader_eet="yes"
 
@@ -633,17 +632,13 @@ EVAS_CHECK_ENGINE([software-16-wince], [${want_evas_engine_software_16_wince}], 
 
 # common gl
 have_evas_engine_gl_common="no"
-have_static_evas_engine_gl_common="no"
 if test "x$have_evas_engine_gl_x11" = "xyes" \
+   || test "x$have_evas_engine_gl_x11" = "xstatic" \
    || test "x$have_evas_engine_gl_glew" = "xyes" \
-   || test "x$have_evas_engine_gl_sdl" = "xyes"; then
-   have_evas_engine_gl_common="yes"
-fi
-if test "x$have_evas_engine_gl_x11" = "xstatic" \
    || test "x$have_evas_engine_gl_glew" = "xstatic" \
+   || test "x$have_evas_engine_gl_sdl" = "xyes" \
    || test "x$have_evas_engine_gl_sdl" = "xstatic"; then
    have_evas_engine_gl_common="yes"
-   have_static_evas_engine_gl_common="yes"
 fi
 
 if test "x$have_evas_engine_gl_common" = "xyes"; then
@@ -654,11 +649,6 @@ fi
 AC_SUBST([evas_engine_gl_common_libs])
 
 AM_CONDITIONAL(BUILD_ENGINE_GL_COMMON, [test "x$have_evas_engine_gl_common" = "xyes"])
-
-AM_CONDITIONAL(EVAS_STATIC_BUILD_GL_COMMON, test "x${have_static_evas_engine_gl_common}" = "xyes")
-if test "x${have_static_evas_engine_gl_common}" = "xyes"; then
-   AC_DEFINE(EVAS_STATIC_BUILD_GL_COMMON, [1], [Build GL generic engine as part of libevas])
-fi
 
 # gl_sdl
 if test "x$have_evas_engine_gl_sdl" = "xyes" || test "x$have_evas_engine_gl_sdl" = "xstatic" ; then
@@ -695,11 +685,6 @@ AC_ARG_ENABLE([static-software-generic],
 )
 AC_MSG_CHECKING([Whether to build software generic engine as part of libevas])
 AC_MSG_RESULT([${have_static_software_generic}])
-
-if test "x${have_static_module}" = "xyes" -a "x${have_static_software_generic}" = "xno"; then
-   AC_MSG_WARN([Forcing --enable-static-software-generic as engines must be compiled statically])
-   have_static_software_generic="yes"
-fi
 
 AM_CONDITIONAL(EVAS_STATIC_BUILD_SOFTWARE_GENERIC, test "x${have_static_software_generic}" = "xyes")
 if test "x${have_static_software_generic}" = "xyes"; then
@@ -835,7 +820,6 @@ EVAS_CHECK_IMAGE_LOADER([TGA], [${want_evas_image_loader_tga}])
 
 EVAS_CHECK_IMAGE_LOADER([WBMP], [${want_evas_image_loader_wbmp}])
 
-EVAS_CHECK_IMAGE_LOADER([ICO], [${want_evas_image_loader_ico}])
 
 #####################################################################
 ## Cpu based optimizations
@@ -1611,7 +1595,6 @@ src/modules/loaders/png/Makefile
 src/modules/loaders/tiff/Makefile
 src/modules/loaders/xpm/Makefile
 src/modules/loaders/bmp/Makefile
-src/modules/loaders/ico/Makefile
 src/modules/loaders/tga/Makefile
 src/modules/loaders/svg/Makefile
 src/modules/loaders/pmaps/Makefile
@@ -1707,19 +1690,18 @@ echo "  Software 16bit WinCE.......: $have_evas_engine_software_16_wince"
 echo "  Software 16bit SDL.........: $have_evas_engine_software_sdl (primitive: $sdl_primitive)"
 echo
 echo "Image Loaders:"
-echo "  BMP.....................: $have_evas_image_loader_bmp"
 echo "  EDB.....................: $have_evas_image_loader_edb"
 echo "  EET.....................: $have_evas_image_loader_eet"
 echo "  GIF.....................: $have_evas_image_loader_gif"
-echo "  ICO.....................: $have_evas_image_loader_ico"
 echo "  JPEG....................: $have_evas_image_loader_jpeg (region: $have_jpeg_region)"
 echo "  PMAPS...................: $have_evas_image_loader_pmaps"
 echo "  PNG.....................: $have_evas_image_loader_png"
 echo "  SVG.....................: $have_evas_image_loader_svg"
-echo "  TGA.....................: $have_evas_image_loader_tga"
 echo "  TIFF....................: $have_evas_image_loader_tiff"
-echo "  WBMP....................: $have_evas_image_loader_wbmp"
 echo "  XPM.....................: $have_evas_image_loader_xpm"
+echo "  BMP.....................: $have_evas_image_loader_bmp"
+echo "  TGA.....................: $have_evas_image_loader_tga"
+echo "  WBMP....................: $have_evas_image_loader_wbmp"
 echo
 echo "Font Sourcing Systems:"
 echo "  EET.....................: $have_evas_font_loader_eet"
@@ -1821,8 +1803,8 @@ echo "  prefix...............: $prefix"
 echo
 if test "x${have_static_module}" = "xyes" ; then
 echo -e "\0033\01331;31mWarning\0033\01331;0m: You are trying to link statically one or more modules to Evas."
-echo "         You must know what you are doing, or else you will have a lot of"
-echo "         problems. And Kenny will be killed."
+echo "         You must know what you are doing, or else you will have a lot of problems."
+echo "         And Kenny will be killed."
 echo "         Think about that."
 echo
 fi

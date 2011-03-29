@@ -281,41 +281,10 @@ _evas_cache_image_entry_delete(Evas_Cache_Image *cache, Image_Entry *ie)
    cache->func.dealloc(ie);
 }
 
-static Eina_Bool
-_timestamp_compare(Image_Timestamp *tstamp, struct stat *st)
-{
-   if (tstamp->mtime != st->st_mtime) return EINA_FALSE;
-   if (tstamp->size != st->st_size) return EINA_FALSE;
-   if (tstamp->ino != st->st_ino) return EINA_FALSE;
-#ifdef _STAT_VER_LINUX
-#if (defined __USE_MISC && defined st_mtime)
-   if (tstamp->mtime_nsec != (unsigned long int)st->st_mtim.tv_nsec) return EINA_FALSE;
-#else
-   if (tstamp->mtime_nsec != (unsigned long int)st->st_mtimensec) return EINA_FALSE;
-#endif
-#endif
-   return EINA_TRUE;
-}
-
-static void
-_timestamp_build(Image_Timestamp *tstamp, struct stat *st)
-{
-   tstamp->mtime = st->st_mtime;
-   tstamp->size = st->st_size;
-   tstamp->ino = st->st_ino;
-#ifdef _STAT_VER_LINUX
-#if (defined __USE_MISC && defined st_mtime)
-   tstamp->mtime_nsec = (unsigned long int)st->st_mtim.tv_nsec;
-#else
-   tstamp->mtime_nsec = (unsigned long int)st->st_mtimensec;
-#endif
-#endif
-}
-
 static Image_Entry *
 _evas_cache_image_entry_new(Evas_Cache_Image *cache,
                             const char *hkey,
-                            Image_Timestamp *tstamp,
+                            time_t timestamp,
                             const char *file,
                             const char *key,
                             RGBA_Image_Loadopts *lo,
@@ -353,8 +322,8 @@ _evas_cache_image_entry_new(Evas_Cache_Image *cache,
    ie->file = file ? eina_stringshare_add(file) : NULL;
    ie->key = key ? eina_stringshare_add(key) : NULL;
 
-   if (tstamp) ie->tstamp = *tstamp;
-   else memset(&ie->tstamp, 0, sizeof(Image_Timestamp));
+   ie->timestamp = timestamp;
+   ie->laststat = time(NULL);
 
    ie->load_opts.scale_down_by = 0;
    ie->load_opts.dpi = 0;
@@ -769,6 +738,8 @@ evas_cache_image_shutdown(Evas_Cache_Image *cache)
    free(cache);
 }
 
+#define STAT_GAP 2
+
 EAPI Image_Entry *
 evas_cache_image_request(Evas_Cache_Image *cache, const char *file, const char *key, RGBA_Image_Loadopts *lo, int *error)
 {
@@ -781,7 +752,6 @@ evas_cache_image_request(Evas_Cache_Image *cache, const char *file, const char *
    size_t                file_length;
    size_t                key_length;
    struct stat           st;
-   Image_Timestamp       tstamp;
 
    assert(cache != NULL);
 
@@ -875,12 +845,18 @@ evas_cache_image_request(Evas_Cache_Image *cache, const char *file, const char *
 #endif
    if (im)
      {
-        int ok = 1;
-        
-        stat_done = 1;
-        if (stat(file, &st) < 0) goto on_stat_error;
+        time_t t;
+        int ok;
+
+        ok = 1;
+        t = time(NULL);
+        if ((t - im->laststat) > STAT_GAP)
           {
-             if (!_timestamp_compare(&(im->tstamp), &st)) ok = 0;
+             stat_done = 1;
+             if (stat(file, &st) < 0) goto on_stat_error;
+
+             im->laststat = t;
+             if (st.st_mtime != im->timestamp) ok = 0;
           }
         if (ok) goto on_ok;
 
@@ -897,16 +873,25 @@ evas_cache_image_request(Evas_Cache_Image *cache, const char *file, const char *
 #endif
    if (im)
      {
-        int ok = 1;
+        int     ok;
 
+        ok = 1;
         if (!stat_done)
           {
-             stat_done = 1;
-             if (stat(file, &st) < 0) goto on_stat_error;
-             if (!_timestamp_compare(&(im->tstamp), &st)) ok = 0;
+             time_t  t;
+
+             t = time(NULL);
+             if ((t - im->laststat) > STAT_GAP)
+               {
+                  stat_done = 1;
+                  if (stat(file, &st) < 0) goto on_stat_error;
+
+                  im->laststat = t;
+                  if (st.st_mtime != im->timestamp) ok = 0;
+               }
           }
         else
-           if (!_timestamp_compare(&(im->tstamp), &st)) ok = 0;
+          if (st.st_mtime != im->timestamp) ok = 0;
 
         if (ok)
           {
@@ -922,8 +907,8 @@ evas_cache_image_request(Evas_Cache_Image *cache, const char *file, const char *
      {
         if (stat(file, &st) < 0) goto on_stat_error;
      }
-   _timestamp_build(&tstamp, &st);
-   im = _evas_cache_image_entry_new(cache, hkey, &tstamp, file, key, lo, error);
+
+   im = _evas_cache_image_entry_new(cache, hkey, st.st_mtime, file, key, lo, error);
    if (!im) return NULL;
 
    if (cache->func.debug)
@@ -979,7 +964,6 @@ evas_cache_image_drop(Image_Entry *im)
    LKL(im->lock_references);
 #endif
    im->references--;
-   if (im->references < 0) im->references = 0;
    references = im->references;
 #ifdef EVAS_FRAME_QUEUING
    LKU(im->lock_references);
@@ -1086,6 +1070,18 @@ evas_cache_image_dirty(Image_Entry *im, unsigned int x, unsigned int y, unsigned
              error = cache->func.dirty(im_dirty, im);
              if (cache->func.debug)
                cache->func.debug("dirty-out", im_dirty);
+/*             
+             im_dirty = _evas_cache_image_entry_new(cache, NULL, im->timestamp, im->file, im->key, &im->load_opts, &error);
+             if (!im_dirty) goto on_error;
+
+             if (cache->func.debug)
+               cache->func.debug("dirty-src", im);
+             error = cache->func.dirty(im_dirty, im);
+             if (cache->func.debug)
+               cache->func.debug("dirty-out", im_dirty);
+
+             if (error != 0) goto on_error;
+ */
 #ifdef EVAS_FRAME_QUEUING
              LKL(im_dirty->lock_references);
 #endif
@@ -1133,7 +1129,7 @@ evas_cache_image_alone(Image_Entry *im)
    LKU(im->lock_references);
 #endif
 
-   if (references <= 1)
+   if (references == 1)
      {
         if (!(im->flags.dirty))
           {
@@ -1156,6 +1152,18 @@ evas_cache_image_alone(Image_Entry *im)
         error = cache->func.dirty(im_dirty, im);
         if (cache->func.debug)
           cache->func.debug("dirty-out", im_dirty);
+/*        
+        im_dirty = _evas_cache_image_entry_new(cache, NULL, im->timestamp, im->file, im->key, &im->load_opts, &error);
+        if (!im_dirty) goto on_error;
+
+        if (cache->func.debug)
+          cache->func.debug("dirty-src", im);
+        error = cache->func.dirty(im_dirty, im);
+        if (cache->func.debug)
+          cache->func.debug("dirty-out", im_dirty);
+
+        if (error != 0) goto on_error;
+ */
 #ifdef EVAS_FRAME_QUEUING
    LKL(im_dirty->lock_references);
 #endif
@@ -1186,7 +1194,7 @@ evas_cache_image_copied_data(Evas_Cache_Image *cache, unsigned int w, unsigned i
        (cspace == EVAS_COLORSPACE_YCBCR422P709_PL))
      w &= ~0x1;
 
-   im = _evas_cache_image_entry_new(cache, NULL, NULL, NULL, NULL, NULL, NULL);
+   im = _evas_cache_image_entry_new(cache, NULL, 0, NULL, NULL, NULL, NULL);
    if (!im) return NULL;
 
    im->space = cspace;
@@ -1223,7 +1231,7 @@ evas_cache_image_data(Evas_Cache_Image *cache, unsigned int w, unsigned int h, D
        (cspace == EVAS_COLORSPACE_YCBCR422P709_PL))
      w &= ~0x1;
 
-   im = _evas_cache_image_entry_new(cache, NULL, NULL, NULL, NULL, NULL, NULL);
+   im = _evas_cache_image_entry_new(cache, NULL, 0, NULL, NULL, NULL, NULL);
    im->w = w;
    im->h = h;
    im->flags.alpha = alpha;
@@ -1292,7 +1300,7 @@ evas_cache_image_size_set(Image_Entry *im, unsigned int w, unsigned int h)
 
    cache = im->cache;
 
-   new = _evas_cache_image_entry_new(cache, NULL, NULL, NULL, NULL, NULL, &error);
+   new = _evas_cache_image_entry_new(cache, NULL, 0, NULL, NULL, NULL, &error);
    if (!new) goto on_error;
 
    new->flags.alpha = im->flags.alpha;
@@ -1543,7 +1551,7 @@ evas_cache_image_empty(Evas_Cache_Image *cache)
 {
    Image_Entry *im;
 
-   im = _evas_cache_image_entry_new(cache, NULL, NULL, NULL, NULL, NULL, NULL);
+   im = _evas_cache_image_entry_new(cache, NULL, 0, NULL, NULL, NULL, NULL);
    if (!im) return NULL;
 
 #ifdef EVAS_FRAME_QUEUING

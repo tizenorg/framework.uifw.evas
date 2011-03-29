@@ -24,11 +24,6 @@ extern LK(lock_ot); // for harfbuzz calls
 #  define BIDILOCK()
 #  define BIDIUNLOCK()
 
-/* Macros for text walking */
-#  define OTLOCK()
-#  define OTUNLOCK()
-# endif
-
 void evas_common_font_source_unload(RGBA_Font_Source *fs);
 void evas_common_font_source_reload(RGBA_Font_Source *fs);
 
@@ -37,6 +32,10 @@ void evas_common_font_int_use_increase(int size);
 void evas_common_font_int_use_trim(void);
 void evas_common_font_int_unload(RGBA_Font_Int *fi);
 void evas_common_font_int_reload(RGBA_Font_Int *fi);
+/* Macros for text walking */
+#  define OTLOCK()
+#  define OTUNLOCK()
+# endif
 
 /* 6th bit is on is the same as frac part >= 0.5 */
 # define EVAS_FONT_ROUND_26_6_TO_INT(x) \

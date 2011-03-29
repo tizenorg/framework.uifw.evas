@@ -17,20 +17,15 @@ endif
 if !EVAS_STATIC_BUILD_FB
 SUBDIRS += fb
 endif
-
-if !EVAS_STATIC_BUILD_GL_COMMON
-SUBDIRS += gl_common
-endif
 if !EVAS_STATIC_BUILD_GL_GLEW
-SUBDIRS += gl_glew
+SUBDIRS += gl_common gl_glew
 endif
 if !EVAS_STATIC_BUILD_GL_X11
-SUBDIRS += gl_x11
+SUBDIRS += gl_common gl_x11
 endif
 if !EVAS_STATIC_BUILD_GL_SDL
-SUBDIRS += gl_sdl
+SUBDIRS += gl_common gl_sdl
 endif
-
 if !EVAS_STATIC_BUILD_QUARTZ
 SUBDIRS += quartz
 endif

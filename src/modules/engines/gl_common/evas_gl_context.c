@@ -107,9 +107,9 @@ gl_symbols(void)
 #endif   
 }
 
-static void shader_array_flush(Evas_Engine_GL_Context *gc);
+static void shader_array_flush(Evas_GL_Context *gc);
 
-static Evas_Engine_GL_Context *_evas_gl_common_context = NULL;
+static Evas_GL_Context *_evas_gl_common_context = NULL;
 static Evas_GL_Shared *shared = NULL;
 
 void
@@ -287,12 +287,11 @@ _evas_gl_common_version_check()
 }
 
 static void
-_evas_gl_common_viewport_set(Evas_Engine_GL_Context *gc)
+_evas_gl_common_viewport_set(Evas_GL_Context *gc)
 {
    GLfloat proj[16];
    int w = 1, h = 1, m = 1, rot = 1, foc = 0;
 
-   EINA_SAFETY_ON_NULL_RETURN(gc);
    foc = gc->foc;
    // surface in pipe 0 will be the same as all pipes
    if ((gc->pipe[0].shader.surface == gc->def_surface) ||
@@ -477,23 +476,23 @@ _evas_gl_common_viewport_set(Evas_Engine_GL_Context *gc)
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 }
 
-Evas_Engine_GL_Context *
+Evas_GL_Context *
 evas_gl_common_context_new(void)
 {
-   Evas_Engine_GL_Context *gc;
+   Evas_GL_Context *gc;
    const char *s;
    int i;
 
 #if 1
    if (_evas_gl_common_context)
      {
-        _evas_gl_common_context->references++;
-        return _evas_gl_common_context;
+	_evas_gl_common_context->references++;
+	return _evas_gl_common_context;
      }
 #endif
    if (!_evas_gl_common_version_check())
      return NULL;
-   gc = calloc(1, sizeof(Evas_Engine_GL_Context));
+   gc = calloc(1, sizeof(Evas_GL_Context));
    if (!gc) return NULL;
 
    gl_symbols();
@@ -777,7 +776,7 @@ evas_gl_common_context_new(void)
 }
 
 void
-evas_gl_common_context_free(Evas_Engine_GL_Context *gc)
+evas_gl_common_context_free(Evas_GL_Context *gc)
 {
    int i, j;
    Eina_List *l;
@@ -841,7 +840,7 @@ evas_gl_common_context_free(Evas_Engine_GL_Context *gc)
 }
 
 void
-evas_gl_common_context_use(Evas_Engine_GL_Context *gc)
+evas_gl_common_context_use(Evas_GL_Context *gc)
 {
    if (_evas_gl_common_context == gc) return;
    _evas_gl_common_context = gc;
@@ -849,7 +848,7 @@ evas_gl_common_context_use(Evas_Engine_GL_Context *gc)
 }
 
 void
-evas_gl_common_context_newframe(Evas_Engine_GL_Context *gc)
+evas_gl_common_context_newframe(Evas_GL_Context *gc)
 {
    int i;
 
@@ -960,7 +959,7 @@ evas_gl_common_context_newframe(Evas_Engine_GL_Context *gc)
 }
 
 void
-evas_gl_common_context_resize(Evas_Engine_GL_Context *gc, int w, int h, int rot)
+evas_gl_common_context_resize(Evas_GL_Context *gc, int w, int h, int rot)
 {
    if ((gc->w == w) && (gc->h == h) && (gc->rot == rot)) return;
    evas_gl_common_context_flush(gc);
@@ -972,7 +971,7 @@ evas_gl_common_context_resize(Evas_Engine_GL_Context *gc, int w, int h, int rot)
 }
 
 void
-evas_gl_common_context_target_surface_set(Evas_Engine_GL_Context *gc,
+evas_gl_common_context_target_surface_set(Evas_GL_Context *gc,
                                           Evas_GL_Image *surface)
 {
    if (surface == gc->pipe[0].shader.surface) return;
@@ -1040,7 +1039,7 @@ evas_gl_common_context_target_surface_set(Evas_Engine_GL_Context *gc,
 
 
 static inline void
-array_alloc(Evas_Engine_GL_Context *gc, int n)
+array_alloc(Evas_GL_Context *gc, int n)
 {
    gc->havestuff = EINA_TRUE;
    if (gc->pipe[n].array.num <= gc->pipe[n].array.alloc) return;
@@ -1066,7 +1065,7 @@ array_alloc(Evas_Engine_GL_Context *gc, int n)
 }
 
 static int
-pipe_region_intersects(Evas_Engine_GL_Context *gc, int n,
+pipe_region_intersects(Evas_GL_Context *gc, int n,
                        int x, int y, int w, int h)
 {
    int i, rx, ry, rw, rh, ii;
@@ -1105,7 +1104,7 @@ pipe_region_intersects(Evas_Engine_GL_Context *gc, int n,
 }
 
 static void
-pipe_region_expand(Evas_Engine_GL_Context *gc, int n,
+pipe_region_expand(Evas_GL_Context *gc, int n,
                    int x, int y, int w, int h)
 {
    int x1, y1, x2, y2;
@@ -1133,7 +1132,7 @@ pipe_region_expand(Evas_Engine_GL_Context *gc, int n,
 }
 
 static Eina_Bool
-vertex_array_size_check(Evas_Engine_GL_Context *gc, int pn, int n)
+vertex_array_size_check(Evas_GL_Context *gc, int pn, int n)
 {
    return 1;
 // this fixup breaks for expedite test 32. why?
@@ -1146,7 +1145,7 @@ vertex_array_size_check(Evas_Engine_GL_Context *gc, int pn, int n)
 }
 
 void
-evas_gl_common_context_line_push(Evas_Engine_GL_Context *gc, 
+evas_gl_common_context_line_push(Evas_GL_Context *gc, 
                                  int x1, int y1, int x2, int y2,
                                  int clip, int cx, int cy, int cw, int ch,
                                  int r, int g, int b, int a)
@@ -1202,11 +1201,7 @@ evas_gl_common_context_line_push(Evas_Engine_GL_Context *gc,
 }
 
 void
-<<<<<<< HEAD
-evas_gl_common_context_rectangle_push(Evas_Engine_GL_Context *gc, 
-=======
 evas_gl_common_context_rectangle_push(Evas_GL_Context *gc,
->>>>>>> EFL_upgrade[add]
                                       int x, int y, int w, int h,
                                       int r, int g, int b, int a)
 {
@@ -1353,7 +1348,7 @@ again:
 }
 
 void
-evas_gl_common_context_image_push(Evas_Engine_GL_Context *gc,
+evas_gl_common_context_image_push(Evas_GL_Context *gc,
                                   Evas_GL_Texture *tex,
                                   double sx, double sy, double sw, double sh,
                                   int x, int y, int w, int h,
@@ -1559,9 +1554,9 @@ again:
    if ((tex->im) && (tex->im->native.data) && (!tex->im->native.yinvert))
      {
         tx1 = ((double)(tex->x) + sx) / (double)tex->pt->w;
-        ty1 = 1.0 - ((double)(tex->y) + sy) / (double)tex->pt->h;
+        ty1 = ((double)(tex->y) + sy + sh) / (double)tex->pt->h;
         tx2 = ((double)(tex->x) + sx + sw) / (double)tex->pt->w;
-        ty2 = 1.0 - ((double)(tex->y) + sy + sh) / (double)tex->pt->h;
+        ty2 = ((double)(tex->y) + sy) / (double)tex->pt->h;
      }
    else
      {
@@ -1844,7 +1839,7 @@ again:
 
 
 void
-evas_gl_common_context_font_push(Evas_Engine_GL_Context *gc,
+evas_gl_common_context_font_push(Evas_GL_Context *gc,
                                  Evas_GL_Texture *tex,
                                  double sx, double sy, double sw, double sh,
                                  int x, int y, int w, int h,
@@ -2003,7 +1998,7 @@ again:
 }
 
 void
-evas_gl_common_context_yuv_push(Evas_Engine_GL_Context *gc,
+evas_gl_common_context_yuv_push(Evas_GL_Context *gc,
                                 Evas_GL_Texture *tex, 
                                 double sx, double sy, double sw, double sh,
                                 int x, int y, int w, int h,
@@ -2190,7 +2185,7 @@ again:
 }
 
 void
-evas_gl_common_context_image_map_push(Evas_Engine_GL_Context *gc,
+evas_gl_common_context_image_map_push(Evas_GL_Context *gc,
                                       Evas_GL_Texture *tex,
                                       int npoints,
                                       RGBA_Map_Point *p,
@@ -2585,13 +2580,13 @@ again:
 }
 
 void
-evas_gl_common_context_flush(Evas_Engine_GL_Context *gc)
+evas_gl_common_context_flush(Evas_GL_Context *gc)
 {
    shader_array_flush(gc);
 }
 
 static void
-shader_array_flush(Evas_Engine_GL_Context *gc)
+shader_array_flush(Evas_GL_Context *gc)
 {
    int i, gw, gh, setclip, cy, fbo = 0, done = 0;
 
