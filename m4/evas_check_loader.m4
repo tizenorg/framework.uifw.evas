@@ -113,18 +113,20 @@ if test "x${have_dep}"  = "xyes" ; then
    AC_CHECK_LIB([jpeg],
       [jpeg_CreateDecompress],
       [
-        evas_image_loader_[]$1[]_libs="-ljpeg"
-        AC_COMPILE_IFELSE([AC_LANG_SOURCE([
-                          #include <stdio.h>
-                          #include <jpeglib.h>
-                          #include <setjmp.h>
-                          int main(int argc, char **argv) {
-                          struct jpeg_decompress_struct decomp;
-                          decomp.region_x = 0;
-                          }
-                        ])],
-                        [have_jpeg_region="yes"],
-                        [have_jpeg_region="no"])
+       evas_image_loader_[]$1[]_libs="-ljpeg"
+       AC_COMPILE_IFELSE(
+          [AC_LANG_PROGRAM(
+              [[
+#include <stdio.h>
+#include <jpeglib.h>
+#include <setjmp.h>
+              ]],
+              [[
+struct jpeg_decompress_struct decomp;
+decomp.region_x = 0;
+              ]])],
+          [have_jpeg_region="yes"],
+          [have_jpeg_region="no"])
       ],
       [have_dep="no"]
    )
@@ -311,6 +313,26 @@ fi
 dnl use: EVAS_CHECK_LOADER_DEP_BMP(loader, want_static[, ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
 
 AC_DEFUN([EVAS_CHECK_LOADER_DEP_BMP],
+[
+
+have_dep="yes"
+evas_image_loader_[]$1[]_cflags=""
+evas_image_loader_[]$1[]_libs=""
+
+AC_SUBST([evas_image_loader_$1_cflags])
+AC_SUBST([evas_image_loader_$1_libs])
+
+if test "x${have_dep}" = "xyes" ; then
+  m4_default([$3], [:])
+else
+  m4_default([$4], [:])
+fi
+
+])
+
+dnl use: EVAS_CHECK_LOADER_DEP_ICO(loader, want_static[, ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
+
+AC_DEFUN([EVAS_CHECK_LOADER_DEP_ICO],
 [
 
 have_dep="yes"

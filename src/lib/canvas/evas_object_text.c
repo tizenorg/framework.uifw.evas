@@ -537,8 +537,8 @@ _evas_object_text_item_new(Evas_Object *obj, Evas_Object_Text *o,
               o->engine_data,
               it->text, &it->text_props,
               &it->w, &it->h);
-        it->adv = ENFN->font_h_advance_get(ENDT, o->engine_data, it->text,
-              &it->text_props);
+        it->adv = it->w + ENFN->font_right_inset_get(ENDT, o->engine_data,
+                                                    &it->text_props);
      }
    o->items = (Evas_Object_Text_Item *)
       eina_inlist_append(EINA_INLIST_GET(o->items), EINA_INLIST_GET(it));
@@ -1890,6 +1890,12 @@ evas_object_text_render(Evas_Object *obj, void *output, void *context, void *sur
    evas_text_style_pad_get(o->cur.style, &sl, NULL, &st, NULL);
    ENFN->context_multiplier_unset(output, context);
    ENFN->context_render_op_set(output, context, obj->cur.render_op);
+   /* FIXME: This clipping is just until we fix inset handling correctly. */
+   ENFN->context_clip_clip(output, context,
+                              obj->cur.geometry.x + x,
+                              obj->cur.geometry.y + y,
+                              obj->cur.geometry.w,
+                              obj->cur.geometry.h);
 /*
    ENFN->context_color_set(output,
                            context,

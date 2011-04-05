@@ -460,6 +460,8 @@ struct _Evas_Object
    struct {
       int                      in_move, in_resize;
    } doing;
+   
+   unsigned int                ref;
 
    unsigned char               delete_me;
 
@@ -488,6 +490,7 @@ struct _Evas_Object
    Eina_Bool                   changed_move : 1;
    Eina_Bool                   changed_move_only : 1;
    Eina_Bool                   changed_nomove : 1;
+   Eina_Bool                   del_ref : 1;
 };
 
 struct _Evas_Func_Node
@@ -684,6 +687,7 @@ struct _Evas_Func
    int  (*image_content_hint_get)          (void *data, void *surface);
    int  (*font_pen_coords_get)            (void *data, void *font, const Eina_Unicode *text, const Evas_Text_Props *intl_props, int pos, int *cpen_x, int *cy, int *cadv, int *ch);
    Eina_Bool (*font_text_props_info_create)                (void *data __UNUSED__, void *font, Eina_Unicode *text, Evas_Text_Props *intl_props, const Evas_BiDi_Paragraph_Props *par_props, size_t pos, size_t len);
+   int  (*font_right_inset_get)                  (void *data, void *font, const Evas_Text_Props *text_props);
 };
 
 struct _Evas_Image_Load_Func
