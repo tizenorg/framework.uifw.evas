@@ -1,3 +1,12 @@
+evas (1.0.0.001+svn.58227slp2+build04) unstable; urgency=low
+
+  * [Fix Bug] fix evas cache double free problem
+     - reference : http://trac.enlightenment.org/e/changeset/58683
+  * Git: 165.213.180.234:slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.58227slp2+build04
+
+ -- Jiyoun Park <jy0703.park@samsung.com>  Fri, 15 Apr 2011 20:12:14 +0900
+
 evas (1.0.0.001+svn.58227slp2+build03) unstable; urgency=low
 
   * [Fix Bug] fix evas-GL backend's screen rotation clip region.
