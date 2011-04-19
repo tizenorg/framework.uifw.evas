@@ -1,3 +1,11 @@
+evas (1.0.0.001+svn.58227slp2+build07) unstable; urgency=low
+
+  * Evas_cache_image : fix double deletion
+  * Git: git:slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.58227slp2+build07
+
+ -- Myoungwoon Kim <myoungwoon.kim@samsung.com>  Tue, 19 Apr 2011 19:31:03 +0900
+
 evas (1.0.0.001+svn.58227slp2+build06) unstable; urgency=low
 
   * Evas_cache_image : fix double deletion
