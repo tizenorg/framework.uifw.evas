@@ -89,6 +89,7 @@ static void _evas_cache_image_entry_delete(Evas_Cache_Image *cache, Image_Entry 
 static void
 _evas_cache_image_make_dirty(Evas_Cache_Image *cache, Image_Entry *im)
 {
+   if (im->flags.dirty) return;
    im->flags.cached = 1;
    im->flags.dirty = 1;
    im->flags.activ = 0;
@@ -113,6 +114,7 @@ _evas_cache_image_make_activ(Evas_Cache_Image *cache,
                              Image_Entry *im, const char *key)
 {
    /* FIXME: Handle case when image is being processed anyway and don't do a double decode. */
+   if (im->flags.activ) return;
    im->cache_key = key;
    if (key)
      {
@@ -138,6 +140,7 @@ static void
 _evas_cache_image_make_inactiv(Evas_Cache_Image *cache,
                                Image_Entry *im, const char *key)
 {
+   if (!im->flags.activ) return;
    if (im->cache_key)
      {
 	im->flags.activ = 0;
@@ -179,6 +182,7 @@ _evas_cache_image_remove_lru_nodata(Evas_Cache_Image *cache, Image_Entry *im)
 static void
 _evas_cache_image_activ_lru_nodata(Evas_Cache_Image *cache, Image_Entry *im)
 {
+   if (!im->flags.lru_nodata) return;
    im->flags.need_data = 0;
    im->flags.lru_nodata = 1;
 #ifdef EVAS_FRAME_QUEUING
