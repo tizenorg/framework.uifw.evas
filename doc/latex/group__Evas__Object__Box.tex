@@ -1,0 +1,769 @@
+\section{Box (Sequence) Smart Object.}
+\label{group__Evas__Object__Box}\index{Box (Sequence) Smart Object.@{Box (Sequence) Smart Object.}}
+
+
+Convenience smart object that packs children as a sequence using a layout function specified by user.  
+
+
+\subsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \hyperlink{struct__Evas__Object__Box__Api}{\_\-Evas\_\-Object\_\-Box\_\-Api}
+\begin{DoxyCompactList}\small\item\em This structure should be used by any class that wants to inherit from box to provide custom behavior not allowed only by providing a layout function with \hyperlink{group__Evas__Object__Box_ga2116d23c11ab08d7c50cbcb588de5570}{evas\_\-object\_\-box\_\-layout\_\-set()}. \item\end{DoxyCompactList}\item 
+struct \hyperlink{struct__Evas__Object__Box__Data}{\_\-Evas\_\-Object\_\-Box\_\-Data}
+\begin{DoxyCompactList}\small\item\em This structure augments clipped smart object's instance data, providing extra members required by generic box implementation. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Defines}
+\begin{DoxyCompactItemize}
+\item 
+\#define \hyperlink{group__Evas__Object__Box_ga118b1b5bc278185207e7651911637ac8}{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT}(smart\_\-class\_\-init)~\{smart\_\-class\_\-init, EVAS\_\-OBJECT\_\-BOX\_\-API\_\-VERSION, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL\}
+\begin{DoxyCompactList}\small\item\em Initializer for whole Evas\_\-Object\_\-Box\_\-Api structure. \item\end{DoxyCompactList}\item 
+\#define \hyperlink{group__Evas__Object__Box_gacfe469ef2fc811ab4af8c77105bf4baa}{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-NULL}~EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT(EVAS\_\-SMART\_\-CLASS\_\-INIT\_\-NULL)
+\begin{DoxyCompactList}\small\item\em Initializer to zero a whole Evas\_\-Object\_\-Box\_\-Api structure. \item\end{DoxyCompactList}\item 
+\#define \hyperlink{group__Evas__Object__Box_gabab7b773ecb31ecbf661646d5db1bea1}{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-VERSION}~EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT(EVAS\_\-SMART\_\-CLASS\_\-INIT\_\-VERSION)
+\begin{DoxyCompactList}\small\item\em Initializer to zero a whole Evas\_\-Object\_\-Box\_\-Api structure and set version. \item\end{DoxyCompactList}\item 
+\#define \hyperlink{group__Evas__Object__Box_gad35b8c6b395f976397abbb6f964878e7}{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-NAME\_\-VERSION}(name)~EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT(EVAS\_\-SMART\_\-CLASS\_\-INIT\_\-NAME\_\-VERSION(name))
+\begin{DoxyCompactList}\small\item\em Initializer to zero a whole Evas\_\-Object\_\-Box\_\-Api structure and set name and version. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef struct \hyperlink{struct__Evas__Object__Box__Api}{\_\-Evas\_\-Object\_\-Box\_\-Api} \hyperlink{group__Evas__Object__Box_ga2a8fbeeab4f5ae23e7bc1b291e27c5e1}{Evas\_\-Object\_\-Box\_\-Api}\label{group__Evas__Object__Box_ga2a8fbeeab4f5ae23e7bc1b291e27c5e1}
+
+\begin{DoxyCompactList}\small\item\em Smart Class extension providing extra box requirements. \item\end{DoxyCompactList}\item 
+typedef struct \hyperlink{struct__Evas__Object__Box__Data}{\_\-Evas\_\-Object\_\-Box\_\-Data} \hyperlink{group__Evas__Object__Box_gac9047b7cff95df59f61c7321967caf7b}{Evas\_\-Object\_\-Box\_\-Data}\label{group__Evas__Object__Box_gac9047b7cff95df59f61c7321967caf7b}
+
+\begin{DoxyCompactList}\small\item\em Smart instance data providing box requirements. \item\end{DoxyCompactList}\item 
+typedef struct \_\-Evas\_\-Object\_\-Box\_\-Option \hyperlink{group__Evas__Object__Box_gabbeb05bf47aaf7681e9d83a1b0055d20}{Evas\_\-Object\_\-Box\_\-Option}\label{group__Evas__Object__Box_gabbeb05bf47aaf7681e9d83a1b0055d20}
+
+\begin{DoxyCompactList}\small\item\em The base structure for a box option. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+EAPI \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$ \hyperlink{group__Evas__Object__Box_ga84e87534e6a45a725d59c0366f4e6544}{evas\_\-object\_\-box\_\-add} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$evas)
+\begin{DoxyCompactList}\small\item\em Create a new box. \item\end{DoxyCompactList}\item 
+EAPI \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$ \hyperlink{group__Evas__Object__Box_gaf332313478211a06a09038755cf139bf}{evas\_\-object\_\-box\_\-add\_\-to} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$parent)
+\begin{DoxyCompactList}\small\item\em Create a box that is child of a given element {\itshape parent\/}. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Box_ga19c407e45de527d9400823fb1c85d0fe}{evas\_\-object\_\-box\_\-smart\_\-set} (\hyperlink{struct__Evas__Object__Box__Api}{Evas\_\-Object\_\-Box\_\-Api} $\ast$api)
+\begin{DoxyCompactList}\small\item\em Set the default box {\itshape api\/} struct (Evas\_\-Object\_\-Box\_\-Api) with the default values. \item\end{DoxyCompactList}\item 
+EAPI const \hyperlink{struct__Evas__Object__Box__Api}{Evas\_\-Object\_\-Box\_\-Api} $\ast$ \hyperlink{group__Evas__Object__Box_ga58da2c7328e5c8a01a8817f934d083ff}{evas\_\-object\_\-box\_\-smart\_\-class\_\-get} (void)\label{group__Evas__Object__Box_ga58da2c7328e5c8a01a8817f934d083ff}
+
+\begin{DoxyCompactList}\small\item\em Get Box Smart Class for inheritance purposes. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Box_ga2116d23c11ab08d7c50cbcb588de5570}{evas\_\-object\_\-box\_\-layout\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, Evas\_\-Object\_\-Box\_\-Layout cb, const void $\ast$data, void($\ast$free\_\-data)(void $\ast$data))
+\begin{DoxyCompactList}\small\item\em Set a 'calculate' callback ({\itshape cb\/}) to the {\itshape o\/} box's smart class, which here defines its genre (horizontal, vertical, homogeneous, etc. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Box_gaabb841838ce9c05f6b99350d15b76aaf}{evas\_\-object\_\-box\_\-layout\_\-horizontal} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, \hyperlink{struct__Evas__Object__Box__Data}{Evas\_\-Object\_\-Box\_\-Data} $\ast$priv, void $\ast$data \_\-\_\-UNUSED\_\-\_\-)
+\begin{DoxyCompactList}\small\item\em Layout function which sets the box {\itshape o\/} to a (basic) horizontal box. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Box_ga1e102aa54789b74f54944c17d0a880db}{evas\_\-object\_\-box\_\-layout\_\-vertical} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, \hyperlink{struct__Evas__Object__Box__Data}{Evas\_\-Object\_\-Box\_\-Data} $\ast$priv, void $\ast$data \_\-\_\-UNUSED\_\-\_\-)
+\begin{DoxyCompactList}\small\item\em Layout function which sets the box {\itshape o\/} to a (basic) vertical box. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Box_gac4478016783bad6d2170571a11a23e21}{evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-horizontal} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, \hyperlink{struct__Evas__Object__Box__Data}{Evas\_\-Object\_\-Box\_\-Data} $\ast$priv, void $\ast$data \_\-\_\-UNUSED\_\-\_\-)
+\begin{DoxyCompactList}\small\item\em Layout function which sets the box {\itshape o\/} to a $\ast$homogeneous$\ast$ horizontal box. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Box_gaa860afd56866955550ae650464d2dc9a}{evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-vertical} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, \hyperlink{struct__Evas__Object__Box__Data}{Evas\_\-Object\_\-Box\_\-Data} $\ast$priv, void $\ast$data \_\-\_\-UNUSED\_\-\_\-)
+\begin{DoxyCompactList}\small\item\em Layout function which sets the box {\itshape o\/} to a $\ast$homogeneous$\ast$ vertical box. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Box_gab9e441a27ebe6253ef1b9d6d25ee9bc4}{evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-max\_\-size\_\-horizontal} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, \hyperlink{struct__Evas__Object__Box__Data}{Evas\_\-Object\_\-Box\_\-Data} $\ast$priv, void $\ast$data \_\-\_\-UNUSED\_\-\_\-)
+\begin{DoxyCompactList}\small\item\em Layout function which sets the box {\itshape o\/} to a $\ast$max size-\/homogeneous$\ast$ horizontal box. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Box_gabccbf4cf59018eac96c9281576b61abf}{evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-max\_\-size\_\-vertical} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, \hyperlink{struct__Evas__Object__Box__Data}{Evas\_\-Object\_\-Box\_\-Data} $\ast$priv, void $\ast$data \_\-\_\-UNUSED\_\-\_\-)
+\begin{DoxyCompactList}\small\item\em Layout function which sets the box {\itshape o\/} to a $\ast$max size-\/homogeneous$\ast$ vertical box. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Box_ga99ee061972f53fb7d9213d586c29cc8d}{evas\_\-object\_\-box\_\-layout\_\-flow\_\-horizontal} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, \hyperlink{struct__Evas__Object__Box__Data}{Evas\_\-Object\_\-Box\_\-Data} $\ast$priv, void $\ast$data \_\-\_\-UNUSED\_\-\_\-)
+\begin{DoxyCompactList}\small\item\em Layout function which sets the box {\itshape o\/} to a $\ast$flow$\ast$ horizontal box. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Box_gaa6e0bf47f84d7bb1b2439f4b6123e7d7}{evas\_\-object\_\-box\_\-layout\_\-flow\_\-vertical} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, \hyperlink{struct__Evas__Object__Box__Data}{Evas\_\-Object\_\-Box\_\-Data} $\ast$priv, void $\ast$data \_\-\_\-UNUSED\_\-\_\-)
+\begin{DoxyCompactList}\small\item\em Layout function which sets the box {\itshape o\/} to a $\ast$flow$\ast$ vertical box. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Box_gae40153d3702dcb79f2587364cde2fb7b}{evas\_\-object\_\-box\_\-layout\_\-stack} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, \hyperlink{struct__Evas__Object__Box__Data}{Evas\_\-Object\_\-Box\_\-Data} $\ast$priv, void $\ast$data \_\-\_\-UNUSED\_\-\_\-)
+\begin{DoxyCompactList}\small\item\em Layout function which sets the box {\itshape o\/} to set all children to the size of the object. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Box_gae66fe763591e62621cf6352528d97e10}{evas\_\-object\_\-box\_\-align\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, double horizontal, double vertical)\label{group__Evas__Object__Box_gae66fe763591e62621cf6352528d97e10}
+
+\begin{DoxyCompactList}\small\item\em Set the alignment of the whole bounding box of contents. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Box_gad87e3a868b14d1a28da7511f95b59673}{evas\_\-object\_\-box\_\-align\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, double $\ast$horizontal, double $\ast$vertical)\label{group__Evas__Object__Box_gad87e3a868b14d1a28da7511f95b59673}
+
+\begin{DoxyCompactList}\small\item\em Get alignment of the whole bounding box of contents. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Box_ga75ab3d2f84c328010c26a6b8d89c9c67}{evas\_\-object\_\-box\_\-padding\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, Evas\_\-Coord horizontal, Evas\_\-Coord vertical)\label{group__Evas__Object__Box_ga75ab3d2f84c328010c26a6b8d89c9c67}
+
+\begin{DoxyCompactList}\small\item\em Set the space (padding) between cells. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Box_gab24383f3b29c8bc78c98cd0b0f16902d}{evas\_\-object\_\-box\_\-padding\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, Evas\_\-Coord $\ast$horizontal, Evas\_\-Coord $\ast$vertical)\label{group__Evas__Object__Box_gab24383f3b29c8bc78c98cd0b0f16902d}
+
+\begin{DoxyCompactList}\small\item\em Get the (space) padding between cells. \item\end{DoxyCompactList}\item 
+EAPI \hyperlink{group__Evas__Object__Box_gabbeb05bf47aaf7681e9d83a1b0055d20}{Evas\_\-Object\_\-Box\_\-Option} $\ast$ \hyperlink{group__Evas__Object__Box_gaa06e910577a949fc55b3a661d17f2fb3}{evas\_\-object\_\-box\_\-append} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$child)
+\begin{DoxyCompactList}\small\item\em Append a new object {\itshape child\/} to the box {\itshape o\/}. \item\end{DoxyCompactList}\item 
+EAPI \hyperlink{group__Evas__Object__Box_gabbeb05bf47aaf7681e9d83a1b0055d20}{Evas\_\-Object\_\-Box\_\-Option} $\ast$ \hyperlink{group__Evas__Object__Box_ga0fec96faf6bbc106b8af28ff479ddfc3}{evas\_\-object\_\-box\_\-prepend} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$child)
+\begin{DoxyCompactList}\small\item\em Prepend a new object {\itshape child\/} to the box {\itshape o\/}. \item\end{DoxyCompactList}\item 
+EAPI \hyperlink{group__Evas__Object__Box_gabbeb05bf47aaf7681e9d83a1b0055d20}{Evas\_\-Object\_\-Box\_\-Option} $\ast$ \hyperlink{group__Evas__Object__Box_ga5759fa41a7c3541f43ae98f58bd1ec85}{evas\_\-object\_\-box\_\-insert\_\-before} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$child, const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$reference)
+\begin{DoxyCompactList}\small\item\em Prepend a new object {\itshape child\/} to the box {\ttfamily o} relative to element {\itshape reference\/}. \item\end{DoxyCompactList}\item 
+EAPI \hyperlink{group__Evas__Object__Box_gabbeb05bf47aaf7681e9d83a1b0055d20}{Evas\_\-Object\_\-Box\_\-Option} $\ast$ \hyperlink{group__Evas__Object__Box_ga9b1fc7ee0200ce3917da70b00fb8637c}{evas\_\-object\_\-box\_\-insert\_\-after} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$child, const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$reference)
+\begin{DoxyCompactList}\small\item\em Append a new object {\itshape child\/} to the box {\ttfamily o} relative to element {\itshape reference\/}. \item\end{DoxyCompactList}\item 
+EAPI \hyperlink{group__Evas__Object__Box_gabbeb05bf47aaf7681e9d83a1b0055d20}{Evas\_\-Object\_\-Box\_\-Option} $\ast$ \hyperlink{group__Evas__Object__Box_ga01b2f0564057297d6853844b77fba3a6}{evas\_\-object\_\-box\_\-insert\_\-at} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$child, unsigned int pos)
+\begin{DoxyCompactList}\small\item\em Insert a new object {\itshape child\/} to the box {\itshape o\/} at position {\itshape pos\/}. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Object__Box_ga90c644be44c06e2e4f966cb14b7a93a5}{evas\_\-object\_\-box\_\-remove} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$child)
+\begin{DoxyCompactList}\small\item\em Remove an object {\itshape child\/} from the box {\itshape o\/}. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Object__Box_ga7d6a7321327f1398790d1f12cccd38f3}{evas\_\-object\_\-box\_\-remove\_\-at} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, unsigned int pos)
+\begin{DoxyCompactList}\small\item\em Remove an object from the box {\itshape o\/} which occupies position {\itshape pos\/}. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Object__Box_ga6c114f237f66c0208f0669783f671318}{evas\_\-object\_\-box\_\-remove\_\-all} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, Eina\_\-Bool clear)
+\begin{DoxyCompactList}\small\item\em Remove all child objects. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Iterator $\ast$ \hyperlink{group__Evas__Object__Box_ga2a3ceff4f02512fa7f85618252eacbdc}{evas\_\-object\_\-box\_\-iterator\_\-new} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o)
+\begin{DoxyCompactList}\small\item\em Get an iterator to walk the list of children for the box. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Accessor $\ast$ \hyperlink{group__Evas__Object__Box_gad5c5837393bd163f6cde72bde073333b}{evas\_\-object\_\-box\_\-accessor\_\-new} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o)
+\begin{DoxyCompactList}\small\item\em Get an accessor to get random access to the list of children for the box. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-List $\ast$ \hyperlink{group__Evas__Object__Box_ga542294a74645829cd5531a8ddec32d9c}{evas\_\-object\_\-box\_\-children\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o)
+\begin{DoxyCompactList}\small\item\em Get the list of children for the box. \item\end{DoxyCompactList}\item 
+EAPI const char $\ast$ \hyperlink{group__Evas__Object__Box_gad6b908faeca8fb7e16c002509a86ffab}{evas\_\-object\_\-box\_\-option\_\-property\_\-name\_\-get} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, int property)
+\begin{DoxyCompactList}\small\item\em Get the name of the property of the child elements of the box {\itshape o\/} whose id is {\itshape property\/}. \item\end{DoxyCompactList}\item 
+EAPI int \hyperlink{group__Evas__Object__Box_ga1b799e5048ba268f47212e29cd8cc3fb}{evas\_\-object\_\-box\_\-option\_\-property\_\-id\_\-get} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, const char $\ast$name)
+\begin{DoxyCompactList}\small\item\em Get the id of the property of the child elements of the box {\itshape o\/} whose name is {\itshape name\/}. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Object__Box_gae2892100753fd70af716f415637f6d86}{evas\_\-object\_\-box\_\-option\_\-property\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, \hyperlink{group__Evas__Object__Box_gabbeb05bf47aaf7681e9d83a1b0055d20}{Evas\_\-Object\_\-Box\_\-Option} $\ast$opt, int property,...)
+\begin{DoxyCompactList}\small\item\em Set the property (with id {\itshape property\/}) of the child element of the box {\itshape o\/} whose property struct is {\itshape opt\/}. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Object__Box_ga56c828490bb5778be68908147c32fa6d}{evas\_\-object\_\-box\_\-option\_\-property\_\-vset} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, \hyperlink{group__Evas__Object__Box_gabbeb05bf47aaf7681e9d83a1b0055d20}{Evas\_\-Object\_\-Box\_\-Option} $\ast$opt, int property, va\_\-list args)
+\begin{DoxyCompactList}\small\item\em Set the property (with id {\itshape property\/}) of the child element of the box {\itshape o\/} whose property struct is {\itshape opt\/}. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Object__Box_ga688c2cd7e2901fd491ff3b4a78dace89}{evas\_\-object\_\-box\_\-option\_\-property\_\-get} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, \hyperlink{group__Evas__Object__Box_gabbeb05bf47aaf7681e9d83a1b0055d20}{Evas\_\-Object\_\-Box\_\-Option} $\ast$opt, int property,...)
+\begin{DoxyCompactList}\small\item\em Get the property (with id {\itshape property\/}) of the child element of the box {\itshape o\/} whose property struct is {\itshape opt\/}. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Object__Box_ga987c048602d55d921c250d1cc57b5873}{evas\_\-object\_\-box\_\-option\_\-property\_\-vget} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, \hyperlink{group__Evas__Object__Box_gabbeb05bf47aaf7681e9d83a1b0055d20}{Evas\_\-Object\_\-Box\_\-Option} $\ast$opt, int property, va\_\-list args)
+\begin{DoxyCompactList}\small\item\em Get the property (with id {\itshape property\/}) of the child element of the box {\itshape o\/} whose property struct is {\itshape opt\/}. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Convenience smart object that packs children as a sequence using a layout function specified by user. There are a couple of helper layout functions, all of them using children size hints to define their size and alignment inside their cell space.
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__Evas__Object__Group__Size__Hints}{Size Hints} 
+\end{DoxySeeAlso}
+
+
+\subsection{Define Documentation}
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT@{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT}}
+\index{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT@{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT(
+\begin{DoxyParamCaption}
+\item[{}]{smart\_\-class\_\-init}
+\end{DoxyParamCaption}
+)~\{smart\_\-class\_\-init, EVAS\_\-OBJECT\_\-BOX\_\-API\_\-VERSION, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL\}}\label{group__Evas__Object__Box_ga118b1b5bc278185207e7651911637ac8}
+
+
+Initializer for whole Evas\_\-Object\_\-Box\_\-Api structure. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em smart\_\-class\_\-init}]initializer to use for the \char`\"{}base\char`\"{} field (Evas\_\-Smart\_\-Class).\end{DoxyParams}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__Evas__Smart__Group_ga223f5d420c1e22275cd6490cd77c85f0}{EVAS\_\-SMART\_\-CLASS\_\-INIT\_\-NULL} 
+
+\hyperlink{group__Evas__Smart__Group_gaaa610a135c79167162405b56cffe8562}{EVAS\_\-SMART\_\-CLASS\_\-INIT\_\-VERSION} 
+
+\hyperlink{group__Evas__Smart__Group_gaff2bbd5bb79e51ad8d31f98106caff77}{EVAS\_\-SMART\_\-CLASS\_\-INIT\_\-NAME\_\-VERSION} 
+
+\hyperlink{group__Evas__Object__Box_gacfe469ef2fc811ab4af8c77105bf4baa}{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-NULL} 
+
+\hyperlink{group__Evas__Object__Box_gabab7b773ecb31ecbf661646d5db1bea1}{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-VERSION} 
+
+\hyperlink{group__Evas__Object__Box_gad35b8c6b395f976397abbb6f964878e7}{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-NAME\_\-VERSION} 
+\end{DoxySeeAlso}
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-NAME\_\-VERSION@{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-NAME\_\-VERSION}}
+\index{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-NAME\_\-VERSION@{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-NAME\_\-VERSION}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-NAME\_\-VERSION}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-NAME\_\-VERSION(
+\begin{DoxyParamCaption}
+\item[{}]{name}
+\end{DoxyParamCaption}
+)~EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT(EVAS\_\-SMART\_\-CLASS\_\-INIT\_\-NAME\_\-VERSION(name))}\label{group__Evas__Object__Box_gad35b8c6b395f976397abbb6f964878e7}
+
+
+Initializer to zero a whole Evas\_\-Object\_\-Box\_\-Api structure and set name and version. 
+
+Similar to EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-NULL, but will set version field of Evas\_\-Smart\_\-Class (base field) to latest EVAS\_\-SMART\_\-CLASS\_\-VERSION and name to the specific value.
+
+It will keep a reference to name field as a \char`\"{}const char $\ast$\char`\"{}, that is, name must be available while the structure is used (hint: static or global!) and will not be modified.
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__Evas__Object__Box_gacfe469ef2fc811ab4af8c77105bf4baa}{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-NULL} 
+
+\hyperlink{group__Evas__Object__Box_gabab7b773ecb31ecbf661646d5db1bea1}{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-VERSION} 
+
+\hyperlink{group__Evas__Object__Box_ga118b1b5bc278185207e7651911637ac8}{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT} 
+\end{DoxySeeAlso}
+
+
+Referenced by evas\_\-object\_\-box\_\-smart\_\-class\_\-get().
+
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-NULL@{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-NULL}}
+\index{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-NULL@{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-NULL}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-NULL}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-NULL~EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT(EVAS\_\-SMART\_\-CLASS\_\-INIT\_\-NULL)}\label{group__Evas__Object__Box_gacfe469ef2fc811ab4af8c77105bf4baa}
+
+
+Initializer to zero a whole Evas\_\-Object\_\-Box\_\-Api structure. 
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__Evas__Object__Box_gabab7b773ecb31ecbf661646d5db1bea1}{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-VERSION} 
+
+\hyperlink{group__Evas__Object__Box_gad35b8c6b395f976397abbb6f964878e7}{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-NAME\_\-VERSION} 
+
+\hyperlink{group__Evas__Object__Box_ga118b1b5bc278185207e7651911637ac8}{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT} 
+\end{DoxySeeAlso}
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-VERSION@{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-VERSION}}
+\index{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-VERSION@{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-VERSION}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-VERSION}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-VERSION~EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT(EVAS\_\-SMART\_\-CLASS\_\-INIT\_\-VERSION)}\label{group__Evas__Object__Box_gabab7b773ecb31ecbf661646d5db1bea1}
+
+
+Initializer to zero a whole Evas\_\-Object\_\-Box\_\-Api structure and set version. 
+
+Similar to EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-NULL, but will set version field of Evas\_\-Smart\_\-Class (base field) to latest EVAS\_\-SMART\_\-CLASS\_\-VERSION
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__Evas__Object__Box_gacfe469ef2fc811ab4af8c77105bf4baa}{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-NULL} 
+
+\hyperlink{group__Evas__Object__Box_gad35b8c6b395f976397abbb6f964878e7}{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT\_\-NAME\_\-VERSION} 
+
+\hyperlink{group__Evas__Object__Box_ga118b1b5bc278185207e7651911637ac8}{EVAS\_\-OBJECT\_\-BOX\_\-API\_\-INIT} 
+\end{DoxySeeAlso}
+
+
+\subsection{Function Documentation}
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-accessor\_\-new@{evas\_\-object\_\-box\_\-accessor\_\-new}}
+\index{evas\_\-object\_\-box\_\-accessor\_\-new@{evas\_\-object\_\-box\_\-accessor\_\-new}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-accessor\_\-new}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Accessor$\ast$ evas\_\-object\_\-box\_\-accessor\_\-new (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ o}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_gad5c5837393bd163f6cde72bde073333b}
+
+
+Get an accessor to get random access to the list of children for the box. 
+
+\begin{DoxyNote}{Note}
+Do not remove or delete objects while walking the list. 
+\end{DoxyNote}
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-add@{evas\_\-object\_\-box\_\-add}}
+\index{evas\_\-object\_\-box\_\-add@{evas\_\-object\_\-box\_\-add}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-add}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Object}$\ast$ evas\_\-object\_\-box\_\-add (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ evas}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_ga84e87534e6a45a725d59c0366f4e6544}
+
+
+Create a new box. 
+
+Its layout function must be set via \hyperlink{group__Evas__Object__Box_ga2116d23c11ab08d7c50cbcb588de5570}{evas\_\-object\_\-box\_\-layout\_\-set()} (defaults to \hyperlink{group__Evas__Object__Box_gaabb841838ce9c05f6b99350d15b76aaf}{evas\_\-object\_\-box\_\-layout\_\-horizontal()}). The other properties of the box must be set/retrieved via evas\_\-object\_\-box\_\-\{h,v\}\_\-\{align,padding\}\_\-\{get,set)(). 
+
+References evas\_\-object\_\-smart\_\-add().
+
+
+
+Referenced by evas\_\-object\_\-box\_\-add\_\-to().
+
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-add\_\-to@{evas\_\-object\_\-box\_\-add\_\-to}}
+\index{evas\_\-object\_\-box\_\-add\_\-to@{evas\_\-object\_\-box\_\-add\_\-to}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-add\_\-to}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Object}$\ast$ evas\_\-object\_\-box\_\-add\_\-to (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ parent}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_gaf332313478211a06a09038755cf139bf}
+
+
+Create a box that is child of a given element {\itshape parent\/}. 
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__Evas__Object__Box_ga84e87534e6a45a725d59c0366f4e6544}{evas\_\-object\_\-box\_\-add()} 
+\end{DoxySeeAlso}
+
+
+References evas\_\-object\_\-box\_\-add(), evas\_\-object\_\-evas\_\-get(), and evas\_\-object\_\-smart\_\-member\_\-add().
+
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-append@{evas\_\-object\_\-box\_\-append}}
+\index{evas\_\-object\_\-box\_\-append@{evas\_\-object\_\-box\_\-append}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-append}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Object\_\-Box\_\-Option}$\ast$ evas\_\-object\_\-box\_\-append (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{{\bf Evas\_\-Object} $\ast$}]{ child}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_gaa06e910577a949fc55b3a661d17f2fb3}
+
+
+Append a new object {\itshape child\/} to the box {\itshape o\/}. 
+
+On error, {\ttfamily NULL} is returned. 
+
+References evas\_\-object\_\-smart\_\-changed(), and evas\_\-object\_\-smart\_\-member\_\-add().
+
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-children\_\-get@{evas\_\-object\_\-box\_\-children\_\-get}}
+\index{evas\_\-object\_\-box\_\-children\_\-get@{evas\_\-object\_\-box\_\-children\_\-get}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-children\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-List$\ast$ evas\_\-object\_\-box\_\-children\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ o}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_ga542294a74645829cd5531a8ddec32d9c}
+
+
+Get the list of children for the box. 
+
+\begin{DoxyNote}{Note}
+This is a duplicate of the list kept by the box internally. It's up to the user to destroy it when it no longer needs it. It's possible to remove objects from the box when walking this list, but these removals won't be reflected on it. 
+\end{DoxyNote}
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-insert\_\-after@{evas\_\-object\_\-box\_\-insert\_\-after}}
+\index{evas\_\-object\_\-box\_\-insert\_\-after@{evas\_\-object\_\-box\_\-insert\_\-after}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-insert\_\-after}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Object\_\-Box\_\-Option}$\ast$ evas\_\-object\_\-box\_\-insert\_\-after (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{{\bf Evas\_\-Object} $\ast$}]{ child, }
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ reference}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_ga9b1fc7ee0200ce3917da70b00fb8637c}
+
+
+Append a new object {\itshape child\/} to the box {\ttfamily o} relative to element {\itshape reference\/}. 
+
+If {\itshape reference\/} is not contained in the box or any other error occurs, {\ttfamily NULL} is returend. 
+
+References evas\_\-object\_\-smart\_\-changed(), and evas\_\-object\_\-smart\_\-member\_\-add().
+
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-insert\_\-at@{evas\_\-object\_\-box\_\-insert\_\-at}}
+\index{evas\_\-object\_\-box\_\-insert\_\-at@{evas\_\-object\_\-box\_\-insert\_\-at}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-insert\_\-at}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Object\_\-Box\_\-Option}$\ast$ evas\_\-object\_\-box\_\-insert\_\-at (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{{\bf Evas\_\-Object} $\ast$}]{ child, }
+\item[{unsigned int}]{ pos}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_ga01b2f0564057297d6853844b77fba3a6}
+
+
+Insert a new object {\itshape child\/} to the box {\itshape o\/} at position {\itshape pos\/}. 
+
+On error, {\ttfamily NULL} is returned. 
+
+References evas\_\-object\_\-smart\_\-changed(), and evas\_\-object\_\-smart\_\-member\_\-add().
+
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-insert\_\-before@{evas\_\-object\_\-box\_\-insert\_\-before}}
+\index{evas\_\-object\_\-box\_\-insert\_\-before@{evas\_\-object\_\-box\_\-insert\_\-before}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-insert\_\-before}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Object\_\-Box\_\-Option}$\ast$ evas\_\-object\_\-box\_\-insert\_\-before (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{{\bf Evas\_\-Object} $\ast$}]{ child, }
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ reference}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_ga5759fa41a7c3541f43ae98f58bd1ec85}
+
+
+Prepend a new object {\itshape child\/} to the box {\ttfamily o} relative to element {\itshape reference\/}. 
+
+If {\itshape reference\/} is not contained in the box or any other error occurs, {\ttfamily NULL} is returned. 
+
+References evas\_\-object\_\-smart\_\-changed(), and evas\_\-object\_\-smart\_\-member\_\-add().
+
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-iterator\_\-new@{evas\_\-object\_\-box\_\-iterator\_\-new}}
+\index{evas\_\-object\_\-box\_\-iterator\_\-new@{evas\_\-object\_\-box\_\-iterator\_\-new}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-iterator\_\-new}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Iterator$\ast$ evas\_\-object\_\-box\_\-iterator\_\-new (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ o}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_ga2a3ceff4f02512fa7f85618252eacbdc}
+
+
+Get an iterator to walk the list of children for the box. 
+
+\begin{DoxyNote}{Note}
+Do not remove or delete objects while walking the list. 
+\end{DoxyNote}
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-layout\_\-flow\_\-horizontal@{evas\_\-object\_\-box\_\-layout\_\-flow\_\-horizontal}}
+\index{evas\_\-object\_\-box\_\-layout\_\-flow\_\-horizontal@{evas\_\-object\_\-box\_\-layout\_\-flow\_\-horizontal}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-layout\_\-flow\_\-horizontal}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-box\_\-layout\_\-flow\_\-horizontal (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{{\bf Evas\_\-Object\_\-Box\_\-Data} $\ast$}]{ priv, }
+\item[{void $\ast$data}]{ \_\-\_\-UNUSED\_\-\_\-}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_ga99ee061972f53fb7d9213d586c29cc8d}
+
+
+Layout function which sets the box {\itshape o\/} to a $\ast$flow$\ast$ horizontal box. 
+
+{\itshape priv\/} must be the smart data of the box.
+
+In a flow horizontal box, the box's child elements are placed in rows (think of text as an analogy). A row has as much elements as can fit into the box's width. The box's overall behavior is controlled by its properties, which are set by the evas\_\-object\_\-box\_\-\{h,v\}\_\-\{align,padding\}\_\-set() family of functions. The properties of the elements in the box -\/-\/ set by evas\_\-object\_\-size\_\-hint\_\-\{align,padding,weight\}\_\-set() functions -\/-\/ also control the way this function works.
+
+\begin{DoxyParagraph}{box's properties:}
+{\ttfamily padding\_\-h} tells the box to draw empty spaces of that size, in pixels, between the child objects's cells. {\ttfamily align\_\-h} dictates the horizontal alignment of the rows (0 to left align them, 1 to right align). A value of -\/1.0 to {\ttfamily align\_\-h} lets the rows $\ast$justified$\ast$ horizontally. {\ttfamily align\_\-v} controls the vertical alignment of the entire set of rows (0 to top, 1 to bottom). A value of -\/1.0 to {\ttfamily align\_\-v} makes the box to $\ast$justify$\ast$ the rows vertically. The padding between them, in this case, is corrected so that the first row touches the top border and the last one touches the bottom border (even if they must overlap). {\ttfamily padding\_\-v} has no influence on the layout.
+\end{DoxyParagraph}
+\begin{DoxyParagraph}{Child element's properties:}
+{\ttfamily padding\_\-l} and {\ttfamily padding\_\-r} sum up to the required width of the child element. The {\ttfamily align\_\-x} property has no influence on the layout. The child's {\ttfamily padding\_\-t} and {\ttfamily padding\_\-b} sum up to the required height of the child element and is the only means (besides row justifying) of setting space between rows. Note, however, that {\ttfamily align\_\-y} dictates positioning relative to the $\ast$largest height$\ast$ required by a child object in the actual row. 
+\end{DoxyParagraph}
+
+
+References evas\_\-object\_\-geometry\_\-get(), evas\_\-object\_\-move(), evas\_\-object\_\-size\_\-hint\_\-align\_\-get(), evas\_\-object\_\-size\_\-hint\_\-min\_\-set(), and evas\_\-object\_\-size\_\-hint\_\-padding\_\-get().
+
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-layout\_\-flow\_\-vertical@{evas\_\-object\_\-box\_\-layout\_\-flow\_\-vertical}}
+\index{evas\_\-object\_\-box\_\-layout\_\-flow\_\-vertical@{evas\_\-object\_\-box\_\-layout\_\-flow\_\-vertical}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-layout\_\-flow\_\-vertical}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-box\_\-layout\_\-flow\_\-vertical (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{{\bf Evas\_\-Object\_\-Box\_\-Data} $\ast$}]{ priv, }
+\item[{void $\ast$data}]{ \_\-\_\-UNUSED\_\-\_\-}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_gaa6e0bf47f84d7bb1b2439f4b6123e7d7}
+
+
+Layout function which sets the box {\itshape o\/} to a $\ast$flow$\ast$ vertical box. 
+
+{\itshape priv\/} must be the smart data of the box.
+
+This function behaves analogously to \hyperlink{group__Evas__Object__Box_ga99ee061972f53fb7d9213d586c29cc8d}{evas\_\-object\_\-box\_\-layout\_\-flow\_\-horizontal()}. The description of its behaviour can be derived from that function's documentation. 
+
+References evas\_\-object\_\-geometry\_\-get(), evas\_\-object\_\-move(), evas\_\-object\_\-size\_\-hint\_\-align\_\-get(), evas\_\-object\_\-size\_\-hint\_\-min\_\-set(), and evas\_\-object\_\-size\_\-hint\_\-padding\_\-get().
+
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-horizontal@{evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-horizontal}}
+\index{evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-horizontal@{evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-horizontal}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-horizontal}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-horizontal (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{{\bf Evas\_\-Object\_\-Box\_\-Data} $\ast$}]{ priv, }
+\item[{void $\ast$data}]{ \_\-\_\-UNUSED\_\-\_\-}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_gac4478016783bad6d2170571a11a23e21}
+
+
+Layout function which sets the box {\itshape o\/} to a $\ast$homogeneous$\ast$ horizontal box. 
+
+{\itshape priv\/} must be the smart data of the box.
+
+In a homogeneous horizontal box, its width is divided equally between the contained objects. The box's overall behavior is controlled by its properties, which are set by the evas\_\-object\_\-box\_\-\{h,v\}\_\-\{align,padding\}\_\-set() family of functions. The properties of the elements in the box -\/-\/ set by evas\_\-object\_\-size\_\-hint\_\-\{align,padding,weight\}\_\-set() functions -\/-\/ also control the way this function works.
+
+\begin{DoxyParagraph}{box's properties:}
+{\ttfamily align\_\-h} has no influence on the box for this layout. {\ttfamily padding\_\-h} tells the box to draw empty spaces of that size, in pixels, between the (still equal) child objects's cells. The {\ttfamily align\_\-v} and {\ttfamily padding\_\-v} properties of the box don't contribute to its behaviour when this layout is chosen.
+\end{DoxyParagraph}
+\begin{DoxyParagraph}{Child element's properties:}
+{\ttfamily padding\_\-l} and {\ttfamily padding\_\-r} sum up to the required width of the child element. The {\ttfamily align\_\-x} property tells the relative position of this overall child width in its allocated cell (0 to extreme left, 1 to extreme right). A value of -\/1.0 to {\ttfamily align\_\-x} makes the box try to resize this child element to the exact width of its cell (respecting the min and max hints on the child's width $\ast$and$\ast$ accounting its horizontal padding properties). The child's {\ttfamily padding\_\-t}, {\ttfamily padding\_\-b} and {\ttfamily align\_\-y} properties apply for padding/positioning relative to the overall height of the box. A value of -\/1.0 to {\ttfamily align\_\-y} makes the box try to resize this child element to the exact height of its parent (respecting the max hint on the child's height). 
+\end{DoxyParagraph}
+
+
+References evas\_\-object\_\-geometry\_\-get(), evas\_\-object\_\-move(), evas\_\-object\_\-resize(), evas\_\-object\_\-size\_\-hint\_\-align\_\-get(), evas\_\-object\_\-size\_\-hint\_\-max\_\-get(), evas\_\-object\_\-size\_\-hint\_\-min\_\-get(), evas\_\-object\_\-size\_\-hint\_\-min\_\-set(), and evas\_\-object\_\-size\_\-hint\_\-padding\_\-get().
+
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-max\_\-size\_\-horizontal@{evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-max\_\-size\_\-horizontal}}
+\index{evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-max\_\-size\_\-horizontal@{evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-max\_\-size\_\-horizontal}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-max\_\-size\_\-horizontal}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-max\_\-size\_\-horizontal (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{{\bf Evas\_\-Object\_\-Box\_\-Data} $\ast$}]{ priv, }
+\item[{void $\ast$data}]{ \_\-\_\-UNUSED\_\-\_\-}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_gab9e441a27ebe6253ef1b9d6d25ee9bc4}
+
+
+Layout function which sets the box {\itshape o\/} to a $\ast$max size-\/homogeneous$\ast$ horizontal box. 
+
+{\itshape priv\/} must be the smart data of the box.
+
+In a max size-\/homogeneous horizontal box, the equal sized cells reserved for the child objects have the width of the space required by the largest child (in width). The box's overall behavior is controlled by its properties, which are set by the evas\_\-object\_\-box\_\-\{h,v\}\_\-\{align,padding\}\_\-set() family of functions. The properties of the elements in the box -\/-\/ set by evas\_\-object\_\-size\_\-hint\_\-\{align,padding,weight\}\_\-set() functions -\/-\/ also control the way this function works.
+
+\begin{DoxyParagraph}{box's properties:}
+{\ttfamily padding\_\-h} tells the box to draw empty spaces of that size, in pixels, between the child objects's cells. {\ttfamily align\_\-h} controls the horizontal alignment of the child objects relative to the containing box. When set to 0, children are aligned to the left. A value of 1 lets them aligned to the right border. Values in between align them proportionally. A negative value of {\ttfamily align\_\-h} makes the box to $\ast$justify$\ast$ its children cells. The padding between them, in this case, is corrected so that the leftmost one touches the left border and the rightmost one touches the right border (even if they must overlap). The {\ttfamily align\_\-v} and {\ttfamily padding\_\-v} properties of the box don't contribute to its behaviour when this layout is chosen.
+\end{DoxyParagraph}
+\begin{DoxyParagraph}{Child element's properties:}
+{\ttfamily padding\_\-l} and {\ttfamily padding\_\-r} sum up to the required width of the child element. The {\ttfamily align\_\-x} property tells the relative position of this overall child width in its allocated cell (0 to extreme left, 1 to extreme right). A value of -\/1.0 to {\ttfamily align\_\-x} makes the box try to resize this child element to the exact width of its cell (respecting the min and max hints on the child's width $\ast$and$\ast$ accounting its horizontal padding properties). The child's {\ttfamily padding\_\-t}, {\ttfamily padding\_\-b} and {\ttfamily align\_\-y} properties apply for padding/positioning relative to the overall height of the box. A value of -\/1.0 to {\ttfamily align\_\-y} makes the box try to resize this child element to the exact height of its parent (respecting the max hint on the child's height). 
+\end{DoxyParagraph}
+
+
+References evas\_\-object\_\-geometry\_\-get(), evas\_\-object\_\-move(), evas\_\-object\_\-resize(), evas\_\-object\_\-size\_\-hint\_\-align\_\-get(), evas\_\-object\_\-size\_\-hint\_\-max\_\-get(), evas\_\-object\_\-size\_\-hint\_\-min\_\-get(), evas\_\-object\_\-size\_\-hint\_\-min\_\-set(), and evas\_\-object\_\-size\_\-hint\_\-padding\_\-get().
+
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-max\_\-size\_\-vertical@{evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-max\_\-size\_\-vertical}}
+\index{evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-max\_\-size\_\-vertical@{evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-max\_\-size\_\-vertical}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-max\_\-size\_\-vertical}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-max\_\-size\_\-vertical (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{{\bf Evas\_\-Object\_\-Box\_\-Data} $\ast$}]{ priv, }
+\item[{void $\ast$data}]{ \_\-\_\-UNUSED\_\-\_\-}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_gabccbf4cf59018eac96c9281576b61abf}
+
+
+Layout function which sets the box {\itshape o\/} to a $\ast$max size-\/homogeneous$\ast$ vertical box. 
+
+{\itshape priv\/} must be the smart data of the box.
+
+This function behaves analogously to \hyperlink{group__Evas__Object__Box_gab9e441a27ebe6253ef1b9d6d25ee9bc4}{evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-max\_\-size\_\-horizontal()}. The description of its behaviour can be derived from that function's documentation. 
+
+References evas\_\-object\_\-geometry\_\-get(), evas\_\-object\_\-move(), evas\_\-object\_\-resize(), evas\_\-object\_\-size\_\-hint\_\-align\_\-get(), evas\_\-object\_\-size\_\-hint\_\-max\_\-get(), evas\_\-object\_\-size\_\-hint\_\-min\_\-get(), evas\_\-object\_\-size\_\-hint\_\-min\_\-set(), and evas\_\-object\_\-size\_\-hint\_\-padding\_\-get().
+
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-vertical@{evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-vertical}}
+\index{evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-vertical@{evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-vertical}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-vertical}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-vertical (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{{\bf Evas\_\-Object\_\-Box\_\-Data} $\ast$}]{ priv, }
+\item[{void $\ast$data}]{ \_\-\_\-UNUSED\_\-\_\-}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_gaa860afd56866955550ae650464d2dc9a}
+
+
+Layout function which sets the box {\itshape o\/} to a $\ast$homogeneous$\ast$ vertical box. 
+
+{\itshape priv\/} must be the smart data of the box.
+
+This function behaves analogously to \hyperlink{group__Evas__Object__Box_gac4478016783bad6d2170571a11a23e21}{evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-horizontal()}. The description of its behaviour can be derived from that function's documentation. 
+
+References evas\_\-object\_\-geometry\_\-get(), evas\_\-object\_\-move(), evas\_\-object\_\-resize(), evas\_\-object\_\-size\_\-hint\_\-align\_\-get(), evas\_\-object\_\-size\_\-hint\_\-max\_\-get(), evas\_\-object\_\-size\_\-hint\_\-min\_\-get(), evas\_\-object\_\-size\_\-hint\_\-min\_\-set(), and evas\_\-object\_\-size\_\-hint\_\-padding\_\-get().
+
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-layout\_\-horizontal@{evas\_\-object\_\-box\_\-layout\_\-horizontal}}
+\index{evas\_\-object\_\-box\_\-layout\_\-horizontal@{evas\_\-object\_\-box\_\-layout\_\-horizontal}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-layout\_\-horizontal}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-box\_\-layout\_\-horizontal (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{{\bf Evas\_\-Object\_\-Box\_\-Data} $\ast$}]{ priv, }
+\item[{void $\ast$data}]{ \_\-\_\-UNUSED\_\-\_\-}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_gaabb841838ce9c05f6b99350d15b76aaf}
+
+
+Layout function which sets the box {\itshape o\/} to a (basic) horizontal box. 
+
+{\itshape priv\/} must be the smart data of the box.
+
+The object's overall behavior is controlled by its properties, which are set by the evas\_\-object\_\-box\_\-\{h,v\}\_\-\{align,padding\}\_\-set() family of functions. The properties of the elements in the box -\/-\/ set by evas\_\-object\_\-size\_\-hint\_\-\{align,padding,weight\}\_\-set() functions -\/-\/ also control the way this function works.
+
+\begin{DoxyParagraph}{box's properties:}
+{\ttfamily align\_\-h} controls the horizontal alignment of the child objects relative to the containing box. When set to 0, children are aligned to the left. A value of 1 lets them aligned to the right border. Values in between align them proportionally. Note that if the size required by the children, which is given by their widths and the {\ttfamily padding\_\-h} property of the box, is bigger than the container width, the children will be displayed out of its bounds. A negative value of {\ttfamily align\_\-h} makes the box to $\ast$justify$\ast$ its children. The padding between them, in this case, is corrected so that the leftmost one touches the left border and the rightmost one touches the right border (even if they must overlap). The {\ttfamily align\_\-v} and {\ttfamily padding\_\-v} properties of the box don't contribute to its behaviour when this layout is chosen.
+\end{DoxyParagraph}
+\begin{DoxyParagraph}{Child element's properties:}
+{\ttfamily align\_\-x} does not influence the box's behavior. {\ttfamily padding\_\-l} and {\ttfamily padding\_\-r} sum up to the container's horizontal padding between elements. The child's {\ttfamily padding\_\-t}, {\ttfamily padding\_\-b} and {\ttfamily align\_\-y} properties apply for padding/positioning relative to the overall height of the box. Finally, there is the {\ttfamily weight\_\-x} property, which, if set to a non-\/zero value, tells the container that the child width is not pre-\/defined. If the container can't accommodate all its children, it sets the widths of the children $\ast$with weights$\ast$ to sizes as small as they can all fit into it. If the size required by the children is less than the available, the box increases its children's (which have weights) widths as to fit the remaining space. The {\ttfamily weight\_\-x} property, besides telling the element is resizable, gives a $\ast$weight$\ast$ for the resizing process. The parent box will try to distribute (or take off) widths accordingly to the $\ast$normalized$\ast$ list of weigths: most weighted children remain/get larger in this process than the the least ones. {\ttfamily weight\_\-y} does not influence the layout.
+\end{DoxyParagraph}
+If one desires that, besides having weights, child elements must be resized bounded to a minimum or maximum size, their size hint properties must be set (by the evas\_\-object\_\-size\_\-hint\_\-\{min,max\}\_\-set() functions. 
+
+References evas\_\-object\_\-geometry\_\-get(), evas\_\-object\_\-move(), evas\_\-object\_\-resize(), evas\_\-object\_\-size\_\-hint\_\-align\_\-get(), evas\_\-object\_\-size\_\-hint\_\-max\_\-get(), evas\_\-object\_\-size\_\-hint\_\-min\_\-set(), evas\_\-object\_\-size\_\-hint\_\-padding\_\-get(), and evas\_\-object\_\-size\_\-hint\_\-weight\_\-get().
+
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-layout\_\-set@{evas\_\-object\_\-box\_\-layout\_\-set}}
+\index{evas\_\-object\_\-box\_\-layout\_\-set@{evas\_\-object\_\-box\_\-layout\_\-set}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-layout\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-box\_\-layout\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{Evas\_\-Object\_\-Box\_\-Layout}]{ cb, }
+\item[{const void $\ast$}]{ data, }
+\item[{void($\ast$)(void $\ast$data)}]{ free\_\-data}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_ga2116d23c11ab08d7c50cbcb588de5570}
+
+
+Set a 'calculate' callback ({\itshape cb\/}) to the {\itshape o\/} box's smart class, which here defines its genre (horizontal, vertical, homogeneous, etc. 
+
+). 
+
+References evas\_\-object\_\-smart\_\-changed().
+
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-layout\_\-stack@{evas\_\-object\_\-box\_\-layout\_\-stack}}
+\index{evas\_\-object\_\-box\_\-layout\_\-stack@{evas\_\-object\_\-box\_\-layout\_\-stack}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-layout\_\-stack}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-box\_\-layout\_\-stack (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{{\bf Evas\_\-Object\_\-Box\_\-Data} $\ast$}]{ priv, }
+\item[{void $\ast$data}]{ \_\-\_\-UNUSED\_\-\_\-}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_gae40153d3702dcb79f2587364cde2fb7b}
+
+
+Layout function which sets the box {\itshape o\/} to set all children to the size of the object. 
+
+{\itshape priv\/} must be the smart data of the box.
+
+In a stack box, all children will be given the same size and they will be stacked on above the other, so the first object will be the bottom most.
+
+\begin{DoxyParagraph}{box's properties:}
+No box option is used.
+\end{DoxyParagraph}
+\begin{DoxyParagraph}{Child element's properties:}
+{\ttfamily padding\_\-l} and {\ttfamily padding\_\-r} sum up to the required width of the child element. The {\ttfamily align\_\-x} property tells the relative position of this overall child width in its allocated cell (0 to extreme left, 1 to extreme right). A value of -\/1.0 to {\ttfamily align\_\-x} makes the box try to resize this child element to the exact width of its cell (respecting the min and max hints on the child's width $\ast$and$\ast$ accounting its horizontal padding properties). Same applies to vertical axis. 
+\end{DoxyParagraph}
+
+
+References evas\_\-object\_\-geometry\_\-get(), evas\_\-object\_\-move(), evas\_\-object\_\-resize(), evas\_\-object\_\-size\_\-hint\_\-align\_\-get(), evas\_\-object\_\-size\_\-hint\_\-max\_\-get(), evas\_\-object\_\-size\_\-hint\_\-min\_\-get(), evas\_\-object\_\-size\_\-hint\_\-min\_\-set(), evas\_\-object\_\-size\_\-hint\_\-padding\_\-get(), and evas\_\-object\_\-stack\_\-above().
+
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-layout\_\-vertical@{evas\_\-object\_\-box\_\-layout\_\-vertical}}
+\index{evas\_\-object\_\-box\_\-layout\_\-vertical@{evas\_\-object\_\-box\_\-layout\_\-vertical}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-layout\_\-vertical}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-box\_\-layout\_\-vertical (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{{\bf Evas\_\-Object\_\-Box\_\-Data} $\ast$}]{ priv, }
+\item[{void $\ast$data}]{ \_\-\_\-UNUSED\_\-\_\-}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_ga1e102aa54789b74f54944c17d0a880db}
+
+
+Layout function which sets the box {\itshape o\/} to a (basic) vertical box. 
+
+{\itshape priv\/} must be the smart data of the box.
+
+This function behaves analogously to \hyperlink{group__Evas__Object__Box_gaabb841838ce9c05f6b99350d15b76aaf}{evas\_\-object\_\-box\_\-layout\_\-horizontal()}. The description of its behaviour can be derived from that function's documentation. 
+
+References evas\_\-object\_\-geometry\_\-get(), evas\_\-object\_\-move(), evas\_\-object\_\-resize(), evas\_\-object\_\-size\_\-hint\_\-align\_\-get(), evas\_\-object\_\-size\_\-hint\_\-max\_\-get(), evas\_\-object\_\-size\_\-hint\_\-min\_\-set(), evas\_\-object\_\-size\_\-hint\_\-padding\_\-get(), and evas\_\-object\_\-size\_\-hint\_\-weight\_\-get().
+
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-option\_\-property\_\-get@{evas\_\-object\_\-box\_\-option\_\-property\_\-get}}
+\index{evas\_\-object\_\-box\_\-option\_\-property\_\-get@{evas\_\-object\_\-box\_\-option\_\-property\_\-get}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-option\_\-property\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-object\_\-box\_\-option\_\-property\_\-get (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{{\bf Evas\_\-Object\_\-Box\_\-Option} $\ast$}]{ opt, }
+\item[{int}]{ property, }
+\item[{}]{ ...}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_ga688c2cd7e2901fd491ff3b4a78dace89}
+
+
+Get the property (with id {\itshape property\/}) of the child element of the box {\itshape o\/} whose property struct is {\itshape opt\/}. 
+
+The last arguments must be addresses of variables with the same type of that property. On error, {\ttfamily 0} is returned. 
+
+References evas\_\-object\_\-box\_\-option\_\-property\_\-vget().
+
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-option\_\-property\_\-id\_\-get@{evas\_\-object\_\-box\_\-option\_\-property\_\-id\_\-get}}
+\index{evas\_\-object\_\-box\_\-option\_\-property\_\-id\_\-get@{evas\_\-object\_\-box\_\-option\_\-property\_\-id\_\-get}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-option\_\-property\_\-id\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI int evas\_\-object\_\-box\_\-option\_\-property\_\-id\_\-get (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{const char $\ast$}]{ name}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_ga1b799e5048ba268f47212e29cd8cc3fb}
+
+
+Get the id of the property of the child elements of the box {\itshape o\/} whose name is {\itshape name\/}. 
+
+On error, {\ttfamily -\/1} is returned. \index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-option\_\-property\_\-name\_\-get@{evas\_\-object\_\-box\_\-option\_\-property\_\-name\_\-get}}
+\index{evas\_\-object\_\-box\_\-option\_\-property\_\-name\_\-get@{evas\_\-object\_\-box\_\-option\_\-property\_\-name\_\-get}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-option\_\-property\_\-name\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI const char$\ast$ evas\_\-object\_\-box\_\-option\_\-property\_\-name\_\-get (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{int}]{ property}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_gad6b908faeca8fb7e16c002509a86ffab}
+
+
+Get the name of the property of the child elements of the box {\itshape o\/} whose id is {\itshape property\/}. 
+
+On error, {\ttfamily NULL} is returned. \index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-option\_\-property\_\-set@{evas\_\-object\_\-box\_\-option\_\-property\_\-set}}
+\index{evas\_\-object\_\-box\_\-option\_\-property\_\-set@{evas\_\-object\_\-box\_\-option\_\-property\_\-set}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-option\_\-property\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-object\_\-box\_\-option\_\-property\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{{\bf Evas\_\-Object\_\-Box\_\-Option} $\ast$}]{ opt, }
+\item[{int}]{ property, }
+\item[{}]{ ...}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_gae2892100753fd70af716f415637f6d86}
+
+
+Set the property (with id {\itshape property\/}) of the child element of the box {\itshape o\/} whose property struct is {\itshape opt\/}. 
+
+The property's values must be the last arguments and their type $\ast$must$\ast$ match that of the property itself. On error, {\ttfamily 0} is returned. 
+
+References evas\_\-object\_\-box\_\-option\_\-property\_\-vset().
+
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-option\_\-property\_\-vget@{evas\_\-object\_\-box\_\-option\_\-property\_\-vget}}
+\index{evas\_\-object\_\-box\_\-option\_\-property\_\-vget@{evas\_\-object\_\-box\_\-option\_\-property\_\-vget}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-option\_\-property\_\-vget}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-object\_\-box\_\-option\_\-property\_\-vget (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{{\bf Evas\_\-Object\_\-Box\_\-Option} $\ast$}]{ opt, }
+\item[{int}]{ property, }
+\item[{va\_\-list}]{ args}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_ga987c048602d55d921c250d1cc57b5873}
+
+
+Get the property (with id {\itshape property\/}) of the child element of the box {\itshape o\/} whose property struct is {\itshape opt\/}. 
+
+The args which the va\_\-list {\itshape args\/} is initialized with must be addresses of variables with the same type of that property. On error, {\ttfamily 0} is returned. 
+
+Referenced by evas\_\-object\_\-box\_\-option\_\-property\_\-get().
+
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-option\_\-property\_\-vset@{evas\_\-object\_\-box\_\-option\_\-property\_\-vset}}
+\index{evas\_\-object\_\-box\_\-option\_\-property\_\-vset@{evas\_\-object\_\-box\_\-option\_\-property\_\-vset}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-option\_\-property\_\-vset}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-object\_\-box\_\-option\_\-property\_\-vset (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{{\bf Evas\_\-Object\_\-Box\_\-Option} $\ast$}]{ opt, }
+\item[{int}]{ property, }
+\item[{va\_\-list}]{ args}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_ga56c828490bb5778be68908147c32fa6d}
+
+
+Set the property (with id {\itshape property\/}) of the child element of the box {\itshape o\/} whose property struct is {\itshape opt\/}. 
+
+The property's values must be the args which the va\_\-list {\itshape args\/} is initialized with and their type $\ast$must$\ast$ match that of the property itself. On error, {\ttfamily 0} is returned. 
+
+References evas\_\-object\_\-smart\_\-changed().
+
+
+
+Referenced by evas\_\-object\_\-box\_\-option\_\-property\_\-set().
+
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-prepend@{evas\_\-object\_\-box\_\-prepend}}
+\index{evas\_\-object\_\-box\_\-prepend@{evas\_\-object\_\-box\_\-prepend}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-prepend}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Object\_\-Box\_\-Option}$\ast$ evas\_\-object\_\-box\_\-prepend (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{{\bf Evas\_\-Object} $\ast$}]{ child}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_ga0fec96faf6bbc106b8af28ff479ddfc3}
+
+
+Prepend a new object {\itshape child\/} to the box {\itshape o\/}. 
+
+On error, {\ttfamily NULL} is returned. 
+
+References evas\_\-object\_\-smart\_\-changed(), and evas\_\-object\_\-smart\_\-member\_\-add().
+
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-remove@{evas\_\-object\_\-box\_\-remove}}
+\index{evas\_\-object\_\-box\_\-remove@{evas\_\-object\_\-box\_\-remove}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-remove}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-object\_\-box\_\-remove (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{{\bf Evas\_\-Object} $\ast$}]{ child}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_ga90c644be44c06e2e4f966cb14b7a93a5}
+
+
+Remove an object {\itshape child\/} from the box {\itshape o\/}. 
+
+On error, {\ttfamily 0} is returned. 
+
+References evas\_\-object\_\-smart\_\-changed(), and evas\_\-object\_\-smart\_\-member\_\-del().
+
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-remove\_\-all@{evas\_\-object\_\-box\_\-remove\_\-all}}
+\index{evas\_\-object\_\-box\_\-remove\_\-all@{evas\_\-object\_\-box\_\-remove\_\-all}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-remove\_\-all}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-object\_\-box\_\-remove\_\-all (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{Eina\_\-Bool}]{ clear}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_ga6c114f237f66c0208f0669783f671318}
+
+
+Remove all child objects. 
+
+\begin{DoxyReturn}{Returns}
+0 on errors 
+\end{DoxyReturn}
+
+
+References evas\_\-object\_\-del(), evas\_\-object\_\-smart\_\-changed(), and evas\_\-object\_\-smart\_\-member\_\-del().
+
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-remove\_\-at@{evas\_\-object\_\-box\_\-remove\_\-at}}
+\index{evas\_\-object\_\-box\_\-remove\_\-at@{evas\_\-object\_\-box\_\-remove\_\-at}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-remove\_\-at}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-object\_\-box\_\-remove\_\-at (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{unsigned int}]{ pos}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_ga7d6a7321327f1398790d1f12cccd38f3}
+
+
+Remove an object from the box {\itshape o\/} which occupies position {\itshape pos\/}. 
+
+On error, {\ttfamily 0} is returned. 
+
+References evas\_\-object\_\-smart\_\-changed(), and evas\_\-object\_\-smart\_\-member\_\-del().
+
+\index{Evas\_\-Object\_\-Box@{Evas\_\-Object\_\-Box}!evas\_\-object\_\-box\_\-smart\_\-set@{evas\_\-object\_\-box\_\-smart\_\-set}}
+\index{evas\_\-object\_\-box\_\-smart\_\-set@{evas\_\-object\_\-box\_\-smart\_\-set}!Evas_Object_Box@{Evas\_\-Object\_\-Box}}
+\subsubsection[{evas\_\-object\_\-box\_\-smart\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-box\_\-smart\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object\_\-Box\_\-Api} $\ast$}]{ api}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Box_ga19c407e45de527d9400823fb1c85d0fe}
+
+
+Set the default box {\itshape api\/} struct (Evas\_\-Object\_\-Box\_\-Api) with the default values. 
+
+May be used to extend that API. 
+
+Referenced by evas\_\-object\_\-box\_\-smart\_\-class\_\-get().
+

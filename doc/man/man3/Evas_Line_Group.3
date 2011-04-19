@@ -1,0 +1,79 @@
+.TH "Line Object Functions" 3 "Tue Apr 19 2011" "Evas" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Line Object Functions \- 
+.PP
+Functions used to deal with evas line objects.  
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_line_add\fP (\fBEvas\fP *e)"
+.br
+.RI "\fIAdds a new evas line object to the given evas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_line_xy_set\fP (\fBEvas_Object\fP *obj, Evas_Coord x1, Evas_Coord y1, Evas_Coord x2, Evas_Coord y2)"
+.br
+.RI "\fISets the coordinates of the end points of the given evas line object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_line_xy_get\fP (const \fBEvas_Object\fP *obj, Evas_Coord *x1, Evas_Coord *y1, Evas_Coord *x2, Evas_Coord *y2)"
+.br
+.RI "\fIRetrieves the coordinates of the end points of the given evas line object. \fP"
+.in -1c
+.SH "Detailed Description"
+.PP 
+Functions used to deal with evas line objects. 
+.SH "Function Documentation"
+.PP 
+.SS "EAPI \fBEvas_Object\fP* evas_object_line_add (\fBEvas\fP * e)"
+.PP
+Adds a new evas line object to the given evas. \fBParameters:\fP
+.RS 4
+\fIe\fP The given evas. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+The new evas line object. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_line_xy_get (const \fBEvas_Object\fP * obj, Evas_Coord * x1, Evas_Coord * y1, Evas_Coord * x2, Evas_Coord * y2)"
+.PP
+Retrieves the coordinates of the end points of the given evas line object. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given line object. 
+.br
+\fIx1\fP Pointer to an integer in which to store the X coordinate of the first end point. 
+.br
+\fIy1\fP Pointer to an integer in which to store the Y coordinate of the first end point. 
+.br
+\fIx2\fP Pointer to an integer in which to store the X coordinate of the second end point. 
+.br
+\fIy2\fP Pointer to an integer in which to store the Y coordinate of the second end point. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_line_xy_set (\fBEvas_Object\fP * obj, Evas_Coord x1, Evas_Coord y1, Evas_Coord x2, Evas_Coord y2)"
+.PP
+Sets the coordinates of the end points of the given evas line object. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given evas line object. 
+.br
+\fIx1\fP The X coordinate of the first point. 
+.br
+\fIy1\fP The Y coordinate of the first point. 
+.br
+\fIx2\fP The X coordinate of the second point. 
+.br
+\fIy2\fP The Y coordinate of the second point. 
+.RE
+.PP
+
+.PP
+References evas_event_feed_mouse_move().
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Evas from the source code.

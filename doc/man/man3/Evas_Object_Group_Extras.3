@@ -1,0 +1,400 @@
+.TH "Extra Object Manipulation" 3 "Tue Apr 19 2011" "Evas" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Extra Object Manipulation \- 
+.PP
+Miscellaneous functions that also apply to any object, but are less used or not implemented by all objects.  
+
+.SS "Typedefs"
+
+.in +1c
+.ti -1c
+.RI "typedef enum \fB_Evas_Render_Op\fP \fBEvas_Render_Op\fP"
+.br
+.ti -1c
+.RI "typedef enum \fB_Evas_Object_Pointer_Mode\fP \fBEvas_Object_Pointer_Mode\fP"
+.br
+.RI "\fIHow mouse pointer should be handled by Evas. \fP"
+.in -1c
+.SS "Enumerations"
+
+.in +1c
+.ti -1c
+.RI "enum \fB_Evas_Render_Op\fP { \fBEVAS_RENDER_BLEND\fP =  0, \fBEVAS_RENDER_BLEND_REL\fP =  1, \fBEVAS_RENDER_COPY\fP =  2, \fBEVAS_RENDER_COPY_REL\fP =  3, \fBEVAS_RENDER_ADD\fP =  4, \fBEVAS_RENDER_ADD_REL\fP =  5, \fBEVAS_RENDER_SUB\fP =  6, \fBEVAS_RENDER_SUB_REL\fP =  7, \fBEVAS_RENDER_TINT\fP =  8, \fBEVAS_RENDER_TINT_REL\fP =  9, \fBEVAS_RENDER_MASK\fP =  10, \fBEVAS_RENDER_MUL\fP =  11 }"
+.br
+.RI "\fIHow the object should be rendered to output. \fP"
+.ti -1c
+.RI "enum \fB_Evas_Object_Pointer_Mode\fP { \fBEVAS_OBJECT_POINTER_MODE_AUTOGRAB\fP }"
+.br
+.RI "\fIHow mouse pointer should be handled by Evas. \fP"
+.in -1c
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "EAPI void \fBevas_object_data_set\fP (\fBEvas_Object\fP *obj, const char *key, const void *data)"
+.br
+.RI "\fISet an attached data pointer to an object with a given string key. \fP"
+.ti -1c
+.RI "EAPI void * \fBevas_object_data_get\fP (const \fBEvas_Object\fP *obj, const char *key)"
+.br
+.RI "\fIReturn an attached data pointer by its given string key. \fP"
+.ti -1c
+.RI "EAPI void * \fBevas_object_data_del\fP (\fBEvas_Object\fP *obj, const char *key)"
+.br
+.RI "\fIDelete at attached data pointer from an object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_pointer_mode_set\fP (\fBEvas_Object\fP *obj, \fBEvas_Object_Pointer_Mode\fP setting)"
+.br
+.RI "\fISet pointer behavior. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object_Pointer_Mode\fP \fBevas_object_pointer_mode_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIDetermine how pointer will behave. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_anti_alias_set\fP (\fBEvas_Object\fP *obj, Eina_Bool anti_alias)"
+.br
+.RI "\fISets whether or not the given evas object is to be drawn anti-aliased. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_anti_alias_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIRetrieves whether or not the given evas object is to be drawn anti_aliased. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_scale_set\fP (\fBEvas_Object\fP *obj, double scale)"
+.br
+.RI "\fISets the scaling factor for an evas object. \fP"
+.ti -1c
+.RI "EAPI double \fBevas_object_scale_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIRetrieves the scaling factor for the given evas object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_render_op_set\fP (\fBEvas_Object\fP *obj, \fBEvas_Render_Op\fP render_op)"
+.br
+.RI "\fISets the render_op to be used for rendering the evas object. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Render_Op\fP \fBevas_object_render_op_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIRetrieves the current value of the operation used for rendering the evas object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_precise_is_inside_set\fP (\fBEvas_Object\fP *obj, Eina_Bool precise)"
+.br
+.RI "\fISet whether to use a precise (usually expensive) point collision detection. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_precise_is_inside_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIDetermine whether an object is set to use a precise point collision detection. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_static_clip_set\fP (\fBEvas_Object\fP *obj, Eina_Bool is_static_clip)"
+.br
+.RI "\fISet a hint flag on the object that this is used as a static 'clipper'. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_static_clip_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIGet static 'clipper' hint flag. \fP"
+.in -1c
+.SH "Detailed Description"
+.PP 
+Miscellaneous functions that also apply to any object, but are less used or not implemented by all objects. 
+.SH "Typedef Documentation"
+.PP 
+.SS "typedef enum \fB_Evas_Object_Pointer_Mode\fP  \fBEvas_Object_Pointer_Mode\fP"
+.PP
+How mouse pointer should be handled by Evas. If \fBEVAS_OBJECT_POINTER_MODE_AUTOGRAB\fP, then when mouse is down an object, then moves outside of it, the pointer still behaves as being bound to the object, albeit out of its drawing region. On mouse up, the event will be feed to the object, that may check if the final position is over or not and do something about it. How mouse pointer should be handled by Evas. 
+.SS "typedef enum \fB_Evas_Render_Op\fP  \fBEvas_Render_Op\fP"How the object should be rendered to output. 
+.SH "Enumeration Type Documentation"
+.PP 
+.SS "enum \fB_Evas_Object_Pointer_Mode\fP"
+.PP
+How mouse pointer should be handled by Evas. If \fBEVAS_OBJECT_POINTER_MODE_AUTOGRAB\fP, then when mouse is down an object, then moves outside of it, the pointer still behaves as being bound to the object, albeit out of its drawing region. On mouse up, the event will be feed to the object, that may check if the final position is over or not and do something about it. 
+.PP
+\fBEnumerator: \fP
+.in +1c
+.TP
+\fB\fIEVAS_OBJECT_POINTER_MODE_AUTOGRAB \fP\fP
+default, X11-like 
+.SS "enum \fB_Evas_Render_Op\fP"
+.PP
+How the object should be rendered to output. 
+.PP
+\fBEnumerator: \fP
+.in +1c
+.TP
+\fB\fIEVAS_RENDER_BLEND \fP\fP
+default op: d = d*(1-sa) + s 
+.TP
+\fB\fIEVAS_RENDER_BLEND_REL \fP\fP
+d = d*(1 - sa) + s*da 
+.TP
+\fB\fIEVAS_RENDER_COPY \fP\fP
+d = s 
+.TP
+\fB\fIEVAS_RENDER_COPY_REL \fP\fP
+d = s*da 
+.TP
+\fB\fIEVAS_RENDER_ADD \fP\fP
+d = d + s 
+.TP
+\fB\fIEVAS_RENDER_ADD_REL \fP\fP
+d = d + s*da 
+.TP
+\fB\fIEVAS_RENDER_SUB \fP\fP
+d = d - s 
+.TP
+\fB\fIEVAS_RENDER_SUB_REL \fP\fP
+d = d - s*da 
+.TP
+\fB\fIEVAS_RENDER_TINT \fP\fP
+d = d*s + d*(1 - sa) + s*(1 - da) 
+.TP
+\fB\fIEVAS_RENDER_TINT_REL \fP\fP
+d = d*(1 - sa + s) 
+.TP
+\fB\fIEVAS_RENDER_MASK \fP\fP
+d = d*sa 
+.TP
+\fB\fIEVAS_RENDER_MUL \fP\fP
+d = d*s 
+.SH "Function Documentation"
+.PP 
+.SS "EAPI Eina_Bool evas_object_anti_alias_get (const \fBEvas_Object\fP * obj)"
+.PP
+Retrieves whether or not the given evas object is to be drawn anti_aliased. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given evas object. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+\fC1\fP if the object is to be anti_aliased. \fC0\fP otherwise. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_anti_alias_set (\fBEvas_Object\fP * obj, Eina_Bool anti_alias)"
+.PP
+Sets whether or not the given evas object is to be drawn anti-aliased. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given evas object. 
+.br
+\fIanti_alias\fP 1 if the object is to be anti_aliased, 0 otherwise. 
+.RE
+.PP
+
+.SS "EAPI void* evas_object_data_del (\fBEvas_Object\fP * obj, const char * key)"
+.PP
+Delete at attached data pointer from an object. \fBParameters:\fP
+.RS 4
+\fIobj\fP The object to delete the data pointer from 
+.br
+\fIkey\fP The string key the data was stored under 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+The original data pointer stored at \fCkey\fP on \fCobj\fP 
+.RE
+.PP
+This will remove thee stored data pointer from \fCobj\fP stored under \fCkey\fP, and return the original pointer stored under \fCkey\fP, if any, nor NULL if nothing was stored under that key.
+.PP
+Example:
+.PP
+.PP
+.nf
+ int *my_data;
+ extern Evas_Object *obj;
+
+ my_data = evas_object_data_del(obj, 'name_of_my_data');
+.fi
+.PP
+ 
+.PP
+Referenced by evas_object_data_set().
+.SS "EAPI void* evas_object_data_get (const \fBEvas_Object\fP * obj, const char * key)"
+.PP
+Return an attached data pointer by its given string key. \fBParameters:\fP
+.RS 4
+\fIobj\fP The object to which the data was attached 
+.br
+\fIkey\fP The string key the data was stored under 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+The data pointer stored, or NULL if none was stored
+.RE
+.PP
+This function will return the data pointer attached to the object \fCobj\fP stored using the string key \fCkey\fP. If the object is valid and data was stored under the given key, the pointer that was stored will be reuturned. If this is not the case, NULL will be returned, signifying an invalid object or non-existent key. It is possible a NULL pointer was stored given that key, but this situation is non-sensical and thus can be considered an error as well. NULL pointers are never stored as this is the return value if an error occurs.
+.PP
+Example:
+.PP
+.PP
+.nf
+ int *my_data;
+ extern Evas_Object *obj;
+
+ my_data = evas_object_data_get(obj, 'name_of_my_data');
+ if (my_data) printf('Data stored was %p\n', my_data);
+ else printf('No data was stored on the object\n');
+.fi
+.PP
+ 
+.SS "EAPI void evas_object_data_set (\fBEvas_Object\fP * obj, const char * key, const void * data)"
+.PP
+Set an attached data pointer to an object with a given string key. \fBParameters:\fP
+.RS 4
+\fIobj\fP The object to attach the data pointer to 
+.br
+\fIkey\fP The string key for the data to access it 
+.br
+\fIdata\fP The ponter to the data to be attached
+.RE
+.PP
+This attaches the pointer \fCdata\fP to the object \fCobj\fP given the string \fCkey\fP. This pointer will stay 'hooked' to the object until a new pointer with the same string key is attached with \fBevas_object_data_set()\fP or it is deleted with \fBevas_object_data_del()\fP. On deletion of the object \fCobj\fP, the pointers will not be accessible from the object anymore.
+.PP
+You can find the pointer attached under a string key using \fBevas_object_data_get()\fP. It is the job of the calling application to free any data pointed to by \fCdata\fP when it is no longer required.
+.PP
+If \fCdata\fP is NULL, the old value stored at \fCkey\fP will be removed but no new value will be stored. This is synonymous with calling \fBevas_object_data_del()\fP with \fCobj\fP and \fCkey\fP.
+.PP
+Example:
+.PP
+.PP
+.nf
+ int *my_data;
+ extern Evas_Object *obj;
+
+ my_data = malloc(500);
+ evas_object_data_set(obj, 'name_of_data', my_data);
+ printf('The data that was attached was %p\n', evas_object_data_get(obj, 'name_of_data'));
+.fi
+.PP
+ 
+.PP
+References evas_object_data_del().
+.SS "EAPI \fBEvas_Object_Pointer_Mode\fP evas_object_pointer_mode_get (const \fBEvas_Object\fP * obj)"
+.PP
+Determine how pointer will behave. \fBParameters:\fP
+.RS 4
+\fIobj\fP 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+pointer behavior. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_pointer_mode_set (\fBEvas_Object\fP * obj, \fBEvas_Object_Pointer_Mode\fP setting)"
+.PP
+Set pointer behavior. \fBParameters:\fP
+.RS 4
+\fIobj\fP 
+.br
+\fIsetting\fP desired behavior.
+.RE
+.PP
+This function has direct effect on event callbacks related to mouse.
+.PP
+If \fCsetting\fP is EVAS_OBJECT_POINTER_MODE_AUTOGRAB, then when mouse is down at this object, events will be restricted to it as source, mouse moves, for example, will be emitted even if outside this object area.
+.PP
+If \fCsetting\fP is EVAS_OBJECT_POINTER_MODE_NOGRAB, then events will be emitted just when inside this object area.
+.PP
+The default value is EVAS_OBJECT_POINTER_MODE_AUTOGRAB. 
+.SS "EAPI Eina_Bool evas_object_precise_is_inside_get (const \fBEvas_Object\fP * obj)"
+.PP
+Determine whether an object is set to use a precise point collision detection. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given object. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_precise_is_inside_set (\fBEvas_Object\fP * obj, Eina_Bool precise)"
+.PP
+Set whether to use a precise (usually expensive) point collision detection. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given object. 
+.br
+\fIprecise\fP wheter to use a precise point collision detection or not The default value is false. 
+.RE
+.PP
+
+.SS "EAPI \fBEvas_Render_Op\fP evas_object_render_op_get (const \fBEvas_Object\fP * obj)"
+.PP
+Retrieves the current value of the operation used for rendering the evas object. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given evas object. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+one of the enumerated values in Evas_Render_Op. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_render_op_set (\fBEvas_Object\fP * obj, \fBEvas_Render_Op\fP render_op)"
+.PP
+Sets the render_op to be used for rendering the evas object. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given evas object. 
+.br
+\fIrender_op\fP one of the Evas_Render_Op values. 
+.RE
+.PP
+
+.SS "EAPI double evas_object_scale_get (const \fBEvas_Object\fP * obj)"
+.PP
+Retrieves the scaling factor for the given evas object. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given evas object. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+The scaling factor. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_scale_set (\fBEvas_Object\fP * obj, double scale)"
+.PP
+Sets the scaling factor for an evas object. Does not affect all objects.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given evas object. 
+.br
+\fIscale\fP The scaling factor. 1.0 == none. 
+.RE
+.PP
+
+.SS "EAPI Eina_Bool evas_object_static_clip_get (const \fBEvas_Object\fP * obj)"
+.PP
+Get static 'clipper' hint flag. \fBSee also:\fP
+.RS 4
+\fBevas_object_static_clip_set()\fP
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given object. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+The static clip flag (on or off) 
+.RE
+.PP
+
+.SS "EAPI void evas_object_static_clip_set (\fBEvas_Object\fP * obj, Eina_Bool is_static_clip)"
+.PP
+Set a hint flag on the object that this is used as a static 'clipper'. This is a hint to evas that this object is used as a big static clipper and shouldnt be moved with children and otherwise considered specially. The Default is off.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given object. 
+.br
+\fIis_static_clip\fP The static clip flag (on or off) 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Evas from the source code.

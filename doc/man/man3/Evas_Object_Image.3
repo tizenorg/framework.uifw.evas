@@ -1,0 +1,1110 @@
+.TH "Image Object Functions" 3 "Tue Apr 19 2011" "Evas" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Image Object Functions \- 
+.PP
+Functions used to create and manipulate image objects.  
+
+.SS "Typedefs"
+
+.in +1c
+.ti -1c
+.RI "typedef enum \fB_Evas_Colorspace\fP \fBEvas_Colorspace\fP"
+.br
+.RI "\fIColorspaces for pixel data supported by Evas. \fP"
+.in -1c
+.SS "Enumerations"
+
+.in +1c
+.ti -1c
+.RI "enum \fB_Evas_Colorspace\fP { \fBEVAS_COLORSPACE_ARGB8888\fP, \fBEVAS_COLORSPACE_YCBCR422P601_PL\fP, \fBEVAS_COLORSPACE_YCBCR422P709_PL\fP, \fBEVAS_COLORSPACE_RGB565_A5P\fP, \fBEVAS_COLORSPACE_GRY8\fP }"
+.br
+.RI "\fIColorspaces for pixel data supported by Evas. \fP"
+.in -1c
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_image_add\fP (\fBEvas\fP *e)"
+.br
+.RI "\fICreates a new image object on the given evas. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_image_filled_add\fP (\fBEvas\fP *e)"
+.br
+.RI "\fICreates a new image object that automatically scales on the given evas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_memfile_set\fP (\fBEvas_Object\fP *obj, void *data, int size, char *format, char *key)"
+.br
+.RI "\fISets the data for an image from memory to be loaded. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_file_set\fP (\fBEvas_Object\fP *obj, const char *file, const char *key)"
+.br
+.RI "\fISets the filename and key of the given image object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_file_get\fP (const \fBEvas_Object\fP *obj, const char **file, const char **key)"
+.br
+.RI "\fIRetrieves the filename and key of the given image object. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_image_source_set\fP (\fBEvas_Object\fP *obj, \fBEvas_Object\fP *src)"
+.br
+.RI "\fISet the source object on a proxy object. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_image_source_get\fP (\fBEvas_Object\fP *obj)"
+.br
+.RI "\fIGet the current source object of an image. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_image_source_unset\fP (\fBEvas_Object\fP *obj)"
+.br
+.RI "\fIClear the source on a proxy image. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_border_set\fP (\fBEvas_Object\fP *obj, int l, int r, int t, int b)"
+.br
+.RI "\fISets how much of each border of the given image object is not to be scaled. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_border_get\fP (const \fBEvas_Object\fP *obj, int *l, int *r, int *t, int *b)"
+.br
+.RI "\fIRetrieves how much of each border of the given image object is not to be scaled. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_border_center_fill_set\fP (\fBEvas_Object\fP *obj, Evas_Border_Fill_Mode fill)"
+.br
+.RI "\fISets if the center part of the given image object (not the border) should be drawn. \fP"
+.ti -1c
+.RI "EAPI Evas_Border_Fill_Mode \fBevas_object_image_border_center_fill_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIRetrieves if the center of the given image object is to be drawn or not. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_filled_set\fP (\fBEvas_Object\fP *obj, Eina_Bool setting)"
+.br
+.RI "\fISets if image fill property should track object size. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_image_filled_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIRetrieves if image fill property is tracking object size. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_border_scale_set\fP (\fBEvas_Object\fP *obj, double scale)"
+.br
+.RI "\fISets a scale factor (multiplier) for the borders of an image. \fP"
+.ti -1c
+.RI "EAPI double \fBevas_object_image_border_scale_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIRetrieves the border scale factor. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_fill_set\fP (\fBEvas_Object\fP *obj, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h)"
+.br
+.RI "\fISets the rectangle of the given image object that the image will be drawn to. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_fill_get\fP (const \fBEvas_Object\fP *obj, Evas_Coord *x, Evas_Coord *y, Evas_Coord *w, Evas_Coord *h)"
+.br
+.RI "\fIRetrieves the dimensions of the rectangle of the given image object that the image will be drawn to. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_fill_spread_set\fP (\fBEvas_Object\fP *obj, \fBEvas_Fill_Spread\fP spread)"
+.br
+.RI "\fISets the tiling mode for the given evas image object's fill. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Fill_Spread\fP \fBevas_object_image_fill_spread_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIRetrieves the spread (tiling mode) for the given image object's fill. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_size_set\fP (\fBEvas_Object\fP *obj, int w, int h)"
+.br
+.RI "\fISets the size of the given image object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_size_get\fP (const \fBEvas_Object\fP *obj, int *w, int *h)"
+.br
+.RI "\fIRetrieves the size of the given image object. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_object_image_stride_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIRetrieves the row stride of the given image object,. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Load_Error\fP \fBevas_object_image_load_error_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIRetrieves a number representing any error that occurred during the last load of the given image object. \fP"
+.ti -1c
+.RI "EAPI void * \fBevas_object_image_data_convert\fP (\fBEvas_Object\fP *obj, \fBEvas_Colorspace\fP to_cspace)"
+.br
+.RI "\fIConverts the raw image data of the given image object to the specified colorspace. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_data_set\fP (\fBEvas_Object\fP *obj, void *data)"
+.br
+.RI "\fISets the raw image data of the given image object. \fP"
+.ti -1c
+.RI "EAPI void * \fBevas_object_image_data_get\fP (const \fBEvas_Object\fP *obj, Eina_Bool for_writing)"
+.br
+.RI "\fIGet a pointer to the raw image data of the given image object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_preload\fP (\fBEvas_Object\fP *obj, Eina_Bool cancel)"
+.br
+.RI "\fIPreload image in the background. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_data_copy_set\fP (\fBEvas_Object\fP *obj, void *data)"
+.br
+.RI "\fIReplaces the raw image data of the given image object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_data_update_add\fP (\fBEvas_Object\fP *obj, int x, int y, int w, int h)"
+.br
+.RI "\fIMark a sub-region of the given image object to be redrawn. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_alpha_set\fP (\fBEvas_Object\fP *obj, Eina_Bool has_alpha)"
+.br
+.RI "\fIEnable or disable alpha channel of the given image object. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_image_alpha_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIRetrieves the alpha channel setting of the given image object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_smooth_scale_set\fP (\fBEvas_Object\fP *obj, Eina_Bool smooth_scale)"
+.br
+.RI "\fISets whether to use of high-quality image scaling algorithm of the given image object. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_image_smooth_scale_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIRetrieves whether the given image object is using use a high-quality image scaling algorithm. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_reload\fP (\fBEvas_Object\fP *obj)"
+.br
+.RI "\fIReload a image of the canvas. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_image_save\fP (const \fBEvas_Object\fP *obj, const char *file, const char *key, const char *flags)"
+.br
+.RI "\fISave the given image object to a file. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_image_pixels_import\fP (\fBEvas_Object\fP *obj, \fBEvas_Pixel_Import_Source\fP *pixels)"
+.br
+.RI "\fIImport pixels from given source to a given canvas image object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_pixels_get_callback_set\fP (\fBEvas_Object\fP *obj, Evas_Object_Image_Pixels_Get_Cb func, void *data)"
+.br
+.RI "\fISet the callback function to get pixels from a canva's image. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_pixels_dirty_set\fP (\fBEvas_Object\fP *obj, Eina_Bool dirty)"
+.br
+.RI "\fIMark whether the given image object is dirty (needs to be redrawn). \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_image_pixels_dirty_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIRetrieves whether the given image object is dirty (needs to be redrawn). \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_load_dpi_set\fP (\fBEvas_Object\fP *obj, double dpi)"
+.br
+.RI "\fISet the dpi resolution of a loaded image of the canvas. \fP"
+.ti -1c
+.RI "EAPI double \fBevas_object_image_load_dpi_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIGet the dpi resolution of a loaded image of the canvas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_load_size_set\fP (\fBEvas_Object\fP *obj, int w, int h)"
+.br
+.RI "\fISet the size of a loaded image of the canvas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_load_size_get\fP (const \fBEvas_Object\fP *obj, int *w, int *h)"
+.br
+.RI "\fIGet the size of a loaded image of the canvas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_load_scale_down_set\fP (\fBEvas_Object\fP *obj, int scale_down)"
+.br
+.RI "\fISet the scale down of a loaded image of the canvas. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_object_image_load_scale_down_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIGet the scale down value of given image of the canvas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_colorspace_set\fP (\fBEvas_Object\fP *obj, \fBEvas_Colorspace\fP cspace)"
+.br
+.RI "\fISet the colorspace of a given image of the canvas. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Colorspace\fP \fBevas_object_image_colorspace_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIGet the colorspace of a given image of the canvas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_native_surface_set\fP (\fBEvas_Object\fP *obj, \fBEvas_Native_Surface\fP *surf)"
+.br
+.RI "\fISet the native surface of a given image of the canvas. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Native_Surface\fP * \fBevas_object_image_native_surface_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIGet the native surface of a given image of the canvas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_scale_hint_set\fP (\fBEvas_Object\fP *obj, Evas_Image_Scale_Hint hint)"
+.br
+.RI "\fISet the scale hint of a given image of the canvas. \fP"
+.ti -1c
+.RI "EAPI Evas_Image_Scale_Hint \fBevas_object_image_scale_hint_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIGet the scale hint of a given image of the canvas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_content_hint_set\fP (\fBEvas_Object\fP *obj, Evas_Image_Content_Hint hint)"
+.br
+.RI "\fISet the content hint of a given image of the canvas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_alpha_mask_set\fP (\fBEvas_Object\fP *obj, Eina_Bool ismask)"
+.br
+.RI "\fIEnable an image to be used as an alpha mask. \fP"
+.ti -1c
+.RI "EAPI Evas_Image_Content_Hint \fBevas_object_image_content_hint_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIGet the content hint of a given image of the canvas. \fP"
+.in -1c
+.SH "Detailed Description"
+.PP 
+Functions used to create and manipulate image objects. 
+
+Note - Image objects may return or accept 'image data' in multiple formats. This is based on the colorspace of an object. Here is a rundown on formats:
+.PP
+EVAS_COLORSPACE_ARGB8888:
+.PP
+This pixel format is a linear block of pixels, starting at the top-left row by row until the bottom right of the image or pixel region. All pixels are 32-bit unsigned int's with the high-byte being alpha and the low byte being blue in the format ARGB. Alpha may or may not be used by evas depending on the alpha flag of the image, but if not used, should be set to 0xff anyway.
+.PP
+This colorspace uses premultiplied alpha. That means that R, G and B cannot exceed A in value. The conversion from non-premultiplied colorspace is:
+.PP
+R = (r * a) / 255; G = (g * a) / 255; B = (b * a) / 255;
+.PP
+So 50% transparent blue will be: 0x80000080. This will not be 'dark' - just 50% transparent. Values are 0 == black, 255 == solid or full red, green or blue.
+.PP
+EVAS_COLORSPACE_YCBCR422P601_PL:
+.PP
+This is a pointer-list indirected set of YUV (YCbCr) pixel data. This means that the data returned or set is not actual pixel data, but pointers TO lines of pixel data. The list of pointers will first be N rows of pointers to the Y plane - pointing to the first pixel at the start of each row in the Y plane. N is the height of the image data in pixels. Each pixel in the Y, U and V planes is 1 byte exactly, packed. The next N / 2 pointers will point to rows in the U plane, and the next N / 2 pointers will point to the V plane rows. U and V planes are half the horizontal and vertical resolution of the Y plane.
+.PP
+Row order is top to bottom and row pixels are stored left to right.
+.PP
+There is a limitation that these images MUST be a multiple of 2 pixels in size horizontally or vertically. This is due to the U and V planes being half resolution. Also note that this assumes the itu601 YUV colorspace specification. This is defined for standard television and mpeg streams. HDTV may use the itu709 specification.
+.PP
+Values are 0 to 255, indicating full or no signal in that plane respectively.
+.PP
+EVAS_COLORSPACE_YCBCR422P709_PL:
+.PP
+Not implemented yet.
+.PP
+EVAS_COLORSPACE_RGB565_A5P:
+.PP
+In the process of being implemented in 1 engine only. This may change.
+.PP
+This is a pointer to image data for 16-bit half-word pixel data in 16bpp RGB 565 format (5 bits red, 6 bits green, 5 bits blue), with the high-byte containing red and the low byte containing blue, per pixel. This data is packed row by row from the top-left to the bottom right.
+.PP
+If the image has an alpha channel enabled there will be an extra alpha plane after the color pixel plane. If not, then this data will not exist and should not be accessed in any way. This plane is a set of pixels with 1 byte per pixel defining the alpha values of all pixels in the image from the top-left to the bottom right of the image, row by row. Even though the values of the alpha pixels can be 0 to 255, only values 0 through to 32 are used, 32 being solid and 0 being transparent.
+.PP
+RGB values can be 0 to 31 for red and blue and 0 to 63 for green, with 0 being black and 31 or 63 being full red, green or blue respectively. This colorspace is also pre-multiplied like EVAS_COLORSPACE_ARGB8888 so:
+.PP
+R = (r * a) / 32; G = (g * a) / 32; B = (b * a) / 32;
+.PP
+EVAS_COLORSPACE_A8:
+.PP
+The image is just a alpha mask (8 bit's per pixel). This is used for alpha masking. 
+.SH "Typedef Documentation"
+.PP 
+.SS "typedef enum \fB_Evas_Colorspace\fP  \fBEvas_Colorspace\fP"
+.PP
+Colorspaces for pixel data supported by Evas. Colorspaces for pixel data supported by Evas 
+.SH "Enumeration Type Documentation"
+.PP 
+.SS "enum \fB_Evas_Colorspace\fP"
+.PP
+Colorspaces for pixel data supported by Evas. 
+.PP
+\fBEnumerator: \fP
+.in +1c
+.TP
+\fB\fIEVAS_COLORSPACE_ARGB8888 \fP\fP
+ARGB 32 bits per pixel, high-byte is Alpha, accessed 1 32bit word at a time. 
+.TP
+\fB\fIEVAS_COLORSPACE_YCBCR422P601_PL \fP\fP
+YCbCr 4:2:2 Planar, ITU.BT-601 specifications. The data poitned to is just an array of row pointer, pointing to the Y rows, then the Cb, then Cr rows 
+.TP
+\fB\fIEVAS_COLORSPACE_YCBCR422P709_PL \fP\fP
+YCbCr 4:2:2 Planar, ITU.BT-709 specifications. The data poitned to is just an array of row pointer, pointing to the Y rows, then the Cb, then Cr rows 
+.TP
+\fB\fIEVAS_COLORSPACE_RGB565_A5P \fP\fP
+16bit rgb565 + Alpha plane at end - 5 bits of the 8 being used per alpha byte 
+.TP
+\fB\fIEVAS_COLORSPACE_GRY8 \fP\fP
+8bit grayscale 
+.SH "Function Documentation"
+.PP 
+.SS "EAPI \fBEvas_Object\fP* evas_object_image_add (\fBEvas\fP * e)"
+.PP
+Creates a new image object on the given evas. \fBParameters:\fP
+.RS 4
+\fIe\fP The given evas. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+The created image object. 
+.RE
+.PP
+
+.PP
+Referenced by evas_object_image_filled_add().
+.SS "EAPI Eina_Bool evas_object_image_alpha_get (const \fBEvas_Object\fP * obj)"
+.PP
+Retrieves the alpha channel setting of the given image object. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Whether the alpha channel data is being used.
+.RE
+.PP
+This function returns 1 if the image object's alpha channel is being used, or 0 otherwise.
+.PP
+See \fBevas_object_image_alpha_set\fP for more details. 
+.SS "EAPI void evas_object_image_alpha_mask_set (\fBEvas_Object\fP * obj, Eina_Bool ismask)"
+.PP
+Enable an image to be used as an alpha mask. This will set any flags, and discard any excess image data not used as an alpha mask.
+.PP
+Note there is little point in using a image as alpha mask unless it has an alpha channel.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP Object to use as an alpha mask. 
+.br
+\fIismask\fP Use image as alphamask, must be true. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_image_alpha_set (\fBEvas_Object\fP * obj, Eina_Bool has_alpha)"
+.PP
+Enable or disable alpha channel of the given image object. This function sets a flag on an image object indicating whether or not to use alpha channel data. A value of 1 indicates to use alpha channel data, and 0 indicates to ignore any alpha channel data. Note that this has nothing to do with an object's color as manipulated by \fBevas_object_color_set()\fP.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.br
+\fIhas_alpha\fP Whether to use alpha channel data or not. 
+.RE
+.PP
+
+.PP
+References evas_object_image_data_update_add().
+.PP
+Referenced by evas_object_image_memfile_set().
+.SS "EAPI Evas_Border_Fill_Mode evas_object_image_border_center_fill_get (const \fBEvas_Object\fP * obj)"
+.PP
+Retrieves if the center of the given image object is to be drawn or not. See \fBevas_object_image_fill_set\fP for more details.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Fill mode of the center. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_image_border_center_fill_set (\fBEvas_Object\fP * obj, Evas_Border_Fill_Mode fill)"
+.PP
+Sets if the center part of the given image object (not the border) should be drawn. When rendering, the image may be scaled to fit the size of the image object. This function sets if the center part of the scaled image is to be drawn or left completely blank, or forced to be solid. Very useful for frames and decorations.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.br
+\fIfill\fP Fill mode of the middle. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_image_border_get (const \fBEvas_Object\fP * obj, int * l, int * r, int * t, int * b)"
+.PP
+Retrieves how much of each border of the given image object is not to be scaled. See \fBevas_object_image_border_set\fP for more details.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.br
+\fIl\fP Location to store the left border width in, or NULL. 
+.br
+\fIr\fP Location to store the right border width in, or NULL. 
+.br
+\fIt\fP Location to store the top border width in, or NULL. 
+.br
+\fIb\fP Location to store the bottom border width in, or NULL. 
+.RE
+.PP
+
+.SS "EAPI double evas_object_image_border_scale_get (const \fBEvas_Object\fP * obj)"
+.PP
+Retrieves the border scale factor. See \fBevas_object_image_border_scale_set()\fP
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+The scale factor 
+.RE
+.PP
+
+.SS "EAPI void evas_object_image_border_scale_set (\fBEvas_Object\fP * obj, double scale)"
+.PP
+Sets a scale factor (multiplier) for the borders of an image. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.br
+\fIscale\fP The scale factor (default is 1.0 - i.e. no scale) 
+.RE
+.PP
+
+.SS "EAPI void evas_object_image_border_set (\fBEvas_Object\fP * obj, int l, int r, int t, int b)"
+.PP
+Sets how much of each border of the given image object is not to be scaled. When rendering, the image may be scaled to fit the size of the image object. This function sets what area around the border of the image is not to be scaled. This sort of function is useful for widget theming, where, for example, buttons may be of varying sizes, but the border size must remain constant.
+.PP
+The units used for \fCl\fP, \fCr\fP, \fCt\fP and \fCb\fP are output units.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.br
+\fIl\fP Distance of the left border that is not to be stretched. 
+.br
+\fIr\fP Distance of the right border that is not to be stretched. 
+.br
+\fIt\fP Distance of the top border that is not to be stretched. 
+.br
+\fIb\fP Distance of the bottom border that is not to be stretched. 
+.RE
+.PP
+
+.SS "EAPI \fBEvas_Colorspace\fP evas_object_image_colorspace_get (const \fBEvas_Object\fP * obj)"
+.PP
+Get the colorspace of a given image of the canvas. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object pointer. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+The colorspace of the image.
+.RE
+.PP
+This function returns the colorspace of given canvas image. 
+.SS "EAPI void evas_object_image_colorspace_set (\fBEvas_Object\fP * obj, \fBEvas_Colorspace\fP cspace)"
+.PP
+Set the colorspace of a given image of the canvas. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object pointer. 
+.br
+\fIcspace\fP The new color space.
+.RE
+.PP
+This function sets the colorspace of given canvas image. 
+.SS "EAPI Evas_Image_Content_Hint evas_object_image_content_hint_get (const \fBEvas_Object\fP * obj)"
+.PP
+Get the content hint of a given image of the canvas. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given canvas pointer.
+.RE
+.PP
+This function returns the content hint value of the given image of the canvas. 
+.SS "EAPI void evas_object_image_content_hint_set (\fBEvas_Object\fP * obj, Evas_Image_Content_Hint hint)"
+.PP
+Set the content hint of a given image of the canvas. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given canvas pointer. 
+.br
+\fIhint\fP The content hint value.
+.RE
+.PP
+This function sets the content hint value of the given image of the canvas. 
+.SS "EAPI void* evas_object_image_data_convert (\fBEvas_Object\fP * obj, \fBEvas_Colorspace\fP to_cspace)"
+.PP
+Converts the raw image data of the given image object to the specified colorspace. Note that this function does not modify the raw image data. If the requested colorspace is the same as the image colorspace nothing is done and NULL is returned. You should use \fBevas_object_image_colorspace_get()\fP to check the current image colorspace.
+.PP
+See \fBevas_object_image_colorspace_get\fP.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.br
+\fIto_cspace\fP The colorspace to which the image raw data will be converted. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+data A newly allocated data in the format specified by to_cspace. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_image_data_copy_set (\fBEvas_Object\fP * obj, void * data)"
+.PP
+Replaces the raw image data of the given image object. This function lets the application replace an image object's internal pixel buffer with a user-allocated one. For best results, you should generally first call \fBevas_object_image_size_set()\fP with the width and height for the new buffer.
+.PP
+This call is best suited for when you will be using image data with different dimensions than the existing image data, if any. If you only need to modify the existing image in some fashion, then using \fBevas_object_image_data_get()\fP is probably what you are after.
+.PP
+Note that the caller is responsible for freeing the buffer when finished with it, as user-set image data will not be automatically freed when the image object is deleted.
+.PP
+See \fBevas_object_image_data_get\fP for more details.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.br
+\fIdata\fP The raw data. 
+.RE
+.PP
+
+.SS "EAPI void* evas_object_image_data_get (const \fBEvas_Object\fP * obj, Eina_Bool for_writing)"
+.PP
+Get a pointer to the raw image data of the given image object. This function returns a pointer to an image object's internal pixel buffer, for reading only or read/write. If you request it for writing, the image will be marked dirty so that it gets redrawn at the next update.
+.PP
+This is best suited when you want to modify an existing image, without changing its dimensions.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.br
+\fIfor_writing\fP Whether the data being retrieved will be modified. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+The raw image data. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_image_data_set (\fBEvas_Object\fP * obj, void * data)"
+.PP
+Sets the raw image data of the given image object. Note that the raw data must be of the same size and colorspace of the image. If data is NULL the current image data will be freed.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.br
+\fIdata\fP The raw data, or NULL. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_image_data_update_add (\fBEvas_Object\fP * obj, int x, int y, int w, int h)"
+.PP
+Mark a sub-region of the given image object to be redrawn. This function schedules a particular rectangular region of an image object to be updated (redrawn) at the next render.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.br
+\fIx\fP X-offset of the region to be updated. 
+.br
+\fIy\fP Y-offset of the region to be updated. 
+.br
+\fIw\fP Width of the region to be updated. 
+.br
+\fIh\fP Height of the region to be updated. 
+.RE
+.PP
+
+.PP
+Referenced by evas_object_image_alpha_set().
+.SS "EAPI void evas_object_image_file_get (const \fBEvas_Object\fP * obj, const char ** file, const char ** key)"
+.PP
+Retrieves the filename and key of the given image object. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.br
+\fIfile\fP Location to store the image filename, or NULL. 
+.br
+\fIkey\fP Location to store the image key, or NULL. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_image_file_set (\fBEvas_Object\fP * obj, const char * file, const char * key)"
+.PP
+Sets the filename and key of the given image object. If the file supports multiple data stored in it as eet, you can specify the key to be used as the index of the image in this file.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.br
+\fIfile\fP The image filename. 
+.br
+\fIkey\fP The image key in file, or NULL. 
+.RE
+.PP
+
+.PP
+References EVAS_LOAD_ERROR_NONE.
+.PP
+Referenced by evas_object_image_memfile_set(), and evas_object_image_source_set().
+.SS "EAPI void evas_object_image_fill_get (const \fBEvas_Object\fP * obj, Evas_Coord * x, Evas_Coord * y, Evas_Coord * w, Evas_Coord * h)"
+.PP
+Retrieves the dimensions of the rectangle of the given image object that the image will be drawn to. See \fBevas_object_image_fill_set\fP for more details.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.br
+\fIx\fP Location to store the X coordinate for the top left corner of the image in, or NULL. 
+.br
+\fIy\fP Location to store the Y coordinate for the top left corner of the image in, or NULL. 
+.br
+\fIw\fP Location to store the width of the image in, or NULL. 
+.br
+\fIh\fP Location to store the height of the image in, or NULL. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_image_fill_set (\fBEvas_Object\fP * obj, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h)"
+.PP
+Sets the rectangle of the given image object that the image will be drawn to. Note that the image will be tiled around this one rectangle. To have only one copy of the image drawn, \fCx\fP and \fCy\fP must be 0 and \fCw\fP and \fCh\fP need to be the width and height of the image object respectively.
+.PP
+The default values for the fill parameters is \fCx\fP = 0, \fCy\fP = 0, \fCw\fP = 32 and \fCh\fP = 32.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.br
+\fIx\fP The X coordinate for the top left corner of the image. 
+.br
+\fIy\fP The Y coordinate for the top left corner of the image. 
+.br
+\fIw\fP The width of the image. 
+.br
+\fIh\fP The height of the image. 
+.RE
+.PP
+
+.PP
+Referenced by evas_object_image_filled_set().
+.SS "EAPI \fBEvas_Fill_Spread\fP evas_object_image_fill_spread_get (const \fBEvas_Object\fP * obj)"
+.PP
+Retrieves the spread (tiling mode) for the given image object's fill. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given evas image object. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+The current spread mode of the image object. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_image_fill_spread_set (\fBEvas_Object\fP * obj, \fBEvas_Fill_Spread\fP spread)"
+.PP
+Sets the tiling mode for the given evas image object's fill. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given evas image object. 
+.br
+\fIspread\fP One of EVAS_TEXTURE_REFLECT, EVAS_TEXTURE_REPEAT, EVAS_TEXTURE_RESTRICT, or EVAS_TEXTURE_PAD. 
+.RE
+.PP
+
+.SS "EAPI \fBEvas_Object\fP* evas_object_image_filled_add (\fBEvas\fP * e)"
+.PP
+Creates a new image object that automatically scales on the given evas. This is a helper around \fBevas_object_image_add()\fP and \fBevas_object_image_filled_set()\fP, it will track object resizes and apply \fBevas_object_image_fill_set()\fP with the new geometry.
+.PP
+\fBSee also:\fP
+.RS 4
+\fBevas_object_image_add()\fP 
+.PP
+\fBevas_object_image_filled_set()\fP 
+.PP
+\fBevas_object_image_fill_set()\fP 
+.RE
+.PP
+
+.PP
+References evas_object_image_add(), and evas_object_image_filled_set().
+.SS "EAPI Eina_Bool evas_object_image_filled_get (const \fBEvas_Object\fP * obj)"
+.PP
+Retrieves if image fill property is tracking object size. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+1 if it is tracking, 0 if not and evas_object_fill_set() must be called manually. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_image_filled_set (\fBEvas_Object\fP * obj, Eina_Bool setting)"
+.PP
+Sets if image fill property should track object size. If set to true, then every \fBevas_object_resize()\fP will automatically trigger call to \fBevas_object_image_fill_set()\fP with the new size so image will fill the whole object area.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.br
+\fIsetting\fP whether to follow object size.
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBevas_object_image_filled_add()\fP 
+.PP
+\fBevas_object_image_fill_set()\fP 
+.RE
+.PP
+
+.PP
+References EVAS_CALLBACK_RESIZE, evas_object_event_callback_add(), evas_object_event_callback_del(), evas_object_geometry_get(), and evas_object_image_fill_set().
+.PP
+Referenced by evas_object_image_filled_add().
+.SS "EAPI double evas_object_image_load_dpi_get (const \fBEvas_Object\fP * obj)"
+.PP
+Get the dpi resolution of a loaded image of the canvas. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given canvas pointer. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+The dpi resolution of the given canvas image.
+.RE
+.PP
+This function returns the dpi resolution of given canvas image. 
+.SS "EAPI void evas_object_image_load_dpi_set (\fBEvas_Object\fP * obj, double dpi)"
+.PP
+Set the dpi resolution of a loaded image of the canvas. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given canvas pointer. 
+.br
+\fIdpi\fP The new dpi resolution.
+.RE
+.PP
+This function set the dpi resolution of a given loaded canvas image. 
+.SS "EAPI \fBEvas_Load_Error\fP evas_object_image_load_error_get (const \fBEvas_Object\fP * obj)"
+.PP
+Retrieves a number representing any error that occurred during the last load of the given image object. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+A value giving the last error that occurred. It should be one of the \fCEVAS_LOAD_ERROR_*\fP values. \fCEVAS_LOAD_ERROR_NONE\fP is returned if there was no error. 
+.RE
+.PP
+
+.SS "EAPI int evas_object_image_load_scale_down_get (const \fBEvas_Object\fP * obj)"
+.PP
+Get the scale down value of given image of the canvas. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object pointer.
+.RE
+.PP
+This function returns the scale down value of a given canvas image. 
+.SS "EAPI void evas_object_image_load_scale_down_set (\fBEvas_Object\fP * obj, int scale_down)"
+.PP
+Set the scale down of a loaded image of the canvas. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given canvas pointer. 
+.br
+\fIscale_down\fP The scale to down value.
+.RE
+.PP
+This function sets the scale down of a given canvas image. 
+.SS "EAPI void evas_object_image_load_size_get (const \fBEvas_Object\fP * obj, int * w, int * h)"
+.PP
+Get the size of a loaded image of the canvas. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given canvas object. 
+.br
+\fIw\fP The width of the canvas image given. 
+.br
+\fIh\fP The height of the canvas image given.
+.RE
+.PP
+This function get the size of the given canvas image. 
+.SS "EAPI void evas_object_image_load_size_set (\fBEvas_Object\fP * obj, int w, int h)"
+.PP
+Set the size of a loaded image of the canvas. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given canvas object. 
+.br
+\fIw\fP The new width of the canvas image given. 
+.br
+\fIh\fP The new height of the canvas image given.
+.RE
+.PP
+This function sets a new size for the given canvas image. 
+.SS "EAPI void evas_object_image_memfile_set (\fBEvas_Object\fP * obj, void * data, int size, char * format, char * key)"
+.PP
+Sets the data for an image from memory to be loaded. This is the same as \fBevas_object_image_file_set()\fP but the file to be loaded may exist at an address in memory (the data for the file, not the filename itself). The \fCdata\fP at the address is copied and stored for future use, so no \fCdata\fP needs to be kept after this call is made. It will be managed and freed for you when no longer needed. The \fCsize\fP is limited to 2 gigabytes in size, and must be greater than 0. A NULL \fCdata\fP pointer is also invalid. Set the filename to NULL to reset to empty state and have the image file data freed from memory using \fBevas_object_image_file_set()\fP.
+.PP
+The \fCformat\fP is optional (pass NULL if you don't need/use it). It is used to help Evas guess better which loader to use for the data. It may simply be the 'extension' of the file as it would normally be on disk such as 'jpg' or 'png' or 'gif' etc.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.br
+\fIdata\fP The image file data address 
+.br
+\fIsize\fP The size of the image file data in bytes 
+.br
+\fIformat\fP The format of the file (optional), or NULL if not needed 
+.br
+\fIkey\fP The image key in file, or NULL. 
+.RE
+.PP
+
+.PP
+References evas_object_image_alpha_set(), and evas_object_image_file_set().
+.SS "EAPI \fBEvas_Native_Surface\fP* evas_object_image_native_surface_get (const \fBEvas_Object\fP * obj)"
+.PP
+Get the native surface of a given image of the canvas. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given canvas pointer. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+The native surface of the given canvas image.
+.RE
+.PP
+This function returns the native surface of a given canvas image. 
+.SS "EAPI void evas_object_image_native_surface_set (\fBEvas_Object\fP * obj, \fBEvas_Native_Surface\fP * surf)"
+.PP
+Set the native surface of a given image of the canvas. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given canvas pointer. 
+.br
+\fIsurf\fP The new native surface.
+.RE
+.PP
+This function sets a native surface of a given canvas image. 
+.SS "EAPI Eina_Bool evas_object_image_pixels_dirty_get (const \fBEvas_Object\fP * obj)"
+.PP
+Retrieves whether the given image object is dirty (needs to be redrawn). \fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Whether the image is dirty. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_image_pixels_dirty_set (\fBEvas_Object\fP * obj, Eina_Bool dirty)"
+.PP
+Mark whether the given image object is dirty (needs to be redrawn). \fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.br
+\fIdirty\fP Whether the image is dirty. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_image_pixels_get_callback_set (\fBEvas_Object\fP * obj, Evas_Object_Image_Pixels_Get_Cb func, void * data)"
+.PP
+Set the callback function to get pixels from a canva's image. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given canvas pointer. 
+.br
+\fIfunc\fP The callback function. 
+.br
+\fIdata\fP The data pointer to be passed to \fIfunc\fP.
+.RE
+.PP
+This functions sets a function to be the callback function that get pixes from a image of the canvas. 
+.SS "EAPI Eina_Bool evas_object_image_pixels_import (\fBEvas_Object\fP * obj, \fBEvas_Pixel_Import_Source\fP * pixels)"
+.PP
+Import pixels from given source to a given canvas image object. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given canvas object. 
+.br
+\fIpixels\fP The pixel's source to be imported.
+.RE
+.PP
+This function imports pixels from a given source to a given canvas image. 
+.PP
+References EVAS_PIXEL_FORMAT_ARGB32, and EVAS_PIXEL_FORMAT_YUV420P_601.
+.SS "EAPI void evas_object_image_preload (\fBEvas_Object\fP * obj, Eina_Bool cancel)"
+.PP
+Preload image in the background. This function request the preload of the data image in the background. The worked is queued before being processed.
+.PP
+If image data is already loaded, it will callback EVAS_CALLBACK_IMAGE_PRELOADED immediatelly and do nothing else.
+.PP
+If cancel is set, it will remove the image from the workqueue.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.br
+\fIcancel\fP 0 means add to the workqueue, 1 remove it. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_image_reload (\fBEvas_Object\fP * obj)"
+.PP
+Reload a image of the canvas. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object pointer.
+.RE
+.PP
+This function reloads a image of the given canvas. 
+.SS "EAPI Eina_Bool evas_object_image_save (const \fBEvas_Object\fP * obj, const char * file, const char * key, const char * flags)"
+.PP
+Save the given image object to a file. Note that you should pass the filename extension when saving. If the file supports multiple data stored in it as eet, you can specify the key to be used as the index of the image in this file.
+.PP
+You can specify some flags when saving the image. Currently acceptable flags are quality and compress. Eg.: 'quality=100
+ compress=9'
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.br
+\fIfile\fP The filename to be used to save the image. 
+.br
+\fIkey\fP The image key in file, or NULL. 
+.br
+\fIflags\fP String containing the flags to be used. 
+.RE
+.PP
+
+.PP
+References EVAS_COLORSPACE_ARGB8888.
+.SS "EAPI Evas_Image_Scale_Hint evas_object_image_scale_hint_get (const \fBEvas_Object\fP * obj)"
+.PP
+Get the scale hint of a given image of the canvas. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given canvas pointer.
+.RE
+.PP
+This function returns the scale hint value of the given image of the canvas. 
+.SS "EAPI void evas_object_image_scale_hint_set (\fBEvas_Object\fP * obj, Evas_Image_Scale_Hint hint)"
+.PP
+Set the scale hint of a given image of the canvas. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given canvas pointer. 
+.br
+\fIhint\fP The scale hint value.
+.RE
+.PP
+This function sets the scale hint value of the given image of the canvas. 
+.SS "EAPI void evas_object_image_size_get (const \fBEvas_Object\fP * obj, int * w, int * h)"
+.PP
+Retrieves the size of the given image object. See \fBevas_object_image_size_set\fP for more details.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.br
+\fIw\fP Location to store the width of the image in, or NULL. 
+.br
+\fIh\fP Location to store the height of the image in, or NULL. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_image_size_set (\fBEvas_Object\fP * obj, int w, int h)"
+.PP
+Sets the size of the given image object. This function will scale down or crop the image so that it is treated as if it were at the given size. If the size given is smaller than the image, it will be cropped. If the size given is larger, then the image will be treated as if it were in the upper left hand corner of a larger image that is otherwise transparent.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.br
+\fIw\fP The new width of the image. 
+.br
+\fIh\fP The new height of the image. 
+.RE
+.PP
+
+.SS "EAPI Eina_Bool evas_object_image_smooth_scale_get (const \fBEvas_Object\fP * obj)"
+.PP
+Retrieves whether the given image object is using use a high-quality image scaling algorithm. See \fBevas_object_image_smooth_scale_set\fP for more details.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Whether smooth scale is being used. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_image_smooth_scale_set (\fBEvas_Object\fP * obj, Eina_Bool smooth_scale)"
+.PP
+Sets whether to use of high-quality image scaling algorithm of the given image object. When enabled, a higher quality image scaling algorithm is used when scaling images to sizes other than the source image. This gives better results but is more computationally expensive.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.br
+\fIsmooth_scale\fP Whether to use smooth scale or not. 
+.RE
+.PP
+
+.SS "EAPI \fBEvas_Object\fP * evas_object_image_source_get (\fBEvas_Object\fP * obj)"
+.PP
+Get the current source object of an image. \fBParameters:\fP
+.RS 4
+\fIobj\fP Image object 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Source object, or NULL on error. 
+.RE
+.PP
+
+.SS "EAPI Eina_Bool evas_object_image_source_set (\fBEvas_Object\fP * obj, \fBEvas_Object\fP * src)"
+.PP
+Set the source object on a proxy object. The source must be another object. The proxy will have the same base appearance of the source object. Obviously other effects may be applied to the proxy, such as a map to create a reflection of the original object.
+.PP
+Any existing source object will be removed. Setting the src to NULL clears the proxy object.
+.PP
+You cannot set a proxy on a proxy.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP Proxy object. 
+.br
+\fIsrc\fP Source of the proxy. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+EINA_TRUE on success, EINA_FALSE on error. 
+.RE
+.PP
+
+.PP
+References evas_object_image_file_set().
+.PP
+Referenced by evas_object_image_source_unset().
+.SS "EAPI Eina_Bool evas_object_image_source_unset (\fBEvas_Object\fP * obj)"
+.PP
+Clear the source on a proxy image. This is equivalent to calling evas_object_image_source_set with a NULL source.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP Image object to clear source of. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+EINA_TRUE on success, EINA_FALSE on error. 
+.RE
+.PP
+
+.PP
+References evas_object_image_source_set().
+.PP
+Referenced by evas_object_del().
+.SS "EAPI int evas_object_image_stride_get (const \fBEvas_Object\fP * obj)"
+.PP
+Retrieves the row stride of the given image object,. The row stride is the number of units between the start of a row and the start of the next row.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given image object. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+The stride of the image. 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Evas from the source code.

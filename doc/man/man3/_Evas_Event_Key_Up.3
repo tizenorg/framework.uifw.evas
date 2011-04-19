@@ -1,0 +1,38 @@
+.TH "_Evas_Event_Key_Up" 3 "Tue Apr 19 2011" "Evas" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+_Evas_Event_Key_Up \- 
+.PP
+Key release event.  
+
+.SH SYNOPSIS
+.br
+.PP
+.SS "Data Fields"
+
+.in +1c
+.ti -1c
+.RI "char * \fBkeyname\fP"
+.br
+.RI "\fIThe string name of the key released. \fP"
+.ti -1c
+.RI "const char * \fBkey\fP"
+.br
+.RI "\fIThe logical key : (eg shift+1 == exclamation). \fP"
+.ti -1c
+.RI "const char * \fBstring\fP"
+.br
+.RI "\fIA UTF8 string if this keystroke has produced a visible string to be ADDED. \fP"
+.ti -1c
+.RI "const char * \fBcompose\fP"
+.br
+.RI "\fIA UTF8 string if this keystroke has modified a string in the middle of being composed - this string replaces the previous one. \fP"
+.in -1c
+.SH "Detailed Description"
+.PP 
+Key release event. 
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Evas from the source code.

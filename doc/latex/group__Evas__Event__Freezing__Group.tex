@@ -1,0 +1,63 @@
+\section{Event Freezing Functions}
+\label{group__Evas__Event__Freezing__Group}\index{Event Freezing Functions@{Event Freezing Functions}}
+
+
+Functions that deal with the freezing of event processing of an evas.  
+
+
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+EAPI void \hyperlink{group__Evas__Event__Freezing__Group_ga45fee3a26820b56527e434f6173c345e}{evas\_\-event\_\-freeze} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e)
+\begin{DoxyCompactList}\small\item\em Freeze all event processing. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Event__Freezing__Group_ga4f08e6b3eece51bf285f1226629924e1}{evas\_\-event\_\-thaw} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e)
+\begin{DoxyCompactList}\small\item\em Thaw a canvas out after freezing. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Functions that deal with the freezing of event processing of an evas. 
+
+\subsection{Function Documentation}
+\index{Evas\_\-Event\_\-Freezing\_\-Group@{Evas\_\-Event\_\-Freezing\_\-Group}!evas\_\-event\_\-freeze@{evas\_\-event\_\-freeze}}
+\index{evas\_\-event\_\-freeze@{evas\_\-event\_\-freeze}!Evas_Event_Freezing_Group@{Evas\_\-Event\_\-Freezing\_\-Group}}
+\subsubsection[{evas\_\-event\_\-freeze}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-event\_\-freeze (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Event__Freezing__Group_ga45fee3a26820b56527e434f6173c345e}
+
+
+Freeze all event processing. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The canvas to freeze event processing on.\end{DoxyParams}
+This function will indicate to evas that the canvas {\ttfamily e} is to have all event processing frozen until a matching \hyperlink{group__Evas__Event__Freezing__Group_ga4f08e6b3eece51bf285f1226629924e1}{evas\_\-event\_\-thaw()} function is called on the same canvas. Every freeze call must be matched by a thaw call in order to completely thaw out a canvas.
+
+Example: 
+\begin{DoxyCode}
+ extern Evas *evas;
+ extern Evas_Object *object;
+
+ evas_event_freeze(evas);
+ evas_object_move(object, 50, 100);
+ evas_object_resize(object, 200, 200);
+ evas_event_thaw(evas);
+\end{DoxyCode}
+ \index{Evas\_\-Event\_\-Freezing\_\-Group@{Evas\_\-Event\_\-Freezing\_\-Group}!evas\_\-event\_\-thaw@{evas\_\-event\_\-thaw}}
+\index{evas\_\-event\_\-thaw@{evas\_\-event\_\-thaw}!Evas_Event_Freezing_Group@{Evas\_\-Event\_\-Freezing\_\-Group}}
+\subsubsection[{evas\_\-event\_\-thaw}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-event\_\-thaw (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Event__Freezing__Group_ga4f08e6b3eece51bf285f1226629924e1}
+
+
+Thaw a canvas out after freezing. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The canvas to thaw out.\end{DoxyParams}
+This will thaw out a canvas after a matching \hyperlink{group__Evas__Event__Freezing__Group_ga45fee3a26820b56527e434f6173c345e}{evas\_\-event\_\-freeze()} call. If this call completely thaws out a canvas, events will start being processed again after this call, but this call will not invole any \char`\"{}missed\char`\"{} events to be evaluated.
+
+See \hyperlink{group__Evas__Event__Freezing__Group_ga45fee3a26820b56527e434f6173c345e}{evas\_\-event\_\-freeze()} for an example. 

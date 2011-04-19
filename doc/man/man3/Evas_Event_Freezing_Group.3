@@ -1,0 +1,61 @@
+.TH "Event Freezing Functions" 3 "Tue Apr 19 2011" "Evas" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Event Freezing Functions \- 
+.PP
+Functions that deal with the freezing of event processing of an evas.  
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "EAPI void \fBevas_event_freeze\fP (\fBEvas\fP *e)"
+.br
+.RI "\fIFreeze all event processing. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_event_thaw\fP (\fBEvas\fP *e)"
+.br
+.RI "\fIThaw a canvas out after freezing. \fP"
+.in -1c
+.SH "Detailed Description"
+.PP 
+Functions that deal with the freezing of event processing of an evas. 
+.SH "Function Documentation"
+.PP 
+.SS "EAPI void evas_event_freeze (\fBEvas\fP * e)"
+.PP
+Freeze all event processing. \fBParameters:\fP
+.RS 4
+\fIe\fP The canvas to freeze event processing on.
+.RE
+.PP
+This function will indicate to evas that the canvas \fCe\fP is to have all event processing frozen until a matching \fBevas_event_thaw()\fP function is called on the same canvas. Every freeze call must be matched by a thaw call in order to completely thaw out a canvas.
+.PP
+Example: 
+.PP
+.nf
+ extern Evas *evas;
+ extern Evas_Object *object;
+
+ evas_event_freeze(evas);
+ evas_object_move(object, 50, 100);
+ evas_object_resize(object, 200, 200);
+ evas_event_thaw(evas);
+
+.fi
+.PP
+ 
+.SS "EAPI void evas_event_thaw (\fBEvas\fP * e)"
+.PP
+Thaw a canvas out after freezing. \fBParameters:\fP
+.RS 4
+\fIe\fP The canvas to thaw out.
+.RE
+.PP
+This will thaw out a canvas after a matching \fBevas_event_freeze()\fP call. If this call completely thaws out a canvas, events will start being processed again after this call, but this call will not invole any 'missed' events to be evaluated.
+.PP
+See \fBevas_event_freeze()\fP for an example. 
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Evas from the source code.

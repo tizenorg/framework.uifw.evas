@@ -1,0 +1,114 @@
+\section{Output and Viewport Resizing Functions}
+\label{group__Evas__Output__Size}\index{Output and Viewport Resizing Functions@{Output and Viewport Resizing Functions}}
+
+
+Functions that set and retrieve the output and viewport size of an evas.  
+
+
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+EAPI void \hyperlink{group__Evas__Output__Size_gaaf571f18f97f4067f554ab7713f01063}{evas\_\-output\_\-size\_\-set} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, int w, int h)
+\begin{DoxyCompactList}\small\item\em Sets the output size of the render engine of the given evas. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Output__Size_ga1f3497644d526ff5ded49b19c1ec732a}{evas\_\-output\_\-size\_\-get} (const \hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, int $\ast$w, int $\ast$h)
+\begin{DoxyCompactList}\small\item\em Retrieve the output size of the render engine of the given evas. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Output__Size_ga1d39edcaff429d884d4a70aa1fca0c08}{evas\_\-output\_\-viewport\_\-set} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, Evas\_\-Coord x, Evas\_\-Coord y, Evas\_\-Coord w, Evas\_\-Coord h)
+\begin{DoxyCompactList}\small\item\em Sets the output viewport of the given evas in evas units. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Output__Size_gab94e38ef64004f0ead8cd8f7a8f69fee}{evas\_\-output\_\-viewport\_\-get} (const \hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, Evas\_\-Coord $\ast$x, Evas\_\-Coord $\ast$y, Evas\_\-Coord $\ast$w, Evas\_\-Coord $\ast$h)
+\begin{DoxyCompactList}\small\item\em Get the render engine's output viewport co-\/ordinates in canvas units. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Functions that set and retrieve the output and viewport size of an evas. 
+
+\subsection{Function Documentation}
+\index{Evas\_\-Output\_\-Size@{Evas\_\-Output\_\-Size}!evas\_\-output\_\-size\_\-get@{evas\_\-output\_\-size\_\-get}}
+\index{evas\_\-output\_\-size\_\-get@{evas\_\-output\_\-size\_\-get}!Evas_Output_Size@{Evas\_\-Output\_\-Size}}
+\subsubsection[{evas\_\-output\_\-size\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-output\_\-size\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas} $\ast$}]{ e, }
+\item[{int $\ast$}]{ w, }
+\item[{int $\ast$}]{ h}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Output__Size_ga1f3497644d526ff5ded49b19c1ec732a}
+
+
+Retrieve the output size of the render engine of the given evas. 
+
+The output size is given in whatever the output units are for the engine.
+
+If either {\ttfamily w} or {\ttfamily h} is {\ttfamily NULL}, then it is ignored. If {\ttfamily e} is invalid, the returned results are undefined.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given evas. \item[{\em w}]The pointer to an integer to store the width in. \item[{\em h}]The pointer to an integer to store the height in. \end{DoxyParams}
+\index{Evas\_\-Output\_\-Size@{Evas\_\-Output\_\-Size}!evas\_\-output\_\-size\_\-set@{evas\_\-output\_\-size\_\-set}}
+\index{evas\_\-output\_\-size\_\-set@{evas\_\-output\_\-size\_\-set}!Evas_Output_Size@{Evas\_\-Output\_\-Size}}
+\subsubsection[{evas\_\-output\_\-size\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-output\_\-size\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e, }
+\item[{int}]{ w, }
+\item[{int}]{ h}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Output__Size_gaaf571f18f97f4067f554ab7713f01063}
+
+
+Sets the output size of the render engine of the given evas. 
+
+The evas will render to a rectangle of the given size once this function is called. The output size is independent of the viewport size. The viewport will be stretched to fill the given rectangle.
+
+The units used for {\ttfamily w} and {\ttfamily h} depend on the engine used by the evas.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given evas. \item[{\em w}]The width in output units, usually pixels. \item[{\em h}]The height in output units, usually pixels. \end{DoxyParams}
+\index{Evas\_\-Output\_\-Size@{Evas\_\-Output\_\-Size}!evas\_\-output\_\-viewport\_\-get@{evas\_\-output\_\-viewport\_\-get}}
+\index{evas\_\-output\_\-viewport\_\-get@{evas\_\-output\_\-viewport\_\-get}!Evas_Output_Size@{Evas\_\-Output\_\-Size}}
+\subsubsection[{evas\_\-output\_\-viewport\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-output\_\-viewport\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas} $\ast$}]{ e, }
+\item[{Evas\_\-Coord $\ast$}]{ x, }
+\item[{Evas\_\-Coord $\ast$}]{ y, }
+\item[{Evas\_\-Coord $\ast$}]{ w, }
+\item[{Evas\_\-Coord $\ast$}]{ h}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Output__Size_gab94e38ef64004f0ead8cd8f7a8f69fee}
+
+
+Get the render engine's output viewport co-\/ordinates in canvas units. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The pointer to the Evas Canvas \item[{\em x}]The pointer to a x variable to be filled in \item[{\em y}]The pointer to a y variable to be filled in \item[{\em w}]The pointer to a width variable to be filled in \item[{\em h}]The pointer to a height variable to be filled in\end{DoxyParams}
+Calling this function writes the current canvas output viewport size and location values into the variables pointed to by {\ttfamily x}, {\ttfamily y}, {\ttfamily w} and {\ttfamily h}. On success the variables have the output location and size values written to them in canvas units. Any of {\ttfamily x}, {\ttfamily y}, {\ttfamily w} or {\ttfamily h} that are NULL will not be written to. If {\ttfamily e} is invalid, the results are undefined.
+
+Example: 
+\begin{DoxyCode}
+ extern Evas *evas;
+ Evas_Coord x, y, width, height;
+
+ evas_output_viewport_get(evas, &x, &y, &w, &h);
+\end{DoxyCode}
+ \index{Evas\_\-Output\_\-Size@{Evas\_\-Output\_\-Size}!evas\_\-output\_\-viewport\_\-set@{evas\_\-output\_\-viewport\_\-set}}
+\index{evas\_\-output\_\-viewport\_\-set@{evas\_\-output\_\-viewport\_\-set}!Evas_Output_Size@{Evas\_\-Output\_\-Size}}
+\subsubsection[{evas\_\-output\_\-viewport\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-output\_\-viewport\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e, }
+\item[{Evas\_\-Coord}]{ x, }
+\item[{Evas\_\-Coord}]{ y, }
+\item[{Evas\_\-Coord}]{ w, }
+\item[{Evas\_\-Coord}]{ h}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Output__Size_ga1d39edcaff429d884d4a70aa1fca0c08}
+
+
+Sets the output viewport of the given evas in evas units. 
+
+The output viewport is the area of the evas that will be visible to the viewer. The viewport will be stretched to fit the output target of the evas when rendering is performed.
+
+\begin{DoxyNote}{Note}
+The coordinate values do not have to map 1-\/to-\/1 with the output target. However, it is generally advised that it is done for ease of use.
+\end{DoxyNote}
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given evas. \item[{\em x}]The top-\/left corner x value of the viewport. \item[{\em y}]The top-\/left corner y value of the viewport. \item[{\em w}]The width of the viewport. Must be greater than 0. \item[{\em h}]The height of the viewport. Must be greater than 0. \end{DoxyParams}

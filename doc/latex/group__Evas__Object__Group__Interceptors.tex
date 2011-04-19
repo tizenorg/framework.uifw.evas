@@ -1,0 +1,413 @@
+\section{Object Method Interceptors}
+\label{group__Evas__Object__Group__Interceptors}\index{Object Method Interceptors@{Object Method Interceptors}}
+
+
+Evas provides a way to intercept method calls.  
+
+
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Interceptors_ga3d80ec058c8c41638c8cc969be4d2920}{evas\_\-object\_\-intercept\_\-show\_\-callback\_\-add} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Object\_\-Intercept\_\-Show\_\-Cb func, const void $\ast$data)
+\begin{DoxyCompactList}\small\item\em Set the callback function that intercepts a show event of a object. \item\end{DoxyCompactList}\item 
+EAPI void $\ast$ \hyperlink{group__Evas__Object__Group__Interceptors_ga4816b582c3187aaad1644d2b93058e5e}{evas\_\-object\_\-intercept\_\-show\_\-callback\_\-del} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Object\_\-Intercept\_\-Show\_\-Cb func)
+\begin{DoxyCompactList}\small\item\em Unset the callback function that intercepts a show event of a object. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Interceptors_ga22e8baa1ef7a1607f8f28dac68a1f082}{evas\_\-object\_\-intercept\_\-hide\_\-callback\_\-add} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Object\_\-Intercept\_\-Hide\_\-Cb func, const void $\ast$data)
+\begin{DoxyCompactList}\small\item\em Set the callback function that intercepts a hide event of a object. \item\end{DoxyCompactList}\item 
+EAPI void $\ast$ \hyperlink{group__Evas__Object__Group__Interceptors_ga6586e236a6184486198775ab763e3f3c}{evas\_\-object\_\-intercept\_\-hide\_\-callback\_\-del} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Object\_\-Intercept\_\-Hide\_\-Cb func)
+\begin{DoxyCompactList}\small\item\em Unset the callback function that intercepts a hide event of a object. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Interceptors_ga08de22649a49981f9e10bf0da91a3ea6}{evas\_\-object\_\-intercept\_\-move\_\-callback\_\-add} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Object\_\-Intercept\_\-Move\_\-Cb func, const void $\ast$data)
+\begin{DoxyCompactList}\small\item\em Set the callback function that intercepts a move event of a object. \item\end{DoxyCompactList}\item 
+EAPI void $\ast$ \hyperlink{group__Evas__Object__Group__Interceptors_ga74c91ac985423daab22a89c4399c1d1d}{evas\_\-object\_\-intercept\_\-move\_\-callback\_\-del} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Object\_\-Intercept\_\-Move\_\-Cb func)
+\begin{DoxyCompactList}\small\item\em Unset the callback function that intercepts a move event of a object. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Interceptors_gac2ff36ae29a8e23617426f29a0c1fcd5}{evas\_\-object\_\-intercept\_\-resize\_\-callback\_\-add} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Object\_\-Intercept\_\-Resize\_\-Cb func, const void $\ast$data)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI void $\ast$ \hyperlink{group__Evas__Object__Group__Interceptors_ga4e97fa796c926741eb36e8394cb165c3}{evas\_\-object\_\-intercept\_\-resize\_\-callback\_\-del} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Object\_\-Intercept\_\-Resize\_\-Cb func)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Interceptors_ga19d34b7aeb38e7461ffd4edbe53ed6de}{evas\_\-object\_\-intercept\_\-raise\_\-callback\_\-add} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Object\_\-Intercept\_\-Raise\_\-Cb func, const void $\ast$data)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI void $\ast$ \hyperlink{group__Evas__Object__Group__Interceptors_ga506306fe87e6029c05900aa1d05f7738}{evas\_\-object\_\-intercept\_\-raise\_\-callback\_\-del} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Object\_\-Intercept\_\-Raise\_\-Cb func)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Interceptors_ga89af0b657cf6455d5f045a8635bda384}{evas\_\-object\_\-intercept\_\-lower\_\-callback\_\-add} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Object\_\-Intercept\_\-Lower\_\-Cb func, const void $\ast$data)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI void $\ast$ \hyperlink{group__Evas__Object__Group__Interceptors_gabf2007804911fba837d08f40771b4407}{evas\_\-object\_\-intercept\_\-lower\_\-callback\_\-del} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Object\_\-Intercept\_\-Lower\_\-Cb func)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Interceptors_ga2312fa84e2a3e406fa3dfcdcad4508e4}{evas\_\-object\_\-intercept\_\-stack\_\-above\_\-callback\_\-add} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Object\_\-Intercept\_\-Stack\_\-Above\_\-Cb func, const void $\ast$data)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI void $\ast$ \hyperlink{group__Evas__Object__Group__Interceptors_gae1bf65a8cd0cdca8de7dc8d2695e793d}{evas\_\-object\_\-intercept\_\-stack\_\-above\_\-callback\_\-del} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Object\_\-Intercept\_\-Stack\_\-Above\_\-Cb func)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Interceptors_ga2ca3156882d8c75ff9f133d919de97a3}{evas\_\-object\_\-intercept\_\-stack\_\-below\_\-callback\_\-add} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Object\_\-Intercept\_\-Stack\_\-Below\_\-Cb func, const void $\ast$data)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI void $\ast$ \hyperlink{group__Evas__Object__Group__Interceptors_ga3ea2c39efe906e667c7ee6ff3e495077}{evas\_\-object\_\-intercept\_\-stack\_\-below\_\-callback\_\-del} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Object\_\-Intercept\_\-Stack\_\-Below\_\-Cb func)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Interceptors_gad09f0dc01feadf931c7e28ec59c5a006}{evas\_\-object\_\-intercept\_\-layer\_\-set\_\-callback\_\-add} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Object\_\-Intercept\_\-Layer\_\-Set\_\-Cb func, const void $\ast$data)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI void $\ast$ \hyperlink{group__Evas__Object__Group__Interceptors_gaae557df24e79e6f5e297c58039769756}{evas\_\-object\_\-intercept\_\-layer\_\-set\_\-callback\_\-del} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Object\_\-Intercept\_\-Layer\_\-Set\_\-Cb func)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Interceptors_gaa06bec22508d8a6e3d46a15ad9b9424b}{evas\_\-object\_\-intercept\_\-color\_\-set\_\-callback\_\-add} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Object\_\-Intercept\_\-Color\_\-Set\_\-Cb func, const void $\ast$data)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI void $\ast$ \hyperlink{group__Evas__Object__Group__Interceptors_gaea953f10b9d493808ed05f76070d9271}{evas\_\-object\_\-intercept\_\-color\_\-set\_\-callback\_\-del} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Object\_\-Intercept\_\-Color\_\-Set\_\-Cb func)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Interceptors_gac4f3f584515d02f663d32fb010bd4959}{evas\_\-object\_\-intercept\_\-clip\_\-set\_\-callback\_\-add} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Object\_\-Intercept\_\-Clip\_\-Set\_\-Cb func, const void $\ast$data)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI void $\ast$ \hyperlink{group__Evas__Object__Group__Interceptors_gab36329c91b46748f30c1bffb811f70ce}{evas\_\-object\_\-intercept\_\-clip\_\-set\_\-callback\_\-del} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Object\_\-Intercept\_\-Clip\_\-Set\_\-Cb func)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Interceptors_ga608008f35ffb143afc70c7154530a2c5}{evas\_\-object\_\-intercept\_\-clip\_\-unset\_\-callback\_\-add} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Object\_\-Intercept\_\-Clip\_\-Unset\_\-Cb func, const void $\ast$data)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI void $\ast$ \hyperlink{group__Evas__Object__Group__Interceptors_gaa4985b2b46b9f0f3126856a343136286}{evas\_\-object\_\-intercept\_\-clip\_\-unset\_\-callback\_\-del} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Object\_\-Intercept\_\-Clip\_\-Unset\_\-Cb func)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Evas provides a way to intercept method calls. The interceptor callback may opt to completely deny the call, or may check and change the parameters before continuing. The continuation of an intercepted call is done by calling the intercepted call again, from inside the interceptor callback. 
+
+\subsection{Function Documentation}
+\index{Evas\_\-Object\_\-Group\_\-Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}!evas\_\-object\_\-intercept\_\-clip\_\-set\_\-callback\_\-add@{evas\_\-object\_\-intercept\_\-clip\_\-set\_\-callback\_\-add}}
+\index{evas\_\-object\_\-intercept\_\-clip\_\-set\_\-callback\_\-add@{evas\_\-object\_\-intercept\_\-clip\_\-set\_\-callback\_\-add}!Evas_Object_Group_Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}}
+\subsubsection[{evas\_\-object\_\-intercept\_\-clip\_\-set\_\-callback\_\-add}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-intercept\_\-clip\_\-set\_\-callback\_\-add (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Object\_\-Intercept\_\-Clip\_\-Set\_\-Cb}]{ func, }
+\item[{const void $\ast$}]{ data}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Interceptors_gac4f3f584515d02f663d32fb010bd4959}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Group\_\-Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}!evas\_\-object\_\-intercept\_\-clip\_\-set\_\-callback\_\-del@{evas\_\-object\_\-intercept\_\-clip\_\-set\_\-callback\_\-del}}
+\index{evas\_\-object\_\-intercept\_\-clip\_\-set\_\-callback\_\-del@{evas\_\-object\_\-intercept\_\-clip\_\-set\_\-callback\_\-del}!Evas_Object_Group_Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}}
+\subsubsection[{evas\_\-object\_\-intercept\_\-clip\_\-set\_\-callback\_\-del}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void$\ast$ evas\_\-object\_\-intercept\_\-clip\_\-set\_\-callback\_\-del (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Object\_\-Intercept\_\-Clip\_\-Set\_\-Cb}]{ func}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Interceptors_gab36329c91b46748f30c1bffb811f70ce}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Group\_\-Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}!evas\_\-object\_\-intercept\_\-clip\_\-unset\_\-callback\_\-add@{evas\_\-object\_\-intercept\_\-clip\_\-unset\_\-callback\_\-add}}
+\index{evas\_\-object\_\-intercept\_\-clip\_\-unset\_\-callback\_\-add@{evas\_\-object\_\-intercept\_\-clip\_\-unset\_\-callback\_\-add}!Evas_Object_Group_Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}}
+\subsubsection[{evas\_\-object\_\-intercept\_\-clip\_\-unset\_\-callback\_\-add}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-intercept\_\-clip\_\-unset\_\-callback\_\-add (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Object\_\-Intercept\_\-Clip\_\-Unset\_\-Cb}]{ func, }
+\item[{const void $\ast$}]{ data}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Interceptors_ga608008f35ffb143afc70c7154530a2c5}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Group\_\-Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}!evas\_\-object\_\-intercept\_\-clip\_\-unset\_\-callback\_\-del@{evas\_\-object\_\-intercept\_\-clip\_\-unset\_\-callback\_\-del}}
+\index{evas\_\-object\_\-intercept\_\-clip\_\-unset\_\-callback\_\-del@{evas\_\-object\_\-intercept\_\-clip\_\-unset\_\-callback\_\-del}!Evas_Object_Group_Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}}
+\subsubsection[{evas\_\-object\_\-intercept\_\-clip\_\-unset\_\-callback\_\-del}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void$\ast$ evas\_\-object\_\-intercept\_\-clip\_\-unset\_\-callback\_\-del (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Object\_\-Intercept\_\-Clip\_\-Unset\_\-Cb}]{ func}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Interceptors_gaa4985b2b46b9f0f3126856a343136286}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Group\_\-Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}!evas\_\-object\_\-intercept\_\-color\_\-set\_\-callback\_\-add@{evas\_\-object\_\-intercept\_\-color\_\-set\_\-callback\_\-add}}
+\index{evas\_\-object\_\-intercept\_\-color\_\-set\_\-callback\_\-add@{evas\_\-object\_\-intercept\_\-color\_\-set\_\-callback\_\-add}!Evas_Object_Group_Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}}
+\subsubsection[{evas\_\-object\_\-intercept\_\-color\_\-set\_\-callback\_\-add}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-intercept\_\-color\_\-set\_\-callback\_\-add (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Object\_\-Intercept\_\-Color\_\-Set\_\-Cb}]{ func, }
+\item[{const void $\ast$}]{ data}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Interceptors_gaa06bec22508d8a6e3d46a15ad9b9424b}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Group\_\-Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}!evas\_\-object\_\-intercept\_\-color\_\-set\_\-callback\_\-del@{evas\_\-object\_\-intercept\_\-color\_\-set\_\-callback\_\-del}}
+\index{evas\_\-object\_\-intercept\_\-color\_\-set\_\-callback\_\-del@{evas\_\-object\_\-intercept\_\-color\_\-set\_\-callback\_\-del}!Evas_Object_Group_Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}}
+\subsubsection[{evas\_\-object\_\-intercept\_\-color\_\-set\_\-callback\_\-del}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void$\ast$ evas\_\-object\_\-intercept\_\-color\_\-set\_\-callback\_\-del (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Object\_\-Intercept\_\-Color\_\-Set\_\-Cb}]{ func}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Interceptors_gaea953f10b9d493808ed05f76070d9271}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Group\_\-Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}!evas\_\-object\_\-intercept\_\-hide\_\-callback\_\-add@{evas\_\-object\_\-intercept\_\-hide\_\-callback\_\-add}}
+\index{evas\_\-object\_\-intercept\_\-hide\_\-callback\_\-add@{evas\_\-object\_\-intercept\_\-hide\_\-callback\_\-add}!Evas_Object_Group_Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}}
+\subsubsection[{evas\_\-object\_\-intercept\_\-hide\_\-callback\_\-add}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-intercept\_\-hide\_\-callback\_\-add (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Object\_\-Intercept\_\-Hide\_\-Cb}]{ func, }
+\item[{const void $\ast$}]{ data}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Interceptors_ga22e8baa1ef7a1607f8f28dac68a1f082}
+
+
+Set the callback function that intercepts a hide event of a object. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given canvas object pointer. \item[{\em func}]The given function to be the callback function. \item[{\em data}]The data passed to the callback function.\end{DoxyParams}
+This function sets a callback function to intercepts a hide event of a canvas object.
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__Evas__Object__Group__Interceptors_ga6586e236a6184486198775ab763e3f3c}{evas\_\-object\_\-intercept\_\-hide\_\-callback\_\-del()}. 
+\end{DoxySeeAlso}
+\index{Evas\_\-Object\_\-Group\_\-Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}!evas\_\-object\_\-intercept\_\-hide\_\-callback\_\-del@{evas\_\-object\_\-intercept\_\-hide\_\-callback\_\-del}}
+\index{evas\_\-object\_\-intercept\_\-hide\_\-callback\_\-del@{evas\_\-object\_\-intercept\_\-hide\_\-callback\_\-del}!Evas_Object_Group_Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}}
+\subsubsection[{evas\_\-object\_\-intercept\_\-hide\_\-callback\_\-del}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void$\ast$ evas\_\-object\_\-intercept\_\-hide\_\-callback\_\-del (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Object\_\-Intercept\_\-Hide\_\-Cb}]{ func}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Interceptors_ga6586e236a6184486198775ab763e3f3c}
+
+
+Unset the callback function that intercepts a hide event of a object. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given canvas object pointer. \item[{\em func}]The given callback function.\end{DoxyParams}
+This function sets a callback function to intercepts a hide event of a canvas object.
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__Evas__Object__Group__Interceptors_ga22e8baa1ef7a1607f8f28dac68a1f082}{evas\_\-object\_\-intercept\_\-hide\_\-callback\_\-add()}. 
+\end{DoxySeeAlso}
+\index{Evas\_\-Object\_\-Group\_\-Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}!evas\_\-object\_\-intercept\_\-layer\_\-set\_\-callback\_\-add@{evas\_\-object\_\-intercept\_\-layer\_\-set\_\-callback\_\-add}}
+\index{evas\_\-object\_\-intercept\_\-layer\_\-set\_\-callback\_\-add@{evas\_\-object\_\-intercept\_\-layer\_\-set\_\-callback\_\-add}!Evas_Object_Group_Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}}
+\subsubsection[{evas\_\-object\_\-intercept\_\-layer\_\-set\_\-callback\_\-add}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-intercept\_\-layer\_\-set\_\-callback\_\-add (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Object\_\-Intercept\_\-Layer\_\-Set\_\-Cb}]{ func, }
+\item[{const void $\ast$}]{ data}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Interceptors_gad09f0dc01feadf931c7e28ec59c5a006}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Group\_\-Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}!evas\_\-object\_\-intercept\_\-layer\_\-set\_\-callback\_\-del@{evas\_\-object\_\-intercept\_\-layer\_\-set\_\-callback\_\-del}}
+\index{evas\_\-object\_\-intercept\_\-layer\_\-set\_\-callback\_\-del@{evas\_\-object\_\-intercept\_\-layer\_\-set\_\-callback\_\-del}!Evas_Object_Group_Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}}
+\subsubsection[{evas\_\-object\_\-intercept\_\-layer\_\-set\_\-callback\_\-del}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void$\ast$ evas\_\-object\_\-intercept\_\-layer\_\-set\_\-callback\_\-del (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Object\_\-Intercept\_\-Layer\_\-Set\_\-Cb}]{ func}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Interceptors_gaae557df24e79e6f5e297c58039769756}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Group\_\-Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}!evas\_\-object\_\-intercept\_\-lower\_\-callback\_\-add@{evas\_\-object\_\-intercept\_\-lower\_\-callback\_\-add}}
+\index{evas\_\-object\_\-intercept\_\-lower\_\-callback\_\-add@{evas\_\-object\_\-intercept\_\-lower\_\-callback\_\-add}!Evas_Object_Group_Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}}
+\subsubsection[{evas\_\-object\_\-intercept\_\-lower\_\-callback\_\-add}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-intercept\_\-lower\_\-callback\_\-add (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Object\_\-Intercept\_\-Lower\_\-Cb}]{ func, }
+\item[{const void $\ast$}]{ data}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Interceptors_ga89af0b657cf6455d5f045a8635bda384}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Group\_\-Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}!evas\_\-object\_\-intercept\_\-lower\_\-callback\_\-del@{evas\_\-object\_\-intercept\_\-lower\_\-callback\_\-del}}
+\index{evas\_\-object\_\-intercept\_\-lower\_\-callback\_\-del@{evas\_\-object\_\-intercept\_\-lower\_\-callback\_\-del}!Evas_Object_Group_Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}}
+\subsubsection[{evas\_\-object\_\-intercept\_\-lower\_\-callback\_\-del}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void$\ast$ evas\_\-object\_\-intercept\_\-lower\_\-callback\_\-del (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Object\_\-Intercept\_\-Lower\_\-Cb}]{ func}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Interceptors_gabf2007804911fba837d08f40771b4407}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Group\_\-Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}!evas\_\-object\_\-intercept\_\-move\_\-callback\_\-add@{evas\_\-object\_\-intercept\_\-move\_\-callback\_\-add}}
+\index{evas\_\-object\_\-intercept\_\-move\_\-callback\_\-add@{evas\_\-object\_\-intercept\_\-move\_\-callback\_\-add}!Evas_Object_Group_Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}}
+\subsubsection[{evas\_\-object\_\-intercept\_\-move\_\-callback\_\-add}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-intercept\_\-move\_\-callback\_\-add (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Object\_\-Intercept\_\-Move\_\-Cb}]{ func, }
+\item[{const void $\ast$}]{ data}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Interceptors_ga08de22649a49981f9e10bf0da91a3ea6}
+
+
+Set the callback function that intercepts a move event of a object. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given canvas object pointer. \item[{\em func}]The given function to be the callback function. \item[{\em data}]The data passed to the callback function.\end{DoxyParams}
+This function sets a callback function to intercepts a move event of a canvas object.
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__Evas__Object__Group__Interceptors_ga74c91ac985423daab22a89c4399c1d1d}{evas\_\-object\_\-intercept\_\-move\_\-callback\_\-del()}. 
+\end{DoxySeeAlso}
+\index{Evas\_\-Object\_\-Group\_\-Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}!evas\_\-object\_\-intercept\_\-move\_\-callback\_\-del@{evas\_\-object\_\-intercept\_\-move\_\-callback\_\-del}}
+\index{evas\_\-object\_\-intercept\_\-move\_\-callback\_\-del@{evas\_\-object\_\-intercept\_\-move\_\-callback\_\-del}!Evas_Object_Group_Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}}
+\subsubsection[{evas\_\-object\_\-intercept\_\-move\_\-callback\_\-del}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void$\ast$ evas\_\-object\_\-intercept\_\-move\_\-callback\_\-del (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Object\_\-Intercept\_\-Move\_\-Cb}]{ func}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Interceptors_ga74c91ac985423daab22a89c4399c1d1d}
+
+
+Unset the callback function that intercepts a move event of a object. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given canvas object pointer. \item[{\em func}]The given callback function.\end{DoxyParams}
+This function sets a callback function to intercepts a move event of a canvas object.
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__Evas__Object__Group__Interceptors_ga08de22649a49981f9e10bf0da91a3ea6}{evas\_\-object\_\-intercept\_\-move\_\-callback\_\-add()}. 
+\end{DoxySeeAlso}
+\index{Evas\_\-Object\_\-Group\_\-Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}!evas\_\-object\_\-intercept\_\-raise\_\-callback\_\-add@{evas\_\-object\_\-intercept\_\-raise\_\-callback\_\-add}}
+\index{evas\_\-object\_\-intercept\_\-raise\_\-callback\_\-add@{evas\_\-object\_\-intercept\_\-raise\_\-callback\_\-add}!Evas_Object_Group_Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}}
+\subsubsection[{evas\_\-object\_\-intercept\_\-raise\_\-callback\_\-add}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-intercept\_\-raise\_\-callback\_\-add (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Object\_\-Intercept\_\-Raise\_\-Cb}]{ func, }
+\item[{const void $\ast$}]{ data}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Interceptors_ga19d34b7aeb38e7461ffd4edbe53ed6de}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Group\_\-Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}!evas\_\-object\_\-intercept\_\-raise\_\-callback\_\-del@{evas\_\-object\_\-intercept\_\-raise\_\-callback\_\-del}}
+\index{evas\_\-object\_\-intercept\_\-raise\_\-callback\_\-del@{evas\_\-object\_\-intercept\_\-raise\_\-callback\_\-del}!Evas_Object_Group_Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}}
+\subsubsection[{evas\_\-object\_\-intercept\_\-raise\_\-callback\_\-del}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void$\ast$ evas\_\-object\_\-intercept\_\-raise\_\-callback\_\-del (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Object\_\-Intercept\_\-Raise\_\-Cb}]{ func}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Interceptors_ga506306fe87e6029c05900aa1d05f7738}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Group\_\-Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}!evas\_\-object\_\-intercept\_\-resize\_\-callback\_\-add@{evas\_\-object\_\-intercept\_\-resize\_\-callback\_\-add}}
+\index{evas\_\-object\_\-intercept\_\-resize\_\-callback\_\-add@{evas\_\-object\_\-intercept\_\-resize\_\-callback\_\-add}!Evas_Object_Group_Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}}
+\subsubsection[{evas\_\-object\_\-intercept\_\-resize\_\-callback\_\-add}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-intercept\_\-resize\_\-callback\_\-add (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Object\_\-Intercept\_\-Resize\_\-Cb}]{ func, }
+\item[{const void $\ast$}]{ data}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Interceptors_gac2ff36ae29a8e23617426f29a0c1fcd5}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Group\_\-Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}!evas\_\-object\_\-intercept\_\-resize\_\-callback\_\-del@{evas\_\-object\_\-intercept\_\-resize\_\-callback\_\-del}}
+\index{evas\_\-object\_\-intercept\_\-resize\_\-callback\_\-del@{evas\_\-object\_\-intercept\_\-resize\_\-callback\_\-del}!Evas_Object_Group_Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}}
+\subsubsection[{evas\_\-object\_\-intercept\_\-resize\_\-callback\_\-del}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void$\ast$ evas\_\-object\_\-intercept\_\-resize\_\-callback\_\-del (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Object\_\-Intercept\_\-Resize\_\-Cb}]{ func}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Interceptors_ga4e97fa796c926741eb36e8394cb165c3}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Group\_\-Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}!evas\_\-object\_\-intercept\_\-show\_\-callback\_\-add@{evas\_\-object\_\-intercept\_\-show\_\-callback\_\-add}}
+\index{evas\_\-object\_\-intercept\_\-show\_\-callback\_\-add@{evas\_\-object\_\-intercept\_\-show\_\-callback\_\-add}!Evas_Object_Group_Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}}
+\subsubsection[{evas\_\-object\_\-intercept\_\-show\_\-callback\_\-add}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-intercept\_\-show\_\-callback\_\-add (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Object\_\-Intercept\_\-Show\_\-Cb}]{ func, }
+\item[{const void $\ast$}]{ data}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Interceptors_ga3d80ec058c8c41638c8cc969be4d2920}
+
+
+Set the callback function that intercepts a show event of a object. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given canvas object pointer. \item[{\em func}]The given function to be the callback function. \item[{\em data}]The data passed to the callback function.\end{DoxyParams}
+This function sets a callback function to intercepts a show event of a canvas object.
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__Evas__Object__Group__Interceptors_ga4816b582c3187aaad1644d2b93058e5e}{evas\_\-object\_\-intercept\_\-show\_\-callback\_\-del()}. 
+\end{DoxySeeAlso}
+\index{Evas\_\-Object\_\-Group\_\-Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}!evas\_\-object\_\-intercept\_\-show\_\-callback\_\-del@{evas\_\-object\_\-intercept\_\-show\_\-callback\_\-del}}
+\index{evas\_\-object\_\-intercept\_\-show\_\-callback\_\-del@{evas\_\-object\_\-intercept\_\-show\_\-callback\_\-del}!Evas_Object_Group_Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}}
+\subsubsection[{evas\_\-object\_\-intercept\_\-show\_\-callback\_\-del}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void$\ast$ evas\_\-object\_\-intercept\_\-show\_\-callback\_\-del (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Object\_\-Intercept\_\-Show\_\-Cb}]{ func}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Interceptors_ga4816b582c3187aaad1644d2b93058e5e}
+
+
+Unset the callback function that intercepts a show event of a object. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given canvas object pointer. \item[{\em func}]The given callback function.\end{DoxyParams}
+This function sets a callback function to intercepts a show event of a canvas object.
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__Evas__Object__Group__Interceptors_ga3d80ec058c8c41638c8cc969be4d2920}{evas\_\-object\_\-intercept\_\-show\_\-callback\_\-add()}. 
+\end{DoxySeeAlso}
+\index{Evas\_\-Object\_\-Group\_\-Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}!evas\_\-object\_\-intercept\_\-stack\_\-above\_\-callback\_\-add@{evas\_\-object\_\-intercept\_\-stack\_\-above\_\-callback\_\-add}}
+\index{evas\_\-object\_\-intercept\_\-stack\_\-above\_\-callback\_\-add@{evas\_\-object\_\-intercept\_\-stack\_\-above\_\-callback\_\-add}!Evas_Object_Group_Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}}
+\subsubsection[{evas\_\-object\_\-intercept\_\-stack\_\-above\_\-callback\_\-add}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-intercept\_\-stack\_\-above\_\-callback\_\-add (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Object\_\-Intercept\_\-Stack\_\-Above\_\-Cb}]{ func, }
+\item[{const void $\ast$}]{ data}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Interceptors_ga2312fa84e2a3e406fa3dfcdcad4508e4}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Group\_\-Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}!evas\_\-object\_\-intercept\_\-stack\_\-above\_\-callback\_\-del@{evas\_\-object\_\-intercept\_\-stack\_\-above\_\-callback\_\-del}}
+\index{evas\_\-object\_\-intercept\_\-stack\_\-above\_\-callback\_\-del@{evas\_\-object\_\-intercept\_\-stack\_\-above\_\-callback\_\-del}!Evas_Object_Group_Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}}
+\subsubsection[{evas\_\-object\_\-intercept\_\-stack\_\-above\_\-callback\_\-del}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void$\ast$ evas\_\-object\_\-intercept\_\-stack\_\-above\_\-callback\_\-del (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Object\_\-Intercept\_\-Stack\_\-Above\_\-Cb}]{ func}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Interceptors_gae1bf65a8cd0cdca8de7dc8d2695e793d}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Group\_\-Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}!evas\_\-object\_\-intercept\_\-stack\_\-below\_\-callback\_\-add@{evas\_\-object\_\-intercept\_\-stack\_\-below\_\-callback\_\-add}}
+\index{evas\_\-object\_\-intercept\_\-stack\_\-below\_\-callback\_\-add@{evas\_\-object\_\-intercept\_\-stack\_\-below\_\-callback\_\-add}!Evas_Object_Group_Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}}
+\subsubsection[{evas\_\-object\_\-intercept\_\-stack\_\-below\_\-callback\_\-add}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-intercept\_\-stack\_\-below\_\-callback\_\-add (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Object\_\-Intercept\_\-Stack\_\-Below\_\-Cb}]{ func, }
+\item[{const void $\ast$}]{ data}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Interceptors_ga2ca3156882d8c75ff9f133d919de97a3}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Group\_\-Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}!evas\_\-object\_\-intercept\_\-stack\_\-below\_\-callback\_\-del@{evas\_\-object\_\-intercept\_\-stack\_\-below\_\-callback\_\-del}}
+\index{evas\_\-object\_\-intercept\_\-stack\_\-below\_\-callback\_\-del@{evas\_\-object\_\-intercept\_\-stack\_\-below\_\-callback\_\-del}!Evas_Object_Group_Interceptors@{Evas\_\-Object\_\-Group\_\-Interceptors}}
+\subsubsection[{evas\_\-object\_\-intercept\_\-stack\_\-below\_\-callback\_\-del}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void$\ast$ evas\_\-object\_\-intercept\_\-stack\_\-below\_\-callback\_\-del (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Object\_\-Intercept\_\-Stack\_\-Below\_\-Cb}]{ func}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Interceptors_ga3ea2c39efe906e667c7ee6ff3e495077}
+
+
+To be documented. 
+
+FIXME: To be fixed. 

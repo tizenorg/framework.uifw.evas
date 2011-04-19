@@ -1,0 +1,130 @@
+.TH "todo" 3 "Tue Apr 19 2011" "Evas" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+todo \- .TH "todo" 3 "Tue Apr 19 2011" "Evas" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+todo \-  
+.IP "\fBGlobal \fBENFN\fP \fP" 1c
+Write  
+.PP
+.PP
+ 
+.IP "\fBpage \fBEvas\fP \fP" 1c
+(1.0) Need a way ot scaling an image and just PRODUCING the output (scaling direct to target buffe r- no blend/copy etc.) 
+.PP
+(1.0) Could improve evas's scaling down code to limit multiple samples per output pixel to maybe 2x2? 
+.PP
+(1.0) Document API 
+.PP
+(1.0) Evas needs to check delete_me member for all object functions 
+.PP
+(1.0) Evas engine that renders to Evas_Objects 
+.PP
+(1.0) OpenGL engine needs to use texture meshes 
+.PP
+(1.0) OpenGL engine needs texture cache and size setting 
+.PP
+(1.0) OpenGL Engine needs YUV import API to YUV texture 
+.PP
+(1.0) All engines need pixel import API 
+.PP
+(1.0) Add parital render through composite layer api to engines 
+.PP
+(1.0) Move callback processing to a queue and do it asynchronously??? 
+.PP
+(1.0) Add button grabbing 
+.PP
+(1.0) Add generic object method call system 
+.PP
+(1.0) Add callbacks set for smart object parents to be set on all child smart objects too. 
+.PP
+(1.0) Add font load query calls (so we know if a font load failed) 
+.PP
+(1.0) Add font listing calls 
+.PP
+(1.0) Add ability to check image comments & disk format 
+.PP
+(1.0) Add fontset support 
+.PP
+(1.0) Export engine rendering API cleanly to Evas API 
+.PP
+(1.0) Add smart object ability to provide rendering callback 
+.PP
+(1.1) Make freetype optional and put in optional graymap font engine 
+.PP
+(1.1) Free images if object invisible (and put back in chache) 
+.PP
+(1.1) Check robustness of malloc/calloc/realloc failures. 
+.PP
+(1.1) Add memory use reduction code if any allocations fail 
+.PP
+(1.1) If image loads fails due to memory allocatue failure, load reduced res version 
+.PP
+(1.1) If image load fails due to memory allocation failure, try split it up into tiles and demand-load them 
+.PP
+(1.2) Add external image loaders (application provided callbacks to load) 
+.PP
+(1.2) Add loadable image loader module support (evas loads file.so) 
+.PP
+(1.2) Add external image loader modules (application provides path to file.so) 
+.PP
+(1.3) Add X11 primtive engine (ie pixmap) 
+.PP
+(1.3) Add immediate mode drawing commands to image objects 
+.PP
+(1.3) Fix FB engine to allocate vt and release properly 
+.PP
+(1.4) Add ellipse objects (circle, arc, ellipse etc.) 
+.PP
+(1.5) Make software engine draw lines & polys etc. with aa 
+.PP
+(1.5) Add radial gradients to gradient objects 
+.PP
+(1.5) Add Symbian Engine 
+.PP
+(1.6) Add PalmOS Engine 
+.PP
+(1.6) Add Apple OpenGL Engine 
+.PP
+(1.7) Document engine API and other internals 
+.PP
+(1.7) Allow any object to clip any other object, and not just rectangles 
+.PP
+(1.8) Add more evas demos 
+.PP
+(1.9) Write the error mechanism in evas_xcb_buffer.c 
+.PP
+(1.9) Rewrite the render xcb engine 
+.PP
+(1.10) Improve Win32 Direct3D Engine
+.PP
+.PP
+ 
+.IP "\fBFile \fBEvas.h\fP \fP" 1c
+check boolean return values and convert to Eina_Bool 
+.PP
+change all api to use EINA_SAFETY_* 
+.PP
+finish api documentation 
+.PP
+.PP
+ 
+.IP "\fBGlobal \fBevas_key_modifier_get\fP(const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE \fP" 1c
+document key modifiers.
+.PP
+.PP
+ 
+.IP "\fBGlobal \fBevas_object_table_homogeneous_set\fP(Evas_Object *o, Evas_Object_Table_Homogeneous_Mode homogeneous) \fP" 1c
+consider aspect hint and respect it.
+.PP
+\fCEVAS_OBJECT_TABLE_HOMOGENEOUS_NONE\fP should balance weight.
+.PP
+.PP
+ 
+.IP "\fBGroup \fBEvas_Object_Textblock\fP \fP" 1c
+put here some usage examples
+.PP
+

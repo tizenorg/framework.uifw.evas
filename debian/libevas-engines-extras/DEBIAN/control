@@ -1,0 +1,20 @@
+Package: libevas-engines-extras
+Source: evas
+Version: 1.0.0.001+svn.58227slp2+build04
+Architecture: armel
+Maintainer: Jaehwan Kim <jae.hwan.kim@samsung.com>, Sangjin Lee <lsj119@samsung.com>, Doyoun Kang <doyoun.kang@samsung.com>, YoungHoon Jung <yhoon.jung@samsung.com>, Myungjae Lee <mjae.lee@samsung.com>, Juyung Seo <juyung.seo@samsung.com>, Gwanglim Lee <gl77.lee@samsung.com>, Jeonghyun Yun <jh0506.yun@samsung.com>, Seokjae Jeong <seok.j.jeong@samsung.com>, MyoungWoon Kim <myoungwoon.kim@samsung.com>, ChunEon Park <chuneon.park@samsung.com>, Hyoyoung Chang <hyoyoung.chang@samsung.com>, WooHyun Jung <wh0705.jung@samsung.com>, Gwangyeong Mun <kk.moon@samsung.com>
+Installed-Size: 200
+Depends: libc6 (>= 2.4), libeina (>= 1.0.0.001+svn20100831), libevas (>= 0.9.9.060+svn20100203), libgcc1 (>= 1:4.4.0), libx11-6, libxrender1, libevas-engines, opengl-es
+Conflicts: libevas-0.9.9.050a-engines-extras
+Section: libs
+Priority: optional
+Homepage: http://www.enlightenment.org
+Description: Evas module providing the Xrender engine
+ Evas is an advanced canvas library, providing six engines for rendering: X11,
+ OpenGL (hardware accelerated), DirectFB, the framebuffer, Microsoft Windows
+ and Qtopia.
+ Due to its simple API, evas can be developed with rapidly, and cleanly.
+ .
+ This package contains some extra Evas engine modules:
+  - GL/X11
+  - Framebuffer

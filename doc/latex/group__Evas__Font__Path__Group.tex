@@ -1,0 +1,89 @@
+\section{Font Path Functions}
+\label{group__Evas__Font__Path__Group}\index{Font Path Functions@{Font Path Functions}}
+
+
+Functions that edit the paths being used to load fonts.  
+
+
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+EAPI void \hyperlink{group__Evas__Font__Path__Group_gad565539bda0fc124e4a0865fa29a8463}{evas\_\-font\_\-path\_\-clear} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e)
+\begin{DoxyCompactList}\small\item\em Removes all font paths loaded into memory for the given evas. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Font__Path__Group_ga0ec22ec047841db059a9f6f0b2ec5918}{evas\_\-font\_\-path\_\-append} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, const char $\ast$path)
+\begin{DoxyCompactList}\small\item\em Appends a font path to the list of font paths used by the given evas. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Font__Path__Group_ga652be59a6b8a2e7ecb71bef3ac31885b}{evas\_\-font\_\-path\_\-prepend} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, const char $\ast$path)
+\begin{DoxyCompactList}\small\item\em Prepends a font path to the list of font paths used by the given evas. \item\end{DoxyCompactList}\item 
+EAPI const Eina\_\-List $\ast$ \hyperlink{group__Evas__Font__Path__Group_ga06fc80b3e4c27237a571404fc6aa3aeb}{evas\_\-font\_\-path\_\-list} (const \hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e)
+\begin{DoxyCompactList}\small\item\em Retrieves the list of font paths used by the given evas. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Functions that edit the paths being used to load fonts. 
+
+\subsection{Function Documentation}
+\index{Evas\_\-Font\_\-Path\_\-Group@{Evas\_\-Font\_\-Path\_\-Group}!evas\_\-font\_\-path\_\-append@{evas\_\-font\_\-path\_\-append}}
+\index{evas\_\-font\_\-path\_\-append@{evas\_\-font\_\-path\_\-append}!Evas_Font_Path_Group@{Evas\_\-Font\_\-Path\_\-Group}}
+\subsubsection[{evas\_\-font\_\-path\_\-append}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-font\_\-path\_\-append (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e, }
+\item[{const char $\ast$}]{ path}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Font__Path__Group_ga0ec22ec047841db059a9f6f0b2ec5918}
+
+
+Appends a font path to the list of font paths used by the given evas. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given evas. \item[{\em path}]The new font path. \end{DoxyParams}
+\index{Evas\_\-Font\_\-Path\_\-Group@{Evas\_\-Font\_\-Path\_\-Group}!evas\_\-font\_\-path\_\-clear@{evas\_\-font\_\-path\_\-clear}}
+\index{evas\_\-font\_\-path\_\-clear@{evas\_\-font\_\-path\_\-clear}!Evas_Font_Path_Group@{Evas\_\-Font\_\-Path\_\-Group}}
+\subsubsection[{evas\_\-font\_\-path\_\-clear}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-font\_\-path\_\-clear (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Font__Path__Group_gad565539bda0fc124e4a0865fa29a8463}
+
+
+Removes all font paths loaded into memory for the given evas. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given evas. \end{DoxyParams}
+
+
+Referenced by evas\_\-free().
+
+\index{Evas\_\-Font\_\-Path\_\-Group@{Evas\_\-Font\_\-Path\_\-Group}!evas\_\-font\_\-path\_\-list@{evas\_\-font\_\-path\_\-list}}
+\index{evas\_\-font\_\-path\_\-list@{evas\_\-font\_\-path\_\-list}!Evas_Font_Path_Group@{Evas\_\-Font\_\-Path\_\-Group}}
+\subsubsection[{evas\_\-font\_\-path\_\-list}]{\setlength{\rightskip}{0pt plus 5cm}EAPI const Eina\_\-List$\ast$ evas\_\-font\_\-path\_\-list (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas} $\ast$}]{ e}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Font__Path__Group_ga06fc80b3e4c27237a571404fc6aa3aeb}
+
+
+Retrieves the list of font paths used by the given evas. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given evas. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The list of font paths used. 
+\end{DoxyReturn}
+\index{Evas\_\-Font\_\-Path\_\-Group@{Evas\_\-Font\_\-Path\_\-Group}!evas\_\-font\_\-path\_\-prepend@{evas\_\-font\_\-path\_\-prepend}}
+\index{evas\_\-font\_\-path\_\-prepend@{evas\_\-font\_\-path\_\-prepend}!Evas_Font_Path_Group@{Evas\_\-Font\_\-Path\_\-Group}}
+\subsubsection[{evas\_\-font\_\-path\_\-prepend}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-font\_\-path\_\-prepend (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e, }
+\item[{const char $\ast$}]{ path}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Font__Path__Group_ga652be59a6b8a2e7ecb71bef3ac31885b}
+
+
+Prepends a font path to the list of font paths used by the given evas. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given evas. \item[{\em path}]The new font path. \end{DoxyParams}

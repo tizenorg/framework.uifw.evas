@@ -1,7 +1,7 @@
 Source: evas
 Section: libs
 Priority: optional
-Maintainer: Jaehwan Kim <jae.hwan.kim@samsung.com>, Sangjin Lee <lsj119@samsung.com>, Doyoun Kang <doyoun.kang@samsung.com>, YoungHoon Jung <yhoon.jung@samsung.com>, Myungjae Lee <mjae.lee@samsung.com>, Juyung Seo <juyung.seo@samsung.com>, Gwanglim Lee <gl77.lee@samsung.com>, Jeonghyun Yun <jh0506.yun@samsung.com>, Seokjae Jeong <seok.j.jeong@samsung.com>, MyoungWoon Kim <myoungwoon.kim@samsung.com>, ChunEon Park <chuneon.park@samsung.com>, Hyoyoung Chang <hyoyoung.chang@samsung.com>, WooHyun Jung <wh0705.jung@samsung.com>, Gwangyeong Mun <kk.moon@samsung.com>
+Maintainer: Jaehwan Kim <jae.hwan.kim@samsung.com>, Sangjin Lee <lsj119@samsung.com>, Doyoun Kang <doyoun.kang@samsung.com>, YoungHoon Jung <yhoon.jung@samsung.com>, Myungjae Lee <mjae.lee@samsung.com>, Juyung Seo <juyung.seo@samsung.com>, Gwanglim Lee <gl77.lee@samsung.com>, Jeonghyun Yun <jh0506.yun@samsung.com>, Seokjae Jeong <seok.j.jeong@samsung.com>, MyoungWoon Kim <myoungwoon.kim@samsung.com>, ChunEon Park <chuneon.park@samsung.com>, Hyoyoung Chang <hyoyoung.chang@samsung.com>, WooHyun Jung <wh0705.jung@samsung.com>, Gwangyeong Mun <kk.moon@samsung.com>, Jiyoun Park <jy0703.park@samsung.com>
 Original-Maintainer:  Debian Pkg-e Team <pkg-e-devel@lists.alioth.debian.org>
 Uploaders: Albin Tonnerre <albin.tonnerre@gmail.com>,
  Niv Sardi <xaiki@debian.org>, Xavier Oswald <x.oswald@free.fr>,

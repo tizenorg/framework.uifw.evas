@@ -1,0 +1,770 @@
+\section{Basic Object Manipulation}
+\label{group__Evas__Object__Group__Basic}\index{Basic Object Manipulation@{Basic Object Manipulation}}
+
+
+Methods that are often used, like those that change the color, clippers and geometry of the object.  
+
+
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Basic_ga19eabaaeec1ea375366e201f533f3d56}{evas\_\-object\_\-clip\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$clip)
+\begin{DoxyCompactList}\small\item\em Clip one object to another. \item\end{DoxyCompactList}\item 
+EAPI \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$ \hyperlink{group__Evas__Object__Group__Basic_gadd9e5c165ff2129dd902f43c669a0c1a}{evas\_\-object\_\-clip\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Get the object clipping this one (if any). \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Basic_gaa7fcd13f310444d7c1541b4fd31fa7f8}{evas\_\-object\_\-clip\_\-unset} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Disable clipping for an object. \item\end{DoxyCompactList}\item 
+EAPI const Eina\_\-List $\ast$ \hyperlink{group__Evas__Object__Group__Basic_gaa73ed804aa051d0aa5faa1743e113887}{evas\_\-object\_\-clipees\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Return a list of objects currently clipped by a specific object. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Basic_ga5f1530901a9e94e3f35b987101009cf5}{evas\_\-object\_\-focus\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Eina\_\-Bool focus)
+\begin{DoxyCompactList}\small\item\em Sets focus to the given object. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Object__Group__Basic_ga7dc71b30e4caaaf60076a5990173d654}{evas\_\-object\_\-focus\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Test if the object has focus. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Basic_gab48bd3ad20b6663aa5756823edb02038}{evas\_\-object\_\-layer\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, short l)
+\begin{DoxyCompactList}\small\item\em Sets the layer of the evas that the given object will be part of. \item\end{DoxyCompactList}\item 
+EAPI short \hyperlink{group__Evas__Object__Group__Basic_ga13cb52d23911b6c701dbb5f1ee3f65f4}{evas\_\-object\_\-layer\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Retrieves the layer of the evas that the given object is part of. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Basic_ga4b6eee1edde61389b5ca9df911de60d8}{evas\_\-object\_\-name\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, const char $\ast$name)
+\begin{DoxyCompactList}\small\item\em Sets the name of the given evas object to the given name. \item\end{DoxyCompactList}\item 
+EAPI const char $\ast$ \hyperlink{group__Evas__Object__Group__Basic_gac34b593d79bfd9284787ddbb43486edd}{evas\_\-object\_\-name\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Retrieves the name of the given evas object. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Basic_gaa22895e88e2cb157b9c38a6d3ce10723}{evas\_\-object\_\-ref} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Increments object reference count to defer deletion. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Basic_ga956f8793fd2897945d90bda2d4d08089}{evas\_\-object\_\-unref} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Decrements object reference count to defer deletion. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Basic_ga6d840e8d5670db3ae32e00c4ecbb6abd}{evas\_\-object\_\-del} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Deletes the given evas object and frees its memory. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Basic_ga78fa8858c51707f1a557b720014b71cc}{evas\_\-object\_\-move} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Coord x, Evas\_\-Coord y)
+\begin{DoxyCompactList}\small\item\em Moves the given evas object to the given location. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Basic_ga34df8b33704deafd2a25f40e3c09d149}{evas\_\-object\_\-resize} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Coord w, Evas\_\-Coord h)
+\begin{DoxyCompactList}\small\item\em Changes the size of the given evas object. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Basic_ga5fa60c701af13dac5dd31071167309d2}{evas\_\-object\_\-geometry\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Coord $\ast$x, Evas\_\-Coord $\ast$y, Evas\_\-Coord $\ast$w, Evas\_\-Coord $\ast$h)
+\begin{DoxyCompactList}\small\item\em Retrieves the position and rectangular size of the given evas object. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Basic_ga769ad9a3e3daecb7a828196a2c86332f}{evas\_\-object\_\-show} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Makes the given evas object visible. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Basic_ga495807707f06f9acd4de8590a8c92148}{evas\_\-object\_\-hide} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Makes the given evas object invisible. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Object__Group__Basic_ga9cf743b5d87b622c84ba591494445b49}{evas\_\-object\_\-visible\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Retrieves whether or not the given evas object is visible. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Basic_ga6b2dfe01eb955cebf734f4e10ac9ce7f}{evas\_\-object\_\-color\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, int r, int g, int b, int a)
+\begin{DoxyCompactList}\small\item\em Sets the general colour of the given evas object to the given colour. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Basic_ga3856f8b88d158ffa9783b44340ef343d}{evas\_\-object\_\-color\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, int $\ast$r, int $\ast$g, int $\ast$b, int $\ast$a)
+\begin{DoxyCompactList}\small\item\em Retrieves the general colour of the given evas object. \item\end{DoxyCompactList}\item 
+EAPI \hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$ \hyperlink{group__Evas__Object__Group__Basic_ga678e810edc3e2ee8b1080186bfa12247}{evas\_\-object\_\-evas\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Retrieves the evas that the given evas object is on. \item\end{DoxyCompactList}\item 
+EAPI const char $\ast$ \hyperlink{group__Evas__Object__Group__Basic_gaebc12590e689bfcbfede10eca37f80ff}{evas\_\-object\_\-type\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Retrieves the name of the type of the given evas object. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Basic_ga7a99128189105d042cf6b4fefca9b60e}{evas\_\-object\_\-raise} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Raise {\ttfamily obj} to the top of its layer. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Basic_gae5ede5671799a140e3d3f7bb7ea7f14f}{evas\_\-object\_\-lower} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Lower {\ttfamily obj} to the bottom of its layer. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Basic_ga1128fb1e04b1de059e9ccade58c83663}{evas\_\-object\_\-stack\_\-above} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$above)
+\begin{DoxyCompactList}\small\item\em Stack {\ttfamily obj} immediately above {\ttfamily above}. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Basic_ga8cc69c6e6d78d686d8c4606ac03c2864}{evas\_\-object\_\-stack\_\-below} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$below)
+\begin{DoxyCompactList}\small\item\em Stack {\ttfamily obj} immediately below {\ttfamily below}. \item\end{DoxyCompactList}\item 
+EAPI \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$ \hyperlink{group__Evas__Object__Group__Basic_gab78867a46ecc2e35ac90bf40bae1689f}{evas\_\-object\_\-above\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Get the evas object above {\ttfamily obj}. \item\end{DoxyCompactList}\item 
+EAPI \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$ \hyperlink{group__Evas__Object__Group__Basic_gaff15b0dacac065bc84e6124c0c4920c5}{evas\_\-object\_\-below\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Get the evas object below {\ttfamily obj}. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Methods that are often used, like those that change the color, clippers and geometry of the object. 
+
+\subsection{Function Documentation}
+\index{Evas\_\-Object\_\-Group\_\-Basic@{Evas\_\-Object\_\-Group\_\-Basic}!evas\_\-object\_\-above\_\-get@{evas\_\-object\_\-above\_\-get}}
+\index{evas\_\-object\_\-above\_\-get@{evas\_\-object\_\-above\_\-get}!Evas_Object_Group_Basic@{Evas\_\-Object\_\-Group\_\-Basic}}
+\subsubsection[{evas\_\-object\_\-above\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Object}$\ast$ evas\_\-object\_\-above\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Basic_gab78867a46ecc2e35ac90bf40bae1689f}
+
+
+Get the evas object above {\ttfamily obj}. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]an Evas\_\-Object \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the Evas\_\-Object directly above 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Group\_\-Basic@{Evas\_\-Object\_\-Group\_\-Basic}!evas\_\-object\_\-below\_\-get@{evas\_\-object\_\-below\_\-get}}
+\index{evas\_\-object\_\-below\_\-get@{evas\_\-object\_\-below\_\-get}!Evas_Object_Group_Basic@{Evas\_\-Object\_\-Group\_\-Basic}}
+\subsubsection[{evas\_\-object\_\-below\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Object}$\ast$ evas\_\-object\_\-below\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Basic_gaff15b0dacac065bc84e6124c0c4920c5}
+
+
+Get the evas object below {\ttfamily obj}. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]an Evas\_\-Object \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the Evas\_\-Object directly below 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Group\_\-Basic@{Evas\_\-Object\_\-Group\_\-Basic}!evas\_\-object\_\-clip\_\-get@{evas\_\-object\_\-clip\_\-get}}
+\index{evas\_\-object\_\-clip\_\-get@{evas\_\-object\_\-clip\_\-get}!Evas_Object_Group_Basic@{Evas\_\-Object\_\-Group\_\-Basic}}
+\subsubsection[{evas\_\-object\_\-clip\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Object}$\ast$ evas\_\-object\_\-clip\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Basic_gadd9e5c165ff2129dd902f43c669a0c1a}
+
+
+Get the object clipping this one (if any). 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The object to get the clipper from\end{DoxyParams}
+This function returns the the object clipping {\ttfamily obj}. If {\ttfamily obj} not being clipped, NULL is returned. The object {\ttfamily obj} must be a valid object.
+
+See also \hyperlink{group__Evas__Object__Group__Basic_ga19eabaaeec1ea375366e201f533f3d56}{evas\_\-object\_\-clip\_\-set()}, \hyperlink{group__Evas__Object__Group__Basic_gaa7fcd13f310444d7c1541b4fd31fa7f8}{evas\_\-object\_\-clip\_\-unset()} and \hyperlink{group__Evas__Object__Group__Basic_gaa73ed804aa051d0aa5faa1743e113887}{evas\_\-object\_\-clipees\_\-get()}.
+
+Example: 
+\begin{DoxyCode}
+ extern Evas_Object *obj;
+ Evas_Object *clipper;
+
+ clipper = evas_object_clip_get(obj);
+ if (clipper) evas_object_show(clipper);
+\end{DoxyCode}
+ \index{Evas\_\-Object\_\-Group\_\-Basic@{Evas\_\-Object\_\-Group\_\-Basic}!evas\_\-object\_\-clip\_\-set@{evas\_\-object\_\-clip\_\-set}}
+\index{evas\_\-object\_\-clip\_\-set@{evas\_\-object\_\-clip\_\-set}!Evas_Object_Group_Basic@{Evas\_\-Object\_\-Group\_\-Basic}}
+\subsubsection[{evas\_\-object\_\-clip\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-clip\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{{\bf Evas\_\-Object} $\ast$}]{ clip}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Basic_ga19eabaaeec1ea375366e201f533f3d56}
+
+
+Clip one object to another. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The object to be clipped \item[{\em clip}]The object to clip {\ttfamily obj} by\end{DoxyParams}
+This function will clip the object {\ttfamily obj} to the area occupied by the object {\ttfamily clipper}. This means the object {\ttfamily obj} will only be visible within the area occupied by the clipping object ({\ttfamily clip}). The color of the object being clipped will be multiplied by the color of the clipping object, so the resulting color for the clipped object is RESULT = (OBJ $\ast$ CLIP) / (255 $\ast$ 255) per color element (red, green, blue and alpha). Clipping is recursive, so clip objects may be clipped by other objects, and their color will in tern be multiplied. You may NOT set up circular clipping lists (i.e. object 1 clips object 2 which clips object 1). The behavior of Evas is undefined in this case. Objects which do not clip others are visible as normal, those that clip 1 or more objects become invisible themselves, only affecting what they clip. If an object ceases to have other objects being clipped by it, it will become visible again. The visibility of an object affects the objects that are clipped by it, so if the object clipping others is not shown, the objects clipped will not be shown either. If the object was being clipped by another object when this function is called, it is implicitly removed from the clipper it is being clipped to, and now is made to clip its new clipper.
+
+At the moment the only objects that can validly be used to clip other objects are rectangle objects. All other object types are invalid and the result of using them is undefined.
+
+The clip object {\ttfamily clip} must be a valid object, but may also be NULL in which case the effect of this function is the same as calling \hyperlink{group__Evas__Object__Group__Basic_gaa7fcd13f310444d7c1541b4fd31fa7f8}{evas\_\-object\_\-clip\_\-unset()} on the {\ttfamily obj} object.
+
+Example: 
+\begin{DoxyCode}
+ extern Evas *evas;
+ extern Evas_Object *obj;
+ Evas_Object *clipper;
+
+ clipper = evas_object_rectangle_add(evas);
+ evas_object_color_set(clipper, 255, 255, 255, 255);
+ evas_object_move(clipper, 10, 10);
+ evas_object_resize(clipper, 20, 50);
+ evas_object_clip_set(obj, clipper);
+ evas_object_show(clipper);
+\end{DoxyCode}
+ 
+
+References evas\_\-damage\_\-rectangle\_\-add(), evas\_\-event\_\-feed\_\-mouse\_\-move(), evas\_\-object\_\-clip\_\-unset(), and evas\_\-object\_\-type\_\-get().
+
+\index{Evas\_\-Object\_\-Group\_\-Basic@{Evas\_\-Object\_\-Group\_\-Basic}!evas\_\-object\_\-clip\_\-unset@{evas\_\-object\_\-clip\_\-unset}}
+\index{evas\_\-object\_\-clip\_\-unset@{evas\_\-object\_\-clip\_\-unset}!Evas_Object_Group_Basic@{Evas\_\-Object\_\-Group\_\-Basic}}
+\subsubsection[{evas\_\-object\_\-clip\_\-unset}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-clip\_\-unset (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Basic_gaa7fcd13f310444d7c1541b4fd31fa7f8}
+
+
+Disable clipping for an object. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The object to cease clipping on\end{DoxyParams}
+This function disables clipping for the object {\ttfamily obj}, if it was already clipped. If it wasn't, this has no effect. The object {\ttfamily obj} must be a valid object.
+
+See also \hyperlink{group__Evas__Object__Group__Basic_ga19eabaaeec1ea375366e201f533f3d56}{evas\_\-object\_\-clip\_\-set()}, \hyperlink{group__Evas__Object__Group__Basic_gaa73ed804aa051d0aa5faa1743e113887}{evas\_\-object\_\-clipees\_\-get()} and \hyperlink{group__Evas__Object__Group__Basic_gadd9e5c165ff2129dd902f43c669a0c1a}{evas\_\-object\_\-clip\_\-get()}.
+
+Example: 
+\begin{DoxyCode}
+ extern Evas_Object *obj;
+ Evas_Object *clipper;
+
+ clipper = evas_object_clip_get(obj);
+ if (clipper)
+   {
+     evas_object_clip_unset(obj);
+     evas_object_hide(obj);
+   }
+\end{DoxyCode}
+ 
+
+References evas\_\-damage\_\-rectangle\_\-add(), and evas\_\-event\_\-feed\_\-mouse\_\-move().
+
+
+
+Referenced by evas\_\-object\_\-clip\_\-set(), and evas\_\-object\_\-del().
+
+\index{Evas\_\-Object\_\-Group\_\-Basic@{Evas\_\-Object\_\-Group\_\-Basic}!evas\_\-object\_\-clipees\_\-get@{evas\_\-object\_\-clipees\_\-get}}
+\index{evas\_\-object\_\-clipees\_\-get@{evas\_\-object\_\-clipees\_\-get}!Evas_Object_Group_Basic@{Evas\_\-Object\_\-Group\_\-Basic}}
+\subsubsection[{evas\_\-object\_\-clipees\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI const Eina\_\-List$\ast$ evas\_\-object\_\-clipees\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Basic_gaa73ed804aa051d0aa5faa1743e113887}
+
+
+Return a list of objects currently clipped by a specific object. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The object to get a list of clippees from\end{DoxyParams}
+This returns the inernal list handle that contains all objects clipped by the object {\ttfamily obj}. If none are clipped, it returns NULL. This list is only valid until the clip list is changed and should be fetched again with another call to \hyperlink{group__Evas__Object__Group__Basic_gaa73ed804aa051d0aa5faa1743e113887}{evas\_\-object\_\-clipees\_\-get()} if any objects being clipped by this object are unclipped, clipped by a new object, are deleted or the clipper is deleted. These operations will invalidate the list returned so it should not be used anymore after that point. Any use of the list after this may have undefined results, not limited just to strange behavior but possible segfaults and other strange memory errors. The object {\ttfamily obj} must be a valid object.
+
+See also \hyperlink{group__Evas__Object__Group__Basic_ga19eabaaeec1ea375366e201f533f3d56}{evas\_\-object\_\-clip\_\-set()}, \hyperlink{group__Evas__Object__Group__Basic_gaa7fcd13f310444d7c1541b4fd31fa7f8}{evas\_\-object\_\-clip\_\-unset()} and \hyperlink{group__Evas__Object__Group__Basic_gadd9e5c165ff2129dd902f43c669a0c1a}{evas\_\-object\_\-clip\_\-get()}.
+
+Example: 
+\begin{DoxyCode}
+ extern Evas_Object *obj;
+ Evas_Object *clipper;
+
+ clipper = evas_object_clip_get(obj);
+ if (clipper)
+   {
+     Eina_List *clippees, *l;
+     Evas_Object *obj_tmp;
+
+     clippees = evas_object_clipees_get(clipper);
+     printf("Clipper clips %i objects\n", eina_list_count(clippees));
+     EINA_LIST_FOREACH(clippees, l, obj_tmp)
+         evas_object_show(obj_tmp);
+   }
+\end{DoxyCode}
+ \index{Evas\_\-Object\_\-Group\_\-Basic@{Evas\_\-Object\_\-Group\_\-Basic}!evas\_\-object\_\-color\_\-get@{evas\_\-object\_\-color\_\-get}}
+\index{evas\_\-object\_\-color\_\-get@{evas\_\-object\_\-color\_\-get}!Evas_Object_Group_Basic@{Evas\_\-Object\_\-Group\_\-Basic}}
+\subsubsection[{evas\_\-object\_\-color\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-color\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{int $\ast$}]{ r, }
+\item[{int $\ast$}]{ g, }
+\item[{int $\ast$}]{ b, }
+\item[{int $\ast$}]{ a}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Basic_ga3856f8b88d158ffa9783b44340ef343d}
+
+
+Retrieves the general colour of the given evas object. 
+
+Note that if any of {\ttfamily r}, {\ttfamily g}, {\ttfamily b} or {\ttfamily a} are {\ttfamily NULL}, then the {\ttfamily NULL} parameters are ignored.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given evas object. \item[{\em r}]Pointer to an integer in which to store the red component of the colour. \item[{\em g}]Pointer to an integer in which to store the green component of the colour. \item[{\em b}]Pointer to an integer in which to store the blue component of the colour. \item[{\em a}]Pointer to an integer in which to store the alpha component of the colour. \end{DoxyParams}
+\index{Evas\_\-Object\_\-Group\_\-Basic@{Evas\_\-Object\_\-Group\_\-Basic}!evas\_\-object\_\-color\_\-set@{evas\_\-object\_\-color\_\-set}}
+\index{evas\_\-object\_\-color\_\-set@{evas\_\-object\_\-color\_\-set}!Evas_Object_Group_Basic@{Evas\_\-Object\_\-Group\_\-Basic}}
+\subsubsection[{evas\_\-object\_\-color\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-color\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{int}]{ r, }
+\item[{int}]{ g, }
+\item[{int}]{ b, }
+\item[{int}]{ a}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Basic_ga6b2dfe01eb955cebf734f4e10ac9ce7f}
+
+
+Sets the general colour of the given evas object to the given colour. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given evas object. \item[{\em r}]The red component of the given colour. \item[{\em g}]The green component of the given colour. \item[{\em b}]The blue component of the given colour. \item[{\em a}]The alpha component of the given colour. \end{DoxyParams}
+
+
+References EVAS\_\-RENDER\_\-BLEND.
+
+\index{Evas\_\-Object\_\-Group\_\-Basic@{Evas\_\-Object\_\-Group\_\-Basic}!evas\_\-object\_\-del@{evas\_\-object\_\-del}}
+\index{evas\_\-object\_\-del@{evas\_\-object\_\-del}!Evas_Object_Group_Basic@{Evas\_\-Object\_\-Group\_\-Basic}}
+\subsubsection[{evas\_\-object\_\-del}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-del (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Basic_ga6d840e8d5670db3ae32e00c4ecbb6abd}
+
+
+Deletes the given evas object and frees its memory. 
+
+The object's 'free' callback is called when this function is called. If the object currently has the focus, its 'focus out' callback is also called.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given evas object. \end{DoxyParams}
+
+
+References EVAS\_\-CALLBACK\_\-DEL, EVAS\_\-CALLBACK\_\-FOCUS\_\-OUT, EVAS\_\-CALLBACK\_\-FREE, evas\_\-object\_\-clip\_\-unset(), evas\_\-object\_\-hide(), evas\_\-object\_\-image\_\-source\_\-unset(), and evas\_\-object\_\-name\_\-set().
+
+
+
+Referenced by evas\_\-object\_\-box\_\-remove\_\-all(), evas\_\-object\_\-table\_\-clear(), and evas\_\-object\_\-unref().
+
+\index{Evas\_\-Object\_\-Group\_\-Basic@{Evas\_\-Object\_\-Group\_\-Basic}!evas\_\-object\_\-evas\_\-get@{evas\_\-object\_\-evas\_\-get}}
+\index{evas\_\-object\_\-evas\_\-get@{evas\_\-object\_\-evas\_\-get}!Evas_Object_Group_Basic@{Evas\_\-Object\_\-Group\_\-Basic}}
+\subsubsection[{evas\_\-object\_\-evas\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas}$\ast$ evas\_\-object\_\-evas\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Basic_ga678e810edc3e2ee8b1080186bfa12247}
+
+
+Retrieves the evas that the given evas object is on. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given evas object. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The evas that the object is on. 
+\end{DoxyReturn}
+
+
+Referenced by evas\_\-object\_\-box\_\-add\_\-to(), and evas\_\-object\_\-table\_\-add\_\-to().
+
+\index{Evas\_\-Object\_\-Group\_\-Basic@{Evas\_\-Object\_\-Group\_\-Basic}!evas\_\-object\_\-focus\_\-get@{evas\_\-object\_\-focus\_\-get}}
+\index{evas\_\-object\_\-focus\_\-get@{evas\_\-object\_\-focus\_\-get}!Evas_Object_Group_Basic@{Evas\_\-Object\_\-Group\_\-Basic}}
+\subsubsection[{evas\_\-object\_\-focus\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-object\_\-focus\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Basic_ga7dc71b30e4caaaf60076a5990173d654}
+
+
+Test if the object has focus. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The object to be tested.\end{DoxyParams}
+If the passed object is the currently focused object 1 is returned, 0 otherwise.
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__Evas__Object__Group__Basic_ga5f1530901a9e94e3f35b987101009cf5}{evas\_\-object\_\-focus\_\-set} 
+
+\hyperlink{group__Evas__Object__Group__Find_gaafc05ec22375400b9f0cfc8bcfc83bf5}{evas\_\-focus\_\-get} 
+
+evas\_\-object\_\-key\_\-grab 
+
+evas\_\-object\_\-key\_\-ungrab
+\end{DoxySeeAlso}
+\begin{DoxyReturn}{Returns}
+1 if the object has the focus, 0 otherwise. 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Group\_\-Basic@{Evas\_\-Object\_\-Group\_\-Basic}!evas\_\-object\_\-focus\_\-set@{evas\_\-object\_\-focus\_\-set}}
+\index{evas\_\-object\_\-focus\_\-set@{evas\_\-object\_\-focus\_\-set}!Evas_Object_Group_Basic@{Evas\_\-Object\_\-Group\_\-Basic}}
+\subsubsection[{evas\_\-object\_\-focus\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-focus\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Eina\_\-Bool}]{ focus}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Basic_ga5f1530901a9e94e3f35b987101009cf5}
+
+
+Sets focus to the given object. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The object to be focused or unfocused. \item[{\em focus}]set or remove focus to the object.\end{DoxyParams}
+Changing focus only affects where key events go. There can be only one object focused at any time. 
+
+If the parameter ({\ttfamily focus}) is set, the passed object will be set as the currently focused object. It will receive all keyboard events that are not exclusive key grabs on other objects.
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__Evas__Object__Group__Basic_ga7dc71b30e4caaaf60076a5990173d654}{evas\_\-object\_\-focus\_\-get} 
+
+\hyperlink{group__Evas__Object__Group__Find_gaafc05ec22375400b9f0cfc8bcfc83bf5}{evas\_\-focus\_\-get} 
+
+evas\_\-object\_\-key\_\-grab 
+
+evas\_\-object\_\-key\_\-ungrab 
+\end{DoxySeeAlso}
+
+
+References EVAS\_\-CALLBACK\_\-CANVAS\_\-OBJECT\_\-FOCUS\_\-IN, EVAS\_\-CALLBACK\_\-CANVAS\_\-OBJECT\_\-FOCUS\_\-OUT, EVAS\_\-CALLBACK\_\-FOCUS\_\-IN, EVAS\_\-CALLBACK\_\-FOCUS\_\-OUT, and evas\_\-object\_\-focus\_\-set().
+
+
+
+Referenced by evas\_\-object\_\-focus\_\-set().
+
+\index{Evas\_\-Object\_\-Group\_\-Basic@{Evas\_\-Object\_\-Group\_\-Basic}!evas\_\-object\_\-geometry\_\-get@{evas\_\-object\_\-geometry\_\-get}}
+\index{evas\_\-object\_\-geometry\_\-get@{evas\_\-object\_\-geometry\_\-get}!Evas_Object_Group_Basic@{Evas\_\-Object\_\-Group\_\-Basic}}
+\subsubsection[{evas\_\-object\_\-geometry\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-geometry\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Coord $\ast$}]{ x, }
+\item[{Evas\_\-Coord $\ast$}]{ y, }
+\item[{Evas\_\-Coord $\ast$}]{ w, }
+\item[{Evas\_\-Coord $\ast$}]{ h}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Basic_ga5fa60c701af13dac5dd31071167309d2}
+
+
+Retrieves the position and rectangular size of the given evas object. 
+
+Note that if any of {\ttfamily x}, {\ttfamily y}, {\ttfamily w} or {\ttfamily h} are {\ttfamily NULL}, the {\ttfamily NULL} parameters are ignored.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given evas object. \item[{\em x}]Pointer to an integer in which to store the X coordinate of the object. \item[{\em y}]Pointer to an integer in which to store the Y coordinate of the object. \item[{\em w}]Pointer to an integer in which to store the width of the object. \item[{\em h}]Pointer to an integer in which to store the height of the object. \end{DoxyParams}
+
+
+Referenced by evas\_\-object\_\-box\_\-layout\_\-flow\_\-horizontal(), evas\_\-object\_\-box\_\-layout\_\-flow\_\-vertical(), evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-horizontal(), evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-max\_\-size\_\-horizontal(), evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-max\_\-size\_\-vertical(), evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-vertical(), evas\_\-object\_\-box\_\-layout\_\-horizontal(), evas\_\-object\_\-box\_\-layout\_\-stack(), evas\_\-object\_\-box\_\-layout\_\-vertical(), and evas\_\-object\_\-image\_\-filled\_\-set().
+
+\index{Evas\_\-Object\_\-Group\_\-Basic@{Evas\_\-Object\_\-Group\_\-Basic}!evas\_\-object\_\-hide@{evas\_\-object\_\-hide}}
+\index{evas\_\-object\_\-hide@{evas\_\-object\_\-hide}!Evas_Object_Group_Basic@{Evas\_\-Object\_\-Group\_\-Basic}}
+\subsubsection[{evas\_\-object\_\-hide}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-hide (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Basic_ga495807707f06f9acd4de8590a8c92148}
+
+
+Makes the given evas object invisible. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given evas object.\end{DoxyParams}
+\begin{DoxyNote}{Note}
+the hidden objects will not be checked for changes and will not catch events. That is, they are much ligher than an object that is invisible due indirect effects, such as clipped or out-\/of-\/viewport. 
+\end{DoxyNote}
+
+
+References \_\-Evas\_\-Event\_\-Mouse\_\-Out::buttons, EVAS\_\-CALLBACK\_\-MOUSE\_\-OUT, and evas\_\-event\_\-feed\_\-mouse\_\-move().
+
+
+
+Referenced by evas\_\-object\_\-del().
+
+\index{Evas\_\-Object\_\-Group\_\-Basic@{Evas\_\-Object\_\-Group\_\-Basic}!evas\_\-object\_\-layer\_\-get@{evas\_\-object\_\-layer\_\-get}}
+\index{evas\_\-object\_\-layer\_\-get@{evas\_\-object\_\-layer\_\-get}!Evas_Object_Group_Basic@{Evas\_\-Object\_\-Group\_\-Basic}}
+\subsubsection[{evas\_\-object\_\-layer\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI short evas\_\-object\_\-layer\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Basic_ga13cb52d23911b6c701dbb5f1ee3f65f4}
+
+
+Retrieves the layer of the evas that the given object is part of. 
+
+Be careful, it doesn't make sense to change the layer of smart object's child. So the returned value could be wrong in some case. Don't rely on it's accuracy.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given evas object. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Number of the layer. 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Group\_\-Basic@{Evas\_\-Object\_\-Group\_\-Basic}!evas\_\-object\_\-layer\_\-set@{evas\_\-object\_\-layer\_\-set}}
+\index{evas\_\-object\_\-layer\_\-set@{evas\_\-object\_\-layer\_\-set}!Evas_Object_Group_Basic@{Evas\_\-Object\_\-Group\_\-Basic}}
+\subsubsection[{evas\_\-object\_\-layer\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-layer\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{short}]{ l}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Basic_gab48bd3ad20b6663aa5756823edb02038}
+
+
+Sets the layer of the evas that the given object will be part of. 
+
+It is not possible to change the layer of a smart object's child.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given evas object. \item[{\em l}]The number of the layer to place the object on. Between \hyperlink{Evas_8h_a8817f2ac4e0058d43f9bfe1e563e551b}{EVAS\_\-LAYER\_\-MIN} and \hyperlink{Evas_8h_a1456f5c97f03ebd786c49d4d1178e7a0}{EVAS\_\-LAYER\_\-MAX}. \end{DoxyParams}
+
+
+References evas\_\-event\_\-feed\_\-mouse\_\-move(), and evas\_\-object\_\-raise().
+
+\index{Evas\_\-Object\_\-Group\_\-Basic@{Evas\_\-Object\_\-Group\_\-Basic}!evas\_\-object\_\-lower@{evas\_\-object\_\-lower}}
+\index{evas\_\-object\_\-lower@{evas\_\-object\_\-lower}!Evas_Object_Group_Basic@{Evas\_\-Object\_\-Group\_\-Basic}}
+\subsubsection[{evas\_\-object\_\-lower}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-lower (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Basic_gae5ede5671799a140e3d3f7bb7ea7f14f}
+
+
+Lower {\ttfamily obj} to the bottom of its layer. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]the object to lower \end{DoxyParams}
+
+
+References evas\_\-event\_\-feed\_\-mouse\_\-move().
+
+
+
+Referenced by evas\_\-object\_\-stack\_\-below().
+
+\index{Evas\_\-Object\_\-Group\_\-Basic@{Evas\_\-Object\_\-Group\_\-Basic}!evas\_\-object\_\-move@{evas\_\-object\_\-move}}
+\index{evas\_\-object\_\-move@{evas\_\-object\_\-move}!Evas_Object_Group_Basic@{Evas\_\-Object\_\-Group\_\-Basic}}
+\subsubsection[{evas\_\-object\_\-move}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-move (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Coord}]{ x, }
+\item[{Evas\_\-Coord}]{ y}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Basic_ga78fa8858c51707f1a557b720014b71cc}
+
+
+Moves the given evas object to the given location. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given evas object. \item[{\em x}]X position to move the object to, in canvas units. \item[{\em y}]Y position to move the object to, in canvas units. \end{DoxyParams}
+
+
+References evas\_\-event\_\-feed\_\-mouse\_\-move().
+
+
+
+Referenced by evas\_\-object\_\-box\_\-layout\_\-flow\_\-horizontal(), evas\_\-object\_\-box\_\-layout\_\-flow\_\-vertical(), evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-horizontal(), evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-max\_\-size\_\-horizontal(), evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-max\_\-size\_\-vertical(), evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-vertical(), evas\_\-object\_\-box\_\-layout\_\-horizontal(), evas\_\-object\_\-box\_\-layout\_\-stack(), evas\_\-object\_\-box\_\-layout\_\-vertical(), and evas\_\-object\_\-smart\_\-move\_\-children\_\-relative().
+
+\index{Evas\_\-Object\_\-Group\_\-Basic@{Evas\_\-Object\_\-Group\_\-Basic}!evas\_\-object\_\-name\_\-get@{evas\_\-object\_\-name\_\-get}}
+\index{evas\_\-object\_\-name\_\-get@{evas\_\-object\_\-name\_\-get}!Evas_Object_Group_Basic@{Evas\_\-Object\_\-Group\_\-Basic}}
+\subsubsection[{evas\_\-object\_\-name\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI const char$\ast$ evas\_\-object\_\-name\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Basic_gac34b593d79bfd9284787ddbb43486edd}
+
+
+Retrieves the name of the given evas object. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given object. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The name of the object. {\ttfamily NULL} if no name has been given to the object. 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Group\_\-Basic@{Evas\_\-Object\_\-Group\_\-Basic}!evas\_\-object\_\-name\_\-set@{evas\_\-object\_\-name\_\-set}}
+\index{evas\_\-object\_\-name\_\-set@{evas\_\-object\_\-name\_\-set}!Evas_Object_Group_Basic@{Evas\_\-Object\_\-Group\_\-Basic}}
+\subsubsection[{evas\_\-object\_\-name\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-name\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{const char $\ast$}]{ name}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Basic_ga4b6eee1edde61389b5ca9df911de60d8}
+
+
+Sets the name of the given evas object to the given name. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given object. \item[{\em name}]The given name. \end{DoxyParams}
+
+
+Referenced by evas\_\-object\_\-del().
+
+\index{Evas\_\-Object\_\-Group\_\-Basic@{Evas\_\-Object\_\-Group\_\-Basic}!evas\_\-object\_\-raise@{evas\_\-object\_\-raise}}
+\index{evas\_\-object\_\-raise@{evas\_\-object\_\-raise}!Evas_Object_Group_Basic@{Evas\_\-Object\_\-Group\_\-Basic}}
+\subsubsection[{evas\_\-object\_\-raise}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-raise (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Basic_ga7a99128189105d042cf6b4fefca9b60e}
+
+
+Raise {\ttfamily obj} to the top of its layer. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]the object to raise \end{DoxyParams}
+
+
+References evas\_\-event\_\-feed\_\-mouse\_\-move().
+
+
+
+Referenced by evas\_\-object\_\-layer\_\-set(), and evas\_\-object\_\-stack\_\-above().
+
+\index{Evas\_\-Object\_\-Group\_\-Basic@{Evas\_\-Object\_\-Group\_\-Basic}!evas\_\-object\_\-ref@{evas\_\-object\_\-ref}}
+\index{evas\_\-object\_\-ref@{evas\_\-object\_\-ref}!Evas_Object_Group_Basic@{Evas\_\-Object\_\-Group\_\-Basic}}
+\subsubsection[{evas\_\-object\_\-ref}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-ref (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Basic_gaa22895e88e2cb157b9c38a6d3ce10723}
+
+
+Increments object reference count to defer deletion. 
+
+This increments the reference count of an object, which if greater than 0 will defer deletion by \hyperlink{group__Evas__Object__Group__Basic_ga6d840e8d5670db3ae32e00c4ecbb6abd}{evas\_\-object\_\-del()} until all references are released back to 0. References cannot go below 0 and unreferencing more times that referencing will result in the reference count being limited to 0. References are limited to 2$^\wedge$32 -\/ 1 for an object. Referencing it more than this will result in it being limited to this value.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given evas object to reference\end{DoxyParams}
+\begin{DoxySince}{Since}
+1.1.0 
+\end{DoxySince}
+\index{Evas\_\-Object\_\-Group\_\-Basic@{Evas\_\-Object\_\-Group\_\-Basic}!evas\_\-object\_\-resize@{evas\_\-object\_\-resize}}
+\index{evas\_\-object\_\-resize@{evas\_\-object\_\-resize}!Evas_Object_Group_Basic@{Evas\_\-Object\_\-Group\_\-Basic}}
+\subsubsection[{evas\_\-object\_\-resize}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-resize (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Coord}]{ w, }
+\item[{Evas\_\-Coord}]{ h}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Basic_ga34df8b33704deafd2a25f40e3c09d149}
+
+
+Changes the size of the given evas object. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given evas object. \item[{\em w}]The new width of the evas object. \item[{\em h}]The new height of the evas object.\end{DoxyParams}
+\begin{DoxyNote}{Note}
+Be aware that resizing an object changes its drawing area, but that does imply the object is rescaled! For instance, images are filled inside their drawing area using the specifications of \hyperlink{group__Evas__Object__Image_ga7182040bc16e68d3bbce3bd0f8ee8034}{evas\_\-object\_\-image\_\-fill\_\-set()}, thus to scale the image to match exactly your drawing area, you need to change the \hyperlink{group__Evas__Object__Image_ga7182040bc16e68d3bbce3bd0f8ee8034}{evas\_\-object\_\-image\_\-fill\_\-set()} as well. Consider the following example: 
+\begin{DoxyCode}
+       // rescale image to fill exactly its area without tiling:
+       evas_object_resize(img, w, h);
+       evas_object_image_fill_set(img, 0, 0, w, h);
+\end{DoxyCode}
+ This is more evident in images, but text, textblock, lines and polygons will behave similarly. Check their specific APIs to know how to achieve your desired behavior. 
+\end{DoxyNote}
+
+
+References evas\_\-event\_\-feed\_\-mouse\_\-move().
+
+
+
+Referenced by evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-horizontal(), evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-max\_\-size\_\-horizontal(), evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-max\_\-size\_\-vertical(), evas\_\-object\_\-box\_\-layout\_\-homogeneous\_\-vertical(), evas\_\-object\_\-box\_\-layout\_\-horizontal(), evas\_\-object\_\-box\_\-layout\_\-stack(), and evas\_\-object\_\-box\_\-layout\_\-vertical().
+
+\index{Evas\_\-Object\_\-Group\_\-Basic@{Evas\_\-Object\_\-Group\_\-Basic}!evas\_\-object\_\-show@{evas\_\-object\_\-show}}
+\index{evas\_\-object\_\-show@{evas\_\-object\_\-show}!Evas_Object_Group_Basic@{Evas\_\-Object\_\-Group\_\-Basic}}
+\subsubsection[{evas\_\-object\_\-show}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-show (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Basic_ga769ad9a3e3daecb7a828196a2c86332f}
+
+
+Makes the given evas object visible. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given evas object. \end{DoxyParams}
+
+
+References evas\_\-event\_\-feed\_\-mouse\_\-move().
+
+\index{Evas\_\-Object\_\-Group\_\-Basic@{Evas\_\-Object\_\-Group\_\-Basic}!evas\_\-object\_\-stack\_\-above@{evas\_\-object\_\-stack\_\-above}}
+\index{evas\_\-object\_\-stack\_\-above@{evas\_\-object\_\-stack\_\-above}!Evas_Object_Group_Basic@{Evas\_\-Object\_\-Group\_\-Basic}}
+\subsubsection[{evas\_\-object\_\-stack\_\-above}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-stack\_\-above (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{{\bf Evas\_\-Object} $\ast$}]{ above}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Basic_ga1128fb1e04b1de059e9ccade58c83663}
+
+
+Stack {\ttfamily obj} immediately above {\ttfamily above}. 
+
+If {\ttfamily obj} is a member of a smart object, then {\ttfamily above} must also be a member of the same smart object.
+
+Similarly, if {\ttfamily obj} is not a member of smart object, {\ttfamily above} may not either.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]the object to stack \item[{\em above}]the object above which to stack \end{DoxyParams}
+
+
+References evas\_\-event\_\-feed\_\-mouse\_\-move(), and evas\_\-object\_\-raise().
+
+
+
+Referenced by evas\_\-object\_\-box\_\-layout\_\-stack().
+
+\index{Evas\_\-Object\_\-Group\_\-Basic@{Evas\_\-Object\_\-Group\_\-Basic}!evas\_\-object\_\-stack\_\-below@{evas\_\-object\_\-stack\_\-below}}
+\index{evas\_\-object\_\-stack\_\-below@{evas\_\-object\_\-stack\_\-below}!Evas_Object_Group_Basic@{Evas\_\-Object\_\-Group\_\-Basic}}
+\subsubsection[{evas\_\-object\_\-stack\_\-below}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-stack\_\-below (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{{\bf Evas\_\-Object} $\ast$}]{ below}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Basic_ga8cc69c6e6d78d686d8c4606ac03c2864}
+
+
+Stack {\ttfamily obj} immediately below {\ttfamily below}. 
+
+If {\ttfamily obj} is a member of a smart object, then {\ttfamily below} must also be a member of the same smart object.
+
+Similarly, if {\ttfamily obj} is not a member of smart object, {\ttfamily below} may not either.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]the object to stack \item[{\em below}]the object below which to stack \end{DoxyParams}
+
+
+References evas\_\-event\_\-feed\_\-mouse\_\-move(), and evas\_\-object\_\-lower().
+
+\index{Evas\_\-Object\_\-Group\_\-Basic@{Evas\_\-Object\_\-Group\_\-Basic}!evas\_\-object\_\-type\_\-get@{evas\_\-object\_\-type\_\-get}}
+\index{evas\_\-object\_\-type\_\-get@{evas\_\-object\_\-type\_\-get}!Evas_Object_Group_Basic@{Evas\_\-Object\_\-Group\_\-Basic}}
+\subsubsection[{evas\_\-object\_\-type\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI const char$\ast$ evas\_\-object\_\-type\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Basic_gaebc12590e689bfcbfede10eca37f80ff}
+
+
+Retrieves the name of the type of the given evas object. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given object. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The name. 
+\end{DoxyReturn}
+
+
+Referenced by evas\_\-object\_\-clip\_\-set().
+
+\index{Evas\_\-Object\_\-Group\_\-Basic@{Evas\_\-Object\_\-Group\_\-Basic}!evas\_\-object\_\-unref@{evas\_\-object\_\-unref}}
+\index{evas\_\-object\_\-unref@{evas\_\-object\_\-unref}!Evas_Object_Group_Basic@{Evas\_\-Object\_\-Group\_\-Basic}}
+\subsubsection[{evas\_\-object\_\-unref}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-unref (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Basic_ga956f8793fd2897945d90bda2d4d08089}
+
+
+Decrements object reference count to defer deletion. 
+
+This decrements the reference count of an object. If the object has had \hyperlink{group__Evas__Object__Group__Basic_ga6d840e8d5670db3ae32e00c4ecbb6abd}{evas\_\-object\_\-del()} called on it while references were more than 0, it will be deleted at the time this function is called as it normally would have been. See \hyperlink{group__Evas__Object__Group__Basic_gaa22895e88e2cb157b9c38a6d3ce10723}{evas\_\-object\_\-ref()} for more information.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given evas object to unreference\end{DoxyParams}
+\begin{DoxySince}{Since}
+1.1.0 
+\end{DoxySince}
+
+
+References evas\_\-object\_\-del().
+
+\index{Evas\_\-Object\_\-Group\_\-Basic@{Evas\_\-Object\_\-Group\_\-Basic}!evas\_\-object\_\-visible\_\-get@{evas\_\-object\_\-visible\_\-get}}
+\index{evas\_\-object\_\-visible\_\-get@{evas\_\-object\_\-visible\_\-get}!Evas_Object_Group_Basic@{Evas\_\-Object\_\-Group\_\-Basic}}
+\subsubsection[{evas\_\-object\_\-visible\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-object\_\-visible\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Basic_ga9cf743b5d87b622c84ba591494445b49}
+
+
+Retrieves whether or not the given evas object is visible. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given evas object. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+{\ttfamily 1} if the object is visible. {\ttfamily 0} otherwise. 
+\end{DoxyReturn}

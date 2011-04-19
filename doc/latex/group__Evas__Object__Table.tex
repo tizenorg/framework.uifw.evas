@@ -1,0 +1,346 @@
+\section{Table Smart Object.}
+\label{group__Evas__Object__Table}\index{Table Smart Object.@{Table Smart Object.}}
+
+
+Convenience smart object that packs children using a tabular layout using children size hints to define their size and alignment inside their cell space.  
+
+
+\subsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef enum \hyperlink{group__Evas__Object__Table_ga536e8e3c9e38ee6d82f918a341b053a8}{\_\-Evas\_\-Object\_\-Table\_\-Homogeneous\_\-Mode} \hyperlink{group__Evas__Object__Table_ga04f33e792aea51d583c3e572a35ceebe}{Evas\_\-Object\_\-Table\_\-Homogeneous\_\-Mode}
+\begin{DoxyCompactList}\small\item\em How to pack items into cells in a table. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum \hyperlink{group__Evas__Object__Table_ga536e8e3c9e38ee6d82f918a341b053a8}{\_\-Evas\_\-Object\_\-Table\_\-Homogeneous\_\-Mode} 
+\begin{DoxyCompactList}\small\item\em How to pack items into cells in a table. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+EAPI \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$ \hyperlink{group__Evas__Object__Table_gaa8950ef1784409f64fc02345b839768d}{evas\_\-object\_\-table\_\-add} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$evas)
+\begin{DoxyCompactList}\small\item\em Create a new table. \item\end{DoxyCompactList}\item 
+EAPI \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$ \hyperlink{group__Evas__Object__Table_gab5789072764ac24f48368182bd35d297}{evas\_\-object\_\-table\_\-add\_\-to} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$parent)
+\begin{DoxyCompactList}\small\item\em Create a table that is child of a given element {\itshape parent\/}. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Table_ga85462a0cbafd4ee4ceface6f3f69b413}{evas\_\-object\_\-table\_\-homogeneous\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, \hyperlink{group__Evas__Object__Table_ga04f33e792aea51d583c3e572a35ceebe}{Evas\_\-Object\_\-Table\_\-Homogeneous\_\-Mode} homogeneous)
+\begin{DoxyCompactList}\small\item\em Set how this table should layout children. \item\end{DoxyCompactList}\item 
+EAPI \hyperlink{group__Evas__Object__Table_ga04f33e792aea51d583c3e572a35ceebe}{Evas\_\-Object\_\-Table\_\-Homogeneous\_\-Mode} \hyperlink{group__Evas__Object__Table_ga1b96719d71cb4ca89a31eb59635df387}{evas\_\-object\_\-table\_\-homogeneous\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o)
+\begin{DoxyCompactList}\small\item\em Get the current layout homogeneous mode. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Table_ga7299bcee8de1f9304fa31fff43347a45}{evas\_\-object\_\-table\_\-align\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, double horizontal, double vertical)\label{group__Evas__Object__Table_ga7299bcee8de1f9304fa31fff43347a45}
+
+\begin{DoxyCompactList}\small\item\em Set the alignment of the whole bounding box of contents. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Table_ga7a1ff64522920c2723675ca11d723d47}{evas\_\-object\_\-table\_\-align\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, double $\ast$horizontal, double $\ast$vertical)\label{group__Evas__Object__Table_ga7a1ff64522920c2723675ca11d723d47}
+
+\begin{DoxyCompactList}\small\item\em Get alignment of the whole bounding box of contents. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Table_ga6ea229f05036a9c5d30010ad40a30c66}{evas\_\-object\_\-table\_\-padding\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, Evas\_\-Coord horizontal, Evas\_\-Coord vertical)\label{group__Evas__Object__Table_ga6ea229f05036a9c5d30010ad40a30c66}
+
+\begin{DoxyCompactList}\small\item\em Set padding between cells. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Table_gabe1af40fbd5e03068bc577e71939934a}{evas\_\-object\_\-table\_\-padding\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, Evas\_\-Coord $\ast$horizontal, Evas\_\-Coord $\ast$vertical)\label{group__Evas__Object__Table_gabe1af40fbd5e03068bc577e71939934a}
+
+\begin{DoxyCompactList}\small\item\em Get padding between cells. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Object__Table_ga6c1129dcd7509ebde06cf753cf6a681d}{evas\_\-object\_\-table\_\-pack} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$child, unsigned short col, unsigned short row, unsigned short colspan, unsigned short rowspan)
+\begin{DoxyCompactList}\small\item\em Add a new child to a table object. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Object__Table_gac8b800b8a8f38589eae4b979ffc2d598}{evas\_\-object\_\-table\_\-unpack} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$child)
+\begin{DoxyCompactList}\small\item\em Remove child from table. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Table_gaec5a10416b76102f7e22c7b799bfac04}{evas\_\-object\_\-table\_\-clear} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, Eina\_\-Bool clear)
+\begin{DoxyCompactList}\small\item\em Faster way to remove all child objects from a table object. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Table_ga007c88dba9eb3b326aa67a10c143f3a9}{evas\_\-object\_\-table\_\-col\_\-row\_\-size\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, int $\ast$cols, int $\ast$rows)
+\begin{DoxyCompactList}\small\item\em Get the number of columns and rows this table takes. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Iterator $\ast$ \hyperlink{group__Evas__Object__Table_ga07d18d5708745143c4b12280a7359e71}{evas\_\-object\_\-table\_\-iterator\_\-new} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o)
+\begin{DoxyCompactList}\small\item\em Get an iterator to walk the list of children for the table. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Accessor $\ast$ \hyperlink{group__Evas__Object__Table_gaaa6c5242faad0906b1fbf4bbc1088543}{evas\_\-object\_\-table\_\-accessor\_\-new} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o)
+\begin{DoxyCompactList}\small\item\em Get an accessor to get random access to the list of children for the table. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-List $\ast$ \hyperlink{group__Evas__Object__Table_ga1afb562131cd3a74a130c374fcea0632}{evas\_\-object\_\-table\_\-children\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o)
+\begin{DoxyCompactList}\small\item\em Get the list of children for the table. \item\end{DoxyCompactList}\item 
+\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$ \hyperlink{group__Evas__Object__Table_gaeb4a9d107dde8a4c7bc60d6f97b5ec46}{evas\_\-object\_\-table\_\-child\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$o, unsigned short col, unsigned short row)
+\begin{DoxyCompactList}\small\item\em Get a child from the table using its coordinates. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Object__Table_gac008b924a1ba3b0133d0ac11b3e6af06}{evas\_\-object\_\-table\_\-mirrored\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Gets the mirrored mode of the table. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Table_ga8f775fb97bf5da5e8a0005a89027044b}{evas\_\-object\_\-table\_\-mirrored\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Eina\_\-Bool mirrored)
+\begin{DoxyCompactList}\small\item\em Sets the mirrored mode of the table. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Convenience smart object that packs children using a tabular layout using children size hints to define their size and alignment inside their cell space. \begin{DoxySeeAlso}{See also}
+\hyperlink{group__Evas__Object__Group__Size__Hints}{Size Hints} 
+\end{DoxySeeAlso}
+
+
+\subsection{Typedef Documentation}
+\index{Evas\_\-Object\_\-Table@{Evas\_\-Object\_\-Table}!Evas\_\-Object\_\-Table\_\-Homogeneous\_\-Mode@{Evas\_\-Object\_\-Table\_\-Homogeneous\_\-Mode}}
+\index{Evas\_\-Object\_\-Table\_\-Homogeneous\_\-Mode@{Evas\_\-Object\_\-Table\_\-Homogeneous\_\-Mode}!Evas_Object_Table@{Evas\_\-Object\_\-Table}}
+\subsubsection[{Evas\_\-Object\_\-Table\_\-Homogeneous\_\-Mode}]{\setlength{\rightskip}{0pt plus 5cm}typedef enum {\bf \_\-Evas\_\-Object\_\-Table\_\-Homogeneous\_\-Mode}  {\bf Evas\_\-Object\_\-Table\_\-Homogeneous\_\-Mode}}\label{group__Evas__Object__Table_ga04f33e792aea51d583c3e572a35ceebe}
+
+
+How to pack items into cells in a table. 
+
+Table cell pack mode. 
+
+\subsection{Function Documentation}
+\index{Evas\_\-Object\_\-Table@{Evas\_\-Object\_\-Table}!evas\_\-object\_\-table\_\-accessor\_\-new@{evas\_\-object\_\-table\_\-accessor\_\-new}}
+\index{evas\_\-object\_\-table\_\-accessor\_\-new@{evas\_\-object\_\-table\_\-accessor\_\-new}!Evas_Object_Table@{Evas\_\-Object\_\-Table}}
+\subsubsection[{evas\_\-object\_\-table\_\-accessor\_\-new}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Accessor$\ast$ evas\_\-object\_\-table\_\-accessor\_\-new (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ o}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Table_gaaa6c5242faad0906b1fbf4bbc1088543}
+
+
+Get an accessor to get random access to the list of children for the table. 
+
+\begin{DoxyNote}{Note}
+Do not remove or delete objects while walking the list. 
+\end{DoxyNote}
+\index{Evas\_\-Object\_\-Table@{Evas\_\-Object\_\-Table}!evas\_\-object\_\-table\_\-add@{evas\_\-object\_\-table\_\-add}}
+\index{evas\_\-object\_\-table\_\-add@{evas\_\-object\_\-table\_\-add}!Evas_Object_Table@{Evas\_\-Object\_\-Table}}
+\subsubsection[{evas\_\-object\_\-table\_\-add}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Object}$\ast$ evas\_\-object\_\-table\_\-add (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ evas}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Table_gaa8950ef1784409f64fc02345b839768d}
+
+
+Create a new table. 
+
+It's set to non-\/homogeneous by default, add children with \hyperlink{group__Evas__Object__Table_ga6c1129dcd7509ebde06cf753cf6a681d}{evas\_\-object\_\-table\_\-pack()}. 
+
+References evas\_\-object\_\-smart\_\-add().
+
+
+
+Referenced by evas\_\-object\_\-table\_\-add\_\-to().
+
+\index{Evas\_\-Object\_\-Table@{Evas\_\-Object\_\-Table}!evas\_\-object\_\-table\_\-add\_\-to@{evas\_\-object\_\-table\_\-add\_\-to}}
+\index{evas\_\-object\_\-table\_\-add\_\-to@{evas\_\-object\_\-table\_\-add\_\-to}!Evas_Object_Table@{Evas\_\-Object\_\-Table}}
+\subsubsection[{evas\_\-object\_\-table\_\-add\_\-to}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Object}$\ast$ evas\_\-object\_\-table\_\-add\_\-to (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ parent}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Table_gab5789072764ac24f48368182bd35d297}
+
+
+Create a table that is child of a given element {\itshape parent\/}. 
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__Evas__Object__Table_gaa8950ef1784409f64fc02345b839768d}{evas\_\-object\_\-table\_\-add()} 
+\end{DoxySeeAlso}
+
+
+References evas\_\-object\_\-evas\_\-get(), evas\_\-object\_\-smart\_\-member\_\-add(), and evas\_\-object\_\-table\_\-add().
+
+\index{Evas\_\-Object\_\-Table@{Evas\_\-Object\_\-Table}!evas\_\-object\_\-table\_\-child\_\-get@{evas\_\-object\_\-table\_\-child\_\-get}}
+\index{evas\_\-object\_\-table\_\-child\_\-get@{evas\_\-object\_\-table\_\-child\_\-get}!Evas_Object_Table@{Evas\_\-Object\_\-Table}}
+\subsubsection[{evas\_\-object\_\-table\_\-child\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Evas\_\-Object}$\ast$ evas\_\-object\_\-table\_\-child\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{unsigned short}]{ col, }
+\item[{unsigned short}]{ row}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Table_gaeb4a9d107dde8a4c7bc60d6f97b5ec46}
+
+
+Get a child from the table using its coordinates. 
+
+\begin{DoxyNote}{Note}
+This does not take into account col/row spanning 
+\end{DoxyNote}
+\index{Evas\_\-Object\_\-Table@{Evas\_\-Object\_\-Table}!evas\_\-object\_\-table\_\-children\_\-get@{evas\_\-object\_\-table\_\-children\_\-get}}
+\index{evas\_\-object\_\-table\_\-children\_\-get@{evas\_\-object\_\-table\_\-children\_\-get}!Evas_Object_Table@{Evas\_\-Object\_\-Table}}
+\subsubsection[{evas\_\-object\_\-table\_\-children\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-List$\ast$ evas\_\-object\_\-table\_\-children\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ o}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Table_ga1afb562131cd3a74a130c374fcea0632}
+
+
+Get the list of children for the table. 
+
+\begin{DoxyNote}{Note}
+This is a duplicate of the list kept by the table internally. It's up to the user to destroy it when it no longer needs it. It's possible to remove objects from the table when walking this list, but these removals won't be reflected on it. 
+\end{DoxyNote}
+\index{Evas\_\-Object\_\-Table@{Evas\_\-Object\_\-Table}!evas\_\-object\_\-table\_\-clear@{evas\_\-object\_\-table\_\-clear}}
+\index{evas\_\-object\_\-table\_\-clear@{evas\_\-object\_\-table\_\-clear}!Evas_Object_Table@{Evas\_\-Object\_\-Table}}
+\subsubsection[{evas\_\-object\_\-table\_\-clear}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-table\_\-clear (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{Eina\_\-Bool}]{ clear}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Table_gaec5a10416b76102f7e22c7b799bfac04}
+
+
+Faster way to remove all child objects from a table object. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em o}]The given table object. \item[{\em clear}]if true, it will delete just removed children. \end{DoxyParams}
+
+
+References evas\_\-object\_\-del(), evas\_\-object\_\-smart\_\-changed(), and evas\_\-object\_\-smart\_\-member\_\-del().
+
+\index{Evas\_\-Object\_\-Table@{Evas\_\-Object\_\-Table}!evas\_\-object\_\-table\_\-col\_\-row\_\-size\_\-get@{evas\_\-object\_\-table\_\-col\_\-row\_\-size\_\-get}}
+\index{evas\_\-object\_\-table\_\-col\_\-row\_\-size\_\-get@{evas\_\-object\_\-table\_\-col\_\-row\_\-size\_\-get}!Evas_Object_Table@{Evas\_\-Object\_\-Table}}
+\subsubsection[{evas\_\-object\_\-table\_\-col\_\-row\_\-size\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-table\_\-col\_\-row\_\-size\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{int $\ast$}]{ cols, }
+\item[{int $\ast$}]{ rows}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Table_ga007c88dba9eb3b326aa67a10c143f3a9}
+
+
+Get the number of columns and rows this table takes. 
+
+\begin{DoxyNote}{Note}
+columns and rows are virtual entities, one can specify a table with a single object that takes 4 columns and 5 rows. The only difference for a single cell table is that paddings will be accounted proportionally. 
+\end{DoxyNote}
+\index{Evas\_\-Object\_\-Table@{Evas\_\-Object\_\-Table}!evas\_\-object\_\-table\_\-homogeneous\_\-get@{evas\_\-object\_\-table\_\-homogeneous\_\-get}}
+\index{evas\_\-object\_\-table\_\-homogeneous\_\-get@{evas\_\-object\_\-table\_\-homogeneous\_\-get}!Evas_Object_Table@{Evas\_\-Object\_\-Table}}
+\subsubsection[{evas\_\-object\_\-table\_\-homogeneous\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Object\_\-Table\_\-Homogeneous\_\-Mode} evas\_\-object\_\-table\_\-homogeneous\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ o}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Table_ga1b96719d71cb4ca89a31eb59635df387}
+
+
+Get the current layout homogeneous mode. 
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__Evas__Object__Table_ga85462a0cbafd4ee4ceface6f3f69b413}{evas\_\-object\_\-table\_\-homogeneous\_\-set()} 
+\end{DoxySeeAlso}
+\index{Evas\_\-Object\_\-Table@{Evas\_\-Object\_\-Table}!evas\_\-object\_\-table\_\-homogeneous\_\-set@{evas\_\-object\_\-table\_\-homogeneous\_\-set}}
+\index{evas\_\-object\_\-table\_\-homogeneous\_\-set@{evas\_\-object\_\-table\_\-homogeneous\_\-set}!Evas_Object_Table@{Evas\_\-Object\_\-Table}}
+\subsubsection[{evas\_\-object\_\-table\_\-homogeneous\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-table\_\-homogeneous\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{{\bf Evas\_\-Object\_\-Table\_\-Homogeneous\_\-Mode}}]{ homogeneous}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Table_ga85462a0cbafd4ee4ceface6f3f69b413}
+
+
+Set how this table should layout children. 
+
+\begin{Desc}
+\item[\hyperlink{todo__todo000002}{Todo}]consider aspect hint and respect it.\end{Desc}
+
+
+\begin{DoxyParagraph}{EVAS\_\-OBJECT\_\-TABLE\_\-HOMOGENEOUS\_\-NONE}
+If table does not use homogeneous mode then columns and rows will be calculated based on hints of individual cells. This operation mode is more flexible, but more complex and heavy to calculate as well. {\bfseries Weight} properties are handled as a boolean expand. Negative alignment will be considered as 0.5.
+\end{DoxyParagraph}
+\begin{Desc}
+\item[\hyperlink{todo__todo000003}{Todo}]{\ttfamily EVAS\_\-OBJECT\_\-TABLE\_\-HOMOGENEOUS\_\-NONE} should balance weight.\end{Desc}
+
+
+\begin{DoxyParagraph}{EVAS\_\-OBJECT\_\-TABLE\_\-HOMOGENEOUS\_\-TABLE}
+When homogeneous is relative to table the own table size is divided equally among children, filling the whole table area. That is, if table has {\ttfamily WIDTH} and {\ttfamily COLUMNS}, each cell will get {\ttfamily WIDTH / COLUMNS} pixels. If children have minimum size that is larger than this amount (including padding), then it will overflow and be aligned respecting the alignment hint, possible overlapping sibling cells. {\bfseries Weight} hint is used as a boolean, if greater than zero it will make the child expand in that axis, taking as much space as possible (bounded to maximum size hint). Negative alignment will be considered as 0.5.
+\end{DoxyParagraph}
+\begin{DoxyParagraph}{EVAS\_\-OBJECT\_\-TABLE\_\-HOMOGENEOUS\_\-ITEM}
+When homogeneous is relative to item it means the greatest minimum cell size will be used. That is, if no element is set to expand, the table will have its contents to a minimum size, the bounding box of all these children will be aligned relatively to the table object using \hyperlink{group__Evas__Object__Table_ga7a1ff64522920c2723675ca11d723d47}{evas\_\-object\_\-table\_\-align\_\-get()}. If the table area is too small to hold this minimum bounding box, then the objects will keep their size and the bounding box will overflow the box area, still respecting the alignment. {\bfseries Weight} hint is used as a boolean, if greater than zero it will make that cell expand in that axis, toggling the {\bfseries expand mode}, which makes the table behave much like {\bfseries EVAS\_\-OBJECT\_\-TABLE\_\-HOMOGENEOUS\_\-TABLE}, except that the bounding box will overflow and items will not overlap siblings. If no minimum size is provided at all then the table will fallback to expand mode as well. 
+\end{DoxyParagraph}
+
+
+References evas\_\-object\_\-smart\_\-changed().
+
+\index{Evas\_\-Object\_\-Table@{Evas\_\-Object\_\-Table}!evas\_\-object\_\-table\_\-iterator\_\-new@{evas\_\-object\_\-table\_\-iterator\_\-new}}
+\index{evas\_\-object\_\-table\_\-iterator\_\-new@{evas\_\-object\_\-table\_\-iterator\_\-new}!Evas_Object_Table@{Evas\_\-Object\_\-Table}}
+\subsubsection[{evas\_\-object\_\-table\_\-iterator\_\-new}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Iterator$\ast$ evas\_\-object\_\-table\_\-iterator\_\-new (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ o}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Table_ga07d18d5708745143c4b12280a7359e71}
+
+
+Get an iterator to walk the list of children for the table. 
+
+\begin{DoxyNote}{Note}
+Do not remove or delete objects while walking the list. 
+\end{DoxyNote}
+\index{Evas\_\-Object\_\-Table@{Evas\_\-Object\_\-Table}!evas\_\-object\_\-table\_\-mirrored\_\-get@{evas\_\-object\_\-table\_\-mirrored\_\-get}}
+\index{evas\_\-object\_\-table\_\-mirrored\_\-get@{evas\_\-object\_\-table\_\-mirrored\_\-get}!Evas_Object_Table@{Evas\_\-Object\_\-Table}}
+\subsubsection[{evas\_\-object\_\-table\_\-mirrored\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-object\_\-table\_\-mirrored\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Table_gac008b924a1ba3b0133d0ac11b3e6af06}
+
+
+Gets the mirrored mode of the table. 
+
+In mirrored mode the table items go from right to left instead of left to right. That is, 1,1 is top right, not to left.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The table object. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+EINA\_\-TRUE if it's a mirrored table, EINA\_\-FALSE otherwise. 
+\end{DoxyReturn}
+\begin{DoxySince}{Since}
+1.1.0 
+\end{DoxySince}
+\index{Evas\_\-Object\_\-Table@{Evas\_\-Object\_\-Table}!evas\_\-object\_\-table\_\-mirrored\_\-set@{evas\_\-object\_\-table\_\-mirrored\_\-set}}
+\index{evas\_\-object\_\-table\_\-mirrored\_\-set@{evas\_\-object\_\-table\_\-mirrored\_\-set}!Evas_Object_Table@{Evas\_\-Object\_\-Table}}
+\subsubsection[{evas\_\-object\_\-table\_\-mirrored\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-table\_\-mirrored\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Eina\_\-Bool}]{ mirrored}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Table_ga8f775fb97bf5da5e8a0005a89027044b}
+
+
+Sets the mirrored mode of the table. 
+
+In mirrored mode the table items go from right to left instead of left to right. That is, 1,1 is top right, not to left.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The table object. \item[{\em mirrored}]the mirrored mode to set \end{DoxyParams}
+\begin{DoxySince}{Since}
+1.1.0 
+\end{DoxySince}
+\index{Evas\_\-Object\_\-Table@{Evas\_\-Object\_\-Table}!evas\_\-object\_\-table\_\-pack@{evas\_\-object\_\-table\_\-pack}}
+\index{evas\_\-object\_\-table\_\-pack@{evas\_\-object\_\-table\_\-pack}!Evas_Object_Table@{Evas\_\-Object\_\-Table}}
+\subsubsection[{evas\_\-object\_\-table\_\-pack}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-object\_\-table\_\-pack (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{{\bf Evas\_\-Object} $\ast$}]{ child, }
+\item[{unsigned short}]{ col, }
+\item[{unsigned short}]{ row, }
+\item[{unsigned short}]{ colspan, }
+\item[{unsigned short}]{ rowspan}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Table_ga6c1129dcd7509ebde06cf753cf6a681d}
+
+
+Add a new child to a table object. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em o}]The given table object. \item[{\em child}]The child object to add. \item[{\em col}]relative-\/horizontal position to place child. \item[{\em row}]relative-\/vertical position to place child. \item[{\em colspan}]how many relative-\/horizontal position to use for this child. \item[{\em rowspan}]how many relative-\/vertical position to use for this child.\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+1 on success, 0 on failure. 
+\end{DoxyReturn}
+
+
+References evas\_\-object\_\-smart\_\-changed(), and evas\_\-object\_\-smart\_\-member\_\-add().
+
+\index{Evas\_\-Object\_\-Table@{Evas\_\-Object\_\-Table}!evas\_\-object\_\-table\_\-unpack@{evas\_\-object\_\-table\_\-unpack}}
+\index{evas\_\-object\_\-table\_\-unpack@{evas\_\-object\_\-table\_\-unpack}!Evas_Object_Table@{Evas\_\-Object\_\-Table}}
+\subsubsection[{evas\_\-object\_\-table\_\-unpack}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-object\_\-table\_\-unpack (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ o, }
+\item[{{\bf Evas\_\-Object} $\ast$}]{ child}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Table_gac8b800b8a8f38589eae4b979ffc2d598}
+
+
+Remove child from table. 
+
+\begin{DoxyNote}{Note}
+removing a child will immediately call a walk over children in order to recalculate numbers of columns and rows. If you plan to remove all children, use \hyperlink{group__Evas__Object__Table_gaec5a10416b76102f7e22c7b799bfac04}{evas\_\-object\_\-table\_\-clear()} instead.
+\end{DoxyNote}
+\begin{DoxyReturn}{Returns}
+1 on success, 0 on failure. 
+\end{DoxyReturn}
+
+
+References evas\_\-object\_\-smart\_\-changed(), evas\_\-object\_\-smart\_\-member\_\-del(), and evas\_\-object\_\-smart\_\-parent\_\-get().
+

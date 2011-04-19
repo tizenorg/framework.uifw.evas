@@ -1,0 +1,45 @@
+\section{\_\-Evas\_\-Smart\_\-Cb\_\-Description Struct Reference}
+\label{struct__Evas__Smart__Cb__Description}\index{\_\-Evas\_\-Smart\_\-Cb\_\-Description@{\_\-Evas\_\-Smart\_\-Cb\_\-Description}}
+
+
+Describes a callback used by a smart class \hyperlink{group__Evas__Smart__Object__Group_ga17bbe660f5bf9d8997913b08882f6f9e}{evas\_\-object\_\-smart\_\-callback\_\-call()}, particularly useful to explain to user and its code (ie: introspection) what the parameter {\ttfamily event\_\-info} will contain.  
+
+
+\subsection*{Data Fields}
+\begin{DoxyCompactItemize}
+\item 
+const char $\ast$ \hyperlink{struct__Evas__Smart__Cb__Description_ab377859f4cfcf1c2dd3c149a76b70b53}{name}\label{struct__Evas__Smart__Cb__Description_ab377859f4cfcf1c2dd3c149a76b70b53}
+
+\begin{DoxyCompactList}\small\item\em callback name, ie: \char`\"{}changed\char`\"{} \item\end{DoxyCompactList}\item 
+const char $\ast$ \hyperlink{struct__Evas__Smart__Cb__Description_af0d4ce3d62a068eab1b89a34abb056ad}{type}
+\begin{DoxyCompactList}\small\item\em Hint type of {\ttfamily event\_\-info} parameter of Evas\_\-Smart\_\-Cb. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Describes a callback used by a smart class \hyperlink{group__Evas__Smart__Object__Group_ga17bbe660f5bf9d8997913b08882f6f9e}{evas\_\-object\_\-smart\_\-callback\_\-call()}, particularly useful to explain to user and its code (ie: introspection) what the parameter {\ttfamily event\_\-info} will contain. 
+
+\subsection{Field Documentation}
+\index{\_\-Evas\_\-Smart\_\-Cb\_\-Description@{\_\-Evas\_\-Smart\_\-Cb\_\-Description}!type@{type}}
+\index{type@{type}!_Evas_Smart_Cb_Description@{\_\-Evas\_\-Smart\_\-Cb\_\-Description}}
+\subsubsection[{type}]{\setlength{\rightskip}{0pt plus 5cm}const char$\ast$ {\bf \_\-Evas\_\-Smart\_\-Cb\_\-Description::type}}\label{struct__Evas__Smart__Cb__Description_af0d4ce3d62a068eab1b89a34abb056ad}
+
+
+Hint type of {\ttfamily event\_\-info} parameter of Evas\_\-Smart\_\-Cb. 
+
+The type string uses the pattern similar to
+
+\href{http://dbus.freedesktop.org/doc/dbus-specification.html#message-protocol-signatures}{\tt http://dbus.freedesktop.org/doc/dbus-\/specification.html\#message-\/protocol-\/signatures}
+
+but extended to optionally include variable names within brackets preceding types. Example:
+
+\begin{DoxyItemize}
+\item Structure with two integers: {\ttfamily \char`\"{}(ii)\char`\"{}} \end{DoxyItemize}
+\begin{DoxyItemize}
+\item Structure called 'x' with two integers named 'a' and 'b': {\ttfamily \char`\"{}\mbox{[}x\mbox{]}(\mbox{[}a\mbox{]}i\mbox{[}b\mbox{]}i)\char`\"{}} \end{DoxyItemize}
+\begin{DoxyItemize}
+\item Array of integers: {\ttfamily \char`\"{}ai\char`\"{}} \end{DoxyItemize}
+\begin{DoxyItemize}
+\item Array called 'x' of struct with two integers: {\ttfamily \char`\"{}\mbox{[}x\mbox{]}a(ii)\char`\"{}} \end{DoxyItemize}
+\begin{DoxyNote}{Note}
+This type string is used as a hint and is {\bfseries not} validated or enforced anyhow. Implementors should make the best use of it to help bindings, documentation and other users of introspection features. 
+\end{DoxyNote}

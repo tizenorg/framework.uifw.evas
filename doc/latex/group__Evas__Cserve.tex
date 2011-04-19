@@ -1,0 +1,123 @@
+\section{Shared Image Cache Server}
+\label{group__Evas__Cserve}\index{Shared Image Cache Server@{Shared Image Cache Server}}
+
+
+Provides client-\/server infrastructure to share bitmaps across multiple processes, saving data and processing power.  
+
+
+\subsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \hyperlink{struct__Evas__Cserve__Stats}{\_\-Evas\_\-Cserve\_\-Stats}
+\begin{DoxyCompactList}\small\item\em Statistics about server that shares cached bitmaps. \item\end{DoxyCompactList}\item 
+struct \hyperlink{struct__Evas__Cserve__Image__Cache}{\_\-Evas\_\-Cserve\_\-Image\_\-Cache}
+\begin{DoxyCompactList}\small\item\em Cache of images shared by server. \item\end{DoxyCompactList}\item 
+struct \hyperlink{struct__Evas__Cserve__Image}{\_\-Evas\_\-Cserve\_\-Image}
+\begin{DoxyCompactList}\small\item\em An image shared by the server. \item\end{DoxyCompactList}\item 
+struct \hyperlink{struct__Evas__Cserve__Config}{\_\-Evas\_\-Cserve\_\-Config}
+\begin{DoxyCompactList}\small\item\em Configuration that controls the server that shares cached bitmaps. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Cserve_gab039ccd04ab2e8857a0df629b4ac0901}{evas\_\-cserve\_\-want\_\-get} (void)
+\begin{DoxyCompactList}\small\item\em Retrieves if the system wants to share bitmaps using the server. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Cserve_gab88ee4c01dbdf01fea4d8acf4a07b25f}{evas\_\-cserve\_\-connected\_\-get} (void)
+\begin{DoxyCompactList}\small\item\em Retrieves if the system is connected to the server used to shae bitmaps. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Cserve_ga82fec634eb97f664e9cb3ed08358b1a2}{evas\_\-cserve\_\-stats\_\-get} (\hyperlink{struct__Evas__Cserve__Stats}{Evas\_\-Cserve\_\-Stats} $\ast$stats)
+\begin{DoxyCompactList}\small\item\em Retrieves if the system wants to share bitmaps using the server. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Cserve_ga9bb7fbd93f4bc9310707549ff9427b47}{evas\_\-cserve\_\-config\_\-get} (\hyperlink{struct__Evas__Cserve__Config}{Evas\_\-Cserve\_\-Config} $\ast$config)
+\begin{DoxyCompactList}\small\item\em Retrieves the current configuration of the server. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Cserve_ga10c38a7bfb59423c2a96447b42c2aa15}{evas\_\-cserve\_\-config\_\-set} (const \hyperlink{struct__Evas__Cserve__Config}{Evas\_\-Cserve\_\-Config} $\ast$config)
+\begin{DoxyCompactList}\small\item\em Changes the configuration of the server. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Cserve_ga3129abb4410e7d6967072f14ac327daf}{evas\_\-cserve\_\-disconnect} (void)\label{group__Evas__Cserve_ga3129abb4410e7d6967072f14ac327daf}
+
+\begin{DoxyCompactList}\small\item\em Force system to disconnect from cache server. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Provides client-\/server infrastructure to share bitmaps across multiple processes, saving data and processing power. 
+
+\subsection{Function Documentation}
+\index{Evas\_\-Cserve@{Evas\_\-Cserve}!evas\_\-cserve\_\-config\_\-get@{evas\_\-cserve\_\-config\_\-get}}
+\index{evas\_\-cserve\_\-config\_\-get@{evas\_\-cserve\_\-config\_\-get}!Evas_Cserve@{Evas\_\-Cserve}}
+\subsubsection[{evas\_\-cserve\_\-config\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-cserve\_\-config\_\-get (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Cserve\_\-Config} $\ast$}]{ config}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Cserve_ga9bb7fbd93f4bc9310707549ff9427b47}
+
+
+Retrieves the current configuration of the server. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em config}]where to store current server configuration. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+{\ttfamily EINA\_\-TRUE} if {\ttfamily config} were filled with data, {\ttfamily EINA\_\-FALSE} otherwise and {\ttfamily config} is untouched. 
+\end{DoxyReturn}
+\index{Evas\_\-Cserve@{Evas\_\-Cserve}!evas\_\-cserve\_\-config\_\-set@{evas\_\-cserve\_\-config\_\-set}}
+\index{evas\_\-cserve\_\-config\_\-set@{evas\_\-cserve\_\-config\_\-set}!Evas_Cserve@{Evas\_\-Cserve}}
+\subsubsection[{evas\_\-cserve\_\-config\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-cserve\_\-config\_\-set (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Cserve\_\-Config} $\ast$}]{ config}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Cserve_ga10c38a7bfb59423c2a96447b42c2aa15}
+
+
+Changes the configuration of the server. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em config}]where to store current server configuration. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+{\ttfamily EINA\_\-TRUE} if {\ttfamily config} were successfully applied, {\ttfamily EINA\_\-FALSE} otherwise. 
+\end{DoxyReturn}
+\index{Evas\_\-Cserve@{Evas\_\-Cserve}!evas\_\-cserve\_\-connected\_\-get@{evas\_\-cserve\_\-connected\_\-get}}
+\index{evas\_\-cserve\_\-connected\_\-get@{evas\_\-cserve\_\-connected\_\-get}!Evas_Cserve@{Evas\_\-Cserve}}
+\subsubsection[{evas\_\-cserve\_\-connected\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-cserve\_\-connected\_\-get (
+\begin{DoxyParamCaption}
+\item[{void}]{}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Cserve_gab88ee4c01dbdf01fea4d8acf4a07b25f}
+
+
+Retrieves if the system is connected to the server used to shae bitmaps. 
+
+\begin{DoxyReturn}{Returns}
+{\ttfamily EINA\_\-TRUE} if connected, {\ttfamily EINA\_\-FALSE} otherwise. 
+\end{DoxyReturn}
+\index{Evas\_\-Cserve@{Evas\_\-Cserve}!evas\_\-cserve\_\-stats\_\-get@{evas\_\-cserve\_\-stats\_\-get}}
+\index{evas\_\-cserve\_\-stats\_\-get@{evas\_\-cserve\_\-stats\_\-get}!Evas_Cserve@{Evas\_\-Cserve}}
+\subsubsection[{evas\_\-cserve\_\-stats\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-cserve\_\-stats\_\-get (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Cserve\_\-Stats} $\ast$}]{ stats}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Cserve_ga82fec634eb97f664e9cb3ed08358b1a2}
+
+
+Retrieves if the system wants to share bitmaps using the server. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em stats}]pointer to structure to fill with statistics about cache server. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+{\ttfamily EINA\_\-TRUE} if {\ttfamily stats} were filled with data, {\ttfamily EINA\_\-FALSE} otherwise and {\ttfamily stats} is untouched. 
+\end{DoxyReturn}
+
+
+References \_\-Evas\_\-Cserve\_\-Stats::saved\_\-memory, \_\-Evas\_\-Cserve\_\-Stats::saved\_\-memory\_\-peak, \_\-Evas\_\-Cserve\_\-Stats::saved\_\-time\_\-image\_\-data\_\-load, \_\-Evas\_\-Cserve\_\-Stats::saved\_\-time\_\-image\_\-header\_\-load, \_\-Evas\_\-Cserve\_\-Stats::wasted\_\-memory, and \_\-Evas\_\-Cserve\_\-Stats::wasted\_\-memory\_\-peak.
+
+\index{Evas\_\-Cserve@{Evas\_\-Cserve}!evas\_\-cserve\_\-want\_\-get@{evas\_\-cserve\_\-want\_\-get}}
+\index{evas\_\-cserve\_\-want\_\-get@{evas\_\-cserve\_\-want\_\-get}!Evas_Cserve@{Evas\_\-Cserve}}
+\subsubsection[{evas\_\-cserve\_\-want\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-cserve\_\-want\_\-get (
+\begin{DoxyParamCaption}
+\item[{void}]{}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Cserve_gab039ccd04ab2e8857a0df629b4ac0901}
+
+
+Retrieves if the system wants to share bitmaps using the server. 
+
+\begin{DoxyReturn}{Returns}
+{\ttfamily EINA\_\-TRUE} if wants, {\ttfamily EINA\_\-FALSE} otherwise. 
+\end{DoxyReturn}

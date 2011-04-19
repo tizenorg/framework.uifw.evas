@@ -1,0 +1,119 @@
+.TH "Output and Viewport Resizing Functions" 3 "Tue Apr 19 2011" "Evas" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Output and Viewport Resizing Functions \- 
+.PP
+Functions that set and retrieve the output and viewport size of an evas.  
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "EAPI void \fBevas_output_size_set\fP (\fBEvas\fP *e, int w, int h)"
+.br
+.RI "\fISets the output size of the render engine of the given evas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_output_size_get\fP (const \fBEvas\fP *e, int *w, int *h)"
+.br
+.RI "\fIRetrieve the output size of the render engine of the given evas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_output_viewport_set\fP (\fBEvas\fP *e, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h)"
+.br
+.RI "\fISets the output viewport of the given evas in evas units. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_output_viewport_get\fP (const \fBEvas\fP *e, Evas_Coord *x, Evas_Coord *y, Evas_Coord *w, Evas_Coord *h)"
+.br
+.RI "\fIGet the render engine's output viewport co-ordinates in canvas units. \fP"
+.in -1c
+.SH "Detailed Description"
+.PP 
+Functions that set and retrieve the output and viewport size of an evas. 
+.SH "Function Documentation"
+.PP 
+.SS "EAPI void evas_output_size_get (const \fBEvas\fP * e, int * w, int * h)"
+.PP
+Retrieve the output size of the render engine of the given evas. The output size is given in whatever the output units are for the engine.
+.PP
+If either \fCw\fP or \fCh\fP is \fCNULL\fP, then it is ignored. If \fCe\fP is invalid, the returned results are undefined.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIe\fP The given evas. 
+.br
+\fIw\fP The pointer to an integer to store the width in. 
+.br
+\fIh\fP The pointer to an integer to store the height in. 
+.RE
+.PP
+
+.SS "EAPI void evas_output_size_set (\fBEvas\fP * e, int w, int h)"
+.PP
+Sets the output size of the render engine of the given evas. The evas will render to a rectangle of the given size once this function is called. The output size is independent of the viewport size. The viewport will be stretched to fill the given rectangle.
+.PP
+The units used for \fCw\fP and \fCh\fP depend on the engine used by the evas.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIe\fP The given evas. 
+.br
+\fIw\fP The width in output units, usually pixels. 
+.br
+\fIh\fP The height in output units, usually pixels. 
+.RE
+.PP
+
+.SS "EAPI void evas_output_viewport_get (const \fBEvas\fP * e, Evas_Coord * x, Evas_Coord * y, Evas_Coord * w, Evas_Coord * h)"
+.PP
+Get the render engine's output viewport co-ordinates in canvas units. \fBParameters:\fP
+.RS 4
+\fIe\fP The pointer to the Evas Canvas 
+.br
+\fIx\fP The pointer to a x variable to be filled in 
+.br
+\fIy\fP The pointer to a y variable to be filled in 
+.br
+\fIw\fP The pointer to a width variable to be filled in 
+.br
+\fIh\fP The pointer to a height variable to be filled in
+.RE
+.PP
+Calling this function writes the current canvas output viewport size and location values into the variables pointed to by \fCx\fP, \fCy\fP, \fCw\fP and \fCh\fP. On success the variables have the output location and size values written to them in canvas units. Any of \fCx\fP, \fCy\fP, \fCw\fP or \fCh\fP that are NULL will not be written to. If \fCe\fP is invalid, the results are undefined.
+.PP
+Example: 
+.PP
+.nf
+ extern Evas *evas;
+ Evas_Coord x, y, width, height;
+
+ evas_output_viewport_get(evas, &x, &y, &w, &h);
+
+.fi
+.PP
+ 
+.SS "EAPI void evas_output_viewport_set (\fBEvas\fP * e, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h)"
+.PP
+Sets the output viewport of the given evas in evas units. The output viewport is the area of the evas that will be visible to the viewer. The viewport will be stretched to fit the output target of the evas when rendering is performed.
+.PP
+\fBNote:\fP
+.RS 4
+The coordinate values do not have to map 1-to-1 with the output target. However, it is generally advised that it is done for ease of use.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIe\fP The given evas. 
+.br
+\fIx\fP The top-left corner x value of the viewport. 
+.br
+\fIy\fP The top-left corner y value of the viewport. 
+.br
+\fIw\fP The width of the viewport. Must be greater than 0. 
+.br
+\fIh\fP The height of the viewport. Must be greater than 0. 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Evas from the source code.

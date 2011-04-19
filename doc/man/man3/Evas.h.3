@@ -1,0 +1,2930 @@
+.TH "Evas.h" 3 "Tue Apr 19 2011" "Evas" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Evas.h \- 
+.PP
+These routines are used for Evas library interaction.  
+
+.SH SYNOPSIS
+.br
+.PP
+.SS "Data Structures"
+
+.in +1c
+.ti -1c
+.RI "struct \fB_Evas_Coord_Rectangle\fP"
+.br
+.RI "\fI< A rectangle in Evas_Coord \fP"
+.ti -1c
+.RI "struct \fB_Evas_Engine_Info\fP"
+.br
+.RI "\fIGeneric engine information. \fP"
+.ti -1c
+.RI "struct \fB_Evas_Event_Mouse_Down\fP"
+.br
+.RI "\fIMouse button press event. \fP"
+.ti -1c
+.RI "struct \fB_Evas_Event_Mouse_Up\fP"
+.br
+.RI "\fIMouse button release event. \fP"
+.ti -1c
+.RI "struct \fB_Evas_Event_Mouse_In\fP"
+.br
+.RI "\fIMouse enter event. \fP"
+.ti -1c
+.RI "struct \fB_Evas_Event_Mouse_Out\fP"
+.br
+.RI "\fIMouse leave event. \fP"
+.ti -1c
+.RI "struct \fB_Evas_Event_Mouse_Move\fP"
+.br
+.RI "\fIMouse button down event. \fP"
+.ti -1c
+.RI "struct \fB_Evas_Event_Mouse_Wheel\fP"
+.br
+.RI "\fIWheel event. \fP"
+.ti -1c
+.RI "struct \fB_Evas_Event_Multi_Down\fP"
+.br
+.RI "\fIMulti button press event. \fP"
+.ti -1c
+.RI "struct \fB_Evas_Event_Multi_Up\fP"
+.br
+.RI "\fIMulti button release event. \fP"
+.ti -1c
+.RI "struct \fB_Evas_Event_Multi_Move\fP"
+.br
+.RI "\fIMulti button down event. \fP"
+.ti -1c
+.RI "struct \fB_Evas_Event_Key_Down\fP"
+.br
+.RI "\fIKey press event. \fP"
+.ti -1c
+.RI "struct \fB_Evas_Event_Key_Up\fP"
+.br
+.RI "\fIKey release event. \fP"
+.ti -1c
+.RI "struct \fB_Evas_Event_Hold\fP"
+.br
+.RI "\fIHold change event. \fP"
+.ti -1c
+.RI "struct \fB_Evas_Smart_Class\fP"
+.br
+.RI "\fIa smart object class \fP"
+.ti -1c
+.RI "struct \fB_Evas_Smart_Cb_Description\fP"
+.br
+.RI "\fIDescribes a callback used by a smart class \fBevas_object_smart_callback_call()\fP, particularly useful to explain to user and its code (ie: introspection) what the parameter \fCevent_info\fP will contain. \fP"
+.ti -1c
+.RI "struct \fB_Evas_Object_Box_Api\fP"
+.br
+.RI "\fIThis structure should be used by any class that wants to inherit from box to provide custom behavior not allowed only by providing a layout function with \fBevas_object_box_layout_set()\fP. \fP"
+.ti -1c
+.RI "struct \fB_Evas_Object_Box_Data\fP"
+.br
+.RI "\fIThis structure augments clipped smart object's instance data, providing extra members required by generic box implementation. \fP"
+.ti -1c
+.RI "struct \fB_Evas_Cserve_Stats\fP"
+.br
+.RI "\fIStatistics about server that shares cached bitmaps. \fP"
+.ti -1c
+.RI "struct \fB_Evas_Cserve_Image_Cache\fP"
+.br
+.RI "\fICache of images shared by server. \fP"
+.ti -1c
+.RI "struct \fB_Evas_Cserve_Image\fP"
+.br
+.RI "\fIAn image shared by the server. \fP"
+.ti -1c
+.RI "struct \fB_Evas_Cserve_Config\fP"
+.br
+.RI "\fIConfiguration that controls the server that shares cached bitmaps. \fP"
+.in -1c
+.SS "Defines"
+
+.in +1c
+.ti -1c
+.RI "#define \fBEVAS_LAYER_MIN\fP   -32768"
+.br
+.RI "\fIbottom-most layer number \fP"
+.ti -1c
+.RI "#define \fBEVAS_LAYER_MAX\fP   32767"
+.br
+.RI "\fItop-most layer number \fP"
+.ti -1c
+.RI "#define \fBEVAS_COLOR_SPACE_ARGB\fP   0"
+.br
+.RI "\fINot used for anything. \fP"
+.ti -1c
+.RI "#define \fBEVAS_COLOR_SPACE_AHSV\fP   1"
+.br
+.RI "\fINot used for anything. \fP"
+.ti -1c
+.RI "#define \fBEVAS_TEXT_INVALID\fP   -1"
+.br
+.RI "\fINot used for anything. \fP"
+.ti -1c
+.RI "#define \fBEVAS_TEXT_SPECIAL\fP   -2"
+.br
+.RI "\fINot used for anything. \fP"
+.ti -1c
+.RI "#define \fBEVAS_HINT_EXPAND\fP   1.0"
+.br
+.RI "\fIUse with \fBevas_object_size_hint_weight_set()\fP, \fBevas_object_size_hint_weight_get()\fP, \fBevas_object_size_hint_expand_set()\fP, \fBevas_object_size_hint_expand_get()\fP. \fP"
+.ti -1c
+.RI "#define \fBEVAS_HINT_FILL\fP   -1.0"
+.br
+.RI "\fIUse with \fBevas_object_size_hint_align_set()\fP, \fBevas_object_size_hint_align_get()\fP, \fBevas_object_size_hint_fill_set()\fP, \fBevas_object_size_hint_fill_get()\fP. \fP"
+.ti -1c
+.RI "#define \fBevas_object_size_hint_fill_set\fP   evas_object_size_hint_align_set"
+.br
+.RI "\fIConvenience macro to make it easier to understand that align is also used for fill properties (as fill is mutually exclusive to align). \fP"
+.ti -1c
+.RI "#define \fBevas_object_size_hint_fill_get\fP   evas_object_size_hint_align_get"
+.br
+.RI "\fIConvenience macro to make it easier to understand that align is also used for fill properties (as fill is mutually exclusive to align). \fP"
+.ti -1c
+.RI "#define \fBevas_object_size_hint_expand_set\fP   evas_object_size_hint_weight_set"
+.br
+.RI "\fIConvenience macro to make it easier to understand that weight is also used for expand properties. \fP"
+.ti -1c
+.RI "#define \fBevas_object_size_hint_expand_get\fP   evas_object_size_hint_weight_get"
+.br
+.RI "\fIConvenience macro to make it easier to understand that weight is also used for expand properties. \fP"
+.ti -1c
+.RI "#define \fBEVAS_SMART_CLASS_VERSION\fP   4"
+.br
+.RI "\fIThe version you have to put into the version field in the smart class struct. \fP"
+.ti -1c
+.RI "#define \fBEVAS_SMART_CLASS_INIT_NULL\fP   {NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}"
+.br
+.RI "\fIInitializer to zero a whole Evas_Smart_Class structure. \fP"
+.ti -1c
+.RI "#define \fBEVAS_SMART_CLASS_INIT_VERSION\fP   {NULL, EVAS_SMART_CLASS_VERSION, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}"
+.br
+.RI "\fIInitializer to zero a whole Evas_Smart_Class structure and set version. \fP"
+.ti -1c
+.RI "#define \fBEVAS_SMART_CLASS_INIT_NAME_VERSION\fP(name)   {name, EVAS_SMART_CLASS_VERSION, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}"
+.br
+.RI "\fIInitializer to zero a whole Evas_Smart_Class structure and set name and version. \fP"
+.ti -1c
+.RI "#define \fBEVAS_SMART_CLASS_INIT_NAME_VERSION_PARENT\fP(name, parent)   {name, EVAS_SMART_CLASS_VERSION, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, parent, NULL, NULL}"
+.br
+.RI "\fIInitializer to zero a whole Evas_Smart_Class structure and set name, version and parent class. \fP"
+.ti -1c
+.RI "#define \fBEVAS_SMART_CLASS_INIT_NAME_VERSION_PARENT_CALLBACKS\fP(name, parent, callbacks)   {name, EVAS_SMART_CLASS_VERSION, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, parent, callbacks, NULL}"
+.br
+.RI "\fIInitializer to zero a whole Evas_Smart_Class structure and set name, version, parent class and callbacks definition. \fP"
+.ti -1c
+.RI "#define \fBEVAS_SMART_SUBCLASS_NEW\fP(smart_name, prefix, api_type, parent_type, parent_func, cb_desc)"
+.br
+.RI "\fIConvenience macro to subclass a Smart Class. \fP"
+.ti -1c
+.RI "#define \fBEVAS_SMART_DATA_ALLOC\fP(o, priv_type)"
+.br
+.RI "\fIConvenience macro to allocate smart data only if needed. \fP"
+.ti -1c
+.RI "#define \fBevas_smart_class_inherit\fP(sc, parent_sc)   evas_smart_class_inherit_full(sc, parent_sc, sizeof(*parent_sc))"
+.br
+.RI "\fIEasy to use version of \fBevas_smart_class_inherit_full()\fP. \fP"
+.ti -1c
+.RI "#define \fBEVAS_OBJECT_BOX_API_INIT\fP(smart_class_init)   {smart_class_init, EVAS_OBJECT_BOX_API_VERSION, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}"
+.br
+.RI "\fIInitializer for whole Evas_Object_Box_Api structure. \fP"
+.ti -1c
+.RI "#define \fBEVAS_OBJECT_BOX_API_INIT_NULL\fP   EVAS_OBJECT_BOX_API_INIT(EVAS_SMART_CLASS_INIT_NULL)"
+.br
+.RI "\fIInitializer to zero a whole Evas_Object_Box_Api structure. \fP"
+.ti -1c
+.RI "#define \fBEVAS_OBJECT_BOX_API_INIT_VERSION\fP   EVAS_OBJECT_BOX_API_INIT(EVAS_SMART_CLASS_INIT_VERSION)"
+.br
+.RI "\fIInitializer to zero a whole Evas_Object_Box_Api structure and set version. \fP"
+.ti -1c
+.RI "#define \fBEVAS_OBJECT_BOX_API_INIT_NAME_VERSION\fP(name)   EVAS_OBJECT_BOX_API_INIT(EVAS_SMART_CLASS_INIT_NAME_VERSION(name))"
+.br
+.RI "\fIInitializer to zero a whole Evas_Object_Box_Api structure and set name and version. \fP"
+.in -1c
+.SS "Typedefs"
+
+.in +1c
+.ti -1c
+.RI "typedef enum \fB_Evas_Callback_Type\fP \fBEvas_Callback_Type\fP"
+.br
+.RI "\fIIdentifier of callbacks to be used with object or canvas. \fP"
+.ti -1c
+.RI "typedef enum \fB_Evas_Button_Flags\fP \fBEvas_Button_Flags\fP"
+.br
+.RI "\fIFlags for Mouse Button events. \fP"
+.ti -1c
+.RI "typedef enum \fB_Evas_Event_Flags\fP \fBEvas_Event_Flags\fP"
+.br
+.RI "\fIFlags for Events. \fP"
+.ti -1c
+.RI "typedef enum \fB_Evas_Font_Hinting_Flags\fP \fBEvas_Font_Hinting_Flags\fP"
+.br
+.RI "\fIFlags for Font Hinting. \fP"
+.ti -1c
+.RI "typedef enum \fB_Evas_Colorspace\fP \fBEvas_Colorspace\fP"
+.br
+.RI "\fIColorspaces for pixel data supported by Evas. \fP"
+.ti -1c
+.RI "typedef enum \fB_Evas_Object_Table_Homogeneous_Mode\fP \fBEvas_Object_Table_Homogeneous_Mode\fP"
+.br
+.RI "\fIHow to pack items into cells in a table. \fP"
+.ti -1c
+.RI "typedef struct \fB_Evas_Coord_Rectangle\fP \fBEvas_Coord_Rectangle\fP"
+.br
+.RI "\fIA generic rectangle handle. \fP"
+.ti -1c
+.RI "typedef struct _Evas_Point \fBEvas_Point\fP"
+.br
+.RI "\fIinteger point \fP"
+.ti -1c
+.RI "typedef struct _Evas_Coord_Point \fBEvas_Coord_Point\fP"
+.br
+.RI "\fIEvas_Coord point. \fP"
+.ti -1c
+.RI "typedef struct _Evas_Coord_Precision_Point \fBEvas_Coord_Precision_Point\fP"
+.br
+.RI "\fIEvas_Coord point with sub-pixel precision. \fP"
+.ti -1c
+.RI "typedef struct _Evas_Position \fBEvas_Position\fP"
+.br
+.RI "\fIassociates given point in Canvas and Output \fP"
+.ti -1c
+.RI "typedef struct _Evas_Precision_Position \fBEvas_Precision_Position\fP"
+.br
+.RI "\fIassociates given point in Canvas and Output, with sub-pixel precision \fP"
+.ti -1c
+.RI "typedef struct \fB_Evas_Smart_Class\fP \fBEvas_Smart_Class\fP"
+.br
+.RI "\fIA smart object base class. \fP"
+.ti -1c
+.RI "typedef struct \fB_Evas_Smart_Cb_Description\fP \fBEvas_Smart_Cb_Description\fP"
+.br
+.RI "\fIA smart object callback description, used to provide introspection. \fP"
+.ti -1c
+.RI "typedef struct _Evas_Map \fBEvas_Map\fP"
+.br
+.RI "\fIAn opaque handle to map points. \fP"
+.ti -1c
+.RI "typedef struct _Evas \fBEvas\fP"
+.br
+.RI "\fIAn Evas canvas handle. \fP"
+.ti -1c
+.RI "typedef struct _Evas_Object \fBEvas_Object\fP"
+.br
+.RI "\fIAn Evas Object handle. \fP"
+.ti -1c
+.RI "typedef void \fBEvas_Performance\fP"
+.br
+.RI "\fIAn Evas Performance handle. \fP"
+.ti -1c
+.RI "typedef struct _Evas_Modifier \fBEvas_Modifier\fP"
+.br
+.RI "\fIAn Evas Modifier. \fP"
+.ti -1c
+.RI "typedef struct _Evas_Lock \fBEvas_Lock\fP"
+.br
+.RI "\fIAn Evas Lock. \fP"
+.ti -1c
+.RI "typedef struct _Evas_Smart \fBEvas_Smart\fP"
+.br
+.RI "\fIAn Evas Smart Object handle. \fP"
+.ti -1c
+.RI "typedef struct _Evas_Native_Surface \fBEvas_Native_Surface\fP"
+.br
+.RI "\fIA generic datatype for engine specific native surface information. \fP"
+.ti -1c
+.RI "typedef unsigned long long \fBEvas_Modifier_Mask\fP"
+.br
+.RI "\fIAn Evas modifier mask type. \fP"
+.ti -1c
+.RI "typedef struct _Evas_Pixel_Import_Source \fBEvas_Pixel_Import_Source\fP"
+.br
+.RI "\fIA source description of pixels for importing pixels. \fP"
+.ti -1c
+.RI "typedef struct \fB_Evas_Engine_Info\fP \fBEvas_Engine_Info\fP"
+.br
+.RI "\fIA generic Evas Engine information structure. \fP"
+.ti -1c
+.RI "typedef struct _Evas_Device \fBEvas_Device\fP"
+.br
+.RI "\fIA source device handle - where the event came from. \fP"
+.ti -1c
+.RI "typedef struct \fB_Evas_Event_Mouse_Down\fP \fBEvas_Event_Mouse_Down\fP"
+.br
+.RI "\fIEvent structure for \fBEVAS_CALLBACK_MOUSE_DOWN\fP event callbacks. \fP"
+.ti -1c
+.RI "typedef struct \fB_Evas_Event_Mouse_Up\fP \fBEvas_Event_Mouse_Up\fP"
+.br
+.RI "\fIEvent structure for \fBEVAS_CALLBACK_MOUSE_UP\fP event callbacks. \fP"
+.ti -1c
+.RI "typedef struct \fB_Evas_Event_Mouse_In\fP \fBEvas_Event_Mouse_In\fP"
+.br
+.RI "\fIEvent structure for \fBEVAS_CALLBACK_MOUSE_IN\fP event callbacks. \fP"
+.ti -1c
+.RI "typedef struct \fB_Evas_Event_Mouse_Out\fP \fBEvas_Event_Mouse_Out\fP"
+.br
+.RI "\fIEvent structure for \fBEVAS_CALLBACK_MOUSE_OUT\fP event callbacks. \fP"
+.ti -1c
+.RI "typedef struct \fB_Evas_Event_Mouse_Move\fP \fBEvas_Event_Mouse_Move\fP"
+.br
+.RI "\fIEvent structure for \fBEVAS_CALLBACK_MOUSE_MOVE\fP event callbacks. \fP"
+.ti -1c
+.RI "typedef struct \fB_Evas_Event_Mouse_Wheel\fP \fBEvas_Event_Mouse_Wheel\fP"
+.br
+.RI "\fIEvent structure for \fBEVAS_CALLBACK_MOUSE_WHEEL\fP event callbacks. \fP"
+.ti -1c
+.RI "typedef struct \fB_Evas_Event_Multi_Down\fP \fBEvas_Event_Multi_Down\fP"
+.br
+.RI "\fIEvent structure for \fBEVAS_CALLBACK_MULTI_DOWN\fP event callbacks. \fP"
+.ti -1c
+.RI "typedef struct \fB_Evas_Event_Multi_Up\fP \fBEvas_Event_Multi_Up\fP"
+.br
+.RI "\fIEvent structure for \fBEVAS_CALLBACK_MULTI_UP\fP event callbacks. \fP"
+.ti -1c
+.RI "typedef struct \fB_Evas_Event_Multi_Move\fP \fBEvas_Event_Multi_Move\fP"
+.br
+.RI "\fIEvent structure for \fBEVAS_CALLBACK_MULTI_MOVE\fP event callbacks. \fP"
+.ti -1c
+.RI "typedef struct \fB_Evas_Event_Key_Down\fP \fBEvas_Event_Key_Down\fP"
+.br
+.RI "\fIEvent structure for \fBEVAS_CALLBACK_KEY_DOWN\fP event callbacks. \fP"
+.ti -1c
+.RI "typedef struct \fB_Evas_Event_Key_Up\fP \fBEvas_Event_Key_Up\fP"
+.br
+.RI "\fIEvent structure for \fBEVAS_CALLBACK_KEY_UP\fP event callbacks. \fP"
+.ti -1c
+.RI "typedef struct \fB_Evas_Event_Hold\fP \fBEvas_Event_Hold\fP"
+.br
+.RI "\fIEvent structure for \fBEVAS_CALLBACK_HOLD\fP event callbacks. \fP"
+.ti -1c
+.RI "typedef enum \fB_Evas_Load_Error\fP \fBEvas_Load_Error\fP"
+.br
+.RI "\fILoad error you can get from loading of files - see \fBevas_load_error_str()\fP too. \fP"
+.ti -1c
+.RI "typedef enum \fB_Evas_Alloc_Error\fP \fBEvas_Alloc_Error\fP"
+.br
+.RI "\fIPossible allocation errors returned by \fBevas_alloc_error()\fP. \fP"
+.ti -1c
+.RI "typedef enum \fB_Evas_Fill_Spread\fP \fBEvas_Fill_Spread\fP"
+.br
+.RI "\fIFill types used for \fBevas_object_image_fill_spread_set()\fP. \fP"
+.ti -1c
+.RI "typedef enum \fB_Evas_Pixel_Import_Pixel_Format\fP \fBEvas_Pixel_Import_Pixel_Format\fP"
+.br
+.RI "\fIPixel format for import call. \fP"
+.ti -1c
+.RI "typedef enum \fB_Evas_Render_Op\fP \fBEvas_Render_Op\fP"
+.br
+.ti -1c
+.RI "typedef enum \fB_Evas_Object_Pointer_Mode\fP \fBEvas_Object_Pointer_Mode\fP"
+.br
+.RI "\fIHow mouse pointer should be handled by Evas. \fP"
+.ti -1c
+.RI "typedef struct _Evas_Object_Textblock_Node_Format \fBEvas_Object_Textblock_Node_Format\fP"
+.br
+.RI "\fIA format node. \fP"
+.ti -1c
+.RI "typedef struct _Evas_Object_Smart_Clipped_Data \fBEvas_Object_Smart_Clipped_Data\fP"
+.br
+.RI "\fIEvery subclass should provide this at the beginning of their own data set with \fBevas_object_smart_data_set()\fP. \fP"
+.ti -1c
+.RI "typedef struct \fB_Evas_Object_Box_Api\fP \fBEvas_Object_Box_Api\fP"
+.br
+.RI "\fISmart Class extension providing extra box requirements. \fP"
+.ti -1c
+.RI "typedef struct \fB_Evas_Object_Box_Data\fP \fBEvas_Object_Box_Data\fP"
+.br
+.RI "\fISmart instance data providing box requirements. \fP"
+.ti -1c
+.RI "typedef struct _Evas_Object_Box_Option \fBEvas_Object_Box_Option\fP"
+.br
+.RI "\fIThe base structure for a box option. \fP"
+.in -1c
+.SS "Enumerations"
+
+.in +1c
+.ti -1c
+.RI "enum \fB_Evas_Callback_Type\fP { \fBEVAS_CALLBACK_MOUSE_IN\fP, \fBEVAS_CALLBACK_MOUSE_OUT\fP, \fBEVAS_CALLBACK_MOUSE_DOWN\fP, \fBEVAS_CALLBACK_MOUSE_UP\fP, \fBEVAS_CALLBACK_MOUSE_MOVE\fP, \fBEVAS_CALLBACK_MOUSE_WHEEL\fP, \fBEVAS_CALLBACK_MULTI_DOWN\fP, \fBEVAS_CALLBACK_MULTI_UP\fP, \fBEVAS_CALLBACK_MULTI_MOVE\fP, \fBEVAS_CALLBACK_FREE\fP, \fBEVAS_CALLBACK_KEY_DOWN\fP, \fBEVAS_CALLBACK_KEY_UP\fP, \fBEVAS_CALLBACK_FOCUS_IN\fP, \fBEVAS_CALLBACK_FOCUS_OUT\fP, \fBEVAS_CALLBACK_SHOW\fP, \fBEVAS_CALLBACK_HIDE\fP, \fBEVAS_CALLBACK_MOVE\fP, \fBEVAS_CALLBACK_RESIZE\fP, \fBEVAS_CALLBACK_RESTACK\fP, \fBEVAS_CALLBACK_DEL\fP, \fBEVAS_CALLBACK_HOLD\fP, \fBEVAS_CALLBACK_CHANGED_SIZE_HINTS\fP, \fBEVAS_CALLBACK_IMAGE_PRELOADED\fP, \fBEVAS_CALLBACK_CANVAS_FOCUS_IN\fP, \fBEVAS_CALLBACK_CANVAS_FOCUS_OUT\fP, \fBEVAS_CALLBACK_RENDER_FLUSH_PRE\fP, \fBEVAS_CALLBACK_RENDER_FLUSH_POST\fP, \fBEVAS_CALLBACK_CANVAS_OBJECT_FOCUS_IN\fP, \fBEVAS_CALLBACK_CANVAS_OBJECT_FOCUS_OUT\fP, \fBEVAS_CALLBACK_IMAGE_UNLOADED\fP, \fBEVAS_CALLBACK_LAST\fP }"
+.br
+.RI "\fIIdentifier of callbacks to be used with object or canvas. \fP"
+.ti -1c
+.RI "enum \fB_Evas_Button_Flags\fP { \fBEVAS_BUTTON_NONE\fP =  0, \fBEVAS_BUTTON_DOUBLE_CLICK\fP =  (1 << 0), \fBEVAS_BUTTON_TRIPLE_CLICK\fP =  (1 << 1) }"
+.br
+.RI "\fIFlags for Mouse Button events. \fP"
+.ti -1c
+.RI "enum \fB_Evas_Event_Flags\fP { \fBEVAS_EVENT_FLAG_NONE\fP =  0, \fBEVAS_EVENT_FLAG_ON_HOLD\fP =  (1 << 0), \fBEVAS_EVENT_FLAG_ON_SCROLL\fP =  (1 << 1) }"
+.br
+.RI "\fIFlags for Events. \fP"
+.ti -1c
+.RI "enum \fB_Evas_Font_Hinting_Flags\fP { \fBEVAS_FONT_HINTING_NONE\fP, \fBEVAS_FONT_HINTING_AUTO\fP, \fBEVAS_FONT_HINTING_BYTECODE\fP }"
+.br
+.RI "\fIFlags for Font Hinting. \fP"
+.ti -1c
+.RI "enum \fB_Evas_Colorspace\fP { \fBEVAS_COLORSPACE_ARGB8888\fP, \fBEVAS_COLORSPACE_YCBCR422P601_PL\fP, \fBEVAS_COLORSPACE_YCBCR422P709_PL\fP, \fBEVAS_COLORSPACE_RGB565_A5P\fP, \fBEVAS_COLORSPACE_GRY8\fP }"
+.br
+.RI "\fIColorspaces for pixel data supported by Evas. \fP"
+.ti -1c
+.RI "enum \fB_Evas_Object_Table_Homogeneous_Mode\fP "
+.br
+.RI "\fIHow to pack items into cells in a table. \fP"
+.ti -1c
+.RI "enum \fB_Evas_Load_Error\fP { \fBEVAS_LOAD_ERROR_NONE\fP =  0, \fBEVAS_LOAD_ERROR_GENERIC\fP =  1, \fBEVAS_LOAD_ERROR_DOES_NOT_EXIST\fP =  2, \fBEVAS_LOAD_ERROR_PERMISSION_DENIED\fP =  3, \fBEVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED\fP =  4, \fBEVAS_LOAD_ERROR_CORRUPT_FILE\fP =  5, \fBEVAS_LOAD_ERROR_UNKNOWN_FORMAT\fP =  6 }"
+.br
+.ti -1c
+.RI "enum \fB_Evas_Alloc_Error\fP { \fBEVAS_ALLOC_ERROR_NONE\fP =  0, \fBEVAS_ALLOC_ERROR_FATAL\fP =  1, \fBEVAS_ALLOC_ERROR_RECOVERED\fP =  2 }"
+.br
+.ti -1c
+.RI "enum \fB_Evas_Fill_Spread\fP { \fBEVAS_TEXTURE_REFLECT\fP =  0, \fBEVAS_TEXTURE_REPEAT\fP =  1, \fBEVAS_TEXTURE_RESTRICT\fP =  2, \fBEVAS_TEXTURE_RESTRICT_REFLECT\fP =  3, \fBEVAS_TEXTURE_RESTRICT_REPEAT\fP =  4, \fBEVAS_TEXTURE_PAD\fP =  5 }"
+.br
+.ti -1c
+.RI "enum \fB_Evas_Pixel_Import_Pixel_Format\fP { \fBEVAS_PIXEL_FORMAT_NONE\fP =  0, \fBEVAS_PIXEL_FORMAT_ARGB32\fP =  1, \fBEVAS_PIXEL_FORMAT_YUV420P_601\fP =  2 }"
+.br
+.ti -1c
+.RI "enum \fB_Evas_Render_Op\fP { \fBEVAS_RENDER_BLEND\fP =  0, \fBEVAS_RENDER_BLEND_REL\fP =  1, \fBEVAS_RENDER_COPY\fP =  2, \fBEVAS_RENDER_COPY_REL\fP =  3, \fBEVAS_RENDER_ADD\fP =  4, \fBEVAS_RENDER_ADD_REL\fP =  5, \fBEVAS_RENDER_SUB\fP =  6, \fBEVAS_RENDER_SUB_REL\fP =  7, \fBEVAS_RENDER_TINT\fP =  8, \fBEVAS_RENDER_TINT_REL\fP =  9, \fBEVAS_RENDER_MASK\fP =  10, \fBEVAS_RENDER_MUL\fP =  11 }"
+.br
+.RI "\fIHow the object should be rendered to output. \fP"
+.ti -1c
+.RI "enum \fB_Evas_Object_Pointer_Mode\fP { \fBEVAS_OBJECT_POINTER_MODE_AUTOGRAB\fP }"
+.br
+.RI "\fIHow mouse pointer should be handled by Evas. \fP"
+.in -1c
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "EAPI int \fBevas_init\fP (void)"
+.br
+.RI "\fIInitialize Evas. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_shutdown\fP (void)"
+.br
+.RI "\fIShutdown Evas. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Alloc_Error\fP \fBevas_alloc_error\fP (void)"
+.br
+.RI "\fIReturn if any allocation errors have occurred during the prior function. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_async_events_fd_get\fP (void) EINA_WARN_UNUSED_RESULT EINA_PURE"
+.br
+.RI "\fIGet evas' internal asynchronous events read file descriptor. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_async_events_process\fP (void)"
+.br
+.RI "\fITrigger the processing of all events waiting on the file descriptor returned by \fBevas_async_events_fd_get()\fP. \fP"
+.ti -1c
+.RI "EAPI \fBEvas\fP * \fBevas_new\fP (void) EINA_WARN_UNUSED_RESULT EINA_MALLOC"
+.br
+.RI "\fICreates a new empty evas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_free\fP (\fBEvas\fP *e) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIFrees the given evas and any objects created on it. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_focus_in\fP (\fBEvas\fP *e)"
+.br
+.RI "\fIInform to the evas that it got the focus. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_focus_out\fP (\fBEvas\fP *e)"
+.br
+.RI "\fIInform to the evas that it lost the focus. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_focus_state_get\fP (const \fBEvas\fP *e) EINA_PURE"
+.br
+.RI "\fIGet the focus state known by the given evas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_nochange_push\fP (\fBEvas\fP *e)"
+.br
+.RI "\fIPush the nochange flag up 1. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_nochange_pop\fP (\fBEvas\fP *e)"
+.br
+.RI "\fIPop the nochange flag down 1. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_data_attach_set\fP (\fBEvas\fP *e, void *data) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIAttaches a specific pointer to the evas for fetching later. \fP"
+.ti -1c
+.RI "EAPI void * \fBevas_data_attach_get\fP (const \fBEvas\fP *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIReturns the pointer attached by \fBevas_data_attach_set()\fP. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_damage_rectangle_add\fP (\fBEvas\fP *e, int x, int y, int w, int h) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIAdd a damage rectangle. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_obscured_rectangle_add\fP (\fBEvas\fP *e, int x, int y, int w, int h) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIAdd an obscured region. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_obscured_clear\fP (\fBEvas\fP *e) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIRemove all obscured region rectangles from the canvas. \fP"
+.ti -1c
+.RI "EAPI Eina_List * \fBevas_render_updates\fP (\fBEvas\fP *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIForce immediate renderization of the given canvas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_render_updates_free\fP (Eina_List *updates)"
+.br
+.RI "\fIFree the rectangles returned by \fBevas_render_updates()\fP. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_render\fP (\fBEvas\fP *e) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIForce renderization of the given canvas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_norender\fP (\fBEvas\fP *e) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIUpdate the canvas internal objects but not triggering immediate renderization. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_render_idle_flush\fP (\fBEvas\fP *e) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIMake the canvas discard internally cached data used for rendering. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_render_method_lookup\fP (const char *name) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1)"
+.br
+.RI "\fILook up a numeric ID from a string name of a rendering engine. \fP"
+.ti -1c
+.RI "EAPI Eina_List * \fBevas_render_method_list\fP (void) EINA_WARN_UNUSED_RESULT"
+.br
+.RI "\fIList all the rendering engines compiled into the copy of the Evas library. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_render_method_list_free\fP (Eina_List *list)"
+.br
+.RI "\fIThis function should be called to free a list of engine names. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_output_method_set\fP (\fBEvas\fP *e, int render_method) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets the output engine for the given evas. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_output_method_get\fP (const \fBEvas\fP *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIRetrieves the number of the output engine used for the given evas. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Engine_Info\fP * \fBevas_engine_info_get\fP (const \fBEvas\fP *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIRetrieves the current render engine info struct from the given evas. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_engine_info_set\fP (\fBEvas\fP *e, \fBEvas_Engine_Info\fP *info) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIApplies the engine settings for the given evas from the given \fCEvas_Engine_Info\fP structure. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_output_size_set\fP (\fBEvas\fP *e, int w, int h) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets the output size of the render engine of the given evas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_output_size_get\fP (const \fBEvas\fP *e, int *w, int *h) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIRetrieve the output size of the render engine of the given evas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_output_viewport_set\fP (\fBEvas\fP *e, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets the output viewport of the given evas in evas units. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_output_viewport_get\fP (const \fBEvas\fP *e, Evas_Coord *x, Evas_Coord *y, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIGet the render engine's output viewport co-ordinates in canvas units. \fP"
+.ti -1c
+.RI "EAPI Evas_Coord \fBevas_coord_screen_x_to_world\fP (const \fBEvas\fP *e, int x) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIConvert/scale an ouput screen co-ordinate into canvas co-ordinates. \fP"
+.ti -1c
+.RI "EAPI Evas_Coord \fBevas_coord_screen_y_to_world\fP (const \fBEvas\fP *e, int y) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIConvert/scale an ouput screen co-ordinate into canvas co-ordinates. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_coord_world_x_to_screen\fP (const \fBEvas\fP *e, Evas_Coord x) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIConvert/scale a canvas co-ordinate into output screen co-ordinates. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_coord_world_y_to_screen\fP (const \fBEvas\fP *e, Evas_Coord y) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIConvert/scale a canvas co-ordinate into output screen co-ordinates. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_pointer_output_xy_get\fP (const \fBEvas\fP *e, int *x, int *y) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIThis function returns the current known pointer co-ordinates. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_pointer_canvas_xy_get\fP (const \fBEvas\fP *e, Evas_Coord *x, Evas_Coord *y) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIThis function returns the current known pointer co-ordinates. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_pointer_button_down_mask_get\fP (const \fBEvas\fP *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIReturns a bitmask with the mouse buttons currently pressed, set to 1. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_pointer_inside_get\fP (const \fBEvas\fP *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIReturns whether the mouse pointer is logically inside the canvas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_event_freeze\fP (\fBEvas\fP *e) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIFreeze all event processing. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_event_thaw\fP (\fBEvas\fP *e) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIThaw a canvas out after freezing. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_event_freeze_get\fP (const \fBEvas\fP *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIReturn the freeze count of a given canvas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_event_feed_mouse_down\fP (\fBEvas\fP *e, int b, \fBEvas_Button_Flags\fP flags, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIMouse down event feed. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_event_feed_mouse_up\fP (\fBEvas\fP *e, int b, \fBEvas_Button_Flags\fP flags, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIMouse up event feed. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_event_feed_mouse_move\fP (\fBEvas\fP *e, int x, int y, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIMouse move event feed. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_event_feed_mouse_in\fP (\fBEvas\fP *e, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIMouse in event feed. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_event_feed_mouse_out\fP (\fBEvas\fP *e, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIMouse out event feed. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_event_feed_mouse_cancel\fP (\fBEvas\fP *e, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIMouse cancel event feed. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_event_feed_mouse_wheel\fP (\fBEvas\fP *e, int direction, int z, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIMouse wheel event feed. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_event_feed_key_down\fP (\fBEvas\fP *e, const char *keyname, const char *key, const char *string, const char *compose, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIKey down event feed. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_event_feed_key_up\fP (\fBEvas\fP *e, const char *keyname, const char *key, const char *string, const char *compose, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIKey up event feed. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_event_feed_hold\fP (\fBEvas\fP *e, int hold, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIHold event feed. \fP"
+.ti -1c
+.RI "EAPI void EAPI void *EAPI void *EAPI void \fBevas_post_event_callback_push\fP (\fBEvas\fP *e, Evas_Object_Event_Post_Cb func, const void *data)"
+.br
+.RI "\fIPush a callback on the post-event callback stack. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_post_event_callback_remove\fP (\fBEvas\fP *e, Evas_Object_Event_Post_Cb func)"
+.br
+.RI "\fIRemove a callback from the post-event callback stack. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_post_event_callback_remove_full\fP (\fBEvas\fP *e, Evas_Object_Event_Post_Cb func, const void *data)"
+.br
+.RI "\fIRemove a callback from the post-event callback stack. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_image_cache_flush\fP (\fBEvas\fP *e) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIFlush the image cache of the canvas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_image_cache_reload\fP (\fBEvas\fP *e) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIReload the image cache. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_image_cache_set\fP (\fBEvas\fP *e, int size) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISet the image cache. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_image_cache_get\fP (const \fBEvas\fP *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fISet the image cache. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_font_hinting_set\fP (\fBEvas\fP *e, \fBEvas_Font_Hinting_Flags\fP hinting) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIChanges the font hinting for the given evas. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Font_Hinting_Flags\fP \fBevas_font_hinting_get\fP (const \fBEvas\fP *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIRetrieves the font hinting used by the given evas. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_font_hinting_can_hint\fP (const \fBEvas\fP *e, \fBEvas_Font_Hinting_Flags\fP hinting) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIChecks if the font hinting is supported by the given evas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_font_cache_flush\fP (\fBEvas\fP *e) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIForce the given evas and associated engine to flush its font cache. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_font_cache_set\fP (\fBEvas\fP *e, int size) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIChanges the size of font cache of the given evas. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_font_cache_get\fP (const \fBEvas\fP *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIChanges the size of font cache of the given evas. \fP"
+.ti -1c
+.RI "EAPI Eina_List * \fBevas_font_available_list\fP (const \fBEvas\fP *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIList of available font descriptions known or found by this evas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_font_available_list_free\fP (\fBEvas\fP *e, Eina_List *available) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIFree list of font descriptions returned by evas_font_dir_available_list(). \fP"
+.ti -1c
+.RI "EAPI void \fBevas_font_path_clear\fP (\fBEvas\fP *e) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIRemoves all font paths loaded into memory for the given evas. \fP"
+.ti -1c
+.RI "EAPI void EAPI void EAPI const Eina_List * \fBevas_font_path_list\fP (const \fBEvas\fP *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIRetrieves the list of font paths used by the given evas. \fP"
+.ti -1c
+.RI "EAPI void EAPI \fBEvas_Object\fP * \fBevas_object_clip_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIGet the object clipping this one (if any). \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_clip_unset\fP (\fBEvas_Object\fP *obj)"
+.br
+.RI "\fIDisable clipping for an object. \fP"
+.ti -1c
+.RI "EAPI const Eina_List * \fBevas_object_clipees_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIReturn a list of objects currently clipped by a specific object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_focus_set\fP (\fBEvas_Object\fP *obj, Eina_Bool focus) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets focus to the given object. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_focus_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fITest if the object has focus. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_layer_set\fP (\fBEvas_Object\fP *obj, short l) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets the layer of the evas that the given object will be part of. \fP"
+.ti -1c
+.RI "EAPI short \fBevas_object_layer_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIRetrieves the layer of the evas that the given object is part of. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_name_set\fP (\fBEvas_Object\fP *obj, const char *name) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets the name of the given evas object to the given name. \fP"
+.ti -1c
+.RI "EAPI const char * \fBevas_object_name_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIRetrieves the name of the given evas object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_ref\fP (\fBEvas_Object\fP *obj)"
+.br
+.RI "\fIIncrements object reference count to defer deletion. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_unref\fP (\fBEvas_Object\fP *obj)"
+.br
+.RI "\fIDecrements object reference count to defer deletion. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_del\fP (\fBEvas_Object\fP *obj) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIDeletes the given evas object and frees its memory. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_move\fP (\fBEvas_Object\fP *obj, Evas_Coord x, Evas_Coord y) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIMoves the given evas object to the given location. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_resize\fP (\fBEvas_Object\fP *obj, Evas_Coord w, Evas_Coord h) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIChanges the size of the given evas object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_geometry_get\fP (const \fBEvas_Object\fP *obj, Evas_Coord *x, Evas_Coord *y, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIRetrieves the position and rectangular size of the given evas object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_show\fP (\fBEvas_Object\fP *obj) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIMakes the given evas object visible. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_hide\fP (\fBEvas_Object\fP *obj) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIMakes the given evas object invisible. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_visible_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIRetrieves whether or not the given evas object is visible. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_color_set\fP (\fBEvas_Object\fP *obj, int r, int g, int b, int a) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets the general colour of the given evas object to the given colour. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_color_get\fP (const \fBEvas_Object\fP *obj, int *r, int *g, int *b, int *a) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIRetrieves the general colour of the given evas object. \fP"
+.ti -1c
+.RI "EAPI \fBEvas\fP * \fBevas_object_evas_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIRetrieves the evas that the given evas object is on. \fP"
+.ti -1c
+.RI "EAPI const char * \fBevas_object_type_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIRetrieves the name of the type of the given evas object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_raise\fP (\fBEvas_Object\fP *obj) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIRaise \fCobj\fP to the top of its layer. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_lower\fP (\fBEvas_Object\fP *obj) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fILower \fCobj\fP to the bottom of its layer. \fP"
+.ti -1c
+.RI "EAPI void EAPI void EAPI \fBEvas_Object\fP * \fBevas_object_above_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIGet the evas object above \fCobj\fP. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_below_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIGet the evas object below \fCobj\fP. \fP"
+.ti -1c
+.RI "EAPI void EAPI void *EAPI void *EAPI void \fBevas_object_pass_events_set\fP (\fBEvas_Object\fP *obj, Eina_Bool pass) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISet an object's pass events state. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_pass_events_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIDetermine whether an object is set to pass events. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_repeat_events_set\fP (\fBEvas_Object\fP *obj, Eina_Bool repeat) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISet an object's repeat events state. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_repeat_events_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIDetermine whether an object is set to repeat events. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_propagate_events_set\fP (\fBEvas_Object\fP *obj, Eina_Bool prop) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISet whether events on a smart member object should propagate to its parent. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_propagate_events_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIDetermine whether an object is set to propagate events. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_map_enable_set\fP (\fBEvas_Object\fP *obj, Eina_Bool enabled)"
+.br
+.RI "\fIEnable or disable the map that is set. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_map_enable_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIGet the map enabled state. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_map_source_set\fP (\fBEvas_Object\fP *obj, \fBEvas_Object\fP *src)"
+.br
+.RI "\fISet the map source object. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_map_source_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIGet the map source object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_map_set\fP (\fBEvas_Object\fP *obj, const \fBEvas_Map\fP *map)"
+.br
+.RI "\fISet current object transformation map. \fP"
+.ti -1c
+.RI "EAPI const \fBEvas_Map\fP * \fBevas_object_map_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIGet current object transformation map. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_map_util_points_populate_from_object_full\fP (\fBEvas_Map\fP *m, const \fBEvas_Object\fP *obj, Evas_Coord z)"
+.br
+.RI "\fIPopulate source and destination map points to match exactly object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_map_util_points_populate_from_object\fP (\fBEvas_Map\fP *m, const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIPopulate source and destination map points to match exactly object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_map_util_points_populate_from_geometry\fP (\fBEvas_Map\fP *m, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h, Evas_Coord z)"
+.br
+.RI "\fIPopulate source and destination map points to match given geometry. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_map_util_points_color_set\fP (\fBEvas_Map\fP *m, int r, int g, int b, int a)"
+.br
+.RI "\fISet color of all points to given color. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_map_util_rotate\fP (\fBEvas_Map\fP *m, double degrees, Evas_Coord cx, Evas_Coord cy)"
+.br
+.RI "\fIChange the map to apply the given rotation. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_map_util_zoom\fP (\fBEvas_Map\fP *m, double zoomx, double zoomy, Evas_Coord cx, Evas_Coord cy)"
+.br
+.RI "\fIChange the map to apply the given zooming. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_map_util_3d_rotate\fP (\fBEvas_Map\fP *m, double dx, double dy, double dz, Evas_Coord cx, Evas_Coord cy, Evas_Coord cz)"
+.br
+.RI "\fIRotate the map around 3 axes in 3D. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_map_util_3d_lighting\fP (\fBEvas_Map\fP *m, Evas_Coord lx, Evas_Coord ly, Evas_Coord lz, int lr, int lg, int lb, int ar, int ag, int ab)"
+.br
+.RI "\fIPerform lighting calculations on the given Map. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_map_util_3d_perspective\fP (\fBEvas_Map\fP *m, Evas_Coord px, Evas_Coord py, Evas_Coord z0, Evas_Coord foc)"
+.br
+.RI "\fIApply a perspective transform to the map. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_map_util_clockwise_get\fP (\fBEvas_Map\fP *m)"
+.br
+.RI "\fIGet the clockwise state of a map. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Map\fP * \fBevas_map_new\fP (int count)"
+.br
+.RI "\fICreate map of transformation points to be later used with an evas object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_map_smooth_set\fP (\fBEvas_Map\fP *m, Eina_Bool enabled)"
+.br
+.RI "\fISet the smoothing for map rendering. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_map_smooth_get\fP (const \fBEvas_Map\fP *m)"
+.br
+.RI "\fIget the smoothing for map rendering \fP"
+.ti -1c
+.RI "EAPI void \fBevas_map_alpha_set\fP (\fBEvas_Map\fP *m, Eina_Bool enabled)"
+.br
+.RI "\fISet the alpha flag for map rendering. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_map_alpha_get\fP (const \fBEvas_Map\fP *m)"
+.br
+.RI "\fIget the alpha flag for map rendering \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Map\fP * \fBevas_map_dup\fP (const \fBEvas_Map\fP *m)"
+.br
+.RI "\fICopy a previously allocated map. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_map_free\fP (\fBEvas_Map\fP *m)"
+.br
+.RI "\fIFree a previously allocated map. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_map_count_get\fP (const \fBEvas_Map\fP *m) EINA_CONST"
+.br
+.RI "\fIGet a maps size. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_map_point_coord_set\fP (\fBEvas_Map\fP *m, int idx, Evas_Coord x, Evas_Coord y, Evas_Coord z)"
+.br
+.RI "\fIChange the map point's coordinate. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_map_point_coord_get\fP (const \fBEvas_Map\fP *m, int idx, Evas_Coord *x, Evas_Coord *y, Evas_Coord *z)"
+.br
+.RI "\fIGet the map point's coordinate. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_map_point_image_uv_set\fP (\fBEvas_Map\fP *m, int idx, double u, double v)"
+.br
+.RI "\fIChange the map point's U and V texture source point. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_map_point_image_uv_get\fP (const \fBEvas_Map\fP *m, int idx, double *u, double *v)"
+.br
+.RI "\fIGet the map point's U and V texture source points. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_map_point_color_set\fP (\fBEvas_Map\fP *m, int idx, int r, int g, int b, int a)"
+.br
+.RI "\fISet the color of a vertex in the map. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_map_point_color_get\fP (const \fBEvas_Map\fP *m, int idx, int *r, int *g, int *b, int *a)"
+.br
+.RI "\fIGet the color set on a vertex in the map. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_size_hint_min_get\fP (const \fBEvas_Object\fP *obj, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIRetrieves the size hint for the minimum size. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_size_hint_min_set\fP (\fBEvas_Object\fP *obj, Evas_Coord w, Evas_Coord h) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets the size hint for the minimum size. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_size_hint_max_get\fP (const \fBEvas_Object\fP *obj, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIRetrieves the size hint for the maximum size. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_size_hint_max_set\fP (\fBEvas_Object\fP *obj, Evas_Coord w, Evas_Coord h) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets the size hint for the maximum size. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_size_hint_request_get\fP (const \fBEvas_Object\fP *obj, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIRetrieves the size request hint. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_size_hint_request_set\fP (\fBEvas_Object\fP *obj, Evas_Coord w, Evas_Coord h) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets the requested size hint. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_size_hint_aspect_get\fP (const \fBEvas_Object\fP *obj, Evas_Aspect_Control *aspect, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIRetrieves the size aspect control hint. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_size_hint_aspect_set\fP (\fBEvas_Object\fP *obj, Evas_Aspect_Control aspect, Evas_Coord w, Evas_Coord h) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets the size aspect control hint. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_size_hint_align_get\fP (const \fBEvas_Object\fP *obj, double *x, double *y) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIRetrieves the size align control hint. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_size_hint_align_set\fP (\fBEvas_Object\fP *obj, double x, double y) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets the size align control hint. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_size_hint_weight_get\fP (const \fBEvas_Object\fP *obj, double *x, double *y) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIRetrieves the size weight control hint. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_size_hint_weight_set\fP (\fBEvas_Object\fP *obj, double x, double y) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets the size weight control hint. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_size_hint_padding_get\fP (const \fBEvas_Object\fP *obj, Evas_Coord *l, Evas_Coord *r, Evas_Coord *t, Evas_Coord *b) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIRetrieves the size padding control hint. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_size_hint_padding_set\fP (\fBEvas_Object\fP *obj, Evas_Coord l, Evas_Coord r, Evas_Coord t, Evas_Coord b) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets the size padding control hint. \fP"
+.ti -1c
+.RI "EAPI void *EAPI void \fBevas_object_pointer_mode_set\fP (\fBEvas_Object\fP *obj, \fBEvas_Object_Pointer_Mode\fP setting) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISet pointer behavior. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object_Pointer_Mode\fP \fBevas_object_pointer_mode_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIDetermine how pointer will behave. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_anti_alias_set\fP (\fBEvas_Object\fP *obj, Eina_Bool antialias) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets whether or not the given evas object is to be drawn anti-aliased. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_anti_alias_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIRetrieves whether or not the given evas object is to be drawn anti_aliased. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_scale_set\fP (\fBEvas_Object\fP *obj, double scale) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets the scaling factor for an evas object. \fP"
+.ti -1c
+.RI "EAPI double \fBevas_object_scale_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIRetrieves the scaling factor for the given evas object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_render_op_set\fP (\fBEvas_Object\fP *obj, \fBEvas_Render_Op\fP op) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets the render_op to be used for rendering the evas object. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Render_Op\fP \fBevas_object_render_op_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIRetrieves the current value of the operation used for rendering the evas object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_precise_is_inside_set\fP (\fBEvas_Object\fP *obj, Eina_Bool precise) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISet whether to use a precise (usually expensive) point collision detection. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_precise_is_inside_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIDetermine whether an object is set to use a precise point collision detection. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_static_clip_set\fP (\fBEvas_Object\fP *obj, Eina_Bool is_static_clip) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISet a hint flag on the object that this is used as a static 'clipper'. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_static_clip_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIGet static 'clipper' hint flag. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_focus_get\fP (const \fBEvas\fP *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIRetrieve the object that currently has focus. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_name_find\fP (const \fBEvas\fP *e, const char *name) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIRetrieves the object on the given evas with the given name. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_top_at_xy_get\fP (const \fBEvas\fP *e, Evas_Coord x, Evas_Coord y, Eina_Bool include_pass_events_objects, Eina_Bool include_hidden_objects) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIRetrieves the top object at the given position (x,y). \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_top_at_pointer_get\fP (const \fBEvas\fP *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIRetrieves the top object at mouse pointer position. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_top_in_rectangle_get\fP (const \fBEvas\fP *e, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h, Eina_Bool include_pass_events_objects, Eina_Bool include_hidden_objects) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIRetrieves the top object in the given rectangle region. \fP"
+.ti -1c
+.RI "EAPI Eina_List * \fBevas_objects_at_xy_get\fP (const \fBEvas\fP *e, Evas_Coord x, Evas_Coord y, Eina_Bool include_pass_events_objects, Eina_Bool include_hidden_objects) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIRetrieves the objects at the given position. \fP"
+.ti -1c
+.RI "EAPI Eina_List * \fBevas_objects_in_rectangle_get\fP (const \fBEvas\fP *e, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h, Eina_Bool include_pass_events_objects, Eina_Bool include_hidden_objects) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_bottom_get\fP (const \fBEvas\fP *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIGet the lowest evas object on the Evas \fCe\fP. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_top_get\fP (const \fBEvas\fP *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIGet the highest evas object on the Evas \fCe\fP. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_rectangle_add\fP (\fBEvas\fP *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC"
+.br
+.RI "\fIAdds a rectangle to the given evas. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_image_add\fP (\fBEvas\fP *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC"
+.br
+.RI "\fICreates a new image object on the given evas. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_image_filled_add\fP (\fBEvas\fP *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC"
+.br
+.RI "\fICreates a new image object that automatically scales on the given evas. \fP"
+.ti -1c
+.RI "EAPI void EAPI void \fBevas_object_image_file_set\fP (\fBEvas_Object\fP *obj, const char *file, const char *key) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets the filename and key of the given image object. \fP"
+.ti -1c
+.RI "EAPI void EAPI void \fBevas_object_image_border_set\fP (\fBEvas_Object\fP *obj, int l, int r, int t, int b) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets how much of each border of the given image object is not to be scaled. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_border_get\fP (const \fBEvas_Object\fP *obj, int *l, int *r, int *t, int *b) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIRetrieves how much of each border of the given image object is not to be scaled. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_border_center_fill_set\fP (\fBEvas_Object\fP *obj, Evas_Border_Fill_Mode fill) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets if the center part of the given image object (not the border) should be drawn. \fP"
+.ti -1c
+.RI "EAPI Evas_Border_Fill_Mode \fBevas_object_image_border_center_fill_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIRetrieves if the center of the given image object is to be drawn or not. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_filled_set\fP (\fBEvas_Object\fP *obj, Eina_Bool setting) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets if image fill property should track object size. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_image_filled_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIRetrieves if image fill property is tracking object size. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_border_scale_set\fP (\fBEvas_Object\fP *obj, double scale)"
+.br
+.RI "\fISets a scale factor (multiplier) for the borders of an image. \fP"
+.ti -1c
+.RI "EAPI double \fBevas_object_image_border_scale_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIRetrieves the border scale factor. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_fill_set\fP (\fBEvas_Object\fP *obj, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets the rectangle of the given image object that the image will be drawn to. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_fill_get\fP (const \fBEvas_Object\fP *obj, Evas_Coord *x, Evas_Coord *y, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIRetrieves the dimensions of the rectangle of the given image object that the image will be drawn to. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_fill_spread_set\fP (\fBEvas_Object\fP *obj, \fBEvas_Fill_Spread\fP spread) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets the tiling mode for the given evas image object's fill. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Fill_Spread\fP \fBevas_object_image_fill_spread_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIRetrieves the spread (tiling mode) for the given image object's fill. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_size_set\fP (\fBEvas_Object\fP *obj, int w, int h) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets the size of the given image object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_size_get\fP (const \fBEvas_Object\fP *obj, int *w, int *h) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIRetrieves the size of the given image object. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_object_image_stride_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIRetrieves the row stride of the given image object,. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Load_Error\fP \fBevas_object_image_load_error_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIRetrieves a number representing any error that occurred during the last load of the given image object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_data_set\fP (\fBEvas_Object\fP *obj, void *data) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets the raw image data of the given image object. \fP"
+.ti -1c
+.RI "EAPI void * \fBevas_object_image_data_convert\fP (\fBEvas_Object\fP *obj, \fBEvas_Colorspace\fP to_cspace) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIConverts the raw image data of the given image object to the specified colorspace. \fP"
+.ti -1c
+.RI "EAPI void * \fBevas_object_image_data_get\fP (const \fBEvas_Object\fP *obj, Eina_Bool for_writing) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIGet a pointer to the raw image data of the given image object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_data_copy_set\fP (\fBEvas_Object\fP *obj, void *data) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIReplaces the raw image data of the given image object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_data_update_add\fP (\fBEvas_Object\fP *obj, int x, int y, int w, int h) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIMark a sub-region of the given image object to be redrawn. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_alpha_set\fP (\fBEvas_Object\fP *obj, Eina_Bool has_alpha) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIEnable or disable alpha channel of the given image object. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_image_alpha_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIRetrieves the alpha channel setting of the given image object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_smooth_scale_set\fP (\fBEvas_Object\fP *obj, Eina_Bool smooth_scale) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets whether to use of high-quality image scaling algorithm of the given image object. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_image_smooth_scale_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIRetrieves whether the given image object is using use a high-quality image scaling algorithm. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_preload\fP (\fBEvas_Object\fP *obj, Eina_Bool cancel) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIPreload image in the background. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_reload\fP (\fBEvas_Object\fP *obj) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIReload a image of the canvas. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool EAPI Eina_Bool EAPI void EAPI void \fBevas_object_image_pixels_dirty_set\fP (\fBEvas_Object\fP *obj, Eina_Bool dirty) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIMark whether the given image object is dirty (needs to be redrawn). \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_image_pixels_dirty_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIRetrieves whether the given image object is dirty (needs to be redrawn). \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_load_dpi_set\fP (\fBEvas_Object\fP *obj, double dpi) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISet the dpi resolution of a loaded image of the canvas. \fP"
+.ti -1c
+.RI "EAPI double \fBevas_object_image_load_dpi_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIGet the dpi resolution of a loaded image of the canvas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_load_size_set\fP (\fBEvas_Object\fP *obj, int w, int h) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISet the size of a loaded image of the canvas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_load_size_get\fP (const \fBEvas_Object\fP *obj, int *w, int *h) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIGet the size of a loaded image of the canvas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_load_scale_down_set\fP (\fBEvas_Object\fP *obj, int scale_down) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISet the scale down of a loaded image of the canvas. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_object_image_load_scale_down_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIGet the scale down value of given image of the canvas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_colorspace_set\fP (\fBEvas_Object\fP *obj, \fBEvas_Colorspace\fP cspace) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISet the colorspace of a given image of the canvas. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Colorspace\fP \fBevas_object_image_colorspace_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIGet the colorspace of a given image of the canvas. \fP"
+.ti -1c
+.RI "EAPI void EAPI \fBEvas_Native_Surface\fP * \fBevas_object_image_native_surface_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIGet the native surface of a given image of the canvas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_scale_hint_set\fP (\fBEvas_Object\fP *obj, Evas_Image_Scale_Hint hint) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISet the scale hint of a given image of the canvas. \fP"
+.ti -1c
+.RI "EAPI Evas_Image_Scale_Hint \fBevas_object_image_scale_hint_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIGet the scale hint of a given image of the canvas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_content_hint_set\fP (\fBEvas_Object\fP *obj, Evas_Image_Content_Hint hint) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISet the content hint of a given image of the canvas. \fP"
+.ti -1c
+.RI "EAPI Evas_Image_Content_Hint \fBevas_object_image_content_hint_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIGet the content hint of a given image of the canvas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_image_alpha_mask_set\fP (\fBEvas_Object\fP *obj, Eina_Bool ismask) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIEnable an image to be used as an alpha mask. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_image_source_set\fP (\fBEvas_Object\fP *obj, \fBEvas_Object\fP *src) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISet the source object on a proxy object. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_image_source_get\fP (\fBEvas_Object\fP *obj) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIGet the current source object of an image. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_image_source_unset\fP (\fBEvas_Object\fP *obj) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIClear the source on a proxy image. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_text_add\fP (\fBEvas\fP *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC"
+.br
+.RI "\fICreates a new text \fCEvas_Object\fP on the provided \fCEvas\fP canvas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_text_font_source_set\fP (\fBEvas_Object\fP *obj, const char *font) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI const char * \fBevas_object_text_font_source_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_text_font_set\fP (\fBEvas_Object\fP *obj, const char *font, Evas_Font_Size size) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI void EAPI void \fBevas_object_text_text_set\fP (\fBEvas_Object\fP *obj, const char *text) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets the text to be displayed by the given evas text object. \fP"
+.ti -1c
+.RI "EAPI const char * \fBevas_object_text_text_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIRetrieves the text currently being displayed by the given evas text object. \fP"
+.ti -1c
+.RI "EAPI Evas_Coord \fBevas_object_text_ascent_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI Evas_Coord \fBevas_object_text_descent_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI Evas_Coord \fBevas_object_text_max_ascent_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI Evas_Coord \fBevas_object_text_max_descent_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI Evas_Coord \fBevas_object_text_horiz_advance_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI Evas_Coord \fBevas_object_text_vert_advance_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI Evas_Coord \fBevas_object_text_inset_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_text_char_pos_get\fP (const \fBEvas_Object\fP *obj, int pos, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIRetrieve position and dimension information of a character within a text \fCEvas_Object\fP. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_object_text_char_coords_get\fP (const \fBEvas_Object\fP *obj, Evas_Coord x, Evas_Coord y, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_object_text_last_up_to_pos\fP (const \fBEvas_Object\fP *obj, Evas_Coord x, Evas_Coord y) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIReturns the logical position of the last char in the text up to the pos given. \fP"
+.ti -1c
+.RI "EAPI Evas_Text_Style_Type \fBevas_object_text_style_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_text_style_set\fP (\fBEvas_Object\fP *obj, Evas_Text_Style_Type type) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_text_shadow_color_set\fP (\fBEvas_Object\fP *obj, int r, int g, int b, int a) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_text_shadow_color_get\fP (const \fBEvas_Object\fP *obj, int *r, int *g, int *b, int *a) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_text_glow_color_set\fP (\fBEvas_Object\fP *obj, int r, int g, int b, int a) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_text_glow_color_get\fP (const \fBEvas_Object\fP *obj, int *r, int *g, int *b, int *a) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_text_glow2_color_set\fP (\fBEvas_Object\fP *obj, int r, int g, int b, int a) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_text_glow2_color_get\fP (const \fBEvas_Object\fP *obj, int *r, int *g, int *b, int *a) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_text_outline_color_set\fP (\fBEvas_Object\fP *obj, int r, int g, int b, int a) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_text_outline_color_get\fP (const \fBEvas_Object\fP *obj, int *r, int *g, int *b, int *a) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_text_style_pad_get\fP (const \fBEvas_Object\fP *obj, int *l, int *r, int *t, int *b) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIGets the text style pad of a text object. \fP"
+.ti -1c
+.RI "EAPI Evas_BiDi_Direction \fBevas_object_text_direction_get\fP (const \fBEvas_Object\fP *obj) EINA_ARG_NONNULL(1) EINA_WARN_UNUSED_RESULT"
+.br
+.RI "\fIRetrieves the direction of the text currently being displayed in the text object. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_textblock_add\fP (\fBEvas\fP *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC"
+.br
+.RI "\fIAdds a textblock to the given evas. \fP"
+.ti -1c
+.RI "EAPI const char * \fBevas_textblock_escape_string_get\fP (const char *escape) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIReturns the unescaped version of escape. \fP"
+.ti -1c
+.RI "EAPI const char * \fBevas_textblock_string_escape_get\fP (const char *string, int *len_ret) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIReturns the escaped version of the string. \fP"
+.ti -1c
+.RI "EAPI Evas_Textblock_Style * \fBevas_textblock_style_new\fP (void) EINA_WARN_UNUSED_RESULT EINA_MALLOC"
+.br
+.RI "\fICreates a new textblock style. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_textblock_style_free\fP (Evas_Textblock_Style *ts) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIDestroys a textblock style. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_textblock_style_set\fP (Evas_Textblock_Style *ts, const char *text) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets the style ts to the style passed as text by text. \fP"
+.ti -1c
+.RI "EAPI const char * \fBevas_textblock_style_get\fP (const Evas_Textblock_Style *ts) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIReturn the text of the style ts. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_textblock_style_set\fP (\fBEvas_Object\fP *obj, Evas_Textblock_Style *ts) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISet the objects style to ts. \fP"
+.ti -1c
+.RI "EAPI const Evas_Textblock_Style * \fBevas_object_textblock_style_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIReturn the style of an object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_textblock_replace_char_set\fP (\fBEvas_Object\fP *obj, const char *ch) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISet the 'replacement character' to use for the given textblock object. \fP"
+.ti -1c
+.RI "EAPI const char * \fBevas_object_textblock_replace_char_get\fP (\fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIGet the 'replacement character' for given textblock object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_textblock_valign_set\fP (\fBEvas_Object\fP *obj, double align)"
+.br
+.RI "\fISets the vertical alignment of text within the textblock object as a whole. \fP"
+.ti -1c
+.RI "EAPI double \fBevas_object_textblock_valign_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIGets the vertical alignment of a textblock. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_textblock_newline_mode_set\fP (\fBEvas_Object\fP *obj, Eina_Bool mode) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets newline mode. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_textblock_newline_mode_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIGets newline mode. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_textblock_text_markup_set\fP (\fBEvas_Object\fP *obj, const char *text) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets the tetxblock's text to the markup text. \fP"
+.ti -1c
+.RI "EAPI void EAPI const char * \fBevas_object_textblock_text_markup_get\fP (const \fBEvas_Object\fP *obj) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIReturn the markup of the object. \fP"
+.ti -1c
+.RI "EAPI const Evas_Textblock_Cursor * \fBevas_object_textblock_cursor_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIReturn the object's main cursor. \fP"
+.ti -1c
+.RI "EAPI Evas_Textblock_Cursor * \fBevas_object_textblock_cursor_new\fP (\fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC"
+.br
+.RI "\fICreate a new cursor, associate it to the obj and init it to point to the start of the textblock. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_textblock_cursor_free\fP (Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIFree the cursor and unassociate it from the object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_textblock_cursor_paragraph_first\fP (Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets the cursor to the start of the first text node. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_textblock_cursor_paragraph_last\fP (Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIsets the cursor to the end of the last text node. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_textblock_cursor_paragraph_next\fP (Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIAdvances to the the start of the next text node. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_textblock_cursor_paragraph_prev\fP (Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIAdvances to the the end of the previous text node. \fP"
+.ti -1c
+.RI "EAPI const \fBEvas_Object_Textblock_Node_Format\fP * \fBevas_textblock_node_format_first_get\fP (const \fBEvas_Object\fP *obj) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIReturns the first format node. \fP"
+.ti -1c
+.RI "EAPI const \fBEvas_Object_Textblock_Node_Format\fP * \fBevas_textblock_node_format_last_get\fP (const \fBEvas_Object\fP *obj) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIReturns the last format node. \fP"
+.ti -1c
+.RI "EAPI const \fBEvas_Object_Textblock_Node_Format\fP * \fBevas_textblock_node_format_next_get\fP (const \fBEvas_Object_Textblock_Node_Format\fP *n) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIReturns the next format node (after n). \fP"
+.ti -1c
+.RI "EAPI const \fBEvas_Object_Textblock_Node_Format\fP * \fBevas_textblock_node_format_prev_get\fP (const \fBEvas_Object_Textblock_Node_Format\fP *n) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIReturns the prev format node (after n). \fP"
+.ti -1c
+.RI "EAPI void EAPI void EAPI const \fBEvas_Object_Textblock_Node_Format\fP * \fBevas_textblock_cursor_format_get\fP (const Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIReturn the format node at the position pointed by cur. \fP"
+.ti -1c
+.RI "EAPI const char * \fBevas_textblock_node_format_text_get\fP (const \fBEvas_Object_Textblock_Node_Format\fP *cur) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIGet the text format representation of the format node. \fP"
+.ti -1c
+.RI "EAPI void EAPI Eina_Bool \fBevas_textblock_cursor_format_is_visible_get\fP (const Evas_Textblock_Cursor *cur) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fICheck if the current cursor position is a visible format. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_textblock_cursor_format_next\fP (Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIAdvances to the next format node. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_textblock_cursor_format_prev\fP (Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIAdvances to the previous format node. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_textblock_cursor_is_format\fP (const Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIReturns true if the cursor points to a format. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_textblock_cursor_char_next\fP (Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIAdvances 1 char forward. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_textblock_cursor_char_prev\fP (Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIAdvances 1 char backward. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_textblock_cursor_paragraph_char_first\fP (Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIGo to the first char in the node the cursor is pointing on. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_textblock_cursor_paragraph_char_last\fP (Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIGo to the last char in a text node. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_textblock_cursor_line_char_first\fP (Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIGo to the start of the current line. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_textblock_cursor_line_char_last\fP (Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIGo to the end of the current line. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_textblock_cursor_pos_get\fP (const Evas_Textblock_Cursor *cur) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIReturn the current cursor pos. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_textblock_cursor_pos_set\fP (Evas_Textblock_Cursor *cur, int pos) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISet the cursor pos. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_textblock_cursor_line_set\fP (Evas_Textblock_Cursor *cur, int line) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIGo to the start of the line passed. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_textblock_cursor_char_delete\fP (Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIDelete the character at the location of the cursor. \fP"
+.ti -1c
+.RI "EAPI void EAPI const char * \fBevas_textblock_cursor_paragraph_text_get\fP (const Evas_Textblock_Cursor *cur) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIReturn the text of the paragraph cur points to - returns the text in markup. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_textblock_cursor_paragraph_text_length_get\fP (const Evas_Textblock_Cursor *cur) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIReturn the length of the paragraph, cheaper the eina_unicode_strlen(). \fP"
+.ti -1c
+.RI "EAPI char * \fBevas_textblock_cursor_content_get\fP (const Evas_Textblock_Cursor *cur) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC"
+.br
+.RI "\fIReturn the content of the cursor. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_textblock_cursor_geometry_get\fP (const Evas_Textblock_Cursor *cur, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch, Evas_BiDi_Direction *dir, Evas_Textblock_Cursor_Type ctype) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIReturns the geometry of the cursor. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_textblock_cursor_char_geometry_get\fP (const Evas_Textblock_Cursor *cur, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIReturns the geometry of the char at cur. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_textblock_cursor_pen_geometry_get\fP (const Evas_Textblock_Cursor *cur, Evas_Coord *cpen_x, Evas_Coord *cy, Evas_Coord *cadv, Evas_Coord *ch) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIReturns the geometry of the pen at cur. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_textblock_cursor_line_geometry_get\fP (const Evas_Textblock_Cursor *cur, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIReturns the geometry of the line at cur. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_textblock_cursor_char_coord_set\fP (Evas_Textblock_Cursor *cur, Evas_Coord x, Evas_Coord y) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISet the position of the cursor according to the X and Y coordinates. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_textblock_cursor_line_coord_set\fP (Evas_Textblock_Cursor *cur, Evas_Coord y) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISet the cursor position according to the y coord. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_textblock_cursor_format_item_geometry_get\fP (const Evas_Textblock_Cursor *cur, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIto be documented. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_textblock_cursor_eol_get\fP (const Evas_Textblock_Cursor *cur) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIChecks if the cursor points to the end of the line. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_textblock_line_number_geometry_get\fP (const \fBEvas_Object\fP *obj, int line, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIGet the geometry of a line number. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_textblock_clear\fP (\fBEvas_Object\fP *obj) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIClear the textblock object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_textblock_size_formatted_get\fP (const \fBEvas_Object\fP *obj, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIGet the formatted width and height. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_textblock_size_native_get\fP (const \fBEvas_Object\fP *obj, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIGet the native width and height. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_textblock_style_insets_get\fP (const \fBEvas_Object\fP *obj, Evas_Coord *l, Evas_Coord *r, Evas_Coord *t, Evas_Coord *b) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIto be documented. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_line_add\fP (\fBEvas\fP *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC"
+.br
+.RI "\fIAdds a new evas line object to the given evas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_line_xy_set\fP (\fBEvas_Object\fP *obj, Evas_Coord x1, Evas_Coord y1, Evas_Coord x2, Evas_Coord y2)"
+.br
+.RI "\fISets the coordinates of the end points of the given evas line object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_line_xy_get\fP (const \fBEvas_Object\fP *obj, Evas_Coord *x1, Evas_Coord *y1, Evas_Coord *x2, Evas_Coord *y2)"
+.br
+.RI "\fIRetrieves the coordinates of the end points of the given evas line object. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_polygon_add\fP (\fBEvas\fP *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC"
+.br
+.RI "\fIAdds a new evas polygon object to the given evas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_polygon_point_add\fP (\fBEvas_Object\fP *obj, Evas_Coord x, Evas_Coord y) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIAdds the given point to the given evas polygon object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_polygon_points_clear\fP (\fBEvas_Object\fP *obj) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIRemoves all of the points from the given evas polygon object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_smart_free\fP (\fBEvas_Smart\fP *s) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIFree an Evas_Smart. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Smart\fP * \fBevas_smart_class_new\fP (const \fBEvas_Smart_Class\fP *sc) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC"
+.br
+.RI "\fICreates an Evas_Smart from an Evas_Smart_Class. \fP"
+.ti -1c
+.RI "EAPI const \fBEvas_Smart_Class\fP * \fBevas_smart_class_get\fP (const \fBEvas_Smart\fP *s) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIGet the Evas_Smart_Class of an Evas_Smart. \fP"
+.ti -1c
+.RI "EAPI void * \fBevas_smart_data_get\fP (const \fBEvas_Smart\fP *s) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIGet the data pointer set on an Evas_Smart. \fP"
+.ti -1c
+.RI "EAPI void EAPI void \fBevas_object_smart_member_del\fP (\fBEvas_Object\fP *obj) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIRemoves a member object from a smart object. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_smart_parent_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIGets the smart parent of an Evas_Object. \fP"
+.ti -1c
+.RI "EAPI Eina_List * \fBevas_object_smart_members_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIGets the list of the member objects of an Evas_Object. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Smart\fP * \fBevas_object_smart_smart_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIGet the Evas_Smart from which \fCobj\fP was created. \fP"
+.ti -1c
+.RI "EAPI void * \fBevas_object_smart_data_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIRetrieve user data stored on a smart object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_smart_data_set\fP (\fBEvas_Object\fP *obj, void *data) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIStore a pointer to user data for a smart object. \fP"
+.ti -1c
+.RI "EAPI void EAPI void EAPI void EAPI Eina_Bool \fBevas_object_smart_callbacks_descriptions_set\fP (\fBEvas_Object\fP *obj, const \fBEvas_Smart_Cb_Description\fP *descriptions) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISet smart object instance callbacks descriptions. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_smart_callbacks_descriptions_get\fP (const \fBEvas_Object\fP *obj, const \fBEvas_Smart_Cb_Description\fP ***class_descriptions, unsigned int *class_count, const \fBEvas_Smart_Cb_Description\fP ***instance_descriptions, unsigned int *instance_count) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIGet the callbacks descriptions known by this smart object. \fP"
+.ti -1c
+.RI "EAPI void EAPI void \fBevas_object_smart_changed\fP (\fBEvas_Object\fP *obj) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIMark smart object as changed, dirty. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_smart_need_recalculate_set\fP (\fBEvas_Object\fP *obj, Eina_Bool value) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISet the need_recalculate flag of given smart object. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_smart_need_recalculate_get\fP (const \fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIGet the current value of need_recalculate flag. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_smart_calculate\fP (\fBEvas_Object\fP *obj) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fICall user provided calculate() and unset need_calculate. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_smart_objects_calculate\fP (\fBEvas\fP *e)"
+.br
+.RI "\fICall user provided calculate() and unset need_calculate on all objects. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_smart_clipped_clipper_get\fP (\fBEvas_Object\fP *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIGet the clipper object for the given clipped smart object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_smart_clipped_smart_set\fP (\fBEvas_Smart_Class\fP *sc) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISet smart class callbacks so it implements the 'Clipped Smart Object'. \fP"
+.ti -1c
+.RI "EAPI const \fBEvas_Smart_Class\fP * \fBevas_object_smart_clipped_class_get\fP (void) EINA_CONST"
+.br
+.RI "\fIGet a pointer to the Clipped Smart Class to use for proper inheritance. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_smart_move_children_relative\fP (\fBEvas_Object\fP *obj, Evas_Coord dx, Evas_Coord dy) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIMoves all children objects relative to given offset. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_box_smart_set\fP (\fBEvas_Object_Box_Api\fP *api) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISet the default box \fIapi\fP struct (Evas_Object_Box_Api) with the default values. \fP"
+.ti -1c
+.RI "EAPI const \fBEvas_Object_Box_Api\fP * \fBevas_object_box_smart_class_get\fP (void) EINA_CONST"
+.br
+.RI "\fIGet Box Smart Class for inheritance purposes. \fP"
+.ti -1c
+.RI "EAPI void EAPI \fBEvas_Object\fP * \fBevas_object_box_add\fP (\fBEvas\fP *evas) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC"
+.br
+.RI "\fICreate a new box. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_box_add_to\fP (\fBEvas_Object\fP *parent) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC"
+.br
+.RI "\fICreate a box that is child of a given element \fIparent\fP. \fP"
+.ti -1c
+.RI "EAPI void EAPI void EAPI void EAPI void EAPI void EAPI void EAPI void EAPI void EAPI void EAPI void \fBevas_object_box_align_set\fP (\fBEvas_Object\fP *o, double horizontal, double vertical) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISet the alignment of the whole bounding box of contents. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_box_align_get\fP (const \fBEvas_Object\fP *o, double *horizontal, double *vertical) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIGet alignment of the whole bounding box of contents. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_box_padding_set\fP (\fBEvas_Object\fP *o, Evas_Coord horizontal, Evas_Coord vertical) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISet the space (padding) between cells. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_box_padding_get\fP (const \fBEvas_Object\fP *o, Evas_Coord *horizontal, Evas_Coord *vertical) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIGet the (space) padding between cells. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object_Box_Option\fP *EAPI \fBEvas_Object_Box_Option\fP *EAPI \fBEvas_Object_Box_Option\fP EAPI \fBEvas_Object_Box_Option\fP EAPI \fBEvas_Object_Box_Option\fP *EAPI Eina_Bool EAPI Eina_Bool \fBevas_object_box_remove_at\fP (\fBEvas_Object\fP *o, unsigned int pos) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIRemove an object from the box \fIo\fP which occupies position \fIpos\fP. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_box_remove_all\fP (\fBEvas_Object\fP *o, Eina_Bool clear) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIRemove all child objects. \fP"
+.ti -1c
+.RI "EAPI Eina_Iterator * \fBevas_object_box_iterator_new\fP (const \fBEvas_Object\fP *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC"
+.br
+.RI "\fIGet an iterator to walk the list of children for the box. \fP"
+.ti -1c
+.RI "EAPI Eina_Accessor * \fBevas_object_box_accessor_new\fP (const \fBEvas_Object\fP *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC"
+.br
+.RI "\fIGet an accessor to get random access to the list of children for the box. \fP"
+.ti -1c
+.RI "EAPI Eina_List * \fBevas_object_box_children_get\fP (const \fBEvas_Object\fP *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC"
+.br
+.RI "\fIGet the list of children for the box. \fP"
+.ti -1c
+.RI "EAPI const char * \fBevas_object_box_option_property_name_get\fP (\fBEvas_Object\fP *o, int property) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIGet the name of the property of the child elements of the box \fIo\fP whose id is \fIproperty\fP. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_table_add\fP (\fBEvas\fP *evas) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC"
+.br
+.RI "\fICreate a new table. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_table_add_to\fP (\fBEvas_Object\fP *parent) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC"
+.br
+.RI "\fICreate a table that is child of a given element \fIparent\fP. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_table_homogeneous_set\fP (\fBEvas_Object\fP *o, \fBEvas_Object_Table_Homogeneous_Mode\fP homogeneous) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISet how this table should layout children. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object_Table_Homogeneous_Mode\fP \fBevas_object_table_homogeneous_get\fP (const \fBEvas_Object\fP *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIGet the current layout homogeneous mode. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_table_padding_set\fP (\fBEvas_Object\fP *o, Evas_Coord horizontal, Evas_Coord vertical) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISet padding between cells. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_table_padding_get\fP (const \fBEvas_Object\fP *o, Evas_Coord *horizontal, Evas_Coord *vertical) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIGet padding between cells. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_table_align_set\fP (\fBEvas_Object\fP *o, double horizontal, double vertical) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISet the alignment of the whole bounding box of contents. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_table_align_get\fP (const \fBEvas_Object\fP *o, double *horizontal, double *vertical) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIGet alignment of the whole bounding box of contents. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_table_mirrored_set\fP (\fBEvas_Object\fP *o, Eina_Bool mirrored) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fISets the mirrored mode of the table. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_table_mirrored_get\fP (const \fBEvas_Object\fP *o) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIGets the mirrored mode of the table. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool EAPI Eina_Bool EAPI void \fBevas_object_table_clear\fP (\fBEvas_Object\fP *o, Eina_Bool clear) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIFaster way to remove all child objects from a table object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_table_col_row_size_get\fP (const \fBEvas_Object\fP *o, int *cols, int *rows) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIGet the number of columns and rows this table takes. \fP"
+.ti -1c
+.RI "EAPI Eina_Iterator * \fBevas_object_table_iterator_new\fP (const \fBEvas_Object\fP *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC"
+.br
+.RI "\fIGet an iterator to walk the list of children for the table. \fP"
+.ti -1c
+.RI "EAPI Eina_Accessor * \fBevas_object_table_accessor_new\fP (const \fBEvas_Object\fP *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC"
+.br
+.RI "\fIGet an accessor to get random access to the list of children for the table. \fP"
+.ti -1c
+.RI "EAPI Eina_List * \fBevas_object_table_children_get\fP (const \fBEvas_Object\fP *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC"
+.br
+.RI "\fIGet the list of children for the table. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_table_child_get\fP (const \fBEvas_Object\fP *o, unsigned short col, unsigned short row) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIGet a child from the table using its coordinates. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_cserve_want_get\fP (void) EINA_WARN_UNUSED_RESULT EINA_PURE"
+.br
+.RI "\fIRetrieves if the system wants to share bitmaps using the server. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_cserve_connected_get\fP (void) EINA_WARN_UNUSED_RESULT"
+.br
+.RI "\fIRetrieves if the system is connected to the server used to shae bitmaps. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_cserve_stats_get\fP (\fBEvas_Cserve_Stats\fP *stats) EINA_WARN_UNUSED_RESULT"
+.br
+.RI "\fIRetrieves if the system wants to share bitmaps using the server. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_cserve_config_get\fP (\fBEvas_Cserve_Config\fP *config) EINA_WARN_UNUSED_RESULT EINA_PURE"
+.br
+.RI "\fIRetrieves the current configuration of the server. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_cserve_config_set\fP (const \fBEvas_Cserve_Config\fP *config) EINA_WARN_UNUSED_RESULT EINA_PURE"
+.br
+.RI "\fIChanges the configuration of the server. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_cserve_disconnect\fP (void)"
+.br
+.RI "\fIForce system to disconnect from cache server. \fP"
+.ti -1c
+.RI "EAPI const char * \fBevas_load_error_str\fP (\fBEvas_Load_Error\fP error)"
+.br
+.RI "\fIConverts the given error code into a string describing it in english. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_color_hsv_to_rgb\fP (float h, float s, float v, int *r, int *g, int *b)"
+.br
+.RI "\fIConvert a given color from HSV to RGB format. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_color_rgb_to_hsv\fP (int r, int g, int b, float *h, float *s, float *v)"
+.br
+.RI "\fIConvert a given color from RGB to HSV format. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_color_argb_premul\fP (int a, int *r, int *g, int *b)"
+.br
+.RI "\fIPre-multiplies a rgb triplet by an alpha factor. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_color_argb_unpremul\fP (int a, int *r, int *g, int *b)"
+.br
+.RI "\fIUndo pre-multiplication of a rgb triplet by an alpha factor. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_data_argb_premul\fP (unsigned int *data, unsigned int len)"
+.br
+.RI "\fIPre-multiplies data by an alpha factor. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_data_argb_unpremul\fP (unsigned int *data, unsigned int len)"
+.br
+.RI "\fIUndo pre-multiplication data by an alpha factor. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_string_char_next_get\fP (const char *str, int pos, int *decoded) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIGets the next character in the string. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_string_char_prev_get\fP (const char *str, int pos, int *decoded) EINA_ARG_NONNULL(1)"
+.br
+.RI "\fIGets the previous character in the string. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_string_char_len_get\fP (const char *str) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIGet the length in characters of the string. \fP"
+.ti -1c
+.RI "EAPI const \fBEvas_Modifier\fP * \fBevas_key_modifier_get\fP (const \fBEvas\fP *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fITO BE DOCUMENTED: \fP"
+.ti -1c
+.RI "EAPI const \fBEvas_Lock\fP * \fBevas_key_lock_get\fP (const \fBEvas\fP *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE"
+.br
+.RI "\fIReturns a handle to the locks available in the system. \fP"
+.in -1c
+.SH "Detailed Description"
+.PP 
+These routines are used for Evas library interaction. 
+
+\fBTodo\fP
+.RS 4
+check boolean return values and convert to Eina_Bool 
+.PP
+change all api to use EINA_SAFETY_* 
+.PP
+finish api documentation 
+.RE
+.PP
+
+.SH "Typedef Documentation"
+.PP 
+.SS "typedef enum \fB_Evas_Button_Flags\fP  \fBEvas_Button_Flags\fP"
+.PP
+Flags for Mouse Button events. Flags for Mouse Button events 
+.SS "typedef enum \fB_Evas_Callback_Type\fP  \fBEvas_Callback_Type\fP"
+.PP
+Identifier of callbacks to be used with object or canvas. \fBSee also:\fP
+.RS 4
+\fBevas_object_event_callback_add()\fP 
+.PP
+\fBevas_event_callback_add()\fP The type of event to trigger the callback 
+.RE
+.PP
+
+.SS "typedef enum \fB_Evas_Event_Flags\fP  \fBEvas_Event_Flags\fP"
+.PP
+Flags for Events. Flags for Events 
+.SS "typedef enum \fB_Evas_Pixel_Import_Pixel_Format\fP  \fBEvas_Pixel_Import_Pixel_Format\fP"
+.PP
+Pixel format for import call. See \fBevas_object_image_pixels_import()\fP 
+.SH "Enumeration Type Documentation"
+.PP 
+.SS "enum \fB_Evas_Alloc_Error\fP"
+.PP
+\fBEnumerator: \fP
+.in +1c
+.TP
+\fB\fIEVAS_ALLOC_ERROR_NONE \fP\fP
+No allocation error. 
+.TP
+\fB\fIEVAS_ALLOC_ERROR_FATAL \fP\fP
+Allocation failed despite attempts to free up memory. 
+.TP
+\fB\fIEVAS_ALLOC_ERROR_RECOVERED \fP\fP
+Allocation succeeded, but extra memory had to be found by freeing up speculative resources. 
+.SS "enum \fB_Evas_Button_Flags\fP"
+.PP
+Flags for Mouse Button events. 
+.PP
+\fBEnumerator: \fP
+.in +1c
+.TP
+\fB\fIEVAS_BUTTON_NONE \fP\fP
+No extra mouse button data. 
+.TP
+\fB\fIEVAS_BUTTON_DOUBLE_CLICK \fP\fP
+This mouse button press was the 2nd press of a double click. 
+.TP
+\fB\fIEVAS_BUTTON_TRIPLE_CLICK \fP\fP
+This mouse button press was the 3rd press of a triple click. 
+.SS "enum \fB_Evas_Callback_Type\fP"
+.PP
+Identifier of callbacks to be used with object or canvas. \fBSee also:\fP
+.RS 4
+\fBevas_object_event_callback_add()\fP 
+.PP
+\fBevas_event_callback_add()\fP 
+.RE
+.PP
+
+.PP
+\fBEnumerator: \fP
+.in +1c
+.TP
+\fB\fIEVAS_CALLBACK_MOUSE_IN \fP\fP
+Mouse In Event. 
+.TP
+\fB\fIEVAS_CALLBACK_MOUSE_OUT \fP\fP
+Mouse Out Event. 
+.TP
+\fB\fIEVAS_CALLBACK_MOUSE_DOWN \fP\fP
+Mouse Button Down Event. 
+.TP
+\fB\fIEVAS_CALLBACK_MOUSE_UP \fP\fP
+Mouse Button Up Event. 
+.TP
+\fB\fIEVAS_CALLBACK_MOUSE_MOVE \fP\fP
+Mouse Move Event. 
+.TP
+\fB\fIEVAS_CALLBACK_MOUSE_WHEEL \fP\fP
+Mouse Wheel Event. 
+.TP
+\fB\fIEVAS_CALLBACK_MULTI_DOWN \fP\fP
+Multi-touch Down Event. 
+.TP
+\fB\fIEVAS_CALLBACK_MULTI_UP \fP\fP
+Multi-touch Up Event. 
+.TP
+\fB\fIEVAS_CALLBACK_MULTI_MOVE \fP\fP
+Multi-touch Move Event. 
+.TP
+\fB\fIEVAS_CALLBACK_FREE \fP\fP
+Object Being Freed (Called after Del). 
+.TP
+\fB\fIEVAS_CALLBACK_KEY_DOWN \fP\fP
+Key Press Event. 
+.TP
+\fB\fIEVAS_CALLBACK_KEY_UP \fP\fP
+Key Release Event. 
+.TP
+\fB\fIEVAS_CALLBACK_FOCUS_IN \fP\fP
+Focus In Event. 
+.TP
+\fB\fIEVAS_CALLBACK_FOCUS_OUT \fP\fP
+Focus Out Event. 
+.TP
+\fB\fIEVAS_CALLBACK_SHOW \fP\fP
+Show Event. 
+.TP
+\fB\fIEVAS_CALLBACK_HIDE \fP\fP
+Hide Event. 
+.TP
+\fB\fIEVAS_CALLBACK_MOVE \fP\fP
+Move Event. 
+.TP
+\fB\fIEVAS_CALLBACK_RESIZE \fP\fP
+Resize Event. 
+.TP
+\fB\fIEVAS_CALLBACK_RESTACK \fP\fP
+Restack Event. 
+.TP
+\fB\fIEVAS_CALLBACK_DEL \fP\fP
+Object Being Deleted (called before Free). 
+.TP
+\fB\fIEVAS_CALLBACK_HOLD \fP\fP
+Events go on/off hold. 
+.TP
+\fB\fIEVAS_CALLBACK_CHANGED_SIZE_HINTS \fP\fP
+Size hints changed event. 
+.TP
+\fB\fIEVAS_CALLBACK_IMAGE_PRELOADED \fP\fP
+Image as been preloaded. 
+.TP
+\fB\fIEVAS_CALLBACK_CANVAS_FOCUS_IN \fP\fP
+Canvas got focus as a whole. 
+.TP
+\fB\fIEVAS_CALLBACK_CANVAS_FOCUS_OUT \fP\fP
+Canvas lost focus as a whole. 
+.TP
+\fB\fIEVAS_CALLBACK_RENDER_FLUSH_PRE \fP\fP
+Called just before rendering is updated on the canvas target. 
+.TP
+\fB\fIEVAS_CALLBACK_RENDER_FLUSH_POST \fP\fP
+Called just after rendering is updated on the canvas target. 
+.TP
+\fB\fIEVAS_CALLBACK_CANVAS_OBJECT_FOCUS_IN \fP\fP
+Canvas object got focus. 
+.TP
+\fB\fIEVAS_CALLBACK_CANVAS_OBJECT_FOCUS_OUT \fP\fP
+Canvas object lost focus. 
+.TP
+\fB\fIEVAS_CALLBACK_IMAGE_UNLOADED \fP\fP
+Image data has been unloaded (by some mechanims in evas that throws out original image data). 
+.TP
+\fB\fIEVAS_CALLBACK_LAST \fP\fP
+keep as last element/sentinel -- not really an event 
+.SS "enum \fB_Evas_Event_Flags\fP"
+.PP
+Flags for Events. 
+.PP
+\fBEnumerator: \fP
+.in +1c
+.TP
+\fB\fIEVAS_EVENT_FLAG_NONE \fP\fP
+No fancy flags set. 
+.TP
+\fB\fIEVAS_EVENT_FLAG_ON_HOLD \fP\fP
+This event is being delivered but should be put 'on hold' until the on hold flag is unset. the event should be used for informational purposes and maybe some indications visually, but not actually perform anything 
+.TP
+\fB\fIEVAS_EVENT_FLAG_ON_SCROLL \fP\fP
+This event flag indicates the event occurs while scrolling; for exameple, DOWN event occurs during scrolling; the event should be used for informational purposes and maybe some indications visually, but not actually perform anything. 
+.SS "enum \fB_Evas_Fill_Spread\fP"
+.PP
+\fBEnumerator: \fP
+.in +1c
+.TP
+\fB\fIEVAS_TEXTURE_REFLECT \fP\fP
+image fill tiling mode - tiling reflects 
+.TP
+\fB\fIEVAS_TEXTURE_REPEAT \fP\fP
+tiling repeats 
+.TP
+\fB\fIEVAS_TEXTURE_RESTRICT \fP\fP
+tiling clamps - range offset ignored 
+.TP
+\fB\fIEVAS_TEXTURE_RESTRICT_REFLECT \fP\fP
+tiling clamps and any range offset reflects 
+.TP
+\fB\fIEVAS_TEXTURE_RESTRICT_REPEAT \fP\fP
+tiling clamps and any range offset repeats 
+.TP
+\fB\fIEVAS_TEXTURE_PAD \fP\fP
+tiling extends with end values 
+.SS "enum \fB_Evas_Load_Error\fP"
+.PP
+\fBEnumerator: \fP
+.in +1c
+.TP
+\fB\fIEVAS_LOAD_ERROR_NONE \fP\fP
+No error on load. 
+.TP
+\fB\fIEVAS_LOAD_ERROR_GENERIC \fP\fP
+A non-specific error occurred. 
+.TP
+\fB\fIEVAS_LOAD_ERROR_DOES_NOT_EXIST \fP\fP
+File (or file path) does not exist. 
+.TP
+\fB\fIEVAS_LOAD_ERROR_PERMISSION_DENIED \fP\fP
+Permission deinied to an existing file (or path). 
+.TP
+\fB\fIEVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED \fP\fP
+Allocation of resources failure prevented load. 
+.TP
+\fB\fIEVAS_LOAD_ERROR_CORRUPT_FILE \fP\fP
+File corrupt (but was detected as a known format). 
+.TP
+\fB\fIEVAS_LOAD_ERROR_UNKNOWN_FORMAT \fP\fP
+File is not a known format. 
+.SS "enum \fB_Evas_Pixel_Import_Pixel_Format\fP"
+.PP
+\fBEnumerator: \fP
+.in +1c
+.TP
+\fB\fIEVAS_PIXEL_FORMAT_NONE \fP\fP
+No pixel format. 
+.TP
+\fB\fIEVAS_PIXEL_FORMAT_ARGB32 \fP\fP
+ARGB 32bit pixel format with A in the high byte per 32bit pixel word. 
+.TP
+\fB\fIEVAS_PIXEL_FORMAT_YUV420P_601 \fP\fP
+YUV 420 Planar format with CCIR 601 color encoding wuth contiguous planes in the order Y, U and V. 
+.SH "Function Documentation"
+.PP 
+.SS "EAPI const \fBEvas_Lock\fP* evas_key_lock_get (const \fBEvas\fP * e)"
+.PP
+Returns a handle to the locks available in the system. This is required to check for locks with the evas_key_lock_is_set function.
+.PP
+\fBSee also:\fP
+.RS 4
+evas_key_lock_add 
+.PP
+evas_key_lock_del 
+.PP
+evas_key_lock_on 
+.PP
+evas_key_lock_off
+.PP
+evas_key_lock_is_set 
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIe\fP The pointer to the Evas Canvas
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+An Evas_Lock handle to query the lock subsystem with evas_key_lock_is_set, or NULL on error. 
+.RE
+.PP
+
+.SS "EAPI const \fBEvas_Modifier\fP* evas_key_modifier_get (const \fBEvas\fP * e)"
+.PP
+TO BE DOCUMENTED: \fBTodo\fP
+.RS 4
+document key modifiers.
+.RE
+.PP
+.PP
+TO BE DOCUMENTED:
+.PP
+This is required to check for modifiers with the evas_key_modifier_is_set function.
+.PP
+\fBSee also:\fP
+.RS 4
+evas_key_modifier_add 
+.PP
+evas_key_modifier_del 
+.PP
+evas_key_modifier_on 
+.PP
+evas_key_modifier_off 
+.PP
+evas_key_modifier_is_set
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIe\fP The pointer to the Evas Canvas
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+An Evas_Modifier handle to query the modifier subsystem with evas_key_modifier_is_set, or NULL on error. 
+.RE
+.PP
+
+.SS "EAPI Eina_Bool evas_map_alpha_get (const \fBEvas_Map\fP * m)"
+.PP
+get the alpha flag for map rendering This gets the alph flag for map rendering.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIm\fP map to get the alpha from. Must not be NULL. 
+.RE
+.PP
+
+.SS "EAPI void evas_map_alpha_set (\fBEvas_Map\fP * m, Eina_Bool enabled)"
+.PP
+Set the alpha flag for map rendering. This sets alpha flag for map rendering. If the object is a type that has its own alpha settings, then this will take precedence. Only image objects have this currently. Fits stops alpha blending of the map area, and is useful if you know the object and/or all sub-objects is 100% solid.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIm\fP map to modify. Must not be NULL. 
+.br
+\fIenabled\fP enable or disable alpha map rendering 
+.RE
+.PP
+
+.SS "EAPI int evas_map_count_get (const \fBEvas_Map\fP * m)"
+.PP
+Get a maps size. Returns the number of points in a map. Should be at least 4.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIm\fP map to get size. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+-1 on error, points otherwise. 
+.RE
+.PP
+
+.SS "EAPI \fBEvas_Map\fP* evas_map_dup (const \fBEvas_Map\fP * m)"
+.PP
+Copy a previously allocated map. This makes a duplicate of the \fCm\fP object and returns it.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIm\fP map to copy. Must not be NULL. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+newly allocated map with the same count and contents as \fCm\fP. 
+.RE
+.PP
+
+.SS "EAPI void evas_map_free (\fBEvas_Map\fP * m)"
+.PP
+Free a previously allocated map. This frees a givem map \fCm\fP and all memory associated with it. You must NOT free a map returned by \fBevas_object_map_get()\fP as this is internal.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIm\fP map to free. 
+.RE
+.PP
+
+.SS "EAPI \fBEvas_Map\fP* evas_map_new (int count)"
+.PP
+Create map of transformation points to be later used with an evas object. This creates a set of points (currently only 4 is supported. no other number for \fCcount\fP will work). That is empty and ready to be modified with evas_map calls.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIcount\fP number of points in the map. * 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+a newly allocated map or NULL on errors.
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBevas_map_free()\fP 
+.PP
+\fBevas_map_dup()\fP 
+.PP
+\fBevas_map_point_coord_set()\fP 
+.PP
+\fBevas_map_point_image_uv_set()\fP 
+.PP
+\fBevas_map_util_points_populate_from_object_full()\fP 
+.PP
+\fBevas_map_util_points_populate_from_object()\fP
+.PP
+\fBevas_object_map_set()\fP 
+.RE
+.PP
+
+.SS "EAPI void evas_map_point_color_get (const \fBEvas_Map\fP * m, int idx, int * r, int * g, int * b, int * a)"
+.PP
+Get the color set on a vertex in the map. This gets the color set by \fBevas_map_point_color_set()\fP on the given vertex of the map.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIm\fP map to get the color of the vertex from. 
+.br
+\fIidx\fP index of point get. Must be smaller than map size. 
+.br
+\fIr\fP pointer to red return 
+.br
+\fIg\fP pointer to green return 
+.br
+\fIb\fP pointer to blue return 
+.br
+\fIa\fP pointer to alpha return (0 - 255)
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBevas_map_point_coord_set()\fP 
+.PP
+\fBevas_object_map_set()\fP 
+.RE
+.PP
+
+.SS "EAPI void evas_map_point_color_set (\fBEvas_Map\fP * m, int idx, int r, int g, int b, int a)"
+.PP
+Set the color of a vertex in the map. This sets the color of the vertex in the map. Colors will be linearly interpolated between vertex points through the map. Color will multiply the 'texture' pixels (like GL_MODULATE in OpenGL). The default color of a vertex in a map is white solid (255, 255, 255, 255) which means it will have no affect on modifying the texture pixels.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIm\fP map to change the color of. 
+.br
+\fIidx\fP index of point to change. Must be smaller than map size. 
+.br
+\fIr\fP red (0 - 255) 
+.br
+\fIg\fP green (0 - 255) 
+.br
+\fIb\fP blue (0 - 255) 
+.br
+\fIa\fP alpha (0 - 255)
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBevas_map_util_points_color_set()\fP 
+.PP
+\fBevas_map_point_coord_set()\fP 
+.PP
+\fBevas_object_map_set()\fP 
+.RE
+.PP
+
+.SS "EAPI void evas_map_point_coord_get (const \fBEvas_Map\fP * m, int idx, Evas_Coord * x, Evas_Coord * y, Evas_Coord * z)"
+.PP
+Get the map point's coordinate. This returns the coordinates of the given point in the map.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIm\fP map to query point. 
+.br
+\fIidx\fP index of point to query. Must be smaller than map size. 
+.br
+\fIx\fP where to return the X coordinate. 
+.br
+\fIy\fP where to return the Y coordinate. 
+.br
+\fIz\fP where to return the Z coordinate. 
+.RE
+.PP
+
+.SS "EAPI void evas_map_point_coord_set (\fBEvas_Map\fP * m, int idx, Evas_Coord x, Evas_Coord y, Evas_Coord z)"
+.PP
+Change the map point's coordinate. This sets the fixen point's coordinate in the map. Note that points describe the outline of a quadrangle and are ordered either clockwise or anit-clock-wise. It is suggested to keep your quadrangles concave and non-complex, though these polygon modes may work, they may not render a desired set of output. The quadrangle will use points 0 and 1 , 1 and 2, 2 and 3, and 3 and 0 to describe the edges of the quandrangle.
+.PP
+The X and Y and Z coordinates are in canvas units. Z is optional and may or may not be honored in drawing. Z is a hint and does not affect the X and Y rendered coordinates. It may be used for calculating fills with perspective correct rendering.
+.PP
+Remember all coordinates are canvas global ones like with move and reize in evas.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIm\fP map to change point. Must not be \fCNULL\fP. 
+.br
+\fIidx\fP index of point to change. Must be smaller than map size. 
+.br
+\fIx\fP Point X Coordinate 
+.br
+\fIy\fP Point Y Coordinate 
+.br
+\fIz\fP Point Z Coordinate hint (pre-perspective transform)
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBevas_map_util_rotate()\fP 
+.PP
+\fBevas_map_util_zoom()\fP 
+.PP
+\fBevas_map_util_points_populate_from_object_full()\fP 
+.PP
+\fBevas_map_util_points_populate_from_object()\fP 
+.RE
+.PP
+
+.SS "EAPI void evas_map_point_image_uv_get (const \fBEvas_Map\fP * m, int idx, double * u, double * v)"
+.PP
+Get the map point's U and V texture source points. This returns the texture points set by \fBevas_map_point_image_uv_set()\fP.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIm\fP map to query point. 
+.br
+\fIidx\fP index of point to query. Must be smaller than map size. 
+.br
+\fIu\fP where to write the X coordinate within the image/texture source 
+.br
+\fIv\fP where to write the Y coordinate within the image/texture source 
+.RE
+.PP
+
+.SS "EAPI void evas_map_point_image_uv_set (\fBEvas_Map\fP * m, int idx, double u, double v)"
+.PP
+Change the map point's U and V texture source point. This sets the U and V coordinates for the point. This determines which coordinate in the source image is mapped to the given point, much like OpenGL and textures. Notes that these points do select the pixel, but are double floating point values to allow for accuracy and sub-pixel selection.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIm\fP map to change the point of. 
+.br
+\fIidx\fP index of point to change. Must be smaller than map size. 
+.br
+\fIu\fP the X coordinate within the image/texture source 
+.br
+\fIv\fP the Y coordinate within the image/texture source
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBevas_map_point_coord_set()\fP 
+.PP
+\fBevas_object_map_set()\fP 
+.PP
+\fBevas_map_util_points_populate_from_object_full()\fP 
+.PP
+\fBevas_map_util_points_populate_from_object()\fP 
+.RE
+.PP
+
+.SS "EAPI Eina_Bool evas_map_smooth_get (const \fBEvas_Map\fP * m)"
+.PP
+get the smoothing for map rendering This gets smoothing for map rendering.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIm\fP map to get the smooth from. Must not be NULL. 
+.RE
+.PP
+
+.SS "EAPI void evas_map_smooth_set (\fBEvas_Map\fP * m, Eina_Bool enabled)"
+.PP
+Set the smoothing for map rendering. This sets smoothing for map rendering. If the object is a type that has its own smoothing settings, then both the smooth settings for this object and the map must be turned off. By default smooth maps are enabled.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIm\fP map to modify. Must not be NULL. 
+.br
+\fIenabled\fP enable or disable smooth map rendering 
+.RE
+.PP
+
+.SS "EAPI void evas_map_util_3d_lighting (\fBEvas_Map\fP * m, Evas_Coord lx, Evas_Coord ly, Evas_Coord lz, int lr, int lg, int lb, int ar, int ag, int ab)"
+.PP
+Perform lighting calculations on the given Map. This is used to apply lighting calculations (from a single light source) to a given map. The R, G and B values of each vertex will be modified to reflect the lighting based on the lixth point coordinates, the light color and the ambient color, and at what angle the map is facing the light source. A surface should have its points be declared in a clockwise fashion if the face is 'facing' towards you (as opposed to away from you) as faces have a 'logical' side for lighting.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIm\fP map to change. 
+.br
+\fIlx\fP X coordinate in space of light point 
+.br
+\fIly\fP Y coordinate in space of light point 
+.br
+\fIlz\fP Z coordinate in space of light point 
+.br
+\fIlr\fP light red value (0 - 255) 
+.br
+\fIlg\fP light green value (0 - 255) 
+.br
+\fIlb\fP light blue value (0 - 255) 
+.br
+\fIar\fP ambient color red value (0 - 255) 
+.br
+\fIag\fP ambient color green value (0 - 255) 
+.br
+\fIab\fP ambient color blue value (0 - 255) 
+.RE
+.PP
+
+.SS "EAPI void evas_map_util_3d_perspective (\fBEvas_Map\fP * m, Evas_Coord px, Evas_Coord py, Evas_Coord z0, Evas_Coord foc)"
+.PP
+Apply a perspective transform to the map. This applies a given perspective (3D) to the map coordinates. X, Y and Z values are used. The px and py points specify the 'infinite distance' point in the 3D conversion (where all lines converge to like when artists draw 3D by hand). The \fCz0\fP value specifis the z value at which there is a 1:1 mapping between spatial coorinates and screen coordinates. Any points on this z value will not have their X and Y values modified in the transform. Those further away (Z value higher) will shrink into the distance, and those less than this value will expand and become bigger. The \fCfoc\fP value determines the 'focal length' of the camera. This is in reality the distance between the camera lens plane itself (at or closer than this rendering results are undefined) and the 'z0' z value. This allows for some 'depth' control and \fCfoc\fP must be greater than 0.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIm\fP map to change. 
+.br
+\fIpx\fP The pespective distance X coordinate 
+.br
+\fIpy\fP The pespective distance Y coordinate 
+.br
+\fIz0\fP The '0' z plane value 
+.br
+\fIfoc\fP The focal distance 
+.RE
+.PP
+
+.SS "EAPI void evas_map_util_3d_rotate (\fBEvas_Map\fP * m, double dx, double dy, double dz, Evas_Coord cx, Evas_Coord cy, Evas_Coord cz)"
+.PP
+Rotate the map around 3 axes in 3D. This will rotate not just around the 'Z' axis as in \fBevas_map_util_rotate()\fP (which is a convenience call for those only wanting 2D). This will rotate around the X, Y and Z axes. The Z axis points 'into' the screen with low values at the screen and higher values further away. The X axis runs from left to right on the screen and the Y axis from top to bottom. Like with evas_map_util_rotate(0 you provide a center point to rotate around (in 3D).
+.PP
+\fBParameters:\fP
+.RS 4
+\fIm\fP map to change. 
+.br
+\fIdx\fP amount of degrees from 0.0 to 360.0 to rotate arount X axis. 
+.br
+\fIdy\fP amount of degrees from 0.0 to 360.0 to rotate arount Y axis. 
+.br
+\fIdz\fP amount of degrees from 0.0 to 360.0 to rotate arount Z axis. 
+.br
+\fIcx\fP rotation's center horizontal position. 
+.br
+\fIcy\fP rotation's center vertical position. 
+.br
+\fIcz\fP rotation's center vertical position. 
+.RE
+.PP
+
+.SS "EAPI Eina_Bool evas_map_util_clockwise_get (\fBEvas_Map\fP * m)"
+.PP
+Get the clockwise state of a map. This determines if the output points (X and Y. Z is not used) are clockwise or anti-clockwise. This can be used for 'back-face culling'. This is where you hide objects that 'face away' from you. In this case objects that are not clockwise.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIm\fP map to query. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+1 if clockwise, 0 otherwise 
+.RE
+.PP
+
+.SS "EAPI void evas_map_util_points_color_set (\fBEvas_Map\fP * m, int r, int g, int b, int a)"
+.PP
+Set color of all points to given color. This call is useful to reuse maps after they had 3d lightning or any other colorization applied before.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIm\fP map to change the color of. 
+.br
+\fIr\fP red (0 - 255) 
+.br
+\fIg\fP green (0 - 255) 
+.br
+\fIb\fP blue (0 - 255) 
+.br
+\fIa\fP alpha (0 - 255)
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBevas_map_point_color_set()\fP 
+.RE
+.PP
+
+.SS "EAPI void evas_map_util_points_populate_from_geometry (\fBEvas_Map\fP * m, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h, Evas_Coord z)"
+.PP
+Populate source and destination map points to match given geometry. Similar to \fBevas_map_util_points_populate_from_object_full()\fP, this call takes raw values instead of querying object's unmapped geometry. The given width will be used to calculate destination points (\fBevas_map_point_coord_set()\fP) and set the image uv (\fBevas_map_point_image_uv_set()\fP).
+.PP
+\fBParameters:\fP
+.RS 4
+\fIm\fP map to change all 4 points (must be of size 4). 
+.br
+\fIx\fP Point X Coordinate 
+.br
+\fIy\fP Point Y Coordinate 
+.br
+\fIw\fP width to use to calculate second and third points. 
+.br
+\fIh\fP height to use to calculate third and fourth points. 
+.br
+\fIz\fP Point Z Coordinate hint (pre-perspective transform). This value will be used for all four points.
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBevas_map_util_points_populate_from_object()\fP 
+.PP
+\fBevas_map_point_coord_set()\fP 
+.PP
+\fBevas_map_point_image_uv_set()\fP 
+.RE
+.PP
+
+.SS "EAPI void evas_map_util_points_populate_from_object (\fBEvas_Map\fP * m, const \fBEvas_Object\fP * obj)"
+.PP
+Populate source and destination map points to match exactly object. Usually one initialize map of an object to match it's original position and size, then transform these with evas_map_util_* functions, such as \fBevas_map_util_rotate()\fP or \fBevas_map_util_3d_rotate()\fP. The original set is done by this function, avoiding code duplication all around.
+.PP
+Z Point coordinate is assumed as 0 (zero).
+.PP
+\fBParameters:\fP
+.RS 4
+\fIm\fP map to change all 4 points (must be of size 4). 
+.br
+\fIobj\fP object to use unmapped geometry to populate map coordinates.
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBevas_map_util_points_populate_from_object_full()\fP 
+.PP
+\fBevas_map_util_points_populate_from_geometry()\fP 
+.PP
+\fBevas_map_point_coord_set()\fP 
+.PP
+\fBevas_map_point_image_uv_set()\fP 
+.RE
+.PP
+
+.SS "EAPI void evas_map_util_points_populate_from_object_full (\fBEvas_Map\fP * m, const \fBEvas_Object\fP * obj, Evas_Coord z)"
+.PP
+Populate source and destination map points to match exactly object. Usually one initialize map of an object to match it's original position and size, then transform these with evas_map_util_* functions, such as \fBevas_map_util_rotate()\fP or \fBevas_map_util_3d_rotate()\fP. The original set is done by this function, avoiding code duplication all around.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIm\fP map to change all 4 points (must be of size 4). 
+.br
+\fIobj\fP object to use unmapped geometry to populate map coordinates. 
+.br
+\fIz\fP Point Z Coordinate hint (pre-perspective transform). This value will be used for all four points.
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBevas_map_util_points_populate_from_object()\fP 
+.PP
+\fBevas_map_point_coord_set()\fP 
+.PP
+\fBevas_map_point_image_uv_set()\fP 
+.RE
+.PP
+
+.SS "EAPI void evas_map_util_rotate (\fBEvas_Map\fP * m, double degrees, Evas_Coord cx, Evas_Coord cy)"
+.PP
+Change the map to apply the given rotation. This rotates the indicated map's coordinates around the center coordinate given by \fCcx\fP and \fCcy\fP as the rotation center. The points will have their X and Y coordinates rotated clockwise by \fCdegrees\fP degress (360.0 is a full rotation). Negative values for degrees will rotate counter-clockwise by that amount. All coordinates are canvas global coordinates.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIm\fP map to change. 
+.br
+\fIdegrees\fP amount of degrees from 0.0 to 360.0 to rotate. 
+.br
+\fIcx\fP rotation's center horizontal position. 
+.br
+\fIcy\fP rotation's center vertical position.
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBevas_map_point_coord_set()\fP 
+.PP
+\fBevas_map_util_zoom()\fP 
+.RE
+.PP
+
+.SS "EAPI void evas_map_util_zoom (\fBEvas_Map\fP * m, double zoomx, double zoomy, Evas_Coord cx, Evas_Coord cy)"
+.PP
+Change the map to apply the given zooming. Like \fBevas_map_util_rotate()\fP, this zooms the points of the map from a center point. That center is defined by \fCcx\fP and \fCcy\fP. The \fCzoomx\fP and \fCzoomy\fP parameters specific how much to zoom in the X and Y direction respectively. A value of 1.0 means 'don't zoom'. 2.0 means 'dobule the size'. 0.5 is 'half the size' etc. All coordinates are canvas global coordinates.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIm\fP map to change. 
+.br
+\fIzoomx\fP horizontal zoom to use. 
+.br
+\fIzoomy\fP vertical zoom to use. 
+.br
+\fIcx\fP zooming center horizontal position. 
+.br
+\fIcy\fP zooming center vertical position.
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBevas_map_point_coord_set()\fP 
+.PP
+\fBevas_map_util_rotate()\fP 
+.RE
+.PP
+
+.SS "EAPI Eina_Bool evas_object_map_enable_get (const \fBEvas_Object\fP * obj)"
+.PP
+Get the map enabled state. This returns the currently enabled state of the map on the object indicated. The default map enable state is off. You can enable and disable it with \fBevas_object_map_enable_set()\fP.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP object to get the map enabled state from 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the map enabled state 
+.RE
+.PP
+
+.SS "EAPI void evas_object_map_enable_set (\fBEvas_Object\fP * obj, Eina_Bool enabled)"
+.PP
+Enable or disable the map that is set. This enables the map that is set or disables it. On enable, the object geometry will be saved, and the new geometry will change (position and size) to reflect the map geometry set. If none is set yet, this may be an undefined geometry, unless you have already set the map with \fBevas_object_map_set()\fP. It is suggested you first set a map with \fBevas_object_map_set()\fP with valid useful coordinates then enable and disable the map with \fBevas_object_map_enable_set()\fP as needed.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP object to enable the map on 
+.br
+\fIenabled\fP enabled state 
+.RE
+.PP
+
+.SS "EAPI const \fBEvas_Map\fP* evas_object_map_get (const \fBEvas_Object\fP * obj)"
+.PP
+Get current object transformation map. This returns the current internal map set on the indicated object. It is intended for read-only acces and is only valid as long as the object is not deleted or the map on the object is not changed. If you wish to modify the map and set it back do the following:
+.PP
+.PP
+.nf
+ const Evas_Map *m = evas_object_map_get(obj);
+ Evas_Map *m2 = evas_map_dup(m);
+ evas_map_util_rotate(m2, 30.0, 0, 0);
+ evas_object_map_set(obj);
+ evas_map_free(m2);
+.fi
+.PP
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP object to query transformation map. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+map reference to map in use. This is an internal data structure, so do not modify it.
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBevas_object_map_set()\fP 
+.RE
+.PP
+
+.SS "EAPI void evas_object_map_set (\fBEvas_Object\fP * obj, const \fBEvas_Map\fP * map)"
+.PP
+Set current object transformation map. This sets the map on a given object. It is copied from the \fCmap\fP pointer, so there is no need to keep the \fCmap\fP object if you don't need it anymore.
+.PP
+A map is a set of 4 points which have canvas x, y coordinates per point, with an optional z point value as a hint for perspective correction, if it is available. As well each point has u and v coordinates. These are like 'texture coordinates' in OpenGL in that they define a point in the source image that is mapped to that map vertex/point. The u corresponds to the x coordinate of this mapped point and v, the y coordinate. Note that these coordinates describe a bounding region to sample. If you have a 200x100 source image and want to display it at 200x100 with proper pixel precision, then do:
+.PP
+.PP
+.nf
+ Evas_Map *m = evas_map_new(4);
+ evas_map_point_coord_set(m, 0,   0,   0, 0);
+ evas_map_point_coord_set(m, 1, 200,   0, 0);
+ evas_map_point_coord_set(m, 2, 200, 100, 0);
+ evas_map_point_coord_set(m, 3,   0, 100, 0);
+ evas_map_point_image_uv_set(m, 0,   0,   0);
+ evas_map_point_image_uv_set(m, 1, 200,   0);
+ evas_map_point_image_uv_set(m, 2, 200, 100);
+ evas_map_point_image_uv_set(m, 3,   0, 100);
+ evas_object_map_set(obj, m);
+ evas_map_free(m);
+.fi
+.PP
+.PP
+Note that the map points a uv coordinates match the image geometry. If the \fCmap\fP parameter is NULL, the stored map will be freed and geometry prior to enabling/setting a map will be restored.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP object to change transformation map 
+.br
+\fImap\fP new map to use
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBevas_map_new()\fP 
+.RE
+.PP
+
+.SS "EAPI \fBEvas_Object\fP* evas_object_map_source_get (const \fBEvas_Object\fP * obj)"
+.PP
+Get the map source object. See \fBevas_object_map_source_set()\fP
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP object to set the map source of 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the object set as the source 
+.RE
+.PP
+
+.SS "EAPI void evas_object_map_source_set (\fBEvas_Object\fP * obj, \fBEvas_Object\fP * src)"
+.PP
+Set the map source object. This sets the object from which the map is taken - can be any object that has map enabled on it.
+.PP
+Currently not implemented. for future use.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP object to set the map source of 
+.br
+\fIsrc\fP the source object from which the map is taken 
+.RE
+.PP
+
+.SS "EAPI Eina_List* evas_object_smart_members_get (const \fBEvas_Object\fP * obj)"
+.PP
+Gets the list of the member objects of an Evas_Object. \fBParameters:\fP
+.RS 4
+\fIobj\fP the Evas_Object you want to get the list of member objects 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Returns the list of the member objects of \fIobj\fP. The returned list should be freed with eina_list_free() when you no longer need it 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Evas from the source code.

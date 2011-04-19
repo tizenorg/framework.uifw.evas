@@ -1,0 +1,1637 @@
+.TH "Textblock Object Functions" 3 "Tue Apr 19 2011" "Evas" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Textblock Object Functions \- 
+.PP
+Functions used to create and manipulate textblock objects.  
+
+.SS "Defines"
+
+.in +1c
+.ti -1c
+.RI "#define \fBENFN\fP   obj->layer->evas->engine.func"
+.br
+.in -1c
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_textblock_add\fP (\fBEvas\fP *e)"
+.br
+.RI "\fIAdds a textblock to the given evas. \fP"
+.ti -1c
+.RI "EAPI Evas_Textblock_Style * \fBevas_textblock_style_new\fP (void)"
+.br
+.RI "\fICreates a new textblock style. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_textblock_style_free\fP (Evas_Textblock_Style *ts)"
+.br
+.RI "\fIDestroys a textblock style. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_textblock_style_set\fP (Evas_Textblock_Style *ts, const char *text)"
+.br
+.RI "\fISets the style ts to the style passed as text by text. \fP"
+.ti -1c
+.RI "EAPI const char * \fBevas_textblock_style_get\fP (const Evas_Textblock_Style *ts)"
+.br
+.RI "\fIReturn the text of the style ts. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_textblock_style_set\fP (\fBEvas_Object\fP *obj, Evas_Textblock_Style *ts)"
+.br
+.RI "\fISet the objects style to ts. \fP"
+.ti -1c
+.RI "EAPI const Evas_Textblock_Style * \fBevas_object_textblock_style_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIReturn the style of an object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_textblock_replace_char_set\fP (\fBEvas_Object\fP *obj, const char *ch)"
+.br
+.RI "\fISet the 'replacement character' to use for the given textblock object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_textblock_newline_mode_set\fP (\fBEvas_Object\fP *obj, Eina_Bool mode)"
+.br
+.RI "\fISets newline mode. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_textblock_newline_mode_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIGets newline mode. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_textblock_valign_set\fP (\fBEvas_Object\fP *obj, double align)"
+.br
+.RI "\fISets the vertical alignment of text within the textblock object as a whole. \fP"
+.ti -1c
+.RI "EAPI double \fBevas_object_textblock_valign_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIGets the vertical alignment of a textblock. \fP"
+.ti -1c
+.RI "EAPI const char * \fBevas_object_textblock_replace_char_get\fP (\fBEvas_Object\fP *obj)"
+.br
+.RI "\fIGet the 'replacement character' for given textblock object. \fP"
+.ti -1c
+.RI "EAPI const char * \fBevas_textblock_escape_string_get\fP (const char *escape)"
+.br
+.RI "\fIReturns the unescaped version of escape. \fP"
+.ti -1c
+.RI "EAPI const char * \fBevas_textblock_escape_string_range_get\fP (const char *escape_start, const char *escape_end)"
+.br
+.RI "\fIReturn the unescaped version of the string between start and end. \fP"
+.ti -1c
+.RI "EAPI const char * \fBevas_textblock_string_escape_get\fP (const char *string, int *len_ret)"
+.br
+.RI "\fIReturns the escaped version of the string. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_textblock_text_markup_set\fP (\fBEvas_Object\fP *obj, const char *text)"
+.br
+.RI "\fISets the tetxblock's text to the markup text. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_textblock_text_markup_prepend\fP (Evas_Textblock_Cursor *cur, const char *text)"
+.br
+.RI "\fIPrepends markup to the cursor cur. \fP"
+.ti -1c
+.RI "EAPI const char * \fBevas_object_textblock_text_markup_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIReturn the markup of the object. \fP"
+.ti -1c
+.RI "EAPI const Evas_Textblock_Cursor * \fBevas_object_textblock_cursor_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIReturn the object's main cursor. \fP"
+.ti -1c
+.RI "EAPI Evas_Textblock_Cursor * \fBevas_object_textblock_cursor_new\fP (\fBEvas_Object\fP *obj)"
+.br
+.RI "\fICreate a new cursor, associate it to the obj and init it to point to the start of the textblock. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_textblock_cursor_free\fP (Evas_Textblock_Cursor *cur)"
+.br
+.RI "\fIFree the cursor and unassociate it from the object. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_textblock_cursor_is_format\fP (const Evas_Textblock_Cursor *cur)"
+.br
+.RI "\fIReturns true if the cursor points to a format. \fP"
+.ti -1c
+.RI "EAPI const \fBEvas_Object_Textblock_Node_Format\fP * \fBevas_textblock_node_format_first_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIReturns the first format node. \fP"
+.ti -1c
+.RI "EAPI const \fBEvas_Object_Textblock_Node_Format\fP * \fBevas_textblock_node_format_last_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIReturns the last format node. \fP"
+.ti -1c
+.RI "EAPI const \fBEvas_Object_Textblock_Node_Format\fP * \fBevas_textblock_node_format_next_get\fP (const \fBEvas_Object_Textblock_Node_Format\fP *n)"
+.br
+.RI "\fIReturns the next format node (after n). \fP"
+.ti -1c
+.RI "EAPI const \fBEvas_Object_Textblock_Node_Format\fP * \fBevas_textblock_node_format_prev_get\fP (const \fBEvas_Object_Textblock_Node_Format\fP *n)"
+.br
+.RI "\fIReturns the prev format node (after n). \fP"
+.ti -1c
+.RI "EAPI void \fBevas_textblock_node_format_remove_pair\fP (\fBEvas_Object\fP *obj, \fBEvas_Object_Textblock_Node_Format\fP *n)"
+.br
+.RI "\fIRemove a format node and it's match. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_textblock_cursor_paragraph_first\fP (Evas_Textblock_Cursor *cur)"
+.br
+.RI "\fISets the cursor to the start of the first text node. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_textblock_cursor_paragraph_last\fP (Evas_Textblock_Cursor *cur)"
+.br
+.RI "\fIsets the cursor to the end of the last text node. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_textblock_cursor_paragraph_next\fP (Evas_Textblock_Cursor *cur)"
+.br
+.RI "\fIAdvances to the the start of the next text node. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_textblock_cursor_paragraph_prev\fP (Evas_Textblock_Cursor *cur)"
+.br
+.RI "\fIAdvances to the the end of the previous text node. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_textblock_cursor_set_at_format\fP (Evas_Textblock_Cursor *cur, const \fBEvas_Object_Textblock_Node_Format\fP *n)"
+.br
+.RI "\fISets the cursor to point to the place where format points to. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_textblock_cursor_format_next\fP (Evas_Textblock_Cursor *cur)"
+.br
+.RI "\fIAdvances to the next format node. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_textblock_cursor_format_prev\fP (Evas_Textblock_Cursor *cur)"
+.br
+.RI "\fIAdvances to the previous format node. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_textblock_cursor_char_next\fP (Evas_Textblock_Cursor *cur)"
+.br
+.RI "\fIAdvances 1 char forward. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_textblock_cursor_char_prev\fP (Evas_Textblock_Cursor *cur)"
+.br
+.RI "\fIAdvances 1 char backward. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_textblock_cursor_paragraph_char_first\fP (Evas_Textblock_Cursor *cur)"
+.br
+.RI "\fIGo to the first char in the node the cursor is pointing on. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_textblock_cursor_paragraph_char_last\fP (Evas_Textblock_Cursor *cur)"
+.br
+.RI "\fIGo to the last char in a text node. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_textblock_cursor_line_char_first\fP (Evas_Textblock_Cursor *cur)"
+.br
+.RI "\fIGo to the start of the current line. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_textblock_cursor_line_char_last\fP (Evas_Textblock_Cursor *cur)"
+.br
+.RI "\fIGo to the end of the current line. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_textblock_cursor_pos_get\fP (const Evas_Textblock_Cursor *cur)"
+.br
+.RI "\fIReturn the current cursor pos. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_textblock_cursor_pos_set\fP (Evas_Textblock_Cursor *cur, int _pos)"
+.br
+.RI "\fISet the cursor pos. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_textblock_cursor_line_set\fP (Evas_Textblock_Cursor *cur, int line)"
+.br
+.RI "\fIGo to the start of the line passed. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_textblock_cursor_compare\fP (const Evas_Textblock_Cursor *cur1, const Evas_Textblock_Cursor *cur2)"
+.br
+.RI "\fICompare two cursors. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_textblock_cursor_copy\fP (const Evas_Textblock_Cursor *cur, Evas_Textblock_Cursor *cur_dest)"
+.br
+.RI "\fIMake cur_dest point to the same place as cur. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_textblock_cursor_text_append\fP (Evas_Textblock_Cursor *cur, const char *_text)"
+.br
+.RI "\fIAdds text to the current cursor position and set the cursor to *before* the start of the text just added. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_textblock_cursor_text_prepend\fP (Evas_Textblock_Cursor *cur, const char *_text)"
+.br
+.RI "\fIAdds text to the current cursor position and set the cursor to *after* the start of the text just added. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_textblock_cursor_format_append\fP (Evas_Textblock_Cursor *cur, const char *format)"
+.br
+.RI "\fIAdds format to the current cursor position. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_textblock_cursor_format_prepend\fP (Evas_Textblock_Cursor *cur, const char *format)"
+.br
+.RI "\fIAdds format to the current cursor position. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_textblock_cursor_char_delete\fP (Evas_Textblock_Cursor *cur)"
+.br
+.RI "\fIDelete the character at the location of the cursor. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_textblock_cursor_range_delete\fP (Evas_Textblock_Cursor *cur1, Evas_Textblock_Cursor *cur2)"
+.br
+.RI "\fIDelete the range between cur1 and cur2. \fP"
+.ti -1c
+.RI "EAPI char * \fBevas_textblock_cursor_content_get\fP (const Evas_Textblock_Cursor *cur)"
+.br
+.RI "\fIReturn the content of the cursor. \fP"
+.ti -1c
+.RI "EAPI char * \fBevas_textblock_cursor_range_text_get\fP (const Evas_Textblock_Cursor *cur1, const Evas_Textblock_Cursor *_cur2, Evas_Textblock_Text_Type format __UNUSED__)"
+.br
+.RI "\fIReturn the text in the range between cur1 and cur2. \fP"
+.ti -1c
+.RI "EAPI const char * \fBevas_textblock_cursor_paragraph_text_get\fP (const Evas_Textblock_Cursor *cur)"
+.br
+.RI "\fIReturn the text of the paragraph cur points to - returns the text in markup. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_textblock_cursor_paragraph_text_length_get\fP (const Evas_Textblock_Cursor *cur)"
+.br
+.RI "\fIReturn the length of the paragraph, cheaper the eina_unicode_strlen(). \fP"
+.ti -1c
+.RI "EAPI const \fBEvas_Object_Textblock_Node_Format\fP * \fBevas_textblock_cursor_format_get\fP (const Evas_Textblock_Cursor *cur)"
+.br
+.RI "\fIReturn the format node at the position pointed by cur. \fP"
+.ti -1c
+.RI "EAPI const char * \fBevas_textblock_node_format_text_get\fP (const \fBEvas_Object_Textblock_Node_Format\fP *fmt)"
+.br
+.RI "\fIGet the text format representation of the format node. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_textblock_cursor_at_format_set\fP (Evas_Textblock_Cursor *cur, const \fBEvas_Object_Textblock_Node_Format\fP *fmt)"
+.br
+.RI "\fISet the cursor to point to the position of fmt. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_textblock_cursor_format_is_visible_get\fP (const Evas_Textblock_Cursor *cur)"
+.br
+.RI "\fICheck if the current cursor position is a visible format. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_textblock_cursor_geometry_get\fP (const Evas_Textblock_Cursor *cur, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch, Evas_BiDi_Direction *dir, Evas_Textblock_Cursor_Type ctype)"
+.br
+.RI "\fIReturns the geometry of the cursor. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_textblock_cursor_char_geometry_get\fP (const Evas_Textblock_Cursor *cur, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch)"
+.br
+.RI "\fIReturns the geometry of the char at cur. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_textblock_cursor_pen_geometry_get\fP (const Evas_Textblock_Cursor *cur, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch)"
+.br
+.RI "\fIReturns the geometry of the pen at cur. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_textblock_cursor_line_geometry_get\fP (const Evas_Textblock_Cursor *cur, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch)"
+.br
+.RI "\fIReturns the geometry of the line at cur. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_textblock_cursor_char_coord_set\fP (Evas_Textblock_Cursor *cur, Evas_Coord x, Evas_Coord y)"
+.br
+.RI "\fISet the position of the cursor according to the X and Y coordinates. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_textblock_cursor_line_coord_set\fP (Evas_Textblock_Cursor *cur, Evas_Coord y)"
+.br
+.RI "\fISet the cursor position according to the y coord. \fP"
+.ti -1c
+.RI "EAPI Eina_List * \fBevas_textblock_cursor_range_geometry_get\fP (const Evas_Textblock_Cursor *cur1, const Evas_Textblock_Cursor *cur2)"
+.br
+.RI "\fIGet the geometry of a range. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_textblock_cursor_format_item_geometry_get\fP (const Evas_Textblock_Cursor *cur, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch)"
+.br
+.RI "\fIto be documented. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_textblock_cursor_eol_get\fP (const Evas_Textblock_Cursor *cur)"
+.br
+.RI "\fIChecks if the cursor points to the end of the line. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_textblock_line_number_geometry_get\fP (const \fBEvas_Object\fP *obj, int line, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch)"
+.br
+.RI "\fIGet the geometry of a line number. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_textblock_clear\fP (\fBEvas_Object\fP *obj)"
+.br
+.RI "\fIClear the textblock object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_textblock_size_formatted_get\fP (const \fBEvas_Object\fP *obj, Evas_Coord *w, Evas_Coord *h)"
+.br
+.RI "\fIGet the formatted width and height. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_textblock_size_native_get\fP (const \fBEvas_Object\fP *obj, Evas_Coord *w, Evas_Coord *h)"
+.br
+.RI "\fIGet the native width and height. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_textblock_style_insets_get\fP (const \fBEvas_Object\fP *obj, Evas_Coord *l, Evas_Coord *r, Evas_Coord *t, Evas_Coord *b)"
+.br
+.RI "\fIto be documented. \fP"
+.in -1c
+.SH "Detailed Description"
+.PP 
+Functions used to create and manipulate textblock objects. 
+
+Unlike \fBText Object Functions\fP, these handle complex text, doing multiple styles and multiline text based on HTML-like tags. Of these extra features will be heavier on memory and processing cost.
+.PP
+\fBTodo\fP
+.RS 4
+put here some usage examples
+.RE
+.PP
+
+.SH "Define Documentation"
+.PP 
+.SS "#define ENFN   obj->layer->evas->engine.func".SH "Textblock Object Tutorial"
+.PP
+This part explains about the textblock object's API and proper usage. If you want to develop textblock, you should also refer to \fBEvas_Object_Textblock_Internal\fP. The main user of the textblock object is the edje entry object in Edje, so that's a good place to learn from, but I think this document is more than enough, if it's not, please request for me info and I'll update it.
+.SS "Introduction"
+The textblock objects is, as implied, an object that can show big chunks of text. Textblock supports many features including: Text formatting, automatic and manual text alignment, embedding items (for example icons) and more. Textblock has three important parts, the text paragraphs, the format nodes and the cursors.
+.SS "Textblock Object Cursors"
+A textblock Cursor \fBEvas_Textblock_Cursor\fP is data type that represents a position in a textblock. Each cursor contains information about the paragraph it points to, the position in that paragraph and the object itself. Cursors register to textblock objects upon creation, this means that once you created a cursor, it belongs to a specific obj and you can't for example copy a cursor 'into' a cursor of a different object. Registered cursors also have the added benefit of updating automatically upon textblock changes, this means that if you have a cursor pointing to a specific character, it'll still point to it even after you change the whole object completely (as long as the char was not deleted), this is not possible without updating, because as mentioned, each cursor holds a character position. There are many functions that handle cursors, just check out the evas_textblock_cursor* functions. For creation and deletion of cursors check out: 
+.PP
+\fBSee also:\fP
+.RS 4
+\fBevas_object_textblock_cursor_new()\fP 
+.PP
+\fBevas_textblock_cursor_free()\fP 
+.RE
+.PP
+\fBNote:\fP
+.RS 4
+Cursors are generally the correct way to handle text in the textblock object, and there are enough functions to do everything you need with them (no need to get big chunks of text and processing them yourself).
+.RE
+.PP
+.SS "Textblock Object Paragraphs"
+The textblock object is made out of text splitted to paragraphs (delimited by the paragraph separation character). Each paragraph has many (or none) format nodes associated with it which are responsible for the formatting of that paragraph.
+.SS "Textblock Object Format Nodes"
+As explained in \fBTextblock Object Paragraphs\fP each one of the format nodes is associated with a paragraph. There are two types of format nodes, visible and invisible: Visible: formats that a cursor can point to, i.e formats that occupy space, for example: newlines, tabs, items and etc. Some visible items are made of two parts, in this case, only the opening tag is visible. A closing tag (i.e a </tag> tag) should NEVER be visible. Invisible: formats that don't occupy space, for example: bold and underline. Being able to access format nodes is very important for some uses. For example, edje uses the '<a>' format to create links in the text (and pop popups above them when clicked). For the textblock object a is just a formatting instruction (how to color the text), but edje utilizes the access to the format nodes to make it do more. For more information, take a look at all the evas_textblock_node_format_* functions. The translation of '<tag>' tags to actual format is done according to the tags defined in the style, see \fBevas_textblock_style_set\fP
+.SS "Special Formats"
+This section is not yet written. If you want some info about styles/formats and how to use them, expedite's textblock_basic test is a great start. 
+.PP
+\fBTodo\fP
+.RS 4
+Write  
+.RE
+.PP
+
+.PP
+Referenced by evas_object_text_font_set(), and evas_object_text_inset_get().
+.SH "Function Documentation"
+.PP 
+.SS "EAPI \fBEvas_Object\fP* evas_object_textblock_add (\fBEvas\fP * e)"
+.PP
+Adds a textblock to the given evas. \fBParameters:\fP
+.RS 4
+\fIe\fP The given evas. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+The new textblock object. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_textblock_clear (\fBEvas_Object\fP * obj)"
+.PP
+Clear the textblock object. \fBNote:\fP
+.RS 4
+Does *NOT* free the evas object itself.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP the object to clear. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+nothing. 
+.RE
+.PP
+
+.SS "EAPI const Evas_Textblock_Cursor* evas_object_textblock_cursor_get (const \fBEvas_Object\fP * obj)"
+.PP
+Return the object's main cursor. \fBParameters:\fP
+.RS 4
+\fIobj\fP the object. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the obj's main cursor. 
+.RE
+.PP
+
+.SS "EAPI Evas_Textblock_Cursor* evas_object_textblock_cursor_new (\fBEvas_Object\fP * obj)"
+.PP
+Create a new cursor, associate it to the obj and init it to point to the start of the textblock. Association to the object means the cursor will be updated when the object will change.
+.PP
+\fBNote:\fP
+.RS 4
+if you need speed and you know what you are doing, it's slightly faster to just allocate the cursor yourself and not associate it. (only people developing the actual object, and not users of the object).
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP the object to associate to. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the new cursor. 
+.RE
+.PP
+
+.SS "EAPI Eina_Bool evas_object_textblock_line_number_geometry_get (const \fBEvas_Object\fP * obj, int line, Evas_Coord * cx, Evas_Coord * cy, Evas_Coord * cw, Evas_Coord * ch)"
+.PP
+Get the geometry of a line number. \fBParameters:\fP
+.RS 4
+\fIobj\fP the object. 
+.br
+\fIline\fP the line number. 
+.br
+\fIcx\fP x coord of the line. 
+.br
+\fIcy\fP y coord of the line. 
+.br
+\fIcw\fP w coord of the line. 
+.br
+\fIch\fP h coord of the line. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+EINA_TRUE on success, EINA_FALSE otherwise. 
+.RE
+.PP
+
+.SS "EAPI Eina_Bool evas_object_textblock_newline_mode_get (const \fBEvas_Object\fP * obj)"
+.PP
+Gets newline mode. When true, newline character behaves as a paragraph separator.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given textblock object. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+EINA_TRUE if in PS mode, EINA_FALSE otherwise. 
+.RE
+.PP
+\fBSince:\fP
+.RS 4
+1.1.0 
+.RE
+.PP
+
+.SS "EAPI void evas_object_textblock_newline_mode_set (\fBEvas_Object\fP * obj, Eina_Bool mode)"
+.PP
+Sets newline mode. When true, newline character will behave as a paragraph separator.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given textblock object. 
+.br
+\fImode\fP EINA_TRUE for PS mode, EINA_FALSE otherwise. 
+.RE
+.PP
+\fBSince:\fP
+.RS 4
+1.1.0 
+.RE
+.PP
+
+.SS "EAPI const char* evas_object_textblock_replace_char_get (\fBEvas_Object\fP * obj)"
+.PP
+Get the 'replacement character' for given textblock object. Returns NULL if no replacement character is in use.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given textblock object 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+replacement character or NULL 
+.RE
+.PP
+
+.SS "EAPI void evas_object_textblock_replace_char_set (\fBEvas_Object\fP * obj, const char * ch)"
+.PP
+Set the 'replacement character' to use for the given textblock object. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given textblock object. 
+.br
+\fIch\fP The charset name. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_textblock_size_formatted_get (const \fBEvas_Object\fP * obj, Evas_Coord * w, Evas_Coord * h)"
+.PP
+Get the formatted width and height. This calculates the actual size after restricting the textblock to the current size of the object. The main difference between this and \fBevas_object_textblock_size_native_get\fP is that the 'native' function does not wrapping into account it just calculates the real width of the object if it was placed on an infinite canvas, while this function gives the size after wrapping according to the size restrictions of the object.
+.PP
+For example for a textblock containing the text: 'You shall not pass!' with no margins or padding and assuming a monospace font and a size of 7x10 char widths (for simplicity) has a native size of 19x1 and a formatted size of 5x4.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP the evas object. 
+.br
+\fIw[out]\fP the width of the object. 
+.br
+\fIh[out]\fP the height of the object 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Returns no value. 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBevas_object_textblock_size_native_get\fP 
+.RE
+.PP
+
+.SS "EAPI void evas_object_textblock_size_native_get (const \fBEvas_Object\fP * obj, Evas_Coord * w, Evas_Coord * h)"
+.PP
+Get the native width and height. This calculates the actual size without taking account the current size of the object. The main difference between this and \fBevas_object_textblock_size_formatted_get\fP is that the 'native' function does not take wrapping into account it just calculates the real width of the object if it was placed on an infinite canvas, while the 'formatted' function gives the size after wrapping text according to the size restrictions of the object.
+.PP
+For example for a textblock containing the text: 'You shall not pass!' with no margins or padding and assuming a monospace font and a size of 7x10 char widths (for simplicity) has a native size of 19x1 and a formatted size of 5x4.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP the evas object of the textblock 
+.br
+\fIw[out]\fP the width returned 
+.br
+\fIh[out]\fP the height returned 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Returns no value. 
+.RE
+.PP
+
+.SS "EAPI const Evas_Textblock_Style* evas_object_textblock_style_get (const \fBEvas_Object\fP * obj)"
+.PP
+Return the style of an object. \fBParameters:\fP
+.RS 4
+\fIobj\fP the object to get the style from. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the style of the object. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_textblock_style_insets_get (const \fBEvas_Object\fP * obj, Evas_Coord * l, Evas_Coord * r, Evas_Coord * t, Evas_Coord * b)"
+.PP
+to be documented. \fBParameters:\fP
+.RS 4
+\fIobj\fP to be documented. 
+.br
+\fIl\fP to be documented. 
+.br
+\fIr\fP to be documented. 
+.br
+\fIt\fP to be documented. 
+.br
+\fIb\fP to be documented. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Returns no value. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_textblock_style_set (\fBEvas_Object\fP * obj, Evas_Textblock_Style * ts)"
+.PP
+Set the objects style to ts. \fBParameters:\fP
+.RS 4
+\fIobj\fP the evas object to set the style to. 
+.br
+\fIts\fP the style to set. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Returns no value. 
+.RE
+.PP
+
+.PP
+References evas_textblock_style_free().
+.SS "EAPI const char* evas_object_textblock_text_markup_get (const \fBEvas_Object\fP * obj)"
+.PP
+Return the markup of the object. \fBParameters:\fP
+.RS 4
+\fIobj\fP the evas object. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the markup text of the object. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_textblock_text_markup_prepend (Evas_Textblock_Cursor * cur, const char * text)"
+.PP
+Prepends markup to the cursor cur. \fBNote:\fP
+.RS 4
+assumes text does not include the unicode object replacement char (0xFFFC)
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor to prepend to. 
+.br
+\fItext\fP the markup text to prepend. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Return no value. 
+.RE
+.PP
+
+.PP
+References evas_textblock_cursor_format_prepend().
+.PP
+Referenced by evas_object_textblock_text_markup_set().
+.SS "EAPI void evas_object_textblock_text_markup_set (\fBEvas_Object\fP * obj, const char * text)"
+.PP
+Sets the tetxblock's text to the markup text. \fBNote:\fP
+.RS 4
+assumes text does not include the unicode object replacement char (0xFFFC)
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP the textblock object. 
+.br
+\fItext\fP the markup text to use. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Return no value. 
+.RE
+.PP
+
+.PP
+References evas_object_textblock_text_markup_prepend(), and evas_textblock_cursor_paragraph_first().
+.SS "EAPI double evas_object_textblock_valign_get (const \fBEvas_Object\fP * obj)"
+.PP
+Gets the vertical alignment of a textblock. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given textblock object. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+The elignment set for the object 
+.RE
+.PP
+\fBSince:\fP
+.RS 4
+1.1.0 
+.RE
+.PP
+
+.SS "EAPI void evas_object_textblock_valign_set (\fBEvas_Object\fP * obj, double align)"
+.PP
+Sets the vertical alignment of text within the textblock object as a whole. Normally alignment is 0.0 (top of object). Values given should be between 0.0 and 1.0 (1.0 bottom of object, 0.5 being vertically centered etc.).
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given textblock object. 
+.br
+\fIalign\fP A value between 0.0 and 1.0 
+.RE
+.PP
+\fBSince:\fP
+.RS 4
+1.1.0 
+.RE
+.PP
+
+.SS "EAPI void evas_textblock_cursor_at_format_set (Evas_Textblock_Cursor * cur, const \fBEvas_Object_Textblock_Node_Format\fP * fmt)"
+.PP
+Set the cursor to point to the position of fmt. \fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor to update 
+.br
+\fIfmt\fP the format to update according to. 
+.RE
+.PP
+
+.SS "EAPI Eina_Bool evas_textblock_cursor_char_coord_set (Evas_Textblock_Cursor * cur, Evas_Coord x, Evas_Coord y)"
+.PP
+Set the position of the cursor according to the X and Y coordinates. \fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor to set. 
+.br
+\fIx\fP coord to set by. 
+.br
+\fIy\fP coord to set by. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+EINA_TRUE on success, EINA_FALSE otherwise. 
+.RE
+.PP
+
+.PP
+References evas_textblock_cursor_line_char_last().
+.SS "EAPI void evas_textblock_cursor_char_delete (Evas_Textblock_Cursor * cur)"
+.PP
+Delete the character at the location of the cursor. If there's a format pointing to this position, delete it as well.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor pointing to the current location. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Returns no value. 
+.RE
+.PP
+
+.SS "EAPI int evas_textblock_cursor_char_geometry_get (const Evas_Textblock_Cursor * cur, Evas_Coord * cx, Evas_Coord * cy, Evas_Coord * cw, Evas_Coord * ch)"
+.PP
+Returns the geometry of the char at cur. \fBParameters:\fP
+.RS 4
+\fIcur\fP the position of the char. 
+.br
+\fIcx\fP the x of the char. 
+.br
+\fIcy\fP the y of the char. 
+.br
+\fIcw\fP the w of the char. 
+.br
+\fIch\fP the h of the char. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+line number of the char on success, -1 on error. 
+.RE
+.PP
+
+.SS "EAPI Eina_Bool evas_textblock_cursor_char_next (Evas_Textblock_Cursor * cur)"
+.PP
+Advances 1 char forward. \fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor to advance. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+EINA_TRUE on success EINA_FALSE otherwise. 
+.RE
+.PP
+
+.PP
+References evas_textblock_cursor_paragraph_next().
+.PP
+Referenced by evas_textblock_cursor_format_prepend().
+.SS "EAPI Eina_Bool evas_textblock_cursor_char_prev (Evas_Textblock_Cursor * cur)"
+.PP
+Advances 1 char backward. \fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor to advance. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+EINA_TRUE on success EINA_FALSE otherwise. 
+.RE
+.PP
+
+.PP
+References evas_textblock_cursor_paragraph_prev().
+.PP
+Referenced by evas_textblock_cursor_geometry_get().
+.SS "EAPI int evas_textblock_cursor_compare (const Evas_Textblock_Cursor * cur1, const Evas_Textblock_Cursor * cur2)"
+.PP
+Compare two cursors. \fBParameters:\fP
+.RS 4
+\fIcur1\fP the first cursor. 
+.br
+\fIcur2\fP the second cursor. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+-1 if cur1 < cur2, 0 if cur1 == cur2 and 1 otherwise. 
+.RE
+.PP
+
+.PP
+Referenced by evas_textblock_cursor_range_delete(), evas_textblock_cursor_range_geometry_get(), and evas_textblock_cursor_range_text_get().
+.SS "EAPI char* evas_textblock_cursor_content_get (const Evas_Textblock_Cursor * cur)"
+.PP
+Return the content of the cursor. \fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the text in the range 
+.RE
+.PP
+
+.PP
+References evas_textblock_cursor_format_get(), evas_textblock_cursor_format_is_visible_get(), and evas_textblock_node_format_text_get().
+.SS "EAPI void evas_textblock_cursor_copy (const Evas_Textblock_Cursor * cur, Evas_Textblock_Cursor * cur_dest)"
+.PP
+Make cur_dest point to the same place as cur. Does not work if they don't point to the same object.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIcur\fP the source cursor. 
+.br
+\fIcur_dest\fP destination cursor. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Returns no value. 
+.RE
+.PP
+
+.PP
+Referenced by evas_textblock_cursor_eol_get(), evas_textblock_cursor_geometry_get(), evas_textblock_cursor_range_delete(), and evas_textblock_cursor_range_text_get().
+.SS "EAPI Eina_Bool evas_textblock_cursor_eol_get (const Evas_Textblock_Cursor * cur)"
+.PP
+Checks if the cursor points to the end of the line. \fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor to check. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+EINA_TRUE if true, EINA_FALSE otherwise. 
+.RE
+.PP
+
+.PP
+References evas_textblock_cursor_copy(), and evas_textblock_cursor_line_char_last().
+.SS "EAPI Eina_Bool evas_textblock_cursor_format_append (Evas_Textblock_Cursor * cur, const char * format)"
+.PP
+Adds format to the current cursor position. If the format being added is a visible format, add it *before* the cursor position, otherwise, add it after. This behavior is because visible formats are like characters and invisible should be stacked in a way that the last one is added last.
+.PP
+This function works with native formats, that means that style defined tags like 
+.br
+ won't work here. For those kind of things use markup prepend.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor to where to add format at. 
+.br
+\fIformat\fP the format to add. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Returns true if a visible format was added, false otherwise. 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBevas_textblock_cursor_format_prepend()\fP 
+.RE
+.PP
+
+.PP
+References evas_textblock_cursor_format_is_visible_get(), and evas_textblock_cursor_text_prepend().
+.PP
+Referenced by evas_textblock_cursor_format_prepend().
+.SS "EAPI const \fBEvas_Object_Textblock_Node_Format\fP* evas_textblock_cursor_format_get (const Evas_Textblock_Cursor * cur)"
+.PP
+Return the format node at the position pointed by cur. \fBParameters:\fP
+.RS 4
+\fIcur\fP the position to look at. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the format node if found, NULL otherwise. 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBevas_textblock_cursor_format_is_visible_get()\fP 
+.RE
+.PP
+
+.PP
+Referenced by evas_textblock_cursor_content_get().
+.SS "EAPI Eina_Bool evas_textblock_cursor_format_is_visible_get (const Evas_Textblock_Cursor * cur)"
+.PP
+Check if the current cursor position is a visible format. This way is more efficient than \fBevas_textblock_cursor_format_get()\fP to check for the existence of a visible format.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor to look at. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+EINA_TRUE if the cursor points to a visible format, EINA_FALSE otherwise. 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBevas_textblock_cursor_format_get()\fP 
+.RE
+.PP
+
+.PP
+Referenced by evas_textblock_cursor_content_get(), evas_textblock_cursor_format_append(), evas_textblock_cursor_format_item_geometry_get(), evas_textblock_cursor_is_format(), and evas_textblock_cursor_text_append().
+.SS "EAPI Eina_Bool evas_textblock_cursor_format_item_geometry_get (const Evas_Textblock_Cursor * cur, Evas_Coord * cx, Evas_Coord * cy, Evas_Coord * cw, Evas_Coord * ch)"
+.PP
+to be documented. \fBParameters:\fP
+.RS 4
+\fIcur\fP to be documented. 
+.br
+\fIcx\fP to be documented. 
+.br
+\fIcy\fP to be documented. 
+.br
+\fIcw\fP to be documented. 
+.br
+\fIch\fP to be documented. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+to be documented. 
+.RE
+.PP
+
+.PP
+References evas_textblock_cursor_format_is_visible_get().
+.SS "EAPI Eina_Bool evas_textblock_cursor_format_next (Evas_Textblock_Cursor * cur)"
+.PP
+Advances to the next format node. \fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor to be updated. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+EINA_TRUE on success EINA_FALSE otherwise. 
+.RE
+.PP
+
+.SS "EAPI Eina_Bool evas_textblock_cursor_format_prepend (Evas_Textblock_Cursor * cur, const char * format)"
+.PP
+Adds format to the current cursor position. If the format being added is a visible format, add it *before* the cursor position, otherwise, add it after. This behavior is because visible formats are like characters and invisible should be stacked in a way that the last one is added last. If the format is visible the cursor is advanced after it.
+.PP
+This function works with native formats, that means that style defined tags like 
+.br
+ won't work here. For those kind of things use markup prepend.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor to where to add format at. 
+.br
+\fIformat\fP the format to add. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Returns true if a visible format was added, false otherwise. 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBevas_textblock_cursor_format_prepend()\fP 
+.RE
+.PP
+
+.PP
+References evas_textblock_cursor_char_next(), and evas_textblock_cursor_format_append().
+.PP
+Referenced by evas_object_textblock_text_markup_prepend().
+.SS "EAPI Eina_Bool evas_textblock_cursor_format_prev (Evas_Textblock_Cursor * cur)"
+.PP
+Advances to the previous format node. \fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor to update. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+EINA_TRUE on success EINA_FALSE otherwise. 
+.RE
+.PP
+
+.PP
+References evas_textblock_cursor_is_format().
+.SS "EAPI void evas_textblock_cursor_free (Evas_Textblock_Cursor * cur)"
+.PP
+Free the cursor and unassociate it from the object. \fBNote:\fP
+.RS 4
+do not use it to free unassociated cursors.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor to free. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Returns no value. 
+.RE
+.PP
+
+.SS "EAPI int evas_textblock_cursor_geometry_get (const Evas_Textblock_Cursor * cur, Evas_Coord * cx, Evas_Coord * cy, Evas_Coord * cw, Evas_Coord * ch, Evas_BiDi_Direction * dir, Evas_Textblock_Cursor_Type ctype)"
+.PP
+Returns the geometry of the cursor. Depends on the type of cursor requested. This should be used instead of char_geometry_get because there are weird special cases with BiDi text. in '_' cursor mode (i.e a line below the char) it's the same as char_geometry get, except for the case of the last char of a line which depends on the paragraph direction.
+.PP
+in '|' cursor mode (i.e a line between two chars) it is very varyable. For example consider the following visual string: 'abcCBA' (ABC are rtl chars), a cursor pointing on A should actually draw a '|' between the c and the C.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor. 
+.br
+\fIcx\fP the x of the cursor 
+.br
+\fIcy\fP the y of the cursor 
+.br
+\fIcw\fP the width of the cursor 
+.br
+\fIch\fP the height of the cursor 
+.br
+\fIdir\fP the direction of the cursor, can be NULL. 
+.br
+\fIctype\fP the type of the cursor. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+line number of the char on success, -1 on error. 
+.RE
+.PP
+
+.PP
+References evas_textblock_cursor_char_prev(), evas_textblock_cursor_copy(), and evas_textblock_cursor_pen_geometry_get().
+.SS "EAPI Eina_Bool evas_textblock_cursor_is_format (const Evas_Textblock_Cursor * cur)"
+.PP
+Returns true if the cursor points to a format. \fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor to check. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Returns EINA_TRUE if a cursor points to a format EINA_FALSE otherwise. 
+.RE
+.PP
+
+.PP
+References evas_textblock_cursor_format_is_visible_get().
+.PP
+Referenced by evas_textblock_cursor_format_prev().
+.SS "EAPI void evas_textblock_cursor_line_char_first (Evas_Textblock_Cursor * cur)"
+.PP
+Go to the start of the current line. \fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor to update. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Returns no value. 
+.RE
+.PP
+
+.SS "EAPI void evas_textblock_cursor_line_char_last (Evas_Textblock_Cursor * cur)"
+.PP
+Go to the end of the current line. \fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor to update. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Returns no value. 
+.RE
+.PP
+
+.PP
+Referenced by evas_textblock_cursor_char_coord_set(), and evas_textblock_cursor_eol_get().
+.SS "EAPI int evas_textblock_cursor_line_coord_set (Evas_Textblock_Cursor * cur, Evas_Coord y)"
+.PP
+Set the cursor position according to the y coord. \fBParameters:\fP
+.RS 4
+\fIcur\fP the cur to be set. 
+.br
+\fIy\fP the coord to set by. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the line number found, -1 on error. 
+.RE
+.PP
+
+.PP
+References evas_textblock_cursor_line_set().
+.SS "EAPI int evas_textblock_cursor_line_geometry_get (const Evas_Textblock_Cursor * cur, Evas_Coord * cx, Evas_Coord * cy, Evas_Coord * cw, Evas_Coord * ch)"
+.PP
+Returns the geometry of the line at cur. \fBParameters:\fP
+.RS 4
+\fIcur\fP the position of the line. 
+.br
+\fIcx\fP the x of the line. 
+.br
+\fIcy\fP the y of the line. 
+.br
+\fIcw\fP the width of the line. 
+.br
+\fIch\fP the height of the line. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+line number of the line on success, -1 on error. 
+.RE
+.PP
+
+.SS "EAPI Eina_Bool evas_textblock_cursor_line_set (Evas_Textblock_Cursor * cur, int line)"
+.PP
+Go to the start of the line passed. \fBParameters:\fP
+.RS 4
+\fIcur\fP cursor to update. 
+.br
+\fIline\fP numer to set. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+EINA_TRUE on success, EINA_FALSE on error. 
+.RE
+.PP
+
+.PP
+Referenced by evas_textblock_cursor_line_coord_set().
+.SS "EAPI void evas_textblock_cursor_paragraph_char_first (Evas_Textblock_Cursor * cur)"
+.PP
+Go to the first char in the node the cursor is pointing on. \fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor to update. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Returns no value. 
+.RE
+.PP
+
+.PP
+Referenced by evas_textblock_cursor_paragraph_text_get().
+.SS "EAPI void evas_textblock_cursor_paragraph_char_last (Evas_Textblock_Cursor * cur)"
+.PP
+Go to the last char in a text node. \fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor to update. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Returns no value. 
+.RE
+.PP
+
+.PP
+Referenced by evas_textblock_cursor_paragraph_last(), evas_textblock_cursor_paragraph_prev(), and evas_textblock_cursor_paragraph_text_get().
+.SS "EAPI void evas_textblock_cursor_paragraph_first (Evas_Textblock_Cursor * cur)"
+.PP
+Sets the cursor to the start of the first text node. \fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor to update. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Returns no value. 
+.RE
+.PP
+
+.PP
+Referenced by evas_object_textblock_text_markup_set().
+.SS "EAPI void evas_textblock_cursor_paragraph_last (Evas_Textblock_Cursor * cur)"
+.PP
+sets the cursor to the end of the last text node. \fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor to set. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Returns no value. 
+.RE
+.PP
+
+.PP
+References evas_textblock_cursor_paragraph_char_last().
+.SS "EAPI Eina_Bool evas_textblock_cursor_paragraph_next (Evas_Textblock_Cursor * cur)"
+.PP
+Advances to the the start of the next text node. \fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor to update 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+EINA_TRUE if it managed to advance a paragraph, EINA_FALSE otherwise. 
+.RE
+.PP
+
+.PP
+Referenced by evas_textblock_cursor_char_next().
+.SS "EAPI Eina_Bool evas_textblock_cursor_paragraph_prev (Evas_Textblock_Cursor * cur)"
+.PP
+Advances to the the end of the previous text node. \fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor to update 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+EINA_TRUE if it managed to advance a paragraph, EINA_FALSE otherwise. 
+.RE
+.PP
+
+.PP
+References evas_textblock_cursor_paragraph_char_last().
+.PP
+Referenced by evas_textblock_cursor_char_prev().
+.SS "EAPI const char* evas_textblock_cursor_paragraph_text_get (const Evas_Textblock_Cursor * cur)"
+.PP
+Return the text of the paragraph cur points to - returns the text in markup. \fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor pointing to the paragraph. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the text on success, NULL otherwise. 
+.RE
+.PP
+
+.PP
+References evas_textblock_cursor_paragraph_char_first(), evas_textblock_cursor_paragraph_char_last(), and evas_textblock_cursor_range_text_get().
+.SS "EAPI int evas_textblock_cursor_paragraph_text_length_get (const Evas_Textblock_Cursor * cur)"
+.PP
+Return the length of the paragraph, cheaper the eina_unicode_strlen(). \fBParameters:\fP
+.RS 4
+\fIcur\fP the position of the paragraph. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the length of the paragraph on success, -1 otehrwise. 
+.RE
+.PP
+
+.SS "EAPI int evas_textblock_cursor_pen_geometry_get (const Evas_Textblock_Cursor * cur, Evas_Coord * cx, Evas_Coord * cy, Evas_Coord * cw, Evas_Coord * ch)"
+.PP
+Returns the geometry of the pen at cur. \fBParameters:\fP
+.RS 4
+\fIcur\fP the position of the char. 
+.br
+\fIcpen_x\fP the pen_x of the char. 
+.br
+\fIcy\fP the y of the char. 
+.br
+\fIcadv\fP the adv of the char. 
+.br
+\fIch\fP the h of the char. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+line number of the char on success, -1 on error. 
+.RE
+.PP
+
+.PP
+Referenced by evas_textblock_cursor_geometry_get().
+.SS "EAPI int evas_textblock_cursor_pos_get (const Evas_Textblock_Cursor * cur)"
+.PP
+Return the current cursor pos. \fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor to take the position from. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the position or -1 on error 
+.RE
+.PP
+
+.SS "EAPI void evas_textblock_cursor_pos_set (Evas_Textblock_Cursor * cur, int _pos)"
+.PP
+Set the cursor pos. \fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor to be set. 
+.br
+\fIpos\fP the pos to set. 
+.RE
+.PP
+
+.SS "EAPI void evas_textblock_cursor_range_delete (Evas_Textblock_Cursor * cur1, Evas_Textblock_Cursor * cur2)"
+.PP
+Delete the range between cur1 and cur2. \fBParameters:\fP
+.RS 4
+\fIcur1\fP one side of the range. 
+.br
+\fIcur2\fP the second side of the range 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Returns no value. 
+.RE
+.PP
+
+.PP
+References evas_textblock_cursor_compare(), and evas_textblock_cursor_copy().
+.SS "EAPI Eina_List* evas_textblock_cursor_range_geometry_get (const Evas_Textblock_Cursor * cur1, const Evas_Textblock_Cursor * cur2)"
+.PP
+Get the geometry of a range. \fBParameters:\fP
+.RS 4
+\fIcur1\fP one side of the range. 
+.br
+\fIcur2\fP other side of the range. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+a list of Rectangles representing the geometry of the range. 
+.RE
+.PP
+
+.PP
+References evas_textblock_cursor_compare().
+.SS "EAPI char* evas_textblock_cursor_range_text_get (const Evas_Textblock_Cursor * cur1, const Evas_Textblock_Cursor * _cur2, Evas_Textblock_Text_Type format __UNUSED__)"
+.PP
+Return the text in the range between cur1 and cur2. FIXME: format is currently unused, you always get markup back.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIcur1\fP one side of the range. 
+.br
+\fIcur2\fP the other side of the range 
+.br
+\fIformat\fP to be documented 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the text in the range 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+elm_entry_markup_to_utf8() 
+.RE
+.PP
+
+.PP
+References evas_textblock_cursor_compare(), and evas_textblock_cursor_copy().
+.PP
+Referenced by evas_textblock_cursor_paragraph_text_get().
+.SS "EAPI void evas_textblock_cursor_set_at_format (Evas_Textblock_Cursor * cur, const \fBEvas_Object_Textblock_Node_Format\fP * n)"
+.PP
+Sets the cursor to point to the place where format points to. \fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor to update. 
+.br
+\fIn\fP the format node to update according. 
+.RE
+.PP
+
+.PP
+Referenced by evas_textblock_node_format_remove_pair().
+.SS "EAPI int evas_textblock_cursor_text_append (Evas_Textblock_Cursor * cur, const char * _text)"
+.PP
+Adds text to the current cursor position and set the cursor to *before* the start of the text just added. \fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor to where to add text at. 
+.br
+\fI_text\fP the text to add. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Returns the len of the text added. 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBevas_textblock_cursor_text_prepend()\fP 
+.RE
+.PP
+
+.PP
+References evas_textblock_cursor_format_is_visible_get().
+.PP
+Referenced by evas_textblock_cursor_text_prepend().
+.SS "EAPI int evas_textblock_cursor_text_prepend (Evas_Textblock_Cursor * cur, const char * _text)"
+.PP
+Adds text to the current cursor position and set the cursor to *after* the start of the text just added. \fBParameters:\fP
+.RS 4
+\fIcur\fP the cursor to where to add text at. 
+.br
+\fI_text\fP the text to add. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Returns the len of the text added. 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBevas_textblock_cursor_text_append()\fP 
+.RE
+.PP
+
+.PP
+References evas_textblock_cursor_text_append().
+.PP
+Referenced by evas_textblock_cursor_format_append().
+.SS "EAPI const char* evas_textblock_escape_string_get (const char * escape)"
+.PP
+Returns the unescaped version of escape. \fBParameters:\fP
+.RS 4
+\fIescape\fP the string to be escaped 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the unescaped version of escape 
+.RE
+.PP
+
+.SS "EAPI const char* evas_textblock_escape_string_range_get (const char * escape_start, const char * escape_end)"
+.PP
+Return the unescaped version of the string between start and end. \fBParameters:\fP
+.RS 4
+\fIescape_start\fP the start of the string. 
+.br
+\fIescape_end\fP the end of the string. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the unescaped version of the range 
+.RE
+.PP
+
+.SS "EAPI const \fBEvas_Object_Textblock_Node_Format\fP* evas_textblock_node_format_first_get (const \fBEvas_Object\fP * obj)"
+.PP
+Returns the first format node. \fBParameters:\fP
+.RS 4
+\fIobj\fP The evas, must not be NULL. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Returns the first format node, may be null if there are none. 
+.RE
+.PP
+
+.SS "EAPI const \fBEvas_Object_Textblock_Node_Format\fP* evas_textblock_node_format_last_get (const \fBEvas_Object\fP * obj)"
+.PP
+Returns the last format node. \fBParameters:\fP
+.RS 4
+\fIobj\fP The evas textblock, must not be NULL. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Returns the first format node, may be null if there are none. 
+.RE
+.PP
+
+.SS "EAPI const \fBEvas_Object_Textblock_Node_Format\fP* evas_textblock_node_format_next_get (const \fBEvas_Object_Textblock_Node_Format\fP * n)"
+.PP
+Returns the next format node (after n). \fBParameters:\fP
+.RS 4
+\fIn\fP the current format node - not null. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Returns the next format node, may be null. 
+.RE
+.PP
+
+.SS "EAPI const \fBEvas_Object_Textblock_Node_Format\fP* evas_textblock_node_format_prev_get (const \fBEvas_Object_Textblock_Node_Format\fP * n)"
+.PP
+Returns the prev format node (after n). \fBParameters:\fP
+.RS 4
+\fIn\fP the current format node - not null. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Returns the prev format node, may be null. 
+.RE
+.PP
+
+.SS "EAPI void evas_textblock_node_format_remove_pair (\fBEvas_Object\fP * obj, \fBEvas_Object_Textblock_Node_Format\fP * n)"
+.PP
+Remove a format node and it's match. i.e, removes a <tag> </tag> pair. Assumes the node is the first part of <tag> i.e, this won't work if n is a closing tag.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP the evas object of the textblock - not null. 
+.br
+\fIn\fP the current format node - not null. 
+.RE
+.PP
+
+.PP
+References evas_textblock_cursor_set_at_format().
+.SS "EAPI const char* evas_textblock_node_format_text_get (const \fBEvas_Object_Textblock_Node_Format\fP * fmt)"
+.PP
+Get the text format representation of the format node. \fBParameters:\fP
+.RS 4
+\fIfmt\fP the format node. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the textual format of the format node. 
+.RE
+.PP
+
+.PP
+Referenced by evas_textblock_cursor_content_get().
+.SS "EAPI const char* evas_textblock_string_escape_get (const char * string, int * len_ret)"
+.PP
+Returns the escaped version of the string. \fBParameters:\fP
+.RS 4
+\fIstring\fP to escape 
+.br
+\fIlen_ret\fP the len of the new escape 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the escaped string. 
+.RE
+.PP
+
+.SS "EAPI void evas_textblock_style_free (Evas_Textblock_Style * ts)"
+.PP
+Destroys a textblock style. \fBParameters:\fP
+.RS 4
+\fIts\fP The textblock style to free. 
+.RE
+.PP
+
+.PP
+Referenced by evas_object_textblock_style_set().
+.SS "EAPI const char* evas_textblock_style_get (const Evas_Textblock_Style * ts)"
+.PP
+Return the text of the style ts. \fBParameters:\fP
+.RS 4
+\fIts\fP the style to get it's text. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the text of the style or null on error. 
+.RE
+.PP
+
+.SS "EAPI Evas_Textblock_Style* evas_textblock_style_new (void)"
+.PP
+Creates a new textblock style. \fBReturns:\fP
+.RS 4
+The new textblock style. 
+.RE
+.PP
+
+.SS "EAPI void evas_textblock_style_set (Evas_Textblock_Style * ts, const char * text)"
+.PP
+Sets the style ts to the style passed as text by text. Expected a string consisting of many (or none) tag='format' pairs.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIts\fP the style to set. 
+.br
+\fItext\fP the text to parse - NOT NULL. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Returns no value. 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Evas from the source code.

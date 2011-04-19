@@ -1,0 +1,234 @@
+.TH "Finding Objects" 3 "Tue Apr 19 2011" "Evas" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Finding Objects \- 
+.PP
+Functions that allows finding objects by their position, name or other properties.  
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_focus_get\fP (const \fBEvas\fP *e)"
+.br
+.RI "\fIRetrieve the object that currently has focus. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_name_find\fP (const \fBEvas\fP *e, const char *name)"
+.br
+.RI "\fIRetrieves the object on the given evas with the given name. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_top_at_xy_get\fP (const \fBEvas\fP *e, Evas_Coord x, Evas_Coord y, Eina_Bool include_pass_events_objects, Eina_Bool include_hidden_objects)"
+.br
+.RI "\fIRetrieves the top object at the given position (x,y). \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_top_at_pointer_get\fP (const \fBEvas\fP *e)"
+.br
+.RI "\fIRetrieves the top object at mouse pointer position. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_top_in_rectangle_get\fP (const \fBEvas\fP *e, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h, Eina_Bool include_pass_events_objects, Eina_Bool include_hidden_objects)"
+.br
+.RI "\fIRetrieves the top object in the given rectangle region. \fP"
+.ti -1c
+.RI "EAPI Eina_List * \fBevas_objects_at_xy_get\fP (const \fBEvas\fP *e, Evas_Coord x, Evas_Coord y, Eina_Bool include_pass_events_objects, Eina_Bool include_hidden_objects)"
+.br
+.RI "\fIRetrieves the objects at the given position. \fP"
+.ti -1c
+.RI "EAPI Eina_List * \fBevas_objects_in_rectangle_get\fP (const \fBEvas\fP *e, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h, Eina_Bool include_pass_events_objects, Eina_Bool include_hidden_objects)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_bottom_get\fP (const \fBEvas\fP *e)"
+.br
+.RI "\fIGet the lowest evas object on the Evas \fCe\fP. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_top_get\fP (const \fBEvas\fP *e)"
+.br
+.RI "\fIGet the highest evas object on the Evas \fCe\fP. \fP"
+.in -1c
+.SH "Detailed Description"
+.PP 
+Functions that allows finding objects by their position, name or other properties. 
+.SH "Function Documentation"
+.PP 
+.SS "EAPI \fBEvas_Object\fP* evas_focus_get (const \fBEvas\fP * e)"
+.PP
+Retrieve the object that currently has focus. \fBParameters:\fP
+.RS 4
+\fIe\fP The \fCEvas\fP canvas to query focus on.
+.RE
+.PP
+Returns the object that currently has focus, NULL otherwise.
+.PP
+\fBSee also:\fP
+.RS 4
+\fBevas_object_focus_set\fP 
+.PP
+\fBevas_object_focus_get\fP 
+.PP
+evas_object_key_grab 
+.PP
+evas_object_key_ungrab
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+The object that has focus or NULL is there is not one. 
+.RE
+.PP
+
+.SS "EAPI \fBEvas_Object\fP* evas_object_bottom_get (const \fBEvas\fP * e)"
+.PP
+Get the lowest evas object on the Evas \fCe\fP. \fBParameters:\fP
+.RS 4
+\fIe\fP an Evas 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the lowest object 
+.RE
+.PP
+
+.SS "EAPI \fBEvas_Object\fP* evas_object_name_find (const \fBEvas\fP * e, const char * name)"
+.PP
+Retrieves the object on the given evas with the given name. \fBParameters:\fP
+.RS 4
+\fIe\fP The given evas. 
+.br
+\fIname\fP The given name. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+If successful, the evas object with the given name. Otherwise, \fCNULL\fP. 
+.RE
+.PP
+
+.SS "EAPI \fBEvas_Object\fP* evas_object_top_at_pointer_get (const \fBEvas\fP * e)"
+.PP
+Retrieves the top object at mouse pointer position. \fBParameters:\fP
+.RS 4
+\fIe\fP The given evas object. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+The evas object that is over all others objects at the pointer position. 
+.RE
+.PP
+
+.PP
+References evas_object_top_at_xy_get().
+.SS "EAPI \fBEvas_Object\fP* evas_object_top_at_xy_get (const \fBEvas\fP * e, Evas_Coord x, Evas_Coord y, Eina_Bool include_pass_events_objects, Eina_Bool include_hidden_objects)"
+.PP
+Retrieves the top object at the given position (x,y). \fBParameters:\fP
+.RS 4
+\fIe\fP The given evas object. 
+.br
+\fIx\fP The horizontal coordinate 
+.br
+\fIy\fP The vertical coordinate 
+.br
+\fIinclude_pass_events_objects\fP Boolean Flag to include or not pass events objects 
+.br
+\fIinclude_hidden_objects\fP Boolean Flag to include or not hidden objects 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+The evas object that is over all others objects at the given position. 
+.RE
+.PP
+
+.PP
+Referenced by evas_object_top_at_pointer_get().
+.SS "EAPI \fBEvas_Object\fP* evas_object_top_get (const \fBEvas\fP * e)"
+.PP
+Get the highest evas object on the Evas \fCe\fP. \fBParameters:\fP
+.RS 4
+\fIe\fP an Evas 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the highest object 
+.RE
+.PP
+
+.SS "EAPI \fBEvas_Object\fP* evas_object_top_in_rectangle_get (const \fBEvas\fP * e, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h, Eina_Bool include_pass_events_objects, Eina_Bool include_hidden_objects)"
+.PP
+Retrieves the top object in the given rectangle region. \fBParameters:\fP
+.RS 4
+\fIe\fP The given evas object. 
+.br
+\fIx\fP The horizontal coordinate. 
+.br
+\fIy\fP The vertical coordinate. 
+.br
+\fIw\fP The width size. 
+.br
+\fIh\fP The height size. 
+.br
+\fIinclude_pass_events_objects\fP Boolean Flag to include or not pass events objects 
+.br
+\fIinclude_hidden_objects\fP Boolean Flag to include or not hidden objects 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+The evas object that is over all others objects at the pointer position. 
+.RE
+.PP
+
+.SS "EAPI Eina_List* evas_objects_at_xy_get (const \fBEvas\fP * e, Evas_Coord x, Evas_Coord y, Eina_Bool include_pass_events_objects, Eina_Bool include_hidden_objects)"
+.PP
+Retrieves the objects at the given position. \fBParameters:\fP
+.RS 4
+\fIe\fP The given evas object. 
+.br
+\fIx\fP The horizontal coordinate. 
+.br
+\fIy\fP The vertical coordinate. 
+.br
+\fIinclude_pass_events_objects\fP Boolean Flag to include or not pass events objects 
+.br
+\fIinclude_hidden_objects\fP Boolean Flag to include or not hidden objects 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+The list of evas objects at the pointer position. 
+.RE
+.PP
+
+.SS "EAPI Eina_List* evas_objects_in_rectangle_get (const \fBEvas\fP * e, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h, Eina_Bool include_pass_events_objects, Eina_Bool include_hidden_objects)"
+.PP
+To be documented. FIXME: To be fixed. Retrieves the objects in the given rectangle region 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIe\fP The given evas object. 
+.br
+\fIx\fP The horizontal coordinate. 
+.br
+\fIy\fP The vertical coordinate. 
+.br
+\fIw\fP The width size. 
+.br
+\fIh\fP The height size. 
+.br
+\fIinclude_pass_events_objects\fP Boolean Flag to include or not pass events objects 
+.br
+\fIinclude_hidden_objects\fP Boolean Flag to include or not hidden objects 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+The list of evas object in the rectangle region. 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Evas from the source code.

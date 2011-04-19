@@ -1,0 +1,286 @@
+\section{Event Feeding Functions}
+\label{group__Evas__Event__Feeding__Group}\index{Event Feeding Functions@{Event Feeding Functions}}
+
+
+Functions to tell Evas that events happened and should be processed.  
+
+
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+EAPI int \hyperlink{group__Evas__Event__Feeding__Group_gabc15f5115b4baaeafd2d144f307b6b64}{evas\_\-event\_\-freeze\_\-get} (const \hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e)
+\begin{DoxyCompactList}\small\item\em Return the freeze count of a given canvas. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Event__Feeding__Group_ga5c9811b87406a96ff573b83d1efd52f2}{evas\_\-event\_\-feed\_\-mouse\_\-down} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, int b, \hyperlink{Evas_8h_aae3a7dde94160cc18015784fb192bb2f}{Evas\_\-Button\_\-Flags} flags, unsigned int timestamp, const void $\ast$data)
+\begin{DoxyCompactList}\small\item\em Mouse down event feed. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Event__Feeding__Group_gacb400569d04ecfd2b89eb0f39856581c}{evas\_\-event\_\-feed\_\-mouse\_\-up} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, int b, \hyperlink{Evas_8h_aae3a7dde94160cc18015784fb192bb2f}{Evas\_\-Button\_\-Flags} flags, unsigned int timestamp, const void $\ast$data)
+\begin{DoxyCompactList}\small\item\em Mouse up event feed. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Event__Feeding__Group_ga5c300cdca8551fd49d5341ef19c8f385}{evas\_\-event\_\-feed\_\-mouse\_\-cancel} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, unsigned int timestamp, const void $\ast$data)
+\begin{DoxyCompactList}\small\item\em Mouse cancel event feed. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Event__Feeding__Group_ga393156722bbe1ce384f0ab33ab76a1f2}{evas\_\-event\_\-feed\_\-mouse\_\-wheel} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, int direction, int z, unsigned int timestamp, const void $\ast$data)
+\begin{DoxyCompactList}\small\item\em Mouse wheel event feed. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Event__Feeding__Group_ga480017cad2b8982bee7a894433aff2f7}{evas\_\-event\_\-feed\_\-mouse\_\-move} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, int x, int y, unsigned int timestamp, const void $\ast$data)
+\begin{DoxyCompactList}\small\item\em Mouse move event feed. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Event__Feeding__Group_gac9c7fada70cfee1f8124ab5446cc59ed}{evas\_\-event\_\-feed\_\-mouse\_\-in} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, unsigned int timestamp, const void $\ast$data)
+\begin{DoxyCompactList}\small\item\em Mouse in event feed. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Event__Feeding__Group_ga64f5f2d26a018f4e6154b91251e6bb13}{evas\_\-event\_\-feed\_\-mouse\_\-out} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, unsigned int timestamp, const void $\ast$data)
+\begin{DoxyCompactList}\small\item\em Mouse out event feed. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Event__Feeding__Group_ga096e2ef05bfa471d2773729bd24732a0}{evas\_\-event\_\-feed\_\-key\_\-down} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, const char $\ast$keyname, const char $\ast$key, const char $\ast$string, const char $\ast$compose, unsigned int timestamp, const void $\ast$data)
+\begin{DoxyCompactList}\small\item\em Key down event feed. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Event__Feeding__Group_gaebe7d4f8b6423aff1ffe67c724d4590d}{evas\_\-event\_\-feed\_\-key\_\-up} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, const char $\ast$keyname, const char $\ast$key, const char $\ast$string, const char $\ast$compose, unsigned int timestamp, const void $\ast$data)
+\begin{DoxyCompactList}\small\item\em Key up event feed. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Event__Feeding__Group_gaedc3a956cd753acdd2a58ad0d2865d04}{evas\_\-event\_\-feed\_\-hold} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, int hold, unsigned int timestamp, const void $\ast$data)
+\begin{DoxyCompactList}\small\item\em Hold event feed. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Functions to tell Evas that events happened and should be processed. As explained in \hyperlink{index_intro_not_evas}{What Evas is not?}, Evas does not know how to poll for events, so the developer should do it and then feed such events to the canvas to be processed. This is only required if operating Evas directly as modules such as Ecore\_\-Evas does that for you. 
+
+\subsection{Function Documentation}
+\index{Evas\_\-Event\_\-Feeding\_\-Group@{Evas\_\-Event\_\-Feeding\_\-Group}!evas\_\-event\_\-feed\_\-hold@{evas\_\-event\_\-feed\_\-hold}}
+\index{evas\_\-event\_\-feed\_\-hold@{evas\_\-event\_\-feed\_\-hold}!Evas_Event_Feeding_Group@{Evas\_\-Event\_\-Feeding\_\-Group}}
+\subsubsection[{evas\_\-event\_\-feed\_\-hold}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-event\_\-feed\_\-hold (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e, }
+\item[{int}]{ hold, }
+\item[{unsigned int}]{ timestamp, }
+\item[{const void $\ast$}]{ data}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Event__Feeding__Group_gaedc3a956cd753acdd2a58ad0d2865d04}
+
+
+Hold event feed. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given canvas pointer. \item[{\em hold}]The hold. \item[{\em timestamp}]The timestamp of the mouse up event. \item[{\em data}]The data for canvas.\end{DoxyParams}
+This function makes the object to stop sending events. 
+
+References EVAS\_\-CALLBACK\_\-HOLD, and \_\-Evas\_\-Event\_\-Hold::hold.
+
+\index{Evas\_\-Event\_\-Feeding\_\-Group@{Evas\_\-Event\_\-Feeding\_\-Group}!evas\_\-event\_\-feed\_\-key\_\-down@{evas\_\-event\_\-feed\_\-key\_\-down}}
+\index{evas\_\-event\_\-feed\_\-key\_\-down@{evas\_\-event\_\-feed\_\-key\_\-down}!Evas_Event_Feeding_Group@{Evas\_\-Event\_\-Feeding\_\-Group}}
+\subsubsection[{evas\_\-event\_\-feed\_\-key\_\-down}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-event\_\-feed\_\-key\_\-down (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e, }
+\item[{const char $\ast$}]{ keyname, }
+\item[{const char $\ast$}]{ key, }
+\item[{const char $\ast$}]{ string, }
+\item[{const char $\ast$}]{ compose, }
+\item[{unsigned int}]{ timestamp, }
+\item[{const void $\ast$}]{ data}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Event__Feeding__Group_ga096e2ef05bfa471d2773729bd24732a0}
+
+
+Key down event feed. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The canvas to thaw out \item[{\em keyname}]Name of the key \item[{\em key}]The key pressed. \item[{\em string}]A String \item[{\em compose}]The compose string \item[{\em timestamp}]Timestamp of the mouse up event \item[{\em data}]Data for canvas.\end{DoxyParams}
+This function will set some evas properties that is necessary when a key is pressed. It prepares information to be treated by the callback function. 
+
+References \_\-Evas\_\-Event\_\-Key\_\-Down::compose, EVAS\_\-CALLBACK\_\-KEY\_\-DOWN, \_\-Evas\_\-Event\_\-Key\_\-Down::key, \_\-Evas\_\-Event\_\-Key\_\-Down::keyname, and \_\-Evas\_\-Event\_\-Key\_\-Down::string.
+
+\index{Evas\_\-Event\_\-Feeding\_\-Group@{Evas\_\-Event\_\-Feeding\_\-Group}!evas\_\-event\_\-feed\_\-key\_\-up@{evas\_\-event\_\-feed\_\-key\_\-up}}
+\index{evas\_\-event\_\-feed\_\-key\_\-up@{evas\_\-event\_\-feed\_\-key\_\-up}!Evas_Event_Feeding_Group@{Evas\_\-Event\_\-Feeding\_\-Group}}
+\subsubsection[{evas\_\-event\_\-feed\_\-key\_\-up}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-event\_\-feed\_\-key\_\-up (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e, }
+\item[{const char $\ast$}]{ keyname, }
+\item[{const char $\ast$}]{ key, }
+\item[{const char $\ast$}]{ string, }
+\item[{const char $\ast$}]{ compose, }
+\item[{unsigned int}]{ timestamp, }
+\item[{const void $\ast$}]{ data}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Event__Feeding__Group_gaebe7d4f8b6423aff1ffe67c724d4590d}
+
+
+Key up event feed. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The canvas to thaw out \item[{\em keyname}]Name of the key \item[{\em key}]The key released. \item[{\em string}]string \item[{\em compose}]compose \item[{\em timestamp}]Timestamp of the mouse up event \item[{\em data}]Data for canvas.\end{DoxyParams}
+This function will set some evas properties that is necessary when a key is released. It prepares information to be treated by the callback function. 
+
+References \_\-Evas\_\-Event\_\-Key\_\-Up::compose, EVAS\_\-CALLBACK\_\-KEY\_\-UP, \_\-Evas\_\-Event\_\-Key\_\-Up::key, \_\-Evas\_\-Event\_\-Key\_\-Up::keyname, and \_\-Evas\_\-Event\_\-Key\_\-Up::string.
+
+\index{Evas\_\-Event\_\-Feeding\_\-Group@{Evas\_\-Event\_\-Feeding\_\-Group}!evas\_\-event\_\-feed\_\-mouse\_\-cancel@{evas\_\-event\_\-feed\_\-mouse\_\-cancel}}
+\index{evas\_\-event\_\-feed\_\-mouse\_\-cancel@{evas\_\-event\_\-feed\_\-mouse\_\-cancel}!Evas_Event_Feeding_Group@{Evas\_\-Event\_\-Feeding\_\-Group}}
+\subsubsection[{evas\_\-event\_\-feed\_\-mouse\_\-cancel}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-event\_\-feed\_\-mouse\_\-cancel (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e, }
+\item[{unsigned int}]{ timestamp, }
+\item[{const void $\ast$}]{ data}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Event__Feeding__Group_ga5c300cdca8551fd49d5341ef19c8f385}
+
+
+Mouse cancel event feed. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given canvas pointer. \item[{\em timestamp}]The timestamp of the mouse up event. \item[{\em data}]The data for canvas.\end{DoxyParams}
+This function will call \hyperlink{group__Evas__Event__Feeding__Group_gacb400569d04ecfd2b89eb0f39856581c}{evas\_\-event\_\-feed\_\-mouse\_\-up()} when a mouse cancel event happens. 
+
+References evas\_\-event\_\-feed\_\-mouse\_\-up().
+
+\index{Evas\_\-Event\_\-Feeding\_\-Group@{Evas\_\-Event\_\-Feeding\_\-Group}!evas\_\-event\_\-feed\_\-mouse\_\-down@{evas\_\-event\_\-feed\_\-mouse\_\-down}}
+\index{evas\_\-event\_\-feed\_\-mouse\_\-down@{evas\_\-event\_\-feed\_\-mouse\_\-down}!Evas_Event_Feeding_Group@{Evas\_\-Event\_\-Feeding\_\-Group}}
+\subsubsection[{evas\_\-event\_\-feed\_\-mouse\_\-down}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-event\_\-feed\_\-mouse\_\-down (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e, }
+\item[{int}]{ b, }
+\item[{{\bf Evas\_\-Button\_\-Flags}}]{ flags, }
+\item[{unsigned int}]{ timestamp, }
+\item[{const void $\ast$}]{ data}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Event__Feeding__Group_ga5c9811b87406a96ff573b83d1efd52f2}
+
+
+Mouse down event feed. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given canvas pointer. \item[{\em b}]The button number. \item[{\em flags}]The evas button flags. \item[{\em timestamp}]The timestamp of the mouse down event. \item[{\em data}]The data for canvas.\end{DoxyParams}
+This function will set some evas properties that is necessary when the mouse button is pressed. It prepares information to be treated by the callback function. 
+
+References \_\-Evas\_\-Event\_\-Mouse\_\-Down::button, and EVAS\_\-CALLBACK\_\-MOUSE\_\-DOWN.
+
+\index{Evas\_\-Event\_\-Feeding\_\-Group@{Evas\_\-Event\_\-Feeding\_\-Group}!evas\_\-event\_\-feed\_\-mouse\_\-in@{evas\_\-event\_\-feed\_\-mouse\_\-in}}
+\index{evas\_\-event\_\-feed\_\-mouse\_\-in@{evas\_\-event\_\-feed\_\-mouse\_\-in}!Evas_Event_Feeding_Group@{Evas\_\-Event\_\-Feeding\_\-Group}}
+\subsubsection[{evas\_\-event\_\-feed\_\-mouse\_\-in}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-event\_\-feed\_\-mouse\_\-in (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e, }
+\item[{unsigned int}]{ timestamp, }
+\item[{const void $\ast$}]{ data}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Event__Feeding__Group_gac9c7fada70cfee1f8124ab5446cc59ed}
+
+
+Mouse in event feed. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given canvas pointer. \item[{\em timestamp}]The timestamp of the mouse up event. \item[{\em data}]The data for canvas.\end{DoxyParams}
+This function will set some evas properties that is necessary when the mouse in event happens. It prepares information to be treated by the callback function. 
+
+References \_\-Evas\_\-Event\_\-Mouse\_\-In::buttons, EVAS\_\-CALLBACK\_\-MOUSE\_\-IN, and evas\_\-event\_\-feed\_\-mouse\_\-move().
+
+\index{Evas\_\-Event\_\-Feeding\_\-Group@{Evas\_\-Event\_\-Feeding\_\-Group}!evas\_\-event\_\-feed\_\-mouse\_\-move@{evas\_\-event\_\-feed\_\-mouse\_\-move}}
+\index{evas\_\-event\_\-feed\_\-mouse\_\-move@{evas\_\-event\_\-feed\_\-mouse\_\-move}!Evas_Event_Feeding_Group@{Evas\_\-Event\_\-Feeding\_\-Group}}
+\subsubsection[{evas\_\-event\_\-feed\_\-mouse\_\-move}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-event\_\-feed\_\-mouse\_\-move (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e, }
+\item[{int}]{ x, }
+\item[{int}]{ y, }
+\item[{unsigned int}]{ timestamp, }
+\item[{const void $\ast$}]{ data}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Event__Feeding__Group_ga480017cad2b8982bee7a894433aff2f7}
+
+
+Mouse move event feed. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given canvas pointer. \item[{\em x}]The horizontal position of the mouse pointer. \item[{\em y}]The vertical position of the mouse pointer. \item[{\em timestamp}]The timestamp of the mouse up event. \item[{\em data}]The data for canvas.\end{DoxyParams}
+This function will set some evas properties that is necessary when the mouse is moved from its last position. It prepares information to be treated by the callback function. 
+
+References \_\-Evas\_\-Event\_\-Mouse\_\-In::buttons, \_\-Evas\_\-Event\_\-Mouse\_\-Out::buttons, \_\-Evas\_\-Event\_\-Mouse\_\-Move::buttons, EVAS\_\-CALLBACK\_\-MOUSE\_\-IN, EVAS\_\-CALLBACK\_\-MOUSE\_\-MOVE, and EVAS\_\-CALLBACK\_\-MOUSE\_\-OUT.
+
+
+
+Referenced by evas\_\-event\_\-feed\_\-mouse\_\-in(), evas\_\-event\_\-feed\_\-mouse\_\-up(), evas\_\-object\_\-clip\_\-set(), evas\_\-object\_\-clip\_\-unset(), evas\_\-object\_\-hide(), evas\_\-object\_\-layer\_\-set(), evas\_\-object\_\-line\_\-xy\_\-set(), evas\_\-object\_\-lower(), evas\_\-object\_\-move(), evas\_\-object\_\-pass\_\-events\_\-set(), evas\_\-object\_\-polygon\_\-point\_\-add(), evas\_\-object\_\-polygon\_\-points\_\-clear(), evas\_\-object\_\-raise(), evas\_\-object\_\-repeat\_\-events\_\-set(), evas\_\-object\_\-resize(), evas\_\-object\_\-show(), evas\_\-object\_\-stack\_\-above(), evas\_\-object\_\-stack\_\-below(), evas\_\-object\_\-text\_\-font\_\-set(), and evas\_\-object\_\-text\_\-text\_\-set().
+
+\index{Evas\_\-Event\_\-Feeding\_\-Group@{Evas\_\-Event\_\-Feeding\_\-Group}!evas\_\-event\_\-feed\_\-mouse\_\-out@{evas\_\-event\_\-feed\_\-mouse\_\-out}}
+\index{evas\_\-event\_\-feed\_\-mouse\_\-out@{evas\_\-event\_\-feed\_\-mouse\_\-out}!Evas_Event_Feeding_Group@{Evas\_\-Event\_\-Feeding\_\-Group}}
+\subsubsection[{evas\_\-event\_\-feed\_\-mouse\_\-out}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-event\_\-feed\_\-mouse\_\-out (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e, }
+\item[{unsigned int}]{ timestamp, }
+\item[{const void $\ast$}]{ data}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Event__Feeding__Group_ga64f5f2d26a018f4e6154b91251e6bb13}
+
+
+Mouse out event feed. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given canvas pointer. \item[{\em timestamp}]Timestamp of the mouse up event. \item[{\em data}]The data for canvas.\end{DoxyParams}
+This function will set some evas properties that is necessary when the mouse out event happens. It prepares information to be treated by the callback function. 
+
+References \_\-Evas\_\-Event\_\-Mouse\_\-Out::buttons, and EVAS\_\-CALLBACK\_\-MOUSE\_\-OUT.
+
+\index{Evas\_\-Event\_\-Feeding\_\-Group@{Evas\_\-Event\_\-Feeding\_\-Group}!evas\_\-event\_\-feed\_\-mouse\_\-up@{evas\_\-event\_\-feed\_\-mouse\_\-up}}
+\index{evas\_\-event\_\-feed\_\-mouse\_\-up@{evas\_\-event\_\-feed\_\-mouse\_\-up}!Evas_Event_Feeding_Group@{Evas\_\-Event\_\-Feeding\_\-Group}}
+\subsubsection[{evas\_\-event\_\-feed\_\-mouse\_\-up}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-event\_\-feed\_\-mouse\_\-up (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e, }
+\item[{int}]{ b, }
+\item[{{\bf Evas\_\-Button\_\-Flags}}]{ flags, }
+\item[{unsigned int}]{ timestamp, }
+\item[{const void $\ast$}]{ data}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Event__Feeding__Group_gacb400569d04ecfd2b89eb0f39856581c}
+
+
+Mouse up event feed. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given canvas pointer. \item[{\em b}]The button number. \item[{\em flags}]evas button flags. \item[{\em timestamp}]The timestamp of the mouse up event. \item[{\em data}]The data for canvas.\end{DoxyParams}
+This function will set some evas properties that is necessary when the mouse button is released. It prepares information to be treated by the callback function. 
+
+References \_\-Evas\_\-Event\_\-Mouse\_\-Up::button, \_\-Evas\_\-Event\_\-Mouse\_\-In::buttons, \_\-Evas\_\-Event\_\-Mouse\_\-Out::buttons, EVAS\_\-CALLBACK\_\-MOUSE\_\-IN, EVAS\_\-CALLBACK\_\-MOUSE\_\-OUT, EVAS\_\-CALLBACK\_\-MOUSE\_\-UP, and evas\_\-event\_\-feed\_\-mouse\_\-move().
+
+
+
+Referenced by evas\_\-event\_\-feed\_\-mouse\_\-cancel().
+
+\index{Evas\_\-Event\_\-Feeding\_\-Group@{Evas\_\-Event\_\-Feeding\_\-Group}!evas\_\-event\_\-feed\_\-mouse\_\-wheel@{evas\_\-event\_\-feed\_\-mouse\_\-wheel}}
+\index{evas\_\-event\_\-feed\_\-mouse\_\-wheel@{evas\_\-event\_\-feed\_\-mouse\_\-wheel}!Evas_Event_Feeding_Group@{Evas\_\-Event\_\-Feeding\_\-Group}}
+\subsubsection[{evas\_\-event\_\-feed\_\-mouse\_\-wheel}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-event\_\-feed\_\-mouse\_\-wheel (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e, }
+\item[{int}]{ direction, }
+\item[{int}]{ z, }
+\item[{unsigned int}]{ timestamp, }
+\item[{const void $\ast$}]{ data}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Event__Feeding__Group_ga393156722bbe1ce384f0ab33ab76a1f2}
+
+
+Mouse wheel event feed. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given canvas pointer. \item[{\em direction}]The wheel mouse direction. \item[{\em z}]How much mouse wheel was scrolled up or down. \item[{\em timestamp}]The timestamp of the mouse up event. \item[{\em data}]The data for canvas.\end{DoxyParams}
+This function will set some evas properties that is necessary when the mouse wheel is scrolled up or down. It prepares information to be treated by the callback function. 
+
+References EVAS\_\-CALLBACK\_\-MOUSE\_\-WHEEL.
+
+\index{Evas\_\-Event\_\-Feeding\_\-Group@{Evas\_\-Event\_\-Feeding\_\-Group}!evas\_\-event\_\-freeze\_\-get@{evas\_\-event\_\-freeze\_\-get}}
+\index{evas\_\-event\_\-freeze\_\-get@{evas\_\-event\_\-freeze\_\-get}!Evas_Event_Feeding_Group@{Evas\_\-Event\_\-Feeding\_\-Group}}
+\subsubsection[{evas\_\-event\_\-freeze\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI int evas\_\-event\_\-freeze\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas} $\ast$}]{ e}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Event__Feeding__Group_gabc15f5115b4baaeafd2d144f307b6b64}
+
+
+Return the freeze count of a given canvas. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The canvas to fetch the freeze count from.\end{DoxyParams}
+This returns the number of times the canvas has been told to freeze events. It is possible to call \hyperlink{group__Evas__Event__Freezing__Group_ga45fee3a26820b56527e434f6173c345e}{evas\_\-event\_\-freeze()} multiple times, and these must be matched by \hyperlink{group__Evas__Event__Freezing__Group_ga4f08e6b3eece51bf285f1226629924e1}{evas\_\-event\_\-thaw()} calls. This call allows the program to discover just how many times things have been frozen in case it may want to break out of a deep freeze state where the count is high.
+
+Example: 
+\begin{DoxyCode}
+ extern Evas *evas;
+
+ while (evas_event_freeze_get(evas) > 0) evas_event_thaw(evas);
+\end{DoxyCode}
+ 

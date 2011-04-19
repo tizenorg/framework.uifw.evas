@@ -1,0 +1,508 @@
+\section{Text Object Functions}
+\label{group__Evas__Object__Text}\index{Text Object Functions@{Text Object Functions}}
+
+
+Functions that operate on single line, single style text objects.  
+
+
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+EAPI \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$ \hyperlink{group__Evas__Object__Text_ga2da9ad20aec514dfeecb97c715e7f539}{evas\_\-object\_\-text\_\-add} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e)
+\begin{DoxyCompactList}\small\item\em Creates a new text {\ttfamily Evas\_\-Object} on the provided {\ttfamily Evas} canvas. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Text_ga6f503ac55e126bebbadf96a152f5d02b}{evas\_\-object\_\-text\_\-font\_\-source\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, const char $\ast$font\_\-source)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI const char $\ast$ \hyperlink{group__Evas__Object__Text_gaa48bece59070032504a2c78ad8a66577}{evas\_\-object\_\-text\_\-font\_\-source\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Text_ga6c7fc38657a876997ad91ebd177669a6}{evas\_\-object\_\-text\_\-font\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, const char $\ast$font, Evas\_\-Font\_\-Size size)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Text_gaa3ed4186d4a9a78c9ca95ea430dab242}{evas\_\-object\_\-text\_\-font\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, const char $\ast$$\ast$font, Evas\_\-Font\_\-Size $\ast$size)
+\begin{DoxyCompactList}\small\item\em Query evas for font information of a text {\ttfamily Evas\_\-Object}. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Text_ga11d37807b5506e6cca746ebb91236532}{evas\_\-object\_\-text\_\-text\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, const char $\ast$\_\-text)
+\begin{DoxyCompactList}\small\item\em Sets the text to be displayed by the given evas text object. \item\end{DoxyCompactList}\item 
+EAPI const char $\ast$ \hyperlink{group__Evas__Object__Text_gaef3b0b12eb63b9cd7574c1cf05afb7a8}{evas\_\-object\_\-text\_\-text\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Retrieves the text currently being displayed by the given evas text object. \item\end{DoxyCompactList}\item 
+EAPI Evas\_\-BiDi\_\-Direction \hyperlink{group__Evas__Object__Text_ga2fdb3ff0318cd4b45d642ae317b19589}{evas\_\-object\_\-text\_\-direction\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Retrieves the direction of the text currently being displayed in the text object. \item\end{DoxyCompactList}\item 
+EAPI Evas\_\-Coord \hyperlink{group__Evas__Object__Text_ga4aaf7a903228927fa0adac885304e43e}{evas\_\-object\_\-text\_\-ascent\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI Evas\_\-Coord \hyperlink{group__Evas__Object__Text_ga71f9d96c6dfc8ec33cf0a97e614228a0}{evas\_\-object\_\-text\_\-descent\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI Evas\_\-Coord \hyperlink{group__Evas__Object__Text_ga1a0bdf57c3ca6e7fb7833ddfbe23b735}{evas\_\-object\_\-text\_\-max\_\-ascent\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI Evas\_\-Coord \hyperlink{group__Evas__Object__Text_ga28ee3eb5e199c23a14ac47e07ac49205}{evas\_\-object\_\-text\_\-max\_\-descent\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI Evas\_\-Coord \hyperlink{group__Evas__Object__Text_ga6c5f45ff6e1be091d0382db0ccfb919d}{evas\_\-object\_\-text\_\-inset\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI Evas\_\-Coord \hyperlink{group__Evas__Object__Text_ga972494bd4b9d807ea5f98404a82d8eab}{evas\_\-object\_\-text\_\-horiz\_\-advance\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI Evas\_\-Coord \hyperlink{group__Evas__Object__Text_gaec17348b4fa02b15162ef96abdbfbf41}{evas\_\-object\_\-text\_\-vert\_\-advance\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Object__Text_ga823b09a9d05a1650e63970e329cd7b72}{evas\_\-object\_\-text\_\-char\_\-pos\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, int pos, Evas\_\-Coord $\ast$cx, Evas\_\-Coord $\ast$cy, Evas\_\-Coord $\ast$cw, Evas\_\-Coord $\ast$ch)
+\begin{DoxyCompactList}\small\item\em Retrieve position and dimension information of a character within a text {\ttfamily Evas\_\-Object}. \item\end{DoxyCompactList}\item 
+EAPI int \hyperlink{group__Evas__Object__Text_ga464d40578e2fdc2ad8890556e0b97268}{evas\_\-object\_\-text\_\-last\_\-up\_\-to\_\-pos} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Coord x, Evas\_\-Coord y)
+\begin{DoxyCompactList}\small\item\em Returns the logical position of the last char in the text up to the pos given. \item\end{DoxyCompactList}\item 
+EAPI int \hyperlink{group__Evas__Object__Text_gab37f85358bd7d333cd6e8c7cf62b5daa}{evas\_\-object\_\-text\_\-char\_\-coords\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Coord x, Evas\_\-Coord y, Evas\_\-Coord $\ast$cx, Evas\_\-Coord $\ast$cy, Evas\_\-Coord $\ast$cw, Evas\_\-Coord $\ast$ch)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Text_gae7896521b9861d4bd3efc04ef1e8e91e}{evas\_\-object\_\-text\_\-style\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Text\_\-Style\_\-Type style)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI Evas\_\-Text\_\-Style\_\-Type \hyperlink{group__Evas__Object__Text_gaf08d4a9630d23ebdbf79cc8c2c91b2c6}{evas\_\-object\_\-text\_\-style\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Text_ga58f0bb7acf2c1d24e9ae5e4a391d19bc}{evas\_\-object\_\-text\_\-shadow\_\-color\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, int r, int g, int b, int a)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Text_ga7cf7432965327a571d413dbaeca66822}{evas\_\-object\_\-text\_\-shadow\_\-color\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, int $\ast$r, int $\ast$g, int $\ast$b, int $\ast$a)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Text_ga74c4ea0f0befd6213f48163ee70041e6}{evas\_\-object\_\-text\_\-glow\_\-color\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, int r, int g, int b, int a)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Text_ga76bcc6322241875990b572f37d754266}{evas\_\-object\_\-text\_\-glow\_\-color\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, int $\ast$r, int $\ast$g, int $\ast$b, int $\ast$a)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Text_ga7dabe4ce0120cdf0c4e60a8f7a7e3659}{evas\_\-object\_\-text\_\-glow2\_\-color\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, int r, int g, int b, int a)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Text_ga264a8425d8dab176a1b15e17a528d56d}{evas\_\-object\_\-text\_\-glow2\_\-color\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, int $\ast$r, int $\ast$g, int $\ast$b, int $\ast$a)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Text_ga1c1cf05c6b31f06a4c79486d19ddaece}{evas\_\-object\_\-text\_\-outline\_\-color\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, int r, int g, int b, int a)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Text_ga16485a0062a397faed21fad732ad16ba}{evas\_\-object\_\-text\_\-outline\_\-color\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, int $\ast$r, int $\ast$g, int $\ast$b, int $\ast$a)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Text_gafd638ae91c10d4139e41e6245c0712e1}{evas\_\-object\_\-text\_\-style\_\-pad\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, int $\ast$l, int $\ast$r, int $\ast$t, int $\ast$b)
+\begin{DoxyCompactList}\small\item\em Gets the text style pad of a text object. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Functions that operate on single line, single style text objects. For multiline and multiple style text, see \hyperlink{group__Evas__Object__Textblock}{Textblock Object Functions}. 
+
+\subsection{Function Documentation}
+\index{Evas\_\-Object\_\-Text@{Evas\_\-Object\_\-Text}!evas\_\-object\_\-text\_\-add@{evas\_\-object\_\-text\_\-add}}
+\index{evas\_\-object\_\-text\_\-add@{evas\_\-object\_\-text\_\-add}!Evas_Object_Text@{Evas\_\-Object\_\-Text}}
+\subsubsection[{evas\_\-object\_\-text\_\-add}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Object}$\ast$ evas\_\-object\_\-text\_\-add (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Text_ga2da9ad20aec514dfeecb97c715e7f539}
+
+
+Creates a new text {\ttfamily Evas\_\-Object} on the provided {\ttfamily Evas} canvas. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The {\ttfamily Evas} canvas to create the text object upon.\end{DoxyParams}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__Evas__Object__Text_ga6f503ac55e126bebbadf96a152f5d02b}{evas\_\-object\_\-text\_\-font\_\-source\_\-set} 
+
+\hyperlink{group__Evas__Object__Text_ga6c7fc38657a876997ad91ebd177669a6}{evas\_\-object\_\-text\_\-font\_\-set} 
+
+\hyperlink{group__Evas__Object__Text_ga11d37807b5506e6cca746ebb91236532}{evas\_\-object\_\-text\_\-text\_\-set}
+\end{DoxySeeAlso}
+\begin{DoxyReturn}{Returns}
+NULL on error, A pointer to a new {\ttfamily Evas\_\-Object} on success. 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Text@{Evas\_\-Object\_\-Text}!evas\_\-object\_\-text\_\-ascent\_\-get@{evas\_\-object\_\-text\_\-ascent\_\-get}}
+\index{evas\_\-object\_\-text\_\-ascent\_\-get@{evas\_\-object\_\-text\_\-ascent\_\-get}!Evas_Object_Text@{Evas\_\-Object\_\-Text}}
+\subsubsection[{evas\_\-object\_\-text\_\-ascent\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Evas\_\-Coord evas\_\-object\_\-text\_\-ascent\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Text_ga4aaf7a903228927fa0adac885304e43e}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Text@{Evas\_\-Object\_\-Text}!evas\_\-object\_\-text\_\-char\_\-coords\_\-get@{evas\_\-object\_\-text\_\-char\_\-coords\_\-get}}
+\index{evas\_\-object\_\-text\_\-char\_\-coords\_\-get@{evas\_\-object\_\-text\_\-char\_\-coords\_\-get}!Evas_Object_Text@{Evas\_\-Object\_\-Text}}
+\subsubsection[{evas\_\-object\_\-text\_\-char\_\-coords\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI int evas\_\-object\_\-text\_\-char\_\-coords\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Coord}]{ x, }
+\item[{Evas\_\-Coord}]{ y, }
+\item[{Evas\_\-Coord $\ast$}]{ cx, }
+\item[{Evas\_\-Coord $\ast$}]{ cy, }
+\item[{Evas\_\-Coord $\ast$}]{ cw, }
+\item[{Evas\_\-Coord $\ast$}]{ ch}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Text_gab37f85358bd7d333cd6e8c7cf62b5daa}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Text@{Evas\_\-Object\_\-Text}!evas\_\-object\_\-text\_\-char\_\-pos\_\-get@{evas\_\-object\_\-text\_\-char\_\-pos\_\-get}}
+\index{evas\_\-object\_\-text\_\-char\_\-pos\_\-get@{evas\_\-object\_\-text\_\-char\_\-pos\_\-get}!Evas_Object_Text@{Evas\_\-Object\_\-Text}}
+\subsubsection[{evas\_\-object\_\-text\_\-char\_\-pos\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-object\_\-text\_\-char\_\-pos\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{int}]{ pos, }
+\item[{Evas\_\-Coord $\ast$}]{ cx, }
+\item[{Evas\_\-Coord $\ast$}]{ cy, }
+\item[{Evas\_\-Coord $\ast$}]{ cw, }
+\item[{Evas\_\-Coord $\ast$}]{ ch}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Text_ga823b09a9d05a1650e63970e329cd7b72}
+
+
+Retrieve position and dimension information of a character within a text {\ttfamily Evas\_\-Object}. 
+
+This function is used to obtain the X, Y, width and height of a the character located at {\ttfamily pos} within the {\ttfamily Evas\_\-Object} {\ttfamily obj}. {\ttfamily obj} must be a text object as created with \hyperlink{group__Evas__Object__Text_ga2da9ad20aec514dfeecb97c715e7f539}{evas\_\-object\_\-text\_\-add()}. Any of the {\ttfamily Evas\_\-Coord} parameters ({\ttfamily cx}, {\ttfamily cy}, {\ttfamily cw}, {\ttfamily ch}) may be NULL in which case no value will be assigned to that parameter.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The text object to retrieve position information for. \item[{\em pos}]The character position to request co-\/ordinates for. \item[{\em cx}]A pointer to an {\ttfamily Evas\_\-Coord} to store the X value in (can be NULL). \item[{\em cy}]A pointer to an {\ttfamily Evas\_\-Coord} to store the Y value in (can be NULL). \item[{\em cw}]A pointer to an {\ttfamily Evas\_\-Coord} to store the Width value in (can be NULL). \item[{\em ch}]A pointer to an {\ttfamily Evas\_\-Coord} to store the Height value in (can be NULL).\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+EINA\_\-FALSE on error, EINA\_\-TRUE on success. 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Text@{Evas\_\-Object\_\-Text}!evas\_\-object\_\-text\_\-descent\_\-get@{evas\_\-object\_\-text\_\-descent\_\-get}}
+\index{evas\_\-object\_\-text\_\-descent\_\-get@{evas\_\-object\_\-text\_\-descent\_\-get}!Evas_Object_Text@{Evas\_\-Object\_\-Text}}
+\subsubsection[{evas\_\-object\_\-text\_\-descent\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Evas\_\-Coord evas\_\-object\_\-text\_\-descent\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Text_ga71f9d96c6dfc8ec33cf0a97e614228a0}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Text@{Evas\_\-Object\_\-Text}!evas\_\-object\_\-text\_\-direction\_\-get@{evas\_\-object\_\-text\_\-direction\_\-get}}
+\index{evas\_\-object\_\-text\_\-direction\_\-get@{evas\_\-object\_\-text\_\-direction\_\-get}!Evas_Object_Text@{Evas\_\-Object\_\-Text}}
+\subsubsection[{evas\_\-object\_\-text\_\-direction\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Evas\_\-BiDi\_\-Direction evas\_\-object\_\-text\_\-direction\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Text_ga2fdb3ff0318cd4b45d642ae317b19589}
+
+
+Retrieves the direction of the text currently being displayed in the text object. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given evas text object. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the direction of the text 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Text@{Evas\_\-Object\_\-Text}!evas\_\-object\_\-text\_\-font\_\-get@{evas\_\-object\_\-text\_\-font\_\-get}}
+\index{evas\_\-object\_\-text\_\-font\_\-get@{evas\_\-object\_\-text\_\-font\_\-get}!Evas_Object_Text@{Evas\_\-Object\_\-Text}}
+\subsubsection[{evas\_\-object\_\-text\_\-font\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-text\_\-font\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{const char $\ast$$\ast$}]{ font, }
+\item[{Evas\_\-Font\_\-Size $\ast$}]{ size}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Text_gaa3ed4186d4a9a78c9ca95ea430dab242}
+
+
+Query evas for font information of a text {\ttfamily Evas\_\-Object}. 
+
+This function allows the font name and size of a text {\ttfamily Evas\_\-Object} as created with \hyperlink{group__Evas__Object__Text_ga2da9ad20aec514dfeecb97c715e7f539}{evas\_\-object\_\-text\_\-add()} to be queried. Be aware that the font name string is still owned by Evas and should NOT have free() called on it by the caller of the function.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The evas text object to query for font information. \item[{\em font}]A pointer to the location to store the font name in (may be NULL). \item[{\em size}]A pointer to the location to store the font size in (may be NULL). \end{DoxyParams}
+\index{Evas\_\-Object\_\-Text@{Evas\_\-Object\_\-Text}!evas\_\-object\_\-text\_\-font\_\-set@{evas\_\-object\_\-text\_\-font\_\-set}}
+\index{evas\_\-object\_\-text\_\-font\_\-set@{evas\_\-object\_\-text\_\-font\_\-set}!Evas_Object_Text@{Evas\_\-Object\_\-Text}}
+\subsubsection[{evas\_\-object\_\-text\_\-font\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-text\_\-font\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{const char $\ast$}]{ font, }
+\item[{Evas\_\-Font\_\-Size}]{ size}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Text_ga6c7fc38657a876997ad91ebd177669a6}
+
+
+To be documented. 
+
+FIXME: To be fixed. 
+
+References ENFN, and evas\_\-event\_\-feed\_\-mouse\_\-move().
+
+\index{Evas\_\-Object\_\-Text@{Evas\_\-Object\_\-Text}!evas\_\-object\_\-text\_\-font\_\-source\_\-get@{evas\_\-object\_\-text\_\-font\_\-source\_\-get}}
+\index{evas\_\-object\_\-text\_\-font\_\-source\_\-get@{evas\_\-object\_\-text\_\-font\_\-source\_\-get}!Evas_Object_Text@{Evas\_\-Object\_\-Text}}
+\subsubsection[{evas\_\-object\_\-text\_\-font\_\-source\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI const char$\ast$ evas\_\-object\_\-text\_\-font\_\-source\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Text_gaa48bece59070032504a2c78ad8a66577}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Text@{Evas\_\-Object\_\-Text}!evas\_\-object\_\-text\_\-font\_\-source\_\-set@{evas\_\-object\_\-text\_\-font\_\-source\_\-set}}
+\index{evas\_\-object\_\-text\_\-font\_\-source\_\-set@{evas\_\-object\_\-text\_\-font\_\-source\_\-set}!Evas_Object_Text@{Evas\_\-Object\_\-Text}}
+\subsubsection[{evas\_\-object\_\-text\_\-font\_\-source\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-text\_\-font\_\-source\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{const char $\ast$}]{ font\_\-source}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Text_ga6f503ac55e126bebbadf96a152f5d02b}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Text@{Evas\_\-Object\_\-Text}!evas\_\-object\_\-text\_\-glow2\_\-color\_\-get@{evas\_\-object\_\-text\_\-glow2\_\-color\_\-get}}
+\index{evas\_\-object\_\-text\_\-glow2\_\-color\_\-get@{evas\_\-object\_\-text\_\-glow2\_\-color\_\-get}!Evas_Object_Text@{Evas\_\-Object\_\-Text}}
+\subsubsection[{evas\_\-object\_\-text\_\-glow2\_\-color\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-text\_\-glow2\_\-color\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{int $\ast$}]{ r, }
+\item[{int $\ast$}]{ g, }
+\item[{int $\ast$}]{ b, }
+\item[{int $\ast$}]{ a}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Text_ga264a8425d8dab176a1b15e17a528d56d}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Text@{Evas\_\-Object\_\-Text}!evas\_\-object\_\-text\_\-glow2\_\-color\_\-set@{evas\_\-object\_\-text\_\-glow2\_\-color\_\-set}}
+\index{evas\_\-object\_\-text\_\-glow2\_\-color\_\-set@{evas\_\-object\_\-text\_\-glow2\_\-color\_\-set}!Evas_Object_Text@{Evas\_\-Object\_\-Text}}
+\subsubsection[{evas\_\-object\_\-text\_\-glow2\_\-color\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-text\_\-glow2\_\-color\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{int}]{ r, }
+\item[{int}]{ g, }
+\item[{int}]{ b, }
+\item[{int}]{ a}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Text_ga7dabe4ce0120cdf0c4e60a8f7a7e3659}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Text@{Evas\_\-Object\_\-Text}!evas\_\-object\_\-text\_\-glow\_\-color\_\-get@{evas\_\-object\_\-text\_\-glow\_\-color\_\-get}}
+\index{evas\_\-object\_\-text\_\-glow\_\-color\_\-get@{evas\_\-object\_\-text\_\-glow\_\-color\_\-get}!Evas_Object_Text@{Evas\_\-Object\_\-Text}}
+\subsubsection[{evas\_\-object\_\-text\_\-glow\_\-color\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-text\_\-glow\_\-color\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{int $\ast$}]{ r, }
+\item[{int $\ast$}]{ g, }
+\item[{int $\ast$}]{ b, }
+\item[{int $\ast$}]{ a}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Text_ga76bcc6322241875990b572f37d754266}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Text@{Evas\_\-Object\_\-Text}!evas\_\-object\_\-text\_\-glow\_\-color\_\-set@{evas\_\-object\_\-text\_\-glow\_\-color\_\-set}}
+\index{evas\_\-object\_\-text\_\-glow\_\-color\_\-set@{evas\_\-object\_\-text\_\-glow\_\-color\_\-set}!Evas_Object_Text@{Evas\_\-Object\_\-Text}}
+\subsubsection[{evas\_\-object\_\-text\_\-glow\_\-color\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-text\_\-glow\_\-color\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{int}]{ r, }
+\item[{int}]{ g, }
+\item[{int}]{ b, }
+\item[{int}]{ a}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Text_ga74c4ea0f0befd6213f48163ee70041e6}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Text@{Evas\_\-Object\_\-Text}!evas\_\-object\_\-text\_\-horiz\_\-advance\_\-get@{evas\_\-object\_\-text\_\-horiz\_\-advance\_\-get}}
+\index{evas\_\-object\_\-text\_\-horiz\_\-advance\_\-get@{evas\_\-object\_\-text\_\-horiz\_\-advance\_\-get}!Evas_Object_Text@{Evas\_\-Object\_\-Text}}
+\subsubsection[{evas\_\-object\_\-text\_\-horiz\_\-advance\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Evas\_\-Coord evas\_\-object\_\-text\_\-horiz\_\-advance\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Text_ga972494bd4b9d807ea5f98404a82d8eab}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Text@{Evas\_\-Object\_\-Text}!evas\_\-object\_\-text\_\-inset\_\-get@{evas\_\-object\_\-text\_\-inset\_\-get}}
+\index{evas\_\-object\_\-text\_\-inset\_\-get@{evas\_\-object\_\-text\_\-inset\_\-get}!Evas_Object_Text@{Evas\_\-Object\_\-Text}}
+\subsubsection[{evas\_\-object\_\-text\_\-inset\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Evas\_\-Coord evas\_\-object\_\-text\_\-inset\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Text_ga6c5f45ff6e1be091d0382db0ccfb919d}
+
+
+To be documented. 
+
+FIXME: To be fixed. 
+
+References ENFN.
+
+\index{Evas\_\-Object\_\-Text@{Evas\_\-Object\_\-Text}!evas\_\-object\_\-text\_\-last\_\-up\_\-to\_\-pos@{evas\_\-object\_\-text\_\-last\_\-up\_\-to\_\-pos}}
+\index{evas\_\-object\_\-text\_\-last\_\-up\_\-to\_\-pos@{evas\_\-object\_\-text\_\-last\_\-up\_\-to\_\-pos}!Evas_Object_Text@{Evas\_\-Object\_\-Text}}
+\subsubsection[{evas\_\-object\_\-text\_\-last\_\-up\_\-to\_\-pos}]{\setlength{\rightskip}{0pt plus 5cm}EAPI int evas\_\-object\_\-text\_\-last\_\-up\_\-to\_\-pos (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Coord}]{ x, }
+\item[{Evas\_\-Coord}]{ y}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Text_ga464d40578e2fdc2ad8890556e0b97268}
+
+
+Returns the logical position of the last char in the text up to the pos given. 
+
+this is NOT the position of the last char because of the possibility of RTL in the text. To be documented.
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Text@{Evas\_\-Object\_\-Text}!evas\_\-object\_\-text\_\-max\_\-ascent\_\-get@{evas\_\-object\_\-text\_\-max\_\-ascent\_\-get}}
+\index{evas\_\-object\_\-text\_\-max\_\-ascent\_\-get@{evas\_\-object\_\-text\_\-max\_\-ascent\_\-get}!Evas_Object_Text@{Evas\_\-Object\_\-Text}}
+\subsubsection[{evas\_\-object\_\-text\_\-max\_\-ascent\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Evas\_\-Coord evas\_\-object\_\-text\_\-max\_\-ascent\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Text_ga1a0bdf57c3ca6e7fb7833ddfbe23b735}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Text@{Evas\_\-Object\_\-Text}!evas\_\-object\_\-text\_\-max\_\-descent\_\-get@{evas\_\-object\_\-text\_\-max\_\-descent\_\-get}}
+\index{evas\_\-object\_\-text\_\-max\_\-descent\_\-get@{evas\_\-object\_\-text\_\-max\_\-descent\_\-get}!Evas_Object_Text@{Evas\_\-Object\_\-Text}}
+\subsubsection[{evas\_\-object\_\-text\_\-max\_\-descent\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Evas\_\-Coord evas\_\-object\_\-text\_\-max\_\-descent\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Text_ga28ee3eb5e199c23a14ac47e07ac49205}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Text@{Evas\_\-Object\_\-Text}!evas\_\-object\_\-text\_\-outline\_\-color\_\-get@{evas\_\-object\_\-text\_\-outline\_\-color\_\-get}}
+\index{evas\_\-object\_\-text\_\-outline\_\-color\_\-get@{evas\_\-object\_\-text\_\-outline\_\-color\_\-get}!Evas_Object_Text@{Evas\_\-Object\_\-Text}}
+\subsubsection[{evas\_\-object\_\-text\_\-outline\_\-color\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-text\_\-outline\_\-color\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{int $\ast$}]{ r, }
+\item[{int $\ast$}]{ g, }
+\item[{int $\ast$}]{ b, }
+\item[{int $\ast$}]{ a}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Text_ga16485a0062a397faed21fad732ad16ba}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Text@{Evas\_\-Object\_\-Text}!evas\_\-object\_\-text\_\-outline\_\-color\_\-set@{evas\_\-object\_\-text\_\-outline\_\-color\_\-set}}
+\index{evas\_\-object\_\-text\_\-outline\_\-color\_\-set@{evas\_\-object\_\-text\_\-outline\_\-color\_\-set}!Evas_Object_Text@{Evas\_\-Object\_\-Text}}
+\subsubsection[{evas\_\-object\_\-text\_\-outline\_\-color\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-text\_\-outline\_\-color\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{int}]{ r, }
+\item[{int}]{ g, }
+\item[{int}]{ b, }
+\item[{int}]{ a}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Text_ga1c1cf05c6b31f06a4c79486d19ddaece}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Text@{Evas\_\-Object\_\-Text}!evas\_\-object\_\-text\_\-shadow\_\-color\_\-get@{evas\_\-object\_\-text\_\-shadow\_\-color\_\-get}}
+\index{evas\_\-object\_\-text\_\-shadow\_\-color\_\-get@{evas\_\-object\_\-text\_\-shadow\_\-color\_\-get}!Evas_Object_Text@{Evas\_\-Object\_\-Text}}
+\subsubsection[{evas\_\-object\_\-text\_\-shadow\_\-color\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-text\_\-shadow\_\-color\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{int $\ast$}]{ r, }
+\item[{int $\ast$}]{ g, }
+\item[{int $\ast$}]{ b, }
+\item[{int $\ast$}]{ a}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Text_ga7cf7432965327a571d413dbaeca66822}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Text@{Evas\_\-Object\_\-Text}!evas\_\-object\_\-text\_\-shadow\_\-color\_\-set@{evas\_\-object\_\-text\_\-shadow\_\-color\_\-set}}
+\index{evas\_\-object\_\-text\_\-shadow\_\-color\_\-set@{evas\_\-object\_\-text\_\-shadow\_\-color\_\-set}!Evas_Object_Text@{Evas\_\-Object\_\-Text}}
+\subsubsection[{evas\_\-object\_\-text\_\-shadow\_\-color\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-text\_\-shadow\_\-color\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{int}]{ r, }
+\item[{int}]{ g, }
+\item[{int}]{ b, }
+\item[{int}]{ a}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Text_ga58f0bb7acf2c1d24e9ae5e4a391d19bc}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Text@{Evas\_\-Object\_\-Text}!evas\_\-object\_\-text\_\-style\_\-get@{evas\_\-object\_\-text\_\-style\_\-get}}
+\index{evas\_\-object\_\-text\_\-style\_\-get@{evas\_\-object\_\-text\_\-style\_\-get}!Evas_Object_Text@{Evas\_\-Object\_\-Text}}
+\subsubsection[{evas\_\-object\_\-text\_\-style\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Evas\_\-Text\_\-Style\_\-Type evas\_\-object\_\-text\_\-style\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Text_gaf08d4a9630d23ebdbf79cc8c2c91b2c6}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Text@{Evas\_\-Object\_\-Text}!evas\_\-object\_\-text\_\-style\_\-pad\_\-get@{evas\_\-object\_\-text\_\-style\_\-pad\_\-get}}
+\index{evas\_\-object\_\-text\_\-style\_\-pad\_\-get@{evas\_\-object\_\-text\_\-style\_\-pad\_\-get}!Evas_Object_Text@{Evas\_\-Object\_\-Text}}
+\subsubsection[{evas\_\-object\_\-text\_\-style\_\-pad\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-text\_\-style\_\-pad\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{int $\ast$}]{ l, }
+\item[{int $\ast$}]{ r, }
+\item[{int $\ast$}]{ t, }
+\item[{int $\ast$}]{ b}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Text_gafd638ae91c10d4139e41e6245c0712e1}
+
+
+Gets the text style pad of a text object. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given text object. \item[{\em l}]The left pad (or NULL). \item[{\em r}]The right pad (or NULL). \item[{\em t}]The top pad (or NULL). \item[{\em b}]The bottom pad (or NULL). \end{DoxyParams}
+\index{Evas\_\-Object\_\-Text@{Evas\_\-Object\_\-Text}!evas\_\-object\_\-text\_\-style\_\-set@{evas\_\-object\_\-text\_\-style\_\-set}}
+\index{evas\_\-object\_\-text\_\-style\_\-set@{evas\_\-object\_\-text\_\-style\_\-set}!Evas_Object_Text@{Evas\_\-Object\_\-Text}}
+\subsubsection[{evas\_\-object\_\-text\_\-style\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-text\_\-style\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Text\_\-Style\_\-Type}]{ style}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Text_gae7896521b9861d4bd3efc04ef1e8e91e}
+
+
+To be documented. 
+
+FIXME: To be fixed. \index{Evas\_\-Object\_\-Text@{Evas\_\-Object\_\-Text}!evas\_\-object\_\-text\_\-text\_\-get@{evas\_\-object\_\-text\_\-text\_\-get}}
+\index{evas\_\-object\_\-text\_\-text\_\-get@{evas\_\-object\_\-text\_\-text\_\-get}!Evas_Object_Text@{Evas\_\-Object\_\-Text}}
+\subsubsection[{evas\_\-object\_\-text\_\-text\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI const char$\ast$ evas\_\-object\_\-text\_\-text\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Text_gaef3b0b12eb63b9cd7574c1cf05afb7a8}
+
+
+Retrieves the text currently being displayed by the given evas text object. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given evas text object. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The text currently being displayed. Do not free it. 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Text@{Evas\_\-Object\_\-Text}!evas\_\-object\_\-text\_\-text\_\-set@{evas\_\-object\_\-text\_\-text\_\-set}}
+\index{evas\_\-object\_\-text\_\-text\_\-set@{evas\_\-object\_\-text\_\-text\_\-set}!Evas_Object_Text@{Evas\_\-Object\_\-Text}}
+\subsubsection[{evas\_\-object\_\-text\_\-text\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-text\_\-text\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{const char $\ast$}]{ \_\-text}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Text_ga11d37807b5506e6cca746ebb91236532}
+
+
+Sets the text to be displayed by the given evas text object. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]Evas text object. \item[{\em text}]Text to display. \end{DoxyParams}
+
+
+References evas\_\-event\_\-feed\_\-mouse\_\-move().
+
+\index{Evas\_\-Object\_\-Text@{Evas\_\-Object\_\-Text}!evas\_\-object\_\-text\_\-vert\_\-advance\_\-get@{evas\_\-object\_\-text\_\-vert\_\-advance\_\-get}}
+\index{evas\_\-object\_\-text\_\-vert\_\-advance\_\-get@{evas\_\-object\_\-text\_\-vert\_\-advance\_\-get}!Evas_Object_Text@{Evas\_\-Object\_\-Text}}
+\subsubsection[{evas\_\-object\_\-text\_\-vert\_\-advance\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Evas\_\-Coord evas\_\-object\_\-text\_\-vert\_\-advance\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Text_gaec17348b4fa02b15162ef96abdbfbf41}
+
+
+To be documented. 
+
+FIXME: To be fixed. 

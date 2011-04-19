@@ -1,0 +1,71 @@
+.TH "Polygon Object Functions" 3 "Tue Apr 19 2011" "Evas" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Polygon Object Functions \- 
+.PP
+Functions that operate on evas polygon objects.  
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_polygon_add\fP (\fBEvas\fP *e)"
+.br
+.RI "\fIAdds a new evas polygon object to the given evas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_polygon_point_add\fP (\fBEvas_Object\fP *obj, Evas_Coord x, Evas_Coord y)"
+.br
+.RI "\fIAdds the given point to the given evas polygon object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_polygon_points_clear\fP (\fBEvas_Object\fP *obj)"
+.br
+.RI "\fIRemoves all of the points from the given evas polygon object. \fP"
+.in -1c
+.SH "Detailed Description"
+.PP 
+Functions that operate on evas polygon objects. 
+
+Hint: as evas does not provide ellipse, smooth paths or circle, one can calculate points and convert these to a polygon. 
+.SH "Function Documentation"
+.PP 
+.SS "EAPI \fBEvas_Object\fP* evas_object_polygon_add (\fBEvas\fP * e)"
+.PP
+Adds a new evas polygon object to the given evas. \fBParameters:\fP
+.RS 4
+\fIe\fP The given evas. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+A new evas polygon object. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_polygon_point_add (\fBEvas_Object\fP * obj, Evas_Coord x, Evas_Coord y)"
+.PP
+Adds the given point to the given evas polygon object. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given evas polygon object. 
+.br
+\fIx\fP The X coordinate of the given point. 
+.br
+\fIy\fP The Y coordinate of the given point. 
+.RE
+.PP
+
+.PP
+References evas_event_feed_mouse_move().
+.SS "EAPI void evas_object_polygon_points_clear (\fBEvas_Object\fP * obj)"
+.PP
+Removes all of the points from the given evas polygon object. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given polygon object. 
+.RE
+.PP
+
+.PP
+References evas_event_feed_mouse_move().
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Evas from the source code.

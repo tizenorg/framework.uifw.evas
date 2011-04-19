@@ -1,0 +1,227 @@
+\section{Finding Objects}
+\label{group__Evas__Object__Group__Find}\index{Finding Objects@{Finding Objects}}
+
+
+Functions that allows finding objects by their position, name or other properties.  
+
+
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+EAPI \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$ \hyperlink{group__Evas__Object__Group__Find_gaafc05ec22375400b9f0cfc8bcfc83bf5}{evas\_\-focus\_\-get} (const \hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e)
+\begin{DoxyCompactList}\small\item\em Retrieve the object that currently has focus. \item\end{DoxyCompactList}\item 
+EAPI \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$ \hyperlink{group__Evas__Object__Group__Find_gad3214c89581f068934c57ac71dc6a52f}{evas\_\-object\_\-name\_\-find} (const \hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, const char $\ast$name)
+\begin{DoxyCompactList}\small\item\em Retrieves the object on the given evas with the given name. \item\end{DoxyCompactList}\item 
+EAPI \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$ \hyperlink{group__Evas__Object__Group__Find_ga6028b55f1ec538feb45aa004ba916a54}{evas\_\-object\_\-top\_\-at\_\-xy\_\-get} (const \hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, Evas\_\-Coord x, Evas\_\-Coord y, Eina\_\-Bool include\_\-pass\_\-events\_\-objects, Eina\_\-Bool include\_\-hidden\_\-objects)
+\begin{DoxyCompactList}\small\item\em Retrieves the top object at the given position (x,y). \item\end{DoxyCompactList}\item 
+EAPI \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$ \hyperlink{group__Evas__Object__Group__Find_ga6382adb2279892eb01029cef46988448}{evas\_\-object\_\-top\_\-at\_\-pointer\_\-get} (const \hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e)
+\begin{DoxyCompactList}\small\item\em Retrieves the top object at mouse pointer position. \item\end{DoxyCompactList}\item 
+EAPI \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$ \hyperlink{group__Evas__Object__Group__Find_gaf072ec206768d96c6f73a590e6af39c9}{evas\_\-object\_\-top\_\-in\_\-rectangle\_\-get} (const \hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, Evas\_\-Coord x, Evas\_\-Coord y, Evas\_\-Coord w, Evas\_\-Coord h, Eina\_\-Bool include\_\-pass\_\-events\_\-objects, Eina\_\-Bool include\_\-hidden\_\-objects)
+\begin{DoxyCompactList}\small\item\em Retrieves the top object in the given rectangle region. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-List $\ast$ \hyperlink{group__Evas__Object__Group__Find_ga473d00deb431d0869484474153e47c04}{evas\_\-objects\_\-at\_\-xy\_\-get} (const \hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, Evas\_\-Coord x, Evas\_\-Coord y, Eina\_\-Bool include\_\-pass\_\-events\_\-objects, Eina\_\-Bool include\_\-hidden\_\-objects)
+\begin{DoxyCompactList}\small\item\em Retrieves the objects at the given position. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-List $\ast$ \hyperlink{group__Evas__Object__Group__Find_gae5d4af2f915c2efe4e5cfc22644b8c53}{evas\_\-objects\_\-in\_\-rectangle\_\-get} (const \hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, Evas\_\-Coord x, Evas\_\-Coord y, Evas\_\-Coord w, Evas\_\-Coord h, Eina\_\-Bool include\_\-pass\_\-events\_\-objects, Eina\_\-Bool include\_\-hidden\_\-objects)
+\begin{DoxyCompactList}\small\item\em To be documented. \item\end{DoxyCompactList}\item 
+EAPI \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$ \hyperlink{group__Evas__Object__Group__Find_ga3e06dcd04da8cd9d64e106f7ede8db9e}{evas\_\-object\_\-bottom\_\-get} (const \hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e)
+\begin{DoxyCompactList}\small\item\em Get the lowest evas object on the Evas {\ttfamily e}. \item\end{DoxyCompactList}\item 
+EAPI \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$ \hyperlink{group__Evas__Object__Group__Find_ga2acf1e026d576ba355ca1b1ea24e0736}{evas\_\-object\_\-top\_\-get} (const \hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e)
+\begin{DoxyCompactList}\small\item\em Get the highest evas object on the Evas {\ttfamily e}. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Functions that allows finding objects by their position, name or other properties. 
+
+\subsection{Function Documentation}
+\index{Evas\_\-Object\_\-Group\_\-Find@{Evas\_\-Object\_\-Group\_\-Find}!evas\_\-focus\_\-get@{evas\_\-focus\_\-get}}
+\index{evas\_\-focus\_\-get@{evas\_\-focus\_\-get}!Evas_Object_Group_Find@{Evas\_\-Object\_\-Group\_\-Find}}
+\subsubsection[{evas\_\-focus\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Object}$\ast$ evas\_\-focus\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas} $\ast$}]{ e}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Find_gaafc05ec22375400b9f0cfc8bcfc83bf5}
+
+
+Retrieve the object that currently has focus. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The {\ttfamily Evas} canvas to query focus on.\end{DoxyParams}
+Returns the object that currently has focus, NULL otherwise.
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__Evas__Object__Group__Basic_ga5f1530901a9e94e3f35b987101009cf5}{evas\_\-object\_\-focus\_\-set} 
+
+\hyperlink{group__Evas__Object__Group__Basic_ga7dc71b30e4caaaf60076a5990173d654}{evas\_\-object\_\-focus\_\-get} 
+
+evas\_\-object\_\-key\_\-grab 
+
+evas\_\-object\_\-key\_\-ungrab
+\end{DoxySeeAlso}
+\begin{DoxyReturn}{Returns}
+The object that has focus or NULL is there is not one. 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Group\_\-Find@{Evas\_\-Object\_\-Group\_\-Find}!evas\_\-object\_\-bottom\_\-get@{evas\_\-object\_\-bottom\_\-get}}
+\index{evas\_\-object\_\-bottom\_\-get@{evas\_\-object\_\-bottom\_\-get}!Evas_Object_Group_Find@{Evas\_\-Object\_\-Group\_\-Find}}
+\subsubsection[{evas\_\-object\_\-bottom\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Object}$\ast$ evas\_\-object\_\-bottom\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas} $\ast$}]{ e}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Find_ga3e06dcd04da8cd9d64e106f7ede8db9e}
+
+
+Get the lowest evas object on the Evas {\ttfamily e}. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]an Evas \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the lowest object 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Group\_\-Find@{Evas\_\-Object\_\-Group\_\-Find}!evas\_\-object\_\-name\_\-find@{evas\_\-object\_\-name\_\-find}}
+\index{evas\_\-object\_\-name\_\-find@{evas\_\-object\_\-name\_\-find}!Evas_Object_Group_Find@{Evas\_\-Object\_\-Group\_\-Find}}
+\subsubsection[{evas\_\-object\_\-name\_\-find}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Object}$\ast$ evas\_\-object\_\-name\_\-find (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas} $\ast$}]{ e, }
+\item[{const char $\ast$}]{ name}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Find_gad3214c89581f068934c57ac71dc6a52f}
+
+
+Retrieves the object on the given evas with the given name. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given evas. \item[{\em name}]The given name. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+If successful, the evas object with the given name. Otherwise, {\ttfamily NULL}. 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Group\_\-Find@{Evas\_\-Object\_\-Group\_\-Find}!evas\_\-object\_\-top\_\-at\_\-pointer\_\-get@{evas\_\-object\_\-top\_\-at\_\-pointer\_\-get}}
+\index{evas\_\-object\_\-top\_\-at\_\-pointer\_\-get@{evas\_\-object\_\-top\_\-at\_\-pointer\_\-get}!Evas_Object_Group_Find@{Evas\_\-Object\_\-Group\_\-Find}}
+\subsubsection[{evas\_\-object\_\-top\_\-at\_\-pointer\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Object}$\ast$ evas\_\-object\_\-top\_\-at\_\-pointer\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas} $\ast$}]{ e}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Find_ga6382adb2279892eb01029cef46988448}
+
+
+Retrieves the top object at mouse pointer position. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given evas object. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The evas object that is over all others objects at the pointer position. 
+\end{DoxyReturn}
+
+
+References evas\_\-object\_\-top\_\-at\_\-xy\_\-get().
+
+\index{Evas\_\-Object\_\-Group\_\-Find@{Evas\_\-Object\_\-Group\_\-Find}!evas\_\-object\_\-top\_\-at\_\-xy\_\-get@{evas\_\-object\_\-top\_\-at\_\-xy\_\-get}}
+\index{evas\_\-object\_\-top\_\-at\_\-xy\_\-get@{evas\_\-object\_\-top\_\-at\_\-xy\_\-get}!Evas_Object_Group_Find@{Evas\_\-Object\_\-Group\_\-Find}}
+\subsubsection[{evas\_\-object\_\-top\_\-at\_\-xy\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Object}$\ast$ evas\_\-object\_\-top\_\-at\_\-xy\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas} $\ast$}]{ e, }
+\item[{Evas\_\-Coord}]{ x, }
+\item[{Evas\_\-Coord}]{ y, }
+\item[{Eina\_\-Bool}]{ include\_\-pass\_\-events\_\-objects, }
+\item[{Eina\_\-Bool}]{ include\_\-hidden\_\-objects}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Find_ga6028b55f1ec538feb45aa004ba916a54}
+
+
+Retrieves the top object at the given position (x,y). 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given evas object. \item[{\em x}]The horizontal coordinate \item[{\em y}]The vertical coordinate \item[{\em include\_\-pass\_\-events\_\-objects}]Boolean Flag to include or not pass events objects \item[{\em include\_\-hidden\_\-objects}]Boolean Flag to include or not hidden objects \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The evas object that is over all others objects at the given position. 
+\end{DoxyReturn}
+
+
+Referenced by evas\_\-object\_\-top\_\-at\_\-pointer\_\-get().
+
+\index{Evas\_\-Object\_\-Group\_\-Find@{Evas\_\-Object\_\-Group\_\-Find}!evas\_\-object\_\-top\_\-get@{evas\_\-object\_\-top\_\-get}}
+\index{evas\_\-object\_\-top\_\-get@{evas\_\-object\_\-top\_\-get}!Evas_Object_Group_Find@{Evas\_\-Object\_\-Group\_\-Find}}
+\subsubsection[{evas\_\-object\_\-top\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Object}$\ast$ evas\_\-object\_\-top\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas} $\ast$}]{ e}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Find_ga2acf1e026d576ba355ca1b1ea24e0736}
+
+
+Get the highest evas object on the Evas {\ttfamily e}. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]an Evas \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the highest object 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Group\_\-Find@{Evas\_\-Object\_\-Group\_\-Find}!evas\_\-object\_\-top\_\-in\_\-rectangle\_\-get@{evas\_\-object\_\-top\_\-in\_\-rectangle\_\-get}}
+\index{evas\_\-object\_\-top\_\-in\_\-rectangle\_\-get@{evas\_\-object\_\-top\_\-in\_\-rectangle\_\-get}!Evas_Object_Group_Find@{Evas\_\-Object\_\-Group\_\-Find}}
+\subsubsection[{evas\_\-object\_\-top\_\-in\_\-rectangle\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Object}$\ast$ evas\_\-object\_\-top\_\-in\_\-rectangle\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas} $\ast$}]{ e, }
+\item[{Evas\_\-Coord}]{ x, }
+\item[{Evas\_\-Coord}]{ y, }
+\item[{Evas\_\-Coord}]{ w, }
+\item[{Evas\_\-Coord}]{ h, }
+\item[{Eina\_\-Bool}]{ include\_\-pass\_\-events\_\-objects, }
+\item[{Eina\_\-Bool}]{ include\_\-hidden\_\-objects}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Find_gaf072ec206768d96c6f73a590e6af39c9}
+
+
+Retrieves the top object in the given rectangle region. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given evas object. \item[{\em x}]The horizontal coordinate. \item[{\em y}]The vertical coordinate. \item[{\em w}]The width size. \item[{\em h}]The height size. \item[{\em include\_\-pass\_\-events\_\-objects}]Boolean Flag to include or not pass events objects \item[{\em include\_\-hidden\_\-objects}]Boolean Flag to include or not hidden objects \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The evas object that is over all others objects at the pointer position. 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Group\_\-Find@{Evas\_\-Object\_\-Group\_\-Find}!evas\_\-objects\_\-at\_\-xy\_\-get@{evas\_\-objects\_\-at\_\-xy\_\-get}}
+\index{evas\_\-objects\_\-at\_\-xy\_\-get@{evas\_\-objects\_\-at\_\-xy\_\-get}!Evas_Object_Group_Find@{Evas\_\-Object\_\-Group\_\-Find}}
+\subsubsection[{evas\_\-objects\_\-at\_\-xy\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-List$\ast$ evas\_\-objects\_\-at\_\-xy\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas} $\ast$}]{ e, }
+\item[{Evas\_\-Coord}]{ x, }
+\item[{Evas\_\-Coord}]{ y, }
+\item[{Eina\_\-Bool}]{ include\_\-pass\_\-events\_\-objects, }
+\item[{Eina\_\-Bool}]{ include\_\-hidden\_\-objects}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Find_ga473d00deb431d0869484474153e47c04}
+
+
+Retrieves the objects at the given position. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given evas object. \item[{\em x}]The horizontal coordinate. \item[{\em y}]The vertical coordinate. \item[{\em include\_\-pass\_\-events\_\-objects}]Boolean Flag to include or not pass events objects \item[{\em include\_\-hidden\_\-objects}]Boolean Flag to include or not hidden objects \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The list of evas objects at the pointer position. 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Group\_\-Find@{Evas\_\-Object\_\-Group\_\-Find}!evas\_\-objects\_\-in\_\-rectangle\_\-get@{evas\_\-objects\_\-in\_\-rectangle\_\-get}}
+\index{evas\_\-objects\_\-in\_\-rectangle\_\-get@{evas\_\-objects\_\-in\_\-rectangle\_\-get}!Evas_Object_Group_Find@{Evas\_\-Object\_\-Group\_\-Find}}
+\subsubsection[{evas\_\-objects\_\-in\_\-rectangle\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-List$\ast$ evas\_\-objects\_\-in\_\-rectangle\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas} $\ast$}]{ e, }
+\item[{Evas\_\-Coord}]{ x, }
+\item[{Evas\_\-Coord}]{ y, }
+\item[{Evas\_\-Coord}]{ w, }
+\item[{Evas\_\-Coord}]{ h, }
+\item[{Eina\_\-Bool}]{ include\_\-pass\_\-events\_\-objects, }
+\item[{Eina\_\-Bool}]{ include\_\-hidden\_\-objects}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Find_gae5d4af2f915c2efe4e5cfc22644b8c53}
+
+
+To be documented. 
+
+FIXME: To be fixed. Retrieves the objects in the given rectangle region 
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given evas object. \item[{\em x}]The horizontal coordinate. \item[{\em y}]The vertical coordinate. \item[{\em w}]The width size. \item[{\em h}]The height size. \item[{\em include\_\-pass\_\-events\_\-objects}]Boolean Flag to include or not pass events objects \item[{\em include\_\-hidden\_\-objects}]Boolean Flag to include or not hidden objects \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The list of evas object in the rectangle region. 
+\end{DoxyReturn}

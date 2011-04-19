@@ -1,0 +1,1270 @@
+\section{Image Object Functions}
+\label{group__Evas__Object__Image}\index{Image Object Functions@{Image Object Functions}}
+
+
+Functions used to create and manipulate image objects.  
+
+
+\subsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef enum \hyperlink{group__Evas__Object__Image_ga84ff1db3d33d85c86d81dbe9046b54bb}{\_\-Evas\_\-Colorspace} \hyperlink{group__Evas__Object__Image_ga8c6e60db9c8b83b155ccea52957ff656}{Evas\_\-Colorspace}
+\begin{DoxyCompactList}\small\item\em Colorspaces for pixel data supported by Evas. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum \hyperlink{group__Evas__Object__Image_ga84ff1db3d33d85c86d81dbe9046b54bb}{\_\-Evas\_\-Colorspace} \{ \par
+\hyperlink{group__Evas__Object__Image_gga84ff1db3d33d85c86d81dbe9046b54bba0948ad4d06f0f64f757aa673d47ac254}{EVAS\_\-COLORSPACE\_\-ARGB8888}, 
+\par
+\hyperlink{group__Evas__Object__Image_gga84ff1db3d33d85c86d81dbe9046b54bba5e861cf48ce8169485bb334c31678636}{EVAS\_\-COLORSPACE\_\-YCBCR422P601\_\-PL}, 
+\par
+\hyperlink{group__Evas__Object__Image_gga84ff1db3d33d85c86d81dbe9046b54bba77eda7660a21d397912e0d6084300f22}{EVAS\_\-COLORSPACE\_\-YCBCR422P709\_\-PL}, 
+\par
+\hyperlink{group__Evas__Object__Image_gga84ff1db3d33d85c86d81dbe9046b54bba69c6f59ef385ef3443caa30ce009f729}{EVAS\_\-COLORSPACE\_\-RGB565\_\-A5P}, 
+\par
+\hyperlink{group__Evas__Object__Image_gga84ff1db3d33d85c86d81dbe9046b54bba6d0303ab6ba63b8bf89e16d39105e0f0}{EVAS\_\-COLORSPACE\_\-GRY8}
+ \}
+\begin{DoxyCompactList}\small\item\em Colorspaces for pixel data supported by Evas. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+EAPI \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$ \hyperlink{group__Evas__Object__Image_gae2bf7d73874a8b11ac4d7cb3bf2476ce}{evas\_\-object\_\-image\_\-add} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e)
+\begin{DoxyCompactList}\small\item\em Creates a new image object on the given evas. \item\end{DoxyCompactList}\item 
+EAPI \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$ \hyperlink{group__Evas__Object__Image_ga2e4275b1aee95e338ffa8b39e81f4eee}{evas\_\-object\_\-image\_\-filled\_\-add} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e)
+\begin{DoxyCompactList}\small\item\em Creates a new image object that automatically scales on the given evas. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_ga58846bf7f00892e6985264ea2681d73a}{evas\_\-object\_\-image\_\-memfile\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, void $\ast$data, int size, char $\ast$format, char $\ast$key)
+\begin{DoxyCompactList}\small\item\em Sets the data for an image from memory to be loaded. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_ga70f63c055b2e248089e761f5c0f78a0f}{evas\_\-object\_\-image\_\-file\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, const char $\ast$file, const char $\ast$key)
+\begin{DoxyCompactList}\small\item\em Sets the filename and key of the given image object. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_ga0c3b22438934db6f2b53a30ddd71ef1a}{evas\_\-object\_\-image\_\-file\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, const char $\ast$$\ast$file, const char $\ast$$\ast$key)
+\begin{DoxyCompactList}\small\item\em Retrieves the filename and key of the given image object. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Object__Image_ga8f3b7eb8efaa3d77b9908a080b3d4c55}{evas\_\-object\_\-image\_\-source\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$src)
+\begin{DoxyCompactList}\small\item\em Set the source object on a proxy object. \item\end{DoxyCompactList}\item 
+EAPI \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$ \hyperlink{group__Evas__Object__Image_ga95a96ced932d6e7e17ee019654d9d901}{evas\_\-object\_\-image\_\-source\_\-get} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Get the current source object of an image. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Object__Image_gad667fc9de032eb39bf07e33ef0f4d81b}{evas\_\-object\_\-image\_\-source\_\-unset} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Clear the source on a proxy image. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_ga6283aace5be077433bee45ec23ad072d}{evas\_\-object\_\-image\_\-border\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, int l, int r, int t, int b)
+\begin{DoxyCompactList}\small\item\em Sets how much of each border of the given image object is not to be scaled. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_gab666a37cbae8ee846cdeb518e7fd495c}{evas\_\-object\_\-image\_\-border\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, int $\ast$l, int $\ast$r, int $\ast$t, int $\ast$b)
+\begin{DoxyCompactList}\small\item\em Retrieves how much of each border of the given image object is not to be scaled. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_ga4caf736585ad602e6748e434ac1f5fc6}{evas\_\-object\_\-image\_\-border\_\-center\_\-fill\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Border\_\-Fill\_\-Mode fill)
+\begin{DoxyCompactList}\small\item\em Sets if the center part of the given image object (not the border) should be drawn. \item\end{DoxyCompactList}\item 
+EAPI Evas\_\-Border\_\-Fill\_\-Mode \hyperlink{group__Evas__Object__Image_ga04f8a4f69c5ad37d9229e4c39bb7c010}{evas\_\-object\_\-image\_\-border\_\-center\_\-fill\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Retrieves if the center of the given image object is to be drawn or not. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_gae304964ee6769e559ca452c788f5aae4}{evas\_\-object\_\-image\_\-filled\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Eina\_\-Bool setting)
+\begin{DoxyCompactList}\small\item\em Sets if image fill property should track object size. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Object__Image_ga3fbe9f33ccc93a5c45ffa3b26019694e}{evas\_\-object\_\-image\_\-filled\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Retrieves if image fill property is tracking object size. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_gaba00498563648d2d3934e7e75449abd0}{evas\_\-object\_\-image\_\-border\_\-scale\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, double scale)
+\begin{DoxyCompactList}\small\item\em Sets a scale factor (multiplier) for the borders of an image. \item\end{DoxyCompactList}\item 
+EAPI double \hyperlink{group__Evas__Object__Image_ga7cc1bf948a8a5d61c703211f0bd5d2dc}{evas\_\-object\_\-image\_\-border\_\-scale\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Retrieves the border scale factor. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_ga7182040bc16e68d3bbce3bd0f8ee8034}{evas\_\-object\_\-image\_\-fill\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Coord x, Evas\_\-Coord y, Evas\_\-Coord w, Evas\_\-Coord h)
+\begin{DoxyCompactList}\small\item\em Sets the rectangle of the given image object that the image will be drawn to. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_gaf1a7d6b8cf914234abdd5d3d3312f85e}{evas\_\-object\_\-image\_\-fill\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Coord $\ast$x, Evas\_\-Coord $\ast$y, Evas\_\-Coord $\ast$w, Evas\_\-Coord $\ast$h)
+\begin{DoxyCompactList}\small\item\em Retrieves the dimensions of the rectangle of the given image object that the image will be drawn to. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_ga0015a660507a5562e118a1777947f881}{evas\_\-object\_\-image\_\-fill\_\-spread\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, \hyperlink{Evas_8h_a693bc9123af8452d9771c2a849b8805c}{Evas\_\-Fill\_\-Spread} spread)
+\begin{DoxyCompactList}\small\item\em Sets the tiling mode for the given evas image object's fill. \item\end{DoxyCompactList}\item 
+EAPI \hyperlink{Evas_8h_a693bc9123af8452d9771c2a849b8805c}{Evas\_\-Fill\_\-Spread} \hyperlink{group__Evas__Object__Image_gae86928005f983627c74dbaef6c0fbb0e}{evas\_\-object\_\-image\_\-fill\_\-spread\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Retrieves the spread (tiling mode) for the given image object's fill. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_gaf85031267b5fab16874ebbf944dded22}{evas\_\-object\_\-image\_\-size\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, int w, int h)
+\begin{DoxyCompactList}\small\item\em Sets the size of the given image object. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_ga43e6f1b16ebe859826e6901cb36995ad}{evas\_\-object\_\-image\_\-size\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, int $\ast$w, int $\ast$h)
+\begin{DoxyCompactList}\small\item\em Retrieves the size of the given image object. \item\end{DoxyCompactList}\item 
+EAPI int \hyperlink{group__Evas__Object__Image_gab72175381532640c620dd032e56c590b}{evas\_\-object\_\-image\_\-stride\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Retrieves the row stride of the given image object,. \item\end{DoxyCompactList}\item 
+EAPI \hyperlink{Evas_8h_aff351ae694a58aecd7834ef12bdf3d64}{Evas\_\-Load\_\-Error} \hyperlink{group__Evas__Object__Image_ga46e4a0b2b916d28694ad054549f88e24}{evas\_\-object\_\-image\_\-load\_\-error\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Retrieves a number representing any error that occurred during the last load of the given image object. \item\end{DoxyCompactList}\item 
+EAPI void $\ast$ \hyperlink{group__Evas__Object__Image_ga3072cf7c31cf33057abd8ae8876218cd}{evas\_\-object\_\-image\_\-data\_\-convert} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, \hyperlink{group__Evas__Object__Image_ga8c6e60db9c8b83b155ccea52957ff656}{Evas\_\-Colorspace} to\_\-cspace)
+\begin{DoxyCompactList}\small\item\em Converts the raw image data of the given image object to the specified colorspace. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_gabdd65e4c69f422ddcf0d3c8720859a92}{evas\_\-object\_\-image\_\-data\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, void $\ast$data)
+\begin{DoxyCompactList}\small\item\em Sets the raw image data of the given image object. \item\end{DoxyCompactList}\item 
+EAPI void $\ast$ \hyperlink{group__Evas__Object__Image_gabe5883e22418071463f4ae97ca8885b2}{evas\_\-object\_\-image\_\-data\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Eina\_\-Bool for\_\-writing)
+\begin{DoxyCompactList}\small\item\em Get a pointer to the raw image data of the given image object. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_gad6383022c4013008d11827b32bf63d59}{evas\_\-object\_\-image\_\-preload} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Eina\_\-Bool cancel)
+\begin{DoxyCompactList}\small\item\em Preload image in the background. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_ga97d17b8d95f0ca01a264a6c303d00c27}{evas\_\-object\_\-image\_\-data\_\-copy\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, void $\ast$data)
+\begin{DoxyCompactList}\small\item\em Replaces the raw image data of the given image object. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_gab6b763271781a2ab35f5849f6564e165}{evas\_\-object\_\-image\_\-data\_\-update\_\-add} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, int x, int y, int w, int h)
+\begin{DoxyCompactList}\small\item\em Mark a sub-\/region of the given image object to be redrawn. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_gadf2df4027a211db3f9a1fb21f248d7fb}{evas\_\-object\_\-image\_\-alpha\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Eina\_\-Bool has\_\-alpha)
+\begin{DoxyCompactList}\small\item\em Enable or disable alpha channel of the given image object. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Object__Image_gac136f7f65d8529427b1f6da055b47a30}{evas\_\-object\_\-image\_\-alpha\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Retrieves the alpha channel setting of the given image object. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_ga670a0cf9176882f0ad339ccb4f37f510}{evas\_\-object\_\-image\_\-smooth\_\-scale\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Eina\_\-Bool smooth\_\-scale)
+\begin{DoxyCompactList}\small\item\em Sets whether to use of high-\/quality image scaling algorithm of the given image object. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Object__Image_gae4acc1da719cb38122b92527df24388c}{evas\_\-object\_\-image\_\-smooth\_\-scale\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Retrieves whether the given image object is using use a high-\/quality image scaling algorithm. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_ga764bec190c0812f61f5a18f38c9c6a4e}{evas\_\-object\_\-image\_\-reload} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Reload a image of the canvas. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Object__Image_ga68eee07a73dc2f5dc529970f5a1634c4}{evas\_\-object\_\-image\_\-save} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, const char $\ast$file, const char $\ast$key, const char $\ast$flags)
+\begin{DoxyCompactList}\small\item\em Save the given image object to a file. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Object__Image_gad87ced373138180afff4756fded5a4f3}{evas\_\-object\_\-image\_\-pixels\_\-import} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, \hyperlink{Evas_8h_abb01076af16fbb50a837b1893b776783}{Evas\_\-Pixel\_\-Import\_\-Source} $\ast$pixels)
+\begin{DoxyCompactList}\small\item\em Import pixels from given source to a given canvas image object. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_ga1602f8906760b1c871b84b4a287a52db}{evas\_\-object\_\-image\_\-pixels\_\-get\_\-callback\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Object\_\-Image\_\-Pixels\_\-Get\_\-Cb func, void $\ast$data)
+\begin{DoxyCompactList}\small\item\em Set the callback function to get pixels from a canva's image. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_gad230eeeb0c6ba49eafd32b20afa314cb}{evas\_\-object\_\-image\_\-pixels\_\-dirty\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Eina\_\-Bool dirty)
+\begin{DoxyCompactList}\small\item\em Mark whether the given image object is dirty (needs to be redrawn). \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Object__Image_ga1d9e82da12f7831552fca02b9b313551}{evas\_\-object\_\-image\_\-pixels\_\-dirty\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Retrieves whether the given image object is dirty (needs to be redrawn). \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_ga88a20331cef0267ddc1d00419841580b}{evas\_\-object\_\-image\_\-load\_\-dpi\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, double dpi)
+\begin{DoxyCompactList}\small\item\em Set the dpi resolution of a loaded image of the canvas. \item\end{DoxyCompactList}\item 
+EAPI double \hyperlink{group__Evas__Object__Image_ga92a5503085a5c0731bb9c299e7b42f78}{evas\_\-object\_\-image\_\-load\_\-dpi\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Get the dpi resolution of a loaded image of the canvas. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_ga1811fb73c1e138b5221cf4b25148111a}{evas\_\-object\_\-image\_\-load\_\-size\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, int w, int h)
+\begin{DoxyCompactList}\small\item\em Set the size of a loaded image of the canvas. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_gae8047183e894e1e1245f1f3aaf78f218}{evas\_\-object\_\-image\_\-load\_\-size\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, int $\ast$w, int $\ast$h)
+\begin{DoxyCompactList}\small\item\em Get the size of a loaded image of the canvas. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_ga59796713b88c217ce5869cb003e404c0}{evas\_\-object\_\-image\_\-load\_\-scale\_\-down\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, int scale\_\-down)
+\begin{DoxyCompactList}\small\item\em Set the scale down of a loaded image of the canvas. \item\end{DoxyCompactList}\item 
+EAPI int \hyperlink{group__Evas__Object__Image_ga259c48b3e2a4009e8a10f8e9874d3847}{evas\_\-object\_\-image\_\-load\_\-scale\_\-down\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Get the scale down value of given image of the canvas. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_gac352f7b110d7e527bf2d36fba5507d0c}{evas\_\-object\_\-image\_\-colorspace\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, \hyperlink{group__Evas__Object__Image_ga8c6e60db9c8b83b155ccea52957ff656}{Evas\_\-Colorspace} cspace)
+\begin{DoxyCompactList}\small\item\em Set the colorspace of a given image of the canvas. \item\end{DoxyCompactList}\item 
+EAPI \hyperlink{group__Evas__Object__Image_ga8c6e60db9c8b83b155ccea52957ff656}{Evas\_\-Colorspace} \hyperlink{group__Evas__Object__Image_gaa59339b6adb32081383fa5540641eb42}{evas\_\-object\_\-image\_\-colorspace\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Get the colorspace of a given image of the canvas. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_gacbe4ec46460fd3321dd4f6161f09bbed}{evas\_\-object\_\-image\_\-native\_\-surface\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, \hyperlink{Evas_8h_ae35ae0b7b909a9e956836b92d63b493d}{Evas\_\-Native\_\-Surface} $\ast$surf)
+\begin{DoxyCompactList}\small\item\em Set the native surface of a given image of the canvas. \item\end{DoxyCompactList}\item 
+EAPI \hyperlink{Evas_8h_ae35ae0b7b909a9e956836b92d63b493d}{Evas\_\-Native\_\-Surface} $\ast$ \hyperlink{group__Evas__Object__Image_gabd3effabde6da00dfcac7cf0cfa22280}{evas\_\-object\_\-image\_\-native\_\-surface\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Get the native surface of a given image of the canvas. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_gad13d32b74c2cd82c95b85fa9640ae529}{evas\_\-object\_\-image\_\-scale\_\-hint\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Image\_\-Scale\_\-Hint hint)
+\begin{DoxyCompactList}\small\item\em Set the scale hint of a given image of the canvas. \item\end{DoxyCompactList}\item 
+EAPI Evas\_\-Image\_\-Scale\_\-Hint \hyperlink{group__Evas__Object__Image_ga8cce0086819196768915e5f2c2ed0cb2}{evas\_\-object\_\-image\_\-scale\_\-hint\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Get the scale hint of a given image of the canvas. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_gaf6cc0faf39773e12eb496116afd67c6f}{evas\_\-object\_\-image\_\-content\_\-hint\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Image\_\-Content\_\-Hint hint)
+\begin{DoxyCompactList}\small\item\em Set the content hint of a given image of the canvas. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Image_ga154d8315842f4602878704951705e6cb}{evas\_\-object\_\-image\_\-alpha\_\-mask\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Eina\_\-Bool ismask)
+\begin{DoxyCompactList}\small\item\em Enable an image to be used as an alpha mask. \item\end{DoxyCompactList}\item 
+EAPI Evas\_\-Image\_\-Content\_\-Hint \hyperlink{group__Evas__Object__Image_ga28881040682dbbf00937948124e9f3fb}{evas\_\-object\_\-image\_\-content\_\-hint\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Get the content hint of a given image of the canvas. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Functions used to create and manipulate image objects. Note -\/ Image objects may return or accept \char`\"{}image data\char`\"{} in multiple formats. This is based on the colorspace of an object. Here is a rundown on formats:
+
+EVAS\_\-COLORSPACE\_\-ARGB8888:
+
+This pixel format is a linear block of pixels, starting at the top-\/left row by row until the bottom right of the image or pixel region. All pixels are 32-\/bit unsigned int's with the high-\/byte being alpha and the low byte being blue in the format ARGB. Alpha may or may not be used by evas depending on the alpha flag of the image, but if not used, should be set to 0xff anyway.
+
+This colorspace uses premultiplied alpha. That means that R, G and B cannot exceed A in value. The conversion from non-\/premultiplied colorspace is:
+
+R = (r $\ast$ a) / 255; G = (g $\ast$ a) / 255; B = (b $\ast$ a) / 255;
+
+So 50\% transparent blue will be: 0x80000080. This will not be \char`\"{}dark\char`\"{} -\/ just 50\% transparent. Values are 0 == black, 255 == solid or full red, green or blue.
+
+EVAS\_\-COLORSPACE\_\-YCBCR422P601\_\-PL:
+
+This is a pointer-\/list indirected set of YUV (YCbCr) pixel data. This means that the data returned or set is not actual pixel data, but pointers TO lines of pixel data. The list of pointers will first be N rows of pointers to the Y plane -\/ pointing to the first pixel at the start of each row in the Y plane. N is the height of the image data in pixels. Each pixel in the Y, U and V planes is 1 byte exactly, packed. The next N / 2 pointers will point to rows in the U plane, and the next N / 2 pointers will point to the V plane rows. U and V planes are half the horizontal and vertical resolution of the Y plane.
+
+Row order is top to bottom and row pixels are stored left to right.
+
+There is a limitation that these images MUST be a multiple of 2 pixels in size horizontally or vertically. This is due to the U and V planes being half resolution. Also note that this assumes the itu601 YUV colorspace specification. This is defined for standard television and mpeg streams. HDTV may use the itu709 specification.
+
+Values are 0 to 255, indicating full or no signal in that plane respectively.
+
+EVAS\_\-COLORSPACE\_\-YCBCR422P709\_\-PL:
+
+Not implemented yet.
+
+EVAS\_\-COLORSPACE\_\-RGB565\_\-A5P:
+
+In the process of being implemented in 1 engine only. This may change.
+
+This is a pointer to image data for 16-\/bit half-\/word pixel data in 16bpp RGB 565 format (5 bits red, 6 bits green, 5 bits blue), with the high-\/byte containing red and the low byte containing blue, per pixel. This data is packed row by row from the top-\/left to the bottom right.
+
+If the image has an alpha channel enabled there will be an extra alpha plane after the color pixel plane. If not, then this data will not exist and should not be accessed in any way. This plane is a set of pixels with 1 byte per pixel defining the alpha values of all pixels in the image from the top-\/left to the bottom right of the image, row by row. Even though the values of the alpha pixels can be 0 to 255, only values 0 through to 32 are used, 32 being solid and 0 being transparent.
+
+RGB values can be 0 to 31 for red and blue and 0 to 63 for green, with 0 being black and 31 or 63 being full red, green or blue respectively. This colorspace is also pre-\/multiplied like EVAS\_\-COLORSPACE\_\-ARGB8888 so:
+
+R = (r $\ast$ a) / 32; G = (g $\ast$ a) / 32; B = (b $\ast$ a) / 32;
+
+EVAS\_\-COLORSPACE\_\-A8:
+
+The image is just a alpha mask (8 bit's per pixel). This is used for alpha masking. 
+
+\subsection{Typedef Documentation}
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!Evas\_\-Colorspace@{Evas\_\-Colorspace}}
+\index{Evas\_\-Colorspace@{Evas\_\-Colorspace}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{Evas\_\-Colorspace}]{\setlength{\rightskip}{0pt plus 5cm}typedef enum {\bf \_\-Evas\_\-Colorspace}  {\bf Evas\_\-Colorspace}}\label{group__Evas__Object__Image_ga8c6e60db9c8b83b155ccea52957ff656}
+
+
+Colorspaces for pixel data supported by Evas. 
+
+Colorspaces for pixel data supported by Evas 
+
+\subsection{Enumeration Type Documentation}
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!\_\-Evas\_\-Colorspace@{\_\-Evas\_\-Colorspace}}
+\index{\_\-Evas\_\-Colorspace@{\_\-Evas\_\-Colorspace}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{\_\-Evas\_\-Colorspace}]{\setlength{\rightskip}{0pt plus 5cm}enum {\bf \_\-Evas\_\-Colorspace}}\label{group__Evas__Object__Image_ga84ff1db3d33d85c86d81dbe9046b54bb}
+
+
+Colorspaces for pixel data supported by Evas. 
+
+\begin{Desc}
+\item[Enumerator: ]\par
+\begin{description}
+\index{EVAS\_\-COLORSPACE\_\-ARGB8888@{EVAS\_\-COLORSPACE\_\-ARGB8888}!Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}}\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!EVAS\_\-COLORSPACE\_\-ARGB8888@{EVAS\_\-COLORSPACE\_\-ARGB8888}}\item[{\em 
+EVAS\_\-COLORSPACE\_\-ARGB8888\label{group__Evas__Object__Image_gga84ff1db3d33d85c86d81dbe9046b54bba0948ad4d06f0f64f757aa673d47ac254}
+}]ARGB 32 bits per pixel, high-\/byte is Alpha, accessed 1 32bit word at a time. \index{EVAS\_\-COLORSPACE\_\-YCBCR422P601\_\-PL@{EVAS\_\-COLORSPACE\_\-YCBCR422P601\_\-PL}!Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}}\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!EVAS\_\-COLORSPACE\_\-YCBCR422P601\_\-PL@{EVAS\_\-COLORSPACE\_\-YCBCR422P601\_\-PL}}\item[{\em 
+EVAS\_\-COLORSPACE\_\-YCBCR422P601\_\-PL\label{group__Evas__Object__Image_gga84ff1db3d33d85c86d81dbe9046b54bba5e861cf48ce8169485bb334c31678636}
+}]YCbCr 4:2:2 Planar, ITU.BT-\/601 specifications. The data poitned to is just an array of row pointer, pointing to the Y rows, then the Cb, then Cr rows \index{EVAS\_\-COLORSPACE\_\-YCBCR422P709\_\-PL@{EVAS\_\-COLORSPACE\_\-YCBCR422P709\_\-PL}!Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}}\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!EVAS\_\-COLORSPACE\_\-YCBCR422P709\_\-PL@{EVAS\_\-COLORSPACE\_\-YCBCR422P709\_\-PL}}\item[{\em 
+EVAS\_\-COLORSPACE\_\-YCBCR422P709\_\-PL\label{group__Evas__Object__Image_gga84ff1db3d33d85c86d81dbe9046b54bba77eda7660a21d397912e0d6084300f22}
+}]YCbCr 4:2:2 Planar, ITU.BT-\/709 specifications. The data poitned to is just an array of row pointer, pointing to the Y rows, then the Cb, then Cr rows \index{EVAS\_\-COLORSPACE\_\-RGB565\_\-A5P@{EVAS\_\-COLORSPACE\_\-RGB565\_\-A5P}!Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}}\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!EVAS\_\-COLORSPACE\_\-RGB565\_\-A5P@{EVAS\_\-COLORSPACE\_\-RGB565\_\-A5P}}\item[{\em 
+EVAS\_\-COLORSPACE\_\-RGB565\_\-A5P\label{group__Evas__Object__Image_gga84ff1db3d33d85c86d81dbe9046b54bba69c6f59ef385ef3443caa30ce009f729}
+}]16bit rgb565 + Alpha plane at end -\/ 5 bits of the 8 being used per alpha byte \index{EVAS\_\-COLORSPACE\_\-GRY8@{EVAS\_\-COLORSPACE\_\-GRY8}!Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}}\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!EVAS\_\-COLORSPACE\_\-GRY8@{EVAS\_\-COLORSPACE\_\-GRY8}}\item[{\em 
+EVAS\_\-COLORSPACE\_\-GRY8\label{group__Evas__Object__Image_gga84ff1db3d33d85c86d81dbe9046b54bba6d0303ab6ba63b8bf89e16d39105e0f0}
+}]8bit grayscale \end{description}
+\end{Desc}
+
+
+
+\subsection{Function Documentation}
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-add@{evas\_\-object\_\-image\_\-add}}
+\index{evas\_\-object\_\-image\_\-add@{evas\_\-object\_\-image\_\-add}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-add}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Object}$\ast$ evas\_\-object\_\-image\_\-add (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_gae2bf7d73874a8b11ac4d7cb3bf2476ce}
+
+
+Creates a new image object on the given evas. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given evas. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The created image object. 
+\end{DoxyReturn}
+
+
+Referenced by evas\_\-object\_\-image\_\-filled\_\-add().
+
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-alpha\_\-get@{evas\_\-object\_\-image\_\-alpha\_\-get}}
+\index{evas\_\-object\_\-image\_\-alpha\_\-get@{evas\_\-object\_\-image\_\-alpha\_\-get}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-alpha\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-object\_\-image\_\-alpha\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_gac136f7f65d8529427b1f6da055b47a30}
+
+
+Retrieves the alpha channel setting of the given image object. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Whether the alpha channel data is being used.
+\end{DoxyReturn}
+This function returns 1 if the image object's alpha channel is being used, or 0 otherwise.
+
+See \hyperlink{group__Evas__Object__Image_gadf2df4027a211db3f9a1fb21f248d7fb}{evas\_\-object\_\-image\_\-alpha\_\-set} for more details. \index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-alpha\_\-mask\_\-set@{evas\_\-object\_\-image\_\-alpha\_\-mask\_\-set}}
+\index{evas\_\-object\_\-image\_\-alpha\_\-mask\_\-set@{evas\_\-object\_\-image\_\-alpha\_\-mask\_\-set}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-alpha\_\-mask\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-alpha\_\-mask\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Eina\_\-Bool}]{ ismask}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga154d8315842f4602878704951705e6cb}
+
+
+Enable an image to be used as an alpha mask. 
+
+This will set any flags, and discard any excess image data not used as an alpha mask.
+
+Note there is little point in using a image as alpha mask unless it has an alpha channel.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]Object to use as an alpha mask. \item[{\em ismask}]Use image as alphamask, must be true. \end{DoxyParams}
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-alpha\_\-set@{evas\_\-object\_\-image\_\-alpha\_\-set}}
+\index{evas\_\-object\_\-image\_\-alpha\_\-set@{evas\_\-object\_\-image\_\-alpha\_\-set}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-alpha\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-alpha\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Eina\_\-Bool}]{ has\_\-alpha}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_gadf2df4027a211db3f9a1fb21f248d7fb}
+
+
+Enable or disable alpha channel of the given image object. 
+
+This function sets a flag on an image object indicating whether or not to use alpha channel data. A value of 1 indicates to use alpha channel data, and 0 indicates to ignore any alpha channel data. Note that this has nothing to do with an object's color as manipulated by \hyperlink{group__Evas__Object__Group__Basic_ga6b2dfe01eb955cebf734f4e10ac9ce7f}{evas\_\-object\_\-color\_\-set()}.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \item[{\em has\_\-alpha}]Whether to use alpha channel data or not. \end{DoxyParams}
+
+
+References evas\_\-object\_\-image\_\-data\_\-update\_\-add().
+
+
+
+Referenced by evas\_\-object\_\-image\_\-memfile\_\-set().
+
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-border\_\-center\_\-fill\_\-get@{evas\_\-object\_\-image\_\-border\_\-center\_\-fill\_\-get}}
+\index{evas\_\-object\_\-image\_\-border\_\-center\_\-fill\_\-get@{evas\_\-object\_\-image\_\-border\_\-center\_\-fill\_\-get}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-border\_\-center\_\-fill\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Evas\_\-Border\_\-Fill\_\-Mode evas\_\-object\_\-image\_\-border\_\-center\_\-fill\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga04f8a4f69c5ad37d9229e4c39bb7c010}
+
+
+Retrieves if the center of the given image object is to be drawn or not. 
+
+See \hyperlink{group__Evas__Object__Image_ga7182040bc16e68d3bbce3bd0f8ee8034}{evas\_\-object\_\-image\_\-fill\_\-set} for more details.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Fill mode of the center. 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-border\_\-center\_\-fill\_\-set@{evas\_\-object\_\-image\_\-border\_\-center\_\-fill\_\-set}}
+\index{evas\_\-object\_\-image\_\-border\_\-center\_\-fill\_\-set@{evas\_\-object\_\-image\_\-border\_\-center\_\-fill\_\-set}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-border\_\-center\_\-fill\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-border\_\-center\_\-fill\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Border\_\-Fill\_\-Mode}]{ fill}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga4caf736585ad602e6748e434ac1f5fc6}
+
+
+Sets if the center part of the given image object (not the border) should be drawn. 
+
+When rendering, the image may be scaled to fit the size of the image object. This function sets if the center part of the scaled image is to be drawn or left completely blank, or forced to be solid. Very useful for frames and decorations.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \item[{\em fill}]Fill mode of the middle. \end{DoxyParams}
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-border\_\-get@{evas\_\-object\_\-image\_\-border\_\-get}}
+\index{evas\_\-object\_\-image\_\-border\_\-get@{evas\_\-object\_\-image\_\-border\_\-get}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-border\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-border\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{int $\ast$}]{ l, }
+\item[{int $\ast$}]{ r, }
+\item[{int $\ast$}]{ t, }
+\item[{int $\ast$}]{ b}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_gab666a37cbae8ee846cdeb518e7fd495c}
+
+
+Retrieves how much of each border of the given image object is not to be scaled. 
+
+See \hyperlink{group__Evas__Object__Image_ga6283aace5be077433bee45ec23ad072d}{evas\_\-object\_\-image\_\-border\_\-set} for more details.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \item[{\em l}]Location to store the left border width in, or NULL. \item[{\em r}]Location to store the right border width in, or NULL. \item[{\em t}]Location to store the top border width in, or NULL. \item[{\em b}]Location to store the bottom border width in, or NULL. \end{DoxyParams}
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-border\_\-scale\_\-get@{evas\_\-object\_\-image\_\-border\_\-scale\_\-get}}
+\index{evas\_\-object\_\-image\_\-border\_\-scale\_\-get@{evas\_\-object\_\-image\_\-border\_\-scale\_\-get}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-border\_\-scale\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI double evas\_\-object\_\-image\_\-border\_\-scale\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga7cc1bf948a8a5d61c703211f0bd5d2dc}
+
+
+Retrieves the border scale factor. 
+
+See \hyperlink{group__Evas__Object__Image_gaba00498563648d2d3934e7e75449abd0}{evas\_\-object\_\-image\_\-border\_\-scale\_\-set()}
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The scale factor 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-border\_\-scale\_\-set@{evas\_\-object\_\-image\_\-border\_\-scale\_\-set}}
+\index{evas\_\-object\_\-image\_\-border\_\-scale\_\-set@{evas\_\-object\_\-image\_\-border\_\-scale\_\-set}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-border\_\-scale\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-border\_\-scale\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{double}]{ scale}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_gaba00498563648d2d3934e7e75449abd0}
+
+
+Sets a scale factor (multiplier) for the borders of an image. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \item[{\em scale}]The scale factor (default is 1.0 -\/ i.e. no scale) \end{DoxyParams}
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-border\_\-set@{evas\_\-object\_\-image\_\-border\_\-set}}
+\index{evas\_\-object\_\-image\_\-border\_\-set@{evas\_\-object\_\-image\_\-border\_\-set}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-border\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-border\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{int}]{ l, }
+\item[{int}]{ r, }
+\item[{int}]{ t, }
+\item[{int}]{ b}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga6283aace5be077433bee45ec23ad072d}
+
+
+Sets how much of each border of the given image object is not to be scaled. 
+
+When rendering, the image may be scaled to fit the size of the image object. This function sets what area around the border of the image is not to be scaled. This sort of function is useful for widget theming, where, for example, buttons may be of varying sizes, but the border size must remain constant.
+
+The units used for {\ttfamily l}, {\ttfamily r}, {\ttfamily t} and {\ttfamily b} are output units.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \item[{\em l}]Distance of the left border that is not to be stretched. \item[{\em r}]Distance of the right border that is not to be stretched. \item[{\em t}]Distance of the top border that is not to be stretched. \item[{\em b}]Distance of the bottom border that is not to be stretched. \end{DoxyParams}
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-colorspace\_\-get@{evas\_\-object\_\-image\_\-colorspace\_\-get}}
+\index{evas\_\-object\_\-image\_\-colorspace\_\-get@{evas\_\-object\_\-image\_\-colorspace\_\-get}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-colorspace\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Colorspace} evas\_\-object\_\-image\_\-colorspace\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_gaa59339b6adb32081383fa5540641eb42}
+
+
+Get the colorspace of a given image of the canvas. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object pointer. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The colorspace of the image.
+\end{DoxyReturn}
+This function returns the colorspace of given canvas image. \index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-colorspace\_\-set@{evas\_\-object\_\-image\_\-colorspace\_\-set}}
+\index{evas\_\-object\_\-image\_\-colorspace\_\-set@{evas\_\-object\_\-image\_\-colorspace\_\-set}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-colorspace\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-colorspace\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{{\bf Evas\_\-Colorspace}}]{ cspace}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_gac352f7b110d7e527bf2d36fba5507d0c}
+
+
+Set the colorspace of a given image of the canvas. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object pointer. \item[{\em cspace}]The new color space.\end{DoxyParams}
+This function sets the colorspace of given canvas image. \index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-content\_\-hint\_\-get@{evas\_\-object\_\-image\_\-content\_\-hint\_\-get}}
+\index{evas\_\-object\_\-image\_\-content\_\-hint\_\-get@{evas\_\-object\_\-image\_\-content\_\-hint\_\-get}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-content\_\-hint\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Evas\_\-Image\_\-Content\_\-Hint evas\_\-object\_\-image\_\-content\_\-hint\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga28881040682dbbf00937948124e9f3fb}
+
+
+Get the content hint of a given image of the canvas. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given canvas pointer.\end{DoxyParams}
+This function returns the content hint value of the given image of the canvas. \index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-content\_\-hint\_\-set@{evas\_\-object\_\-image\_\-content\_\-hint\_\-set}}
+\index{evas\_\-object\_\-image\_\-content\_\-hint\_\-set@{evas\_\-object\_\-image\_\-content\_\-hint\_\-set}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-content\_\-hint\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-content\_\-hint\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Image\_\-Content\_\-Hint}]{ hint}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_gaf6cc0faf39773e12eb496116afd67c6f}
+
+
+Set the content hint of a given image of the canvas. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given canvas pointer. \item[{\em hint}]The content hint value.\end{DoxyParams}
+This function sets the content hint value of the given image of the canvas. \index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-data\_\-convert@{evas\_\-object\_\-image\_\-data\_\-convert}}
+\index{evas\_\-object\_\-image\_\-data\_\-convert@{evas\_\-object\_\-image\_\-data\_\-convert}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-data\_\-convert}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void$\ast$ evas\_\-object\_\-image\_\-data\_\-convert (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{{\bf Evas\_\-Colorspace}}]{ to\_\-cspace}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga3072cf7c31cf33057abd8ae8876218cd}
+
+
+Converts the raw image data of the given image object to the specified colorspace. 
+
+Note that this function does not modify the raw image data. If the requested colorspace is the same as the image colorspace nothing is done and NULL is returned. You should use \hyperlink{group__Evas__Object__Image_gaa59339b6adb32081383fa5540641eb42}{evas\_\-object\_\-image\_\-colorspace\_\-get()} to check the current image colorspace.
+
+See \hyperlink{group__Evas__Object__Image_gaa59339b6adb32081383fa5540641eb42}{evas\_\-object\_\-image\_\-colorspace\_\-get}.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \item[{\em to\_\-cspace}]The colorspace to which the image raw data will be converted. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+data A newly allocated data in the format specified by to\_\-cspace. 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-data\_\-copy\_\-set@{evas\_\-object\_\-image\_\-data\_\-copy\_\-set}}
+\index{evas\_\-object\_\-image\_\-data\_\-copy\_\-set@{evas\_\-object\_\-image\_\-data\_\-copy\_\-set}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-data\_\-copy\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-data\_\-copy\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{void $\ast$}]{ data}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga97d17b8d95f0ca01a264a6c303d00c27}
+
+
+Replaces the raw image data of the given image object. 
+
+This function lets the application replace an image object's internal pixel buffer with a user-\/allocated one. For best results, you should generally first call \hyperlink{group__Evas__Object__Image_gaf85031267b5fab16874ebbf944dded22}{evas\_\-object\_\-image\_\-size\_\-set()} with the width and height for the new buffer.
+
+This call is best suited for when you will be using image data with different dimensions than the existing image data, if any. If you only need to modify the existing image in some fashion, then using \hyperlink{group__Evas__Object__Image_gabe5883e22418071463f4ae97ca8885b2}{evas\_\-object\_\-image\_\-data\_\-get()} is probably what you are after.
+
+Note that the caller is responsible for freeing the buffer when finished with it, as user-\/set image data will not be automatically freed when the image object is deleted.
+
+See \hyperlink{group__Evas__Object__Image_gabe5883e22418071463f4ae97ca8885b2}{evas\_\-object\_\-image\_\-data\_\-get} for more details.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \item[{\em data}]The raw data. \end{DoxyParams}
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-data\_\-get@{evas\_\-object\_\-image\_\-data\_\-get}}
+\index{evas\_\-object\_\-image\_\-data\_\-get@{evas\_\-object\_\-image\_\-data\_\-get}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-data\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void$\ast$ evas\_\-object\_\-image\_\-data\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Eina\_\-Bool}]{ for\_\-writing}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_gabe5883e22418071463f4ae97ca8885b2}
+
+
+Get a pointer to the raw image data of the given image object. 
+
+This function returns a pointer to an image object's internal pixel buffer, for reading only or read/write. If you request it for writing, the image will be marked dirty so that it gets redrawn at the next update.
+
+This is best suited when you want to modify an existing image, without changing its dimensions.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \item[{\em for\_\-writing}]Whether the data being retrieved will be modified. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The raw image data. 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-data\_\-set@{evas\_\-object\_\-image\_\-data\_\-set}}
+\index{evas\_\-object\_\-image\_\-data\_\-set@{evas\_\-object\_\-image\_\-data\_\-set}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-data\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-data\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{void $\ast$}]{ data}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_gabdd65e4c69f422ddcf0d3c8720859a92}
+
+
+Sets the raw image data of the given image object. 
+
+Note that the raw data must be of the same size and colorspace of the image. If data is NULL the current image data will be freed.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \item[{\em data}]The raw data, or NULL. \end{DoxyParams}
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-data\_\-update\_\-add@{evas\_\-object\_\-image\_\-data\_\-update\_\-add}}
+\index{evas\_\-object\_\-image\_\-data\_\-update\_\-add@{evas\_\-object\_\-image\_\-data\_\-update\_\-add}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-data\_\-update\_\-add}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-data\_\-update\_\-add (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{int}]{ x, }
+\item[{int}]{ y, }
+\item[{int}]{ w, }
+\item[{int}]{ h}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_gab6b763271781a2ab35f5849f6564e165}
+
+
+Mark a sub-\/region of the given image object to be redrawn. 
+
+This function schedules a particular rectangular region of an image object to be updated (redrawn) at the next render.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \item[{\em x}]X-\/offset of the region to be updated. \item[{\em y}]Y-\/offset of the region to be updated. \item[{\em w}]Width of the region to be updated. \item[{\em h}]Height of the region to be updated. \end{DoxyParams}
+
+
+Referenced by evas\_\-object\_\-image\_\-alpha\_\-set().
+
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-file\_\-get@{evas\_\-object\_\-image\_\-file\_\-get}}
+\index{evas\_\-object\_\-image\_\-file\_\-get@{evas\_\-object\_\-image\_\-file\_\-get}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-file\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-file\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{const char $\ast$$\ast$}]{ file, }
+\item[{const char $\ast$$\ast$}]{ key}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga0c3b22438934db6f2b53a30ddd71ef1a}
+
+
+Retrieves the filename and key of the given image object. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \item[{\em file}]Location to store the image filename, or NULL. \item[{\em key}]Location to store the image key, or NULL. \end{DoxyParams}
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-file\_\-set@{evas\_\-object\_\-image\_\-file\_\-set}}
+\index{evas\_\-object\_\-image\_\-file\_\-set@{evas\_\-object\_\-image\_\-file\_\-set}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-file\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-file\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{const char $\ast$}]{ file, }
+\item[{const char $\ast$}]{ key}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga70f63c055b2e248089e761f5c0f78a0f}
+
+
+Sets the filename and key of the given image object. 
+
+If the file supports multiple data stored in it as eet, you can specify the key to be used as the index of the image in this file.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \item[{\em file}]The image filename. \item[{\em key}]The image key in file, or NULL. \end{DoxyParams}
+
+
+References EVAS\_\-LOAD\_\-ERROR\_\-NONE.
+
+
+
+Referenced by evas\_\-object\_\-image\_\-memfile\_\-set(), and evas\_\-object\_\-image\_\-source\_\-set().
+
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-fill\_\-get@{evas\_\-object\_\-image\_\-fill\_\-get}}
+\index{evas\_\-object\_\-image\_\-fill\_\-get@{evas\_\-object\_\-image\_\-fill\_\-get}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-fill\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-fill\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Coord $\ast$}]{ x, }
+\item[{Evas\_\-Coord $\ast$}]{ y, }
+\item[{Evas\_\-Coord $\ast$}]{ w, }
+\item[{Evas\_\-Coord $\ast$}]{ h}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_gaf1a7d6b8cf914234abdd5d3d3312f85e}
+
+
+Retrieves the dimensions of the rectangle of the given image object that the image will be drawn to. 
+
+See \hyperlink{group__Evas__Object__Image_ga7182040bc16e68d3bbce3bd0f8ee8034}{evas\_\-object\_\-image\_\-fill\_\-set} for more details.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \item[{\em x}]Location to store the X coordinate for the top left corner of the image in, or NULL. \item[{\em y}]Location to store the Y coordinate for the top left corner of the image in, or NULL. \item[{\em w}]Location to store the width of the image in, or NULL. \item[{\em h}]Location to store the height of the image in, or NULL. \end{DoxyParams}
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-fill\_\-set@{evas\_\-object\_\-image\_\-fill\_\-set}}
+\index{evas\_\-object\_\-image\_\-fill\_\-set@{evas\_\-object\_\-image\_\-fill\_\-set}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-fill\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-fill\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Coord}]{ x, }
+\item[{Evas\_\-Coord}]{ y, }
+\item[{Evas\_\-Coord}]{ w, }
+\item[{Evas\_\-Coord}]{ h}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga7182040bc16e68d3bbce3bd0f8ee8034}
+
+
+Sets the rectangle of the given image object that the image will be drawn to. 
+
+Note that the image will be tiled around this one rectangle. To have only one copy of the image drawn, {\ttfamily x} and {\ttfamily y} must be 0 and {\ttfamily w} and {\ttfamily h} need to be the width and height of the image object respectively.
+
+The default values for the fill parameters is {\ttfamily x} = 0, {\ttfamily y} = 0, {\ttfamily w} = 32 and {\ttfamily h} = 32.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \item[{\em x}]The X coordinate for the top left corner of the image. \item[{\em y}]The Y coordinate for the top left corner of the image. \item[{\em w}]The width of the image. \item[{\em h}]The height of the image. \end{DoxyParams}
+
+
+Referenced by evas\_\-object\_\-image\_\-filled\_\-set().
+
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-fill\_\-spread\_\-get@{evas\_\-object\_\-image\_\-fill\_\-spread\_\-get}}
+\index{evas\_\-object\_\-image\_\-fill\_\-spread\_\-get@{evas\_\-object\_\-image\_\-fill\_\-spread\_\-get}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-fill\_\-spread\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Fill\_\-Spread} evas\_\-object\_\-image\_\-fill\_\-spread\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_gae86928005f983627c74dbaef6c0fbb0e}
+
+
+Retrieves the spread (tiling mode) for the given image object's fill. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given evas image object. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The current spread mode of the image object. 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-fill\_\-spread\_\-set@{evas\_\-object\_\-image\_\-fill\_\-spread\_\-set}}
+\index{evas\_\-object\_\-image\_\-fill\_\-spread\_\-set@{evas\_\-object\_\-image\_\-fill\_\-spread\_\-set}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-fill\_\-spread\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-fill\_\-spread\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{{\bf Evas\_\-Fill\_\-Spread}}]{ spread}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga0015a660507a5562e118a1777947f881}
+
+
+Sets the tiling mode for the given evas image object's fill. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given evas image object. \item[{\em spread}]One of EVAS\_\-TEXTURE\_\-REFLECT, EVAS\_\-TEXTURE\_\-REPEAT, EVAS\_\-TEXTURE\_\-RESTRICT, or EVAS\_\-TEXTURE\_\-PAD. \end{DoxyParams}
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-filled\_\-add@{evas\_\-object\_\-image\_\-filled\_\-add}}
+\index{evas\_\-object\_\-image\_\-filled\_\-add@{evas\_\-object\_\-image\_\-filled\_\-add}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-filled\_\-add}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Object}$\ast$ evas\_\-object\_\-image\_\-filled\_\-add (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga2e4275b1aee95e338ffa8b39e81f4eee}
+
+
+Creates a new image object that automatically scales on the given evas. 
+
+This is a helper around \hyperlink{group__Evas__Object__Image_gae2bf7d73874a8b11ac4d7cb3bf2476ce}{evas\_\-object\_\-image\_\-add()} and \hyperlink{group__Evas__Object__Image_gae304964ee6769e559ca452c788f5aae4}{evas\_\-object\_\-image\_\-filled\_\-set()}, it will track object resizes and apply \hyperlink{group__Evas__Object__Image_ga7182040bc16e68d3bbce3bd0f8ee8034}{evas\_\-object\_\-image\_\-fill\_\-set()} with the new geometry.
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__Evas__Object__Image_gae2bf7d73874a8b11ac4d7cb3bf2476ce}{evas\_\-object\_\-image\_\-add()} 
+
+\hyperlink{group__Evas__Object__Image_gae304964ee6769e559ca452c788f5aae4}{evas\_\-object\_\-image\_\-filled\_\-set()} 
+
+\hyperlink{group__Evas__Object__Image_ga7182040bc16e68d3bbce3bd0f8ee8034}{evas\_\-object\_\-image\_\-fill\_\-set()} 
+\end{DoxySeeAlso}
+
+
+References evas\_\-object\_\-image\_\-add(), and evas\_\-object\_\-image\_\-filled\_\-set().
+
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-filled\_\-get@{evas\_\-object\_\-image\_\-filled\_\-get}}
+\index{evas\_\-object\_\-image\_\-filled\_\-get@{evas\_\-object\_\-image\_\-filled\_\-get}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-filled\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-object\_\-image\_\-filled\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga3fbe9f33ccc93a5c45ffa3b26019694e}
+
+
+Retrieves if image fill property is tracking object size. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+1 if it is tracking, 0 if not and evas\_\-object\_\-fill\_\-set() must be called manually. 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-filled\_\-set@{evas\_\-object\_\-image\_\-filled\_\-set}}
+\index{evas\_\-object\_\-image\_\-filled\_\-set@{evas\_\-object\_\-image\_\-filled\_\-set}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-filled\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-filled\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Eina\_\-Bool}]{ setting}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_gae304964ee6769e559ca452c788f5aae4}
+
+
+Sets if image fill property should track object size. 
+
+If set to true, then every \hyperlink{group__Evas__Object__Group__Basic_ga34df8b33704deafd2a25f40e3c09d149}{evas\_\-object\_\-resize()} will automatically trigger call to \hyperlink{group__Evas__Object__Image_ga7182040bc16e68d3bbce3bd0f8ee8034}{evas\_\-object\_\-image\_\-fill\_\-set()} with the new size so image will fill the whole object area.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \item[{\em setting}]whether to follow object size.\end{DoxyParams}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__Evas__Object__Image_ga2e4275b1aee95e338ffa8b39e81f4eee}{evas\_\-object\_\-image\_\-filled\_\-add()} 
+
+\hyperlink{group__Evas__Object__Image_ga7182040bc16e68d3bbce3bd0f8ee8034}{evas\_\-object\_\-image\_\-fill\_\-set()} 
+\end{DoxySeeAlso}
+
+
+References EVAS\_\-CALLBACK\_\-RESIZE, evas\_\-object\_\-event\_\-callback\_\-add(), evas\_\-object\_\-event\_\-callback\_\-del(), evas\_\-object\_\-geometry\_\-get(), and evas\_\-object\_\-image\_\-fill\_\-set().
+
+
+
+Referenced by evas\_\-object\_\-image\_\-filled\_\-add().
+
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-load\_\-dpi\_\-get@{evas\_\-object\_\-image\_\-load\_\-dpi\_\-get}}
+\index{evas\_\-object\_\-image\_\-load\_\-dpi\_\-get@{evas\_\-object\_\-image\_\-load\_\-dpi\_\-get}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-load\_\-dpi\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI double evas\_\-object\_\-image\_\-load\_\-dpi\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga92a5503085a5c0731bb9c299e7b42f78}
+
+
+Get the dpi resolution of a loaded image of the canvas. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given canvas pointer. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The dpi resolution of the given canvas image.
+\end{DoxyReturn}
+This function returns the dpi resolution of given canvas image. \index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-load\_\-dpi\_\-set@{evas\_\-object\_\-image\_\-load\_\-dpi\_\-set}}
+\index{evas\_\-object\_\-image\_\-load\_\-dpi\_\-set@{evas\_\-object\_\-image\_\-load\_\-dpi\_\-set}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-load\_\-dpi\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-load\_\-dpi\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{double}]{ dpi}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga88a20331cef0267ddc1d00419841580b}
+
+
+Set the dpi resolution of a loaded image of the canvas. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given canvas pointer. \item[{\em dpi}]The new dpi resolution.\end{DoxyParams}
+This function set the dpi resolution of a given loaded canvas image. \index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-load\_\-error\_\-get@{evas\_\-object\_\-image\_\-load\_\-error\_\-get}}
+\index{evas\_\-object\_\-image\_\-load\_\-error\_\-get@{evas\_\-object\_\-image\_\-load\_\-error\_\-get}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-load\_\-error\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Load\_\-Error} evas\_\-object\_\-image\_\-load\_\-error\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga46e4a0b2b916d28694ad054549f88e24}
+
+
+Retrieves a number representing any error that occurred during the last load of the given image object. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+A value giving the last error that occurred. It should be one of the {\ttfamily EVAS\_\-LOAD\_\-ERROR\_\-$\ast$} values. {\ttfamily EVAS\_\-LOAD\_\-ERROR\_\-NONE} is returned if there was no error. 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-load\_\-scale\_\-down\_\-get@{evas\_\-object\_\-image\_\-load\_\-scale\_\-down\_\-get}}
+\index{evas\_\-object\_\-image\_\-load\_\-scale\_\-down\_\-get@{evas\_\-object\_\-image\_\-load\_\-scale\_\-down\_\-get}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-load\_\-scale\_\-down\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI int evas\_\-object\_\-image\_\-load\_\-scale\_\-down\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga259c48b3e2a4009e8a10f8e9874d3847}
+
+
+Get the scale down value of given image of the canvas. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object pointer.\end{DoxyParams}
+This function returns the scale down value of a given canvas image. \index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-load\_\-scale\_\-down\_\-set@{evas\_\-object\_\-image\_\-load\_\-scale\_\-down\_\-set}}
+\index{evas\_\-object\_\-image\_\-load\_\-scale\_\-down\_\-set@{evas\_\-object\_\-image\_\-load\_\-scale\_\-down\_\-set}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-load\_\-scale\_\-down\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-load\_\-scale\_\-down\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{int}]{ scale\_\-down}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga59796713b88c217ce5869cb003e404c0}
+
+
+Set the scale down of a loaded image of the canvas. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given canvas pointer. \item[{\em scale\_\-down}]The scale to down value.\end{DoxyParams}
+This function sets the scale down of a given canvas image. \index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-load\_\-size\_\-get@{evas\_\-object\_\-image\_\-load\_\-size\_\-get}}
+\index{evas\_\-object\_\-image\_\-load\_\-size\_\-get@{evas\_\-object\_\-image\_\-load\_\-size\_\-get}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-load\_\-size\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-load\_\-size\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{int $\ast$}]{ w, }
+\item[{int $\ast$}]{ h}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_gae8047183e894e1e1245f1f3aaf78f218}
+
+
+Get the size of a loaded image of the canvas. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given canvas object. \item[{\em w}]The width of the canvas image given. \item[{\em h}]The height of the canvas image given.\end{DoxyParams}
+This function get the size of the given canvas image. \index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-load\_\-size\_\-set@{evas\_\-object\_\-image\_\-load\_\-size\_\-set}}
+\index{evas\_\-object\_\-image\_\-load\_\-size\_\-set@{evas\_\-object\_\-image\_\-load\_\-size\_\-set}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-load\_\-size\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-load\_\-size\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{int}]{ w, }
+\item[{int}]{ h}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga1811fb73c1e138b5221cf4b25148111a}
+
+
+Set the size of a loaded image of the canvas. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given canvas object. \item[{\em w}]The new width of the canvas image given. \item[{\em h}]The new height of the canvas image given.\end{DoxyParams}
+This function sets a new size for the given canvas image. \index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-memfile\_\-set@{evas\_\-object\_\-image\_\-memfile\_\-set}}
+\index{evas\_\-object\_\-image\_\-memfile\_\-set@{evas\_\-object\_\-image\_\-memfile\_\-set}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-memfile\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-memfile\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{void $\ast$}]{ data, }
+\item[{int}]{ size, }
+\item[{char $\ast$}]{ format, }
+\item[{char $\ast$}]{ key}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga58846bf7f00892e6985264ea2681d73a}
+
+
+Sets the data for an image from memory to be loaded. 
+
+This is the same as \hyperlink{group__Evas__Object__Image_ga70f63c055b2e248089e761f5c0f78a0f}{evas\_\-object\_\-image\_\-file\_\-set()} but the file to be loaded may exist at an address in memory (the data for the file, not the filename itself). The {\ttfamily data} at the address is copied and stored for future use, so no {\ttfamily data} needs to be kept after this call is made. It will be managed and freed for you when no longer needed. The {\ttfamily size} is limited to 2 gigabytes in size, and must be greater than 0. A NULL {\ttfamily data} pointer is also invalid. Set the filename to NULL to reset to empty state and have the image file data freed from memory using \hyperlink{group__Evas__Object__Image_ga70f63c055b2e248089e761f5c0f78a0f}{evas\_\-object\_\-image\_\-file\_\-set()}.
+
+The {\ttfamily format} is optional (pass NULL if you don't need/use it). It is used to help Evas guess better which loader to use for the data. It may simply be the \char`\"{}extension\char`\"{} of the file as it would normally be on disk such as \char`\"{}jpg\char`\"{} or \char`\"{}png\char`\"{} or \char`\"{}gif\char`\"{} etc.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \item[{\em data}]The image file data address \item[{\em size}]The size of the image file data in bytes \item[{\em format}]The format of the file (optional), or NULL if not needed \item[{\em key}]The image key in file, or NULL. \end{DoxyParams}
+
+
+References evas\_\-object\_\-image\_\-alpha\_\-set(), and evas\_\-object\_\-image\_\-file\_\-set().
+
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-native\_\-surface\_\-get@{evas\_\-object\_\-image\_\-native\_\-surface\_\-get}}
+\index{evas\_\-object\_\-image\_\-native\_\-surface\_\-get@{evas\_\-object\_\-image\_\-native\_\-surface\_\-get}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-native\_\-surface\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Native\_\-Surface}$\ast$ evas\_\-object\_\-image\_\-native\_\-surface\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_gabd3effabde6da00dfcac7cf0cfa22280}
+
+
+Get the native surface of a given image of the canvas. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given canvas pointer. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The native surface of the given canvas image.
+\end{DoxyReturn}
+This function returns the native surface of a given canvas image. \index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-native\_\-surface\_\-set@{evas\_\-object\_\-image\_\-native\_\-surface\_\-set}}
+\index{evas\_\-object\_\-image\_\-native\_\-surface\_\-set@{evas\_\-object\_\-image\_\-native\_\-surface\_\-set}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-native\_\-surface\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-native\_\-surface\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{{\bf Evas\_\-Native\_\-Surface} $\ast$}]{ surf}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_gacbe4ec46460fd3321dd4f6161f09bbed}
+
+
+Set the native surface of a given image of the canvas. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given canvas pointer. \item[{\em surf}]The new native surface.\end{DoxyParams}
+This function sets a native surface of a given canvas image. \index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-pixels\_\-dirty\_\-get@{evas\_\-object\_\-image\_\-pixels\_\-dirty\_\-get}}
+\index{evas\_\-object\_\-image\_\-pixels\_\-dirty\_\-get@{evas\_\-object\_\-image\_\-pixels\_\-dirty\_\-get}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-pixels\_\-dirty\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-object\_\-image\_\-pixels\_\-dirty\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga1d9e82da12f7831552fca02b9b313551}
+
+
+Retrieves whether the given image object is dirty (needs to be redrawn). 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Whether the image is dirty. 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-pixels\_\-dirty\_\-set@{evas\_\-object\_\-image\_\-pixels\_\-dirty\_\-set}}
+\index{evas\_\-object\_\-image\_\-pixels\_\-dirty\_\-set@{evas\_\-object\_\-image\_\-pixels\_\-dirty\_\-set}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-pixels\_\-dirty\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-pixels\_\-dirty\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Eina\_\-Bool}]{ dirty}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_gad230eeeb0c6ba49eafd32b20afa314cb}
+
+
+Mark whether the given image object is dirty (needs to be redrawn). 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \item[{\em dirty}]Whether the image is dirty. \end{DoxyParams}
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-pixels\_\-get\_\-callback\_\-set@{evas\_\-object\_\-image\_\-pixels\_\-get\_\-callback\_\-set}}
+\index{evas\_\-object\_\-image\_\-pixels\_\-get\_\-callback\_\-set@{evas\_\-object\_\-image\_\-pixels\_\-get\_\-callback\_\-set}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-pixels\_\-get\_\-callback\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-pixels\_\-get\_\-callback\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Object\_\-Image\_\-Pixels\_\-Get\_\-Cb}]{ func, }
+\item[{void $\ast$}]{ data}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga1602f8906760b1c871b84b4a287a52db}
+
+
+Set the callback function to get pixels from a canva's image. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given canvas pointer. \item[{\em func}]The callback function. \item[{\em data}]The data pointer to be passed to {\itshape func\/}.\end{DoxyParams}
+This functions sets a function to be the callback function that get pixes from a image of the canvas. \index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-pixels\_\-import@{evas\_\-object\_\-image\_\-pixels\_\-import}}
+\index{evas\_\-object\_\-image\_\-pixels\_\-import@{evas\_\-object\_\-image\_\-pixels\_\-import}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-pixels\_\-import}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-object\_\-image\_\-pixels\_\-import (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{{\bf Evas\_\-Pixel\_\-Import\_\-Source} $\ast$}]{ pixels}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_gad87ced373138180afff4756fded5a4f3}
+
+
+Import pixels from given source to a given canvas image object. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given canvas object. \item[{\em pixels}]The pixel's source to be imported.\end{DoxyParams}
+This function imports pixels from a given source to a given canvas image. 
+
+References EVAS\_\-PIXEL\_\-FORMAT\_\-ARGB32, and EVAS\_\-PIXEL\_\-FORMAT\_\-YUV420P\_\-601.
+
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-preload@{evas\_\-object\_\-image\_\-preload}}
+\index{evas\_\-object\_\-image\_\-preload@{evas\_\-object\_\-image\_\-preload}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-preload}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-preload (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Eina\_\-Bool}]{ cancel}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_gad6383022c4013008d11827b32bf63d59}
+
+
+Preload image in the background. 
+
+This function request the preload of the data image in the background. The worked is queued before being processed.
+
+If image data is already loaded, it will callback EVAS\_\-CALLBACK\_\-IMAGE\_\-PRELOADED immediatelly and do nothing else.
+
+If cancel is set, it will remove the image from the workqueue.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \item[{\em cancel}]0 means add to the workqueue, 1 remove it. \end{DoxyParams}
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-reload@{evas\_\-object\_\-image\_\-reload}}
+\index{evas\_\-object\_\-image\_\-reload@{evas\_\-object\_\-image\_\-reload}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-reload}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-reload (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga764bec190c0812f61f5a18f38c9c6a4e}
+
+
+Reload a image of the canvas. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object pointer.\end{DoxyParams}
+This function reloads a image of the given canvas. \index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-save@{evas\_\-object\_\-image\_\-save}}
+\index{evas\_\-object\_\-image\_\-save@{evas\_\-object\_\-image\_\-save}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-save}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-object\_\-image\_\-save (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{const char $\ast$}]{ file, }
+\item[{const char $\ast$}]{ key, }
+\item[{const char $\ast$}]{ flags}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga68eee07a73dc2f5dc529970f5a1634c4}
+
+
+Save the given image object to a file. 
+
+Note that you should pass the filename extension when saving. If the file supports multiple data stored in it as eet, you can specify the key to be used as the index of the image in this file.
+
+You can specify some flags when saving the image. Currently acceptable flags are quality and compress. Eg.: \char`\"{}quality=100
+ compress=9\char`\"{}
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \item[{\em file}]The filename to be used to save the image. \item[{\em key}]The image key in file, or NULL. \item[{\em flags}]String containing the flags to be used. \end{DoxyParams}
+
+
+References EVAS\_\-COLORSPACE\_\-ARGB8888.
+
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-scale\_\-hint\_\-get@{evas\_\-object\_\-image\_\-scale\_\-hint\_\-get}}
+\index{evas\_\-object\_\-image\_\-scale\_\-hint\_\-get@{evas\_\-object\_\-image\_\-scale\_\-hint\_\-get}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-scale\_\-hint\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Evas\_\-Image\_\-Scale\_\-Hint evas\_\-object\_\-image\_\-scale\_\-hint\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga8cce0086819196768915e5f2c2ed0cb2}
+
+
+Get the scale hint of a given image of the canvas. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given canvas pointer.\end{DoxyParams}
+This function returns the scale hint value of the given image of the canvas. \index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-scale\_\-hint\_\-set@{evas\_\-object\_\-image\_\-scale\_\-hint\_\-set}}
+\index{evas\_\-object\_\-image\_\-scale\_\-hint\_\-set@{evas\_\-object\_\-image\_\-scale\_\-hint\_\-set}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-scale\_\-hint\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-scale\_\-hint\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Image\_\-Scale\_\-Hint}]{ hint}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_gad13d32b74c2cd82c95b85fa9640ae529}
+
+
+Set the scale hint of a given image of the canvas. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given canvas pointer. \item[{\em hint}]The scale hint value.\end{DoxyParams}
+This function sets the scale hint value of the given image of the canvas. \index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-size\_\-get@{evas\_\-object\_\-image\_\-size\_\-get}}
+\index{evas\_\-object\_\-image\_\-size\_\-get@{evas\_\-object\_\-image\_\-size\_\-get}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-size\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-size\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{int $\ast$}]{ w, }
+\item[{int $\ast$}]{ h}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga43e6f1b16ebe859826e6901cb36995ad}
+
+
+Retrieves the size of the given image object. 
+
+See \hyperlink{group__Evas__Object__Image_gaf85031267b5fab16874ebbf944dded22}{evas\_\-object\_\-image\_\-size\_\-set} for more details.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \item[{\em w}]Location to store the width of the image in, or NULL. \item[{\em h}]Location to store the height of the image in, or NULL. \end{DoxyParams}
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-size\_\-set@{evas\_\-object\_\-image\_\-size\_\-set}}
+\index{evas\_\-object\_\-image\_\-size\_\-set@{evas\_\-object\_\-image\_\-size\_\-set}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-size\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-size\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{int}]{ w, }
+\item[{int}]{ h}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_gaf85031267b5fab16874ebbf944dded22}
+
+
+Sets the size of the given image object. 
+
+This function will scale down or crop the image so that it is treated as if it were at the given size. If the size given is smaller than the image, it will be cropped. If the size given is larger, then the image will be treated as if it were in the upper left hand corner of a larger image that is otherwise transparent.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \item[{\em w}]The new width of the image. \item[{\em h}]The new height of the image. \end{DoxyParams}
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-smooth\_\-scale\_\-get@{evas\_\-object\_\-image\_\-smooth\_\-scale\_\-get}}
+\index{evas\_\-object\_\-image\_\-smooth\_\-scale\_\-get@{evas\_\-object\_\-image\_\-smooth\_\-scale\_\-get}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-smooth\_\-scale\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-object\_\-image\_\-smooth\_\-scale\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_gae4acc1da719cb38122b92527df24388c}
+
+
+Retrieves whether the given image object is using use a high-\/quality image scaling algorithm. 
+
+See \hyperlink{group__Evas__Object__Image_ga670a0cf9176882f0ad339ccb4f37f510}{evas\_\-object\_\-image\_\-smooth\_\-scale\_\-set} for more details.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Whether smooth scale is being used. 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-smooth\_\-scale\_\-set@{evas\_\-object\_\-image\_\-smooth\_\-scale\_\-set}}
+\index{evas\_\-object\_\-image\_\-smooth\_\-scale\_\-set@{evas\_\-object\_\-image\_\-smooth\_\-scale\_\-set}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-smooth\_\-scale\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-image\_\-smooth\_\-scale\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Eina\_\-Bool}]{ smooth\_\-scale}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga670a0cf9176882f0ad339ccb4f37f510}
+
+
+Sets whether to use of high-\/quality image scaling algorithm of the given image object. 
+
+When enabled, a higher quality image scaling algorithm is used when scaling images to sizes other than the source image. This gives better results but is more computationally expensive.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \item[{\em smooth\_\-scale}]Whether to use smooth scale or not. \end{DoxyParams}
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-source\_\-get@{evas\_\-object\_\-image\_\-source\_\-get}}
+\index{evas\_\-object\_\-image\_\-source\_\-get@{evas\_\-object\_\-image\_\-source\_\-get}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-source\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Object} $\ast$ evas\_\-object\_\-image\_\-source\_\-get (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga95a96ced932d6e7e17ee019654d9d901}
+
+
+Get the current source object of an image. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]Image object \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Source object, or NULL on error. 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-source\_\-set@{evas\_\-object\_\-image\_\-source\_\-set}}
+\index{evas\_\-object\_\-image\_\-source\_\-set@{evas\_\-object\_\-image\_\-source\_\-set}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-source\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-object\_\-image\_\-source\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{{\bf Evas\_\-Object} $\ast$}]{ src}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_ga8f3b7eb8efaa3d77b9908a080b3d4c55}
+
+
+Set the source object on a proxy object. 
+
+The source must be another object. The proxy will have the same base appearance of the source object. Obviously other effects may be applied to the proxy, such as a map to create a reflection of the original object.
+
+Any existing source object will be removed. Setting the src to NULL clears the proxy object.
+
+You cannot set a proxy on a proxy.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]Proxy object. \item[{\em src}]Source of the proxy. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+EINA\_\-TRUE on success, EINA\_\-FALSE on error. 
+\end{DoxyReturn}
+
+
+References evas\_\-object\_\-image\_\-file\_\-set().
+
+
+
+Referenced by evas\_\-object\_\-image\_\-source\_\-unset().
+
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-source\_\-unset@{evas\_\-object\_\-image\_\-source\_\-unset}}
+\index{evas\_\-object\_\-image\_\-source\_\-unset@{evas\_\-object\_\-image\_\-source\_\-unset}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-source\_\-unset}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-object\_\-image\_\-source\_\-unset (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_gad667fc9de032eb39bf07e33ef0f4d81b}
+
+
+Clear the source on a proxy image. 
+
+This is equivalent to calling evas\_\-object\_\-image\_\-source\_\-set with a NULL source.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]Image object to clear source of. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+EINA\_\-TRUE on success, EINA\_\-FALSE on error. 
+\end{DoxyReturn}
+
+
+References evas\_\-object\_\-image\_\-source\_\-set().
+
+
+
+Referenced by evas\_\-object\_\-del().
+
+\index{Evas\_\-Object\_\-Image@{Evas\_\-Object\_\-Image}!evas\_\-object\_\-image\_\-stride\_\-get@{evas\_\-object\_\-image\_\-stride\_\-get}}
+\index{evas\_\-object\_\-image\_\-stride\_\-get@{evas\_\-object\_\-image\_\-stride\_\-get}!Evas_Object_Image@{Evas\_\-Object\_\-Image}}
+\subsubsection[{evas\_\-object\_\-image\_\-stride\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI int evas\_\-object\_\-image\_\-stride\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Image_gab72175381532640c620dd032e56c590b}
+
+
+Retrieves the row stride of the given image object,. 
+
+The row stride is the number of units between the start of a row and the start of the next row.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given image object. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The stride of the image. 
+\end{DoxyReturn}

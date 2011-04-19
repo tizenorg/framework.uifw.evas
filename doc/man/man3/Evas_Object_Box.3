@@ -1,0 +1,533 @@
+.TH "Box (Sequence) Smart Object." 3 "Tue Apr 19 2011" "Evas" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Box (Sequence) Smart Object. \- 
+.PP
+Convenience smart object that packs children as a sequence using a layout function specified by user.  
+
+.SS "Data Structures"
+
+.in +1c
+.ti -1c
+.RI "struct \fB_Evas_Object_Box_Api\fP"
+.br
+.RI "\fIThis structure should be used by any class that wants to inherit from box to provide custom behavior not allowed only by providing a layout function with \fBevas_object_box_layout_set()\fP. \fP"
+.ti -1c
+.RI "struct \fB_Evas_Object_Box_Data\fP"
+.br
+.RI "\fIThis structure augments clipped smart object's instance data, providing extra members required by generic box implementation. \fP"
+.in -1c
+.SS "Defines"
+
+.in +1c
+.ti -1c
+.RI "#define \fBEVAS_OBJECT_BOX_API_INIT\fP(smart_class_init)   {smart_class_init, EVAS_OBJECT_BOX_API_VERSION, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}"
+.br
+.RI "\fIInitializer for whole Evas_Object_Box_Api structure. \fP"
+.ti -1c
+.RI "#define \fBEVAS_OBJECT_BOX_API_INIT_NULL\fP   EVAS_OBJECT_BOX_API_INIT(EVAS_SMART_CLASS_INIT_NULL)"
+.br
+.RI "\fIInitializer to zero a whole Evas_Object_Box_Api structure. \fP"
+.ti -1c
+.RI "#define \fBEVAS_OBJECT_BOX_API_INIT_VERSION\fP   EVAS_OBJECT_BOX_API_INIT(EVAS_SMART_CLASS_INIT_VERSION)"
+.br
+.RI "\fIInitializer to zero a whole Evas_Object_Box_Api structure and set version. \fP"
+.ti -1c
+.RI "#define \fBEVAS_OBJECT_BOX_API_INIT_NAME_VERSION\fP(name)   EVAS_OBJECT_BOX_API_INIT(EVAS_SMART_CLASS_INIT_NAME_VERSION(name))"
+.br
+.RI "\fIInitializer to zero a whole Evas_Object_Box_Api structure and set name and version. \fP"
+.in -1c
+.SS "Typedefs"
+
+.in +1c
+.ti -1c
+.RI "typedef struct \fB_Evas_Object_Box_Api\fP \fBEvas_Object_Box_Api\fP"
+.br
+.RI "\fISmart Class extension providing extra box requirements. \fP"
+.ti -1c
+.RI "typedef struct \fB_Evas_Object_Box_Data\fP \fBEvas_Object_Box_Data\fP"
+.br
+.RI "\fISmart instance data providing box requirements. \fP"
+.ti -1c
+.RI "typedef struct _Evas_Object_Box_Option \fBEvas_Object_Box_Option\fP"
+.br
+.RI "\fIThe base structure for a box option. \fP"
+.in -1c
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_box_add\fP (\fBEvas\fP *evas)"
+.br
+.RI "\fICreate a new box. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_box_add_to\fP (\fBEvas_Object\fP *parent)"
+.br
+.RI "\fICreate a box that is child of a given element \fIparent\fP. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_box_smart_set\fP (\fBEvas_Object_Box_Api\fP *api)"
+.br
+.RI "\fISet the default box \fIapi\fP struct (Evas_Object_Box_Api) with the default values. \fP"
+.ti -1c
+.RI "EAPI const \fBEvas_Object_Box_Api\fP * \fBevas_object_box_smart_class_get\fP (void)"
+.br
+.RI "\fIGet Box Smart Class for inheritance purposes. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_box_layout_set\fP (\fBEvas_Object\fP *o, Evas_Object_Box_Layout cb, const void *data, void(*free_data)(void *data))"
+.br
+.RI "\fISet a 'calculate' callback (\fIcb\fP) to the \fIo\fP box's smart class, which here defines its genre (horizontal, vertical, homogeneous, etc. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_box_layout_horizontal\fP (\fBEvas_Object\fP *o, \fBEvas_Object_Box_Data\fP *priv, void *data __UNUSED__)"
+.br
+.RI "\fILayout function which sets the box \fIo\fP to a (basic) horizontal box. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_box_layout_vertical\fP (\fBEvas_Object\fP *o, \fBEvas_Object_Box_Data\fP *priv, void *data __UNUSED__)"
+.br
+.RI "\fILayout function which sets the box \fIo\fP to a (basic) vertical box. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_box_layout_homogeneous_horizontal\fP (\fBEvas_Object\fP *o, \fBEvas_Object_Box_Data\fP *priv, void *data __UNUSED__)"
+.br
+.RI "\fILayout function which sets the box \fIo\fP to a *homogeneous* horizontal box. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_box_layout_homogeneous_vertical\fP (\fBEvas_Object\fP *o, \fBEvas_Object_Box_Data\fP *priv, void *data __UNUSED__)"
+.br
+.RI "\fILayout function which sets the box \fIo\fP to a *homogeneous* vertical box. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_box_layout_homogeneous_max_size_horizontal\fP (\fBEvas_Object\fP *o, \fBEvas_Object_Box_Data\fP *priv, void *data __UNUSED__)"
+.br
+.RI "\fILayout function which sets the box \fIo\fP to a *max size-homogeneous* horizontal box. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_box_layout_homogeneous_max_size_vertical\fP (\fBEvas_Object\fP *o, \fBEvas_Object_Box_Data\fP *priv, void *data __UNUSED__)"
+.br
+.RI "\fILayout function which sets the box \fIo\fP to a *max size-homogeneous* vertical box. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_box_layout_flow_horizontal\fP (\fBEvas_Object\fP *o, \fBEvas_Object_Box_Data\fP *priv, void *data __UNUSED__)"
+.br
+.RI "\fILayout function which sets the box \fIo\fP to a *flow* horizontal box. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_box_layout_flow_vertical\fP (\fBEvas_Object\fP *o, \fBEvas_Object_Box_Data\fP *priv, void *data __UNUSED__)"
+.br
+.RI "\fILayout function which sets the box \fIo\fP to a *flow* vertical box. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_box_layout_stack\fP (\fBEvas_Object\fP *o, \fBEvas_Object_Box_Data\fP *priv, void *data __UNUSED__)"
+.br
+.RI "\fILayout function which sets the box \fIo\fP to set all children to the size of the object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_box_align_set\fP (\fBEvas_Object\fP *o, double horizontal, double vertical)"
+.br
+.RI "\fISet the alignment of the whole bounding box of contents. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_box_align_get\fP (const \fBEvas_Object\fP *o, double *horizontal, double *vertical)"
+.br
+.RI "\fIGet alignment of the whole bounding box of contents. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_box_padding_set\fP (\fBEvas_Object\fP *o, Evas_Coord horizontal, Evas_Coord vertical)"
+.br
+.RI "\fISet the space (padding) between cells. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_box_padding_get\fP (const \fBEvas_Object\fP *o, Evas_Coord *horizontal, Evas_Coord *vertical)"
+.br
+.RI "\fIGet the (space) padding between cells. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object_Box_Option\fP * \fBevas_object_box_append\fP (\fBEvas_Object\fP *o, \fBEvas_Object\fP *child)"
+.br
+.RI "\fIAppend a new object \fIchild\fP to the box \fIo\fP. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object_Box_Option\fP * \fBevas_object_box_prepend\fP (\fBEvas_Object\fP *o, \fBEvas_Object\fP *child)"
+.br
+.RI "\fIPrepend a new object \fIchild\fP to the box \fIo\fP. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object_Box_Option\fP * \fBevas_object_box_insert_before\fP (\fBEvas_Object\fP *o, \fBEvas_Object\fP *child, const \fBEvas_Object\fP *reference)"
+.br
+.RI "\fIPrepend a new object \fIchild\fP to the box \fCo\fP relative to element \fIreference\fP. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object_Box_Option\fP * \fBevas_object_box_insert_after\fP (\fBEvas_Object\fP *o, \fBEvas_Object\fP *child, const \fBEvas_Object\fP *reference)"
+.br
+.RI "\fIAppend a new object \fIchild\fP to the box \fCo\fP relative to element \fIreference\fP. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object_Box_Option\fP * \fBevas_object_box_insert_at\fP (\fBEvas_Object\fP *o, \fBEvas_Object\fP *child, unsigned int pos)"
+.br
+.RI "\fIInsert a new object \fIchild\fP to the box \fIo\fP at position \fIpos\fP. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_box_remove\fP (\fBEvas_Object\fP *o, \fBEvas_Object\fP *child)"
+.br
+.RI "\fIRemove an object \fIchild\fP from the box \fIo\fP. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_box_remove_at\fP (\fBEvas_Object\fP *o, unsigned int pos)"
+.br
+.RI "\fIRemove an object from the box \fIo\fP which occupies position \fIpos\fP. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_box_remove_all\fP (\fBEvas_Object\fP *o, Eina_Bool clear)"
+.br
+.RI "\fIRemove all child objects. \fP"
+.ti -1c
+.RI "EAPI Eina_Iterator * \fBevas_object_box_iterator_new\fP (const \fBEvas_Object\fP *o)"
+.br
+.RI "\fIGet an iterator to walk the list of children for the box. \fP"
+.ti -1c
+.RI "EAPI Eina_Accessor * \fBevas_object_box_accessor_new\fP (const \fBEvas_Object\fP *o)"
+.br
+.RI "\fIGet an accessor to get random access to the list of children for the box. \fP"
+.ti -1c
+.RI "EAPI Eina_List * \fBevas_object_box_children_get\fP (const \fBEvas_Object\fP *o)"
+.br
+.RI "\fIGet the list of children for the box. \fP"
+.ti -1c
+.RI "EAPI const char * \fBevas_object_box_option_property_name_get\fP (\fBEvas_Object\fP *o, int property)"
+.br
+.RI "\fIGet the name of the property of the child elements of the box \fIo\fP whose id is \fIproperty\fP. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_object_box_option_property_id_get\fP (\fBEvas_Object\fP *o, const char *name)"
+.br
+.RI "\fIGet the id of the property of the child elements of the box \fIo\fP whose name is \fIname\fP. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_box_option_property_set\fP (\fBEvas_Object\fP *o, \fBEvas_Object_Box_Option\fP *opt, int property,...)"
+.br
+.RI "\fISet the property (with id \fIproperty\fP) of the child element of the box \fIo\fP whose property struct is \fIopt\fP. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_box_option_property_vset\fP (\fBEvas_Object\fP *o, \fBEvas_Object_Box_Option\fP *opt, int property, va_list args)"
+.br
+.RI "\fISet the property (with id \fIproperty\fP) of the child element of the box \fIo\fP whose property struct is \fIopt\fP. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_box_option_property_get\fP (\fBEvas_Object\fP *o, \fBEvas_Object_Box_Option\fP *opt, int property,...)"
+.br
+.RI "\fIGet the property (with id \fIproperty\fP) of the child element of the box \fIo\fP whose property struct is \fIopt\fP. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_box_option_property_vget\fP (\fBEvas_Object\fP *o, \fBEvas_Object_Box_Option\fP *opt, int property, va_list args)"
+.br
+.RI "\fIGet the property (with id \fIproperty\fP) of the child element of the box \fIo\fP whose property struct is \fIopt\fP. \fP"
+.in -1c
+.SH "Detailed Description"
+.PP 
+Convenience smart object that packs children as a sequence using a layout function specified by user. 
+
+There are a couple of helper layout functions, all of them using children size hints to define their size and alignment inside their cell space.
+.PP
+\fBSee also:\fP
+.RS 4
+\fBSize Hints\fP 
+.RE
+.PP
+
+.SH "Define Documentation"
+.PP 
+.SS "#define EVAS_OBJECT_BOX_API_INIT(smart_class_init)   {smart_class_init, EVAS_OBJECT_BOX_API_VERSION, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}"
+.PP
+Initializer for whole Evas_Object_Box_Api structure. \fBParameters:\fP
+.RS 4
+\fIsmart_class_init\fP initializer to use for the 'base' field (Evas_Smart_Class).
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBEVAS_SMART_CLASS_INIT_NULL\fP 
+.PP
+\fBEVAS_SMART_CLASS_INIT_VERSION\fP 
+.PP
+\fBEVAS_SMART_CLASS_INIT_NAME_VERSION\fP 
+.PP
+\fBEVAS_OBJECT_BOX_API_INIT_NULL\fP 
+.PP
+\fBEVAS_OBJECT_BOX_API_INIT_VERSION\fP 
+.PP
+\fBEVAS_OBJECT_BOX_API_INIT_NAME_VERSION\fP 
+.RE
+.PP
+
+.SS "#define EVAS_OBJECT_BOX_API_INIT_NAME_VERSION(name)   EVAS_OBJECT_BOX_API_INIT(EVAS_SMART_CLASS_INIT_NAME_VERSION(name))"
+.PP
+Initializer to zero a whole Evas_Object_Box_Api structure and set name and version. Similar to EVAS_OBJECT_BOX_API_INIT_NULL, but will set version field of Evas_Smart_Class (base field) to latest EVAS_SMART_CLASS_VERSION and name to the specific value.
+.PP
+It will keep a reference to name field as a 'const char *', that is, name must be available while the structure is used (hint: static or global!) and will not be modified.
+.PP
+\fBSee also:\fP
+.RS 4
+\fBEVAS_OBJECT_BOX_API_INIT_NULL\fP 
+.PP
+\fBEVAS_OBJECT_BOX_API_INIT_VERSION\fP 
+.PP
+\fBEVAS_OBJECT_BOX_API_INIT\fP 
+.RE
+.PP
+
+.PP
+Referenced by evas_object_box_smart_class_get().
+.SS "#define EVAS_OBJECT_BOX_API_INIT_NULL   EVAS_OBJECT_BOX_API_INIT(EVAS_SMART_CLASS_INIT_NULL)"
+.PP
+Initializer to zero a whole Evas_Object_Box_Api structure. \fBSee also:\fP
+.RS 4
+\fBEVAS_OBJECT_BOX_API_INIT_VERSION\fP 
+.PP
+\fBEVAS_OBJECT_BOX_API_INIT_NAME_VERSION\fP 
+.PP
+\fBEVAS_OBJECT_BOX_API_INIT\fP 
+.RE
+.PP
+
+.SS "#define EVAS_OBJECT_BOX_API_INIT_VERSION   EVAS_OBJECT_BOX_API_INIT(EVAS_SMART_CLASS_INIT_VERSION)"
+.PP
+Initializer to zero a whole Evas_Object_Box_Api structure and set version. Similar to EVAS_OBJECT_BOX_API_INIT_NULL, but will set version field of Evas_Smart_Class (base field) to latest EVAS_SMART_CLASS_VERSION
+.PP
+\fBSee also:\fP
+.RS 4
+\fBEVAS_OBJECT_BOX_API_INIT_NULL\fP 
+.PP
+\fBEVAS_OBJECT_BOX_API_INIT_NAME_VERSION\fP 
+.PP
+\fBEVAS_OBJECT_BOX_API_INIT\fP 
+.RE
+.PP
+
+.SH "Function Documentation"
+.PP 
+.SS "EAPI Eina_Accessor* evas_object_box_accessor_new (const \fBEvas_Object\fP * o)"
+.PP
+Get an accessor to get random access to the list of children for the box. \fBNote:\fP
+.RS 4
+Do not remove or delete objects while walking the list. 
+.RE
+.PP
+
+.SS "EAPI \fBEvas_Object\fP* evas_object_box_add (\fBEvas\fP * evas)"
+.PP
+Create a new box. Its layout function must be set via \fBevas_object_box_layout_set()\fP (defaults to \fBevas_object_box_layout_horizontal()\fP). The other properties of the box must be set/retrieved via evas_object_box_{h,v}_{align,padding}_{get,set)(). 
+.PP
+References evas_object_smart_add().
+.PP
+Referenced by evas_object_box_add_to().
+.SS "EAPI \fBEvas_Object\fP* evas_object_box_add_to (\fBEvas_Object\fP * parent)"
+.PP
+Create a box that is child of a given element \fIparent\fP. \fBSee also:\fP
+.RS 4
+\fBevas_object_box_add()\fP 
+.RE
+.PP
+
+.PP
+References evas_object_box_add(), evas_object_evas_get(), and evas_object_smart_member_add().
+.SS "EAPI \fBEvas_Object_Box_Option\fP* evas_object_box_append (\fBEvas_Object\fP * o, \fBEvas_Object\fP * child)"
+.PP
+Append a new object \fIchild\fP to the box \fIo\fP. On error, \fCNULL\fP is returned. 
+.PP
+References evas_object_smart_changed(), and evas_object_smart_member_add().
+.SS "EAPI Eina_List* evas_object_box_children_get (const \fBEvas_Object\fP * o)"
+.PP
+Get the list of children for the box. \fBNote:\fP
+.RS 4
+This is a duplicate of the list kept by the box internally. It's up to the user to destroy it when it no longer needs it. It's possible to remove objects from the box when walking this list, but these removals won't be reflected on it. 
+.RE
+.PP
+
+.SS "EAPI \fBEvas_Object_Box_Option\fP* evas_object_box_insert_after (\fBEvas_Object\fP * o, \fBEvas_Object\fP * child, const \fBEvas_Object\fP * reference)"
+.PP
+Append a new object \fIchild\fP to the box \fCo\fP relative to element \fIreference\fP. If \fIreference\fP is not contained in the box or any other error occurs, \fCNULL\fP is returend. 
+.PP
+References evas_object_smart_changed(), and evas_object_smart_member_add().
+.SS "EAPI \fBEvas_Object_Box_Option\fP* evas_object_box_insert_at (\fBEvas_Object\fP * o, \fBEvas_Object\fP * child, unsigned int pos)"
+.PP
+Insert a new object \fIchild\fP to the box \fIo\fP at position \fIpos\fP. On error, \fCNULL\fP is returned. 
+.PP
+References evas_object_smart_changed(), and evas_object_smart_member_add().
+.SS "EAPI \fBEvas_Object_Box_Option\fP* evas_object_box_insert_before (\fBEvas_Object\fP * o, \fBEvas_Object\fP * child, const \fBEvas_Object\fP * reference)"
+.PP
+Prepend a new object \fIchild\fP to the box \fCo\fP relative to element \fIreference\fP. If \fIreference\fP is not contained in the box or any other error occurs, \fCNULL\fP is returned. 
+.PP
+References evas_object_smart_changed(), and evas_object_smart_member_add().
+.SS "EAPI Eina_Iterator* evas_object_box_iterator_new (const \fBEvas_Object\fP * o)"
+.PP
+Get an iterator to walk the list of children for the box. \fBNote:\fP
+.RS 4
+Do not remove or delete objects while walking the list. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_box_layout_flow_horizontal (\fBEvas_Object\fP * o, \fBEvas_Object_Box_Data\fP * priv, void *data __UNUSED__)"
+.PP
+Layout function which sets the box \fIo\fP to a *flow* horizontal box. \fIpriv\fP must be the smart data of the box.
+.PP
+In a flow horizontal box, the box's child elements are placed in rows (think of text as an analogy). A row has as much elements as can fit into the box's width. The box's overall behavior is controlled by its properties, which are set by the evas_object_box_{h,v}_{align,padding}_set() family of functions. The properties of the elements in the box -- set by evas_object_size_hint_{align,padding,weight}_set() functions -- also control the way this function works.
+.PP
+\fBbox's properties:\fP
+.RS 4
+\fCpadding_h\fP tells the box to draw empty spaces of that size, in pixels, between the child objects's cells. \fCalign_h\fP dictates the horizontal alignment of the rows (0 to left align them, 1 to right align). A value of -1.0 to \fCalign_h\fP lets the rows *justified* horizontally. \fCalign_v\fP controls the vertical alignment of the entire set of rows (0 to top, 1 to bottom). A value of -1.0 to \fCalign_v\fP makes the box to *justify* the rows vertically. The padding between them, in this case, is corrected so that the first row touches the top border and the last one touches the bottom border (even if they must overlap). \fCpadding_v\fP has no influence on the layout.
+.RE
+.PP
+\fBChild element's properties:\fP
+.RS 4
+\fCpadding_l\fP and \fCpadding_r\fP sum up to the required width of the child element. The \fCalign_x\fP property has no influence on the layout. The child's \fCpadding_t\fP and \fCpadding_b\fP sum up to the required height of the child element and is the only means (besides row justifying) of setting space between rows. Note, however, that \fCalign_y\fP dictates positioning relative to the *largest height* required by a child object in the actual row. 
+.RE
+.PP
+
+.PP
+References evas_object_geometry_get(), evas_object_move(), evas_object_size_hint_align_get(), evas_object_size_hint_min_set(), and evas_object_size_hint_padding_get().
+.SS "EAPI void evas_object_box_layout_flow_vertical (\fBEvas_Object\fP * o, \fBEvas_Object_Box_Data\fP * priv, void *data __UNUSED__)"
+.PP
+Layout function which sets the box \fIo\fP to a *flow* vertical box. \fIpriv\fP must be the smart data of the box.
+.PP
+This function behaves analogously to \fBevas_object_box_layout_flow_horizontal()\fP. The description of its behaviour can be derived from that function's documentation. 
+.PP
+References evas_object_geometry_get(), evas_object_move(), evas_object_size_hint_align_get(), evas_object_size_hint_min_set(), and evas_object_size_hint_padding_get().
+.SS "EAPI void evas_object_box_layout_homogeneous_horizontal (\fBEvas_Object\fP * o, \fBEvas_Object_Box_Data\fP * priv, void *data __UNUSED__)"
+.PP
+Layout function which sets the box \fIo\fP to a *homogeneous* horizontal box. \fIpriv\fP must be the smart data of the box.
+.PP
+In a homogeneous horizontal box, its width is divided equally between the contained objects. The box's overall behavior is controlled by its properties, which are set by the evas_object_box_{h,v}_{align,padding}_set() family of functions. The properties of the elements in the box -- set by evas_object_size_hint_{align,padding,weight}_set() functions -- also control the way this function works.
+.PP
+\fBbox's properties:\fP
+.RS 4
+\fCalign_h\fP has no influence on the box for this layout. \fCpadding_h\fP tells the box to draw empty spaces of that size, in pixels, between the (still equal) child objects's cells. The \fCalign_v\fP and \fCpadding_v\fP properties of the box don't contribute to its behaviour when this layout is chosen.
+.RE
+.PP
+\fBChild element's properties:\fP
+.RS 4
+\fCpadding_l\fP and \fCpadding_r\fP sum up to the required width of the child element. The \fCalign_x\fP property tells the relative position of this overall child width in its allocated cell (0 to extreme left, 1 to extreme right). A value of -1.0 to \fCalign_x\fP makes the box try to resize this child element to the exact width of its cell (respecting the min and max hints on the child's width *and* accounting its horizontal padding properties). The child's \fCpadding_t\fP, \fCpadding_b\fP and \fCalign_y\fP properties apply for padding/positioning relative to the overall height of the box. A value of -1.0 to \fCalign_y\fP makes the box try to resize this child element to the exact height of its parent (respecting the max hint on the child's height). 
+.RE
+.PP
+
+.PP
+References evas_object_geometry_get(), evas_object_move(), evas_object_resize(), evas_object_size_hint_align_get(), evas_object_size_hint_max_get(), evas_object_size_hint_min_get(), evas_object_size_hint_min_set(), and evas_object_size_hint_padding_get().
+.SS "EAPI void evas_object_box_layout_homogeneous_max_size_horizontal (\fBEvas_Object\fP * o, \fBEvas_Object_Box_Data\fP * priv, void *data __UNUSED__)"
+.PP
+Layout function which sets the box \fIo\fP to a *max size-homogeneous* horizontal box. \fIpriv\fP must be the smart data of the box.
+.PP
+In a max size-homogeneous horizontal box, the equal sized cells reserved for the child objects have the width of the space required by the largest child (in width). The box's overall behavior is controlled by its properties, which are set by the evas_object_box_{h,v}_{align,padding}_set() family of functions. The properties of the elements in the box -- set by evas_object_size_hint_{align,padding,weight}_set() functions -- also control the way this function works.
+.PP
+\fBbox's properties:\fP
+.RS 4
+\fCpadding_h\fP tells the box to draw empty spaces of that size, in pixels, between the child objects's cells. \fCalign_h\fP controls the horizontal alignment of the child objects relative to the containing box. When set to 0, children are aligned to the left. A value of 1 lets them aligned to the right border. Values in between align them proportionally. A negative value of \fCalign_h\fP makes the box to *justify* its children cells. The padding between them, in this case, is corrected so that the leftmost one touches the left border and the rightmost one touches the right border (even if they must overlap). The \fCalign_v\fP and \fCpadding_v\fP properties of the box don't contribute to its behaviour when this layout is chosen.
+.RE
+.PP
+\fBChild element's properties:\fP
+.RS 4
+\fCpadding_l\fP and \fCpadding_r\fP sum up to the required width of the child element. The \fCalign_x\fP property tells the relative position of this overall child width in its allocated cell (0 to extreme left, 1 to extreme right). A value of -1.0 to \fCalign_x\fP makes the box try to resize this child element to the exact width of its cell (respecting the min and max hints on the child's width *and* accounting its horizontal padding properties). The child's \fCpadding_t\fP, \fCpadding_b\fP and \fCalign_y\fP properties apply for padding/positioning relative to the overall height of the box. A value of -1.0 to \fCalign_y\fP makes the box try to resize this child element to the exact height of its parent (respecting the max hint on the child's height). 
+.RE
+.PP
+
+.PP
+References evas_object_geometry_get(), evas_object_move(), evas_object_resize(), evas_object_size_hint_align_get(), evas_object_size_hint_max_get(), evas_object_size_hint_min_get(), evas_object_size_hint_min_set(), and evas_object_size_hint_padding_get().
+.SS "EAPI void evas_object_box_layout_homogeneous_max_size_vertical (\fBEvas_Object\fP * o, \fBEvas_Object_Box_Data\fP * priv, void *data __UNUSED__)"
+.PP
+Layout function which sets the box \fIo\fP to a *max size-homogeneous* vertical box. \fIpriv\fP must be the smart data of the box.
+.PP
+This function behaves analogously to \fBevas_object_box_layout_homogeneous_max_size_horizontal()\fP. The description of its behaviour can be derived from that function's documentation. 
+.PP
+References evas_object_geometry_get(), evas_object_move(), evas_object_resize(), evas_object_size_hint_align_get(), evas_object_size_hint_max_get(), evas_object_size_hint_min_get(), evas_object_size_hint_min_set(), and evas_object_size_hint_padding_get().
+.SS "EAPI void evas_object_box_layout_homogeneous_vertical (\fBEvas_Object\fP * o, \fBEvas_Object_Box_Data\fP * priv, void *data __UNUSED__)"
+.PP
+Layout function which sets the box \fIo\fP to a *homogeneous* vertical box. \fIpriv\fP must be the smart data of the box.
+.PP
+This function behaves analogously to \fBevas_object_box_layout_homogeneous_horizontal()\fP. The description of its behaviour can be derived from that function's documentation. 
+.PP
+References evas_object_geometry_get(), evas_object_move(), evas_object_resize(), evas_object_size_hint_align_get(), evas_object_size_hint_max_get(), evas_object_size_hint_min_get(), evas_object_size_hint_min_set(), and evas_object_size_hint_padding_get().
+.SS "EAPI void evas_object_box_layout_horizontal (\fBEvas_Object\fP * o, \fBEvas_Object_Box_Data\fP * priv, void *data __UNUSED__)"
+.PP
+Layout function which sets the box \fIo\fP to a (basic) horizontal box. \fIpriv\fP must be the smart data of the box.
+.PP
+The object's overall behavior is controlled by its properties, which are set by the evas_object_box_{h,v}_{align,padding}_set() family of functions. The properties of the elements in the box -- set by evas_object_size_hint_{align,padding,weight}_set() functions -- also control the way this function works.
+.PP
+\fBbox's properties:\fP
+.RS 4
+\fCalign_h\fP controls the horizontal alignment of the child objects relative to the containing box. When set to 0, children are aligned to the left. A value of 1 lets them aligned to the right border. Values in between align them proportionally. Note that if the size required by the children, which is given by their widths and the \fCpadding_h\fP property of the box, is bigger than the container width, the children will be displayed out of its bounds. A negative value of \fCalign_h\fP makes the box to *justify* its children. The padding between them, in this case, is corrected so that the leftmost one touches the left border and the rightmost one touches the right border (even if they must overlap). The \fCalign_v\fP and \fCpadding_v\fP properties of the box don't contribute to its behaviour when this layout is chosen.
+.RE
+.PP
+\fBChild element's properties:\fP
+.RS 4
+\fCalign_x\fP does not influence the box's behavior. \fCpadding_l\fP and \fCpadding_r\fP sum up to the container's horizontal padding between elements. The child's \fCpadding_t\fP, \fCpadding_b\fP and \fCalign_y\fP properties apply for padding/positioning relative to the overall height of the box. Finally, there is the \fCweight_x\fP property, which, if set to a non-zero value, tells the container that the child width is not pre-defined. If the container can't accommodate all its children, it sets the widths of the children *with weights* to sizes as small as they can all fit into it. If the size required by the children is less than the available, the box increases its children's (which have weights) widths as to fit the remaining space. The \fCweight_x\fP property, besides telling the element is resizable, gives a *weight* for the resizing process. The parent box will try to distribute (or take off) widths accordingly to the *normalized* list of weigths: most weighted children remain/get larger in this process than the the least ones. \fCweight_y\fP does not influence the layout.
+.RE
+.PP
+If one desires that, besides having weights, child elements must be resized bounded to a minimum or maximum size, their size hint properties must be set (by the evas_object_size_hint_{min,max}_set() functions. 
+.PP
+References evas_object_geometry_get(), evas_object_move(), evas_object_resize(), evas_object_size_hint_align_get(), evas_object_size_hint_max_get(), evas_object_size_hint_min_set(), evas_object_size_hint_padding_get(), and evas_object_size_hint_weight_get().
+.SS "EAPI void evas_object_box_layout_set (\fBEvas_Object\fP * o, Evas_Object_Box_Layout cb, const void * data, void(*)(void *data) free_data)"
+.PP
+Set a 'calculate' callback (\fIcb\fP) to the \fIo\fP box's smart class, which here defines its genre (horizontal, vertical, homogeneous, etc. ). 
+.PP
+References evas_object_smart_changed().
+.SS "EAPI void evas_object_box_layout_stack (\fBEvas_Object\fP * o, \fBEvas_Object_Box_Data\fP * priv, void *data __UNUSED__)"
+.PP
+Layout function which sets the box \fIo\fP to set all children to the size of the object. \fIpriv\fP must be the smart data of the box.
+.PP
+In a stack box, all children will be given the same size and they will be stacked on above the other, so the first object will be the bottom most.
+.PP
+\fBbox's properties:\fP
+.RS 4
+No box option is used.
+.RE
+.PP
+\fBChild element's properties:\fP
+.RS 4
+\fCpadding_l\fP and \fCpadding_r\fP sum up to the required width of the child element. The \fCalign_x\fP property tells the relative position of this overall child width in its allocated cell (0 to extreme left, 1 to extreme right). A value of -1.0 to \fCalign_x\fP makes the box try to resize this child element to the exact width of its cell (respecting the min and max hints on the child's width *and* accounting its horizontal padding properties). Same applies to vertical axis. 
+.RE
+.PP
+
+.PP
+References evas_object_geometry_get(), evas_object_move(), evas_object_resize(), evas_object_size_hint_align_get(), evas_object_size_hint_max_get(), evas_object_size_hint_min_get(), evas_object_size_hint_min_set(), evas_object_size_hint_padding_get(), and evas_object_stack_above().
+.SS "EAPI void evas_object_box_layout_vertical (\fBEvas_Object\fP * o, \fBEvas_Object_Box_Data\fP * priv, void *data __UNUSED__)"
+.PP
+Layout function which sets the box \fIo\fP to a (basic) vertical box. \fIpriv\fP must be the smart data of the box.
+.PP
+This function behaves analogously to \fBevas_object_box_layout_horizontal()\fP. The description of its behaviour can be derived from that function's documentation. 
+.PP
+References evas_object_geometry_get(), evas_object_move(), evas_object_resize(), evas_object_size_hint_align_get(), evas_object_size_hint_max_get(), evas_object_size_hint_min_set(), evas_object_size_hint_padding_get(), and evas_object_size_hint_weight_get().
+.SS "EAPI Eina_Bool evas_object_box_option_property_get (\fBEvas_Object\fP * o, \fBEvas_Object_Box_Option\fP * opt, int property,  ...)"
+.PP
+Get the property (with id \fIproperty\fP) of the child element of the box \fIo\fP whose property struct is \fIopt\fP. The last arguments must be addresses of variables with the same type of that property. On error, \fC0\fP is returned. 
+.PP
+References evas_object_box_option_property_vget().
+.SS "EAPI int evas_object_box_option_property_id_get (\fBEvas_Object\fP * o, const char * name)"
+.PP
+Get the id of the property of the child elements of the box \fIo\fP whose name is \fIname\fP. On error, \fC-1\fP is returned. 
+.SS "EAPI const char* evas_object_box_option_property_name_get (\fBEvas_Object\fP * o, int property)"
+.PP
+Get the name of the property of the child elements of the box \fIo\fP whose id is \fIproperty\fP. On error, \fCNULL\fP is returned. 
+.SS "EAPI Eina_Bool evas_object_box_option_property_set (\fBEvas_Object\fP * o, \fBEvas_Object_Box_Option\fP * opt, int property,  ...)"
+.PP
+Set the property (with id \fIproperty\fP) of the child element of the box \fIo\fP whose property struct is \fIopt\fP. The property's values must be the last arguments and their type *must* match that of the property itself. On error, \fC0\fP is returned. 
+.PP
+References evas_object_box_option_property_vset().
+.SS "EAPI Eina_Bool evas_object_box_option_property_vget (\fBEvas_Object\fP * o, \fBEvas_Object_Box_Option\fP * opt, int property, va_list args)"
+.PP
+Get the property (with id \fIproperty\fP) of the child element of the box \fIo\fP whose property struct is \fIopt\fP. The args which the va_list \fIargs\fP is initialized with must be addresses of variables with the same type of that property. On error, \fC0\fP is returned. 
+.PP
+Referenced by evas_object_box_option_property_get().
+.SS "EAPI Eina_Bool evas_object_box_option_property_vset (\fBEvas_Object\fP * o, \fBEvas_Object_Box_Option\fP * opt, int property, va_list args)"
+.PP
+Set the property (with id \fIproperty\fP) of the child element of the box \fIo\fP whose property struct is \fIopt\fP. The property's values must be the args which the va_list \fIargs\fP is initialized with and their type *must* match that of the property itself. On error, \fC0\fP is returned. 
+.PP
+References evas_object_smart_changed().
+.PP
+Referenced by evas_object_box_option_property_set().
+.SS "EAPI \fBEvas_Object_Box_Option\fP* evas_object_box_prepend (\fBEvas_Object\fP * o, \fBEvas_Object\fP * child)"
+.PP
+Prepend a new object \fIchild\fP to the box \fIo\fP. On error, \fCNULL\fP is returned. 
+.PP
+References evas_object_smart_changed(), and evas_object_smart_member_add().
+.SS "EAPI Eina_Bool evas_object_box_remove (\fBEvas_Object\fP * o, \fBEvas_Object\fP * child)"
+.PP
+Remove an object \fIchild\fP from the box \fIo\fP. On error, \fC0\fP is returned. 
+.PP
+References evas_object_smart_changed(), and evas_object_smart_member_del().
+.SS "EAPI Eina_Bool evas_object_box_remove_all (\fBEvas_Object\fP * o, Eina_Bool clear)"
+.PP
+Remove all child objects. \fBReturns:\fP
+.RS 4
+0 on errors 
+.RE
+.PP
+
+.PP
+References evas_object_del(), evas_object_smart_changed(), and evas_object_smart_member_del().
+.SS "EAPI Eina_Bool evas_object_box_remove_at (\fBEvas_Object\fP * o, unsigned int pos)"
+.PP
+Remove an object from the box \fIo\fP which occupies position \fIpos\fP. On error, \fC0\fP is returned. 
+.PP
+References evas_object_smart_changed(), and evas_object_smart_member_del().
+.SS "EAPI void evas_object_box_smart_set (\fBEvas_Object_Box_Api\fP * api)"
+.PP
+Set the default box \fIapi\fP struct (Evas_Object_Box_Api) with the default values. May be used to extend that API. 
+.PP
+Referenced by evas_object_box_smart_class_get().
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Evas from the source code.

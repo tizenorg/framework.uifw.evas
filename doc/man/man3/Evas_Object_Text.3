@@ -1,0 +1,325 @@
+.TH "Text Object Functions" 3 "Tue Apr 19 2011" "Evas" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Text Object Functions \- 
+.PP
+Functions that operate on single line, single style text objects.  
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_text_add\fP (\fBEvas\fP *e)"
+.br
+.RI "\fICreates a new text \fCEvas_Object\fP on the provided \fCEvas\fP canvas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_text_font_source_set\fP (\fBEvas_Object\fP *obj, const char *font_source)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI const char * \fBevas_object_text_font_source_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_text_font_set\fP (\fBEvas_Object\fP *obj, const char *font, Evas_Font_Size size)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_text_font_get\fP (const \fBEvas_Object\fP *obj, const char **font, Evas_Font_Size *size)"
+.br
+.RI "\fIQuery evas for font information of a text \fCEvas_Object\fP. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_text_text_set\fP (\fBEvas_Object\fP *obj, const char *_text)"
+.br
+.RI "\fISets the text to be displayed by the given evas text object. \fP"
+.ti -1c
+.RI "EAPI const char * \fBevas_object_text_text_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIRetrieves the text currently being displayed by the given evas text object. \fP"
+.ti -1c
+.RI "EAPI Evas_BiDi_Direction \fBevas_object_text_direction_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIRetrieves the direction of the text currently being displayed in the text object. \fP"
+.ti -1c
+.RI "EAPI Evas_Coord \fBevas_object_text_ascent_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI Evas_Coord \fBevas_object_text_descent_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI Evas_Coord \fBevas_object_text_max_ascent_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI Evas_Coord \fBevas_object_text_max_descent_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI Evas_Coord \fBevas_object_text_inset_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI Evas_Coord \fBevas_object_text_horiz_advance_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI Evas_Coord \fBevas_object_text_vert_advance_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_text_char_pos_get\fP (const \fBEvas_Object\fP *obj, int pos, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch)"
+.br
+.RI "\fIRetrieve position and dimension information of a character within a text \fCEvas_Object\fP. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_object_text_last_up_to_pos\fP (const \fBEvas_Object\fP *obj, Evas_Coord x, Evas_Coord y)"
+.br
+.RI "\fIReturns the logical position of the last char in the text up to the pos given. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_object_text_char_coords_get\fP (const \fBEvas_Object\fP *obj, Evas_Coord x, Evas_Coord y, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_text_style_set\fP (\fBEvas_Object\fP *obj, Evas_Text_Style_Type style)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI Evas_Text_Style_Type \fBevas_object_text_style_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_text_shadow_color_set\fP (\fBEvas_Object\fP *obj, int r, int g, int b, int a)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_text_shadow_color_get\fP (const \fBEvas_Object\fP *obj, int *r, int *g, int *b, int *a)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_text_glow_color_set\fP (\fBEvas_Object\fP *obj, int r, int g, int b, int a)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_text_glow_color_get\fP (const \fBEvas_Object\fP *obj, int *r, int *g, int *b, int *a)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_text_glow2_color_set\fP (\fBEvas_Object\fP *obj, int r, int g, int b, int a)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_text_glow2_color_get\fP (const \fBEvas_Object\fP *obj, int *r, int *g, int *b, int *a)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_text_outline_color_set\fP (\fBEvas_Object\fP *obj, int r, int g, int b, int a)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_text_outline_color_get\fP (const \fBEvas_Object\fP *obj, int *r, int *g, int *b, int *a)"
+.br
+.RI "\fITo be documented. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_text_style_pad_get\fP (const \fBEvas_Object\fP *obj, int *l, int *r, int *t, int *b)"
+.br
+.RI "\fIGets the text style pad of a text object. \fP"
+.in -1c
+.SH "Detailed Description"
+.PP 
+Functions that operate on single line, single style text objects. 
+
+For multiline and multiple style text, see \fBTextblock Object Functions\fP. 
+.SH "Function Documentation"
+.PP 
+.SS "EAPI \fBEvas_Object\fP* evas_object_text_add (\fBEvas\fP * e)"
+.PP
+Creates a new text \fCEvas_Object\fP on the provided \fCEvas\fP canvas. \fBParameters:\fP
+.RS 4
+\fIe\fP The \fCEvas\fP canvas to create the text object upon.
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBevas_object_text_font_source_set\fP 
+.PP
+\fBevas_object_text_font_set\fP 
+.PP
+\fBevas_object_text_text_set\fP
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+NULL on error, A pointer to a new \fCEvas_Object\fP on success. 
+.RE
+.PP
+
+.SS "EAPI Evas_Coord evas_object_text_ascent_get (const \fBEvas_Object\fP * obj)"
+.PP
+To be documented. FIXME: To be fixed. 
+.SS "EAPI int evas_object_text_char_coords_get (const \fBEvas_Object\fP * obj, Evas_Coord x, Evas_Coord y, Evas_Coord * cx, Evas_Coord * cy, Evas_Coord * cw, Evas_Coord * ch)"
+.PP
+To be documented. FIXME: To be fixed. 
+.SS "EAPI Eina_Bool evas_object_text_char_pos_get (const \fBEvas_Object\fP * obj, int pos, Evas_Coord * cx, Evas_Coord * cy, Evas_Coord * cw, Evas_Coord * ch)"
+.PP
+Retrieve position and dimension information of a character within a text \fCEvas_Object\fP. This function is used to obtain the X, Y, width and height of a the character located at \fCpos\fP within the \fCEvas_Object\fP \fCobj\fP. \fCobj\fP must be a text object as created with \fBevas_object_text_add()\fP. Any of the \fCEvas_Coord\fP parameters (\fCcx\fP, \fCcy\fP, \fCcw\fP, \fCch\fP) may be NULL in which case no value will be assigned to that parameter.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The text object to retrieve position information for. 
+.br
+\fIpos\fP The character position to request co-ordinates for. 
+.br
+\fIcx\fP A pointer to an \fCEvas_Coord\fP to store the X value in (can be NULL). 
+.br
+\fIcy\fP A pointer to an \fCEvas_Coord\fP to store the Y value in (can be NULL). 
+.br
+\fIcw\fP A pointer to an \fCEvas_Coord\fP to store the Width value in (can be NULL). 
+.br
+\fIch\fP A pointer to an \fCEvas_Coord\fP to store the Height value in (can be NULL).
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+EINA_FALSE on error, EINA_TRUE on success. 
+.RE
+.PP
+
+.SS "EAPI Evas_Coord evas_object_text_descent_get (const \fBEvas_Object\fP * obj)"
+.PP
+To be documented. FIXME: To be fixed. 
+.SS "EAPI Evas_BiDi_Direction evas_object_text_direction_get (const \fBEvas_Object\fP * obj)"
+.PP
+Retrieves the direction of the text currently being displayed in the text object. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given evas text object. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the direction of the text 
+.RE
+.PP
+
+.SS "EAPI void evas_object_text_font_get (const \fBEvas_Object\fP * obj, const char ** font, Evas_Font_Size * size)"
+.PP
+Query evas for font information of a text \fCEvas_Object\fP. This function allows the font name and size of a text \fCEvas_Object\fP as created with \fBevas_object_text_add()\fP to be queried. Be aware that the font name string is still owned by Evas and should NOT have free() called on it by the caller of the function.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The evas text object to query for font information. 
+.br
+\fIfont\fP A pointer to the location to store the font name in (may be NULL). 
+.br
+\fIsize\fP A pointer to the location to store the font size in (may be NULL). 
+.RE
+.PP
+
+.SS "EAPI void evas_object_text_font_set (\fBEvas_Object\fP * obj, const char * font, Evas_Font_Size size)"
+.PP
+To be documented. FIXME: To be fixed. 
+.PP
+References ENFN, and evas_event_feed_mouse_move().
+.SS "EAPI const char* evas_object_text_font_source_get (const \fBEvas_Object\fP * obj)"
+.PP
+To be documented. FIXME: To be fixed. 
+.SS "EAPI void evas_object_text_font_source_set (\fBEvas_Object\fP * obj, const char * font_source)"
+.PP
+To be documented. FIXME: To be fixed. 
+.SS "EAPI void evas_object_text_glow2_color_get (const \fBEvas_Object\fP * obj, int * r, int * g, int * b, int * a)"
+.PP
+To be documented. FIXME: To be fixed. 
+.SS "EAPI void evas_object_text_glow2_color_set (\fBEvas_Object\fP * obj, int r, int g, int b, int a)"
+.PP
+To be documented. FIXME: To be fixed. 
+.SS "EAPI void evas_object_text_glow_color_get (const \fBEvas_Object\fP * obj, int * r, int * g, int * b, int * a)"
+.PP
+To be documented. FIXME: To be fixed. 
+.SS "EAPI void evas_object_text_glow_color_set (\fBEvas_Object\fP * obj, int r, int g, int b, int a)"
+.PP
+To be documented. FIXME: To be fixed. 
+.SS "EAPI Evas_Coord evas_object_text_horiz_advance_get (const \fBEvas_Object\fP * obj)"
+.PP
+To be documented. FIXME: To be fixed. 
+.SS "EAPI Evas_Coord evas_object_text_inset_get (const \fBEvas_Object\fP * obj)"
+.PP
+To be documented. FIXME: To be fixed. 
+.PP
+References ENFN.
+.SS "EAPI int evas_object_text_last_up_to_pos (const \fBEvas_Object\fP * obj, Evas_Coord x, Evas_Coord y)"
+.PP
+Returns the logical position of the last char in the text up to the pos given. this is NOT the position of the last char because of the possibility of RTL in the text. To be documented.
+.PP
+FIXME: To be fixed. 
+.SS "EAPI Evas_Coord evas_object_text_max_ascent_get (const \fBEvas_Object\fP * obj)"
+.PP
+To be documented. FIXME: To be fixed. 
+.SS "EAPI Evas_Coord evas_object_text_max_descent_get (const \fBEvas_Object\fP * obj)"
+.PP
+To be documented. FIXME: To be fixed. 
+.SS "EAPI void evas_object_text_outline_color_get (const \fBEvas_Object\fP * obj, int * r, int * g, int * b, int * a)"
+.PP
+To be documented. FIXME: To be fixed. 
+.SS "EAPI void evas_object_text_outline_color_set (\fBEvas_Object\fP * obj, int r, int g, int b, int a)"
+.PP
+To be documented. FIXME: To be fixed. 
+.SS "EAPI void evas_object_text_shadow_color_get (const \fBEvas_Object\fP * obj, int * r, int * g, int * b, int * a)"
+.PP
+To be documented. FIXME: To be fixed. 
+.SS "EAPI void evas_object_text_shadow_color_set (\fBEvas_Object\fP * obj, int r, int g, int b, int a)"
+.PP
+To be documented. FIXME: To be fixed. 
+.SS "EAPI Evas_Text_Style_Type evas_object_text_style_get (const \fBEvas_Object\fP * obj)"
+.PP
+To be documented. FIXME: To be fixed. 
+.SS "EAPI void evas_object_text_style_pad_get (const \fBEvas_Object\fP * obj, int * l, int * r, int * t, int * b)"
+.PP
+Gets the text style pad of a text object. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given text object. 
+.br
+\fIl\fP The left pad (or NULL). 
+.br
+\fIr\fP The right pad (or NULL). 
+.br
+\fIt\fP The top pad (or NULL). 
+.br
+\fIb\fP The bottom pad (or NULL). 
+.RE
+.PP
+
+.SS "EAPI void evas_object_text_style_set (\fBEvas_Object\fP * obj, Evas_Text_Style_Type style)"
+.PP
+To be documented. FIXME: To be fixed. 
+.SS "EAPI const char* evas_object_text_text_get (const \fBEvas_Object\fP * obj)"
+.PP
+Retrieves the text currently being displayed by the given evas text object. \fBParameters:\fP
+.RS 4
+\fIobj\fP The given evas text object. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+The text currently being displayed. Do not free it. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_text_text_set (\fBEvas_Object\fP * obj, const char * _text)"
+.PP
+Sets the text to be displayed by the given evas text object. \fBParameters:\fP
+.RS 4
+\fIobj\fP Evas text object. 
+.br
+\fItext\fP Text to display. 
+.RE
+.PP
+
+.PP
+References evas_event_feed_mouse_move().
+.SS "EAPI Evas_Coord evas_object_text_vert_advance_get (const \fBEvas_Object\fP * obj)"
+.PP
+To be documented. FIXME: To be fixed. 
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Evas from the source code.

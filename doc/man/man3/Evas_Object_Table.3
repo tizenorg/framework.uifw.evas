@@ -1,0 +1,306 @@
+.TH "Table Smart Object." 3 "Tue Apr 19 2011" "Evas" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Table Smart Object. \- 
+.PP
+Convenience smart object that packs children using a tabular layout using children size hints to define their size and alignment inside their cell space.  
+
+.SS "Typedefs"
+
+.in +1c
+.ti -1c
+.RI "typedef enum \fB_Evas_Object_Table_Homogeneous_Mode\fP \fBEvas_Object_Table_Homogeneous_Mode\fP"
+.br
+.RI "\fIHow to pack items into cells in a table. \fP"
+.in -1c
+.SS "Enumerations"
+
+.in +1c
+.ti -1c
+.RI "enum \fB_Evas_Object_Table_Homogeneous_Mode\fP "
+.br
+.RI "\fIHow to pack items into cells in a table. \fP"
+.in -1c
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_table_add\fP (\fBEvas\fP *evas)"
+.br
+.RI "\fICreate a new table. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_table_add_to\fP (\fBEvas_Object\fP *parent)"
+.br
+.RI "\fICreate a table that is child of a given element \fIparent\fP. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_table_homogeneous_set\fP (\fBEvas_Object\fP *o, \fBEvas_Object_Table_Homogeneous_Mode\fP homogeneous)"
+.br
+.RI "\fISet how this table should layout children. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object_Table_Homogeneous_Mode\fP \fBevas_object_table_homogeneous_get\fP (const \fBEvas_Object\fP *o)"
+.br
+.RI "\fIGet the current layout homogeneous mode. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_table_align_set\fP (\fBEvas_Object\fP *o, double horizontal, double vertical)"
+.br
+.RI "\fISet the alignment of the whole bounding box of contents. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_table_align_get\fP (const \fBEvas_Object\fP *o, double *horizontal, double *vertical)"
+.br
+.RI "\fIGet alignment of the whole bounding box of contents. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_table_padding_set\fP (\fBEvas_Object\fP *o, Evas_Coord horizontal, Evas_Coord vertical)"
+.br
+.RI "\fISet padding between cells. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_table_padding_get\fP (const \fBEvas_Object\fP *o, Evas_Coord *horizontal, Evas_Coord *vertical)"
+.br
+.RI "\fIGet padding between cells. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_table_pack\fP (\fBEvas_Object\fP *o, \fBEvas_Object\fP *child, unsigned short col, unsigned short row, unsigned short colspan, unsigned short rowspan)"
+.br
+.RI "\fIAdd a new child to a table object. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_table_unpack\fP (\fBEvas_Object\fP *o, \fBEvas_Object\fP *child)"
+.br
+.RI "\fIRemove child from table. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_table_clear\fP (\fBEvas_Object\fP *o, Eina_Bool clear)"
+.br
+.RI "\fIFaster way to remove all child objects from a table object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_table_col_row_size_get\fP (const \fBEvas_Object\fP *o, int *cols, int *rows)"
+.br
+.RI "\fIGet the number of columns and rows this table takes. \fP"
+.ti -1c
+.RI "EAPI Eina_Iterator * \fBevas_object_table_iterator_new\fP (const \fBEvas_Object\fP *o)"
+.br
+.RI "\fIGet an iterator to walk the list of children for the table. \fP"
+.ti -1c
+.RI "EAPI Eina_Accessor * \fBevas_object_table_accessor_new\fP (const \fBEvas_Object\fP *o)"
+.br
+.RI "\fIGet an accessor to get random access to the list of children for the table. \fP"
+.ti -1c
+.RI "EAPI Eina_List * \fBevas_object_table_children_get\fP (const \fBEvas_Object\fP *o)"
+.br
+.RI "\fIGet the list of children for the table. \fP"
+.ti -1c
+.RI "\fBEvas_Object\fP * \fBevas_object_table_child_get\fP (const \fBEvas_Object\fP *o, unsigned short col, unsigned short row)"
+.br
+.RI "\fIGet a child from the table using its coordinates. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_table_mirrored_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIGets the mirrored mode of the table. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_table_mirrored_set\fP (\fBEvas_Object\fP *obj, Eina_Bool mirrored)"
+.br
+.RI "\fISets the mirrored mode of the table. \fP"
+.in -1c
+.SH "Detailed Description"
+.PP 
+Convenience smart object that packs children using a tabular layout using children size hints to define their size and alignment inside their cell space. 
+
+\fBSee also:\fP
+.RS 4
+\fBSize Hints\fP 
+.RE
+.PP
+
+.SH "Typedef Documentation"
+.PP 
+.SS "typedef enum \fB_Evas_Object_Table_Homogeneous_Mode\fP  \fBEvas_Object_Table_Homogeneous_Mode\fP"
+.PP
+How to pack items into cells in a table. Table cell pack mode. 
+.SH "Function Documentation"
+.PP 
+.SS "EAPI Eina_Accessor* evas_object_table_accessor_new (const \fBEvas_Object\fP * o)"
+.PP
+Get an accessor to get random access to the list of children for the table. \fBNote:\fP
+.RS 4
+Do not remove or delete objects while walking the list. 
+.RE
+.PP
+
+.SS "EAPI \fBEvas_Object\fP* evas_object_table_add (\fBEvas\fP * evas)"
+.PP
+Create a new table. It's set to non-homogeneous by default, add children with \fBevas_object_table_pack()\fP. 
+.PP
+References evas_object_smart_add().
+.PP
+Referenced by evas_object_table_add_to().
+.SS "EAPI \fBEvas_Object\fP* evas_object_table_add_to (\fBEvas_Object\fP * parent)"
+.PP
+Create a table that is child of a given element \fIparent\fP. \fBSee also:\fP
+.RS 4
+\fBevas_object_table_add()\fP 
+.RE
+.PP
+
+.PP
+References evas_object_evas_get(), evas_object_smart_member_add(), and evas_object_table_add().
+.SS "\fBEvas_Object\fP* evas_object_table_child_get (const \fBEvas_Object\fP * o, unsigned short col, unsigned short row)"
+.PP
+Get a child from the table using its coordinates. \fBNote:\fP
+.RS 4
+This does not take into account col/row spanning 
+.RE
+.PP
+
+.SS "EAPI Eina_List* evas_object_table_children_get (const \fBEvas_Object\fP * o)"
+.PP
+Get the list of children for the table. \fBNote:\fP
+.RS 4
+This is a duplicate of the list kept by the table internally. It's up to the user to destroy it when it no longer needs it. It's possible to remove objects from the table when walking this list, but these removals won't be reflected on it. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_table_clear (\fBEvas_Object\fP * o, Eina_Bool clear)"
+.PP
+Faster way to remove all child objects from a table object. \fBParameters:\fP
+.RS 4
+\fIo\fP The given table object. 
+.br
+\fIclear\fP if true, it will delete just removed children. 
+.RE
+.PP
+
+.PP
+References evas_object_del(), evas_object_smart_changed(), and evas_object_smart_member_del().
+.SS "EAPI void evas_object_table_col_row_size_get (const \fBEvas_Object\fP * o, int * cols, int * rows)"
+.PP
+Get the number of columns and rows this table takes. \fBNote:\fP
+.RS 4
+columns and rows are virtual entities, one can specify a table with a single object that takes 4 columns and 5 rows. The only difference for a single cell table is that paddings will be accounted proportionally. 
+.RE
+.PP
+
+.SS "EAPI \fBEvas_Object_Table_Homogeneous_Mode\fP evas_object_table_homogeneous_get (const \fBEvas_Object\fP * o)"
+.PP
+Get the current layout homogeneous mode. \fBSee also:\fP
+.RS 4
+\fBevas_object_table_homogeneous_set()\fP 
+.RE
+.PP
+
+.SS "EAPI void evas_object_table_homogeneous_set (\fBEvas_Object\fP * o, \fBEvas_Object_Table_Homogeneous_Mode\fP homogeneous)"
+.PP
+Set how this table should layout children. \fBTodo\fP
+.RS 4
+consider aspect hint and respect it.
+.RE
+.PP
+.PP
+\fBEVAS_OBJECT_TABLE_HOMOGENEOUS_NONE\fP
+.RS 4
+If table does not use homogeneous mode then columns and rows will be calculated based on hints of individual cells. This operation mode is more flexible, but more complex and heavy to calculate as well. \fBWeight\fP properties are handled as a boolean expand. Negative alignment will be considered as 0.5.
+.RE
+.PP
+\fBTodo\fP
+.RS 4
+\fCEVAS_OBJECT_TABLE_HOMOGENEOUS_NONE\fP should balance weight.
+.RE
+.PP
+.PP
+\fBEVAS_OBJECT_TABLE_HOMOGENEOUS_TABLE\fP
+.RS 4
+When homogeneous is relative to table the own table size is divided equally among children, filling the whole table area. That is, if table has \fCWIDTH\fP and \fCCOLUMNS\fP, each cell will get \fCWIDTH / COLUMNS\fP pixels. If children have minimum size that is larger than this amount (including padding), then it will overflow and be aligned respecting the alignment hint, possible overlapping sibling cells. \fBWeight\fP hint is used as a boolean, if greater than zero it will make the child expand in that axis, taking as much space as possible (bounded to maximum size hint). Negative alignment will be considered as 0.5.
+.RE
+.PP
+\fBEVAS_OBJECT_TABLE_HOMOGENEOUS_ITEM\fP
+.RS 4
+When homogeneous is relative to item it means the greatest minimum cell size will be used. That is, if no element is set to expand, the table will have its contents to a minimum size, the bounding box of all these children will be aligned relatively to the table object using \fBevas_object_table_align_get()\fP. If the table area is too small to hold this minimum bounding box, then the objects will keep their size and the bounding box will overflow the box area, still respecting the alignment. \fBWeight\fP hint is used as a boolean, if greater than zero it will make that cell expand in that axis, toggling the \fBexpand mode\fP, which makes the table behave much like \fBEVAS_OBJECT_TABLE_HOMOGENEOUS_TABLE\fP, except that the bounding box will overflow and items will not overlap siblings. If no minimum size is provided at all then the table will fallback to expand mode as well. 
+.RE
+.PP
+
+.PP
+References evas_object_smart_changed().
+.SS "EAPI Eina_Iterator* evas_object_table_iterator_new (const \fBEvas_Object\fP * o)"
+.PP
+Get an iterator to walk the list of children for the table. \fBNote:\fP
+.RS 4
+Do not remove or delete objects while walking the list. 
+.RE
+.PP
+
+.SS "EAPI Eina_Bool evas_object_table_mirrored_get (const \fBEvas_Object\fP * obj)"
+.PP
+Gets the mirrored mode of the table. In mirrored mode the table items go from right to left instead of left to right. That is, 1,1 is top right, not to left.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The table object. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+EINA_TRUE if it's a mirrored table, EINA_FALSE otherwise. 
+.RE
+.PP
+\fBSince:\fP
+.RS 4
+1.1.0 
+.RE
+.PP
+
+.SS "EAPI void evas_object_table_mirrored_set (\fBEvas_Object\fP * obj, Eina_Bool mirrored)"
+.PP
+Sets the mirrored mode of the table. In mirrored mode the table items go from right to left instead of left to right. That is, 1,1 is top right, not to left.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The table object. 
+.br
+\fImirrored\fP the mirrored mode to set 
+.RE
+.PP
+\fBSince:\fP
+.RS 4
+1.1.0 
+.RE
+.PP
+
+.SS "EAPI Eina_Bool evas_object_table_pack (\fBEvas_Object\fP * o, \fBEvas_Object\fP * child, unsigned short col, unsigned short row, unsigned short colspan, unsigned short rowspan)"
+.PP
+Add a new child to a table object. \fBParameters:\fP
+.RS 4
+\fIo\fP The given table object. 
+.br
+\fIchild\fP The child object to add. 
+.br
+\fIcol\fP relative-horizontal position to place child. 
+.br
+\fIrow\fP relative-vertical position to place child. 
+.br
+\fIcolspan\fP how many relative-horizontal position to use for this child. 
+.br
+\fIrowspan\fP how many relative-vertical position to use for this child.
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+1 on success, 0 on failure. 
+.RE
+.PP
+
+.PP
+References evas_object_smart_changed(), and evas_object_smart_member_add().
+.SS "EAPI Eina_Bool evas_object_table_unpack (\fBEvas_Object\fP * o, \fBEvas_Object\fP * child)"
+.PP
+Remove child from table. \fBNote:\fP
+.RS 4
+removing a child will immediately call a walk over children in order to recalculate numbers of columns and rows. If you plan to remove all children, use \fBevas_object_table_clear()\fP instead.
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+1 on success, 0 on failure. 
+.RE
+.PP
+
+.PP
+References evas_object_smart_changed(), evas_object_smart_member_del(), and evas_object_smart_parent_get().
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Evas from the source code.

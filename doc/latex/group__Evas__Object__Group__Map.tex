@@ -1,0 +1,43 @@
+\section{UV Mapping (Rotation, Perspecitve, 3D...)}
+\label{group__Evas__Object__Group__Map}\index{UV Mapping (Rotation, Perspecitve, 3D...)@{UV Mapping (Rotation, Perspecitve, 3D...)}}
+
+
+Evas allows different transformations to be applied to all kinds of objects.  
+
+
+\subsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef struct \_\-Evas\_\-Map \hyperlink{group__Evas__Object__Group__Map_gae94fcea124ae4135e8bb15a014b334dc}{Evas\_\-Map}
+\begin{DoxyCompactList}\small\item\em An opaque handle to map points. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Evas allows different transformations to be applied to all kinds of objects. These are applied by means of UV mapping.
+
+With UV mapping, one maps points in the source object to a 3D space positioning at target. This allows rotation, perspective, scale and lots of other effects, depending on the map that is used.
+
+Each map point may carry a multiplier color. If properly calculated, these can do shading effects on the object, producing 3D effects.
+
+As usual, Evas provides both the raw and easy to use methods. The raw methods allow developer to create its maps somewhere else, maybe load them from some file format. The easy to use methods, calculate the points given some high-\/level parameters, such as rotation angle, ambient light and so on.
+
+\begin{DoxyNote}{Note}
+applying mapping will reduce performance, so use with care. The impact on performance depends on engine in use. Software is quite optimized, but not as fast as OpenGL. 
+\end{DoxyNote}
+
+
+\subsection{Typedef Documentation}
+\index{Evas\_\-Object\_\-Group\_\-Map@{Evas\_\-Object\_\-Group\_\-Map}!Evas\_\-Map@{Evas\_\-Map}}
+\index{Evas\_\-Map@{Evas\_\-Map}!Evas_Object_Group_Map@{Evas\_\-Object\_\-Group\_\-Map}}
+\subsubsection[{Evas\_\-Map}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Evas\_\-Map}}\label{group__Evas__Object__Group__Map_gae94fcea124ae4135e8bb15a014b334dc}
+
+
+An opaque handle to map points. 
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{Evas_8h_a719acc4f4792236f7031664ec450b399}{evas\_\-map\_\-new()} 
+
+\hyperlink{Evas_8h_a78ecdf799f326e1c17aae6770c06058a}{evas\_\-map\_\-free()} 
+
+\hyperlink{Evas_8h_a25ffe0dd36fed0c9c492d636b163390a}{evas\_\-map\_\-dup()} 
+\end{DoxySeeAlso}

@@ -1,0 +1,137 @@
+\section{Coordinate Mapping Functions}
+\label{group__Evas__Coord__Mapping__Group}\index{Coordinate Mapping Functions@{Coordinate Mapping Functions}}
+
+
+Functions that are used to map coordinates from the canvas to the screen or the screen to the canvas.  
+
+
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+EAPI Evas\_\-Coord \hyperlink{group__Evas__Coord__Mapping__Group_gab435c4e98554a4c6b934840a38d96051}{evas\_\-coord\_\-screen\_\-x\_\-to\_\-world} (const \hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, int x)
+\begin{DoxyCompactList}\small\item\em Convert/scale an ouput screen co-\/ordinate into canvas co-\/ordinates. \item\end{DoxyCompactList}\item 
+EAPI Evas\_\-Coord \hyperlink{group__Evas__Coord__Mapping__Group_gac69db230ec0bd06f683e62665abe5df2}{evas\_\-coord\_\-screen\_\-y\_\-to\_\-world} (const \hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, int y)
+\begin{DoxyCompactList}\small\item\em Convert/scale an ouput screen co-\/ordinate into canvas co-\/ordinates. \item\end{DoxyCompactList}\item 
+EAPI int \hyperlink{group__Evas__Coord__Mapping__Group_ga3e4f9f6af852df00de8c180f2e3919e9}{evas\_\-coord\_\-world\_\-x\_\-to\_\-screen} (const \hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, Evas\_\-Coord x)
+\begin{DoxyCompactList}\small\item\em Convert/scale a canvas co-\/ordinate into output screen co-\/ordinates. \item\end{DoxyCompactList}\item 
+EAPI int \hyperlink{group__Evas__Coord__Mapping__Group_ga6c80c5dd33180044bcd200bb4739a2b8}{evas\_\-coord\_\-world\_\-y\_\-to\_\-screen} (const \hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, Evas\_\-Coord y)
+\begin{DoxyCompactList}\small\item\em Convert/scale a canvas co-\/ordinate into output screen co-\/ordinates. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Functions that are used to map coordinates from the canvas to the screen or the screen to the canvas. 
+
+\subsection{Function Documentation}
+\index{Evas\_\-Coord\_\-Mapping\_\-Group@{Evas\_\-Coord\_\-Mapping\_\-Group}!evas\_\-coord\_\-screen\_\-x\_\-to\_\-world@{evas\_\-coord\_\-screen\_\-x\_\-to\_\-world}}
+\index{evas\_\-coord\_\-screen\_\-x\_\-to\_\-world@{evas\_\-coord\_\-screen\_\-x\_\-to\_\-world}!Evas_Coord_Mapping_Group@{Evas\_\-Coord\_\-Mapping\_\-Group}}
+\subsubsection[{evas\_\-coord\_\-screen\_\-x\_\-to\_\-world}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Evas\_\-Coord evas\_\-coord\_\-screen\_\-x\_\-to\_\-world (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas} $\ast$}]{ e, }
+\item[{int}]{ x}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Coord__Mapping__Group_gab435c4e98554a4c6b934840a38d96051}
+
+
+Convert/scale an ouput screen co-\/ordinate into canvas co-\/ordinates. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The pointer to the Evas Canvas \item[{\em x}]The screen/output x co-\/ordinate \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The screen co-\/ordinate translated to canvas unit co-\/ordinates
+\end{DoxyReturn}
+This function takes in a horizontal co-\/ordinate as the {\ttfamily x} parameter and converts it into canvas units, accounting for output size, viewport size and location, returning it as the function return value. If {\ttfamily e} is invalid, the results are undefined.
+
+Example: 
+\begin{DoxyCode}
+ extern Evas *evas;
+ extern int screen_x;
+ Evas_Coord canvas_x;
+
+ canvas_x = evas_coord_screen_x_to_world(evas, screen_x);
+\end{DoxyCode}
+ \index{Evas\_\-Coord\_\-Mapping\_\-Group@{Evas\_\-Coord\_\-Mapping\_\-Group}!evas\_\-coord\_\-screen\_\-y\_\-to\_\-world@{evas\_\-coord\_\-screen\_\-y\_\-to\_\-world}}
+\index{evas\_\-coord\_\-screen\_\-y\_\-to\_\-world@{evas\_\-coord\_\-screen\_\-y\_\-to\_\-world}!Evas_Coord_Mapping_Group@{Evas\_\-Coord\_\-Mapping\_\-Group}}
+\subsubsection[{evas\_\-coord\_\-screen\_\-y\_\-to\_\-world}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Evas\_\-Coord evas\_\-coord\_\-screen\_\-y\_\-to\_\-world (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas} $\ast$}]{ e, }
+\item[{int}]{ y}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Coord__Mapping__Group_gac69db230ec0bd06f683e62665abe5df2}
+
+
+Convert/scale an ouput screen co-\/ordinate into canvas co-\/ordinates. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The pointer to the Evas Canvas \item[{\em y}]The screen/output y co-\/ordinate \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The screen co-\/ordinate translated to canvas unit co-\/ordinates
+\end{DoxyReturn}
+This function takes in a vertical co-\/ordinate as the {\ttfamily y} parameter and converts it into canvas units, accounting for output size, viewport size and location, returning it as the function return value. If {\ttfamily e} is invalid, the results are undefined.
+
+Example: 
+\begin{DoxyCode}
+ extern Evas *evas;
+ extern int screen_y;
+ Evas_Coord canvas_y;
+
+ canvas_y = evas_coord_screen_y_to_world(evas, screen_y);
+\end{DoxyCode}
+ \index{Evas\_\-Coord\_\-Mapping\_\-Group@{Evas\_\-Coord\_\-Mapping\_\-Group}!evas\_\-coord\_\-world\_\-x\_\-to\_\-screen@{evas\_\-coord\_\-world\_\-x\_\-to\_\-screen}}
+\index{evas\_\-coord\_\-world\_\-x\_\-to\_\-screen@{evas\_\-coord\_\-world\_\-x\_\-to\_\-screen}!Evas_Coord_Mapping_Group@{Evas\_\-Coord\_\-Mapping\_\-Group}}
+\subsubsection[{evas\_\-coord\_\-world\_\-x\_\-to\_\-screen}]{\setlength{\rightskip}{0pt plus 5cm}EAPI int evas\_\-coord\_\-world\_\-x\_\-to\_\-screen (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas} $\ast$}]{ e, }
+\item[{Evas\_\-Coord}]{ x}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Coord__Mapping__Group_ga3e4f9f6af852df00de8c180f2e3919e9}
+
+
+Convert/scale a canvas co-\/ordinate into output screen co-\/ordinates. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The pointer to the Evas Canvas \item[{\em x}]The canvas x co-\/ordinate \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The output/screen co-\/ordinate translated to output co-\/ordinates
+\end{DoxyReturn}
+This function takes in a horizontal co-\/ordinate as the {\ttfamily x} parameter and converts it into output units, accounting for output size, viewport size and location, returning it as the function return value. If {\ttfamily e} is invalid, the results are undefined.
+
+Example: 
+\begin{DoxyCode}
+ extern Evas *evas;
+ int screen_x;
+ extern Evas_Coord canvas_x;
+
+ screen_x = evas_coord_world_x_to_screen(evas, canvas_x);
+\end{DoxyCode}
+ \index{Evas\_\-Coord\_\-Mapping\_\-Group@{Evas\_\-Coord\_\-Mapping\_\-Group}!evas\_\-coord\_\-world\_\-y\_\-to\_\-screen@{evas\_\-coord\_\-world\_\-y\_\-to\_\-screen}}
+\index{evas\_\-coord\_\-world\_\-y\_\-to\_\-screen@{evas\_\-coord\_\-world\_\-y\_\-to\_\-screen}!Evas_Coord_Mapping_Group@{Evas\_\-Coord\_\-Mapping\_\-Group}}
+\subsubsection[{evas\_\-coord\_\-world\_\-y\_\-to\_\-screen}]{\setlength{\rightskip}{0pt plus 5cm}EAPI int evas\_\-coord\_\-world\_\-y\_\-to\_\-screen (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas} $\ast$}]{ e, }
+\item[{Evas\_\-Coord}]{ y}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Coord__Mapping__Group_ga6c80c5dd33180044bcd200bb4739a2b8}
+
+
+Convert/scale a canvas co-\/ordinate into output screen co-\/ordinates. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The pointer to the Evas Canvas \item[{\em y}]The canvas y co-\/ordinate \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The output/screen co-\/ordinate translated to output co-\/ordinates
+\end{DoxyReturn}
+This function takes in a vertical co-\/ordinate as the {\ttfamily x} parameter and converts it into output units, accounting for output size, viewport size and location, returning it as the function return value. If {\ttfamily e} is invalid, the results are undefined.
+
+Example: 
+\begin{DoxyCode}
+ extern Evas *evas;
+ int screen_y;
+ extern Evas_Coord canvas_y;
+
+ screen_y = evas_coord_world_y_to_screen(evas, canvas_y);
+\end{DoxyCode}
+ 

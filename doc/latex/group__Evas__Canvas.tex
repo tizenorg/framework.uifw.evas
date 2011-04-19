@@ -1,0 +1,427 @@
+\section{Canvas Functions}
+\label{group__Evas__Canvas}\index{Canvas Functions@{Canvas Functions}}
+
+
+Functions that deal with the basic evas object.  
+
+
+\subsection*{Modules}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{group__Evas__Output__Method}{Render Engine Functions}
+
+
+\begin{DoxyCompactList}\small\item\em Functions that are used to set the render engine for a given function, and then get that engine working. \item\end{DoxyCompactList}
+
+\item 
+\hyperlink{group__Evas__Output__Size}{Output and Viewport Resizing Functions}
+
+
+\begin{DoxyCompactList}\small\item\em Functions that set and retrieve the output and viewport size of an evas. \item\end{DoxyCompactList}
+
+\item 
+\hyperlink{group__Evas__Coord__Mapping__Group}{Coordinate Mapping Functions}
+
+
+\begin{DoxyCompactList}\small\item\em Functions that are used to map coordinates from the canvas to the screen or the screen to the canvas. \item\end{DoxyCompactList}
+
+\item 
+\hyperlink{group__Evas__Pointer__Group}{Pointer (Mouse) Functions}
+
+
+\begin{DoxyCompactList}\small\item\em Functions that deal with the status of the pointer (mouse cursor). \item\end{DoxyCompactList}
+
+\item 
+\hyperlink{group__Evas__Event__Freezing__Group}{Event Freezing Functions}
+
+
+\begin{DoxyCompactList}\small\item\em Functions that deal with the freezing of event processing of an evas. \item\end{DoxyCompactList}
+
+\item 
+\hyperlink{group__Evas__Event__Feeding__Group}{Event Feeding Functions}
+
+
+\begin{DoxyCompactList}\small\item\em Functions to tell Evas that events happened and should be processed. \item\end{DoxyCompactList}
+
+\item 
+\hyperlink{group__Evas__Canvas__Events}{Canvas Events}
+
+
+\begin{DoxyCompactList}\small\item\em Canvas generates some events. \item\end{DoxyCompactList}
+
+\item 
+\hyperlink{group__Evas__Image__Group}{Image Functions}
+
+
+\begin{DoxyCompactList}\small\item\em Functions that deals with images at canvas level. \item\end{DoxyCompactList}
+
+\item 
+\hyperlink{group__Evas__Font__Group}{Font Functions}
+
+
+\begin{DoxyCompactList}\small\item\em Functions that deals with fonts. \item\end{DoxyCompactList}
+
+\end{DoxyCompactItemize}
+\subsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef struct \_\-Evas \hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas}
+\begin{DoxyCompactList}\small\item\em An Evas canvas handle. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+EAPI \hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$ \hyperlink{group__Evas__Canvas_ga9280ee6564c889348b142b8bcd723f87}{evas\_\-new} (void)
+\begin{DoxyCompactList}\small\item\em Creates a new empty evas. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Canvas_ga45ab1883cc0b145bc3af130d3c00a21f}{evas\_\-free} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e)
+\begin{DoxyCompactList}\small\item\em Frees the given evas and any objects created on it. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Canvas_gadbf3e81c6db5396d3c6415f3cd34e8c8}{evas\_\-data\_\-attach\_\-set} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, void $\ast$data)
+\begin{DoxyCompactList}\small\item\em Attaches a specific pointer to the evas for fetching later. \item\end{DoxyCompactList}\item 
+EAPI void $\ast$ \hyperlink{group__Evas__Canvas_ga4244b77b68937ab060bc7d8c3bf77fdc}{evas\_\-data\_\-attach\_\-get} (const \hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e)
+\begin{DoxyCompactList}\small\item\em Returns the pointer attached by \hyperlink{group__Evas__Canvas_gadbf3e81c6db5396d3c6415f3cd34e8c8}{evas\_\-data\_\-attach\_\-set()}. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Canvas_gad4e5f592d23e74868f1e135c714a1acb}{evas\_\-focus\_\-in} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e)
+\begin{DoxyCompactList}\small\item\em Inform to the evas that it got the focus. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Canvas_ga438b8a00339af4b25c84c4ef57d6b3ff}{evas\_\-focus\_\-out} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e)
+\begin{DoxyCompactList}\small\item\em Inform to the evas that it lost the focus. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Canvas_gab4822a733c10760b293006b77c4fc6d8}{evas\_\-focus\_\-state\_\-get} (const \hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e)
+\begin{DoxyCompactList}\small\item\em Get the focus state known by the given evas. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Canvas_ga6e49e2a2b27c306c265433ac7d3b5dbe}{evas\_\-nochange\_\-push} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e)
+\begin{DoxyCompactList}\small\item\em Push the nochange flag up 1. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Canvas_gaa001b49fa2aa654ba0b116c6667b0fac}{evas\_\-nochange\_\-pop} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e)
+\begin{DoxyCompactList}\small\item\em Pop the nochange flag down 1. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Canvas_ga91b68cf4090201f16aede8e4c124986d}{evas\_\-damage\_\-rectangle\_\-add} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, int x, int y, int w, int h)
+\begin{DoxyCompactList}\small\item\em Add a damage rectangle. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Canvas_gab731e13487e7a2bf6c39d1c1dc69ccc4}{evas\_\-obscured\_\-rectangle\_\-add} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, int x, int y, int w, int h)
+\begin{DoxyCompactList}\small\item\em Add an obscured region. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Canvas_ga76dbc1ce160666ffde45901346cfe876}{evas\_\-obscured\_\-clear} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e)
+\begin{DoxyCompactList}\small\item\em Remove all obscured region rectangles from the canvas. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Canvas_gae4889bb5ec0e6e4f6ce5d6ef99f8737b}{evas\_\-render\_\-updates\_\-free} (Eina\_\-List $\ast$updates)
+\begin{DoxyCompactList}\small\item\em Free the rectangles returned by \hyperlink{group__Evas__Canvas_ga49650dcc731a151d4881106b56f7a5ca}{evas\_\-render\_\-updates()}. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-List $\ast$ \hyperlink{group__Evas__Canvas_ga49650dcc731a151d4881106b56f7a5ca}{evas\_\-render\_\-updates} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e)
+\begin{DoxyCompactList}\small\item\em Force immediate renderization of the given canvas. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Canvas_ga241869ebb085b8ab11ff6af26e1aeaaf}{evas\_\-render} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e)
+\begin{DoxyCompactList}\small\item\em Force renderization of the given canvas. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Canvas_ga5c7761185381376e2d97497625a7bbe1}{evas\_\-norender} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e)
+\begin{DoxyCompactList}\small\item\em Update the canvas internal objects but not triggering immediate renderization. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Canvas_ga84a691e253bf4239691b3f3adca3c7b1}{evas\_\-render\_\-idle\_\-flush} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e)
+\begin{DoxyCompactList}\small\item\em Make the canvas discard internally cached data used for rendering. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Functions that deal with the basic evas object. They are the functions you need to use at a minimum to get a working evas, and to destroy it. 
+
+\subsection{Typedef Documentation}
+\index{Evas\_\-Canvas@{Evas\_\-Canvas}!Evas@{Evas}}
+\index{Evas@{Evas}!Evas_Canvas@{Evas\_\-Canvas}}
+\subsubsection[{Evas}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Evas}}\label{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}
+
+
+An Evas canvas handle. 
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__Evas__Canvas_ga9280ee6564c889348b142b8bcd723f87}{evas\_\-new()} 
+
+\hyperlink{group__Evas__Canvas_ga45ab1883cc0b145bc3af130d3c00a21f}{evas\_\-free()} 
+\end{DoxySeeAlso}
+
+
+\subsection{Function Documentation}
+\index{Evas\_\-Canvas@{Evas\_\-Canvas}!evas\_\-damage\_\-rectangle\_\-add@{evas\_\-damage\_\-rectangle\_\-add}}
+\index{evas\_\-damage\_\-rectangle\_\-add@{evas\_\-damage\_\-rectangle\_\-add}!Evas_Canvas@{Evas\_\-Canvas}}
+\subsubsection[{evas\_\-damage\_\-rectangle\_\-add}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-damage\_\-rectangle\_\-add (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e, }
+\item[{int}]{ x, }
+\item[{int}]{ y, }
+\item[{int}]{ w, }
+\item[{int}]{ h}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Canvas_ga91b68cf4090201f16aede8e4c124986d}
+
+
+Add a damage rectangle. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given canvas pointer. \item[{\em x}]The rectangle's left position. \item[{\em y}]The rectangle's top position. \item[{\em w}]The rectangle's width. \item[{\em h}]The rectangle's height.\end{DoxyParams}
+This is the function by which one tells evas that a part of the canvas has to be repainted. 
+
+Referenced by evas\_\-object\_\-clip\_\-set(), and evas\_\-object\_\-clip\_\-unset().
+
+\index{Evas\_\-Canvas@{Evas\_\-Canvas}!evas\_\-data\_\-attach\_\-get@{evas\_\-data\_\-attach\_\-get}}
+\index{evas\_\-data\_\-attach\_\-get@{evas\_\-data\_\-attach\_\-get}!Evas_Canvas@{Evas\_\-Canvas}}
+\subsubsection[{evas\_\-data\_\-attach\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void$\ast$ evas\_\-data\_\-attach\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas} $\ast$}]{ e}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Canvas_ga4244b77b68937ab060bc7d8c3bf77fdc}
+
+
+Returns the pointer attached by \hyperlink{group__Evas__Canvas_gadbf3e81c6db5396d3c6415f3cd34e8c8}{evas\_\-data\_\-attach\_\-set()}. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The canvas to attach the pointer to \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The pointer attached 
+\end{DoxyReturn}
+\index{Evas\_\-Canvas@{Evas\_\-Canvas}!evas\_\-data\_\-attach\_\-set@{evas\_\-data\_\-attach\_\-set}}
+\index{evas\_\-data\_\-attach\_\-set@{evas\_\-data\_\-attach\_\-set}!Evas_Canvas@{Evas\_\-Canvas}}
+\subsubsection[{evas\_\-data\_\-attach\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-data\_\-attach\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e, }
+\item[{void $\ast$}]{ data}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Canvas_gadbf3e81c6db5396d3c6415f3cd34e8c8}
+
+
+Attaches a specific pointer to the evas for fetching later. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The canvas to attach the pointer to \item[{\em data}]The pointer to attach \end{DoxyParams}
+\index{Evas\_\-Canvas@{Evas\_\-Canvas}!evas\_\-focus\_\-in@{evas\_\-focus\_\-in}}
+\index{evas\_\-focus\_\-in@{evas\_\-focus\_\-in}!Evas_Canvas@{Evas\_\-Canvas}}
+\subsubsection[{evas\_\-focus\_\-in}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-focus\_\-in (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Canvas_gad4e5f592d23e74868f1e135c714a1acb}
+
+
+Inform to the evas that it got the focus. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The evas to change information. \end{DoxyParams}
+
+
+References EVAS\_\-CALLBACK\_\-CANVAS\_\-FOCUS\_\-IN.
+
+\index{Evas\_\-Canvas@{Evas\_\-Canvas}!evas\_\-focus\_\-out@{evas\_\-focus\_\-out}}
+\index{evas\_\-focus\_\-out@{evas\_\-focus\_\-out}!Evas_Canvas@{Evas\_\-Canvas}}
+\subsubsection[{evas\_\-focus\_\-out}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-focus\_\-out (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Canvas_ga438b8a00339af4b25c84c4ef57d6b3ff}
+
+
+Inform to the evas that it lost the focus. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The evas to change information. \end{DoxyParams}
+
+
+References EVAS\_\-CALLBACK\_\-CANVAS\_\-FOCUS\_\-OUT.
+
+\index{Evas\_\-Canvas@{Evas\_\-Canvas}!evas\_\-focus\_\-state\_\-get@{evas\_\-focus\_\-state\_\-get}}
+\index{evas\_\-focus\_\-state\_\-get@{evas\_\-focus\_\-state\_\-get}!Evas_Canvas@{Evas\_\-Canvas}}
+\subsubsection[{evas\_\-focus\_\-state\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-focus\_\-state\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas} $\ast$}]{ e}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Canvas_gab4822a733c10760b293006b77c4fc6d8}
+
+
+Get the focus state known by the given evas. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The evas to query information. \end{DoxyParams}
+\index{Evas\_\-Canvas@{Evas\_\-Canvas}!evas\_\-free@{evas\_\-free}}
+\index{evas\_\-free@{evas\_\-free}!Evas_Canvas@{Evas\_\-Canvas}}
+\subsubsection[{evas\_\-free}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-free (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Canvas_ga45ab1883cc0b145bc3af130d3c00a21f}
+
+
+Frees the given evas and any objects created on it. 
+
+Any objects with 'free' callbacks will have those callbacks called in this function.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given evas. \end{DoxyParams}
+
+
+References evas\_\-font\_\-path\_\-clear(), and evas\_\-render\_\-idle\_\-flush().
+
+\index{Evas\_\-Canvas@{Evas\_\-Canvas}!evas\_\-new@{evas\_\-new}}
+\index{evas\_\-new@{evas\_\-new}!Evas_Canvas@{Evas\_\-Canvas}}
+\subsubsection[{evas\_\-new}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas}$\ast$ evas\_\-new (
+\begin{DoxyParamCaption}
+\item[{void}]{}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Canvas_ga9280ee6564c889348b142b8bcd723f87}
+
+
+Creates a new empty evas. 
+
+Note that before you can use the evas, you will to at a minimum: \begin{DoxyItemize}
+\item Set its render method with \hyperlink{group__Evas__Output__Method_gab6cca6c7a5edabef057790889d560b11}{evas\_\-output\_\-method\_\-set} . \item Set its viewport size with \hyperlink{group__Evas__Output__Size_ga1d39edcaff429d884d4a70aa1fca0c08}{evas\_\-output\_\-viewport\_\-set} . \item Set its size of the canvas with \hyperlink{group__Evas__Output__Size_gaaf571f18f97f4067f554ab7713f01063}{evas\_\-output\_\-size\_\-set} . \item Ensure that the render engine is given the correct settings with \hyperlink{group__Evas__Output__Method_gafeff04b89b4498eedf99c89e0a06e604}{evas\_\-engine\_\-info\_\-set} .\end{DoxyItemize}
+This function should only fail if the memory allocation fails
+
+\begin{DoxyNote}{Note}
+this function is very low level. Instead of using it directly, consider using the high level functions in Ecore\_\-Evas such as {\ttfamily ecore\_\-evas\_\-new()}. See \href{http://docs.enlightenment.org/auto/ecore/.}{\tt http://docs.enlightenment.org/auto/ecore/.}
+\end{DoxyNote}
+\begin{DoxyAttention}{Attention}
+it is recommended that one calls \hyperlink{group__Evas__Group_ga939a904ec53bf80796a8ad763cbb4c3c}{evas\_\-init()} before creating new canvas.
+\end{DoxyAttention}
+\begin{DoxyReturn}{Returns}
+A new uninitialised Evas canvas on success. Otherwise, {\ttfamily NULL}. 
+\end{DoxyReturn}
+\index{Evas\_\-Canvas@{Evas\_\-Canvas}!evas\_\-nochange\_\-pop@{evas\_\-nochange\_\-pop}}
+\index{evas\_\-nochange\_\-pop@{evas\_\-nochange\_\-pop}!Evas_Canvas@{Evas\_\-Canvas}}
+\subsubsection[{evas\_\-nochange\_\-pop}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-nochange\_\-pop (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Canvas_gaa001b49fa2aa654ba0b116c6667b0fac}
+
+
+Pop the nochange flag down 1. 
+
+This tells evas, that while the nochange flag is greater than 0, do not mark objects as \char`\"{}changed\char`\"{} when making changes.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The evas to change information. \end{DoxyParams}
+\index{Evas\_\-Canvas@{Evas\_\-Canvas}!evas\_\-nochange\_\-push@{evas\_\-nochange\_\-push}}
+\index{evas\_\-nochange\_\-push@{evas\_\-nochange\_\-push}!Evas_Canvas@{Evas\_\-Canvas}}
+\subsubsection[{evas\_\-nochange\_\-push}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-nochange\_\-push (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Canvas_ga6e49e2a2b27c306c265433ac7d3b5dbe}
+
+
+Push the nochange flag up 1. 
+
+This tells evas, that while the nochange flag is greater than 0, do not mark objects as \char`\"{}changed\char`\"{} when making changes.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The evas to change information. \end{DoxyParams}
+\index{Evas\_\-Canvas@{Evas\_\-Canvas}!evas\_\-norender@{evas\_\-norender}}
+\index{evas\_\-norender@{evas\_\-norender}!Evas_Canvas@{Evas\_\-Canvas}}
+\subsubsection[{evas\_\-norender}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-norender (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Canvas_ga5c7761185381376e2d97497625a7bbe1}
+
+
+Update the canvas internal objects but not triggering immediate renderization. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given canvas pointer.\end{DoxyParams}
+This function updates the canvas internal objects not triggering renderization. To force renderization function \hyperlink{group__Evas__Canvas_ga241869ebb085b8ab11ff6af26e1aeaaf}{evas\_\-render()} should be used.
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__Evas__Canvas_ga241869ebb085b8ab11ff6af26e1aeaaf}{evas\_\-render}. 
+\end{DoxySeeAlso}
+\index{Evas\_\-Canvas@{Evas\_\-Canvas}!evas\_\-obscured\_\-clear@{evas\_\-obscured\_\-clear}}
+\index{evas\_\-obscured\_\-clear@{evas\_\-obscured\_\-clear}!Evas_Canvas@{Evas\_\-Canvas}}
+\subsubsection[{evas\_\-obscured\_\-clear}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-obscured\_\-clear (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Canvas_ga76dbc1ce160666ffde45901346cfe876}
+
+
+Remove all obscured region rectangles from the canvas. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given canvas pointer.\end{DoxyParams}
+This function removes all the rectangles from the obscured list of the canvas. It takes obscured areas added with \hyperlink{group__Evas__Canvas_gab731e13487e7a2bf6c39d1c1dc69ccc4}{evas\_\-obscured\_\-rectangle\_\-add()} and makes it a region that have to be repainted. \index{Evas\_\-Canvas@{Evas\_\-Canvas}!evas\_\-obscured\_\-rectangle\_\-add@{evas\_\-obscured\_\-rectangle\_\-add}}
+\index{evas\_\-obscured\_\-rectangle\_\-add@{evas\_\-obscured\_\-rectangle\_\-add}!Evas_Canvas@{Evas\_\-Canvas}}
+\subsubsection[{evas\_\-obscured\_\-rectangle\_\-add}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-obscured\_\-rectangle\_\-add (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e, }
+\item[{int}]{ x, }
+\item[{int}]{ y, }
+\item[{int}]{ w, }
+\item[{int}]{ h}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Canvas_gab731e13487e7a2bf6c39d1c1dc69ccc4}
+
+
+Add an obscured region. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given canvas pointer. \item[{\em x}]The rectangle's left position. \item[{\em y}]The rectangle's top position \item[{\em w}]The rectangle's width. \item[{\em h}]The rectangle's height.\end{DoxyParams}
+This is the function by which one tells evas that a part of the canvas has not to be repainted. To make this region one that have to be repainted, call the function \hyperlink{group__Evas__Canvas_ga76dbc1ce160666ffde45901346cfe876}{evas\_\-obscured\_\-clear()}.
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__Evas__Canvas_ga76dbc1ce160666ffde45901346cfe876}{evas\_\-obscured\_\-clear()}. 
+\end{DoxySeeAlso}
+\index{Evas\_\-Canvas@{Evas\_\-Canvas}!evas\_\-render@{evas\_\-render}}
+\index{evas\_\-render@{evas\_\-render}!Evas_Canvas@{Evas\_\-Canvas}}
+\subsubsection[{evas\_\-render}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-render (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Canvas_ga241869ebb085b8ab11ff6af26e1aeaaf}
+
+
+Force renderization of the given canvas. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given canvas pointer. \end{DoxyParams}
+\index{Evas\_\-Canvas@{Evas\_\-Canvas}!evas\_\-render\_\-idle\_\-flush@{evas\_\-render\_\-idle\_\-flush}}
+\index{evas\_\-render\_\-idle\_\-flush@{evas\_\-render\_\-idle\_\-flush}!Evas_Canvas@{Evas\_\-Canvas}}
+\subsubsection[{evas\_\-render\_\-idle\_\-flush}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-render\_\-idle\_\-flush (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Canvas_ga84a691e253bf4239691b3f3adca3c7b1}
+
+
+Make the canvas discard internally cached data used for rendering. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given canvas pointer.\end{DoxyParams}
+This function flushes the arrays of delete, active and render objects. Other things it may also discard are: shared memory segments, temporary scratch buffers, cached data to avoid re-\/compute of that data etc. 
+
+Referenced by evas\_\-free().
+
+\index{Evas\_\-Canvas@{Evas\_\-Canvas}!evas\_\-render\_\-updates@{evas\_\-render\_\-updates}}
+\index{evas\_\-render\_\-updates@{evas\_\-render\_\-updates}!Evas_Canvas@{Evas\_\-Canvas}}
+\subsubsection[{evas\_\-render\_\-updates}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-List$\ast$ evas\_\-render\_\-updates (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Canvas_ga49650dcc731a151d4881106b56f7a5ca}
+
+
+Force immediate renderization of the given canvas. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given canvas pointer. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+A newly allocated list of updated rectangles of the canvas. Free this list with \hyperlink{group__Evas__Canvas_gae4889bb5ec0e6e4f6ce5d6ef99f8737b}{evas\_\-render\_\-updates\_\-free()}.
+\end{DoxyReturn}
+This function forces an immediate renderization update of the given given canvas. \index{Evas\_\-Canvas@{Evas\_\-Canvas}!evas\_\-render\_\-updates\_\-free@{evas\_\-render\_\-updates\_\-free}}
+\index{evas\_\-render\_\-updates\_\-free@{evas\_\-render\_\-updates\_\-free}!Evas_Canvas@{Evas\_\-Canvas}}
+\subsubsection[{evas\_\-render\_\-updates\_\-free}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-render\_\-updates\_\-free (
+\begin{DoxyParamCaption}
+\item[{Eina\_\-List $\ast$}]{ updates}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Canvas_gae4889bb5ec0e6e4f6ce5d6ef99f8737b}
+
+
+Free the rectangles returned by \hyperlink{group__Evas__Canvas_ga49650dcc731a151d4881106b56f7a5ca}{evas\_\-render\_\-updates()}. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em updates}]The list of updated rectangles of the canvas.\end{DoxyParams}
+This function removes the region from the render updates list. It makes the region doesn't be render updated anymore. 

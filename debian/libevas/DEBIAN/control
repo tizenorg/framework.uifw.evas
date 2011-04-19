@@ -1,0 +1,21 @@
+Package: libevas
+Source: evas
+Version: 1.0.0.001+svn.58227slp2+build04
+Architecture: armel
+Maintainer: Jaehwan Kim <jae.hwan.kim@samsung.com>, Sangjin Lee <lsj119@samsung.com>, Doyoun Kang <doyoun.kang@samsung.com>, YoungHoon Jung <yhoon.jung@samsung.com>, Myungjae Lee <mjae.lee@samsung.com>, Juyung Seo <juyung.seo@samsung.com>, Gwanglim Lee <gl77.lee@samsung.com>, Jeonghyun Yun <jh0506.yun@samsung.com>, Seokjae Jeong <seok.j.jeong@samsung.com>, MyoungWoon Kim <myoungwoon.kim@samsung.com>, ChunEon Park <chuneon.park@samsung.com>, Hyoyoung Chang <hyoyoung.chang@samsung.com>, WooHyun Jung <wh0705.jung@samsung.com>, Gwangyeong Mun <kk.moon@samsung.com>
+Installed-Size: 964
+Depends: libc6 (>= 2.7), libeet1 (>= 1.1.0), libeina (>= 1.0.0.001+svn20100831), libfontconfig1, libfreetype6, libfribidi0, libgcc1 (>= 1:4.4.0), libgif4 (>= 4.1.6), libjpeg7, libpng12-0, libevas-engines (>= 0.9.9.060+svn20100304)
+Conflicts: libevas
+Provides: libevas
+Section: libs
+Priority: optional
+Homepage: http://www.enlightenment.org
+Description: Enlightenment DR17 advanced canvas library
+ Evas is an advanced canvas library, providing six engines for rendering: X11,
+ OpenGL (hardware accelerated), DirectFB, the framebuffer, Microsoft Windows
+ and Qtopia.
+ .
+ Due to its simple API, evas can be developed with rapidly, and cleanly.
+ .
+ This package contains the core library and a set of image loaders and/or savers
+ for various formats: eet, gif, jpeg, png, svg, tiff, bmp, wbmp and xpm

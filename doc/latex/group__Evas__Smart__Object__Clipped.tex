@@ -1,0 +1,127 @@
+\section{Clipped Smart Object}
+\label{group__Evas__Smart__Object__Clipped}\index{Clipped Smart Object@{Clipped Smart Object}}
+
+
+Clipped smart object is a base to construct other smart objects that based on the concept of having an internal clipper that is applied to all its other children.  
+
+
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+EAPI void \hyperlink{group__Evas__Smart__Object__Clipped_ga1e051786da49a712512430fcb6360c12}{evas\_\-object\_\-smart\_\-move\_\-children\_\-relative} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Coord dx, Evas\_\-Coord dy)
+\begin{DoxyCompactList}\small\item\em Moves all children objects relative to given offset. \item\end{DoxyCompactList}\item 
+EAPI \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$ \hyperlink{group__Evas__Smart__Object__Clipped_ga27b74fdbecd5d915c9ec832199048907}{evas\_\-object\_\-smart\_\-clipped\_\-clipper\_\-get} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Get the clipper object for the given clipped smart object. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Smart__Object__Clipped_ga3725ce3a781c93120637ad6a58f6e628}{evas\_\-object\_\-smart\_\-clipped\_\-smart\_\-set} (\hyperlink{struct__Evas__Smart__Class}{Evas\_\-Smart\_\-Class} $\ast$sc)
+\begin{DoxyCompactList}\small\item\em Set smart class callbacks so it implements the \char`\"{}Clipped Smart Object\char`\"{}. \item\end{DoxyCompactList}\item 
+EAPI const \hyperlink{struct__Evas__Smart__Class}{Evas\_\-Smart\_\-Class} $\ast$ \hyperlink{group__Evas__Smart__Object__Clipped_ga83e064112f527be0c2156c425562a57c}{evas\_\-object\_\-smart\_\-clipped\_\-class\_\-get} (void)\label{group__Evas__Smart__Object__Clipped_ga83e064112f527be0c2156c425562a57c}
+
+\begin{DoxyCompactList}\small\item\em Get a pointer to the Clipped Smart Class to use for proper inheritance. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Clipped smart object is a base to construct other smart objects that based on the concept of having an internal clipper that is applied to all its other children. This clipper will control the visibility, clipping and color of sibling objects (remember that the clipping is recursive, and clipper color modulates the color of its clippees). By default, this base will also move children relatively to the parent, and delete them when parent is deleted. In other words, it is the base for simple object grouping.
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__Evas__Smart__Object__Clipped_ga3725ce3a781c93120637ad6a58f6e628}{evas\_\-object\_\-smart\_\-clipped\_\-smart\_\-set()} 
+\end{DoxySeeAlso}
+
+
+\subsection{Function Documentation}
+\index{Evas\_\-Smart\_\-Object\_\-Clipped@{Evas\_\-Smart\_\-Object\_\-Clipped}!evas\_\-object\_\-smart\_\-clipped\_\-clipper\_\-get@{evas\_\-object\_\-smart\_\-clipped\_\-clipper\_\-get}}
+\index{evas\_\-object\_\-smart\_\-clipped\_\-clipper\_\-get@{evas\_\-object\_\-smart\_\-clipped\_\-clipper\_\-get}!Evas_Smart_Object_Clipped@{Evas\_\-Smart\_\-Object\_\-Clipped}}
+\subsubsection[{evas\_\-object\_\-smart\_\-clipped\_\-clipper\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Object}$\ast$ evas\_\-object\_\-smart\_\-clipped\_\-clipper\_\-get (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Smart__Object__Clipped_ga27b74fdbecd5d915c9ec832199048907}
+
+
+Get the clipper object for the given clipped smart object. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]the clipped smart object to retrieve the associated clipper. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the clipper object.
+\end{DoxyReturn}
+\begin{DoxySeeAlso}{See also}
+evas\_\-object\_\-smart\_\-clipped\_\-smart\_\-add() 
+\end{DoxySeeAlso}
+
+
+References evas\_\-object\_\-smart\_\-data\_\-get().
+
+\index{Evas\_\-Smart\_\-Object\_\-Clipped@{Evas\_\-Smart\_\-Object\_\-Clipped}!evas\_\-object\_\-smart\_\-clipped\_\-smart\_\-set@{evas\_\-object\_\-smart\_\-clipped\_\-smart\_\-set}}
+\index{evas\_\-object\_\-smart\_\-clipped\_\-smart\_\-set@{evas\_\-object\_\-smart\_\-clipped\_\-smart\_\-set}!Evas_Smart_Object_Clipped@{Evas\_\-Smart\_\-Object\_\-Clipped}}
+\subsubsection[{evas\_\-object\_\-smart\_\-clipped\_\-smart\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-smart\_\-clipped\_\-smart\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Smart\_\-Class} $\ast$}]{ sc}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Smart__Object__Clipped_ga3725ce3a781c93120637ad6a58f6e628}
+
+
+Set smart class callbacks so it implements the \char`\"{}Clipped Smart Object\char`\"{}. 
+
+This call will assign all the required methods of Evas\_\-Smart\_\-Class, if one wants to \char`\"{}subclass\char`\"{} it, call this function and later override values, if one wants to call the original method, save it somewhere, example:
+
+
+\begin{DoxyCode}
+ static Evas_Smart_Class parent_sc = EVAS_SMART_CLASS_INIT_NULL;
+
+ static void my_class_smart_add(Evas_Object *o)
+ {
+    parent_sc.add(o);
+    evas_object_color_set(evas_object_smart_clipped_clipper_get(o),
+                          255, 0, 0, 255);
+ }
+
+ Evas_Smart_Class *my_class_new(void)
+ {
+    static Evas_Smart_Class sc = EVAS_SMART_CLASS_INIT_NAME_VERSION("MyClass");
+    if (!parent_sc.name)
+      {
+         evas_object_smart_clipped_smart_set(&sc);
+         parent_sc = sc;
+         sc.add = my_class_smart_add;
+      }
+    return &sc;
+ }
+\end{DoxyCode}
+
+
+Default behavior is:
+\begin{DoxyItemize}
+\item add: creates a hidden clipper with \char`\"{}infinite\char`\"{} size;
+\item del: delete all children objects;
+\item move: move all objects relative relatively;
+\item resize: not defined;
+\item show: if there are children objects, show clipper;
+\item hide: hides clipper;
+\item color\_\-set: set the color of clipper;
+\item clip\_\-set: set clipper of clipper;
+\item clip\_\-unset: unset the clipper of clipper; 
+\end{DoxyItemize}
+
+Referenced by evas\_\-object\_\-smart\_\-clipped\_\-class\_\-get().
+
+\index{Evas\_\-Smart\_\-Object\_\-Clipped@{Evas\_\-Smart\_\-Object\_\-Clipped}!evas\_\-object\_\-smart\_\-move\_\-children\_\-relative@{evas\_\-object\_\-smart\_\-move\_\-children\_\-relative}}
+\index{evas\_\-object\_\-smart\_\-move\_\-children\_\-relative@{evas\_\-object\_\-smart\_\-move\_\-children\_\-relative}!Evas_Smart_Object_Clipped@{Evas\_\-Smart\_\-Object\_\-Clipped}}
+\subsubsection[{evas\_\-object\_\-smart\_\-move\_\-children\_\-relative}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-smart\_\-move\_\-children\_\-relative (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Coord}]{ dx, }
+\item[{Evas\_\-Coord}]{ dy}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Smart__Object__Clipped_ga1e051786da49a712512430fcb6360c12}
+
+
+Moves all children objects relative to given offset. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]the smart evas object to use. \item[{\em dx}]horizontal offset. \item[{\em dy}]vertical offset. \end{DoxyParams}
+
+
+References evas\_\-object\_\-move().
+

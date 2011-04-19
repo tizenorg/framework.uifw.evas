@@ -1,0 +1,148 @@
+.TH "Coordinate Mapping Functions" 3 "Tue Apr 19 2011" "Evas" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Coordinate Mapping Functions \- 
+.PP
+Functions that are used to map coordinates from the canvas to the screen or the screen to the canvas.  
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "EAPI Evas_Coord \fBevas_coord_screen_x_to_world\fP (const \fBEvas\fP *e, int x)"
+.br
+.RI "\fIConvert/scale an ouput screen co-ordinate into canvas co-ordinates. \fP"
+.ti -1c
+.RI "EAPI Evas_Coord \fBevas_coord_screen_y_to_world\fP (const \fBEvas\fP *e, int y)"
+.br
+.RI "\fIConvert/scale an ouput screen co-ordinate into canvas co-ordinates. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_coord_world_x_to_screen\fP (const \fBEvas\fP *e, Evas_Coord x)"
+.br
+.RI "\fIConvert/scale a canvas co-ordinate into output screen co-ordinates. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_coord_world_y_to_screen\fP (const \fBEvas\fP *e, Evas_Coord y)"
+.br
+.RI "\fIConvert/scale a canvas co-ordinate into output screen co-ordinates. \fP"
+.in -1c
+.SH "Detailed Description"
+.PP 
+Functions that are used to map coordinates from the canvas to the screen or the screen to the canvas. 
+.SH "Function Documentation"
+.PP 
+.SS "EAPI Evas_Coord evas_coord_screen_x_to_world (const \fBEvas\fP * e, int x)"
+.PP
+Convert/scale an ouput screen co-ordinate into canvas co-ordinates. \fBParameters:\fP
+.RS 4
+\fIe\fP The pointer to the Evas Canvas 
+.br
+\fIx\fP The screen/output x co-ordinate 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+The screen co-ordinate translated to canvas unit co-ordinates
+.RE
+.PP
+This function takes in a horizontal co-ordinate as the \fCx\fP parameter and converts it into canvas units, accounting for output size, viewport size and location, returning it as the function return value. If \fCe\fP is invalid, the results are undefined.
+.PP
+Example: 
+.PP
+.nf
+ extern Evas *evas;
+ extern int screen_x;
+ Evas_Coord canvas_x;
+
+ canvas_x = evas_coord_screen_x_to_world(evas, screen_x);
+
+.fi
+.PP
+ 
+.SS "EAPI Evas_Coord evas_coord_screen_y_to_world (const \fBEvas\fP * e, int y)"
+.PP
+Convert/scale an ouput screen co-ordinate into canvas co-ordinates. \fBParameters:\fP
+.RS 4
+\fIe\fP The pointer to the Evas Canvas 
+.br
+\fIy\fP The screen/output y co-ordinate 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+The screen co-ordinate translated to canvas unit co-ordinates
+.RE
+.PP
+This function takes in a vertical co-ordinate as the \fCy\fP parameter and converts it into canvas units, accounting for output size, viewport size and location, returning it as the function return value. If \fCe\fP is invalid, the results are undefined.
+.PP
+Example: 
+.PP
+.nf
+ extern Evas *evas;
+ extern int screen_y;
+ Evas_Coord canvas_y;
+
+ canvas_y = evas_coord_screen_y_to_world(evas, screen_y);
+
+.fi
+.PP
+ 
+.SS "EAPI int evas_coord_world_x_to_screen (const \fBEvas\fP * e, Evas_Coord x)"
+.PP
+Convert/scale a canvas co-ordinate into output screen co-ordinates. \fBParameters:\fP
+.RS 4
+\fIe\fP The pointer to the Evas Canvas 
+.br
+\fIx\fP The canvas x co-ordinate 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+The output/screen co-ordinate translated to output co-ordinates
+.RE
+.PP
+This function takes in a horizontal co-ordinate as the \fCx\fP parameter and converts it into output units, accounting for output size, viewport size and location, returning it as the function return value. If \fCe\fP is invalid, the results are undefined.
+.PP
+Example: 
+.PP
+.nf
+ extern Evas *evas;
+ int screen_x;
+ extern Evas_Coord canvas_x;
+
+ screen_x = evas_coord_world_x_to_screen(evas, canvas_x);
+
+.fi
+.PP
+ 
+.SS "EAPI int evas_coord_world_y_to_screen (const \fBEvas\fP * e, Evas_Coord y)"
+.PP
+Convert/scale a canvas co-ordinate into output screen co-ordinates. \fBParameters:\fP
+.RS 4
+\fIe\fP The pointer to the Evas Canvas 
+.br
+\fIy\fP The canvas y co-ordinate 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+The output/screen co-ordinate translated to output co-ordinates
+.RE
+.PP
+This function takes in a vertical co-ordinate as the \fCx\fP parameter and converts it into output units, accounting for output size, viewport size and location, returning it as the function return value. If \fCe\fP is invalid, the results are undefined.
+.PP
+Example: 
+.PP
+.nf
+ extern Evas *evas;
+ int screen_y;
+ extern Evas_Coord canvas_y;
+
+ screen_y = evas_coord_world_y_to_screen(evas, canvas_y);
+
+.fi
+.PP
+ 
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Evas from the source code.

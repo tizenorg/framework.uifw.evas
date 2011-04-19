@@ -1,0 +1,2 @@
+shlibs:Depends=libc6 (>= 2.7), libeet1 (>= 1.1.0), libeina (>= 1.0.0.001+svn20100831), libevas (>= 0.9.9.060+svn20100203), libfontconfig1, libfreetype6, libfribidi0, libgcc1 (>= 1:4.4.0), libgif4 (>= 4.1.6), libjpeg7, libpng12-0
+misc:Depends=

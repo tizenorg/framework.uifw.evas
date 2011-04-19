@@ -1,0 +1,18 @@
+Package: libevas-doc
+Source: evas
+Version: 1.0.0.001+svn.58227slp2+build04
+Architecture: armel
+Maintainer: Jaehwan Kim <jae.hwan.kim@samsung.com>, Sangjin Lee <lsj119@samsung.com>, Doyoun Kang <doyoun.kang@samsung.com>, YoungHoon Jung <yhoon.jung@samsung.com>, Myungjae Lee <mjae.lee@samsung.com>, Juyung Seo <juyung.seo@samsung.com>, Gwanglim Lee <gl77.lee@samsung.com>, Jeonghyun Yun <jh0506.yun@samsung.com>, Seokjae Jeong <seok.j.jeong@samsung.com>, MyoungWoon Kim <myoungwoon.kim@samsung.com>, ChunEon Park <chuneon.park@samsung.com>, Hyoyoung Chang <hyoyoung.chang@samsung.com>, WooHyun Jung <wh0705.jung@samsung.com>, Gwangyeong Mun <kk.moon@samsung.com>
+Installed-Size: 2564
+Enhances: libevas-dev
+Section: doc
+Priority: optional
+Homepage: http://www.enlightenment.org
+Description: Evas API Documentation
+ Evas is an advanced canvas library, providing six engines for rendering: X11,
+ OpenGL (hardware accelerated), DirectFB, the framebuffer, Microsoft Windows
+ and Qtopia.
+ Due to its simple API, evas can be developed with rapidly, and cleanly.
+ .
+ This package provides development documentation (html and manpages) for the
+ Evas library.

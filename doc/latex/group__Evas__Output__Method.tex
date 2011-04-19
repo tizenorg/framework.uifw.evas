@@ -1,0 +1,251 @@
+\section{Render Engine Functions}
+\label{group__Evas__Output__Method}\index{Render Engine Functions@{Render Engine Functions}}
+
+
+Functions that are used to set the render engine for a given function, and then get that engine working.  
+
+
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+EAPI void \hyperlink{group__Evas__Output__Method_gab6cca6c7a5edabef057790889d560b11}{evas\_\-output\_\-method\_\-set} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, int render\_\-method)
+\begin{DoxyCompactList}\small\item\em Sets the output engine for the given evas. \item\end{DoxyCompactList}\item 
+EAPI int \hyperlink{group__Evas__Output__Method_gac4127a10231f1851cc3443a84fb0b059}{evas\_\-output\_\-method\_\-get} (const \hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e)
+\begin{DoxyCompactList}\small\item\em Retrieves the number of the output engine used for the given evas. \item\end{DoxyCompactList}\item 
+EAPI \hyperlink{struct__Evas__Engine__Info}{Evas\_\-Engine\_\-Info} $\ast$ \hyperlink{group__Evas__Output__Method_ga882d5f9411b5556719bdf28a134ee713}{evas\_\-engine\_\-info\_\-get} (const \hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e)
+\begin{DoxyCompactList}\small\item\em Retrieves the current render engine info struct from the given evas. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Output__Method_gafeff04b89b4498eedf99c89e0a06e604}{evas\_\-engine\_\-info\_\-set} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e, \hyperlink{struct__Evas__Engine__Info}{Evas\_\-Engine\_\-Info} $\ast$info)
+\begin{DoxyCompactList}\small\item\em Applies the engine settings for the given evas from the given {\ttfamily Evas\_\-Engine\_\-Info} structure. \item\end{DoxyCompactList}\item 
+EAPI int \hyperlink{group__Evas__Output__Method_gad8a701a8d4a2acbb2ce4b741ae55ce6b}{evas\_\-render\_\-method\_\-lookup} (const char $\ast$name)
+\begin{DoxyCompactList}\small\item\em Look up a numeric ID from a string name of a rendering engine. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-List $\ast$ \hyperlink{group__Evas__Output__Method_ga23d8fc2c859f5dfcc9f50f441b96d285}{evas\_\-render\_\-method\_\-list} (void)
+\begin{DoxyCompactList}\small\item\em List all the rendering engines compiled into the copy of the Evas library. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Output__Method_gab7f4a90e3082364eca04b39d3c1c2693}{evas\_\-render\_\-method\_\-list\_\-free} (Eina\_\-List $\ast$list)
+\begin{DoxyCompactList}\small\item\em This function should be called to free a list of engine names. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Functions that are used to set the render engine for a given function, and then get that engine working. The following code snippet shows how they can be used to initialise an evas that uses the X11 software engine: 
+\begin{DoxyCode}
+ Evas *evas;
+ Evas_Engine_Info_Software_X11 *einfo;
+ extern Display *display;
+ extern Window win;
+
+ evas_init();
+
+ evas = evas_new();
+ evas_output_method_set(evas, evas_render_method_lookup("software_x11"));
+ evas_output_size_set(evas, 640, 480);
+ evas_output_viewport_set(evas, 0, 0, 640, 480);
+ einfo = (Evas_Engine_Info_Software_X11 *)evas_engine_info_get(evas);
+ einfo->info.display = display;
+ einfo->info.visual = DefaultVisual(display, DefaultScreen(display));
+ einfo->info.colormap = DefaultColormap(display, DefaultScreen(display));
+ einfo->info.drawable = win;
+ einfo->info.depth = DefaultDepth(display, DefaultScreen(display));
+ evas_engine_info_set(evas, (Evas_Engine_Info *)einfo);
+\end{DoxyCode}
+ 
+
+\subsection{Function Documentation}
+\index{Evas\_\-Output\_\-Method@{Evas\_\-Output\_\-Method}!evas\_\-engine\_\-info\_\-get@{evas\_\-engine\_\-info\_\-get}}
+\index{evas\_\-engine\_\-info\_\-get@{evas\_\-engine\_\-info\_\-get}!Evas_Output_Method@{Evas\_\-Output\_\-Method}}
+\subsubsection[{evas\_\-engine\_\-info\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Engine\_\-Info}$\ast$ evas\_\-engine\_\-info\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas} $\ast$}]{ e}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Output__Method_ga882d5f9411b5556719bdf28a134ee713}
+
+
+Retrieves the current render engine info struct from the given evas. 
+
+The returned structure is publicly modifiable. The contents are valid until either \hyperlink{group__Evas__Output__Method_gafeff04b89b4498eedf99c89e0a06e604}{evas\_\-engine\_\-info\_\-set} or \hyperlink{group__Evas__Canvas_ga241869ebb085b8ab11ff6af26e1aeaaf}{evas\_\-render} are called.
+
+This structure does not need to be freed by the caller.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given evas. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+A pointer to the Engine Info structure. {\ttfamily NULL} is returned if an engine has not yet been assigned. 
+\end{DoxyReturn}
+
+
+References \_\-Evas\_\-Engine\_\-Info::magic.
+
+\index{Evas\_\-Output\_\-Method@{Evas\_\-Output\_\-Method}!evas\_\-engine\_\-info\_\-set@{evas\_\-engine\_\-info\_\-set}}
+\index{evas\_\-engine\_\-info\_\-set@{evas\_\-engine\_\-info\_\-set}!Evas_Output_Method@{Evas\_\-Output\_\-Method}}
+\subsubsection[{evas\_\-engine\_\-info\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-engine\_\-info\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e, }
+\item[{{\bf Evas\_\-Engine\_\-Info} $\ast$}]{ info}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Output__Method_gafeff04b89b4498eedf99c89e0a06e604}
+
+
+Applies the engine settings for the given evas from the given {\ttfamily Evas\_\-Engine\_\-Info} structure. 
+
+To get the Evas\_\-Engine\_\-Info structure to use, call \hyperlink{group__Evas__Output__Method_ga882d5f9411b5556719bdf28a134ee713}{evas\_\-engine\_\-info\_\-get} . Do not try to obtain a pointer to an {\ttfamily Evas\_\-Engine\_\-Info} structure in any other way.
+
+You will need to call this function at least once before you can create objects on an evas or render that evas. Some engines allow their settings to be changed more than once.
+
+Once called, the {\ttfamily info} pointer should be considered invalid.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The pointer to the Evas Canvas \item[{\em info}]The pointer to the Engine Info to use \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+1 if no error occurred, 0 otherwise 
+\end{DoxyReturn}
+
+
+References \_\-Evas\_\-Engine\_\-Info::magic.
+
+\index{Evas\_\-Output\_\-Method@{Evas\_\-Output\_\-Method}!evas\_\-output\_\-method\_\-get@{evas\_\-output\_\-method\_\-get}}
+\index{evas\_\-output\_\-method\_\-get@{evas\_\-output\_\-method\_\-get}!Evas_Output_Method@{Evas\_\-Output\_\-Method}}
+\subsubsection[{evas\_\-output\_\-method\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI int evas\_\-output\_\-method\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas} $\ast$}]{ e}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Output__Method_gac4127a10231f1851cc3443a84fb0b059}
+
+
+Retrieves the number of the output engine used for the given evas. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given evas. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The ID number of the output engine being used. {\ttfamily 0} is returned if there is an error. 
+\end{DoxyReturn}
+\index{Evas\_\-Output\_\-Method@{Evas\_\-Output\_\-Method}!evas\_\-output\_\-method\_\-set@{evas\_\-output\_\-method\_\-set}}
+\index{evas\_\-output\_\-method\_\-set@{evas\_\-output\_\-method\_\-set}!Evas_Output_Method@{Evas\_\-Output\_\-Method}}
+\subsubsection[{evas\_\-output\_\-method\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-output\_\-method\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e, }
+\item[{int}]{ render\_\-method}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Output__Method_gab6cca6c7a5edabef057790889d560b11}
+
+
+Sets the output engine for the given evas. 
+
+Once the output engine for an evas is set, any attempt to change it will be ignored. The value for {\ttfamily render\_\-method} can be found using \hyperlink{group__Evas__Output__Method_gad8a701a8d4a2acbb2ce4b741ae55ce6b}{evas\_\-render\_\-method\_\-lookup} .
+
+\begin{DoxyAttention}{Attention}
+it is mandatory that one calls \hyperlink{group__Evas__Group_ga939a904ec53bf80796a8ad763cbb4c3c}{evas\_\-init()} before setting the output method.
+\end{DoxyAttention}
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given evas. \item[{\em render\_\-method}]The numeric engine value to use. \end{DoxyParams}
+\index{Evas\_\-Output\_\-Method@{Evas\_\-Output\_\-Method}!evas\_\-render\_\-method\_\-list@{evas\_\-render\_\-method\_\-list}}
+\index{evas\_\-render\_\-method\_\-list@{evas\_\-render\_\-method\_\-list}!Evas_Output_Method@{Evas\_\-Output\_\-Method}}
+\subsubsection[{evas\_\-render\_\-method\_\-list}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-List$\ast$ evas\_\-render\_\-method\_\-list (
+\begin{DoxyParamCaption}
+\item[{void}]{}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Output__Method_ga23d8fc2c859f5dfcc9f50f441b96d285}
+
+
+List all the rendering engines compiled into the copy of the Evas library. 
+
+\begin{DoxyReturn}{Returns}
+A linked list whose data members are C strings of engine names
+\end{DoxyReturn}
+Calling this will return a handle (pointer) to an Evas linked list. Each node in the linked list will have the data pointer be a (char $\ast$) pointer to the string name of the rendering engine available. The strings should never be modified, neither should the list be modified. This list should be cleaned up as soon as the program no longer needs it using \hyperlink{group__Evas__Output__Method_gab7f4a90e3082364eca04b39d3c1c2693}{evas\_\-render\_\-method\_\-list\_\-free()}. If no engines are available from Evas, NULL will be returned.
+
+Example: 
+\begin{DoxyCode}
+ Eina_List *engine_list, *l;
+ char *engine_name;
+
+ engine_list = evas_render_method_list();
+ if (!engine_list)
+   {
+     fprintf(stderr, "ERROR: Evas supports no engines! Exit.\n");
+     exit(-1);
+   }
+ printf("Availible Evas Engines:\n");
+ EINA_LIST_FOREACH(engine_list, l, engine_name)
+     printf("%s\n", engine_name);
+ evas_render_method_list_free(engine_list);
+\end{DoxyCode}
+ \index{Evas\_\-Output\_\-Method@{Evas\_\-Output\_\-Method}!evas\_\-render\_\-method\_\-list\_\-free@{evas\_\-render\_\-method\_\-list\_\-free}}
+\index{evas\_\-render\_\-method\_\-list\_\-free@{evas\_\-render\_\-method\_\-list\_\-free}!Evas_Output_Method@{Evas\_\-Output\_\-Method}}
+\subsubsection[{evas\_\-render\_\-method\_\-list\_\-free}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-render\_\-method\_\-list\_\-free (
+\begin{DoxyParamCaption}
+\item[{Eina\_\-List $\ast$}]{ list}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Output__Method_gab7f4a90e3082364eca04b39d3c1c2693}
+
+
+This function should be called to free a list of engine names. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em list}]The Eina\_\-List base pointer for the engine list to be freed\end{DoxyParams}
+When this function is called it will free the engine list passed in as {\ttfamily list}. The list should only be a list of engines generated by calling \hyperlink{group__Evas__Output__Method_ga23d8fc2c859f5dfcc9f50f441b96d285}{evas\_\-render\_\-method\_\-list()}. If {\ttfamily list} is NULL, nothing will happen.
+
+Example: 
+\begin{DoxyCode}
+ Eina_List *engine_list, *l;
+ char *engine_name;
+
+ engine_list = evas_render_method_list();
+ if (!engine_list)
+   {
+     fprintf(stderr, "ERROR: Evas supports no engines! Exit.\n");
+     exit(-1);
+   }
+ printf("Availible Evas Engines:\n");
+ EINA_LIST_FOREACH(engine_list, l, engine_name)
+     printf("%s\n", engine_name);
+ evas_render_method_list_free(engine_list);
+\end{DoxyCode}
+ \index{Evas\_\-Output\_\-Method@{Evas\_\-Output\_\-Method}!evas\_\-render\_\-method\_\-lookup@{evas\_\-render\_\-method\_\-lookup}}
+\index{evas\_\-render\_\-method\_\-lookup@{evas\_\-render\_\-method\_\-lookup}!Evas_Output_Method@{Evas\_\-Output\_\-Method}}
+\subsubsection[{evas\_\-render\_\-method\_\-lookup}]{\setlength{\rightskip}{0pt plus 5cm}EAPI int evas\_\-render\_\-method\_\-lookup (
+\begin{DoxyParamCaption}
+\item[{const char $\ast$}]{ name}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Output__Method_gad8a701a8d4a2acbb2ce4b741ae55ce6b}
+
+
+Look up a numeric ID from a string name of a rendering engine. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em name}]The string name of an engine \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+A numeric (opaque) ID for the rendering engine
+\end{DoxyReturn}
+This function looks up a numeric return value for the named engine in the string {\ttfamily name}. This is a normal C string, NUL byte terminated. The name is case sensitive. If the rendering engine is available, a numeric ID for that engine is returned that is not 0. If the engine is not available, 0 is returned, indicating an invalid engine.
+
+The programmer should NEVER rely on the numeric ID of an engine unless it is returned by this function. Programs should NOT be written accessing render method ID's directly, without first obtaining it from this function.
+
+\begin{DoxyAttention}{Attention}
+it is mandatory that one calls \hyperlink{group__Evas__Group_ga939a904ec53bf80796a8ad763cbb4c3c}{evas\_\-init()} before looking up the render method.
+\end{DoxyAttention}
+Example: 
+\begin{DoxyCode}
+ int engine_id;
+ Evas *evas;
+
+ evas_init();
+
+ evas = evas_new();
+ if (!evas)
+   {
+     fprintf(stderr, "ERROR: Canvas creation failed. Fatal error.\n");
+     exit(-1);
+   }
+ engine_id = evas_render_method_lookup("software_x11");
+ if (!engine_id)
+   {
+     fprintf(stderr, "ERROR: Requested rendering engine is absent.\n");
+     exit(-1);
+   }
+ evas_output_method_set(evas, engine_id);
+\end{DoxyCode}
+ 

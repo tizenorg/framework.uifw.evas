@@ -1,0 +1,457 @@
+\section{Extra Object Manipulation}
+\label{group__Evas__Object__Group__Extras}\index{Extra Object Manipulation@{Extra Object Manipulation}}
+
+
+Miscellaneous functions that also apply to any object, but are less used or not implemented by all objects.  
+
+
+\subsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef enum \hyperlink{group__Evas__Object__Group__Extras_ga551375283a5e2b0abffd5f40582e9ce2}{\_\-Evas\_\-Render\_\-Op} \hyperlink{group__Evas__Object__Group__Extras_ga9c39a3ca795bbec3687fae9ee67d6056}{Evas\_\-Render\_\-Op}
+\item 
+typedef enum \hyperlink{group__Evas__Object__Group__Extras_ga822b2a69896ff21279debe2a417e3082}{\_\-Evas\_\-Object\_\-Pointer\_\-Mode} \hyperlink{group__Evas__Object__Group__Extras_ga27baac4c63b590de109e3e3f0d941483}{Evas\_\-Object\_\-Pointer\_\-Mode}
+\begin{DoxyCompactList}\small\item\em How mouse pointer should be handled by Evas. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum \hyperlink{group__Evas__Object__Group__Extras_ga551375283a5e2b0abffd5f40582e9ce2}{\_\-Evas\_\-Render\_\-Op} \{ \par
+\hyperlink{group__Evas__Object__Group__Extras_gga551375283a5e2b0abffd5f40582e9ce2ade640652f7342e2e2151bb7bd0bee31e}{EVAS\_\-RENDER\_\-BLEND} =  0, 
+\par
+\hyperlink{group__Evas__Object__Group__Extras_gga551375283a5e2b0abffd5f40582e9ce2af49b4dbb7b8c61b595f143c7415b9eb7}{EVAS\_\-RENDER\_\-BLEND\_\-REL} =  1, 
+\par
+\hyperlink{group__Evas__Object__Group__Extras_gga551375283a5e2b0abffd5f40582e9ce2a695c8ae11f59b4b5cd9907767ff5e7bd}{EVAS\_\-RENDER\_\-COPY} =  2, 
+\par
+\hyperlink{group__Evas__Object__Group__Extras_gga551375283a5e2b0abffd5f40582e9ce2a7e4cca2acc2088c71cdebca03d7e3cea}{EVAS\_\-RENDER\_\-COPY\_\-REL} =  3, 
+\par
+\hyperlink{group__Evas__Object__Group__Extras_gga551375283a5e2b0abffd5f40582e9ce2a950b6045d15e439b98badc63d9c52926}{EVAS\_\-RENDER\_\-ADD} =  4, 
+\par
+\hyperlink{group__Evas__Object__Group__Extras_gga551375283a5e2b0abffd5f40582e9ce2a7771ae083fb87f50a203cc643cb670cc}{EVAS\_\-RENDER\_\-ADD\_\-REL} =  5, 
+\par
+\hyperlink{group__Evas__Object__Group__Extras_gga551375283a5e2b0abffd5f40582e9ce2a3183f3f43c243373ca0d63e134342e27}{EVAS\_\-RENDER\_\-SUB} =  6, 
+\par
+\hyperlink{group__Evas__Object__Group__Extras_gga551375283a5e2b0abffd5f40582e9ce2ab6167dbd8428b155181368f3d0eb349c}{EVAS\_\-RENDER\_\-SUB\_\-REL} =  7, 
+\par
+\hyperlink{group__Evas__Object__Group__Extras_gga551375283a5e2b0abffd5f40582e9ce2a9d1d18d6f8e8497db805b3539ff4a2e9}{EVAS\_\-RENDER\_\-TINT} =  8, 
+\par
+\hyperlink{group__Evas__Object__Group__Extras_gga551375283a5e2b0abffd5f40582e9ce2a074b198fc95213003d51be4e1b2988c6}{EVAS\_\-RENDER\_\-TINT\_\-REL} =  9, 
+\par
+\hyperlink{group__Evas__Object__Group__Extras_gga551375283a5e2b0abffd5f40582e9ce2ad84a48299047fa2e2fb0d9807cae9b2f}{EVAS\_\-RENDER\_\-MASK} =  10, 
+\par
+\hyperlink{group__Evas__Object__Group__Extras_gga551375283a5e2b0abffd5f40582e9ce2a9da04ad7efd34522071e86a01a57f294}{EVAS\_\-RENDER\_\-MUL} =  11
+ \}
+\begin{DoxyCompactList}\small\item\em How the object should be rendered to output. \item\end{DoxyCompactList}\item 
+enum \hyperlink{group__Evas__Object__Group__Extras_ga822b2a69896ff21279debe2a417e3082}{\_\-Evas\_\-Object\_\-Pointer\_\-Mode} \{ \hyperlink{group__Evas__Object__Group__Extras_gga822b2a69896ff21279debe2a417e3082a088ef2950aeb5a105c53decbbac82a28}{EVAS\_\-OBJECT\_\-POINTER\_\-MODE\_\-AUTOGRAB}
+ \}
+\begin{DoxyCompactList}\small\item\em How mouse pointer should be handled by Evas. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Extras_ga429f41f49547080ff96d21196e4ff8ed}{evas\_\-object\_\-data\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, const char $\ast$key, const void $\ast$data)
+\begin{DoxyCompactList}\small\item\em Set an attached data pointer to an object with a given string key. \item\end{DoxyCompactList}\item 
+EAPI void $\ast$ \hyperlink{group__Evas__Object__Group__Extras_ga69bba3a6ae917a3170ec4429d6b86f0b}{evas\_\-object\_\-data\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, const char $\ast$key)
+\begin{DoxyCompactList}\small\item\em Return an attached data pointer by its given string key. \item\end{DoxyCompactList}\item 
+EAPI void $\ast$ \hyperlink{group__Evas__Object__Group__Extras_ga163e7d373168eea15ef1b6a9be68f3ec}{evas\_\-object\_\-data\_\-del} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, const char $\ast$key)
+\begin{DoxyCompactList}\small\item\em Delete at attached data pointer from an object. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Extras_ga5504e39f8d0cc41af3663fed15ec06e5}{evas\_\-object\_\-pointer\_\-mode\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, \hyperlink{group__Evas__Object__Group__Extras_ga27baac4c63b590de109e3e3f0d941483}{Evas\_\-Object\_\-Pointer\_\-Mode} setting)
+\begin{DoxyCompactList}\small\item\em Set pointer behavior. \item\end{DoxyCompactList}\item 
+EAPI \hyperlink{group__Evas__Object__Group__Extras_ga27baac4c63b590de109e3e3f0d941483}{Evas\_\-Object\_\-Pointer\_\-Mode} \hyperlink{group__Evas__Object__Group__Extras_ga80faa9ce3b9ab59fe7b4bf6924b293ac}{evas\_\-object\_\-pointer\_\-mode\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Determine how pointer will behave. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Extras_gaf0c7d4c49695749fa616d0abdbd5ddeb}{evas\_\-object\_\-anti\_\-alias\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Eina\_\-Bool anti\_\-alias)
+\begin{DoxyCompactList}\small\item\em Sets whether or not the given evas object is to be drawn anti-\/aliased. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Object__Group__Extras_ga3308cb65716beb4ce826b9701e23159a}{evas\_\-object\_\-anti\_\-alias\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Retrieves whether or not the given evas object is to be drawn anti\_\-aliased. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Extras_gaf010777fa1b58bd1c9c8093d2edc62e9}{evas\_\-object\_\-scale\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, double scale)
+\begin{DoxyCompactList}\small\item\em Sets the scaling factor for an evas object. \item\end{DoxyCompactList}\item 
+EAPI double \hyperlink{group__Evas__Object__Group__Extras_ga1c0aca3af434f0bc0fa8732248b197ba}{evas\_\-object\_\-scale\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Retrieves the scaling factor for the given evas object. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Extras_ga86ef8d1f039bff1a60595688f93a7990}{evas\_\-object\_\-render\_\-op\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, \hyperlink{group__Evas__Object__Group__Extras_ga9c39a3ca795bbec3687fae9ee67d6056}{Evas\_\-Render\_\-Op} render\_\-op)
+\begin{DoxyCompactList}\small\item\em Sets the render\_\-op to be used for rendering the evas object. \item\end{DoxyCompactList}\item 
+EAPI \hyperlink{group__Evas__Object__Group__Extras_ga9c39a3ca795bbec3687fae9ee67d6056}{Evas\_\-Render\_\-Op} \hyperlink{group__Evas__Object__Group__Extras_gaa157afa6f23cdf4b344d95531bb7d508}{evas\_\-object\_\-render\_\-op\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Retrieves the current value of the operation used for rendering the evas object. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Extras_gac9ce9802afd7d4cba580fbcbe92c28b2}{evas\_\-object\_\-precise\_\-is\_\-inside\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Eina\_\-Bool precise)
+\begin{DoxyCompactList}\small\item\em Set whether to use a precise (usually expensive) point collision detection. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Object__Group__Extras_ga8483a3c855f466a5dca480fcfd07b52b}{evas\_\-object\_\-precise\_\-is\_\-inside\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Determine whether an object is set to use a precise point collision detection. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Object__Group__Extras_ga8697b24251c2209c60aabb1a5de860a8}{evas\_\-object\_\-static\_\-clip\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Eina\_\-Bool is\_\-static\_\-clip)
+\begin{DoxyCompactList}\small\item\em Set a hint flag on the object that this is used as a static \char`\"{}clipper\char`\"{}. \item\end{DoxyCompactList}\item 
+EAPI Eina\_\-Bool \hyperlink{group__Evas__Object__Group__Extras_gafda644be2d6e6360959853c9d6195ec8}{evas\_\-object\_\-static\_\-clip\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj)
+\begin{DoxyCompactList}\small\item\em Get static \char`\"{}clipper\char`\"{} hint flag. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Miscellaneous functions that also apply to any object, but are less used or not implemented by all objects. 
+
+\subsection{Typedef Documentation}
+\index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!Evas\_\-Object\_\-Pointer\_\-Mode@{Evas\_\-Object\_\-Pointer\_\-Mode}}
+\index{Evas\_\-Object\_\-Pointer\_\-Mode@{Evas\_\-Object\_\-Pointer\_\-Mode}!Evas_Object_Group_Extras@{Evas\_\-Object\_\-Group\_\-Extras}}
+\subsubsection[{Evas\_\-Object\_\-Pointer\_\-Mode}]{\setlength{\rightskip}{0pt plus 5cm}typedef enum {\bf \_\-Evas\_\-Object\_\-Pointer\_\-Mode}  {\bf Evas\_\-Object\_\-Pointer\_\-Mode}}\label{group__Evas__Object__Group__Extras_ga27baac4c63b590de109e3e3f0d941483}
+
+
+How mouse pointer should be handled by Evas. 
+
+If \hyperlink{group__Evas__Object__Group__Extras_gga822b2a69896ff21279debe2a417e3082a088ef2950aeb5a105c53decbbac82a28}{EVAS\_\-OBJECT\_\-POINTER\_\-MODE\_\-AUTOGRAB}, then when mouse is down an object, then moves outside of it, the pointer still behaves as being bound to the object, albeit out of its drawing region. On mouse up, the event will be feed to the object, that may check if the final position is over or not and do something about it. How mouse pointer should be handled by Evas. \index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!Evas\_\-Render\_\-Op@{Evas\_\-Render\_\-Op}}
+\index{Evas\_\-Render\_\-Op@{Evas\_\-Render\_\-Op}!Evas_Object_Group_Extras@{Evas\_\-Object\_\-Group\_\-Extras}}
+\subsubsection[{Evas\_\-Render\_\-Op}]{\setlength{\rightskip}{0pt plus 5cm}typedef enum {\bf \_\-Evas\_\-Render\_\-Op}  {\bf Evas\_\-Render\_\-Op}}\label{group__Evas__Object__Group__Extras_ga9c39a3ca795bbec3687fae9ee67d6056}
+How the object should be rendered to output. 
+
+\subsection{Enumeration Type Documentation}
+\index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!\_\-Evas\_\-Object\_\-Pointer\_\-Mode@{\_\-Evas\_\-Object\_\-Pointer\_\-Mode}}
+\index{\_\-Evas\_\-Object\_\-Pointer\_\-Mode@{\_\-Evas\_\-Object\_\-Pointer\_\-Mode}!Evas_Object_Group_Extras@{Evas\_\-Object\_\-Group\_\-Extras}}
+\subsubsection[{\_\-Evas\_\-Object\_\-Pointer\_\-Mode}]{\setlength{\rightskip}{0pt plus 5cm}enum {\bf \_\-Evas\_\-Object\_\-Pointer\_\-Mode}}\label{group__Evas__Object__Group__Extras_ga822b2a69896ff21279debe2a417e3082}
+
+
+How mouse pointer should be handled by Evas. 
+
+If \hyperlink{group__Evas__Object__Group__Extras_gga822b2a69896ff21279debe2a417e3082a088ef2950aeb5a105c53decbbac82a28}{EVAS\_\-OBJECT\_\-POINTER\_\-MODE\_\-AUTOGRAB}, then when mouse is down an object, then moves outside of it, the pointer still behaves as being bound to the object, albeit out of its drawing region. On mouse up, the event will be feed to the object, that may check if the final position is over or not and do something about it. \begin{Desc}
+\item[Enumerator: ]\par
+\begin{description}
+\index{EVAS\_\-OBJECT\_\-POINTER\_\-MODE\_\-AUTOGRAB@{EVAS\_\-OBJECT\_\-POINTER\_\-MODE\_\-AUTOGRAB}!Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}}\index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!EVAS\_\-OBJECT\_\-POINTER\_\-MODE\_\-AUTOGRAB@{EVAS\_\-OBJECT\_\-POINTER\_\-MODE\_\-AUTOGRAB}}\item[{\em 
+EVAS\_\-OBJECT\_\-POINTER\_\-MODE\_\-AUTOGRAB\label{group__Evas__Object__Group__Extras_gga822b2a69896ff21279debe2a417e3082a088ef2950aeb5a105c53decbbac82a28}
+}]default, X11-\/like \end{description}
+\end{Desc}
+
+\index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!\_\-Evas\_\-Render\_\-Op@{\_\-Evas\_\-Render\_\-Op}}
+\index{\_\-Evas\_\-Render\_\-Op@{\_\-Evas\_\-Render\_\-Op}!Evas_Object_Group_Extras@{Evas\_\-Object\_\-Group\_\-Extras}}
+\subsubsection[{\_\-Evas\_\-Render\_\-Op}]{\setlength{\rightskip}{0pt plus 5cm}enum {\bf \_\-Evas\_\-Render\_\-Op}}\label{group__Evas__Object__Group__Extras_ga551375283a5e2b0abffd5f40582e9ce2}
+
+
+How the object should be rendered to output. 
+
+\begin{Desc}
+\item[Enumerator: ]\par
+\begin{description}
+\index{EVAS\_\-RENDER\_\-BLEND@{EVAS\_\-RENDER\_\-BLEND}!Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}}\index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!EVAS\_\-RENDER\_\-BLEND@{EVAS\_\-RENDER\_\-BLEND}}\item[{\em 
+EVAS\_\-RENDER\_\-BLEND\label{group__Evas__Object__Group__Extras_gga551375283a5e2b0abffd5f40582e9ce2ade640652f7342e2e2151bb7bd0bee31e}
+}]default op: d = d$\ast$(1-\/sa) + s \index{EVAS\_\-RENDER\_\-BLEND\_\-REL@{EVAS\_\-RENDER\_\-BLEND\_\-REL}!Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}}\index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!EVAS\_\-RENDER\_\-BLEND\_\-REL@{EVAS\_\-RENDER\_\-BLEND\_\-REL}}\item[{\em 
+EVAS\_\-RENDER\_\-BLEND\_\-REL\label{group__Evas__Object__Group__Extras_gga551375283a5e2b0abffd5f40582e9ce2af49b4dbb7b8c61b595f143c7415b9eb7}
+}]d = d$\ast$(1 -\/ sa) + s$\ast$da \index{EVAS\_\-RENDER\_\-COPY@{EVAS\_\-RENDER\_\-COPY}!Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}}\index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!EVAS\_\-RENDER\_\-COPY@{EVAS\_\-RENDER\_\-COPY}}\item[{\em 
+EVAS\_\-RENDER\_\-COPY\label{group__Evas__Object__Group__Extras_gga551375283a5e2b0abffd5f40582e9ce2a695c8ae11f59b4b5cd9907767ff5e7bd}
+}]d = s \index{EVAS\_\-RENDER\_\-COPY\_\-REL@{EVAS\_\-RENDER\_\-COPY\_\-REL}!Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}}\index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!EVAS\_\-RENDER\_\-COPY\_\-REL@{EVAS\_\-RENDER\_\-COPY\_\-REL}}\item[{\em 
+EVAS\_\-RENDER\_\-COPY\_\-REL\label{group__Evas__Object__Group__Extras_gga551375283a5e2b0abffd5f40582e9ce2a7e4cca2acc2088c71cdebca03d7e3cea}
+}]d = s$\ast$da \index{EVAS\_\-RENDER\_\-ADD@{EVAS\_\-RENDER\_\-ADD}!Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}}\index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!EVAS\_\-RENDER\_\-ADD@{EVAS\_\-RENDER\_\-ADD}}\item[{\em 
+EVAS\_\-RENDER\_\-ADD\label{group__Evas__Object__Group__Extras_gga551375283a5e2b0abffd5f40582e9ce2a950b6045d15e439b98badc63d9c52926}
+}]d = d + s \index{EVAS\_\-RENDER\_\-ADD\_\-REL@{EVAS\_\-RENDER\_\-ADD\_\-REL}!Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}}\index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!EVAS\_\-RENDER\_\-ADD\_\-REL@{EVAS\_\-RENDER\_\-ADD\_\-REL}}\item[{\em 
+EVAS\_\-RENDER\_\-ADD\_\-REL\label{group__Evas__Object__Group__Extras_gga551375283a5e2b0abffd5f40582e9ce2a7771ae083fb87f50a203cc643cb670cc}
+}]d = d + s$\ast$da \index{EVAS\_\-RENDER\_\-SUB@{EVAS\_\-RENDER\_\-SUB}!Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}}\index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!EVAS\_\-RENDER\_\-SUB@{EVAS\_\-RENDER\_\-SUB}}\item[{\em 
+EVAS\_\-RENDER\_\-SUB\label{group__Evas__Object__Group__Extras_gga551375283a5e2b0abffd5f40582e9ce2a3183f3f43c243373ca0d63e134342e27}
+}]d = d -\/ s \index{EVAS\_\-RENDER\_\-SUB\_\-REL@{EVAS\_\-RENDER\_\-SUB\_\-REL}!Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}}\index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!EVAS\_\-RENDER\_\-SUB\_\-REL@{EVAS\_\-RENDER\_\-SUB\_\-REL}}\item[{\em 
+EVAS\_\-RENDER\_\-SUB\_\-REL\label{group__Evas__Object__Group__Extras_gga551375283a5e2b0abffd5f40582e9ce2ab6167dbd8428b155181368f3d0eb349c}
+}]d = d -\/ s$\ast$da \index{EVAS\_\-RENDER\_\-TINT@{EVAS\_\-RENDER\_\-TINT}!Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}}\index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!EVAS\_\-RENDER\_\-TINT@{EVAS\_\-RENDER\_\-TINT}}\item[{\em 
+EVAS\_\-RENDER\_\-TINT\label{group__Evas__Object__Group__Extras_gga551375283a5e2b0abffd5f40582e9ce2a9d1d18d6f8e8497db805b3539ff4a2e9}
+}]d = d$\ast$s + d$\ast$(1 -\/ sa) + s$\ast$(1 -\/ da) \index{EVAS\_\-RENDER\_\-TINT\_\-REL@{EVAS\_\-RENDER\_\-TINT\_\-REL}!Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}}\index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!EVAS\_\-RENDER\_\-TINT\_\-REL@{EVAS\_\-RENDER\_\-TINT\_\-REL}}\item[{\em 
+EVAS\_\-RENDER\_\-TINT\_\-REL\label{group__Evas__Object__Group__Extras_gga551375283a5e2b0abffd5f40582e9ce2a074b198fc95213003d51be4e1b2988c6}
+}]d = d$\ast$(1 -\/ sa + s) \index{EVAS\_\-RENDER\_\-MASK@{EVAS\_\-RENDER\_\-MASK}!Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}}\index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!EVAS\_\-RENDER\_\-MASK@{EVAS\_\-RENDER\_\-MASK}}\item[{\em 
+EVAS\_\-RENDER\_\-MASK\label{group__Evas__Object__Group__Extras_gga551375283a5e2b0abffd5f40582e9ce2ad84a48299047fa2e2fb0d9807cae9b2f}
+}]d = d$\ast$sa \index{EVAS\_\-RENDER\_\-MUL@{EVAS\_\-RENDER\_\-MUL}!Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}}\index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!EVAS\_\-RENDER\_\-MUL@{EVAS\_\-RENDER\_\-MUL}}\item[{\em 
+EVAS\_\-RENDER\_\-MUL\label{group__Evas__Object__Group__Extras_gga551375283a5e2b0abffd5f40582e9ce2a9da04ad7efd34522071e86a01a57f294}
+}]d = d$\ast$s \end{description}
+\end{Desc}
+
+
+
+\subsection{Function Documentation}
+\index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!evas\_\-object\_\-anti\_\-alias\_\-get@{evas\_\-object\_\-anti\_\-alias\_\-get}}
+\index{evas\_\-object\_\-anti\_\-alias\_\-get@{evas\_\-object\_\-anti\_\-alias\_\-get}!Evas_Object_Group_Extras@{Evas\_\-Object\_\-Group\_\-Extras}}
+\subsubsection[{evas\_\-object\_\-anti\_\-alias\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-object\_\-anti\_\-alias\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Extras_ga3308cb65716beb4ce826b9701e23159a}
+
+
+Retrieves whether or not the given evas object is to be drawn anti\_\-aliased. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given evas object. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+{\ttfamily 1} if the object is to be anti\_\-aliased. {\ttfamily 0} otherwise. 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!evas\_\-object\_\-anti\_\-alias\_\-set@{evas\_\-object\_\-anti\_\-alias\_\-set}}
+\index{evas\_\-object\_\-anti\_\-alias\_\-set@{evas\_\-object\_\-anti\_\-alias\_\-set}!Evas_Object_Group_Extras@{Evas\_\-Object\_\-Group\_\-Extras}}
+\subsubsection[{evas\_\-object\_\-anti\_\-alias\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-anti\_\-alias\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Eina\_\-Bool}]{ anti\_\-alias}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Extras_gaf0c7d4c49695749fa616d0abdbd5ddeb}
+
+
+Sets whether or not the given evas object is to be drawn anti-\/aliased. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given evas object. \item[{\em anti\_\-alias}]1 if the object is to be anti\_\-aliased, 0 otherwise. \end{DoxyParams}
+\index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!evas\_\-object\_\-data\_\-del@{evas\_\-object\_\-data\_\-del}}
+\index{evas\_\-object\_\-data\_\-del@{evas\_\-object\_\-data\_\-del}!Evas_Object_Group_Extras@{Evas\_\-Object\_\-Group\_\-Extras}}
+\subsubsection[{evas\_\-object\_\-data\_\-del}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void$\ast$ evas\_\-object\_\-data\_\-del (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{const char $\ast$}]{ key}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Extras_ga163e7d373168eea15ef1b6a9be68f3ec}
+
+
+Delete at attached data pointer from an object. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The object to delete the data pointer from \item[{\em key}]The string key the data was stored under \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The original data pointer stored at {\ttfamily key} on {\ttfamily obj} 
+\end{DoxyReturn}
+This will remove thee stored data pointer from {\ttfamily obj} stored under {\ttfamily key}, and return the original pointer stored under {\ttfamily key}, if any, nor NULL if nothing was stored under that key.
+
+Example:
+
+
+\begin{DoxyCode}
+ int *my_data;
+ extern Evas_Object *obj;
+
+ my_data = evas_object_data_del(obj, "name_of_my_data");
+\end{DoxyCode}
+ 
+
+Referenced by evas\_\-object\_\-data\_\-set().
+
+\index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!evas\_\-object\_\-data\_\-get@{evas\_\-object\_\-data\_\-get}}
+\index{evas\_\-object\_\-data\_\-get@{evas\_\-object\_\-data\_\-get}!Evas_Object_Group_Extras@{Evas\_\-Object\_\-Group\_\-Extras}}
+\subsubsection[{evas\_\-object\_\-data\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void$\ast$ evas\_\-object\_\-data\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{const char $\ast$}]{ key}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Extras_ga69bba3a6ae917a3170ec4429d6b86f0b}
+
+
+Return an attached data pointer by its given string key. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The object to which the data was attached \item[{\em key}]The string key the data was stored under \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The data pointer stored, or NULL if none was stored
+\end{DoxyReturn}
+This function will return the data pointer attached to the object {\ttfamily obj} stored using the string key {\ttfamily key}. If the object is valid and data was stored under the given key, the pointer that was stored will be reuturned. If this is not the case, NULL will be returned, signifying an invalid object or non-\/existent key. It is possible a NULL pointer was stored given that key, but this situation is non-\/sensical and thus can be considered an error as well. NULL pointers are never stored as this is the return value if an error occurs.
+
+Example:
+
+
+\begin{DoxyCode}
+ int *my_data;
+ extern Evas_Object *obj;
+
+ my_data = evas_object_data_get(obj, "name_of_my_data");
+ if (my_data) printf("Data stored was %p\n", my_data);
+ else printf("No data was stored on the object\n");
+\end{DoxyCode}
+ \index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!evas\_\-object\_\-data\_\-set@{evas\_\-object\_\-data\_\-set}}
+\index{evas\_\-object\_\-data\_\-set@{evas\_\-object\_\-data\_\-set}!Evas_Object_Group_Extras@{Evas\_\-Object\_\-Group\_\-Extras}}
+\subsubsection[{evas\_\-object\_\-data\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-data\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{const char $\ast$}]{ key, }
+\item[{const void $\ast$}]{ data}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Extras_ga429f41f49547080ff96d21196e4ff8ed}
+
+
+Set an attached data pointer to an object with a given string key. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The object to attach the data pointer to \item[{\em key}]The string key for the data to access it \item[{\em data}]The ponter to the data to be attached\end{DoxyParams}
+This attaches the pointer {\ttfamily data} to the object {\ttfamily obj} given the string {\ttfamily key}. This pointer will stay \char`\"{}hooked\char`\"{} to the object until a new pointer with the same string key is attached with \hyperlink{group__Evas__Object__Group__Extras_ga429f41f49547080ff96d21196e4ff8ed}{evas\_\-object\_\-data\_\-set()} or it is deleted with \hyperlink{group__Evas__Object__Group__Extras_ga163e7d373168eea15ef1b6a9be68f3ec}{evas\_\-object\_\-data\_\-del()}. On deletion of the object {\ttfamily obj}, the pointers will not be accessible from the object anymore.
+
+You can find the pointer attached under a string key using \hyperlink{group__Evas__Object__Group__Extras_ga69bba3a6ae917a3170ec4429d6b86f0b}{evas\_\-object\_\-data\_\-get()}. It is the job of the calling application to free any data pointed to by {\ttfamily data} when it is no longer required.
+
+If {\ttfamily data} is NULL, the old value stored at {\ttfamily key} will be removed but no new value will be stored. This is synonymous with calling \hyperlink{group__Evas__Object__Group__Extras_ga163e7d373168eea15ef1b6a9be68f3ec}{evas\_\-object\_\-data\_\-del()} with {\ttfamily obj} and {\ttfamily key}.
+
+Example:
+
+
+\begin{DoxyCode}
+ int *my_data;
+ extern Evas_Object *obj;
+
+ my_data = malloc(500);
+ evas_object_data_set(obj, "name_of_data", my_data);
+ printf("The data that was attached was %p\n", evas_object_data_get(obj, "name_of
+      _data"));
+\end{DoxyCode}
+ 
+
+References evas\_\-object\_\-data\_\-del().
+
+\index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!evas\_\-object\_\-pointer\_\-mode\_\-get@{evas\_\-object\_\-pointer\_\-mode\_\-get}}
+\index{evas\_\-object\_\-pointer\_\-mode\_\-get@{evas\_\-object\_\-pointer\_\-mode\_\-get}!Evas_Object_Group_Extras@{Evas\_\-Object\_\-Group\_\-Extras}}
+\subsubsection[{evas\_\-object\_\-pointer\_\-mode\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Object\_\-Pointer\_\-Mode} evas\_\-object\_\-pointer\_\-mode\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Extras_ga80faa9ce3b9ab59fe7b4bf6924b293ac}
+
+
+Determine how pointer will behave. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+pointer behavior. 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!evas\_\-object\_\-pointer\_\-mode\_\-set@{evas\_\-object\_\-pointer\_\-mode\_\-set}}
+\index{evas\_\-object\_\-pointer\_\-mode\_\-set@{evas\_\-object\_\-pointer\_\-mode\_\-set}!Evas_Object_Group_Extras@{Evas\_\-Object\_\-Group\_\-Extras}}
+\subsubsection[{evas\_\-object\_\-pointer\_\-mode\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-pointer\_\-mode\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{{\bf Evas\_\-Object\_\-Pointer\_\-Mode}}]{ setting}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Extras_ga5504e39f8d0cc41af3663fed15ec06e5}
+
+
+Set pointer behavior. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]\item[{\em setting}]desired behavior.\end{DoxyParams}
+This function has direct effect on event callbacks related to mouse.
+
+If {\ttfamily setting} is EVAS\_\-OBJECT\_\-POINTER\_\-MODE\_\-AUTOGRAB, then when mouse is down at this object, events will be restricted to it as source, mouse moves, for example, will be emitted even if outside this object area.
+
+If {\ttfamily setting} is EVAS\_\-OBJECT\_\-POINTER\_\-MODE\_\-NOGRAB, then events will be emitted just when inside this object area.
+
+The default value is EVAS\_\-OBJECT\_\-POINTER\_\-MODE\_\-AUTOGRAB. \index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!evas\_\-object\_\-precise\_\-is\_\-inside\_\-get@{evas\_\-object\_\-precise\_\-is\_\-inside\_\-get}}
+\index{evas\_\-object\_\-precise\_\-is\_\-inside\_\-get@{evas\_\-object\_\-precise\_\-is\_\-inside\_\-get}!Evas_Object_Group_Extras@{Evas\_\-Object\_\-Group\_\-Extras}}
+\subsubsection[{evas\_\-object\_\-precise\_\-is\_\-inside\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-object\_\-precise\_\-is\_\-inside\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Extras_ga8483a3c855f466a5dca480fcfd07b52b}
+
+
+Determine whether an object is set to use a precise point collision detection. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given object. \end{DoxyParams}
+\index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!evas\_\-object\_\-precise\_\-is\_\-inside\_\-set@{evas\_\-object\_\-precise\_\-is\_\-inside\_\-set}}
+\index{evas\_\-object\_\-precise\_\-is\_\-inside\_\-set@{evas\_\-object\_\-precise\_\-is\_\-inside\_\-set}!Evas_Object_Group_Extras@{Evas\_\-Object\_\-Group\_\-Extras}}
+\subsubsection[{evas\_\-object\_\-precise\_\-is\_\-inside\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-precise\_\-is\_\-inside\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Eina\_\-Bool}]{ precise}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Extras_gac9ce9802afd7d4cba580fbcbe92c28b2}
+
+
+Set whether to use a precise (usually expensive) point collision detection. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given object. \item[{\em precise}]wheter to use a precise point collision detection or not The default value is false. \end{DoxyParams}
+\index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!evas\_\-object\_\-render\_\-op\_\-get@{evas\_\-object\_\-render\_\-op\_\-get}}
+\index{evas\_\-object\_\-render\_\-op\_\-get@{evas\_\-object\_\-render\_\-op\_\-get}!Evas_Object_Group_Extras@{Evas\_\-Object\_\-Group\_\-Extras}}
+\subsubsection[{evas\_\-object\_\-render\_\-op\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Render\_\-Op} evas\_\-object\_\-render\_\-op\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Extras_gaa157afa6f23cdf4b344d95531bb7d508}
+
+
+Retrieves the current value of the operation used for rendering the evas object. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given evas object. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+one of the enumerated values in Evas\_\-Render\_\-Op. 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!evas\_\-object\_\-render\_\-op\_\-set@{evas\_\-object\_\-render\_\-op\_\-set}}
+\index{evas\_\-object\_\-render\_\-op\_\-set@{evas\_\-object\_\-render\_\-op\_\-set}!Evas_Object_Group_Extras@{Evas\_\-Object\_\-Group\_\-Extras}}
+\subsubsection[{evas\_\-object\_\-render\_\-op\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-render\_\-op\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{{\bf Evas\_\-Render\_\-Op}}]{ render\_\-op}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Extras_ga86ef8d1f039bff1a60595688f93a7990}
+
+
+Sets the render\_\-op to be used for rendering the evas object. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given evas object. \item[{\em render\_\-op}]one of the Evas\_\-Render\_\-Op values. \end{DoxyParams}
+\index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!evas\_\-object\_\-scale\_\-get@{evas\_\-object\_\-scale\_\-get}}
+\index{evas\_\-object\_\-scale\_\-get@{evas\_\-object\_\-scale\_\-get}!Evas_Object_Group_Extras@{Evas\_\-Object\_\-Group\_\-Extras}}
+\subsubsection[{evas\_\-object\_\-scale\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI double evas\_\-object\_\-scale\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Extras_ga1c0aca3af434f0bc0fa8732248b197ba}
+
+
+Retrieves the scaling factor for the given evas object. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given evas object. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The scaling factor. 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!evas\_\-object\_\-scale\_\-set@{evas\_\-object\_\-scale\_\-set}}
+\index{evas\_\-object\_\-scale\_\-set@{evas\_\-object\_\-scale\_\-set}!Evas_Object_Group_Extras@{Evas\_\-Object\_\-Group\_\-Extras}}
+\subsubsection[{evas\_\-object\_\-scale\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-scale\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{double}]{ scale}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Extras_gaf010777fa1b58bd1c9c8093d2edc62e9}
+
+
+Sets the scaling factor for an evas object. 
+
+Does not affect all objects.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given evas object. \item[{\em scale}]The scaling factor. 1.0 == none. \end{DoxyParams}
+\index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!evas\_\-object\_\-static\_\-clip\_\-get@{evas\_\-object\_\-static\_\-clip\_\-get}}
+\index{evas\_\-object\_\-static\_\-clip\_\-get@{evas\_\-object\_\-static\_\-clip\_\-get}!Evas_Object_Group_Extras@{Evas\_\-Object\_\-Group\_\-Extras}}
+\subsubsection[{evas\_\-object\_\-static\_\-clip\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI Eina\_\-Bool evas\_\-object\_\-static\_\-clip\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Extras_gafda644be2d6e6360959853c9d6195ec8}
+
+
+Get static \char`\"{}clipper\char`\"{} hint flag. 
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__Evas__Object__Group__Extras_ga8697b24251c2209c60aabb1a5de860a8}{evas\_\-object\_\-static\_\-clip\_\-set()}
+\end{DoxySeeAlso}
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given object. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The static clip flag (on or off) 
+\end{DoxyReturn}
+\index{Evas\_\-Object\_\-Group\_\-Extras@{Evas\_\-Object\_\-Group\_\-Extras}!evas\_\-object\_\-static\_\-clip\_\-set@{evas\_\-object\_\-static\_\-clip\_\-set}}
+\index{evas\_\-object\_\-static\_\-clip\_\-set@{evas\_\-object\_\-static\_\-clip\_\-set}!Evas_Object_Group_Extras@{Evas\_\-Object\_\-Group\_\-Extras}}
+\subsubsection[{evas\_\-object\_\-static\_\-clip\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-static\_\-clip\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Eina\_\-Bool}]{ is\_\-static\_\-clip}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Object__Group__Extras_ga8697b24251c2209c60aabb1a5de860a8}
+
+
+Set a hint flag on the object that this is used as a static \char`\"{}clipper\char`\"{}. 
+
+This is a hint to evas that this object is used as a big static clipper and shouldnt be moved with children and otherwise considered specially. The Default is off.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given object. \item[{\em is\_\-static\_\-clip}]The static clip flag (on or off) \end{DoxyParams}

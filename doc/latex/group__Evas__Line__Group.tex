@@ -1,0 +1,79 @@
+\section{Line Object Functions}
+\label{group__Evas__Line__Group}\index{Line Object Functions@{Line Object Functions}}
+
+
+Functions used to deal with evas line objects.  
+
+
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+EAPI \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$ \hyperlink{group__Evas__Line__Group_ga896f1beaea24379495af4cbc5efcebfe}{evas\_\-object\_\-line\_\-add} (\hyperlink{group__Evas__Canvas_ga5ff87cc4ce6bc43e3b640a6d37f73043}{Evas} $\ast$e)
+\begin{DoxyCompactList}\small\item\em Adds a new evas line object to the given evas. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Line__Group_gaa43185929e6e41e9c7315d2230665174}{evas\_\-object\_\-line\_\-xy\_\-set} (\hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Coord x1, Evas\_\-Coord y1, Evas\_\-Coord x2, Evas\_\-Coord y2)
+\begin{DoxyCompactList}\small\item\em Sets the coordinates of the end points of the given evas line object. \item\end{DoxyCompactList}\item 
+EAPI void \hyperlink{group__Evas__Line__Group_ga3fa674863aa41d655caa103f546a9092}{evas\_\-object\_\-line\_\-xy\_\-get} (const \hyperlink{group__Evas__Object__Group_ga9e19e6dd1f517a0ba437c0114d3e7c97}{Evas\_\-Object} $\ast$obj, Evas\_\-Coord $\ast$x1, Evas\_\-Coord $\ast$y1, Evas\_\-Coord $\ast$x2, Evas\_\-Coord $\ast$y2)
+\begin{DoxyCompactList}\small\item\em Retrieves the coordinates of the end points of the given evas line object. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Functions used to deal with evas line objects. 
+
+\subsection{Function Documentation}
+\index{Evas\_\-Line\_\-Group@{Evas\_\-Line\_\-Group}!evas\_\-object\_\-line\_\-add@{evas\_\-object\_\-line\_\-add}}
+\index{evas\_\-object\_\-line\_\-add@{evas\_\-object\_\-line\_\-add}!Evas_Line_Group@{Evas\_\-Line\_\-Group}}
+\subsubsection[{evas\_\-object\_\-line\_\-add}]{\setlength{\rightskip}{0pt plus 5cm}EAPI {\bf Evas\_\-Object}$\ast$ evas\_\-object\_\-line\_\-add (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas} $\ast$}]{ e}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Line__Group_ga896f1beaea24379495af4cbc5efcebfe}
+
+
+Adds a new evas line object to the given evas. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em e}]The given evas. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The new evas line object. 
+\end{DoxyReturn}
+\index{Evas\_\-Line\_\-Group@{Evas\_\-Line\_\-Group}!evas\_\-object\_\-line\_\-xy\_\-get@{evas\_\-object\_\-line\_\-xy\_\-get}}
+\index{evas\_\-object\_\-line\_\-xy\_\-get@{evas\_\-object\_\-line\_\-xy\_\-get}!Evas_Line_Group@{Evas\_\-Line\_\-Group}}
+\subsubsection[{evas\_\-object\_\-line\_\-xy\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-line\_\-xy\_\-get (
+\begin{DoxyParamCaption}
+\item[{const {\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Coord $\ast$}]{ x1, }
+\item[{Evas\_\-Coord $\ast$}]{ y1, }
+\item[{Evas\_\-Coord $\ast$}]{ x2, }
+\item[{Evas\_\-Coord $\ast$}]{ y2}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Line__Group_ga3fa674863aa41d655caa103f546a9092}
+
+
+Retrieves the coordinates of the end points of the given evas line object. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given line object. \item[{\em x1}]Pointer to an integer in which to store the X coordinate of the first end point. \item[{\em y1}]Pointer to an integer in which to store the Y coordinate of the first end point. \item[{\em x2}]Pointer to an integer in which to store the X coordinate of the second end point. \item[{\em y2}]Pointer to an integer in which to store the Y coordinate of the second end point. \end{DoxyParams}
+\index{Evas\_\-Line\_\-Group@{Evas\_\-Line\_\-Group}!evas\_\-object\_\-line\_\-xy\_\-set@{evas\_\-object\_\-line\_\-xy\_\-set}}
+\index{evas\_\-object\_\-line\_\-xy\_\-set@{evas\_\-object\_\-line\_\-xy\_\-set}!Evas_Line_Group@{Evas\_\-Line\_\-Group}}
+\subsubsection[{evas\_\-object\_\-line\_\-xy\_\-set}]{\setlength{\rightskip}{0pt plus 5cm}EAPI void evas\_\-object\_\-line\_\-xy\_\-set (
+\begin{DoxyParamCaption}
+\item[{{\bf Evas\_\-Object} $\ast$}]{ obj, }
+\item[{Evas\_\-Coord}]{ x1, }
+\item[{Evas\_\-Coord}]{ y1, }
+\item[{Evas\_\-Coord}]{ x2, }
+\item[{Evas\_\-Coord}]{ y2}
+\end{DoxyParamCaption}
+)}\label{group__Evas__Line__Group_gaa43185929e6e41e9c7315d2230665174}
+
+
+Sets the coordinates of the end points of the given evas line object. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em obj}]The given evas line object. \item[{\em x1}]The X coordinate of the first point. \item[{\em y1}]The Y coordinate of the first point. \item[{\em x2}]The X coordinate of the second point. \item[{\em y2}]The Y coordinate of the second point. \end{DoxyParams}
+
+
+References evas\_\-event\_\-feed\_\-mouse\_\-move().
+

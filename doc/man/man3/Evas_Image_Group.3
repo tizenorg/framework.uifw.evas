@@ -1,0 +1,74 @@
+.TH "Image Functions" 3 "Tue Apr 19 2011" "Evas" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Image Functions \- 
+.PP
+Functions that deals with images at canvas level.  
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "EAPI void \fBevas_image_cache_flush\fP (\fBEvas\fP *e)"
+.br
+.RI "\fIFlush the image cache of the canvas. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_image_cache_reload\fP (\fBEvas\fP *e)"
+.br
+.RI "\fIReload the image cache. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_image_cache_set\fP (\fBEvas\fP *e, int size)"
+.br
+.RI "\fISet the image cache. \fP"
+.ti -1c
+.RI "EAPI int \fBevas_image_cache_get\fP (const \fBEvas\fP *e)"
+.br
+.RI "\fISet the image cache. \fP"
+.in -1c
+.SH "Detailed Description"
+.PP 
+Functions that deals with images at canvas level. 
+.SH "Function Documentation"
+.PP 
+.SS "EAPI void evas_image_cache_flush (\fBEvas\fP * e)"
+.PP
+Flush the image cache of the canvas. \fBParameters:\fP
+.RS 4
+\fIe\fP The given evas pointer.
+.RE
+.PP
+This function flushes image cache of canvas. 
+.PP
+Referenced by evas_image_cache_reload().
+.SS "EAPI int evas_image_cache_get (const \fBEvas\fP * e)"
+.PP
+Set the image cache. \fBParameters:\fP
+.RS 4
+\fIe\fP The given evas pointer.
+.RE
+.PP
+This function returns the image cache of canvas. 
+.SS "EAPI void evas_image_cache_reload (\fBEvas\fP * e)"
+.PP
+Reload the image cache. \fBParameters:\fP
+.RS 4
+\fIe\fP The given evas pointer.
+.RE
+.PP
+This function reloads the image cache of canvas. 
+.PP
+References evas_image_cache_flush().
+.SS "EAPI void evas_image_cache_set (\fBEvas\fP * e, int size)"
+.PP
+Set the image cache. \fBParameters:\fP
+.RS 4
+\fIe\fP The given evas pointer. 
+.br
+\fIsize\fP The cache size.
+.RE
+.PP
+This function sets the image cache of canvas. 
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Evas from the source code.

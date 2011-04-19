@@ -1,0 +1,425 @@
+.TH "Smart Object Functions" 3 "Tue Apr 19 2011" "Evas" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Smart Object Functions \- 
+.PP
+Functions dealing with evas smart objects (instances).  
+
+.SS "Modules"
+
+.in +1c
+.ti -1c
+.RI "\fBClipped Smart Object\fP"
+.br
+.PP
+
+.RI "\fIClipped smart object is a base to construct other smart objects that based on the concept of having an internal clipper that is applied to all its other children. \fP"
+.ti -1c
+.RI "\fBBox (Sequence) Smart Object.\fP"
+.br
+.PP
+
+.RI "\fIConvenience smart object that packs children as a sequence using a layout function specified by user. \fP"
+.ti -1c
+.RI "\fBTable Smart Object.\fP"
+.br
+.PP
+
+.RI "\fIConvenience smart object that packs children using a tabular layout using children size hints to define their size and alignment inside their cell space. \fP"
+.in -1c
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "EAPI void \fBevas_object_smart_data_set\fP (\fBEvas_Object\fP *obj, void *data)"
+.br
+.RI "\fIStore a pointer to user data for a smart object. \fP"
+.ti -1c
+.RI "EAPI void * \fBevas_object_smart_data_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIRetrieve user data stored on a smart object. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Smart\fP * \fBevas_object_smart_smart_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIGet the Evas_Smart from which \fCobj\fP was created. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_smart_member_add\fP (\fBEvas_Object\fP *obj, \fBEvas_Object\fP *smart_obj)"
+.br
+.RI "\fISet an evas object as a member of a smart object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_smart_member_del\fP (\fBEvas_Object\fP *obj)"
+.br
+.RI "\fIRemoves a member object from a smart object. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_smart_parent_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIGets the smart parent of an Evas_Object. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_smart_type_check\fP (const \fBEvas_Object\fP *obj, const char *type)"
+.br
+.RI "\fIChecks the Smart type of the object and its parents. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_smart_type_check_ptr\fP (const \fBEvas_Object\fP *obj, const char *type)"
+.br
+.RI "\fIChecks the Smart type of the object and its parents using pointer comparison. \fP"
+.ti -1c
+.RI "EAPI \fBEvas_Object\fP * \fBevas_object_smart_add\fP (\fBEvas\fP *e, \fBEvas_Smart\fP *s)"
+.br
+.RI "\fIInstantiates a new smart object described by \fCs\fP. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_smart_callback_add\fP (\fBEvas_Object\fP *obj, const char *event, void(*func)(void *data, \fBEvas_Object\fP *obj, void *event_info), const void *data)"
+.br
+.RI "\fIAdd a callback for the smart event specified by \fCevent\fP. \fP"
+.ti -1c
+.RI "EAPI void * \fBevas_object_smart_callback_del\fP (\fBEvas_Object\fP *obj, const char *event, void(*func)(void *data, \fBEvas_Object\fP *obj, void *event_info))"
+.br
+.RI "\fIRemove a smart callback. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_smart_callback_call\fP (\fBEvas_Object\fP *obj, const char *event, void *event_info)"
+.br
+.RI "\fICall any smart callbacks on \fCobj\fP for \fCevent\fP. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_smart_callbacks_descriptions_set\fP (\fBEvas_Object\fP *obj, const \fBEvas_Smart_Cb_Description\fP *descriptions)"
+.br
+.RI "\fISet smart object instance callbacks descriptions. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_smart_callbacks_descriptions_get\fP (const \fBEvas_Object\fP *obj, const \fBEvas_Smart_Cb_Description\fP ***class_descriptions, unsigned int *class_count, const \fBEvas_Smart_Cb_Description\fP ***instance_descriptions, unsigned int *instance_count)"
+.br
+.RI "\fIGet the callbacks descriptions known by this smart object. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_smart_need_recalculate_set\fP (\fBEvas_Object\fP *obj, Eina_Bool value)"
+.br
+.RI "\fISet the need_recalculate flag of given smart object. \fP"
+.ti -1c
+.RI "EAPI Eina_Bool \fBevas_object_smart_need_recalculate_get\fP (const \fBEvas_Object\fP *obj)"
+.br
+.RI "\fIGet the current value of need_recalculate flag. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_smart_calculate\fP (\fBEvas_Object\fP *obj)"
+.br
+.RI "\fICall user provided calculate() and unset need_calculate. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_smart_objects_calculate\fP (\fBEvas\fP *e)"
+.br
+.RI "\fICall user provided calculate() and unset need_calculate on all objects. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_smart_changed\fP (\fBEvas_Object\fP *obj)"
+.br
+.RI "\fIMark smart object as changed, dirty. \fP"
+.in -1c
+.SH "Detailed Description"
+.PP 
+Functions dealing with evas smart objects (instances). 
+
+Smart objects are groupings of primitive evas objects that behave as a cohesive group. For instance, a file manager icon may be a smart object composed of an image object, a text label and two rectangles that appear behind the image and text when the icon is selected. As a smart object, the normal evas api could be used on the icon object.
+.PP
+\fBSee also:\fP
+.RS 4
+\fBSmart Functions\fP for class definitions. 
+.RE
+.PP
+
+.SH "Function Documentation"
+.PP 
+.SS "EAPI \fBEvas_Object\fP* evas_object_smart_add (\fBEvas\fP * e, \fBEvas_Smart\fP * s)"
+.PP
+Instantiates a new smart object described by \fCs\fP. \fBParameters:\fP
+.RS 4
+\fIe\fP the evas on which to add the object 
+.br
+\fIs\fP the Evas_Smart describing the smart object 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+a new Evas_Object 
+.RE
+.PP
+
+.PP
+Referenced by evas_object_box_add(), and evas_object_table_add().
+.SS "EAPI void evas_object_smart_calculate (\fBEvas_Object\fP * obj)"
+.PP
+Call user provided calculate() and unset need_calculate. \fBParameters:\fP
+.RS 4
+\fIobj\fP the smart object 
+.RE
+.PP
+
+.SS "EAPI void evas_object_smart_callback_add (\fBEvas_Object\fP * obj, const char * event, void(*)(void *data, \fBEvas_Object\fP *obj, void *event_info) func, const void * data)"
+.PP
+Add a callback for the smart event specified by \fCevent\fP. \fBParameters:\fP
+.RS 4
+\fIobj\fP a smart object 
+.br
+\fIevent\fP the event name 
+.br
+\fIfunc\fP the callback function 
+.br
+\fIdata\fP user data to be passed to the callback function 
+.RE
+.PP
+
+.SS "EAPI void evas_object_smart_callback_call (\fBEvas_Object\fP * obj, const char * event, void * event_info)"
+.PP
+Call any smart callbacks on \fCobj\fP for \fCevent\fP. \fBParameters:\fP
+.RS 4
+\fIobj\fP the smart object 
+.br
+\fIevent\fP the event name 
+.br
+\fIevent_info\fP an event specific struct of info to pass to the callback
+.RE
+.PP
+This should be called internally in the smart object when some specific event has occurred. The documentation for the smart object should include a list of possible events and what type of \fCevent_info\fP to expect. 
+.SS "EAPI void* evas_object_smart_callback_del (\fBEvas_Object\fP * obj, const char * event, void(*)(void *data, \fBEvas_Object\fP *obj, void *event_info) func)"
+.PP
+Remove a smart callback. Removes a callback that was added by \fBevas_object_smart_callback_add()\fP
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP a smart object 
+.br
+\fIevent\fP the event name 
+.br
+\fIfunc\fP the callback function 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the data pointer 
+.RE
+.PP
+
+.SS "EAPI void evas_object_smart_callbacks_descriptions_get (const \fBEvas_Object\fP * obj, const \fBEvas_Smart_Cb_Description\fP *** class_descriptions, unsigned int * class_count, const \fBEvas_Smart_Cb_Description\fP *** instance_descriptions, unsigned int * instance_count)"
+.PP
+Get the callbacks descriptions known by this smart object. This call retrieves processed callbacks descriptions for both instance and class. These arrays are sorted by description's name and are \fCNULL\fP terminated, so both \fIclass_count\fP and \fIinstance_count\fP can be ignored, the terminator \fCNULL\fP is not counted in these values.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP the smart object. 
+.br
+\fIclass_descriptions\fP where to store class callbacks descriptions array, if any is known. If no descriptions are known, \fCNULL\fP is returned. This parameter may be \fCNULL\fP if it is not of interest. 
+.br
+\fIclass_count\fP returns how many class callbacks descriptions are known. 
+.br
+\fIinstance_descriptions\fP where to store instance callbacks descriptions array, if any is known. If no descriptions are known, \fCNULL\fP is returned. This parameter may be \fCNULL\fP if it is not of interest. 
+.br
+\fIinstance_count\fP returns how many instance callbacks descriptions are known.
+.RE
+.PP
+\fBNote:\fP
+.RS 4
+if just class descriptions are of interest, try \fBevas_smart_callbacks_descriptions_get()\fP instead.
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBevas_smart_callbacks_descriptions_get()\fP 
+.RE
+.PP
+
+.SS "EAPI Eina_Bool evas_object_smart_callbacks_descriptions_set (\fBEvas_Object\fP * obj, const \fBEvas_Smart_Cb_Description\fP * descriptions)"
+.PP
+Set smart object instance callbacks descriptions. These descriptions are hints to be used by introspection and are not enforced in any way.
+.PP
+It will not be checked if instance callbacks descriptions have the same name as another in class. Both are kept in different arrays and users of \fBevas_object_smart_callbacks_descriptions_get()\fP should handle this case as they wish.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The smart object 
+.br
+\fIdescriptions\fP NULL terminated (name != NULL) array with descriptions. Array elements will not be modified, but reference to them and their contents will be made, so this array should be kept alive during object lifetime. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+1 on success, 0 on failure.
+.RE
+.PP
+\fBNote:\fP
+.RS 4
+while instance callbacks descriptions are possible, they are not recommended. Use class callbacks descriptions instead as they make user's life simpler and will use less memory as descriptions and arrays will be shared among all instances. 
+.RE
+.PP
+
+.PP
+References _Evas_Smart_Cb_Description::name.
+.SS "EAPI void evas_object_smart_changed (\fBEvas_Object\fP * obj)"
+.PP
+Mark smart object as changed, dirty. This will inform the scene that it changed and needs to be redraw, also setting need_recalculate on the given object.
+.PP
+\fBSee also:\fP
+.RS 4
+\fBevas_object_smart_need_recalculate_set()\fP. 
+.RE
+.PP
+
+.PP
+References evas_object_smart_need_recalculate_set().
+.PP
+Referenced by evas_object_box_align_set(), evas_object_box_append(), evas_object_box_insert_after(), evas_object_box_insert_at(), evas_object_box_insert_before(), evas_object_box_layout_set(), evas_object_box_option_property_vset(), evas_object_box_padding_set(), evas_object_box_prepend(), evas_object_box_remove(), evas_object_box_remove_all(), evas_object_box_remove_at(), evas_object_table_align_set(), evas_object_table_clear(), evas_object_table_homogeneous_set(), evas_object_table_pack(), evas_object_table_padding_set(), and evas_object_table_unpack().
+.SS "EAPI void* evas_object_smart_data_get (const \fBEvas_Object\fP * obj)"
+.PP
+Retrieve user data stored on a smart object. \fBParameters:\fP
+.RS 4
+\fIobj\fP The smart object 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+A pointer to data stored using \fBevas_object_smart_data_set()\fP, or NULL if none has been set. 
+.RE
+.PP
+
+.PP
+Referenced by evas_object_smart_clipped_clipper_get().
+.SS "EAPI void evas_object_smart_data_set (\fBEvas_Object\fP * obj, void * data)"
+.PP
+Store a pointer to user data for a smart object. \fBParameters:\fP
+.RS 4
+\fIobj\fP The smart object 
+.br
+\fIdata\fP A pointer to user data 
+.RE
+.PP
+
+.SS "EAPI void evas_object_smart_member_add (\fBEvas_Object\fP * obj, \fBEvas_Object\fP * smart_obj)"
+.PP
+Set an evas object as a member of a smart object. \fBParameters:\fP
+.RS 4
+\fIobj\fP The member object 
+.br
+\fIsmart_obj\fP The smart object
+.RE
+.PP
+Members will automatically be stacked and layered with the smart object. The various stacking function will operate on members relative to the other members instead of the entire canvas.
+.PP
+Non-member objects can not interleave a smart object's members. 
+.PP
+References evas_object_smart_member_del().
+.PP
+Referenced by evas_object_box_add_to(), evas_object_box_append(), evas_object_box_insert_after(), evas_object_box_insert_at(), evas_object_box_insert_before(), evas_object_box_prepend(), evas_object_table_add_to(), and evas_object_table_pack().
+.SS "EAPI void evas_object_smart_member_del (\fBEvas_Object\fP * obj)"
+.PP
+Removes a member object from a smart object. \fBParameters:\fP
+.RS 4
+\fIobj\fP the member object
+.RE
+.PP
+This removes a member object from a smart object. The object will still be on the canvas, but no longer associated with whichever smart object it was associated with. 
+.PP
+Referenced by evas_object_box_remove(), evas_object_box_remove_all(), evas_object_box_remove_at(), evas_object_smart_member_add(), evas_object_table_clear(), and evas_object_table_unpack().
+.SS "EAPI Eina_Bool evas_object_smart_need_recalculate_get (const \fBEvas_Object\fP * obj)"
+.PP
+Get the current value of need_recalculate flag. \fBNote:\fP
+.RS 4
+this flag will be unset during the render phase, after calculate() is called if one is provided. If no calculate() is provided, then the flag will be left unchanged after render phase.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP the smart object 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+if flag is set or not. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_smart_need_recalculate_set (\fBEvas_Object\fP * obj, Eina_Bool value)"
+.PP
+Set the need_recalculate flag of given smart object. If this flag is set then calculate() callback (method) of the given smart object will be called, if one is provided, during render phase usually \fBevas_render()\fP. After this step, this flag will be automatically unset.
+.PP
+If no calculate() is provided, this flag will be left unchanged.
+.PP
+\fBNote:\fP
+.RS 4
+just setting this flag will not make scene dirty and \fBevas_render()\fP will have no effect. To do that, use \fBevas_object_smart_changed()\fP, that will automatically call this function with 1 as parameter.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP the smart object 
+.br
+\fIvalue\fP if one want to set or unset the need_recalculate flag. 
+.RE
+.PP
+
+.PP
+Referenced by evas_object_smart_changed().
+.SS "EAPI \fBEvas_Object\fP* evas_object_smart_parent_get (const \fBEvas_Object\fP * obj)"
+.PP
+Gets the smart parent of an Evas_Object. \fBParameters:\fP
+.RS 4
+\fIobj\fP the Evas_Object you want to get the parent 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Returns the smart parent of \fIobj\fP, or NULL if \fIobj\fP is not a smart member of another Evas_Object 
+.RE
+.PP
+
+.PP
+Referenced by evas_object_table_unpack().
+.SS "EAPI \fBEvas_Smart\fP* evas_object_smart_smart_get (const \fBEvas_Object\fP * obj)"
+.PP
+Get the Evas_Smart from which \fCobj\fP was created. \fBParameters:\fP
+.RS 4
+\fIobj\fP a smart object 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the Evas_Smart 
+.RE
+.PP
+
+.SS "EAPI Eina_Bool evas_object_smart_type_check (const \fBEvas_Object\fP * obj, const char * type)"
+.PP
+Checks the Smart type of the object and its parents. \fBParameters:\fP
+.RS 4
+\fIobj\fP the Evas_Object to check the type of 
+.br
+\fItype\fP the type to check for 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+EINA_TRUE if \fIobj\fP or any of its parents if of type \fItype\fP, EINA_FALSE otherwise 
+.RE
+.PP
+
+.PP
+References _Evas_Smart_Class::name, and _Evas_Smart_Class::parent.
+.SS "EAPI Eina_Bool evas_object_smart_type_check_ptr (const \fBEvas_Object\fP * obj, const char * type)"
+.PP
+Checks the Smart type of the object and its parents using pointer comparison. \fBParameters:\fP
+.RS 4
+\fIobj\fP the Evas_Object to check the type of 
+.br
+\fItype\fP the type to check for. Must be the name pointer in the smart class used to create the object 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+EINA_TRUE if \fIobj\fP or any of its parents if of type \fItype\fP, EINA_FALSE otherwise 
+.RE
+.PP
+
+.PP
+References _Evas_Smart_Class::name, and _Evas_Smart_Class::parent.
+.SS "EAPI void evas_smart_objects_calculate (\fBEvas\fP * e)"
+.PP
+Call user provided calculate() and unset need_calculate on all objects. \fBParameters:\fP
+.RS 4
+\fIe\fP The canvas to calculate all objects in 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Evas from the source code.

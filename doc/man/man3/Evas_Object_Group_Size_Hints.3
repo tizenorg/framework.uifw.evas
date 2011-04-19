@@ -1,0 +1,322 @@
+.TH "Size Hints" 3 "Tue Apr 19 2011" "Evas" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Size Hints \- 
+.PP
+Objects may carry hints so another object that acts as a manager (see \fBSmart Object Functions\fP) may know how to properly position and resize the object.  
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "EAPI void \fBevas_object_size_hint_min_get\fP (const \fBEvas_Object\fP *obj, Evas_Coord *w, Evas_Coord *h)"
+.br
+.RI "\fIRetrieves the size hint for the minimum size. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_size_hint_min_set\fP (\fBEvas_Object\fP *obj, Evas_Coord w, Evas_Coord h)"
+.br
+.RI "\fISets the size hint for the minimum size. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_size_hint_max_get\fP (const \fBEvas_Object\fP *obj, Evas_Coord *w, Evas_Coord *h)"
+.br
+.RI "\fIRetrieves the size hint for the maximum size. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_size_hint_max_set\fP (\fBEvas_Object\fP *obj, Evas_Coord w, Evas_Coord h)"
+.br
+.RI "\fISets the size hint for the maximum size. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_size_hint_request_get\fP (const \fBEvas_Object\fP *obj, Evas_Coord *w, Evas_Coord *h)"
+.br
+.RI "\fIRetrieves the size request hint. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_size_hint_request_set\fP (\fBEvas_Object\fP *obj, Evas_Coord w, Evas_Coord h)"
+.br
+.RI "\fISets the requested size hint. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_size_hint_aspect_get\fP (const \fBEvas_Object\fP *obj, Evas_Aspect_Control *aspect, Evas_Coord *w, Evas_Coord *h)"
+.br
+.RI "\fIRetrieves the size aspect control hint. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_size_hint_aspect_set\fP (\fBEvas_Object\fP *obj, Evas_Aspect_Control aspect, Evas_Coord w, Evas_Coord h)"
+.br
+.RI "\fISets the size aspect control hint. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_size_hint_align_get\fP (const \fBEvas_Object\fP *obj, double *x, double *y)"
+.br
+.RI "\fIRetrieves the size align control hint. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_size_hint_align_set\fP (\fBEvas_Object\fP *obj, double x, double y)"
+.br
+.RI "\fISets the size align control hint. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_size_hint_weight_get\fP (const \fBEvas_Object\fP *obj, double *x, double *y)"
+.br
+.RI "\fIRetrieves the size weight control hint. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_size_hint_weight_set\fP (\fBEvas_Object\fP *obj, double x, double y)"
+.br
+.RI "\fISets the size weight control hint. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_size_hint_padding_get\fP (const \fBEvas_Object\fP *obj, Evas_Coord *l, Evas_Coord *r, Evas_Coord *t, Evas_Coord *b)"
+.br
+.RI "\fIRetrieves the size padding control hint. \fP"
+.ti -1c
+.RI "EAPI void \fBevas_object_size_hint_padding_set\fP (\fBEvas_Object\fP *obj, Evas_Coord l, Evas_Coord r, Evas_Coord t, Evas_Coord b)"
+.br
+.RI "\fISets the size padding control hint. \fP"
+.in -1c
+.SH "Detailed Description"
+.PP 
+Objects may carry hints so another object that acts as a manager (see \fBSmart Object Functions\fP) may know how to properly position and resize the object. 
+
+The Size Hints provide a common interface that is recommended as the protocol for such information. 
+.SH "Function Documentation"
+.PP 
+.SS "EAPI void evas_object_size_hint_align_get (const \fBEvas_Object\fP * obj, double * x, double * y)"
+.PP
+Retrieves the size align control hint. This is not a size enforcement in any way, it's just a hint that should be used whenever appropriate.
+.PP
+Note that if any of \fCx\fP or \fCy\fP are \fCNULL\fP, the \fCNULL\fP parameters are ignored.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given evas object. 
+.br
+\fIx\fP Pointer to a double in which to store the align x. 
+.br
+\fIy\fP Pointer to a double in which to store the align y. 
+.RE
+.PP
+
+.PP
+Referenced by evas_object_box_layout_flow_horizontal(), evas_object_box_layout_flow_vertical(), evas_object_box_layout_homogeneous_horizontal(), evas_object_box_layout_homogeneous_max_size_horizontal(), evas_object_box_layout_homogeneous_max_size_vertical(), evas_object_box_layout_homogeneous_vertical(), evas_object_box_layout_horizontal(), evas_object_box_layout_stack(), and evas_object_box_layout_vertical().
+.SS "EAPI void evas_object_size_hint_align_set (\fBEvas_Object\fP * obj, double x, double y)"
+.PP
+Sets the size align control hint. This is not a size enforcement in any way, it's just a hint that should be used whenever appropriate.
+.PP
+Accepted values are in the 0.0 to 1.0 range, with the special value -1.0 used to specify 'justify' or 'fill' by some users. See documentation of possible users.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given evas object. 
+.br
+\fIx\fP Double (0.0..1.0 or -1.0) to use as align x hint. 
+.br
+\fIy\fP Double (0.0..1.0 or -1.0) to use as align y hint. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_size_hint_aspect_get (const \fBEvas_Object\fP * obj, Evas_Aspect_Control * aspect, Evas_Coord * w, Evas_Coord * h)"
+.PP
+Retrieves the size aspect control hint. This is not a size enforcement in any way, it's just a hint that should be used whenever appropriate.
+.PP
+Note that if any of \fCaspect\fP, \fCw\fP or \fCh\fP are \fCNULL\fP, the \fCNULL\fP parameters are ignored.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given evas object. 
+.br
+\fIaspect\fP Returns the hint on how size should be calculated. 
+.br
+\fIw\fP Pointer to an integer in which to store the aspect width. 
+.br
+\fIh\fP Pointer to an integer in which to store the aspect height. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_size_hint_aspect_set (\fBEvas_Object\fP * obj, Evas_Aspect_Control aspect, Evas_Coord w, Evas_Coord h)"
+.PP
+Sets the size aspect control hint. This is not a size enforcement in any way, it's just a hint that should be used whenever appropriate.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given evas object. 
+.br
+\fIaspect\fP Hint on how to calculate size. 
+.br
+\fIw\fP Integer to use as aspect width hint. 
+.br
+\fIh\fP Integer to use as aspect height hint. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_size_hint_max_get (const \fBEvas_Object\fP * obj, Evas_Coord * w, Evas_Coord * h)"
+.PP
+Retrieves the size hint for the maximum size. This is not a size enforcement in any way, it's just a hint that should be used whenever appropriate.
+.PP
+Note that if any of \fCw\fP or \fCh\fP are \fCNULL\fP, the \fCNULL\fP parameters are ignored.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given evas object. 
+.br
+\fIw\fP Pointer to an integer in which to store the maximum width. 
+.br
+\fIh\fP Pointer to an integer in which to store the maximum height. 
+.RE
+.PP
+
+.PP
+Referenced by evas_object_box_layout_homogeneous_horizontal(), evas_object_box_layout_homogeneous_max_size_horizontal(), evas_object_box_layout_homogeneous_max_size_vertical(), evas_object_box_layout_homogeneous_vertical(), evas_object_box_layout_horizontal(), evas_object_box_layout_stack(), and evas_object_box_layout_vertical().
+.SS "EAPI void evas_object_size_hint_max_set (\fBEvas_Object\fP * obj, Evas_Coord w, Evas_Coord h)"
+.PP
+Sets the size hint for the maximum size. This is not a size enforcement in any way, it's just a hint that should be used whenever appropriate.
+.PP
+Value -1 is considered unset.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given evas object. 
+.br
+\fIw\fP Integer to use as the maximum width hint. 
+.br
+\fIh\fP Integer to use as the maximum height hint. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_size_hint_min_get (const \fBEvas_Object\fP * obj, Evas_Coord * w, Evas_Coord * h)"
+.PP
+Retrieves the size hint for the minimum size. This is not a size enforcement in any way, it's just a hint that should be used whenever appropriate.
+.PP
+Note that if any of \fCw\fP or \fCh\fP are \fCNULL\fP, the \fCNULL\fP parameters are ignored.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given evas object. 
+.br
+\fIw\fP Pointer to an integer in which to store the minimum width. 
+.br
+\fIh\fP Pointer to an integer in which to store the minimum height. 
+.RE
+.PP
+
+.PP
+Referenced by evas_object_box_layout_homogeneous_horizontal(), evas_object_box_layout_homogeneous_max_size_horizontal(), evas_object_box_layout_homogeneous_max_size_vertical(), evas_object_box_layout_homogeneous_vertical(), and evas_object_box_layout_stack().
+.SS "EAPI void evas_object_size_hint_min_set (\fBEvas_Object\fP * obj, Evas_Coord w, Evas_Coord h)"
+.PP
+Sets the size hint for the minimum size. This is not a size enforcement in any way, it's just a hint that should be used whenever appropriate.
+.PP
+Value 0 is considered unset.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given evas object. 
+.br
+\fIw\fP Integer to use as the minimum width hint. 
+.br
+\fIh\fP Integer to use as the minimum height hint. 
+.RE
+.PP
+
+.PP
+Referenced by evas_object_box_layout_flow_horizontal(), evas_object_box_layout_flow_vertical(), evas_object_box_layout_homogeneous_horizontal(), evas_object_box_layout_homogeneous_max_size_horizontal(), evas_object_box_layout_homogeneous_max_size_vertical(), evas_object_box_layout_homogeneous_vertical(), evas_object_box_layout_horizontal(), evas_object_box_layout_stack(), and evas_object_box_layout_vertical().
+.SS "EAPI void evas_object_size_hint_padding_get (const \fBEvas_Object\fP * obj, Evas_Coord * l, Evas_Coord * r, Evas_Coord * t, Evas_Coord * b)"
+.PP
+Retrieves the size padding control hint. This is not a size enforcement in any way, it's just a hint that should be used whenever appropriate.
+.PP
+Note that if any of \fCl\fP, \fCr\fP, \fCt\fP or \fCb\fP are \fCNULL\fP, the \fCNULL\fP parameters are ignored.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given evas object. 
+.br
+\fIl\fP Pointer to an integer in which to store left padding. 
+.br
+\fIr\fP Pointer to an integer in which to store right padding. 
+.br
+\fIt\fP Pointer to an integer in which to store top padding. 
+.br
+\fIb\fP Pointer to an integer in which to store bottom padding. 
+.RE
+.PP
+
+.PP
+Referenced by evas_object_box_layout_flow_horizontal(), evas_object_box_layout_flow_vertical(), evas_object_box_layout_homogeneous_horizontal(), evas_object_box_layout_homogeneous_max_size_horizontal(), evas_object_box_layout_homogeneous_max_size_vertical(), evas_object_box_layout_homogeneous_vertical(), evas_object_box_layout_horizontal(), evas_object_box_layout_stack(), and evas_object_box_layout_vertical().
+.SS "EAPI void evas_object_size_hint_padding_set (\fBEvas_Object\fP * obj, Evas_Coord l, Evas_Coord r, Evas_Coord t, Evas_Coord b)"
+.PP
+Sets the size padding control hint. This is not a size enforcement in any way, it's just a hint that should be used whenever appropriate.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given evas object. 
+.br
+\fIl\fP Integer to specify left padding. 
+.br
+\fIr\fP Integer to specify right padding. 
+.br
+\fIt\fP Integer to specify top padding. 
+.br
+\fIb\fP Integer to specify bottom padding. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_size_hint_request_get (const \fBEvas_Object\fP * obj, Evas_Coord * w, Evas_Coord * h)"
+.PP
+Retrieves the size request hint. This is not a size enforcement in any way, it's just a hint that should be used whenever appropriate.
+.PP
+Note that if any of \fCw\fP or \fCh\fP are \fCNULL\fP, the \fCNULL\fP parameters are ignored.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given evas object. 
+.br
+\fIw\fP Pointer to an integer in which to store the requested width. 
+.br
+\fIh\fP Pointer to an integer in which to store the requested height. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_size_hint_request_set (\fBEvas_Object\fP * obj, Evas_Coord w, Evas_Coord h)"
+.PP
+Sets the requested size hint. This is not a size enforcement in any way, it's just a hint that should be used whenever appropriate.
+.PP
+Value 0 is considered unset.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given evas object. 
+.br
+\fIw\fP Integer to use as the preferred width hint. 
+.br
+\fIh\fP Integer to use as the preferred height hint. 
+.RE
+.PP
+
+.SS "EAPI void evas_object_size_hint_weight_get (const \fBEvas_Object\fP * obj, double * x, double * y)"
+.PP
+Retrieves the size weight control hint. This is not a size enforcement in any way, it's just a hint that should be used whenever appropriate.
+.PP
+Note that if any of \fCx\fP or \fCy\fP are \fCNULL\fP, the \fCNULL\fP parameters are ignored.
+.PP
+Accepted values are zero or positive values. Some users might use this hint as a boolean, but some might consider it as a proportion, see documentation of possible users.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given evas object. 
+.br
+\fIx\fP Pointer to a double in which to store the weight x. 
+.br
+\fIy\fP Pointer to a double in which to store the weight y. 
+.RE
+.PP
+
+.PP
+Referenced by evas_object_box_layout_horizontal(), and evas_object_box_layout_vertical().
+.SS "EAPI void evas_object_size_hint_weight_set (\fBEvas_Object\fP * obj, double x, double y)"
+.PP
+Sets the size weight control hint. This is not a size enforcement in any way, it's just a hint that should be used whenever appropriate.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIobj\fP The given evas object. 
+.br
+\fIx\fP Double (0.0-1.0) to use as weight x hint. 
+.br
+\fIy\fP Double (0.0-1.0) to use as weight y hint. 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Evas from the source code.
