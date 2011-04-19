@@ -1,2 +1,0 @@
-shlibs:Depends=libc6 (>= 2.4), libeina (>= 1.0.0.001+svn20100831), libevas (>= 0.9.9.060+svn20100203), libgcc1 (>= 1:4.4.0), libx11-6, libxext6
-misc:Depends=
