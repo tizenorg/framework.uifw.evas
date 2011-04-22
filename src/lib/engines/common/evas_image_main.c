@@ -172,6 +172,20 @@ _evas_common_rgba_image_delete(Image_Entry *ie)
 #ifdef EVAS_CSERVE
    if (ie->data1) evas_cserve_image_free(ie);
 #endif   
+/*
+ * FIXME: This doesn't seem to be needed... But I'm not sure why.
+ *	 -- nash
+     {
+        Filtered_Image *fi;
+        
+        EINA_LIST_FREE(im->filtered, fi)
+          {
+             free(fi->key);
+             _evas_common_rgba_image_delete((Image_Entry *)(fi->image));
+             free(fi);
+          }
+     }
+*/
    free(im);
 }
 
@@ -355,11 +369,12 @@ static int
 _evas_common_rgba_image_ram_usage(Image_Entry *ie)
 {
    RGBA_Image   *im = (RGBA_Image *) ie;
-   int size = 0;
+   int size = sizeof(struct _RGBA_Image);
+   
+   if (ie->cache_key) size += strlen(ie->cache_key);
+   if (ie->file) size += strlen(ie->file);
+   if (ie->key) size += strlen(ie->key);
 
-//   ram += sizeof(struct _RGBA_Image);
-//   if (im->info.real_file) ram += strlen(im->info.real_file);
-//   if (im->info.comment) ram += strlen(im->info.comment);
    if (im->image.data)
      {
 #ifdef EVAS_CSERVE
