@@ -12,6 +12,7 @@
 #include <math.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <Eet.h>
 
 #ifdef BUILD_ENGINE_GL_GLEW
 # include <GL/glew.h>
@@ -91,6 +92,15 @@
 #ifndef EGL_MAP_GL_TEXTURE_STRIDE_IN_BYTES_SEC
 # define EGL_MAP_GL_TEXTURE_STRIDE_IN_BYTES_SEC 0x3208
 #endif
+#ifndef GL_PROGRAM_BINARY_LENGTH
+# define GL_PROGRAM_BINARY_LENGTH 0x8741
+#endif
+#ifndef GL_NUM_PROGRAM_BINARY_FORMATS
+# define GL_NUM_PROGRAM_BINARY_FORMATS 0x87FE
+#endif
+#ifndef GL_PROGRAM_BINARY_FORMATS
+# define GL_PROGRAM_BINARY_FORMATS 0x87FF
+#endif
 
 #define SHAD_VERTEX 0
 #define SHAD_COLOR  1
@@ -138,6 +148,7 @@ struct _Evas_GL_Shared
       Eina_Bool tex_npo2 : 1;
       Eina_Bool tex_rect : 1;
       Eina_Bool sec_image_map : 1;
+      Eina_Bool bin_program : 1;
       // tuning params - per gpu/cpu combo?
 #define MAX_CUTOUT             512
 #define DEF_CUTOUT                  512
@@ -460,10 +471,7 @@ void             evas_gl_common_context_image_map_push(Evas_Engine_GL_Context *g
                                                        Eina_Bool yuv);
 void              evas_gl_common_context_flush(Evas_Engine_GL_Context *gc);
 
-int               evas_gl_common_shader_program_init(Evas_GL_Program *p,
-                                                     Evas_GL_Program_Source *vert,
-                                                     Evas_GL_Program_Source *frag,
-                                                     const char *name);
+int               evas_gl_common_shader_program_init(Evas_GL_Shared *shared);
 void              evas_gl_common_shader_program_init_done(void);
 void              evas_gl_common_shader_program_shutdown(Evas_GL_Program *p);
     
@@ -515,6 +523,8 @@ extern void (*glsym_glGenFramebuffers)      (GLsizei a, GLuint *b);
 extern void (*glsym_glBindFramebuffer)      (GLenum a, GLuint b);
 extern void (*glsym_glFramebufferTexture2D) (GLenum a, GLenum b, GLenum c, GLuint d, GLint e);
 extern void (*glsym_glDeleteFramebuffers)   (GLsizei a, const GLuint *b);
+extern void (*glsym_glGetProgramBinary)     (GLuint a, GLsizei b, GLsizei *c, GLenum *d, void *e);
+extern void (*glsym_glProgramBinary)        (GLuint a, GLenum b, const void *c, GLint d);
 
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
 extern void          *(*secsym_eglCreateImage)               (void *a, void *b, GLenum c, void *d, const int *e);

@@ -6,7 +6,8 @@ AM_CPPFLAGS = \
 -I$(top_srcdir)/src/lib \
 -I$(top_srcdir)/src/lib/include \
 @FREETYPE_CFLAGS@ \
-@EINA_CFLAGS@
+@EINA_CFLAGS@ \
+@GL_EET_CFLAGS@
 
 if BUILD_ENGINE_GL_COMMON
 
@@ -63,7 +64,7 @@ shader/tex_nomul_frag_bin_s3c6410.h \
 shader/tex_nomul_vert.h \
 shader/tex_nomul_vert_bin_s3c6410.h
 
-libevas_engine_gl_common_la_LIBADD = @EINA_LIBS@ @evas_engine_gl_common_libs@ @dlopen_libs@
+libevas_engine_gl_common_la_LIBADD = @EINA_LIBS@ @GL_EET_LIBS@ @evas_engine_gl_common_libs@ @dlopen_libs@
 endif
 
 EXTRA_DIST = \

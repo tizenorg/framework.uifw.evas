@@ -8,6 +8,7 @@ AM_CPPFLAGS = \
 -I$(top_srcdir)/src/modules/engines/gl_common \
 @FREETYPE_CFLAGS@ \
 @EINA_CFLAGS@ \
+@GL_EET_CFLAGS@ \
 @evas_engine_gl_x11_cflags@
 
 if BUILD_ENGINE_GL_X11
@@ -28,7 +29,7 @@ pkgdir = $(libdir)/evas/modules/engines/gl_x11/$(MODULE_ARCH)
 pkg_LTLIBRARIES = module.la
 
 module_la_SOURCES = $(GL_X11_SOURCES)
-module_la_LIBADD = @EINA_LIBS@ $(GL_X11_LIBADD) $(top_builddir)/src/lib/libevas.la @dlopen_libs@
+module_la_LIBADD = @EINA_LIBS@ @GL_EET_LIBS@ $(GL_X11_LIBADD) $(top_builddir)/src/lib/libevas.la @dlopen_libs@
 module_la_LDFLAGS = -module -avoid-version
 module_la_LIBTOOLFLAGS = --tag=disable-static
 

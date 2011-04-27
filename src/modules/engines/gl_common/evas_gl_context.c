@@ -11,6 +11,8 @@ void (*glsym_glGenFramebuffers)      (GLsizei a, GLuint *b) = NULL;
 void (*glsym_glBindFramebuffer)      (GLenum a, GLuint b) = NULL;
 void (*glsym_glFramebufferTexture2D) (GLenum a, GLenum b, GLenum c, GLuint d, GLint e) = NULL;
 void (*glsym_glDeleteFramebuffers)   (GLsizei a, const GLuint *b) = NULL;
+void (*glsym_glGetProgramBinary)     (GLuint a, GLsizei b, GLsizei *c, GLenum *d, void *e) = NULL;
+void (*glsym_glProgramBinary)        (GLuint a, GLenum b, const void *c, GLint d) = NULL;
 
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
 // just used for finding symbols :)
@@ -71,6 +73,13 @@ gl_symbols(void)
    FINDSYM(glsym_glDeleteFramebuffers, "glDeleteFramebuffersARB", glsym_func_void);
    FALLBAK(glsym_glDeleteFramebuffers, glsym_func_void);
 
+   FINDSYM(glsym_glGetProgramBinary, "glGetProgramBinary", glsym_func_void);
+   FINDSYM(glsym_glGetProgramBinary, "glGetProgramBinaryEXT", glsym_func_void);
+   FINDSYM(glsym_glGetProgramBinary, "glGetProgramBinaryARB", glsym_func_void);
+
+   FINDSYM(glsym_glProgramBinary, "glProgramBinary", glsym_func_void);
+   FINDSYM(glsym_glProgramBinary, "glProgramBinaryEXT", glsym_func_void);
+   FINDSYM(glsym_glProgramBinary, "glProgramBinaryARB", glsym_func_void);
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
 #undef FINDSYM
 #define FINDSYM(dst, sym, typ) \
@@ -104,6 +113,8 @@ gl_symbols(void)
    FINDSYM(secsym_eglUnmapImageSEC, "eglUnmapImageSEC", secsym_func_uint);
    
    FINDSYM(secsym_eglGetImageAttribSEC, "eglGetImageAttribSEC", secsym_func_uint);
+   FINDSYM(glsym_glGetProgramBinary, "glGetProgramBinaryOES", glsym_func_void);
+   FINDSYM(glsym_glProgramBinary, "glProgramBinaryOES", glsym_func_void);
 #endif   
 }
 
@@ -523,6 +534,9 @@ evas_gl_common_context_new(void)
                  (strstr((char *)ext, "GL_EXT_texture_rectangle")) ||
                  (strstr((char *)ext, "GL_ARB_texture_rectangle")))
                shared->info.tex_rect = 1;
+             if ((strstr((char *)ext, "GL_ARB_get_program_binary")) ||
+                 (strstr((char *)ext, "GL_OES_get_program_binary")))
+               shared->info.bin_program = 1;
 #ifdef GL_TEXTURE_MAX_ANISOTROPY_EXT
              if ((strstr((char *)ext, "GL_EXT_texture_filter_anisotropic")))
                glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, 
@@ -679,50 +693,7 @@ evas_gl_common_context_new(void)
         glEnableVertexAttribArray(SHAD_COLOR);
         GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 
-        if (!evas_gl_common_shader_program_init(&(shared->shader.rect), 
-                                                &(shader_rect_vert_src), 
-                                                &(shader_rect_frag_src),
-                                                "rect")) goto error;
-        if (!evas_gl_common_shader_program_init(&(shared->shader.font),
-                                                &(shader_font_vert_src), 
-                                                &(shader_font_frag_src),
-                                                "font")) goto error;
-        if (!evas_gl_common_shader_program_init(&(shared->shader.img),
-                                                &(shader_img_vert_src),
-                                                &(shader_img_frag_src),
-                                                "img")) goto error;
-        if (!evas_gl_common_shader_program_init(&(shared->shader.img_nomul),
-                                                &(shader_img_nomul_vert_src),
-                                                &(shader_img_nomul_frag_src),
-                                                "img_nomul")) goto error;
-        if (!evas_gl_common_shader_program_init(&(shared->shader.img_bgra),
-                                                &(shader_img_bgra_vert_src),
-                                                &(shader_img_bgra_frag_src),
-                                                "img_bgra")) goto error;
-        if (!evas_gl_common_shader_program_init(&(shared->shader.img_bgra_nomul),
-                                                &(shader_img_bgra_nomul_vert_src),
-                                                &(shader_img_bgra_nomul_frag_src),
-                                                "img_bgra_nomul")) goto error;
-        if (!evas_gl_common_shader_program_init(&(shared->shader.img_mask),
-                                                &(shader_img_mask_vert_src),
-                                                &(shader_img_mask_frag_src),
-                                                "img_mask")) goto error;
-        if (!evas_gl_common_shader_program_init(&(shared->shader.tex),
-                                                &(shader_tex_vert_src), 
-                                                &(shader_tex_frag_src),
-                                                "tex")) goto error;
-        if (!evas_gl_common_shader_program_init(&(shared->shader.tex_nomul),
-                                                &(shader_tex_nomul_vert_src), 
-                                                &(shader_tex_nomul_frag_src),
-                                                "tex_nomul")) goto error;
-        if (!evas_gl_common_shader_program_init(&(shared->shader.yuv),
-                                                &(shader_yuv_vert_src), 
-                                                &(shader_yuv_frag_src),
-                                                "yuv")) goto error;
-        if (!evas_gl_common_shader_program_init(&(shared->shader.yuv_nomul),
-                                                &(shader_yuv_nomul_vert_src), 
-                                                &(shader_yuv_nomul_frag_src),
-                                                "yuv_nomul")) goto error;
+	if (!evas_gl_common_shader_program_init(shared)) goto error;
         
         glUseProgram(shared->shader.yuv.prog);
         GLERR(__FUNCTION__, __FILE__, __LINE__, "");
