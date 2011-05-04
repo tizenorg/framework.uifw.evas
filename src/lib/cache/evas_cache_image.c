@@ -448,6 +448,8 @@ _evas_cache_image_async_cancel(void *data)
    if (cache) evas_cache_image_flush(cache);
 }
 
+// note - preload_add assumes a target is ONLY added ONCE to the image
+// entry. make sure you only add once, or remove first, then add
 static int
 _evas_cache_image_entry_preload_add(Image_Entry *ie, const void *target)
 {
