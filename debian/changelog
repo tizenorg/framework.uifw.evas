@@ -1,3 +1,11 @@
+evas (1.0.0.001+svn.58227slp2+build13) unstable; urgency=low
+
+  * Upload Package
+  * Git: 165.213.180.234:/slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.58227slp2+build13
+
+ -- Jiyoun Park <jy0703.park@samsung.com>  Mon, 16 May 2011 13:26:07 +0900
+
 evas (1.0.0.001+svn.58227slp2+build12) unstable; urgency=low
 
   * Upload Package for fixing of smart_object caching problem
