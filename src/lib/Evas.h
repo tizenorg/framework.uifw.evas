@@ -785,6 +785,7 @@ typedef void      (*Evas_Async_Events_Put_Cb)(void *target, Evas_Callback_Type t
    EAPI void              evas_event_freeze                 (Evas *e) EINA_ARG_NONNULL(1);
    EAPI void              evas_event_thaw                   (Evas *e) EINA_ARG_NONNULL(1);
    EAPI int               evas_event_freeze_get             (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+   EAPI void              evas_event_thaw_eval              (Evas *e) EINA_ARG_NONNULL(1);
 
 /**
  * @defgroup Evas_Event_Feeding_Group Event Feeding Functions
