@@ -1,3 +1,11 @@
+evas (1.0.0.001+svn.58227slp2+build15) unstable; urgency=low
+
+  * Upload Package
+  * Git: 165.213.180.234:/slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.58227slp2+build15
+
+ -- Jiyoun Park <jy0703.park@samsung.com>  Mon, 13 Jun 2011 18:01:27 +0900
+
 evas (1.0.0.001+svn.58227slp2+build14) unstable; urgency=low
 
   * Added evas_event_thaw_eval API. Upstream merge with r59727.
