@@ -30,6 +30,9 @@ struct _Evas_Object_Table_Cache
 {
    struct {
       struct {
+         double h, v;
+      } weights;
+      struct {
 	 int h, v;
       } expands;
       struct {
@@ -37,11 +40,15 @@ struct _Evas_Object_Table_Cache
       } min;
    } total;
    struct {
+      double *h, *v;
+   } weights;
+   struct {
       Evas_Coord *h, *v;
    } sizes;
    struct {
       Eina_Bool *h, *v;
    } expands;
+   double ___pad; // padding to make sure doubles at end can be aligned
 };
 
 struct _Evas_Object_Table_Data
@@ -80,11 +87,6 @@ struct _Evas_Object_Table_Accessor
    Eina_Accessor *real_accessor;
    const Evas_Object *table;
 };
-
-/**
- * @addtogroup Evas_Object_Table
- * @{
- */
 
 #define EVAS_OBJECT_TABLE_DATA_GET(o, ptr)			\
   Evas_Object_Table_Data *ptr = evas_object_smart_data_get(o)
@@ -136,11 +138,11 @@ _evas_object_table_iterator_free(Evas_Object_Table_Iterator *it)
 }
 
 static Eina_Bool
-_evas_object_table_accessor_get_at(Evas_Object_Table_Accessor *it, unsigned int index, void **data)
+_evas_object_table_accessor_get_at(Evas_Object_Table_Accessor *it, unsigned int idx, void **data)
 {
    Evas_Object_Table_Option *opt = NULL;
 
-   if (!eina_accessor_data_get(it->real_accessor, index, (void **)&opt))
+   if (!eina_accessor_data_get(it->real_accessor, idx, (void **)&opt))
      return EINA_FALSE;
    if (data) *data = opt->obj;
    return EINA_TRUE;
@@ -165,8 +167,9 @@ _evas_object_table_cache_alloc(int cols, int rows)
    Evas_Object_Table_Cache *cache;
    int size;
 
-   size = (sizeof(Evas_Object_Table_Cache) +
-	   (cols + rows) * (sizeof(Eina_Bool) + sizeof(Evas_Coord)));
+   size = sizeof(Evas_Object_Table_Cache) +
+      ((cols + rows) * 
+          (sizeof(double) + sizeof(Evas_Coord) + sizeof(Eina_Bool)));
    cache = malloc(size);
    if (!cache)
      {
@@ -175,7 +178,9 @@ _evas_object_table_cache_alloc(int cols, int rows)
 	return NULL;
      }
 
-   cache->sizes.h = (Evas_Coord *)(cache + 1);
+   cache->weights.h = (double *)(cache + 1);
+   cache->weights.v = (double *)(cache->weights.h + cols);
+   cache->sizes.h = (Evas_Coord *)(cache->weights.v + rows);
    cache->sizes.v = (Evas_Coord *)(cache->sizes.h + cols);
    cache->expands.h = (Eina_Bool *)(cache->sizes.v + rows);
    cache->expands.v = (Eina_Bool *)(cache->expands.h + cols);
@@ -201,7 +206,7 @@ _evas_object_table_cache_reset(Evas_Object_Table_Data *priv)
    c->total.min.h = 0;
 
    size = ((priv->size.rows + priv->size.cols) *
-	   (sizeof(Eina_Bool) + sizeof(Evas_Coord)));
+	   (sizeof(double) + sizeof(Evas_Coord) + sizeof(Eina_Bool)));
    memset(c + 1, 0, size);
 }
 
@@ -308,31 +313,6 @@ _evas_object_table_calculate_cell(const Evas_Object_Table_Option *opt, Evas_Coor
      }
 }
 
-/* static Eina_Bool */
-/* _evas_object_table_check_hints_homogeneous_table(Evas_Object *child, double *align, Evas_Coord min, const char *axis_name) */
-/* { */
-/*    if (*align < 0.0) */
-/*      { */
-/*	/\* assume expand and align to the center. */
-/*	 * this is compatible with evas_object_box behavior and is the */
-/*	 * same as weight > 0.0. */
-/*	 *\/ */
-/*	*align = 0.5; */
-/*	return 0; */
-/*      } */
-/*    else if (min < 1) */
-/*      { */
-/*	WRN("Child %p [%s, %s] has no minimum width " */
-/*		"and no %s expand (weight is not > 0.0). " */
-/*		"Assuming weight > 0.0\n", */
-/*		child, evas_object_type_get(child), evas_object_name_get(child), */
-/*		axis_name); */
-/*	return 0; */
-/*      } */
-
-/*    return 1; */
-/* } */
-
 static void
 _evas_object_table_calculate_hints_homogeneous(Evas_Object *o, Evas_Object_Table_Data *priv)
 {
@@ -375,14 +355,6 @@ _evas_object_table_calculate_hints_homogeneous(Evas_Object *o, Evas_Object_Table
 	     opt->expand_h = 1;
 	     expand_h = 1;
 	  }
-/*	else if ((priv->homogeneous == EVAS_OBJECT_TABLE_HOMOGENEOUS_TABLE) && */
-/*		 (!_evas_object_table_check_hints_homogeneous_table */
-/*		  (child, &opt->align.h, opt->min.w, "horizontal"))) */
-/*	  { */
-/*	     opt->expand_h = 1; */
-/*	     expand_h = 1; */
-/*	  } */
-
 
 	opt->expand_v = 0;
 	if ((weighth > 0.0) &&
@@ -392,13 +364,6 @@ _evas_object_table_calculate_hints_homogeneous(Evas_Object *o, Evas_Object_Table
 	     opt->expand_v = 1;
 	     expand_v = 1;
 	  }
-/*	else if ((priv->homogeneous == EVAS_OBJECT_TABLE_HOMOGENEOUS_TABLE) && */
-/*		 (!_evas_object_table_check_hints_homogeneous_table */
-/*		  (child, &opt->align.v, opt->min.h, "vertical"))) */
-/*	  { */
-/*	     opt->expand_v = 1; */
-/*	     expand_v = 1; */
-/*	  } */
 
 	opt->fill_h = 0;
 	if (opt->align.h < 0.0)
@@ -496,25 +461,48 @@ _evas_object_table_calculate_layout_homogeneous_sizes(const Evas_Object *o, cons
 static void
 _evas_object_table_calculate_layout_homogeneous(Evas_Object *o, Evas_Object_Table_Data *priv)
 {
-   Evas_Coord x, y, w, h, cellw, cellh;
+   Evas_Coord x = 0, y = 0, w = 0, h = 0, ww, hh, cellw = 0, cellh = 0;
    Eina_List *l;
    Evas_Object_Table_Option *opt;
-
+   
    _evas_object_table_calculate_layout_homogeneous_sizes
      (o, priv, &x, &y, &w, &h, &cellw, &cellh);
-
+   
+   ww = w - ((priv->size.cols - 1) * priv->pad.h);
+   hh = h - ((priv->size.rows - 1) * priv->pad.v);
+   
+   if (ww < 0) ww = 0;
+   if (ww < 0) ww = 0;
+   
    EINA_LIST_FOREACH(priv->children, l, opt)
      {
 	Evas_Object *child = opt->obj;
-	Evas_Coord cx, cy, cw, ch;
+	Evas_Coord cx, cy, cw, ch, cox, coy, cow, coh;
 
-	cx = x + opt->col * (cellw + priv->pad.h);
-	cy = y + opt->row * (cellh + priv->pad.v);
+	cx = x + ((opt->col * ww) / priv->size.cols);
+        cw = x + (((opt->col + opt->colspan) * ww) / priv->size.cols) - cx;
+	cy = y + ((opt->row * hh) / priv->size.rows);
+        ch = y + (((opt->row + opt->rowspan) * hh) / priv->size.rows) - cy;
 
-	cw = opt->colspan * cellw - priv->pad.h;
-	ch = opt->rowspan * cellh - priv->pad.v;
+        cx += (opt->col) * priv->pad.h;
+        cy += (opt->row) * priv->pad.v;
+        
+        cox = cx;
+        coy = cy;
+        cow = cw;
+        coh = ch;
 
 	_evas_object_table_calculate_cell(opt, &cx, &cy, &cw, &ch);
+        if (cw > cow)
+          {
+             cx = cox;
+             cw = cow;
+          }
+        if (ch > coh)
+          {
+             cy = coy;
+             ch = coh;
+          }
 
         if (priv->is_mirrored)
           {
@@ -543,8 +531,10 @@ _evas_object_table_count_expands(const Eina_Bool *expands, int start, int end)
    int count = 0;
 
    for (; itr < itr_end; itr++)
-     if (*itr)
-       count++;
+     {
+        if (*itr)
+           count++;
+     }
 
    return count;
 }
@@ -578,28 +568,55 @@ _evas_object_table_sizes_calc_noexpand(Evas_Coord *sizes, int start, int end, Ev
 }
 
 static void
-_evas_object_table_sizes_calc_expand(Evas_Coord *sizes, int start, int end, Evas_Coord space, const Eina_Bool *expands, int expand_count)
+_evas_object_table_sizes_calc_expand(Evas_Coord *sizes, int start, int end, Evas_Coord space, const Eina_Bool *expands, int expand_count, double *weights, double weighttot)
 {
    Evas_Coord *itr = sizes + start, *itr_end = sizes + end;
    const Eina_Bool *itr_expand = expands + start;
-   Evas_Coord step, last_space;
-
+   Evas_Coord step = 0, last_space = 0;
+   int total = 0, i = start;
+   
    /* XXX move to fixed point math and spread errors among cells */
-   step = space / expand_count;
-   last_space = space - step * (expand_count - 1);
+   if (weighttot > 0.0)
+     {
+        step = space / expand_count;
+        last_space = space - step * (expand_count - 1);
+     }
 
-   for (; itr < itr_end; itr++, itr_expand++)
-     if (*itr_expand)
-       {
-	  expand_count--;
-	  if (expand_count > 0)
-	    *itr += step;
-	  else
-	    {
-	       *itr += last_space;
-	       break;
-	    }
-       }
+   for (; itr < itr_end; itr++, itr_expand++, i++)
+     {
+        if (weighttot <= 0.0)
+          {
+             if (*itr_expand)
+               {
+                  expand_count--;
+                  if (expand_count > 0)
+                     *itr += step;
+                  else
+                    {
+                       *itr += last_space;
+                       break;
+                    }
+               }
+          }
+        else
+          {
+             if (*itr_expand)
+               {
+                  expand_count--;
+                  if (expand_count > 0)
+                    {
+                       step = (weights[i] / weighttot) * space;
+                       *itr += step;
+                       total += step;
+                    }
+                  else
+                    {
+                       *itr += space - total;
+                       break;
+                    }
+               }
+          }
+     }
 }
 
 static void
@@ -608,7 +625,9 @@ _evas_object_table_calculate_hints_regular(Evas_Object *o, Evas_Object_Table_Dat
    Evas_Object_Table_Option *opt;
    Evas_Object_Table_Cache *c;
    Eina_List *l;
-
+   double totweightw = 0.0, totweighth = 0.0;
+   int i;
+   
    if (!priv->cache)
      {
 	priv->cache = _evas_object_table_cache_alloc
@@ -620,6 +639,10 @@ _evas_object_table_calculate_hints_regular(Evas_Object *o, Evas_Object_Table_Dat
    _evas_object_table_cache_reset(priv);
 
    /* cache interesting data */
+   memset(c->expands.h, 1, priv->size.cols);
+   memset(c->expands.v, 1, priv->size.rows);
+   memset(c->weights.h, 0, priv->size.cols);
+   memset(c->weights.v, 0, priv->size.rows);
    EINA_LIST_FOREACH(priv->children, l, opt)
      {
 	Evas_Object *child = opt->obj;
@@ -643,7 +666,7 @@ _evas_object_table_calculate_hints_regular(Evas_Object *o, Evas_Object_Table_Dat
 	    ((opt->max.h < 0) ||
 	     ((opt->max.h > -1) && (opt->min.h < opt->max.h))))
 	  opt->expand_v = 1;
-
+        
 	opt->fill_h = 0;
 	if (opt->align.h < 0.0)
 	  {
@@ -657,11 +680,23 @@ _evas_object_table_calculate_hints_regular(Evas_Object *o, Evas_Object_Table_Dat
 	     opt->fill_v = 1;
 	  }
 
-	if (opt->expand_h)
-	  memset(c->expands.h + opt->col, 1, opt->colspan);
-	if (opt->expand_v)
-	  memset(c->expands.v + opt->row, 1, opt->rowspan);
+	if (!opt->expand_h)
+	  memset(c->expands.h + opt->col, 0, opt->colspan);
+        else
+          {
+             for (i = opt->col; i < opt->col + opt->colspan; i++)
+                c->weights.h[i] += (weightw / (double)opt->colspan);
+          }
+	if (!opt->expand_v)
+	  memset(c->expands.v + opt->row, 0, opt->rowspan);
+        else
+          {
+             for (i = opt->row; i < opt->row + opt->rowspan; i++)
+                c->weights.v[i] += (weighth / (double)opt->rowspan);
+          }
      }
+   for (i = 0; i < priv->size.cols; i++) totweightw += c->weights.h[i];
+   for (i = 0; i < priv->size.rows; i++) totweighth += c->weights.v[i];
 
    /* calculate sizes for each row and column */
    EINA_LIST_FOREACH(priv->children, l, opt)
@@ -682,7 +717,7 @@ _evas_object_table_calculate_hints_regular(Evas_Object *o, Evas_Object_Table_Dat
 	     if (count > 0)
 	       _evas_object_table_sizes_calc_expand
 		 (c->sizes.h, opt->col, opt->end_col, space,
-		  c->expands.h, count);
+		  c->expands.h, count, c->weights.h, totweightw);
 	     else
 	       _evas_object_table_sizes_calc_noexpand
 		 (c->sizes.h, opt->col, opt->end_col, space);
@@ -702,13 +737,16 @@ _evas_object_table_calculate_hints_regular(Evas_Object *o, Evas_Object_Table_Dat
 	     if (count > 0)
 	       _evas_object_table_sizes_calc_expand
 		 (c->sizes.v, opt->row, opt->end_row, space,
-		  c->expands.v, count);
+		  c->expands.v, count, c->weights.v, totweighth);
 	     else
 	       _evas_object_table_sizes_calc_noexpand
 		 (c->sizes.v, opt->row, opt->end_row, space);
 	  }
      }
 
+   c->total.weights.h = totweightw;
+   c->total.weights.v = totweighth;
+   
    c->total.expands.h = _evas_object_table_count_expands
      (c->expands.h, 0, priv->size.cols);
    c->total.expands.v = _evas_object_table_count_expands
@@ -760,7 +798,7 @@ _evas_object_table_calculate_layout_regular(Evas_Object *o, Evas_Object_Table_Da
 	memcpy(cols, c->sizes.h, size);
 	_evas_object_table_sizes_calc_expand
 	  (cols, 0, priv->size.cols, w - c->total.min.w,
-	   c->expands.h, c->total.expands.h);
+	   c->expands.h, c->total.expands.h, c->weights.h, c->total.weights.h);
      }
 
    /* handle vertical */
@@ -783,7 +821,7 @@ _evas_object_table_calculate_layout_regular(Evas_Object *o, Evas_Object_Table_Da
 	memcpy(rows, c->sizes.v, size);
 	_evas_object_table_sizes_calc_expand
 	  (rows, 0, priv->size.rows, h - c->total.min.h,
-	   c->expands.v, c->total.expands.v);
+	   c->expands.v, c->total.expands.v, c->weights.v, c->total.weights.v);
      }
 
    EINA_LIST_FOREACH(priv->children, l, opt)
@@ -916,23 +954,12 @@ _evas_object_table_smart_set_user(Evas_Smart_Class *sc)
    sc->calculate = _evas_object_table_smart_calculate;
 }
 
-/**
- * Create a new table.
- *
- * It's set to non-homogeneous by default, add children with
- * evas_object_table_pack().
- */
 EAPI Evas_Object *
 evas_object_table_add(Evas *evas)
 {
    return evas_object_smart_add(evas, _evas_object_table_smart_class_new());
 }
 
-/**
- * Create a table that is child of a given element @a parent.
- *
- * @see evas_object_table_add()
- */
 EAPI Evas_Object *
 evas_object_table_add_to(Evas_Object *parent)
 {
@@ -945,48 +972,6 @@ evas_object_table_add_to(Evas_Object *parent)
    return o;
 }
 
-/**
- * Set how this table should layout children.
- *
- * @todo consider aspect hint and respect it.
- *
- * @par EVAS_OBJECT_TABLE_HOMOGENEOUS_NONE
- * If table does not use homogeneous mode then columns and rows will
- * be calculated based on hints of individual cells. This operation
- * mode is more flexible, but more complex and heavy to calculate as
- * well. @b Weight properties are handled as a boolean
- * expand. Negative alignment will be considered as 0.5.
- *
- * @todo @c EVAS_OBJECT_TABLE_HOMOGENEOUS_NONE should balance weight.
- *
- * @par EVAS_OBJECT_TABLE_HOMOGENEOUS_TABLE
- * When homogeneous is relative to table the own table size is divided
- * equally among children, filling the whole table area. That is, if
- * table has @c WIDTH and @c COLUMNS, each cell will get <tt>WIDTH /
- * COLUMNS</tt> pixels. If children have minimum size that is larger
- * than this amount (including padding), then it will overflow and be
- * aligned respecting the alignment hint, possible overlapping sibling
- * cells. @b Weight hint is used as a boolean, if greater than zero it
- * will make the child expand in that axis, taking as much space as
- * possible (bounded to maximum size hint). Negative alignment will be
- * considered as 0.5.
- *
- * @par EVAS_OBJECT_TABLE_HOMOGENEOUS_ITEM
- * When homogeneous is relative to item it means the greatest minimum
- * cell size will be used. That is, if no element is set to expand,
- * the table will have its contents to a minimum size, the bounding
- * box of all these children will be aligned relatively to the table
- * object using evas_object_table_align_get(). If the table area is
- * too small to hold this minimum bounding box, then the objects will
- * keep their size and the bounding box will overflow the box area,
- * still respecting the alignment. @b Weight hint is used as a
- * boolean, if greater than zero it will make that cell expand in that
- * axis, toggling the <b>expand mode</b>, which makes the table behave
- * much like @b EVAS_OBJECT_TABLE_HOMOGENEOUS_TABLE, except that the
- * bounding box will overflow and items will not overlap siblings. If
- * no minimum size is provided at all then the table will fallback to
- * expand mode as well.
- */
 EAPI void
 evas_object_table_homogeneous_set(Evas_Object *o, Evas_Object_Table_Homogeneous_Mode homogeneous)
 {
@@ -998,11 +983,6 @@ evas_object_table_homogeneous_set(Evas_Object *o, Evas_Object_Table_Homogeneous_
    evas_object_smart_changed(o);
 }
 
-/**
- * Get the current layout homogeneous mode.
- *
- * @see evas_object_table_homogeneous_set()
- */
 EAPI Evas_Object_Table_Homogeneous_Mode
 evas_object_table_homogeneous_get(const Evas_Object *o)
 {
@@ -1010,9 +990,6 @@ evas_object_table_homogeneous_get(const Evas_Object *o)
    return priv->homogeneous;
 }
 
-/**
- * Set the alignment of the whole bounding box of contents.
- */
 EAPI void
 evas_object_table_align_set(Evas_Object *o, double horizontal, double vertical)
 {
@@ -1024,9 +1001,6 @@ evas_object_table_align_set(Evas_Object *o, double horizontal, double vertical)
    evas_object_smart_changed(o);
 }
 
-/**
- * Get alignment of the whole bounding box of contents.
- */
 EAPI void
 evas_object_table_align_get(const Evas_Object *o, double *horizontal, double *vertical)
 {
@@ -1043,9 +1017,6 @@ evas_object_table_align_get(const Evas_Object *o, double *horizontal, double *ve
      }
 }
 
-/**
- * Set padding between cells.
- */
 EAPI void
 evas_object_table_padding_set(Evas_Object *o, Evas_Coord horizontal, Evas_Coord vertical)
 {
@@ -1058,9 +1029,6 @@ evas_object_table_padding_set(Evas_Object *o, Evas_Coord horizontal, Evas_Coord 
    evas_object_smart_changed(o);
 }
 
-/**
- * Get padding between cells.
- */
 EAPI void
 evas_object_table_padding_get(const Evas_Object *o, Evas_Coord *horizontal, Evas_Coord *vertical)
 {
@@ -1077,18 +1045,6 @@ evas_object_table_padding_get(const Evas_Object *o, Evas_Coord *horizontal, Evas
      }
 }
 
-/**
- * Add a new child to a table object.
- *
- * @param o The given table object.
- * @param child The child object to add.
- * @param col relative-horizontal position to place child.
- * @param row relative-vertical position to place child.
- * @param colspan how many relative-horizontal position to use for this child.
- * @param rowspan how many relative-vertical position to use for this child.
- *
- * @return 1 on success, 0 on failure.
- */
 EAPI Eina_Bool
 evas_object_table_pack(Evas_Object *o, Evas_Object *child, unsigned short col, unsigned short row, unsigned short colspan, unsigned short rowspan)
 {
@@ -1203,15 +1159,6 @@ _evas_object_table_remove_opt(Evas_Object_Table_Data *priv, Evas_Object_Table_Op
      }
 }
 
-/**
- * Remove child from table.
- *
- * @note removing a child will immediately call a walk over children in order
- *       to recalculate numbers of columns and rows. If you plan to remove
- *       all children, use evas_object_table_clear() instead.
- *
- * @return 1 on success, 0 on failure.
- */
 EAPI Eina_Bool
 evas_object_table_unpack(Evas_Object *o, Evas_Object *child)
 {
@@ -1242,12 +1189,6 @@ evas_object_table_unpack(Evas_Object *o, Evas_Object *child)
    return EINA_TRUE;
 }
 
-/**
- * Faster way to remove all child objects from a table object.
- *
- * @param o The given table object.
- * @param clear if true, it will delete just removed children.
- */
 EAPI void
 evas_object_table_clear(Evas_Object *o, Eina_Bool clear)
 {
@@ -1270,14 +1211,6 @@ evas_object_table_clear(Evas_Object *o, Eina_Bool clear)
    evas_object_smart_changed(o);
 }
 
-/**
- * Get the number of columns and rows this table takes.
- *
- * @note columns and rows are virtual entities, one can specify a table
- *       with a single object that takes 4 columns and 5 rows. The only
- *       difference for a single cell table is that paddings will be
- *       accounted proportionally.
- */
 EAPI void
 evas_object_table_col_row_size_get(const Evas_Object *o, int *cols, int *rows)
 {
@@ -1294,11 +1227,6 @@ evas_object_table_col_row_size_get(const Evas_Object *o, int *cols, int *rows)
      }
 }
 
-/**
- * Get an iterator to walk the list of children for the table.
- *
- * @note Do not remove or delete objects while walking the list.
- */
 EAPI Eina_Iterator *
 evas_object_table_iterator_new(const Evas_Object *o)
 {
@@ -1323,11 +1251,6 @@ evas_object_table_iterator_new(const Evas_Object *o)
    return &it->iterator;
 }
 
-/**
- * Get an accessor to get random access to the list of children for the table.
- *
- * @note Do not remove or delete objects while walking the list.
- */
 EAPI Eina_Accessor *
 evas_object_table_accessor_new(const Evas_Object *o)
 {
@@ -1352,14 +1275,6 @@ evas_object_table_accessor_new(const Evas_Object *o)
    return &it->accessor;
 }
 
-/**
- * Get the list of children for the table.
- *
- * @note This is a duplicate of the list kept by the table internally.
- *       It's up to the user to destroy it when it no longer needs it.
- *       It's possible to remove objects from the table when walking this
- *       list, but these removals won't be reflected on it.
- */
 EAPI Eina_List *
 evas_object_table_children_get(const Evas_Object *o)
 {
@@ -1374,11 +1289,6 @@ evas_object_table_children_get(const Evas_Object *o)
    return new_list;
 }
 
-/**
- * Get a child from the table using its coordinates
- *
- * @note This does not take into account col/row spanning
- */
 Evas_Object *
 evas_object_table_child_get(const Evas_Object *o, unsigned short col, unsigned short row)
 {
@@ -1393,15 +1303,6 @@ evas_object_table_child_get(const Evas_Object *o, unsigned short col, unsigned s
    return NULL;
 }
 
-/**
- * Gets the mirrored mode of the table. In mirrored mode the table items go
- * from right to left instead of left to right. That is, 1,1 is top right, not
- * to left.
- *
- * @param obj The table object.
- * @return EINA_TRUE if it's a mirrored table, EINA_FALSE otherwise.
- * @since 1.1.0
- */
 EAPI Eina_Bool
 evas_object_table_mirrored_get(const Evas_Object *obj)
 {
@@ -1410,15 +1311,6 @@ evas_object_table_mirrored_get(const Evas_Object *obj)
    return priv->is_mirrored;
 }
 
-/**
- * Sets the mirrored mode of the table. In mirrored mode the table items go
- * from right to left instead of left to right. That is, 1,1 is top right, not
- * to left.
- *
- * @param obj The table object.
- * @param mirrored the mirrored mode to set
- * @since 1.1.0
- */
 EAPI void
 evas_object_table_mirrored_set(Evas_Object *obj, Eina_Bool mirrored)
 {
@@ -1426,10 +1318,6 @@ evas_object_table_mirrored_set(Evas_Object *obj, Eina_Bool mirrored)
    if (priv->is_mirrored != mirrored)
      {
         priv->is_mirrored = mirrored;
-        _evas_object_table_smart_calculate_regular(obj, priv);
+        _evas_object_table_smart_calculate(obj);
      }
 }
-
-/**
- * @}
- */

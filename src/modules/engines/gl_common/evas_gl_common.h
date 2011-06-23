@@ -14,11 +14,7 @@
 #include <unistd.h>
 #include <Eet.h>
 
-#ifdef BUILD_ENGINE_GL_GLEW
-# include <GL/glew.h>
-#else
-# define GL_GLEXT_PROTOTYPES
-#endif
+#define GL_GLEXT_PROTOTYPES
 
 #ifdef BUILD_ENGINE_GL_QUARTZ
 # include <OpenGL/gl.h>
@@ -100,6 +96,9 @@
 #endif
 #ifndef GL_PROGRAM_BINARY_FORMATS
 # define GL_PROGRAM_BINARY_FORMATS 0x87FF
+#endif
+#ifndef GL_PROGRAM_BINARY_RETRIEVABLE_HINT
+# define GL_PROGRAM_BINARY_RETRIEVABLE_HINT 0x8257
 #endif
 
 #define SHAD_VERTEX 0
@@ -199,7 +198,8 @@ struct _Evas_GL_Shared
       Eina_List       *atlas[33][3];
    } tex;
    
-   Eina_Hash          *native_hash;
+   Eina_Hash          *native_pm_hash;
+   Eina_Hash          *native_tex_hash;
    
    struct {
       Evas_GL_Program  rect;
@@ -210,6 +210,18 @@ struct _Evas_GL_Shared
       Evas_GL_Program  img_mask;
       Evas_GL_Program  yuv,            yuv_nomul;
       Evas_GL_Program  tex,            tex_nomul;
+
+      Evas_GL_Program  filter_invert,         filter_invert_nomul;
+      Evas_GL_Program  filter_invert_bgra,    filter_invert_bgra_nomul;
+      Evas_GL_Program  filter_greyscale,      filter_greyscale_nomul;
+      Evas_GL_Program  filter_greyscale_bgra, filter_greyscale_bgra_nomul;
+      Evas_GL_Program  filter_sepia,          filter_sepia_nomul;
+      Evas_GL_Program  filter_sepia_bgra,     filter_sepia_bgra_nomul;
+#if 0
+      Evas_GL_Program  filter_blur_vert;
+      Evas_GL_Program  filter_blur,           filter_blur_nomul;
+      Evas_GL_Program  filter_blur_bgra,      filter_blur_bgra_nomul;
+#endif
    } shader;
    int references;
    int w, h;
@@ -299,6 +311,9 @@ struct _Evas_Engine_GL_Context
    Eina_Bool havestuff : 1;
    
    Evas_GL_Image *def_surface;
+
+   /* If this is set: Force drawing with a particular filter */
+   GLuint	filter_prog;
    
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
 // FIXME: hack. expose egl display to gl core for egl image sec extn.   
@@ -371,6 +386,8 @@ struct _Evas_GL_Image
    int scale_hint, content_hint;
    int csize;
    
+   Eina_List       *filtered;
+
    unsigned char    dirty : 1;
    unsigned char    cached : 1;
    unsigned char    alpha : 1;
@@ -419,6 +436,27 @@ extern Evas_GL_Program_Source shader_tex_vert_src;
 extern Evas_GL_Program_Source shader_tex_nomul_frag_src;
 extern Evas_GL_Program_Source shader_tex_nomul_vert_src;
 
+extern Evas_GL_Program_Source shader_filter_invert_frag_src;
+extern Evas_GL_Program_Source shader_filter_invert_nomul_frag_src;
+extern Evas_GL_Program_Source shader_filter_invert_bgra_frag_src;
+extern Evas_GL_Program_Source shader_filter_invert_bgra_nomul_frag_src;
+extern Evas_GL_Program_Source shader_filter_sepia_frag_src;
+extern Evas_GL_Program_Source shader_filter_sepia_nomul_frag_src;
+extern Evas_GL_Program_Source shader_filter_sepia_bgra_frag_src;
+extern Evas_GL_Program_Source shader_filter_sepia_bgra_nomul_frag_src;
+extern Evas_GL_Program_Source shader_filter_greyscale_frag_src;
+extern Evas_GL_Program_Source shader_filter_greyscale_nomul_frag_src;
+extern Evas_GL_Program_Source shader_filter_greyscale_bgra_frag_src;
+extern Evas_GL_Program_Source shader_filter_greyscale_bgra_nomul_frag_src;
+#if 0
+/* blur (annoyingly) needs (aka is faster with) a vertex shader */
+extern Evas_GL_Program_Source shader_filter_blur_vert_src;
+extern Evas_GL_Program_Source shader_filter_blur_frag_src;
+extern Evas_GL_Program_Source shader_filter_blur_nomul_frag_src;
+extern Evas_GL_Program_Source shader_filter_blur_bgra_frag_src;
+extern Evas_GL_Program_Source shader_filter_blur_bgra_nomul_frag_src;
+#endif
+
 void glerr(int err, const char *file, const char *func, int line, const char *op);
  
 Evas_Engine_GL_Context  *evas_gl_common_context_new(void);
@@ -449,6 +487,8 @@ void              evas_gl_common_context_image_mask_push(Evas_Engine_GL_Context 
                                                     int x, int y, int w, int h,
                                                     int r, int g, int b, int a,
                                                     Eina_Bool smooth);
+
+
 void              evas_gl_common_context_font_push(Evas_Engine_GL_Context *gc,
                                                    Evas_GL_Texture *tex,
                                                    double sx, double sy, double sw, double sh,
@@ -506,6 +546,7 @@ void              evas_gl_common_image_cache_flush(Evas_Engine_GL_Context *gc);
 void              evas_gl_common_image_free(Evas_GL_Image *im);
 Evas_GL_Image    *evas_gl_common_image_surface_new(Evas_Engine_GL_Context *gc, unsigned int w, unsigned int h, int alpha);
 void              evas_gl_common_image_dirty(Evas_GL_Image *im, unsigned int x, unsigned int y, unsigned int w, unsigned int h);
+void              evas_gl_common_image_update(Evas_Engine_GL_Context *gc, Evas_GL_Image *im);
 void              evas_gl_common_image_map_draw(Evas_Engine_GL_Context *gc, Evas_GL_Image *im, int npoints, RGBA_Map_Point *p, int smooth, int level);
 void              evas_gl_common_image_draw(Evas_Engine_GL_Context *gc, Evas_GL_Image *im, int sx, int sy, int sw, int sh, int dx, int dy, int dw, int dh, int smooth);
 
@@ -519,12 +560,20 @@ void              evas_gl_common_poly_draw(Evas_Engine_GL_Context *gc, Evas_GL_P
 
 void              evas_gl_common_line_draw(Evas_Engine_GL_Context *gc, int x1, int y1, int x2, int y2);
 
+#if 0 // filtering disabled
+void              evas_gl_common_filter_draw(Evas_Engine_GL_Context *context, Evas_GL_Image *im, Evas_Filter_Info *filter);
+Filtered_Image   *evas_gl_common_image_filtered_get(Evas_GL_Image *im, uint8_t *key, size_t keylen);
+Filtered_Image   *evas_gl_common_image_filtered_save(Evas_GL_Image *im, Evas_GL_Image *fimage, uint8_t *key, size_t keylen);
+void              evas_gl_common_image_filtered_free(Evas_GL_Image *im, Filtered_Image *);
+#endif
+
 extern void (*glsym_glGenFramebuffers)      (GLsizei a, GLuint *b);
 extern void (*glsym_glBindFramebuffer)      (GLenum a, GLuint b);
 extern void (*glsym_glFramebufferTexture2D) (GLenum a, GLenum b, GLenum c, GLuint d, GLint e);
 extern void (*glsym_glDeleteFramebuffers)   (GLsizei a, const GLuint *b);
 extern void (*glsym_glGetProgramBinary)     (GLuint a, GLsizei b, GLsizei *c, GLenum *d, void *e);
 extern void (*glsym_glProgramBinary)        (GLuint a, GLenum b, const void *c, GLint d);
+extern void (*glsym_glProgramParameteri)    (GLuint a, GLuint b, GLint d);
 
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
 extern void          *(*secsym_eglCreateImage)               (void *a, void *b, GLenum c, void *d, const int *e);

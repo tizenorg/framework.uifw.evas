@@ -32,19 +32,14 @@ autogen.sh \
 README.in \
 README \
 evas.pc.in \
-evas-cairo-x11.pc.in \
 evas-directfb.pc.in \
 evas-fb.pc.in \
 evas-opengl-x11.pc.in \
 evas-opengl-sdl.pc.in \
-evas-opengl-glew.pc.in \
 evas-software-buffer.pc.in \
-evas-software-qtopia.pc.in \
 evas-software-x11.pc.in \
 evas-software-16-x11.pc.in \
 evas-software-8-x11.pc.in \
-evas-xrender-x11.pc.in \
-evas-xrender-xcb.pc.in \
 evas-software-gdi.pc.in \
 evas-software-ddraw.pc.in \
 evas-software-16-ddraw.pc.in \
@@ -81,36 +76,12 @@ if BUILD_ENGINE_BUFFER
 pkgconfig_DATA += evas-software-buffer.pc
 endif
 
-#if BUILD_ENGINE_SOFTWARE_QTOPIA
-#pkgconfig_DATA += evas-software-qtopia.pc
-#endif
-
 if BUILD_ENGINE_GL_X11
 pkgconfig_DATA += evas-opengl-x11.pc
 endif
 
 if BUILD_ENGINE_GL_SDL
 pkgconfig_DATA += evas-opengl-sdl.pc
-endif
-
-if BUILD_ENGINE_QUARTZ
-pkgconfig_DATA += evas-quartz.pc
-endif
-
-if BUILD_ENGINE_GL_GLEW
-pkgconfig_DATA += evas-opengl-glew.pc
-endif
-
-#if BUILD_ENGINE_CAIRO_X11
-#pkgconfig_DATA += evas-cairo-x11.pc
-#endif
-
-if BUILD_ENGINE_XRENDER_X11
-pkgconfig_DATA += evas-xrender-x11.pc
-endif
-
-if BUILD_ENGINE_XRENDER_XCB
-pkgconfig_DATA += evas-xrender-xcb.pc
 endif
 
 if BUILD_ENGINE_SOFTWARE_GDI

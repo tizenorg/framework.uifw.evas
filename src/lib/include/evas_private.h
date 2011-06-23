@@ -46,6 +46,14 @@ typedef struct _Evas_Map_Point              Evas_Map_Point;
 typedef struct _Evas_Smart_Cb_Description_Array Evas_Smart_Cb_Description_Array;
 typedef struct _Evas_Post_Callback          Evas_Post_Callback;
 
+/* General types - used for script type chceking */
+#define OPAQUE_TYPE(type) struct __##type { int a; }; \
+   typedef struct __##type type
+
+OPAQUE_TYPE(Evas_Font_Set); /* General type for RGBA_Font */
+OPAQUE_TYPE(Evas_Font_Instance); /* General type for RGBA_Font_Int */
+/* End of general types */
+
 #define MAGIC_EVAS                 0x70777770
 #define MAGIC_OBJ                  0x71777770
 #define MAGIC_OBJ_RECTANGLE        0x71777771
@@ -55,11 +63,11 @@ typedef struct _Evas_Post_Callback          Evas_Post_Callback;
 #define MAGIC_OBJ_TEXT             0x71777776
 #define MAGIC_OBJ_SMART            0x71777777
 #define MAGIC_OBJ_TEXTBLOCK        0x71777778
-#define MAGIC_OBJ_PROXY	           0x71777779
 #define MAGIC_SMART                0x72777770
 #define MAGIC_OBJ_SHAPE            0x72777773
 #define MAGIC_OBJ_CONTAINER        0x72777774
 #define MAGIC_OBJ_CUSTOM           0x72777775
+#define MAGIC_EVAS_GL              0x72777776
 
 #ifdef MAGIC_DEBUG
 # define MAGIC_CHECK_FAILED(o, t, m) \
@@ -381,6 +389,35 @@ struct _Evas_Map
    Evas_Map_Point        points[]; // actual points
 };
 
+#if 0 // filtering disabled
+/* nash: Split into two bits */
+typedef struct Evas_Filter_Info
+{
+   Evas_Filter filter;
+   Evas_Filter_Mode mode;
+
+   Eina_Bool dirty : 1;
+
+   int datalen;
+   void *data;
+   void (*data_free)(void *);
+
+   uint8_t *key;
+   uint32_t len;
+   Filtered_Image *cached;
+} Evas_Filter_Info;
+
+typedef Eina_Bool (*Evas_Software_Filter_Fn)(Evas_Filter_Info *, RGBA_Image *, RGBA_Image *);
+
+int evas_filter_get_size(Evas_Filter_Info *info, int inw, int inh,
+                     int *outw, int *outh, Eina_Bool inv);
+Eina_Bool evas_filter_always_alpha(Evas_Filter_Info *info);
+uint8_t *evas_filter_key_get(const Evas_Filter_Info *info, uint32_t *lenp);
+// expose for use in engines
+EAPI Evas_Software_Filter_Fn evas_filter_software_get(Evas_Filter_Info *info);
+void evas_filter_free(Evas_Object *o);
+#endif
+
 struct _Evas_Object
 {
    EINA_INLIST;
@@ -449,6 +486,10 @@ struct _Evas_Object
       Eina_Bool                redraw;
    } proxy;
 
+#if 0 // filtering disabled
+   Evas_Filter_Info           *filter;
+#endif
+   
    Evas_Size_Hints            *size_hints;
 
    int                         last_mouse_down_counter;
@@ -626,7 +667,7 @@ struct _Evas_Func
    void *(*image_size_set)                 (void *data, void *image, int w, int h);
    void (*image_stride_get)                (void *data, void *image, int *stride);
    void *(*image_dirty_region)             (void *data, void *image, int x, int y, int w, int h);
-   void *(*image_data_get)                 (void *data, void *image, int to_write, DATA32 **image_data);
+   void *(*image_data_get)                 (void *data, void *image, int to_write, DATA32 **image_data, int *err);
    void *(*image_data_put)                 (void *data, void *image, DATA32 *image_data);
    void  (*image_data_preload_request)     (void *data, void *image, const void *target);
    void  (*image_data_preload_cancel)      (void *data, void *image, const void *target);
@@ -647,22 +688,22 @@ struct _Evas_Func
    void (*image_cache_set)                 (void *data, int bytes);
    int  (*image_cache_get)                 (void *data);
 
-   void *(*font_load)                      (void *data, const char *name, int size);
-   void *(*font_memory_load)               (void *data, char *name, int size, const void *fdata, int fdata_size);
-   void *(*font_add)                       (void *data, void *font, const char *name, int size);
-   void *(*font_memory_add)                (void *data, void *font, char *name, int size, const void *fdata, int fdata_size);
-   void (*font_free)                       (void *data, void *font);
-   int  (*font_ascent_get)                 (void *data, void *font);
-   int  (*font_descent_get)                (void *data, void *font);
-   int  (*font_max_ascent_get)             (void *data, void *font);
-   int  (*font_max_descent_get)            (void *data, void *font);
-   void (*font_string_size_get)            (void *data, void *font, const Eina_Unicode *text, const Evas_Text_Props *intl_props, int *w, int *h);
-   int  (*font_inset_get)                  (void *data, void *font, const Evas_Text_Props *text_props);
-   int  (*font_h_advance_get)              (void *data, void *font, const Eina_Unicode *text, const Evas_Text_Props *intl_props);
-   int  (*font_v_advance_get)              (void *data, void *font, const Eina_Unicode *text, const Evas_Text_Props *intl_props);
-   int  (*font_char_coords_get)            (void *data, void *font, const Eina_Unicode *text, const Evas_Text_Props *intl_props, int pos, int *cx, int *cy, int *cw, int *ch);
-   int  (*font_char_at_coords_get)         (void *data, void *font, const Eina_Unicode *text, const Evas_Text_Props *intl_props, int x, int y, int *cx, int *cy, int *cw, int *ch);
-   void (*font_draw)                       (void *data, void *context, void *surface, void *font, int x, int y, int w, int h, int ow, int oh, const Eina_Unicode *text, const Evas_Text_Props *intl_props);
+   Evas_Font_Set *(*font_load)             (void *data, const char *name, int size, Font_Rend_Flags wanted_rend);
+   Evas_Font_Set *(*font_memory_load)      (void *data, char *name, int size, const void *fdata, int fdata_size, Font_Rend_Flags wanted_rend);
+   Evas_Font_Set *(*font_add)              (void *data, Evas_Font_Set *font, const char *name, int size, Font_Rend_Flags wanted_rend);
+   Evas_Font_Set *(*font_memory_add)       (void *data, Evas_Font_Set *font, char *name, int size, const void *fdata, int fdata_size, Font_Rend_Flags wanted_rend);
+   void (*font_free)                       (void *data, Evas_Font_Set *font);
+   int  (*font_ascent_get)                 (void *data, Evas_Font_Set *font);
+   int  (*font_descent_get)                (void *data, Evas_Font_Set *font);
+   int  (*font_max_ascent_get)             (void *data, Evas_Font_Set *font);
+   int  (*font_max_descent_get)            (void *data, Evas_Font_Set *font);
+   void (*font_string_size_get)            (void *data, Evas_Font_Set *font, const Evas_Text_Props *intl_props, int *w, int *h);
+   int  (*font_inset_get)                  (void *data, Evas_Font_Set *font, const Evas_Text_Props *text_props);
+   int  (*font_h_advance_get)              (void *data, Evas_Font_Set *font, const Evas_Text_Props *intl_props);
+   int  (*font_v_advance_get)              (void *data, Evas_Font_Set *font, const Evas_Text_Props *intl_props);
+   int  (*font_char_coords_get)            (void *data, Evas_Font_Set *font, const Evas_Text_Props *intl_props, int pos, int *cx, int *cy, int *cw, int *ch);
+   int  (*font_char_at_coords_get)         (void *data, Evas_Font_Set *font, const Evas_Text_Props *intl_props, int x, int y, int *cx, int *cy, int *cw, int *ch);
+   void (*font_draw)                       (void *data, void *context, void *surface, Evas_Font_Set *font, int x, int y, int w, int h, int ow, int oh, const Evas_Text_Props *intl_props);
 
    void (*font_cache_flush)                (void *data);
    void (*font_cache_set)                  (void *data, int bytes);
@@ -670,14 +711,14 @@ struct _Evas_Func
 
    /* Engine functions will over time expand from here */
 
-   void (*font_hinting_set)                (void *data, void *font, int hinting);
+   void (*font_hinting_set)                (void *data, Evas_Font_Set *font, int hinting);
    int  (*font_hinting_can_hint)           (void *data, int hinting);
 
 /*    void (*image_rotation_set)              (void *data, void *image); */
 
    void (*image_scale_hint_set)            (void *data, void *image, int hint);
    int  (*image_scale_hint_get)            (void *data, void *image);
-   int  (*font_last_up_to_pos)             (void *data, void *font, const Eina_Unicode *text, const Evas_Text_Props *intl_props, int x, int y);
+   int  (*font_last_up_to_pos)             (void *data, Evas_Font_Set *font, const Evas_Text_Props *intl_props, int x, int y);
 
    void (*image_map_draw)                  (void *data, void *context, void *surface, void *image, int npoints, RGBA_Map_Point *p, int smooth, int level);
    void *(*image_map_surface_new)          (void *data, int w, int h, int alpha);
@@ -685,9 +726,28 @@ struct _Evas_Func
 
    void (*image_content_hint_set)          (void *data, void *surface, int hint);
    int  (*image_content_hint_get)          (void *data, void *surface);
-   int  (*font_pen_coords_get)            (void *data, void *font, const Eina_Unicode *text, const Evas_Text_Props *intl_props, int pos, int *cpen_x, int *cy, int *cadv, int *ch);
-   Eina_Bool (*font_text_props_info_create)                (void *data __UNUSED__, void *font, Eina_Unicode *text, Evas_Text_Props *intl_props, const Evas_BiDi_Paragraph_Props *par_props, size_t pos, size_t len);
-   int  (*font_right_inset_get)                  (void *data, void *font, const Evas_Text_Props *text_props);
+   int  (*font_pen_coords_get)             (void *data, Evas_Font_Set *font, const Evas_Text_Props *intl_props, int pos, int *cpen_x, int *cy, int *cadv, int *ch);
+   Eina_Bool (*font_text_props_info_create) (void *data __UNUSED__, Evas_Font_Instance *fi, const Eina_Unicode *text, Evas_Text_Props *intl_props, const Evas_BiDi_Paragraph_Props *par_props, size_t pos, size_t len);
+   int  (*font_right_inset_get)            (void *data, Evas_Font_Set *font, const Evas_Text_Props *text_props);
+
+#if 0 // filtering disabled
+   void (*image_draw_filtered)             (void *data, void *context, void *surface, void *image, Evas_Filter_Info *filter);
+   Filtered_Image *(*image_filtered_get)   (void *image, uint8_t *key, size_t len);
+   Filtered_Image *(*image_filtered_save)  (void *image, void *filtered, uint8_t *key, size_t len);
+   void (*image_filtered_free)             (void *image, Filtered_Image *);
+#endif
+   
+   /* EFL-GL Glue Layer */
+   void *(*gl_surface_create)            (void *data, void *config, int w, int h);
+   int  (*gl_surface_destroy)            (void *data, void *surface);
+   void *(*gl_context_create)            (void *data, void *share_context);
+   int  (*gl_context_destroy)            (void *data, void *context);
+   int  (*gl_make_current)               (void *data, void *surface, void *context); 
+   void *(*gl_proc_address_get)          (void *data, const char *name);
+   int  (*gl_native_surface_get)         (void *data, void *surface, void *native_surface);
+   void *(*gl_api_get)                   (void *data);
+   int  (*image_load_error_get)          (void *data, void *image);
+   int  (*font_run_end_get)              (void *data, Evas_Font_Set *font, Evas_Font_Instance **script_fi, Evas_Font_Instance **cur_fi, Evas_Script_Type script, const Eina_Unicode *text, int run_len);
 };
 
 struct _Evas_Image_Load_Func
@@ -756,6 +816,7 @@ const Evas_Smart_Cb_Description *evas_smart_cb_description_find(const Evas_Smart
 
 Eina_Bool _evas_object_image_preloading_get(const Evas_Object *obj);
 void _evas_object_image_preloading_set(Evas_Object *obj, Eina_Bool preloading);
+void _evas_object_image_preloading_check(Evas_Object *obj);
 void evas_object_smart_del(Evas_Object *obj);
 void evas_object_smart_cleanup(Evas_Object *obj);
 void evas_object_smart_member_raise(Evas_Object *member);
@@ -838,6 +899,7 @@ Eina_Bool evas_preload_thread_cancel(Evas_Preload_Pthread *thread);
 void _evas_walk(Evas *e);
 void _evas_unwalk(Evas *e);
 
+// expose for use in engines
 EAPI int _evas_module_engine_inherit(Evas_Func *funcs, char *name);
 
 void evas_render_invalidate(Evas *e);
@@ -845,7 +907,7 @@ void evas_render_object_recalc(Evas_Object *obj);
 
 Eina_Bool evas_map_inside_get(const Evas_Map *m, Evas_Coord x, Evas_Coord y);
 Eina_Bool evas_map_coords_get(const Evas_Map *m, Evas_Coord x, Evas_Coord y, Evas_Coord *mx, Evas_Coord *my, int grab);
-
+   
 /****************************************************************************/
 /*****************************************/
 /********************/
@@ -906,6 +968,8 @@ struct _Evas_Mempool
   
 #define EVAS_API_OVERRIDE(func, api, prefix) \
      (api)->func = prefix##func
+#define EVAS_API_RESET(func, api) \
+     (api)->func = NULL
 
 #include "evas_inline.x"
 

@@ -64,56 +64,6 @@ fi
 
 ])
 
-dnl use: EVAS_CHECK_ENGINE_DEP_XRENDER_X11(engine, simple, want_static[, ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
-
-AC_DEFUN([EVAS_CHECK_ENGINE_DEP_XRENDER_X11],
-[
-
-evas_engine_[]$1[]_cflags=""
-evas_engine_[]$1[]_libs=""
-
-AC_PATH_X
-AC_PATH_XTRA
-
-AC_CHECK_HEADERS([X11/Xlib.h X11/extensions/Xrender.h],
-   [have_dep="yes"],
-   [have_dep="no"; break;])
-
-if test "x${have_dep}" = "xyes" ; then
-   AC_CHECK_LIB([X11], [XCreateImage], [have_dep="yes"], [have_dep="no"])
-fi
-
-if test "x${have_dep}" = "xyes" ; then
-   AC_CHECK_LIB([Xext], [XShmCreateImage], [have_dep="yes"], [have_dep="no"])
-fi
-
-if test "x${have_dep}" = "xyes" ; then
-   AC_CHECK_LIB([Xrender], [XRenderCreatePicture], [have_dep="yes"], [have_dep="no"])
-fi
-
-if test "x${have_dep}" = "xyes" ; then
-   if test "x$2" = "xyes" ; then
-      x_libs="${x_libs} -lX11 -lXext"
-   else
-      x_dir=${x_dir:-/usr/X11R6}
-      x_cflags=${x_cflags:--I${x_includes:-$x_dir/include}}
-      x_libs="${x_libs:--L${x_libraries:-$x_dir/lib}} -lX11 -lXext"
-   fi
-   evas_engine_[]$1[]_cflags="${x_cflags}"
-   evas_engine_[]$1[]_libs="${x_libs} -lXrender"
-fi
-
-AC_SUBST([evas_engine_$1_cflags])
-AC_SUBST([evas_engine_$1_libs])
-
-if test "x${have_dep}" = "xyes" ; then
-  m4_default([$4], [:])
-else
-  m4_default([$5], [:])
-fi
-
-])
-
 dnl use: EVAS_CHECK_ENGINE_DEP_GL_X11(engine, simple, want_static[, ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
 
 AC_DEFUN([EVAS_CHECK_ENGINE_DEP_GL_X11],
@@ -226,53 +176,6 @@ fi
 
 ])
 
-dnl use: EVAS_CHECK_ENGINE_DEP_CAIRO_X11(engine, simple, want_static[, ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
-
-AC_DEFUN([EVAS_CHECK_ENGINE_DEP_CAIRO_X11],
-[
-
-requirement=""
-have_dep="no"
-evas_engine_[]$1[]_cflags=""
-evas_engine_[]$1[]_libs=""
-
-AC_PATH_X
-AC_PATH_XTRA
-
-AC_CHECK_HEADER([X11/X.h],
-   [PKG_CHECK_MODULES([CAIRO],
-       [cairo >= 1.0.0],
-       [have_dep="yes" requirement="cairo"]
-    )]
-)
-
-if test "x${have_dep}" = "xyes" ; then
-   if test "x$2" = "xyes" ; then
-      x_libs="${x_libs} -lX11 -lXext"
-   else
-      x_dir=${x_dir:-/usr/X11R6}
-      x_cflags=${x_cflags:--I${x_includes:-$x_dir/include}}
-      x_libs="${x_libs:--L${x_libraries:-$x_dir/lib}} -lX11 -lXext"
-   fi
-   evas_engine_[]$1[]_cflags="${CAIRO_CFLAGS} ${x_cflags}"
-   evas_engine_[]$1[]_libs="${CAIRO_LIBS} ${x_libs}"
-fi
-
-AC_SUBST([evas_engine_$1_cflags])
-AC_SUBST([evas_engine_$1_libs])
-
-if test "x$3" = "xstatic" ; then
-   requirement_evas="${requirement} ${requirement_evas}"
-fi
-
-if test "x${have_dep}" = "xyes" ; then
-  m4_default([$4], [:])
-else
-  m4_default([$5], [:])
-fi
-
-])
-
 dnl use: EVAS_CHECK_ENGINE_DEP_SOFTWARE_XCB(engine, simple, want_static[, ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
 
 AC_DEFUN([EVAS_CHECK_ENGINE_DEP_SOFTWARE_XCB],
@@ -290,43 +193,6 @@ PKG_CHECK_MODULES([XCB],
     requirement="xcb xcb-shm xcb-image pixman-1"
     evas_engine_[]$1[]_cflags="${XCB_CFLAGS}"
     evas_engine_[]$1[]_libs="${XCB_LIBS}"
-   ],[
-    have_dep="no"
-   ]
-)
-
-AC_SUBST([evas_engine_$1_cflags])
-AC_SUBST([evas_engine_$1_libs])
-
-if test "x$3" = "xstatic" ; then
-   requirement_evas="${requirement} ${requirement_evas}"
-fi
-
-if test "x${have_dep}" = "xyes" ; then
-  m4_default([$4], [:])
-else
-  m4_default([$5], [:])
-fi
-
-])
-
-dnl use: EVAS_CHECK_ENGINE_DEP_XRENDER_XCB(engine, simple, want_static[, ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
-
-AC_DEFUN([EVAS_CHECK_ENGINE_DEP_XRENDER_XCB],
-[
-
-requirement=""
-have_dep="no"
-evas_engine_[]$1[]_cflags=""
-evas_engine_[]$1[]_libs=""
-
-PKG_CHECK_MODULES([XCBRENDER],
-   [xcb xcb-shm xcb-render xcb-image >= 0.2.1 pixman-1],
-   [
-    have_dep="yes"
-    requirement="xcb xcb-shm xcb-render xcb-image pixman-1"
-    evas_engine_[]$1[]_cflags="${XCBRENDER_CFLAGS}"
-    evas_engine_[]$1[]_libs="${XCBRENDER_LIBS}"
    ],[
     have_dep="no"
    ]
@@ -415,73 +281,6 @@ AC_CHECK_HEADERS([d3d9.h d3dx9.h],
     evas_engine_[]$1[]_libs="-ld3d9 -ld3dx9 -lgdi32"
    ],
    [have_dep="no"; break]
-)
-
-AC_SUBST([evas_engine_$1_cflags])
-AC_SUBST([evas_engine_$1_libs])
-
-if test "x${have_dep}" = "xyes" ; then
-  m4_default([$4], [:])
-else
-  m4_default([$5], [:])
-fi
-
-])
-
-dnl use: EVAS_CHECK_ENGINE_DEP_QUARTZ(engine, simple, want_static[, ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
-
-AC_DEFUN([EVAS_CHECK_ENGINE_DEP_QUARTZ],
-[
-
-have_dep="no"
-evas_engine_[]$1[]_cflags=""
-evas_engine_[]$1[]_libs=""
-
-AC_REQUIRE([EVAS_MAYBE_GET_OBJCPP])
-
-AS_IF([test "x${rw_cv_prog_objc_works}" = "xyes"],
-[
-   m4_ifdef([AC_PROG_OBJC], [AC_LANG_PUSH([Objective C])])
-   AC_CHECK_HEADER([/System/Library/Frameworks/Cocoa.framework/Headers/Cocoa.h], [
-      have_dep="yes"
-      evas_engine_[]$1[]_libs="-framework Cocoa"
-   ],[
-      have_dep="no"
-   ]) 
-   m4_ifdef([AC_PROG_OBJC], [AC_LANG_POP([Objective C])], [:])])
-
-AC_SUBST([evas_engine_$1_cflags])
-AC_SUBST([evas_engine_$1_libs])
-
-if test "x${have_dep}" = "xyes" ; then
-  m4_default([$4], [:])
-else
-  m4_default([$5], [:])
-fi
-
-])
-
-dnl Helper macro for EVAS_CHECK_ENGINE_DEP_QUARTZ
-
-AC_DEFUN([EVAS_MAYBE_GET_OBJCPP],
-[AS_IF([test "x${rw_cv_prog_objc_works}" = "xyes"],
-       [m4_ifdef([AC_PROG_OBJC], [AC_PROG_OBJCPP], [:])])
-])
-
-dnl use: EVAS_CHECK_ENGINE_DEP_GL_GLEW(engine, simple, want_static[, ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
-
-AC_DEFUN([EVAS_CHECK_ENGINE_DEP_GL_GLEW],
-[
-
-evas_engine_[]$1[]_cflags=""
-evas_engine_[]$1[]_libs=""
-
-AC_CHECK_HEADERS([GL/gl.h GL/glew.h],
-   [
-    have_dep="yes"
-    evas_engine_[]$1[]_libs="-lglew32 -lopengl32 -lgdi32"
-   ],
-   [have_dep="no"; break;]
 )
 
 AC_SUBST([evas_engine_$1_cflags])
@@ -658,58 +457,6 @@ AC_SUBST([evas_engine_$1_libs])
 if test "x$3" = "xstatic" ; then
    requirement_evas="${requirement} ${requirement_evas}"
 fi
-
-if test "x${have_dep}" = "xyes" ; then
-  m4_default([$4], [:])
-else
-  m4_default([$5], [:])
-fi
-
-])
-
-dnl use: EVAS_CHECK_ENGINE_DEP_SOFTWARE_QTOPIA(engine, simple, want_static[, ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
-
-AC_DEFUN([EVAS_CHECK_ENGINE_DEP_SOFTWARE_QTOPIA],
-[
-
-have_dep="no"
-evas_engine_[]$1[]_cflags=""
-evas_engine_[]$1[]_libs=""
-evas_engine_[]$1[]_moc=""
-
-AC_ARG_WITH([qtdir],
-   [AC_HELP_STRING([--with-qtdir=QT_DIR], [use qt directory specified])],
-   [
-    qt_dir=$withval;
-    echo "using "$qt_dir" for qt directory.";
-   ],
-   [qt_dir="/opt/Qtopia"]
-)
-
-AC_LANG_PUSH(C++)
-
-AC_CHECK_HEADER([qdirectpainter_qws.h],
-   [have_dep="yes"],
-   [have_dep="no"],
-   [
-#include <qwidget.h>
-#include <qnamespace.h>
-#include <qbrush.h>
-#include <qpainter.h>
-   ]
-)
-
-AC_LANG_POP(C++)
-
-if test "x${have_dep}" = "xyes" ; then
-   evas_engine_[]$1[]_cflags="-fno-exceptions -fno-rtti -I${qt_dir}/include"
-   evas_engine_[]$1[]_libs="-L${qt_dir}/lib -lqte -lqpe"
-   evas_engine_[]$1[]_moc="${qt_dir}/bin/moc"
-fi
-
-AC_SUBST([evas_engine_$1_cflags])
-AC_SUBST([evas_engine_$1_libs])
-AC_SUBST([evas_engine_$1_moc])
 
 if test "x${have_dep}" = "xyes" ; then
   m4_default([$4], [:])

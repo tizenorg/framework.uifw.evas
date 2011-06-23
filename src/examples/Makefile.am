@@ -11,8 +11,10 @@ AM_CPPFLAGS = \
 -DPACKAGE_BIN_DIR=\"$(bindir)\" \
 -DPACKAGE_LIB_DIR=\"$(libdir)\" \
 -DPACKAGE_DATA_DIR=\"$(datadir)/$(PACKAGE)\" \
+-DPACKAGE_EXAMPLES_DIR=\"$(datadir)/$(PACKAGE)/examples\" \
 @EINA_CFLAGS@ \
 @FREETYPE_CFLAGS@ \
+@PIXMAN_CFLAGS@ \
 @FRIBIDI_CFLAGS@ \
 @EET_CFLAGS@ \
 @FONTCONFIG_CFLAGS@ \
@@ -30,14 +32,28 @@ evas_buffer_simple_SOURCES = evas-buffer-simple.c
 evas_buffer_simple_LDADD = $(top_builddir)/src/lib/libevas.la
 endif
 
-endif
+pkglib_PROGRAMS += evas_init_shutdown
+evas_init_shutdown_SOURCES = evas-init-shutdown.c
+evas_init_shutdown_LDADD = $(top_builddir)/src/lib/libevas.la
 
+AM_CPPFLAGS += @ECORE_EVAS_CFLAGS@
 
+pkglib_PROGRAMS += evas_load_error_str
+evas_load_error_str_SOURCES = evas-load-error-str.c
+evas_load_error_str_LDADD = $(top_builddir)/src/lib/libevas.la @ECORE_EVAS_LIBS@
+
+pkglib_PROGRAMS += evas_events
+evas_events_SOURCES = evas-events.c
+evas_events_LDADD = $(top_builddir)/src/lib/libevas.la @ECORE_EVAS_LIBS@
+
+endif # if BUILD_EXAMPLES
 
 filesdir = $(datadir)/$(PACKAGE)/examples
-files_DATA =
+files_DATA = $(srcdir)/enlightenment.png
 
 if INSTALL_EXAMPLES
 files_DATA += \
-	evas-buffer-simple.c
+	$(srcdir)/evas-buffer-simple.c \
+	$(srcdir)/evas-init-shutdown.c \
+	$(srcdir)/evas-load-error-str.c
 endif

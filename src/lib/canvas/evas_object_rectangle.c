@@ -4,6 +4,8 @@
 /* private magic number for rectangle objects */
 static const char o_type[] = "rectangle";
 
+const char *o_rect_type = o_type;
+
 /* private struct for rectangle object internal data */
 typedef struct _Evas_Object_Rectangle      Evas_Object_Rectangle;
 
@@ -66,19 +68,8 @@ static const Evas_Object_Func object_func =
 /* the actual api call to add a rect */
 /* it has no other api calls as all properties are standard */
 
-
-/**
- * @addtogroup Evas_Object_Rectangle
- * @{
- */
-
 EVAS_MEMPOOL(_mp_obj);
 
-/**
- * Adds a rectangle to the given evas.
- * @param   e The given evas.
- * @return  The new rectangle object.
- */
 EAPI Evas_Object *
 evas_object_rectangle_add(Evas *e)
 {
@@ -92,10 +83,6 @@ evas_object_rectangle_add(Evas *e)
    evas_object_inject(obj, e);
    return obj;
 }
-
-/**
- * @}
- */
 
 /* all nice and private */
 static void

@@ -637,24 +637,27 @@ eng_image_dirty_region(void *data, void *image, int x, int y, int w, int h)
 }
 
 static void *
-eng_image_data_get(void *data, void *image, int to_write, DATA32 **image_data)
+eng_image_data_get(void *data, void *image, int to_write, DATA32 **image_data, int *err)
 {
    Render_Engine *re;
    Evas_GL_Image *im;
-
+   int error;
+   
    re = (Render_Engine *)data;
    if (!image)
      {
 	*image_data = NULL;
+        if (err) *err = EVAS_LOAD_ERROR_GENERIC;
 	return NULL;
      }
    im = image;
    if (im->native.data)
      {
         *image_data = NULL;
+        if (err) *err = EVAS_LOAD_ERROR_NONE;
         return im;
      }
-   evas_cache_image_load_data(&im->im->cache_entry);
+   error = evas_cache_image_load_data(&im->im->cache_entry);
    switch (im->cs.space)
      {
       case EVAS_COLORSPACE_ARGB8888:
@@ -670,7 +673,8 @@ eng_image_data_get(void *data, void *image, int to_write, DATA32 **image_data)
    		  if (!im_new)
    		    {
    		       *image_data = NULL;
-   		       return im;
+                       if (err) *err = error;
+                       return im;
    		    }
    		  evas_gl_common_image_free(im);
    		  im = im_new;
@@ -688,6 +692,7 @@ eng_image_data_get(void *data, void *image, int to_write, DATA32 **image_data)
 	abort();
 	break;
      }
+   if (err) *err = error;
    return im;
 }
 
@@ -817,7 +822,7 @@ eng_image_scale_hint_get(void *data __UNUSED__, void *image)
 }
 
 static void
-eng_font_draw(void *data, void *context, void *surface, void *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const Eina_Unicode *text, const Evas_Text_Props *intl_props)
+eng_font_draw(void *data, void *context, void *surface, Evas_Font_Set *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const Evas_Text_Props *intl_props)
 {
    Render_Engine *re;
 
@@ -837,7 +842,8 @@ eng_font_draw(void *data, void *context, void *surface, void *font, int x, int y
    					      evas_gl_font_texture_new,
    					      evas_gl_font_texture_free,
    					      evas_gl_font_texture_draw);
-	evas_common_font_draw(im, context, font, x, y, text, intl_props);
+	evas_common_font_draw(im, context, (RGBA_Font *) font, x, y,
+              intl_props);
 	evas_common_draw_context_font_ext_set(context,
 					      NULL,
 					      NULL,
@@ -852,6 +858,17 @@ eng_canvas_alpha_get(void *data __UNUSED__, void *info __UNUSED__)
    // FIXME: support ARGB gl targets!!!
    return EINA_FALSE;
 }
+
+static int
+eng_image_load_error_get(void *data __UNUSED__, void *image)
+{
+   Evas_GL_Image *im;
+   
+   if (!image) return EVAS_LOAD_ERROR_NONE;
+   im = image;
+   return im->im->cache_entry.load_error;
+}
+
 
 static int
 module_open(Evas_Module *em)
@@ -917,6 +934,12 @@ module_open(Evas_Module *em)
    ORD(image_colorspace_get);
    ORD(image_native_set);
    ORD(image_native_get);
+#if 0 // filtering disabled
+//   ORD(image_draw_filtered);
+//   ORD(image_filtered_get);
+//   ORD(image_filtered_save);
+//   ORD(image_filtered_free);
+#endif
    ORD(font_draw);
    
    ORD(image_scale_hint_set);
@@ -925,6 +948,25 @@ module_open(Evas_Module *em)
    ORD(image_map_draw);
    ORD(image_map_surface_new);
    ORD(image_map_surface_free);
+
+//   ORD(image_content_hint_set);
+//   ORD(image_content_hint_get);
+   
+//   ORD(image_cache_flush);
+//   ORD(image_cache_set);
+//   ORD(image_cache_get);
+   
+//   ORD(gl_surface_create);
+//   ORD(gl_surface_destroy);
+//   ORD(gl_context_create);
+//   ORD(gl_context_destroy);
+//   ORD(gl_make_current);
+//   ORD(gl_proc_address_get);
+//   ORD(gl_native_surface_get);
+   
+//   ORD(gl_api_get);
+   
+   ORD(image_load_error_get);
    
    /* now advertise out own api */
    em->functions = (void *)(&func);

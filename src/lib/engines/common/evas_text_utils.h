@@ -9,6 +9,9 @@ typedef struct _Evas_Font_Glyph_Info Evas_Font_Glyph_Info;
 # include "language/evas_bidi_utils.h"
 # include "language/evas_language_utils.h"
 
+/* Used for showing "malformed" or missing chars */
+#define REPLACEMENT_CHAR 0xFFFD
+
 struct _Evas_Text_Props
 {
    /* Start and len represent the start offset and the length in the
@@ -20,6 +23,7 @@ struct _Evas_Text_Props
    Evas_BiDi_Props bidi;
    Evas_Script_Type script;
    Evas_Text_Props_Info *info;
+   void *font_instance;
 };
 
 struct _Evas_Text_Props_Info
@@ -41,7 +45,7 @@ struct _Evas_Font_Glyph_Info
    Evas_Coord y_bear;
 #endif
    Evas_Coord width;
-   Evas_Coord advance;
+   Evas_Coord pen_after;
 };
 
 
@@ -50,12 +54,12 @@ evas_common_text_props_bidi_set(Evas_Text_Props *props,
       Evas_BiDi_Paragraph_Props *bidi_par_props, size_t start);
 
 void
-evas_common_text_props_script_set(Evas_Text_Props *props,
-      const Eina_Unicode *str);
+evas_common_text_props_script_set(Evas_Text_Props *props, Evas_Script_Type scr);
 
 EAPI Eina_Bool
-evas_common_text_props_content_create(void *_fn, const Eina_Unicode *text,
-      Evas_Text_Props *text_props, int len);
+evas_common_text_props_content_create(void *_fi, const Eina_Unicode *text,
+      Evas_Text_Props *text_props, const Evas_BiDi_Paragraph_Props *par_props,
+      size_t par_pos, int len);
 
 void
 evas_common_text_props_content_copy_and_ref(Evas_Text_Props *dst,
@@ -67,10 +71,13 @@ evas_common_text_props_content_ref(Evas_Text_Props *props);
 void
 evas_common_text_props_content_unref(Evas_Text_Props *props);
 
+EAPI int
+evas_common_text_props_index_find(Evas_Text_Props *props, int _cutoff);
 
 EAPI void
 evas_common_text_props_split(Evas_Text_Props *base, Evas_Text_Props *ext,
       int cutoff);
 EAPI void
 evas_common_text_props_merge(Evas_Text_Props *item1, const Evas_Text_Props *item2);
+
 #endif

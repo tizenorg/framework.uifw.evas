@@ -7,13 +7,9 @@
 #define ALIGN_FIX
 
 static void evas_common_copy_pixels_c        (DATA32 *src, DATA32 *dst, int len);
-#ifdef BUILD_MMX
 static void evas_common_copy_pixels_mmx      (DATA32 *src, DATA32 *dst, int len);
 static void evas_common_copy_pixels_mmx2     (DATA32 *src, DATA32 *dst, int len);
-#endif
-#ifdef BUILD_SSE
 static void evas_common_copy_pixels_sse/*NB*/ (DATA32 *src, DATA32 *dst, int len);
-#endif
 
 #ifdef BUILD_NEON
 static void evas_common_copy_pixels_neon     (DATA32 *src, DATA32 *dst, int len);
@@ -21,12 +17,8 @@ static void evas_common_copy_pixels_rev_neon (DATA32 *src, DATA32 *dst, int len)
 #endif
 
 static void evas_common_copy_pixels_rev_c           (DATA32 *src, DATA32 *dst, int len);
-#ifdef BUILD_MMX
 static void evas_common_copy_pixels_rev_mmx         (DATA32 *src, DATA32 *dst, int len);
-#endif
-#ifdef BUILD_SSE
 static void evas_common_copy_pixels_rev_sse/*NB*/ (DATA32 *src, DATA32 *dst, int len);
-#endif
 
 static void evas_common_copy_rev_pixels_c           (DATA32 *src, DATA32 *dst, int len);
 

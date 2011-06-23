@@ -666,18 +666,19 @@ evas_engine_sdl16_image_dirty_region(void *data __UNUSED__,
 
 static void*
 evas_engine_sdl16_image_data_get(void *data __UNUSED__, void *image,
-                                 int to_write, DATA32** image_data)
+                                 int to_write, DATA32** image_data, int *err)
 {
    SDL_Engine_Image_Entry       *eim = image;
    Soft16_Image                 *im;
-
+   int                           error;
+   
    if (!eim)
      {
         *image_data = NULL;
         return NULL;
      }
    im = (Soft16_Image *) eim->cache_entry.src;
-   evas_cache_image_load_data(&im->cache_entry);
+   error = evas_cache_image_load_data(&im->cache_entry);
 
    if (to_write)
      eim = (SDL_Engine_Image_Entry *) evas_cache_engine_image_alone(&eim->cache_entry,
@@ -686,6 +687,7 @@ evas_engine_sdl16_image_data_get(void *data __UNUSED__, void *image,
    /* FIXME: Handle colorspace conversion correctly. */
    if (image_data) *image_data = (DATA32 *) im->pixels;
 
+   if (err) *err = error;
    return eim;
 }
 
@@ -873,7 +875,7 @@ evas_engine_sdl16_image_format_get(void *data __UNUSED__, void *image __UNUSED__
 }
 
 static void
-evas_engine_sdl16_font_draw(void *data __UNUSED__, void *context, void *surface, void *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const Eina_Unicode *text, const Evas_Text_Props *intl_props)
+evas_engine_sdl16_font_draw(void *data __UNUSED__, void *context, void *surface, void *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const Evas_Text_Props *intl_props)
 {
    static RGBA_Image            *im = NULL;
    SDL_Engine_Image_Entry       *eim = surface;
@@ -895,7 +897,7 @@ evas_engine_sdl16_font_draw(void *data __UNUSED__, void *context, void *surface,
                                          evas_common_soft16_font_glyph_new,
                                          evas_common_soft16_font_glyph_free,
                                          evas_common_soft16_font_glyph_draw);
-   evas_common_font_draw(im, context, font, x, y, text, intl_props);
+   evas_common_font_draw(im, context, font, x, y, intl_props);
    evas_common_draw_context_font_ext_set(context,
                                          NULL,
                                          NULL,

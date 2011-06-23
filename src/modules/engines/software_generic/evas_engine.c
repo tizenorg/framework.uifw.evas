@@ -107,12 +107,13 @@ eng_context_mask_unset(void *data __UNUSED__, void *context)
 {
    evas_common_draw_context_unset_mask(context);
 }
-
+/*
 static void *
 eng_context_mask_get(void *data __UNUSED__, void *context)
 {
    return ((RGBA_Draw_Context *)context)->mask.mask;
 }
+*/
 
 static void
 eng_context_cutout_add(void *data __UNUSED__, void *context, int x, int y, int w, int h)
@@ -276,6 +277,7 @@ eng_image_mask_create(void *data __UNUSED__, void *image)
    if (!im->image.data)
       evas_cache_image_load_data(&im->cache_entry);
    src = im->image.data;
+   if (!src) return;
    for (end = dst + sz ; dst < end ; dst ++, src ++)
       *dst = *src >> 24;
    im->mask.dirty = 0;
@@ -410,9 +412,10 @@ eng_image_dirty_region(void *data __UNUSED__, void *image, int x, int y, int w, 
 }
 
 static void *
-eng_image_data_get(void *data __UNUSED__, void *image, int to_write, DATA32 **image_data)
+eng_image_data_get(void *data __UNUSED__, void *image, int to_write, DATA32 **image_data, int *err)
 {
    RGBA_Image *im;
+   int error;
 
    if (!image)
      {
@@ -420,12 +423,12 @@ eng_image_data_get(void *data __UNUSED__, void *image, int to_write, DATA32 **im
 	return NULL;
      }
    im = image;
-   evas_cache_image_load_data(&im->cache_entry);
+   error = evas_cache_image_load_data(&im->cache_entry);
    switch (im->cache_entry.space)
      {
       case EVAS_COLORSPACE_ARGB8888:
 	if (to_write)
-          im = (RGBA_Image *) evas_cache_image_alone(&im->cache_entry);
+          im = (RGBA_Image *)evas_cache_image_alone(&im->cache_entry);
 	*image_data = im->image.data;
 	break;
       case EVAS_COLORSPACE_YCBCR422P601_PL:
@@ -436,6 +439,7 @@ eng_image_data_get(void *data __UNUSED__, void *image, int to_write, DATA32 **im
 	abort();
 	break;
      }
+   if (err) *err = error;
    return im;
 }
 
@@ -471,6 +475,7 @@ eng_image_data_put(void *data, void *image, DATA32 *image_data)
 		  if (!im->cs.no_free) free(im->cs.data);
 	       }
 	     im->cs.data = image_data;
+	     evas_common_image_colorspace_dirty(im);
 	  }
         break;
       default:
@@ -512,11 +517,11 @@ eng_image_draw(void *data __UNUSED__, void *context, void *surface, void *image,
 #endif
         )
      {
-        evas_common_rgba_image_scalecache_prepare((Image_Entry *)(im),
+        evas_common_rgba_image_scalecache_prepare((Image_Entry *)(im), 
                                                   surface, context, smooth,
                                                   src_x, src_y, src_w, src_h,
                                                   dst_x, dst_y, dst_w, dst_h);
-
+        
         evas_common_pipe_image_draw(im, surface, context, smooth,
                                     src_x, src_y, src_w, src_h,
                                     dst_x, dst_y, dst_w, dst_h);
@@ -533,7 +538,7 @@ eng_image_draw(void *data __UNUSED__, void *context, void *surface, void *image,
         evas_common_rgba_image_scalecache_do(&im->cache_entry, surface, context, smooth,
                                              src_x, src_y, src_w, src_h,
                                              dst_x, dst_y, dst_w, dst_h);
-/*
+/*        
 	if (smooth)
 	  evas_common_scale_rgba_in_to_out_clip_smooth(im, surface, context,
 						       src_x, src_y, src_w, src_h,
@@ -670,137 +675,141 @@ eng_image_cache_get(void *data __UNUSED__)
    return evas_common_image_get_cache();
 }
 
-static void *
-eng_font_load(void *data __UNUSED__, const char *name, int size)
+static Evas_Font_Set *
+eng_font_load(void *data __UNUSED__, const char *name, int size,
+      Font_Rend_Flags wanted_rend)
 {
-   return evas_common_font_load(name, size);
+   return (Evas_Font_Set *) evas_common_font_load(name, size, wanted_rend);
 }
 
-static void *
-eng_font_memory_load(void *data __UNUSED__, char *name, int size, const void *fdata, int fdata_size)
+static Evas_Font_Set *
+eng_font_memory_load(void *data __UNUSED__, char *name, int size, const void *fdata, int fdata_size, Font_Rend_Flags wanted_rend)
 {
-   return evas_common_font_memory_load(name, size, fdata, fdata_size);
+   return (Evas_Font_Set *) evas_common_font_memory_load(name, size, fdata,
+         fdata_size, wanted_rend);
 }
 
-static void *
-eng_font_add(void *data __UNUSED__, void *font, const char *name, int size)
+static Evas_Font_Set *
+eng_font_add(void *data __UNUSED__, Evas_Font_Set *font, const char *name, int size, Font_Rend_Flags wanted_rend)
 {
-   return evas_common_font_add(font, name, size);
+   return (Evas_Font_Set *) evas_common_font_add((RGBA_Font *) font, name,
+         size, wanted_rend);
 }
 
-static void *
-eng_font_memory_add(void *data __UNUSED__, void *font, char *name, int size, const void *fdata, int fdata_size)
+static Evas_Font_Set *
+eng_font_memory_add(void *data __UNUSED__, Evas_Font_Set *font, char *name, int size, const void *fdata, int fdata_size, Font_Rend_Flags wanted_rend)
 {
-   return evas_common_font_memory_add(font, name, size, fdata, fdata_size);
-}
-
-static void
-eng_font_free(void *data __UNUSED__, void *font)
-{
-   evas_common_font_free(font);
-}
-
-static int
-eng_font_ascent_get(void *data __UNUSED__, void *font)
-{
-   return evas_common_font_ascent_get(font);
-}
-
-static int
-eng_font_descent_get(void *data __UNUSED__, void *font)
-{
-   return evas_common_font_descent_get(font);
-}
-
-static int
-eng_font_max_ascent_get(void *data __UNUSED__, void *font)
-{
-   return evas_common_font_max_ascent_get(font);
-}
-
-static int
-eng_font_max_descent_get(void *data __UNUSED__, void *font)
-{
-   return evas_common_font_max_descent_get(font);
+   return (Evas_Font_Set *) evas_common_font_memory_add((RGBA_Font *) font,
+         name, size, fdata, fdata_size, wanted_rend);
 }
 
 static void
-eng_font_string_size_get(void *data __UNUSED__, void *font, const Eina_Unicode *text, const Evas_Text_Props *text_props, int *w, int *h)
+eng_font_free(void *data __UNUSED__, Evas_Font_Set *font)
 {
-   evas_common_font_query_size(font, text, text_props, w, h);
+   evas_common_font_free((RGBA_Font *) font);
 }
 
 static int
-eng_font_inset_get(void *data __UNUSED__, void *font, const Evas_Text_Props *text_props)
+eng_font_ascent_get(void *data __UNUSED__, Evas_Font_Set *font)
 {
-   return evas_common_font_query_inset(font, text_props);
+   return evas_common_font_ascent_get((RGBA_Font *) font);
 }
 
 static int
-eng_font_right_inset_get(void *data __UNUSED__, void *font, const Evas_Text_Props *text_props)
+eng_font_descent_get(void *data __UNUSED__, Evas_Font_Set *font)
 {
-   return evas_common_font_query_right_inset(font, text_props);
+   return evas_common_font_descent_get((RGBA_Font *) font);
 }
 
 static int
-eng_font_h_advance_get(void *data __UNUSED__, void *font, const Eina_Unicode *text, const Evas_Text_Props *text_props)
+eng_font_max_ascent_get(void *data __UNUSED__, Evas_Font_Set *font)
+{
+   return evas_common_font_max_ascent_get((RGBA_Font *) font);
+}
+
+static int
+eng_font_max_descent_get(void *data __UNUSED__, Evas_Font_Set *font)
+{
+   return evas_common_font_max_descent_get((RGBA_Font *) font);
+}
+
+static void
+eng_font_string_size_get(void *data __UNUSED__, Evas_Font_Set *font, const Evas_Text_Props *text_props, int *w, int *h)
+{
+   evas_common_font_query_size((RGBA_Font *) font, text_props, w, h);
+}
+
+static int
+eng_font_inset_get(void *data __UNUSED__, Evas_Font_Set *font, const Evas_Text_Props *text_props)
+{
+   return evas_common_font_query_inset((RGBA_Font *) font, text_props);
+}
+
+static int
+eng_font_right_inset_get(void *data __UNUSED__, Evas_Font_Set *font, const Evas_Text_Props *text_props)
+{
+   return evas_common_font_query_right_inset((RGBA_Font *) font, text_props);
+}
+
+static int
+eng_font_h_advance_get(void *data __UNUSED__, Evas_Font_Set *font, const Evas_Text_Props *text_props)
 {
    int h, v;
 
-   evas_common_font_query_advance(font, text, text_props, &h, &v);
+   evas_common_font_query_advance((RGBA_Font *) font, text_props, &h, &v);
    return h;
 }
 
 static int
-eng_font_v_advance_get(void *data __UNUSED__, void *font, const Eina_Unicode *text, const Evas_Text_Props *text_props)
+eng_font_v_advance_get(void *data __UNUSED__, Evas_Font_Set *font, const Evas_Text_Props *text_props)
 {
    int h, v;
 
-   evas_common_font_query_advance(font, text, text_props, &h, &v);
+   evas_common_font_query_advance((RGBA_Font *) font, text_props, &h, &v);
    return v;
 }
 
 static int
-eng_font_pen_coords_get(void *data __UNUSED__, void *font, const Eina_Unicode *text, const Evas_Text_Props *text_props, int pos, int *cpen_x, int *cy, int *cadv, int *ch)
+eng_font_pen_coords_get(void *data __UNUSED__, Evas_Font_Set *font, const Evas_Text_Props *text_props, int pos, int *cpen_x, int *cy, int *cadv, int *ch)
 {
-   return evas_common_font_query_pen_coords(font, text, text_props, pos, cpen_x, cy, cadv, ch);
+   return evas_common_font_query_pen_coords((RGBA_Font *) font, text_props, pos, cpen_x, cy, cadv, ch);
 }
 
 static Eina_Bool
-eng_font_text_props_info_create(void *data __UNUSED__, void *font, Eina_Unicode *text, Evas_Text_Props *text_props, const Evas_BiDi_Paragraph_Props *par_props, size_t pos, size_t len)
+eng_font_text_props_info_create(void *data __UNUSED__, Evas_Font_Instance *fi, const Eina_Unicode *text, Evas_Text_Props *text_props, const Evas_BiDi_Paragraph_Props *par_props, size_t par_pos, size_t len)
 {
-   (void) font;
-   (void) text;
-   (void) text_props;
-   (void) par_props;
-   (void) pos;
-   (void) len;
-#if !defined(OT_SUPPORT) && defined(BIDI_SUPPORT)
-   evas_bidi_shape_string(text, par_props, pos, len);
-#endif
-   return evas_common_text_props_content_create(font, text, text_props, len);
+   return evas_common_text_props_content_create((RGBA_Font_Int *) fi, text,
+         text_props, par_props, par_pos, len);
 }
 
 static int
-eng_font_char_coords_get(void *data __UNUSED__, void *font, const Eina_Unicode *text, const Evas_Text_Props *text_props, int pos, int *cx, int *cy, int *cw, int *ch)
+eng_font_char_coords_get(void *data __UNUSED__, Evas_Font_Set *font, const Evas_Text_Props *text_props, int pos, int *cx, int *cy, int *cw, int *ch)
 {
-   return evas_common_font_query_char_coords(font, text, text_props, pos, cx, cy, cw, ch);
+   return evas_common_font_query_char_coords((RGBA_Font *) font, text_props, pos, cx, cy, cw, ch);
 }
 
 static int
-eng_font_char_at_coords_get(void *data __UNUSED__, void *font, const Eina_Unicode *text, const Evas_Text_Props *text_props, int x, int y, int *cx, int *cy, int *cw, int *ch)
+eng_font_char_at_coords_get(void *data __UNUSED__, Evas_Font_Set *font, const Evas_Text_Props *text_props, int x, int y, int *cx, int *cy, int *cw, int *ch)
 {
-   return evas_common_font_query_char_at_coords(font, text, text_props, x, y, cx, cy, cw, ch);
+   return evas_common_font_query_char_at_coords((RGBA_Font *) font, text_props, x, y, cx, cy, cw, ch);
 }
 
 static int
-eng_font_last_up_to_pos(void *data __UNUSED__, void *font, const Eina_Unicode *text, const Evas_Text_Props *text_props, int x, int y)
+eng_font_last_up_to_pos(void *data __UNUSED__, Evas_Font_Set *font, const Evas_Text_Props *text_props, int x, int y)
 {
-   return evas_common_font_query_last_up_to_pos(font, text, text_props, x, y);
+   return evas_common_font_query_last_up_to_pos((RGBA_Font *) font, text_props, x, y);
+}
+
+static int
+eng_font_run_font_end_get(void *data __UNUSED__, Evas_Font_Set *font, Evas_Font_Instance **script_fi, Evas_Font_Instance **cur_fi, Evas_Script_Type script, const Eina_Unicode *text, int run_len)
+{
+   return evas_common_font_query_run_font_end_get((RGBA_Font *) font,
+         (RGBA_Font_Int **) script_fi, (RGBA_Font_Int **) cur_fi,
+         script, text, run_len);
 }
 
 static void
-eng_font_draw(void *data __UNUSED__, void *context, void *surface, void *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const Eina_Unicode *text, const Evas_Text_Props *text_props)
+eng_font_draw(void *data __UNUSED__, void *context, void *surface, Evas_Font_Set *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const Evas_Text_Props *text_props)
 {
 #ifdef BUILD_PIPE_RENDER
    if ((cpunum > 1)
@@ -808,11 +817,13 @@ eng_font_draw(void *data __UNUSED__, void *context, void *surface, void *font, i
         && evas_common_frameq_enabled()
 #endif
         )
-     evas_common_pipe_text_draw(surface, context, font, x, y, text, text_props);
+     evas_common_pipe_text_draw(surface, context, (RGBA_Font *) font, x, y,
+           text_props);
    else
 #endif   
      {
-	evas_common_font_draw(surface, context, font, x, y, text, text_props);
+	evas_common_font_draw(surface, context, (RGBA_Font *) font, x, y,
+              text_props);
 	evas_common_cpu_end_opt();
      }
 }
@@ -841,9 +852,9 @@ eng_font_cache_get(void *data __UNUSED__)
 }
 
 static void
-eng_font_hinting_set(void *data __UNUSED__, void *font, int hinting)
+eng_font_hinting_set(void *data __UNUSED__, Evas_Font_Set *font, int hinting)
 {
-   evas_common_font_hinting_set(font, hinting);
+   evas_common_font_hinting_set((RGBA_Font *) font, hinting);
 }
 
 static int
@@ -856,6 +867,99 @@ static Eina_Bool
 eng_canvas_alpha_get(void *data __UNUSED__, void *info __UNUSED__)
 {
    return EINA_TRUE;
+}
+
+
+/* Filter API */
+#if 0 // filtering disabled
+static void
+eng_image_draw_filtered(void *data __UNUSED__, void *context __UNUSED__,
+                        void *surface, void *image, Evas_Filter_Info *filter)
+{
+   Evas_Software_Filter_Fn fn;
+   RGBA_Image *im = image;
+
+   fn = evas_filter_software_get(filter);
+   if (!fn) return;
+   if (im->cache_entry.cache) evas_cache_image_load_data(&im->cache_entry);
+   fn(filter, image, surface);
+   return;
+}
+
+static Filtered_Image *
+eng_image_filtered_get(void *image, uint8_t *key, size_t keylen)
+{
+   RGBA_Image *im = image;
+   Filtered_Image *fi;
+   Eina_List *l;
+
+   for (l = im->filtered ; l ; l = l->next)
+     {
+         fi = l->data;
+         if (fi->keylen != keylen) continue;
+         if (memcmp(key, fi->key, keylen) != 0) continue;
+         fi->ref ++;
+         return fi;
+     }
+
+   return NULL;
+}
+
+static Filtered_Image *
+eng_image_filtered_save(void *image, void *fimage, uint8_t *key, size_t keylen)
+{
+   RGBA_Image *im = image;
+   Filtered_Image *fi;
+   Eina_List *l;
+
+   for (l = im->filtered ; l ; l = l->next)
+     {
+        fi = l->data;
+        if (fi->keylen != keylen) continue;
+        if (memcmp(key, fi->key, keylen) == 0) continue;
+        evas_cache_image_drop((void *)fi->image);
+        fi->image = fimage;
+        return fi;
+     }
+
+   fi = calloc(1,sizeof(Filtered_Image));
+   if (!fi) return NULL;
+
+   fi->keylen = keylen;
+   fi->key = malloc(keylen);
+   memcpy(fi->key, key, keylen);
+   fi->image = fimage;
+   fi->ref = 1;
+
+   im->filtered = eina_list_prepend(im->filtered, fi);
+
+   return fi;
+}
+
+static void
+eng_image_filtered_free(void *image, Filtered_Image *fi)
+{
+   RGBA_Image *im = image;
+
+   fi->ref --;
+   if (fi->ref) return;
+
+   free(fi->key);
+   evas_cache_image_drop(&fi->image->cache_entry);
+   fi->image = NULL;
+
+   im->filtered = eina_list_remove(im->filtered, fi);
+}
+#endif
+
+static int
+eng_image_load_error_get(void *data __UNUSED__, void *image)
+{
+   RGBA_Image *im;
+   
+   if (!image) return EVAS_LOAD_ERROR_NONE;
+   im = image;
+   return im->cache_entry.load_error;
 }
 
 /*
@@ -970,7 +1074,6 @@ static Evas_Func func =
      eng_image_scale_hint_get,
      /* more font draw functions */
      eng_font_last_up_to_pos,
-     /* FUTURE software generic calls go here (done) */
      eng_image_map_draw,
      eng_image_map_surface_new,
      eng_image_map_surface_free,
@@ -978,8 +1081,24 @@ static Evas_Func func =
      NULL, // eng_image_content_hint_get - software doesn't use it
      eng_font_pen_coords_get,
      eng_font_text_props_info_create,
-     eng_font_right_inset_get
-     /* FUTURE software generic calls go here */
+     eng_font_right_inset_get,
+#if 0 // filtering disabled
+     eng_image_draw_filtered,
+     eng_image_filtered_get,
+     eng_image_filtered_save,
+     eng_image_filtered_free,
+#endif   
+     NULL, // FIXME: need software mesa for gl rendering <- gl_surface_create
+     NULL, // FIXME: need software mesa for gl rendering <- gl_surface_destroy
+     NULL, // FIXME: need software mesa for gl rendering <- gl_context_create
+     NULL, // FIXME: need software mesa for gl rendering <- gl_context_destroy
+     NULL, // FIXME: need software mesa for gl rendering <- gl_make_current
+     NULL, // FIXME: need software mesa for gl rendering <- gl_proc_address_get
+     NULL, // FIXME: need software mesa for gl rendering <- gl_native_surface_get
+     NULL, // FIXME: need software mesa for gl rendering <- gl_api_get
+     eng_image_load_error_get,
+     eng_font_run_font_end_get
+   /* FUTURE software generic calls go here */
 };
 
 /*

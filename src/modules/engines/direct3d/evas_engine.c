@@ -321,10 +321,11 @@ eng_image_dirty_region(void *data, void *image, int x, int y, int w, int h)
 }
 
 static void *
-eng_image_data_get(void *data, void *image, int to_write, DATA32 **image_data)
+eng_image_data_get(void *data, void *image, int to_write, DATA32 **image_data, int *err)
 {
    Render_Engine *re = (Render_Engine *)data;
    evas_direct3d_image_data_get(re->d3d, image, to_write, image_data);
+   if (err) *err = EVAS_LOAD_ERROR_NONE;
    return image;
 }
 
@@ -388,7 +389,7 @@ eng_image_scale_hint_get(void *data __UNUSED__, void *image)
 }
 
 static void
-eng_font_draw(void *data, void *context, void *surface, void *font, int x, int y, int w, int h, int ow, int oh, const Eina_Unicode *text, const Evas_Text_Props *intl_props)
+eng_font_draw(void *data, void *context, void *surface, Evas_Font_Set *font, int x, int y, int w, int h, int ow, int oh, const Evas_Text_Props *intl_props)
 {
    Render_Engine *re = (Render_Engine *)data;
 	RGBA_Image im;
@@ -402,7 +403,7 @@ eng_font_draw(void *data, void *context, void *surface, void *font, int x, int y
       evas_direct3d_font_texture_new,
       evas_direct3d_font_texture_free,
       evas_direct3d_font_texture_draw);
-   evas_common_font_draw(&im, context, font, x, y, text, intl_props);
+   evas_common_font_draw(&im, context, (RGBA_Font *) font, x, y, intl_props);
    evas_common_draw_context_font_ext_set(context, NULL, NULL, NULL, NULL);
 }
 

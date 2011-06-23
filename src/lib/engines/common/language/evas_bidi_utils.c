@@ -35,6 +35,11 @@
         }             \
      } while(0)
 
+#if SIZEOF_FRIBIDICHAR != SIZEOF_EINA_UNICODE
+# define EVAS_FRIBIDI_EINA_UNICODE_UNEQUAL
+#endif
+
+#ifdef EVAS_FRIBIDI_EINA_UNICODE_UNEQUAL
 /* Convert bidichar to eina_unicode assume both are valid pointers */
 static Eina_Unicode *
 _evas_bidi_fribidichar_to_unicode(Eina_Unicode *dest, const FriBidiChar *src)
@@ -58,6 +63,7 @@ _evas_bidi_unicode_to_fribidichar(FriBidiChar *dest, const Eina_Unicode *src)
    *dest = 0;
    return ret;
 }
+#endif
 
 /**
  * @internal
@@ -104,18 +110,13 @@ evas_bidi_shape_string(Eina_Unicode *eina_ustr, const Evas_BiDi_Paragraph_Props 
      return EINA_FALSE;
 
    /* The size of fribidichar is different than eina_unicode, convert */
-   /*FIXME: Make this comparison at compile time and compile out
-    * unwanted code. - In all of this source file. (including the actual
-    * function declerations. */
-   if (sizeof(Eina_Unicode) != sizeof(FriBidiChar))
-     {
-        base_ustr = ustr = calloc(len + 1, sizeof(FriBidiChar));
-        ustr = _evas_bidi_unicode_to_fribidichar(ustr, eina_ustr);
-     }
-   else
-     {
-        ustr = (FriBidiChar *) eina_ustr;
-     }
+#ifdef EVAS_FRIBIDI_EINA_UNICODE_UNEQUAL
+   base_ustr = ustr = calloc(len + 1, sizeof(FriBidiChar));
+   ustr = _evas_bidi_unicode_to_fribidichar(ustr, eina_ustr);
+#else
+   (void) base_ustr;
+   ustr = (FriBidiChar *) eina_ustr;
+#endif
 
 
    EvasBiDiJoiningType *join_types = NULL;
@@ -137,12 +138,67 @@ evas_bidi_shape_string(Eina_Unicode *eina_ustr, const Evas_BiDi_Paragraph_Props 
    if (join_types) free(join_types);
 
    /* Convert back */
-   if (sizeof(Eina_Unicode) != sizeof(FriBidiChar))
-     {
-        eina_ustr = _evas_bidi_fribidichar_to_unicode(eina_ustr, ustr);
-        if (base_ustr) free(base_ustr);
-     }
+#ifdef EVAS_FRIBIDI_EINA_UNICODE_UNEQUAL
+   eina_ustr = _evas_bidi_fribidichar_to_unicode(eina_ustr, ustr);
+   if (base_ustr) free(base_ustr);
+#endif
    return EINA_TRUE;
+}
+
+/**
+ * @internal
+ * Return a -1 terminated array of the indexes of the delimiters (passed in
+ * delim) found in the string. This result should be used with par_props_get.
+ *
+ * @param str The string to parse
+ * @param delim a list of delimiters to work with.
+ * @return returns a -1 terminated array of indexes according to positions of the delimiters found. NULL if there were none.
+ */
+int *
+evas_bidi_segment_idxs_get(const Eina_Unicode *str, const char *delim)
+{
+   Eina_Unicode *udelim;
+   const Eina_Unicode *str_base = str;
+   int *ret, *tmp_ret;
+   int ret_idx = 0, ret_len = 10; /* arbitrary choice */
+   udelim = eina_unicode_utf8_to_unicode(delim, NULL);
+   ret = malloc(ret_len * sizeof(int));
+   for ( ; *str ; str++)
+     {
+        const Eina_Unicode *del;
+        for (del = udelim ; *del ; del++)
+          {
+             if (*str == *del)
+               {
+                  if (ret_idx >= ret_len)
+                    {
+                       /* arbitrary choice */
+                       ret_len += 20;
+                       tmp_ret = realloc(ret, ret_len * sizeof(int));
+                       if (!tmp_ret)
+                         {
+                            free(ret);
+                            return NULL;
+                         }
+                    }
+                  ret[ret_idx++] = str - str_base;
+                  break;
+               }
+          }
+     }
+   free(udelim);
+
+   /* If no indexes were found return NULL */
+   if (ret_idx == 0)
+     {
+        free(ret);
+        return NULL;
+     }
+
+   ret[ret_idx] = -1;
+   tmp_ret = realloc(ret, (ret_idx + 1) * sizeof(int));
+
+   return (tmp_ret) ? tmp_ret : ret;
 }
 
 /**
@@ -150,19 +206,24 @@ evas_bidi_shape_string(Eina_Unicode *eina_ustr, const Evas_BiDi_Paragraph_Props 
  * Allocates bidi properties according to ustr. First checks to see if the
  * passed has rtl chars, if not, it returns NULL.
  *
+ * Assumes all the segment_idxs are either -1 or legal, and > 0 indexes.
+ * Also assumes that the characters at the override points are of weak/neutral
+ * bidi type, otherwise unexpected results may occur.
+ *
  * @param ustr The string to update according to.
+ * @param len The length of the string
+ * @param segment_idxs A -1 terminated array of points to start a new bidi analysis at (used for section high level bidi overrides). - NULL means none.
  * @return returns allocated paragraph props on success, NULL otherwise.
  */
-
 Evas_BiDi_Paragraph_Props *
-evas_bidi_paragraph_props_get(const Eina_Unicode *eina_ustr)
+evas_bidi_paragraph_props_get(const Eina_Unicode *eina_ustr, size_t len,
+      int *segment_idxs)
 {
    Evas_BiDi_Paragraph_Props *bidi_props = NULL;
    EvasBiDiCharType *char_types = NULL;
    EvasBiDiLevel *embedding_levels = NULL;
    const FriBidiChar *ustr;
    FriBidiChar *base_ustr = NULL;
-   size_t len;
 
    if (!eina_ustr)
       return NULL;
@@ -176,16 +237,13 @@ evas_bidi_paragraph_props_get(const Eina_Unicode *eina_ustr)
 
    len = eina_unicode_strlen(eina_ustr);
    /* The size of fribidichar s different than eina_unicode, convert */
-   if (sizeof(Eina_Unicode) != sizeof(FriBidiChar))
-     {
-        base_ustr = calloc(len + 1, sizeof(FriBidiChar));
-        base_ustr = _evas_bidi_unicode_to_fribidichar(base_ustr, eina_ustr);
-        ustr = base_ustr;
-     }
-   else
-     {
-        ustr = (const FriBidiChar *) eina_ustr;
-     }
+#ifdef EVAS_FRIBIDI_EINA_UNICODE_UNEQUAL
+   base_ustr = calloc(len + 1, sizeof(FriBidiChar));
+   base_ustr = _evas_bidi_unicode_to_fribidichar(base_ustr, eina_ustr);
+   ustr = base_ustr;
+#else
+   ustr = (const FriBidiChar *) eina_ustr;
+#endif
 
    bidi_props = evas_bidi_paragraph_props_new();
 
@@ -204,10 +262,71 @@ evas_bidi_paragraph_props_get(const Eina_Unicode *eina_ustr)
         len = -2;
         goto cleanup;
      }
-   if (!fribidi_get_par_embedding_levels(char_types, len, &bidi_props->direction, embedding_levels))
+
+   if (segment_idxs)
      {
-        len = -2;
-        goto cleanup;
+        size_t pos = 0;
+        int *itr;
+        EvasBiDiLevel base_level = 0;
+        EvasBiDiParType direction;
+
+        for (itr = segment_idxs ; *itr > 0 ; itr++)
+          {
+             direction = EVAS_BIDI_PARAGRAPH_NEUTRAL;
+             if (!fribidi_get_par_embedding_levels(char_types + pos,
+                      *itr - pos,
+                      &direction,
+                      embedding_levels + pos))
+               {
+                  len = -2;
+                  goto cleanup;
+               }
+
+             /* Only on the first run */
+             if (itr == segment_idxs)
+               {
+                  bidi_props->direction = direction;
+                  /* adjust base_level to be 1 for rtl paragraphs, and 0 for
+                   * ltr paragraphs. */
+                  base_level =
+                     EVAS_BIDI_PARAGRAPH_DIRECTION_IS_RTL(bidi_props) ? 1 : 0;
+               }
+
+             /* We want those chars at the override points to be on the base
+              * level and we also remove -2 cause we later increment them,
+              * just for simpler code paths */
+             embedding_levels[*itr] = base_level - 2;
+             pos = *itr + 1;
+          }
+
+        direction = EVAS_BIDI_PARAGRAPH_NEUTRAL;
+        if (!fribidi_get_par_embedding_levels(char_types + pos,
+                 len - pos,
+                 &direction,
+                 embedding_levels + pos))
+          {
+             len = -2;
+             goto cleanup;
+          }
+
+        /* Increment all levels by 2 to emulate embedding. */
+          {
+             EvasBiDiLevel *bitr = embedding_levels, *end;
+             end = bitr + len;
+             for ( ; bitr < end ; bitr++)
+               {
+                  *bitr += 2;
+               }
+          }
+     }
+   else
+     {
+        if (!fribidi_get_par_embedding_levels(char_types, len,
+                 &bidi_props->direction, embedding_levels))
+          {
+             len = -2;
+             goto cleanup;
+          }
      }
 
 
@@ -276,15 +395,12 @@ evas_bidi_props_reorder_line(Eina_Unicode *eina_ustr, size_t start, size_t len, 
    if (eina_ustr)
      {
         /* The size of fribidichar is different than eina_unicode, convert */
-        if (sizeof(Eina_Unicode) != sizeof(FriBidiChar))
-          {
-             base_ustr = ustr = calloc(len + 1, sizeof(FriBidiChar));
-             ustr = _evas_bidi_unicode_to_fribidichar(ustr, eina_ustr);
-          }
-        else
-          {
-             ustr = (FriBidiChar *) eina_ustr;
-          }
+#ifdef EVAS_FRIBIDI_EINA_UNICODE_UNEQUAL
+        base_ustr = ustr = calloc(len + 1, sizeof(FriBidiChar));
+        ustr = _evas_bidi_unicode_to_fribidichar(ustr, eina_ustr);
+#else
+        ustr = (FriBidiChar *) eina_ustr;
+#endif
      }
 
 
@@ -323,11 +439,10 @@ evas_bidi_props_reorder_line(Eina_Unicode *eina_ustr, size_t start, size_t len, 
 
 
    /* The size of fribidichar is different than eina_unicode, convert */
-   if (sizeof(Eina_Unicode) != sizeof(FriBidiChar))
-     {
-        _evas_bidi_fribidichar_to_unicode(eina_ustr, base_ustr);
-        free(base_ustr);
-     }
+#ifdef EVAS_FRIBIDI_EINA_UNICODE_UNEQUAL
+   _evas_bidi_fribidichar_to_unicode(eina_ustr, base_ustr);
+   free(base_ustr);
+#endif
    return EINA_FALSE;
 /* ERROR HANDLING */
 error:
@@ -424,12 +539,12 @@ evas_bidi_position_reverse(const Evas_BiDi_Props *props, int len, EvasBiDiStrInd
  * @return #EINA_TRUE if true, #EINA_FALSE otherwise.
  */
 Eina_Bool
-evas_bidi_is_rtl_char(const Evas_BiDi_Paragraph_Props *bidi_props, size_t start, EvasBiDiStrIndex index)
+evas_bidi_is_rtl_char(const Evas_BiDi_Paragraph_Props *bidi_props, size_t start, EvasBiDiStrIndex ind)
 {
-   if(!bidi_props || index < 0)
+   if(!bidi_props || ind < 0)
       return EINA_FALSE;
    return (FRIBIDI_IS_RTL(
-            bidi_props->embedding_levels[index + start]))
+            bidi_props->embedding_levels[ind + start]))
       ? EINA_TRUE : EINA_FALSE;
 }
 
@@ -438,7 +553,7 @@ evas_bidi_paragraph_props_new(void)
 {
    Evas_BiDi_Paragraph_Props *ret;
    ret = calloc(1, sizeof(Evas_BiDi_Paragraph_Props));
-   ret->direction = EVAS_BIDI_PARAGRAPH_NATURAL;
+   ret->direction = EVAS_BIDI_PARAGRAPH_NEUTRAL;
    ret->refcount = 1;
 
    return ret;
@@ -513,5 +628,17 @@ evas_bidi_props_clean(Evas_BiDi_Props *bidi_props)
 /**
  * @}
  */
+#endif
+
+#if 0
+/* Good for debugging */
+static void
+dump_levels(Eina_Unicode *ustr, EvasBiDiLevel *emb)
+{
+   for ( ; *ustr ; ustr++, emb++)
+     {
+        printf("%lc %d\n", *ustr, *emb);
+     }
+}
 #endif
 

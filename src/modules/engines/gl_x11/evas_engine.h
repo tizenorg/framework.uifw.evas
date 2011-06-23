@@ -2,45 +2,44 @@
 #define EVAS_ENGINE_H
 
 #include "config.h"
-#ifdef HAVE_GL_GLEW_H
-# include <GL/glxew.h>
-#else
-# if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-#  if defined(GLES_VARIETY_S3C6410)
-#   include <EGL/egl.h>
-#   include <GLES2/gl2.h>
-#   include <X11/Xlib.h>
-#   include <X11/Xatom.h>
-#   include <X11/Xutil.h>
-#   include <X11/extensions/Xrender.h>
-#   include <X11/Xresource.h> // xres - dpi
-#  elif defined(GLES_VARIETY_SGX)
-#   define SUPPORT_X11 1
-#   include <EGL/egl.h>
-#   include <GLES2/gl2.h>
-#   include <GLES2/gl2ext.h>
-#   include <X11/Xlib.h>
-#   include <X11/Xatom.h>
-#   include <X11/Xutil.h>
-#   include <X11/extensions/Xrender.h>
-#   include <X11/Xresource.h> // xres - dpi
-#endif
-# else
-#  include <X11/Xlib.h>
-#  include <X11/Xatom.h>
-#  include <X11/Xutil.h>
-#  include <X11/extensions/Xrender.h>
-#  include <X11/Xresource.h> // xres - dpi
-#  include <GL/gl.h>
-#  include <GL/glext.h>
-#  include <GL/glx.h>
-# endif
-#endif
 #include "evas_common.h"
 #include "evas_private.h"
 #include "evas_gl_common.h"
 #include "Evas.h"
 #include "Evas_Engine_GL_X11.h"
+
+#define GL_GLEXT_PROTOTYPES
+
+#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+# if defined(GLES_VARIETY_S3C6410)
+#  include <EGL/egl.h>
+#  include <GLES2/gl2.h>
+#  include <X11/Xlib.h>
+#  include <X11/Xatom.h>
+#  include <X11/Xutil.h>
+#  include <X11/extensions/Xrender.h>
+#  include <X11/Xresource.h> // xres - dpi
+# elif defined(GLES_VARIETY_SGX)
+#  define SUPPORT_X11 1
+#  include <EGL/egl.h>
+#  include <GLES2/gl2.h>
+#  include <GLES2/gl2ext.h>
+#  include <X11/Xlib.h>
+#  include <X11/Xatom.h>
+#  include <X11/Xutil.h>
+#  include <X11/extensions/Xrender.h>
+#  include <X11/Xresource.h> // xres - dpi
+# endif
+#else
+# include <X11/Xlib.h>
+# include <X11/Xatom.h>
+# include <X11/Xutil.h>
+# include <X11/extensions/Xrender.h>
+# include <X11/Xresource.h> // xres - dpi
+# include <GL/gl.h>
+# include <GL/glext.h>
+# include <GL/glx.h>
+#endif
 
 extern int _evas_engine_GL_X11_log_dom ;
 #ifdef ERR

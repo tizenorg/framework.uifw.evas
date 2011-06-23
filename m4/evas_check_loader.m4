@@ -176,13 +176,40 @@ have_dep="no"
 evas_image_loader_[]$1[]_cflags=""
 evas_image_loader_[]$1[]_libs=""
 
-PKG_CHECK_EXISTS([libpng14], [PKG_CHECK_MODULES([PNG], [libpng14], [have_dep="yes" requirement="libpng14"], [have_dep="no"])],
-  [PKG_CHECK_EXISTS([libpng12], [PKG_CHECK_MODULES([PNG], [libpng12], [have_dep="yes" requirement="libpng12"], [have_dep="no"])],
-    [PKG_CHECK_EXISTS([libpng10], [PKG_CHECK_MODULES([PNG], [libpng10], [have_dep="yes" requirement="libpng10"], [have_dep="no"])],
-      [PKG_CHECK_MODULES([PNG], [libpng], [have_dep="yes" requirement="libpng"], [have_dep="no"])
-    ])
-  ])
-])
+dnl libpng.pc is the latest version of libpng that ahs been installed.
+dnl We check it first.
+PKG_CHECK_MODULES([PNG],
+   [libpng],
+   [have_dep="yes" requirement="libpng"],
+   [have_dep="no"])
+
+if test "x${have_dep}" = "xno" ; then
+   PKG_CHECK_MODULES([PNG],
+      [libpng15],
+      [have_dep="yes" requirement="libpng15"],
+      [have_dep="no"])
+fi
+
+if test "x${have_dep}" = "xno" ; then
+   PKG_CHECK_MODULES([PNG],
+      [libpng14],
+      [have_dep="yes" requirement="libpng14"],
+      [have_dep="no"])
+fi
+
+if test "x${have_dep}" = "xno" ; then
+   PKG_CHECK_MODULES([PNG],
+      [libpng12],
+      [have_dep="yes" requirement="libpng12"],
+      [have_dep="no"])
+fi
+
+if test "x${have_dep}" = "xno" ; then
+   PKG_CHECK_MODULES([PNG],
+      [libpng10],
+      [have_dep="yes" requirement="libpng10"],
+      [have_dep="no"])
+fi
 
 evas_image_loader_[]$1[]_cflags="${PNG_CFLAGS}"
 evas_image_loader_[]$1[]_libs="${PNG_LIBS}"
@@ -373,6 +400,46 @@ fi
 dnl use: EVAS_CHECK_LOADER_DEP_WBMP(loader, want_static[, ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
 
 AC_DEFUN([EVAS_CHECK_LOADER_DEP_WBMP],
+[
+
+have_dep="yes"
+evas_image_loader_[]$1[]_cflags=""
+evas_image_loader_[]$1[]_libs=""
+
+AC_SUBST([evas_image_loader_$1_cflags])
+AC_SUBST([evas_image_loader_$1_libs])
+
+if test "x${have_dep}" = "xyes" ; then
+  m4_default([$3], [:])
+else
+  m4_default([$4], [:])
+fi
+
+])
+
+dnl use: EVAS_CHECK_LOADER_DEP_PSD(loader, want_static[, ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
+
+AC_DEFUN([EVAS_CHECK_LOADER_DEP_PSD],
+[
+
+have_dep="yes"
+evas_image_loader_[]$1[]_cflags=""
+evas_image_loader_[]$1[]_libs=""
+
+AC_SUBST([evas_image_loader_$1_cflags])
+AC_SUBST([evas_image_loader_$1_libs])
+
+if test "x${have_dep}" = "xyes" ; then
+  m4_default([$3], [:])
+else
+  m4_default([$4], [:])
+fi
+
+])
+
+dnl use: EVAS_CHECK_LOADER_DEP_GENERIC(loader, want_static[, ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
+
+AC_DEFUN([EVAS_CHECK_LOADER_DEP_GENERIC],
 [
 
 have_dep="yes"

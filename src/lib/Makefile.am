@@ -27,14 +27,6 @@ SUBDIRS += ../modules/engines/fb/
 EVAS_STATIC_MODULE += ../modules/engines/fb/libevas_engine_fb.la
 EVAS_STATIC_LIBADD += @evas_engine_fb_libs@
 endif
-if EVAS_STATIC_BUILD_GL_GLEW
-SUBDIRS += \
-	../modules/engines/gl_common \
-	../modules/engines/gl_glew
-EVAS_STATIC_MODULE += \
-	../modules/engines/gl_glew/libevas_engine_gl_glew.la
-EVAS_STATIC_LIBADD += @evas_engine_gl_common_libs@ @evas_engine_gl_glew_libs@
-endif
 if EVAS_STATIC_BUILD_GL_X11
 SUBDIRS += \
 	../modules/engines/gl_common \
@@ -50,11 +42,6 @@ SUBDIRS += \
 EVAS_STATIC_MODULE += \
 	../modules/engines/gl_sdl/libevas_engine_gl_sdl.la
 EVAS_STATIC_LIBADD += @evas_engine_gl_common_libs@ @evas_engine_gl_sdl_libs@
-endif
-if EVAS_STATIC_BUILD_QUARTZ
-SUBDIRS += ../modules/engines/quartz/
-EVAS_STATIC_MODULE += ../modules/engines/quartz/libevas_engine_quartz.la
-EVAS_STATIC_LIBADD += @evas_engine_quartz_libs@
 endif
 if EVAS_STATIC_BUILD_SOFTWARE_16
 SUBDIRS += ../modules/engines/software_16/
@@ -108,11 +95,6 @@ SUBDIRS += ../modules/engines/software_x11/
 EVAS_STATIC_MODULE += ../modules/engines/software_x11/libevas_engine_software_x11.la
 EVAS_STATIC_LIBADD += @evas_engine_software_xlib_libs@ @evas_engine_software_xcb_libs@
 endif
-if EVAS_STATIC_BUILD_XRENDER_X11
-SUBDIRS += ../modules/engines/xrender_x11/
-EVAS_STATIC_MODULE += ../modules/engines/xrender_x11/libevas_engine_xrender_x11.la
-EVAS_STATIC_LIBADD += @evas_engine_xrender_x11_libs@ @evas_engine_xrender_xcb_libs@
-endif
 if EVAS_STATIC_BUILD_BMP
 SUBDIRS += ../modules/loaders/bmp
 EVAS_STATIC_MODULE += ../modules/loaders/bmp/libevas_loader_bmp.la
@@ -127,6 +109,11 @@ if EVAS_STATIC_BUILD_EET
 SUBDIRS += ../modules/savers/eet ../modules/loaders/eet
 EVAS_STATIC_MODULE += ../modules/savers/eet/libevas_saver_eet.la ../modules/loaders/eet/libevas_loader_eet.la
 EVAS_STATIC_LIBADD += @evas_image_loader_eet_libs@
+endif
+if EVAS_STATIC_BUILD_GENERIC
+SUBDIRS += ../modules/loaders/generic
+EVAS_STATIC_MODULE += ../modules/loaders/generic/libevas_loader_generic.la
+EVAS_STATIC_LIBADD += @evas_image_loader_generic_libs@
 endif
 if EVAS_STATIC_BUILD_GIF
 SUBDIRS += ../modules/loaders/gif
@@ -157,6 +144,11 @@ SUBDIRS += ../modules/savers/png ../modules/loaders/png
 EVAS_STATIC_MODULE += ../modules/savers/png/libevas_saver_png.la ../modules/loaders/png/libevas_loader_png.la
 EVAS_STATIC_LIBADD += @evas_image_loader_png_libs@
 endif
+if EVAS_STATIC_BUILD_PSD
+SUBDIRS += ../modules/loaders/psd
+EVAS_STATIC_MODULE += ../modules/loaders/psd/libevas_loader_psd.la
+EVAS_STATIC_LIBADD += @evas_image_loader_psd_libs@
+endif
 if EVAS_STATIC_BUILD_SVG
 SUBDIRS += ../modules/loaders/svg
 EVAS_STATIC_MODULE += ../modules/loaders/svg/libevas_loader_svg.la
@@ -183,22 +175,6 @@ EVAS_STATIC_MODULE += ../modules/loaders/xpm/libevas_loader_xpm.la
 EVAS_STATIC_LIBADD += @evas_image_loader_xpm_libs@
 endif
 
-
-#if EVAS_STATIC_BUILD_CAIRO_X11
-#SUBDIRS += \
-#	../modules/engines/cairo_common \
-#	../modules/engines/cairo_x11
-#EVAS_STATIC_MODULE += \
-#	../modules/engines/cairo_common/libevas_engine_cairo_common.la \
-#	../modules/engines/cairo_x11/libevas_engine_cairo_x11.la
-#EVAS_STATIC_LIBADD += @CAIRO_CFLAGS@
-#endif
-#if EVAS_STATIC_BUILD_SOFTWARE_QTOPIA
-#SUBDIRS += ../modules/engines/software_qtopia/
-#EVAS_STATIC_MODULE += ../modules/engines/software_qtopia/libevas_engine_software_qtopia.la
-#EVAS_STATIC_LIBADD += @evas_engine_software_qtopia_libs@
-#endif
-
 AM_CPPFLAGS = \
 -I. \
 -I$(top_srcdir)/src/lib \
@@ -212,13 +188,14 @@ AM_CPPFLAGS = \
 @HARFBUZZ_CFLAGS@ \
 @EET_CFLAGS@ \
 @FONTCONFIG_CFLAGS@ \
-@pthread_cflags@
+@pthread_cflags@ \
+@PIXMAN_CFLAGS@
 
 AM_CFLAGS = @WIN32_CFLAGS@
 
 lib_LTLIBRARIES = libevas.la
 
-includes_HEADERS = Evas.h
+includes_HEADERS = Evas.h Evas_GL.h
 includesdir = $(includedir)/evas-@VMAJ@
 
 libevas_la_SOURCES = main.c
@@ -244,6 +221,7 @@ engines/common/libevas_engine_common.la \
 @EINA_LIBS@ \
 $(EVAS_STATIC_MODULE) \
 $(EVAS_STATIC_LIBADD) \
+@PIXMAN_LIBS@ \
 -lm
 
 libevas_la_DEPENDENCIES = \

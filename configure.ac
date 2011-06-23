@@ -90,25 +90,20 @@ AC_DEFINE_UNQUOTED(MODULE_ARCH, "$MODULE_ARCH", "Module architecture")
 want_fontconfig="auto"
 want_fribidi="auto"
 want_harfbuzz="auto"
+want_pixman="no"
 want_evas_cserve="yes"
 
 want_evas_engine_buffer="yes"
 want_evas_engine_software_xlib="no"
-want_evas_engine_xrender_x11="no"
 want_evas_engine_gl_x11="no"
 want_evas_engine_gl_sdl="no"
-want_evas_engine_cairo_x11="no"
 want_evas_engine_software_xcb="no"
-want_evas_engine_xrender_xcb="no"
 want_evas_engine_software_gdi="no"
 want_evas_engine_software_ddraw="no"
 want_evas_engine_direct3d="no"
-want_evas_engine_quartz="no"
-want_evas_engine_gl_glew="no"
 want_evas_engine_software_sdl="no"
 want_evas_engine_fb="no"
 want_evas_engine_directfb="no"
-want_evas_engine_software_qtopia="no"
 want_evas_engine_software_8_x11="no"
 want_evas_engine_software_16_x11="no"
 want_evas_engine_software_16_ddraw="no"
@@ -127,6 +122,8 @@ want_evas_image_loader_bmp="yes"
 want_evas_image_loader_tga="yes"
 want_evas_image_loader_wbmp="yes"
 want_evas_image_loader_ico="yes"
+want_evas_image_loader_psd="yes"
+want_evas_image_loader_generic="yes"
 
 want_evas_font_loader_eet="yes"
 
@@ -149,7 +146,6 @@ case "$host_os" in
       ;;
    darwin*)
       want_evas_engine_software_xlib="auto"
-      want_evas_engine_quartz="auto"
       ;;
    *)
       want_evas_engine_software_xlib="auto"
@@ -157,7 +153,6 @@ case "$host_os" in
       want_evas_engine_fb="auto"
 ### no - not ready/usable/complete
 #      want_evas_engine_software_8_x11="auto"
-#      want_evas_engine_xrender_x11="auto"
 #      want_evas_engine_software_16_x11="auto"
       ;;
 esac
@@ -236,6 +231,10 @@ esac
 
 # Eina
 PKG_CHECK_MODULES([EINA], [eina >= 1.0.0])
+CPPFLAGS_SAVE="$CPPFLAGS"
+CPPFLAGS="$CPPFLAGS $EINA_CFLAGS"
+AC_CHECK_SIZEOF(Eina_Unicode,, [#include <Eina.h>])
+CPPFLAGS="$CPPFLAGS_SAVE"
 
 # Freetype
 PKG_CHECK_MODULES([FREETYPE], [freetype2 >= 9.3.0])
@@ -273,6 +272,33 @@ if test "x${want_fontconfig}" = "xyes" -o "x${want_fontconfig}" = "xauto" ; then
       ])
 fi
 
+# linebreak
+have_linebreak="no"
+want_linebreak="yes"
+AC_ARG_ENABLE([liblinebreak],
+   AC_HELP_STRING([--disable-liblinebreak],
+      [disable linking against liblinebreak. @<:@default=enabled@:>@]),
+   [
+    if test "x${enableval}" = "xyes" ; then
+       want_linebreak="yes"
+    else
+       want_linebreak="no"
+    fi
+   ])
+
+
+AM_CONDITIONAL(EVAS_USE_LINEBREAK, test "x${want_linebreak}" = "xyes")
+if test "x${want_linebreak}" = "xyes" ; then
+   have_linebreak="yes"
+   LINEBREAK_CFLAGS='-I$(top_srcdir)/src/static_deps/liblinebreak'
+   LINEBREAK_LIBS='$(top_builddir)/src/static_deps/liblinebreak/liblinebreak.la'
+   AC_SUBST(LINEBREAK_CFLAGS)
+   AC_SUBST(LINEBREAK_LIBS)
+   AC_DEFINE(HAVE_LINEBREAK, 1, [have liblinebreak support])
+else
+   have_linebreak="no"
+fi
+
 # fribidi support
 have_fribidi="no"
 AC_ARG_ENABLE([fribidi],
@@ -293,6 +319,10 @@ if test "x${want_fribidi}" = "xyes" -o "x${want_fribidi}" = "xauto" ; then
        have_fribidi="yes"
        AC_DEFINE(HAVE_FRIBIDI, 1, [have fribidi support])
        requirement_evas="fribidi ${requirement_evas}"
+       CPPFLAGS_SAVE="$CPPFLAGS"
+       CPPFLAGS="$CPPFLAGS $FRIBIDI_CFLAGS"
+       AC_CHECK_SIZEOF(FriBidiChar,, [#include <fribidi/fribidi.h>])
+       CPPFLAGS="$CPPFLAGS_SAVE"
       ],
       [
        if test "x$want_fribidi" = "xyes" -a "x$use_strict" = "xyes" ; then
@@ -307,7 +337,6 @@ fi
 
 # harfbuzz support
 have_harfbuzz="no"
-have_harfbuzz_glib="no"
 have_harfbuzz_ft="no"
 AC_ARG_ENABLE([harfbuzz],
    AC_HELP_STRING([--disable-harfbuzz],
@@ -322,7 +351,7 @@ AC_ARG_ENABLE([harfbuzz],
 
 if test "x${want_harfbuzz}" = "xyes" -o "x${want_harfbuzz}" = "xauto" ; then
    PKG_CHECK_MODULES([HARFBUZZ],
-      [harfbuzz >= 0.2],
+      [harfbuzz >= 0.6.0],
       [
        have_harfbuzz="yes"
        requirement_evas="harfbuzz ${requirement_evas}"
@@ -350,15 +379,6 @@ if test "x${want_harfbuzz}" = "xyes" -o "x${want_harfbuzz}" = "xauto" ; then
            fi
            have_harfbuzz="no"
           ])
-# nice to have if harfbuzz has it
-      AC_CHECK_HEADER(hb-glib.h,
-          [
-           have_harfbuzz_glib="yes"
-           AC_DEFINE(HAVE_HARFBUZZ_GLIB, 1, [have harfbuzz glib support])
-          ],
-          [
-           have_harfbuzz_glib="no"
-          ])
       CPPFLAGS="$CPPFLAGS_SAVE"
    fi
 fi
@@ -367,9 +387,38 @@ if test "x${have_harfbuzz}" = "xno"; then
   HAS_HARFBUZZ=0
 fi
 
+# Pixman
+have_pixman="no"
+AC_ARG_ENABLE([pixman],
+   AC_HELP_STRING([--disable-pixman],
+      [disable pixman for software rendering. @<:@default=enabled@:>@]),
+   [
+    if test "x${enableval}" = "xyes" ; then
+       want_pixman="yes"
+    else
+       want_pixman="no"
+    fi
+   ])
+
+
+if test "x${want_pixman}" = "xyes" -o "x${want_pixman}" = "xauto" ; then
+   PKG_CHECK_MODULES([PIXMAN],
+      [pixman-1],
+      [
+       have_pixman="yes"
+       AC_DEFINE(HAVE_PIXMAN, 1, [have pixman for rendering])
+       requirement_evas="pixman-1 ${requirement_evas}"
+      ],
+      [
+       if test "x${want_pixman}" = "xyes" -a "x${use_strict}" = "xyes" ; then
+          AC_MSG_ERROR([Pixman not found (strict dependencies checking)])
+       fi
+      ])
+fi
+
 ### Checks for header files
 AC_HEADER_STDC
-AC_CHECK_HEADERS([unistd.h stdint.h sys/param.h])
+AC_CHECK_HEADERS([unistd.h stdint.h sys/param.h netinet/in.h])
 
 EFL_CHECK_PATH_MAX
 
@@ -452,6 +501,32 @@ case "$host_os" in
     fi
 esac
 AC_SUBST(dlopen_libs)
+
+SHM_OPEN_LINK=""
+AC_MSG_CHECKING([whether shm_open() is present])
+LIBS_save=${LIBS}
+LIBS="${LIBS} -lrt"
+AC_LINK_IFELSE(
+   [AC_LANG_PROGRAM(
+      [[
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+      ]],
+      [[
+int fd;
+fd = shm_open("/", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+shm_unlink("/");
+      ]])],
+   [
+    have_shm_open="yes"
+    AC_DEFINE(HAVE_SHM_OPEN, 1, [Have shm_open() call])
+    SHM_OPEN_LINK="-lrt"
+   ],
+   [have_shm_open="no"])
+LIBS=${LIBS_save}
+AC_MSG_RESULT([${have_shm_open}])
+AC_SUBST(SHM_OPEN_LINK)
 
 # (shm_open (for cache server)
 AC_ARG_ENABLE([evas-cserve],
@@ -583,26 +658,15 @@ EVAS_CHECK_ENGINE([buffer], [${want_evas_engine_buffer}], [yes], [Buffer])
 
 EVAS_CHECK_ENGINE([software-xlib], [${want_evas_engine_software_xlib}], [yes], [Software Xlib])
 
-EVAS_CHECK_ENGINE([xrender-x11], [${want_evas_engine_xrender_x11}], [yes], [XRender X11])
-
 EVAS_CHECK_ENGINE([gl-x11], [${want_evas_engine_gl_x11}], [yes], [OpenGL X11])
 
-# disable cairo engine for the release
-#EVAS_CHECK_ENGINE([cairo-x11], [${want_evas_engine_cairo_x11}], [yes], [Cairo X11])
-
 EVAS_CHECK_ENGINE([software-xcb], [${want_evas_engine_software_xcb}], [no], [Software XCB])
-
-EVAS_CHECK_ENGINE([xrender-xcb], [${want_evas_engine_xrender_xcb}], [no], [XRender XCB])
 
 EVAS_CHECK_ENGINE([software-gdi], [${want_evas_engine_software_gdi}], [no], [Software GDI])
 
 EVAS_CHECK_ENGINE([software-ddraw], [${want_evas_engine_software_ddraw}], [no], [Software DirectDraw])
 
 EVAS_CHECK_ENGINE([direct3d], [${want_evas_engine_direct3d}], [no], [Direct3D])
-
-EVAS_CHECK_ENGINE([quartz], [${want_evas_engine_quartz}], [no], [Quartz])
-
-EVAS_CHECK_ENGINE([gl-glew], [${want_evas_engine_gl_glew}], [no], [OpenGL Glew])
 
 EVAS_CHECK_ENGINE([software-sdl], [${want_evas_engine_software_sdl}], [no], [Software SDL])
 
@@ -612,9 +676,6 @@ EVAS_CHECK_ENGINE([fb], [${want_evas_engine_fb}], [yes], [Framebuffer])
 
 EVAS_CHECK_ENGINE([directfb], [${want_evas_engine_directfb}], [no], [DirectFB])
 
-# disable qtopia engine for the release
-#EVAS_CHECK_ENGINE([software-qtopia], [${want_evas_engine_software_qtopia}], [no], [Qtopia])
-
 EVAS_CHECK_ENGINE([software-8-x11], [${want_evas_engine_software_8_x11}], [yes], [Software X11 8 bits grayscale])
 
 EVAS_CHECK_ENGINE([software-16-x11], [${want_evas_engine_software_16_x11}], [yes], [Software X11 16 bits])
@@ -623,24 +684,14 @@ EVAS_CHECK_ENGINE([software-16-ddraw], [${want_evas_engine_software_16_ddraw}], 
 
 EVAS_CHECK_ENGINE([software-16-wince], [${want_evas_engine_software_16_wince}], [no], [Software Windows CE 16 bits])
 
-# common cairo
-#have_evas_engine_cairo_common="no"
-#if test "x${have_evas_engine_cairo_x11}" = "xyes" ; then
-#   have_evas_engine_cairo_common="yes"
-#   AC_DEFINE([BUILD_ENGINE_CAIRO_COMMON], [1], [Generic Cairo Rendering Support])
-#fi
-#AM_CONDITIONAL([BUILD_ENGINE_CAIRO_COMMON], [test "x$have_evas_engine_cairo_common" = "xyes"])
-
 # common gl
 have_evas_engine_gl_common="no"
 have_static_evas_engine_gl_common="no"
 if test "x$have_evas_engine_gl_x11" = "xyes" \
-   || test "x$have_evas_engine_gl_glew" = "xyes" \
    || test "x$have_evas_engine_gl_sdl" = "xyes"; then
    have_evas_engine_gl_common="yes"
 fi
 if test "x$have_evas_engine_gl_x11" = "xstatic" \
-   || test "x$have_evas_engine_gl_glew" = "xstatic" \
    || test "x$have_evas_engine_gl_sdl" = "xstatic"; then
    have_evas_engine_gl_common="yes"
    have_static_evas_engine_gl_common="yes"
@@ -836,6 +887,10 @@ EVAS_CHECK_IMAGE_LOADER([TGA], [${want_evas_image_loader_tga}])
 EVAS_CHECK_IMAGE_LOADER([WBMP], [${want_evas_image_loader_wbmp}])
 
 EVAS_CHECK_IMAGE_LOADER([ICO], [${want_evas_image_loader_ico}])
+
+EVAS_CHECK_IMAGE_LOADER([PSD], [${want_evas_image_loader_psd}])
+
+EVAS_CHECK_IMAGE_LOADER([GENERIC], [${want_evas_image_loader_generic}])
 
 #####################################################################
 ## Cpu based optimizations
@@ -1514,10 +1569,14 @@ AM_CONDITIONAL([INSTALL_EXAMPLES], [test "x${install_examples}" = "xyes"])
 build_examples="no"
 AC_ARG_ENABLE([build-examples],
    AC_HELP_STRING([--enable-build-examples],
-                  [enable building examples. @<:@default==disabled@:>@]),
+                  [enable building examples (this requires extra denpendencies. if you don't have them installed yet, don't build with this option or it will fail. build again when you have it, overriding the previous installation). @<:@default==disabled@:>@]),
    [
     if test "x${enableval}" = "xyes" ; then
        build_examples="yes"
+       # put in here the dependencies for Evas' examples. they are
+       # meant to be 'real world' usage examples, thus one will be
+       # using higher level libraries on these programs
+       PKG_CHECK_MODULES([ECORE_EVAS], [ecore-evas ecore])
     else
        build_examples="no"
     fi
@@ -1542,16 +1601,12 @@ AC_OUTPUT([
 Makefile
 evas-directfb.pc
 evas-fb.pc
-evas-opengl-glew.pc
 evas-opengl-x11.pc
 evas-opengl-sdl.pc
-evas-quartz.pc
 evas-software-buffer.pc
 evas-software-x11.pc
 evas-software-8-x11.pc
 evas-software-16-x11.pc
-evas-xrender-x11.pc
-evas-xrender-xcb.pc
 evas-software-gdi.pc
 evas-software-ddraw.pc
 evas-software-16-ddraw.pc
@@ -1561,6 +1616,7 @@ evas-software-sdl.pc
 evas.pc
 doc/evas.dox
 doc/Makefile
+doc/Doxyfile
 src/Makefile
 src/bin/Makefile
 src/lib/Makefile
@@ -1590,11 +1646,8 @@ src/modules/engines/fb/Makefile
 src/modules/engines/buffer/Makefile
 src/modules/engines/directfb/Makefile
 src/modules/engines/gl_common/Makefile
-src/modules/engines/gl_glew/Makefile
 src/modules/engines/gl_x11/Makefile
 src/modules/engines/gl_sdl/Makefile
-src/modules/engines/quartz/Makefile
-src/modules/engines/xrender_x11/Makefile
 src/modules/engines/software_sdl/Makefile
 src/modules/engines/software_8/Makefile
 src/modules/engines/software_8_x11/Makefile
@@ -1616,25 +1669,21 @@ src/modules/loaders/tga/Makefile
 src/modules/loaders/svg/Makefile
 src/modules/loaders/pmaps/Makefile
 src/modules/loaders/wbmp/Makefile
+src/modules/loaders/psd/Makefile
+src/modules/loaders/generic/Makefile
 src/modules/savers/Makefile
 src/modules/savers/edb/Makefile
 src/modules/savers/eet/Makefile
 src/modules/savers/jpeg/Makefile
 src/modules/savers/png/Makefile
 src/modules/savers/tiff/Makefile
+src/static_deps/Makefile
+src/static_deps/liblinebreak/Makefile
 src/lib/include/Makefile
 src/examples/Makefile
 README
 evas.spec
 ])
-
-#disabled for the release:
-# evas-cairo-x11.pc
-# evas-software-qtopia.pc
-# src/modules/engines/cairo_common/Makefile
-# src/modules/engines/cairo_x11/Makefile
-# src/modules/engines/software_qtopia/Makefile
-
 
 #####################################################################
 ## Sanity Checks
@@ -1675,19 +1724,15 @@ echo
 echo "Engines:"
 echo "  Software Memory Buffer.....: $have_evas_engine_buffer"
 echo "  Software X11...............: $have_evas_engine_software_x11 (Xlib: $have_evas_engine_software_xlib) (XCB: $have_evas_engine_software_xcb)"
-echo "  XRender X11................: $have_evas_engine_xrender_x11 (XCB: $have_evas_engine_xrender_xcb)"
 echo $ECHO_N "  OpenGL X11.................: $have_evas_engine_gl_x11 $ECHO_C"
 if test "x$have_evas_engine_gl_x11" = "xyes"; then
   echo "(GLES: $gl_flavor_gles) (SGX: $gles_variety_sgx) (s3c6410: $gles_variety_s3c6410)"
 else
   echo
 fi
-dnl echo "  Cairo X11..................: $have_evas_engine_cairo_x11"
 echo "  Software GDI...............: $have_evas_engine_software_gdi"
 echo "  Software DirectDraw........: $have_evas_engine_software_ddraw"
 echo "  Direct3d...................: $have_evas_engine_direct3d"
-echo "  Quartz.....................: $have_evas_engine_quartz"
-echo "  OpenGL Glew................: $have_evas_engine_gl_glew"
 echo "  Software SDL...............: $have_evas_engine_software_sdl (primitive: $sdl_primitive)"
 echo $ECHO_N "  OpenGL SDL.................: $have_evas_engine_gl_sdl $ECHO_C"
 if test "x$have_evas_engine_gl_sdl" = "xyes"; then
@@ -1697,7 +1742,6 @@ else
 fi
 echo "  Software Framebuffer.......: $have_evas_engine_fb"
 echo "  DirectFB...................: $have_evas_engine_directfb"
-dnl echo "  Software Qtopia............: $have_evas_engine_software_qtopia"
 echo "  Software 8bit grayscale....: $have_evas_engine_software_8"
 # FIXME: kill software 16bit
 echo "  Software 16bit ............: $have_evas_engine_software_16"
@@ -1710,11 +1754,13 @@ echo "Image Loaders:"
 echo "  BMP.....................: $have_evas_image_loader_bmp"
 echo "  EDB.....................: $have_evas_image_loader_edb"
 echo "  EET.....................: $have_evas_image_loader_eet"
+echo "  GENERIC.................: $have_evas_image_loader_generic"
 echo "  GIF.....................: $have_evas_image_loader_gif"
 echo "  ICO.....................: $have_evas_image_loader_ico"
 echo "  JPEG....................: $have_evas_image_loader_jpeg (region: $have_jpeg_region)"
 echo "  PMAPS...................: $have_evas_image_loader_pmaps"
 echo "  PNG.....................: $have_evas_image_loader_png"
+echo "  PSD.....................: $have_evas_image_loader_psd"
 echo "  SVG.....................: $have_evas_image_loader_svg"
 echo "  TGA.....................: $have_evas_image_loader_tga"
 echo "  TIFF....................: $have_evas_image_loader_tiff"
@@ -1730,6 +1776,7 @@ echo
 echo "Font Rendering Helpers:"
 echo "  Fribidi.................: $have_fribidi"
 echo "  Harfbuzz................: $have_harfbuzz"
+echo "  liblinebreak............: $have_linebreak"
 # FIXME: add non freetype2 font engine support
 # FIXME: make freetype2 optional
 echo

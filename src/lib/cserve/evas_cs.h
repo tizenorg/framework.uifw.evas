@@ -137,6 +137,7 @@ typedef struct
       struct {
          int x, y, w, h;
       } region;
+      Eina_Bool orientation;
    } lopt;
 } Op_Load; // +"file""key"
 typedef struct
@@ -272,7 +273,7 @@ EAPI Mem *evas_cserve_mem_new(int size, const char *name);
 EAPI void evas_cserve_mem_free(Mem *m);
     
 // for client
-EAPI Mem *evas_cserve_mem_open(int pid, int id, const char *name, int size, int write);
+EAPI Mem *evas_cserve_mem_open(int pid, int id, const char *name, int size, int do_write);
 EAPI void evas_cserve_mem_close(Mem *m);
 
 // for both

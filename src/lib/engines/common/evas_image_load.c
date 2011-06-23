@@ -1,43 +1,126 @@
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include "evas_common.h"
 #include "evas_private.h"
 #include "evas_cs.h"
 
 struct ext_loader_s
 {
+   unsigned int length;
    const char *extension;
    const char *loader;
 };
 
+#define MATCHING(Ext, Module)                   \
+  { sizeof (Ext), Ext, Module }
+
 static const struct ext_loader_s loaders[] =
-{
-   { "png", "png" },
-   { "jpg", "jpeg" },
-   { "jpeg", "jpeg" },
-   { "jfif", "jpeg" },
-   { "eet", "eet" },
-   { "edj", "eet" },
-   { "eap", "eet" },
-   { "edb", "edb" },
-   { "xpm", "xpm" },
-   { "tiff", "tiff" },
-   { "tif", "tiff" },
-   { "svg", "svg" },
-   { "svgz", "svg" },
-   { "gif", "gif" },
-   { "pbm", "pmaps" },
-   { "pgm", "pmaps" },
-   { "ppm", "pmaps" },
-   { "pnm", "pmaps" },
-   { "bmp", "bmp" },
-   { "tga", "tga" },
-   { "wbmp", "wbmp" },
-   { "ico", "ico" },
-   { "cur", "ico" }
+{ /* map extensions to loaders to use for good first-guess tries */
+   MATCHING(".png", "png"),
+   MATCHING(".jpg", "jpeg"),
+   MATCHING(".jpeg", "jpeg"),
+   MATCHING(".jfif", "jpeg"),
+   MATCHING(".eet", "eet"),
+   MATCHING(".edj", "eet"),
+   MATCHING(".eap", "eet"),
+   MATCHING(".edb", "edb"),
+   MATCHING(".xpm", "xpm"),
+   MATCHING(".tiff", "tiff"),
+   MATCHING(".tif", "tiff"),
+   MATCHING(".svg", "svg"),
+   MATCHING(".svgz", "svg"),
+   MATCHING(".svg.gz", "svg"),
+   MATCHING(".gif", "gif"),
+   MATCHING(".pbm", "pmaps"),
+   MATCHING(".pgm", "pmaps"),
+   MATCHING(".ppm", "pmaps"),
+   MATCHING(".pnm", "pmaps"),
+   MATCHING(".bmp", "bmp"),
+   MATCHING(".tga", "tga"),
+   MATCHING(".wbmp", "wbmp"),
+   MATCHING(".ico", "ico"),
+   MATCHING(".cur", "ico"),
+   MATCHING(".psd", "psd"),
+   MATCHING(".pdf", "generic"),
+   MATCHING(".ps", "generic"),
+   MATCHING(".xcf", "generic"),
+   MATCHING(".xcf.gz", "generic"),
+   /* RAW */
+   MATCHING(".arw", "generic"),
+   MATCHING(".cr2", "generic"),
+   MATCHING(".crw", "generic"),
+   MATCHING(".dcr", "generic"),
+   MATCHING(".dng", "generic"),
+   MATCHING(".k25", "generic"),
+   MATCHING(".kdc", "generic"),
+   MATCHING(".erf", "generic"),
+   MATCHING(".mrw", "generic"),
+   MATCHING(".nef", "generic"),
+   MATCHING(".nrf", "generic"),
+   MATCHING(".nrw", "generic"),
+   MATCHING(".orf", "generic"),
+   MATCHING(".raw", "generic"),
+   MATCHING(".rw2", "generic"),
+   MATCHING(".pef", "generic"),
+   MATCHING(".raf", "generic"),
+   MATCHING(".sr2", "generic"),
+   MATCHING(".srf", "generic"),
+   MATCHING(".x3f", "generic"),
+   /* video */
+   MATCHING(".264", "generic"),
+   MATCHING(".3g2", "generic"),
+   MATCHING(".3gp", "generic"),
+   MATCHING(".3gp2", "generic"),
+   MATCHING(".3gpp", "generic"),
+   MATCHING(".3gpp2", "generic"),
+   MATCHING(".3p2", "generic"),
+   MATCHING(".asf", "generic"),
+   MATCHING(".avi", "generic"),
+   MATCHING(".bdm", "generic"),
+   MATCHING(".bdmv", "generic"),
+   MATCHING(".clpi", "generic"),
+   MATCHING(".clp", "generic"),
+   MATCHING(".fla", "generic"),
+   MATCHING(".flv", "generic"),
+   MATCHING(".m1v", "generic"),
+   MATCHING(".m2v", "generic"),
+   MATCHING(".m2t", "generic"),
+   MATCHING(".m4v", "generic"),
+   MATCHING(".mkv", "generic"),
+   MATCHING(".mov", "generic"),
+   MATCHING(".mp2", "generic"),
+   MATCHING(".mp2ts", "generic"),
+   MATCHING(".mp4", "generic"),
+   MATCHING(".mpe", "generic"),
+   MATCHING(".mpeg", "generic"),
+   MATCHING(".mpg", "generic"),
+   MATCHING(".mpl", "generic"),
+   MATCHING(".mpls", "generic"),
+   MATCHING(".mts", "generic"),
+   MATCHING(".mxf", "generic"),
+   MATCHING(".nut", "generic"),
+   MATCHING(".nuv", "generic"),
+   MATCHING(".ogg", "generic"),
+   MATCHING(".ogm", "generic"),
+   MATCHING(".ogv", "generic"),
+   MATCHING(".rm", "generic"),
+   MATCHING(".rmj", "generic"),
+   MATCHING(".rmm", "generic"),
+   MATCHING(".rms", "generic"),
+   MATCHING(".rmx", "generic"),
+   MATCHING(".rmvb", "generic"),
+   MATCHING(".swf", "generic"),
+   MATCHING(".ts", "generic"),
+   MATCHING(".weba", "generic"),
+   MATCHING(".webm", "generic"),
+   MATCHING(".wmv", "generic")
 };
 
 static const char *loaders_name[] =
-{
-  "png", "jpeg", "eet", "xpm", "tiff", "gif", "svg", "pmaps", "edb", "bmp", "tga", "wbmp", "ico"
+{ /* in order of most likely needed */
+  "png", "jpeg", "eet", "xpm", "tiff", "gif", "svg", "pmaps", "bmp", "tga", "wbmp", "ico", "psd", "edb", "generic"
 };
 
 struct evas_image_foreach_loader_data
@@ -75,11 +158,11 @@ EAPI int
 evas_common_load_rgba_image_module_from_file(Image_Entry *ie)
 {
    Evas_Image_Load_Func *evas_image_load_func = NULL;
-   const char           *loader = NULL;
+   const char           *loader = NULL, *end;
    Evas_Module          *em;
-   char                 *dot;
+   struct stat		 st;
    unsigned int          i;
-   int                   ret = EVAS_LOAD_ERROR_NONE;
+   int                   len, ret = EVAS_LOAD_ERROR_NONE;
    struct evas_image_foreach_loader_data fdata;
 
 
@@ -95,20 +178,26 @@ evas_common_load_rgba_image_module_from_file(Image_Entry *ie)
              return EVAS_LOAD_ERROR_NONE;
           }
      }
-#endif   
-   dot = strrchr (ie->file, '.');
-   if (dot)
+#endif
+   if (stat(ie->file, &st) != 0 || S_ISDIR(st.st_mode))
      {
-	for (i = 0, ++dot; i < (sizeof (loaders) / sizeof (struct ext_loader_s)); ++i)
-	  {
-	     if (!strcasecmp(dot, loaders[i].extension))
-	       {
-		  loader = loaders[i].loader;
-		  DBG("known loader '%s' handles extension '%s' of file '%s'",
-		      loader, dot, ie->file);
-		  break;
-	       }
-	  }
+        DBG("trying to open directory '%s' !", ie->file);
+        return EVAS_LOAD_ERROR_DOES_NOT_EXIST;
+     }
+
+   len = strlen(ie->file);
+   end = ie->file + len;
+   for (i = 0; i < (sizeof (loaders) / sizeof(struct ext_loader_s)); i++)
+     {
+        int len2 = strlen(loaders[i].extension);
+        if (len2 > len) continue;
+        if (!strcasecmp(end - len2, loaders[i].extension))
+          {
+             loader = loaders[i].loader;
+             DBG("known loader '%s' handles extension '%s' of file '%s'",
+                 loader, end - len2, ie->file);
+             break;
+          }
      }
 
    if (loader)
@@ -255,4 +344,24 @@ evas_common_load_rgba_image_data_from_file(Image_Entry *ie)
 //   ie->info.module = NULL;
 
    return EVAS_LOAD_ERROR_NONE;
+}
+
+EAPI Eina_Bool
+evas_common_extension_can_load_get(const char *file)
+{
+   unsigned int length;
+   unsigned int i;
+
+   length = eina_stringshare_strlen(file) + 1;
+   if (length < 5) return EINA_FALSE;
+
+   for (i = 0; i < sizeof (loaders) / sizeof (struct ext_loader_s); ++i)
+     {
+        if (loaders[i].length > length) continue;
+
+        if (!strcasecmp(loaders[i].extension, file + length - loaders[i].length))
+          return EINA_TRUE;
+     }
+
+   return EINA_FALSE;
 }

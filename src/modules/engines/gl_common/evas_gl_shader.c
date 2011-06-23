@@ -443,6 +443,167 @@ Evas_GL_Program_Source shader_img_bgra_nomul_vert_src =
 };
 
 /////////////////////////////////////////////
+const char filter_invert_frag_glsl[] =
+#include "shader/filter_invert.h"
+  ;
+Evas_GL_Program_Source shader_filter_invert_frag_src =
+{
+   filter_invert_frag_glsl,
+   NULL, 0
+};
+
+const char filter_invert_nomul_frag_glsl[] =
+#include "shader/filter_invert_nomul.h"
+  ;
+Evas_GL_Program_Source shader_filter_invert_nomul_frag_src =
+{
+   filter_invert_nomul_frag_glsl,
+   NULL, 0
+};
+
+const char filter_invert_bgra_frag_glsl[] =
+#include "shader/filter_invert_bgra.h"
+  ;
+Evas_GL_Program_Source shader_filter_invert_bgra_frag_src =
+{
+   filter_invert_bgra_frag_glsl,
+   NULL, 0
+};
+const char filter_invert_bgra_nomul_frag_glsl[] =
+#include "shader/filter_invert_bgra_nomul.h"
+  ;
+Evas_GL_Program_Source shader_filter_invert_bgra_nomul_frag_src =
+{
+   filter_invert_bgra_nomul_frag_glsl,
+   NULL, 0
+};
+
+/////////////////////////////////////////////
+const char filter_greyscale_frag_glsl[] =
+#include "shader/filter_greyscale.h"
+  ;
+Evas_GL_Program_Source shader_filter_greyscale_frag_src =
+{
+   filter_greyscale_frag_glsl,
+   NULL, 0
+};
+
+const char filter_greyscale_nomul_frag_glsl[] =
+#include "shader/filter_greyscale_nomul.h"
+  ;
+Evas_GL_Program_Source shader_filter_greyscale_nomul_frag_src =
+{
+   filter_greyscale_nomul_frag_glsl,
+   NULL, 0
+};
+
+const char filter_greyscale_bgra_frag_glsl[] =
+#include "shader/filter_greyscale_bgra.h"
+  ;
+Evas_GL_Program_Source shader_filter_greyscale_bgra_frag_src =
+{
+   filter_greyscale_bgra_frag_glsl,
+   NULL, 0
+};
+const char filter_greyscale_bgra_nomul_frag_glsl[] =
+#include "shader/filter_greyscale_bgra_nomul.h"
+  ;
+Evas_GL_Program_Source shader_filter_greyscale_bgra_nomul_frag_src =
+{
+   filter_greyscale_bgra_nomul_frag_glsl,
+   NULL, 0
+};
+
+/////////////////////////////////////////////
+const char filter_sepia_frag_glsl[] =
+#include "shader/filter_sepia.h"
+  ;
+Evas_GL_Program_Source shader_filter_sepia_frag_src =
+{
+   filter_sepia_frag_glsl,
+   NULL, 0
+};
+
+const char filter_sepia_nomul_frag_glsl[] =
+#include "shader/filter_sepia_nomul.h"
+  ;
+Evas_GL_Program_Source shader_filter_sepia_nomul_frag_src =
+{
+   filter_sepia_nomul_frag_glsl,
+   NULL, 0
+};
+
+const char filter_sepia_bgra_frag_glsl[] =
+#include "shader/filter_sepia_bgra.h"
+  ;
+Evas_GL_Program_Source shader_filter_sepia_bgra_frag_src =
+{
+   filter_sepia_bgra_frag_glsl,
+   NULL, 0
+};
+const char filter_sepia_bgra_nomul_frag_glsl[] =
+#include "shader/filter_sepia_bgra_nomul.h"
+  ;
+Evas_GL_Program_Source shader_filter_sepia_bgra_nomul_frag_src =
+{
+   filter_sepia_bgra_nomul_frag_glsl,
+   NULL, 0
+};
+
+/////////////////////////////////////////////
+#if 0
+	Blur is a work in progress currently.
+	Mostly because GPUs are so hopeless.
+const char filter_blur_vert_glsl[] =
+#include "shader/filter_blur_vert.h"
+  ;
+
+Evas_GL_Program_Source shader_filter_blur_vert_src =
+{
+   filter_blur_vert_glsl,
+   NULL, 0
+};
+
+const char filter_blur_frag_glsl[] =
+#include "shader/filter_blur.h"
+  ;
+Evas_GL_Program_Source shader_filter_blur_frag_src =
+{
+   filter_blur_frag_glsl,
+   NULL, 0
+};
+
+const char filter_blur_nomul_frag_glsl[] =
+#include "shader/filter_blur_nomul.h"
+  ;
+Evas_GL_Program_Source shader_filter_blur_nomul_frag_src =
+{
+   filter_blur_nomul_frag_glsl,
+   NULL, 0
+};
+
+const char filter_blur_bgra_frag_glsl[] =
+#include "shader/filter_blur_bgra.h"
+  ;
+Evas_GL_Program_Source shader_filter_blur_bgra_frag_src =
+{
+   filter_blur_bgra_frag_glsl,
+   NULL, 0
+};
+const char filter_blur_bgra_nomul_frag_glsl[] =
+#include "shader/filter_blur_bgra_nomul.h"
+  ;
+Evas_GL_Program_Source shader_filter_blur_bgra_nomul_frag_src =
+{
+   filter_blur_bgra_nomul_frag_glsl,
+   NULL, 0
+};
+
+#endif
+
+
+
+/////////////////////////////////////////////
 static void
 gl_compile_link_error(GLuint target, const char *action)
 {
@@ -502,7 +663,6 @@ _evas_gl_shader_file_exists(const char *file)
    struct stat st;
    if (!file) return EINA_FALSE;
    if (stat(file, &st) < 0) return EINA_FALSE;
-
    return EINA_TRUE;
 }
 
@@ -527,30 +687,30 @@ _evas_gl_shader_file_mkpath(const char *path)
 
    if (_evas_gl_shader_file_is_dir(path)) return EINA_TRUE;
 
-   for (i = 0; path[i] != '\0'; ss[i] = path[i], i++)
+   for (i = 0; path[i]; ss[i] = path[i], i++)
      {
         if (i == sizeof(ss) - 1) return EINA_FALSE;
         if ((path[i] == '/') && (i > 0))
           {
-             ss[i] = '\0';
+             ss[i] = 0;
              if (!_evas_gl_shader_file_mkpath_if_not_exists(ss))
                return EINA_FALSE;
           }
      }
-   ss[i] = '\0';
+   ss[i] = 0;
    return _evas_gl_shader_file_mkpath_if_not_exists(ss);
 }
 
 static int
 _evas_gl_shader_dir_check(char *bin_shader_dir, int num)
 {
-   char *bin_shader_main_dir = NULL;
-   char *bin_shader_sub_dir = "/.evas/gl_common_shaders";
+   char *home = NULL;
+   char *subdir = ".cache/evas_gl_common_shaders";
 
-   bin_shader_main_dir = getenv("HOME");
-   if (!bin_shader_main_dir ||bin_shader_main_dir[0] == '\0') return 0;
-
-   snprintf(bin_shader_dir, num, "%s%s", bin_shader_main_dir, bin_shader_sub_dir);
+   home = getenv("HOME");
+   if ((!home) || (!home[0])) return 0;
+   
+   snprintf(bin_shader_dir, num, "%s/%s", home, subdir);
    return _evas_gl_shader_file_exists(bin_shader_dir);
 }
 
@@ -581,7 +741,7 @@ _evas_gl_shader_file_check(const char *bin_shader_dir, char *bin_shader_file, in
              j++;
           }
      }
-   after_name[j] = '\0';
+   after_name[j] = 0;
 
    snprintf(bin_shader_file, dir_num, "%s/%s", bin_shader_dir, after_name);
 
@@ -600,12 +760,12 @@ _evas_gl_common_shader_program_binary_init(Evas_GL_Program *p,
    if (!ef) return res;
 
    data = eet_read(ef, pname, &length);
-   if (!data || length <= 0) goto finish;
+   if ((!data) || (length <= 0)) goto finish;
 
    glGetIntegerv(GL_NUM_PROGRAM_BINARY_FORMATS, &num);
    if (num <= 0) goto finish;
 
-   formats = (int*)calloc(num, sizeof(int));
+   formats = calloc(num, sizeof(int));
    if (!formats) goto finish;
 
    glGetIntegerv(GL_PROGRAM_BINARY_FORMATS, formats);
@@ -613,13 +773,15 @@ _evas_gl_common_shader_program_binary_init(Evas_GL_Program *p,
 
    p->prog = glCreateProgram();
 
-   // TOOD: invalid rendering error occurs when attempting to use a glProgramBinary.
-   // in order to render correctly we should create a dummy vertex shader.
+#if 1
+   // TODO: invalid rendering error occurs when attempting to use a 
+   // glProgramBinary. in order to render correctly we should create a dummy 
+   // vertex shader.
    p->vert = glCreateShader(GL_VERTEX_SHADER);
    glAttachShader(p->prog, p->vert);
    p->frag = glCreateShader(GL_FRAGMENT_SHADER);
    glAttachShader(p->prog, p->frag);
-
+#endif
    glsym_glProgramBinary(p->prog, formats[0], data, length);
 
    glBindAttribLocation(p->prog, SHAD_VERTEX, "vertex");
@@ -628,18 +790,16 @@ _evas_gl_common_shader_program_binary_init(Evas_GL_Program *p,
    glBindAttribLocation(p->prog, SHAD_TEXUV2, "tex_coord2");
    glBindAttribLocation(p->prog, SHAD_TEXUV3, "tex_coord3");
    glBindAttribLocation(p->prog, SHAD_TEXM,   "tex_coordm");
-
    res = 1;
 
 finish:
    if (formats) free(formats);
    if (data) free(data);
-   if (!res && p->prog)
+   if ((!res) && (p->prog))
      {
         glDeleteProgram(p->prog);
         p->prog = 0;
      }
-
    return res;
 }
 
@@ -656,12 +816,10 @@ _evas_gl_common_shader_program_binary_save(Evas_GL_Program *p,
 
    glGetProgramiv(p->prog, GL_PROGRAM_BINARY_LENGTH, &length);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-
    if (length <= 0) return 0;
 
    data = malloc(length);
    if (!data) return 0;
-
 
    glsym_glGetProgramBinary(p->prog, length, NULL, &format, data);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
@@ -677,12 +835,12 @@ _evas_gl_common_shader_program_binary_save(Evas_GL_Program *p,
 
 static int
 _evas_gl_common_shader_program_source_init(Evas_GL_Program *p,
-                                   Evas_GL_Program_Source *vert,
-                                   Evas_GL_Program_Source *frag,
-                                   const char *name)
+                                           Evas_GL_Program_Source *vert,
+                                           Evas_GL_Program_Source *frag,
+                                           const char *name)
 {
    GLint ok;
-
+   
    p->vert = glCreateShader(GL_VERTEX_SHADER);
    p->frag = glCreateShader(GL_FRAGMENT_SHADER);
 #if defined (GLES_VARIETY_S3C6410)
@@ -721,6 +879,12 @@ _evas_gl_common_shader_program_source_init(Evas_GL_Program *p,
      }
 #endif
    p->prog = glCreateProgram();
+#if defined(GLES_VARIETY_S3C6410) || defined(GLES_VARIETY_SGX)
+#else
+   if ((glsym_glGetProgramBinary) && (glsym_glProgramParameteri))
+      glsym_glProgramParameteri(p->prog, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, 
+                                GL_TRUE);
+#endif   
    glAttachShader(p->prog, p->vert);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
    glAttachShader(p->prog, p->frag);
@@ -758,49 +922,120 @@ static int
 _evas_gl_common_shader_source_init(Evas_GL_Shared *shared)
 {
    if (!_evas_gl_common_shader_program_source_init(&(shared->shader.rect),
-                                                &(shader_rect_vert_src),
-                                                &(shader_rect_frag_src),
-                                                "rect")) return 0;
+                                                   &(shader_rect_vert_src),
+                                                   &(shader_rect_frag_src),
+                                                   "rect")) return 0;
    if (!_evas_gl_common_shader_program_source_init(&(shared->shader.font),
-                                                &(shader_font_vert_src),
-                                                &(shader_font_frag_src),
-                                                "font")) return 0;
+                                                   &(shader_font_vert_src),
+                                                   &(shader_font_frag_src),
+                                                   "font")) return 0;
    if (!_evas_gl_common_shader_program_source_init(&(shared->shader.img),
-                                                &(shader_img_vert_src),
-                                                &(shader_img_frag_src),
-                                                "img")) return 0;
+                                                   &(shader_img_vert_src),
+                                                   &(shader_img_frag_src),
+                                                   "img")) return 0;
    if (!_evas_gl_common_shader_program_source_init(&(shared->shader.img_nomul),
-                                                &(shader_img_nomul_vert_src),
-                                                &(shader_img_nomul_frag_src),
-                                                "img_nomul")) return 0;
+                                                   &(shader_img_nomul_vert_src),
+                                                   &(shader_img_nomul_frag_src),
+                                                   "img_nomul")) return 0;
    if (!_evas_gl_common_shader_program_source_init(&(shared->shader.img_bgra),
-                                                &(shader_img_bgra_vert_src),
+                                                   &(shader_img_bgra_vert_src),
                                                 &(shader_img_bgra_frag_src),
-                                                "img_bgra")) return 0;
+                                                   "img_bgra")) return 0;
    if (!_evas_gl_common_shader_program_source_init(&(shared->shader.img_bgra_nomul),
-                                                &(shader_img_bgra_nomul_vert_src),
-                                                &(shader_img_bgra_nomul_frag_src),
-                                                "img_bgra_nomul")) return 0;
+                                                   &(shader_img_bgra_nomul_vert_src),
+                                                   &(shader_img_bgra_nomul_frag_src),
+                                                   "img_bgra_nomul")) return 0;
    if (!_evas_gl_common_shader_program_source_init(&(shared->shader.img_mask),
-                                                &(shader_img_mask_vert_src),
-                                                &(shader_img_mask_frag_src),
-                                                "img_mask")) return 0;
+                                                   &(shader_img_mask_vert_src),
+                                                   &(shader_img_mask_frag_src),
+                                                   "img_mask")) return 0;
    if (!_evas_gl_common_shader_program_source_init(&(shared->shader.tex),
-                                                &(shader_tex_vert_src),
-                                                &(shader_tex_frag_src),
-                                                "tex")) return 0;
+                                                   &(shader_tex_vert_src),
+                                                   &(shader_tex_frag_src),
+                                                   "tex")) return 0;
    if (!_evas_gl_common_shader_program_source_init(&(shared->shader.tex_nomul),
-                                                &(shader_tex_nomul_vert_src),
-                                                &(shader_tex_nomul_frag_src),
-                                                "tex_nomul")) return 0;
+                                                   &(shader_tex_nomul_vert_src),
+                                                   &(shader_tex_nomul_frag_src),
+                                                   "tex_nomul")) return 0;
    if (!_evas_gl_common_shader_program_source_init(&(shared->shader.yuv),
-                                                &(shader_yuv_vert_src),
-                                                &(shader_yuv_frag_src),
-                                                "yuv")) return 0;
+                                                   &(shader_yuv_vert_src),
+                                                   &(shader_yuv_frag_src),
+                                                   "yuv")) return 0;
    if (!_evas_gl_common_shader_program_source_init(&(shared->shader.yuv_nomul),
-                                                &(shader_yuv_nomul_vert_src),
-                                                &(shader_yuv_nomul_frag_src),
-                                                "yuv_nomul")) return 0;
+                                                   &(shader_yuv_nomul_vert_src),
+                                                   &(shader_yuv_nomul_frag_src),
+                                                   "yuv_nomul")) return 0;
+   
+   /* Most of the filters use the image fragment shader */
+   if (!_evas_gl_common_shader_program_source_init(&(shared->shader.filter_invert),
+                                                   &(shader_img_vert_src),
+                                                   &(shader_filter_invert_frag_src),
+                                                   "filter_invert")) return 0;
+   if (!_evas_gl_common_shader_program_source_init(&(shared->shader.filter_invert_nomul),
+                                                   &(shader_img_vert_src),
+                                                   &(shader_filter_invert_nomul_frag_src),
+                                                   "filter_invert_nomul")) return 0;
+   if (!_evas_gl_common_shader_program_source_init(&(shared->shader.filter_invert_bgra),
+                                                   &(shader_img_vert_src),
+                                                   &(shader_filter_invert_bgra_frag_src),
+                                                   "filter_invert_bgra")) return 0;
+   if (!_evas_gl_common_shader_program_source_init(&(shared->shader.filter_invert_bgra_nomul),
+                                                   &(shader_img_vert_src),
+                                                   &(shader_filter_invert_bgra_nomul_frag_src),
+                                                   "filter_invert_bgra_nomul")) return 0;
+   
+   if (!_evas_gl_common_shader_program_source_init(&(shared->shader.filter_sepia),
+                                                   &(shader_img_vert_src),
+                                                   &(shader_filter_sepia_frag_src),
+                                                   "filter_sepia")) return 0;
+   if (!_evas_gl_common_shader_program_source_init(&(shared->shader.filter_sepia_nomul),
+                                                   &(shader_img_vert_src),
+                                                   &(shader_filter_sepia_nomul_frag_src),
+                                                   "filter_sepia_nomul")) return 0;
+   if (!_evas_gl_common_shader_program_source_init(&(shared->shader.filter_sepia_bgra),
+                                                   &(shader_img_vert_src),
+                                                   &(shader_filter_sepia_bgra_frag_src),
+                                                   "filter_sepia_bgra")) return 0;
+   if (!_evas_gl_common_shader_program_source_init(&(shared->shader.filter_sepia_bgra_nomul),
+                                                   &(shader_img_vert_src),
+                                                   &(shader_filter_sepia_bgra_nomul_frag_src),
+                                                   "filter_sepia_bgra_nomul")) return 0;
+   
+   if (!_evas_gl_common_shader_program_source_init(&(shared->shader.filter_greyscale),
+                                                   &(shader_img_vert_src),
+                                                   &(shader_filter_greyscale_frag_src),
+                                                   "filter_greyscale")) return 0;
+   if (!_evas_gl_common_shader_program_source_init(&(shared->shader.filter_greyscale_nomul),
+                                                   &(shader_img_vert_src),
+                                                   &(shader_filter_greyscale_nomul_frag_src),
+                                                   "filter_greyscale_nomul")) return 0;
+   if (!_evas_gl_common_shader_program_source_init(&(shared->shader.filter_greyscale_bgra),
+                                                   &(shader_img_vert_src),
+                                                   &(shader_filter_greyscale_bgra_frag_src),
+                                                   "filter_greyscale_bgra")) return 0;
+   if (!_evas_gl_common_shader_program_source_init(&(shared->shader.filter_greyscale_bgra_nomul),
+                                                   &(shader_img_vert_src),
+                                                   &(shader_filter_greyscale_bgra_nomul_frag_src),
+                                                   "filter_greyscale_bgra_nomul")) return 0;
+#if 0
+   if (!_evas_gl_common_shader_program_source_init(&(shared->shader.filter_blur),
+                                                   &(shader_filter_blur_vert_src),
+                                                   &(shader_filter_blur_frag_src),
+                                                   "filter_blur")) return 0;
+   if (!_evas_gl_common_shader_program_source_init(&(shared->shader.filter_blur_nomul),
+                                                   &(shader_filter_blur_vert_src),
+                                                   &(shader_filter_blur_nomul_frag_src),
+                                                   "filter_blur_nomul")) return 0;
+   if (!_evas_gl_common_shader_program_source_init(&(shared->shader.filter_blur_bgra),
+                                                   &(shader_filter_blur_vert_src),
+                                                   &(shader_filter_blur_bgra_frag_src),
+                                                   "filter_blur_bgra")) return 0;
+   if (!_evas_gl_common_shader_program_source_init(&(shared->shader.filter_blur_bgra_nomul),
+                                                   &(shader_filter_blur_vert_src),
+                                                   &(shader_filter_blur_bgra_nomul_frag_src),
+                                                   "filter_blur_bgra_nomul")) return 0;
+#endif
+   
    return 1;
 }
 
@@ -808,15 +1043,17 @@ static int
 _evas_gl_common_shader_binary_init(Evas_GL_Shared *shared)
 {
    /* check eet */
-   Eet_File *et = NULL; //check eet file
-
+   Eet_File *et = NULL;
    char bin_dir_path[PATH_MAX];
    char bin_file_path[PATH_MAX];
 
-   if (!_evas_gl_shader_dir_check(bin_dir_path, sizeof(bin_dir_path))) return 0;
-
-   if (!_evas_gl_shader_file_check(bin_dir_path, bin_file_path, sizeof(bin_dir_path))) return 0;
-
+   if (!_evas_gl_shader_dir_check(bin_dir_path, sizeof(bin_dir_path)))
+      return 0;
+   
+   if (!_evas_gl_shader_file_check(bin_dir_path, bin_file_path,
+                                   sizeof(bin_dir_path))) 
+      return 0;
+   
    /* use eet */
    if (!eet_init()) return 0;
    et = eet_open(bin_file_path, EET_FILE_MODE_READ);
@@ -833,6 +1070,28 @@ _evas_gl_common_shader_binary_init(Evas_GL_Shared *shared)
    if (!_evas_gl_common_shader_program_binary_init(&(shared->shader.tex_nomul),"tex_nomul", et)) goto error;
    if (!_evas_gl_common_shader_program_binary_init(&(shared->shader.yuv), "yuv", et)) goto error;
    if (!_evas_gl_common_shader_program_binary_init(&(shared->shader.yuv_nomul), "yuv_nomul", et)) goto error;
+
+   /* Most of the filters use the image fragment shader */
+   if (!_evas_gl_common_shader_program_binary_init(&(shared->shader.filter_invert), "filter_invert", et)) goto error;
+   if (!_evas_gl_common_shader_program_binary_init(&(shared->shader.filter_invert_nomul), "filter_invert_nomul", et)) goto error;
+   if (!_evas_gl_common_shader_program_binary_init(&(shared->shader.filter_invert_bgra), "filter_invert_bgra", et)) goto error;
+   if (!_evas_gl_common_shader_program_binary_init(&(shared->shader.filter_invert_bgra_nomul), "filter_invert_bgra_nomul", et)) goto error;
+
+   if (!_evas_gl_common_shader_program_binary_init(&(shared->shader.filter_sepia), "filter_sepia", et)) goto error;
+   if (!_evas_gl_common_shader_program_binary_init(&(shared->shader.filter_sepia_nomul), "filter_sepia_nomul", et)) goto error;
+   if (!_evas_gl_common_shader_program_binary_init(&(shared->shader.filter_sepia_bgra), "filter_sepia_bgra", et)) goto error;
+   if (!_evas_gl_common_shader_program_binary_init(&(shared->shader.filter_sepia_bgra_nomul), "filter_sepia_bgra_nomul", et)) goto error;
+
+   if (!_evas_gl_common_shader_program_binary_init(&(shared->shader.filter_greyscale), "filter_greyscale", et)) goto error;
+   if (!_evas_gl_common_shader_program_binary_init(&(shared->shader.filter_greyscale_nomul), "filter_greyscale_nomul", et)) goto error;
+   if (!_evas_gl_common_shader_program_binary_init(&(shared->shader.filter_greyscale_bgra), "filter_greyscale_bgra", et)) goto error;
+   if (!_evas_gl_common_shader_program_binary_init(&(shared->shader.filter_greyscale_bgra_nomul), "filter_greyscale_bgra_nomul", et)) goto error;
+#if 0
+   if (!_evas_gl_common_shader_program_binary_init(&(shared->shader.filter_blur), "filter_blur", et)) goto error;
+   if (!_evas_gl_common_shader_program_binary_init(&(shared->shader.filter_blur_nomul), "filter_blur_nomul", et)) goto error;
+   if (!_evas_gl_common_shader_program_binary_init(&(shared->shader.filter_blur_bgra), "filter_blur_bgra", et)) goto error;
+   if (!_evas_gl_common_shader_program_binary_init(&(shared->shader.filter_blur_bgra_nomul), "filter_blur_bgra_nomul", et)) goto error;
+#endif
 
    if (et) eet_close(et);
    eet_shutdown();
@@ -856,11 +1115,12 @@ _evas_gl_common_shader_binary_save(Evas_GL_Shared *shared)
    char tmp_file[PATH_MAX];
 
    if (!_evas_gl_shader_dir_check(bin_dir_path, sizeof(bin_dir_path)))
-     res = _evas_gl_shader_file_mkpath(bin_dir_path);
+      res = _evas_gl_shader_file_mkpath(bin_dir_path);
    if (!res) return 0; /* we can't make directory */
-
-   _evas_gl_shader_file_check(bin_dir_path, bin_file_path, sizeof(bin_dir_path));
-
+   
+   _evas_gl_shader_file_check(bin_dir_path, bin_file_path, 
+                              sizeof(bin_dir_path));
+   
    /* use mkstemp for writing */
    snprintf(tmp_file, sizeof(tmp_file), "%s.XXXXXX", bin_file_path);
    tmpfd = mkstemp(tmp_file);
@@ -884,6 +1144,27 @@ _evas_gl_common_shader_binary_save(Evas_GL_Shared *shared)
    if (!_evas_gl_common_shader_program_binary_save(&(shared->shader.tex_nomul),"tex_nomul", et)) goto error;
    if (!_evas_gl_common_shader_program_binary_save(&(shared->shader.yuv), "yuv", et)) goto error;
    if (!_evas_gl_common_shader_program_binary_save(&(shared->shader.yuv_nomul), "yuv_nomul", et)) goto error;
+   /* Most of the filters use the image fragment shader */
+   if (!_evas_gl_common_shader_program_binary_save(&(shared->shader.filter_invert), "filter_invert", et)) goto error;
+   if (!_evas_gl_common_shader_program_binary_save(&(shared->shader.filter_invert_nomul), "filter_invert_nomul", et)) goto error;
+   if (!_evas_gl_common_shader_program_binary_save(&(shared->shader.filter_invert_bgra), "filter_invert_bgra", et)) goto error;
+   if (!_evas_gl_common_shader_program_binary_save(&(shared->shader.filter_invert_bgra_nomul), "filter_invert_bgra_nomul", et)) goto error;
+
+   if (!_evas_gl_common_shader_program_binary_save(&(shared->shader.filter_sepia), "filter_sepia", et)) goto error;
+   if (!_evas_gl_common_shader_program_binary_save(&(shared->shader.filter_sepia_nomul), "filter_sepia_nomul", et)) goto error;
+   if (!_evas_gl_common_shader_program_binary_save(&(shared->shader.filter_sepia_bgra), "filter_sepia_bgra", et)) goto error;
+   if (!_evas_gl_common_shader_program_binary_save(&(shared->shader.filter_sepia_bgra_nomul), "filter_sepia_bgra_nomul", et)) goto error;
+
+   if (!_evas_gl_common_shader_program_binary_save(&(shared->shader.filter_greyscale), "filter_greyscale", et)) goto error;
+   if (!_evas_gl_common_shader_program_binary_save(&(shared->shader.filter_greyscale_nomul), "filter_greyscale_nomul", et)) goto error;
+   if (!_evas_gl_common_shader_program_binary_save(&(shared->shader.filter_greyscale_bgra), "filter_greyscale_bgra", et)) goto error;
+   if (!_evas_gl_common_shader_program_binary_save(&(shared->shader.filter_greyscale_bgra_nomul), "filter_greyscale_bgra_nomul", et)) goto error;
+#if 0
+   if (!_evas_gl_common_shader_program_binary_save(&(shared->shader.filter_blur), "filter_blur", et)) goto error;
+   if (!_evas_gl_common_shader_program_binary_save(&(shared->shader.filter_blur_nomul), "filter_blur_nomul", et)) goto error;
+   if (!_evas_gl_common_shader_program_binary_save(&(shared->shader.filter_blur_bgra), "filter_blur_bgra", et)) goto error;
+   if (!_evas_gl_common_shader_program_binary_save(&(shared->shader.filter_blur_bgra_nomul), "filter_blur_bgra_nomul", et)) goto error;
+#endif
 
    if (eet_close(et) != EET_ERROR_NONE) goto error;
    if (rename(tmp_file,bin_file_path) < 0) goto error;
@@ -901,14 +1182,12 @@ int
 evas_gl_common_shader_program_init(Evas_GL_Shared *shared)
 {
    // gl support binary shader and get env of binary shader path
-   if (shared->info.bin_program && _evas_gl_common_shader_binary_init(shared)) return 1;
-
+   if (shared->info.bin_program && 
+       _evas_gl_common_shader_binary_init(shared)) return 1;
    /* compile all shader.*/
    if (!_evas_gl_common_shader_source_init(shared)) return 0;
-
-   /* sucess compile all shader. if gl support binary shader, we need to save */
+   /* success compile all shader. if gl support binary shader, we need to save */
    if (shared->info.bin_program) _evas_gl_common_shader_binary_save(shared);
-
    return 1;
 }
 

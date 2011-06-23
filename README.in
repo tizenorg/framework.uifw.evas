@@ -19,7 +19,6 @@ Must:
 Recommended:
   libX11
   libXext
-  libXrender
   fontconfig
   libpng
   libjpeg
@@ -27,7 +26,7 @@ Recommended:
   libpthread
 
 Optional:
-  XCB SDL OpenGL Qtopia librsvg libtiff libgif edb DirectFB
+  XCB SDL OpenGL librsvg libtiff libgif edb DirectFB
 
 Evas is a clean display canvas API for several target display systems
 that can draw anti-aliased text, smooth super and sub-sampled scaled
@@ -192,22 +191,6 @@ pixels, allowing the results of rendering to be directly read out or
 used again for other purposes.
 
 
---enable-xrender-x11[=static]
-
-this engine uses the xrender api to do drawing via (possibly)
-accelerated 2d or 3d hardware means. as such xrender has never lived
-up to its possible performance levels and has fallen into disrepair.
-use this engine at your own risk. it is considered to be "bitrotting"
-and be unmaintained.
-
-
---enable-xrender-xcb[=static]
-
-this is the same as xrender-x11 but uses/exposes an xcb api. It is not
-recommended to use this as it's experimental and will create problems
-with both ecore_evas and enlightenment itself.
-
-
 --enable-gl-x11[=static]
 
 this is the opengl engine. it is intended for an x11 target (via xlib)
@@ -350,16 +333,6 @@ windows direct-draw engine for evas
 --enable-direct3d[=static]
 
 evas direct3d engine (experimental)
-
-
---enable-quartz[=static]
-
-macos-x quartz engine (experimental)
-
-
---enable-gl-glew[=static]
-
-opengl glew based gl engine for evas (experimental)
 
 
 --enable-software-sdl[=static]
@@ -876,5 +849,3 @@ found here:
   http://www.koders.com/c/fid2B518462CB1EED3D4E31E271DB83CD1582F6EEBE.aspx
 It should be installed in the mingw include directory.
 
-For the OpenGL engine on Windows, the glew library is needed:
-  http://glew.sourceforge.net/

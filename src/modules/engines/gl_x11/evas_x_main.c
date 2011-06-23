@@ -214,14 +214,13 @@ eng_window_new(Display *disp,
 	eng_window_free(gw);
         return NULL;
      }
-    _evas_gl_x11_window = gw;
 
    vendor = glGetString(GL_VENDOR);
    renderer = glGetString(GL_RENDERER);
    version = glGetString(GL_VERSION);
-   if (!vendor) vendor = "-UNKNOWN-";
-   if (!renderer) renderer = "-UNKNOWN-";
-   if (!version) version = "-UNKNOWN-";
+   if (!vendor)   vendor   = (unsigned char *)"-UNKNOWN-";
+   if (!renderer) renderer = (unsigned char *)"-UNKNOWN-";
+   if (!version)  version  = (unsigned char *)"-UNKNOWN-";
    if (getenv("EVAS_GL_INFO"))
      {
         fprintf(stderr, "vendor: %s\n", vendor);
@@ -500,7 +499,6 @@ eng_window_new(Display *disp,
           }
      }
 #endif
-   _evas_gl_x11_window = gw;
    
    gw->gl_context = evas_gl_common_context_new();
    if (!gw->gl_context)
@@ -511,10 +509,11 @@ eng_window_new(Display *disp,
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
    gw->gl_context->egldisp = gw->egl_disp;
 #endif   
-   evas_gl_common_context_use(gw->gl_context);
+   eng_window_use(gw);
    evas_gl_common_context_resize(gw->gl_context, w, h, rot);
    gw->surf = 1;
    return gw;
+   indirect = 0;
 }
 
 void
@@ -525,13 +524,13 @@ eng_window_free(Evas_GL_X11_Window *gw)
    eng_window_use(gw);
    if (gw == _evas_gl_x11_window) _evas_gl_x11_window = NULL;
    if (gw->gl_context)
-      {
-         ref = gw->gl_context->references - 1;
-         evas_gl_common_context_free(gw->gl_context);
-      }
+     {
+        ref = gw->gl_context->references - 1;
+        evas_gl_common_context_free(gw->gl_context);
+     }
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
    if (gw->egl_surface[0] != EGL_NO_SURFACE)
-     eglDestroySurface(gw->egl_disp, gw->egl_surface[0]);
+      eglDestroySurface(gw->egl_disp, gw->egl_surface[0]);
    if (ref == 0)
      {
         if (context) eglDestroyContext(gw->egl_disp, context);
@@ -570,15 +569,23 @@ eng_window_use(Evas_GL_X11_Window *gw)
                 _evas_gl_x11_window->egl_surface[0]))
            force_use = EINA_TRUE;
      }
-#else   
+#else
+   if (_evas_gl_x11_window)
+     {
+        if (glXGetCurrentContext() != _evas_gl_x11_window->context)
+           force_use = EINA_TRUE;
+     }
 #endif   
    if ((_evas_gl_x11_window != gw) || (force_use))
      {
         if (_evas_gl_x11_window)
-          evas_gl_common_context_flush(_evas_gl_x11_window->gl_context);
-	_evas_gl_x11_window = gw;
-       if (gw)
-         {
+          {
+             evas_gl_common_context_use(_evas_gl_x11_window->gl_context);
+             evas_gl_common_context_flush(_evas_gl_x11_window->gl_context);
+          }
+        _evas_gl_x11_window = gw;
+        if (gw)
+          {
 // EGL / GLES
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
            if (gw->egl_surface[0] != EGL_NO_SURFACE)
@@ -609,7 +616,7 @@ eng_window_use(Evas_GL_X11_Window *gw)
                  }
              }
 #endif
-         }
+          }
      }
    if (gw) evas_gl_common_context_use(gw->gl_context);
 }

@@ -5,9 +5,6 @@
 #include "language/evas_language_utils.h"
 #include "evas_font_ot.h"
 
-/* Used for showing "malformed" or missing chars */
-#define REPLACEMENT_CHAR 0xFFFD
-
 void
 evas_common_text_props_bidi_set(Evas_Text_Props *props,
       Evas_BiDi_Paragraph_Props *bidi_par_props, size_t start)
@@ -25,10 +22,9 @@ evas_common_text_props_bidi_set(Evas_Text_Props *props,
 }
 
 void
-evas_common_text_props_script_set(Evas_Text_Props *props,
-      const Eina_Unicode *str)
+evas_common_text_props_script_set(Evas_Text_Props *props, Evas_Script_Type scr)
 {
-   props->script = evas_common_language_script_type_get(str);
+   props->script = scr;
 }
 
 void
@@ -69,7 +65,87 @@ evas_common_text_props_content_unref(Evas_Text_Props *props)
      }
 }
 
-/* Won't work in the middle of ligatures, assumes cutoff < len */
+/* Returns the index of the logical char in the props. */
+EAPI int
+evas_common_text_props_index_find(Evas_Text_Props *props, int _cutoff)
+{
+#ifdef OT_SUPPORT
+   Evas_Font_OT_Info *ot_info;
+   int min = 0;
+   int max = props->len - 1;
+   int mid;
+
+   _cutoff += props->text_offset;
+   ot_info = props->info->ot + props->start;
+   if (props->bidi.dir == EVAS_BIDI_DIRECTION_RTL)
+     {
+        /* Monotonic in a descending order */
+        do
+          {
+             mid = (min + max) / 2;
+
+             if (_cutoff > (int) ot_info[mid].source_cluster)
+                max = mid - 1;
+             else if (_cutoff < (int) ot_info[mid].source_cluster)
+                min = mid + 1;
+             else
+                break;
+          }
+        while (min <= max);
+     }
+   else
+     {
+        /* Monotonic in an ascending order */
+        do
+          {
+             mid = (min + max) / 2;
+
+             if (_cutoff < (int) ot_info[mid].source_cluster)
+                max = mid - 1;
+             else if (_cutoff > (int) ot_info[mid].source_cluster)
+                min = mid + 1;
+             else
+                break;
+          }
+        while (min <= max);
+     }
+
+   /* If we didn't find, abort */
+   if (min > max)
+      return -1;
+
+   ot_info += mid;
+   if (props->bidi.dir == EVAS_BIDI_DIRECTION_RTL)
+     {
+        /* Walk to the last one of the same cluster */
+        for ( ; mid < (int) props->len ; mid++, ot_info++)
+          {
+             if (ot_info->source_cluster != (size_t) _cutoff)
+                break;
+          }
+        mid = props->len - mid;
+     }
+   else
+     {
+        /* Walk to the last one of the same cluster */
+        for ( ; mid >= 0 ; mid--, ot_info--)
+          {
+             if (ot_info->source_cluster != (size_t) _cutoff)
+                break;
+          }
+        mid++;
+     }
+
+   return mid;
+#else
+   return _cutoff;
+   (void) props;
+#endif
+}
+
+/* Won't work in the middle of ligatures, assumes cutoff < len.
+ * Also won't work in the middle of indic words, should handle that in a
+ * smart way. */
 EAPI void
 evas_common_text_props_split(Evas_Text_Props *base,
       Evas_Text_Props *ext, int _cutoff)
@@ -78,39 +154,13 @@ evas_common_text_props_split(Evas_Text_Props *base,
 
    /* Translate text cutoff pos to string object cutoff point */
 #ifdef OT_SUPPORT
-   cutoff = 0;
+   _cutoff = evas_common_text_props_index_find(base, _cutoff);
 
+   if (_cutoff > 0)
      {
-        Evas_Font_OT_Info *itr;
-        size_t i;
-        itr = base->info->ot + base->start;
-        _cutoff += base->text_offset;
-        /* FIXME: can I binary search? I don't think this is always sorted */
-        for (i = 0 ; i < base->len ; i++, itr++)
-          {
-             if (itr->source_cluster == (size_t) _cutoff)
-               {
-                  if (base->bidi.dir == EVAS_BIDI_DIRECTION_RTL)
-                    {
-                       /* Walk to the last one of the same cluster */
-                       for ( ; i < base->len ; i++, itr++)
-                         {
-                            if (itr->source_cluster != (size_t) _cutoff)
-                              break;
-                         }
-                       cutoff = base->len - i;
-                    }
-                  else
-                    {
-                       cutoff = i;
-                    }
-                  break;
-               }
-          }
+        cutoff = (size_t) _cutoff;
      }
-
-   /* If we didn't find a reasonable cut location, return. */
-   if (cutoff == 0)
+   else
      {
         ERR("Couldn't find the cutoff position. Is it inside a cluster?");
         return;
@@ -170,11 +220,11 @@ evas_common_text_props_merge(Evas_Text_Props *item1,
 }
 
 EAPI Eina_Bool
-evas_common_text_props_content_create(void *_fn, const Eina_Unicode *text,
-      Evas_Text_Props *text_props, int len)
+evas_common_text_props_content_create(void *_fi, const Eina_Unicode *text,
+      Evas_Text_Props *text_props, const Evas_BiDi_Paragraph_Props *par_props,
+      size_t par_pos, int len)
 {
-   RGBA_Font *fn = (RGBA_Font *) _fn;
-   RGBA_Font_Int *fi;
+   RGBA_Font_Int *fi = (RGBA_Font_Int *) _fi;
 
    if (text_props->info)
      {
@@ -187,8 +237,8 @@ evas_common_text_props_content_create(void *_fn, const Eina_Unicode *text,
      }
    text_props->info = calloc(1, sizeof(Evas_Text_Props_Info));
 
-   fi = fn->fonts->data;
-   /* evas_common_font_size_use(fn); */
+   text_props->font_instance = fi;
+
    evas_common_font_int_reload(fi);
    if (fi->src->current_size != fi->size)
      {
@@ -201,53 +251,34 @@ evas_common_text_props_content_create(void *_fn, const Eina_Unicode *text,
 #ifdef OT_SUPPORT
    size_t char_index;
    Evas_Font_Glyph_Info *gl_itr;
-   const Eina_Unicode *base_char;
-   evas_common_font_ot_populate_text_props(fn, text, text_props, len);
+   Evas_Coord pen_x = 0, adjust_x = 0;
+   (void) par_props;
+   (void) par_pos;
 
-   /* Load the glyph according to the first letter of the script, preety
-    * bad, but will have to do */
-     {
-        /* Skip common chars */
-        for (base_char = text ;
-             *base_char &&
-             evas_common_language_char_script_get(*base_char) ==
-             EVAS_SCRIPT_COMMON ;
-             base_char++)
-           ;
-        if (!*base_char && (base_char > text)) base_char--;
-        evas_common_font_glyph_search(fn, &fi, *base_char);
-     }
+   evas_common_font_ot_populate_text_props(text, text_props, len);
 
    gl_itr = text_props->info->glyph;
    for (char_index = 0 ; char_index < text_props->len ; char_index++)
      {
-        FT_UInt index;
+        FT_UInt idx;
         RGBA_Font_Glyph *fg;
         Eina_Bool is_replacement = EINA_FALSE;
         /* If we got a malformed index, show the replacement char instead */
         if (gl_itr->index == 0)
           {
-             gl_itr->index =
-                evas_common_font_glyph_search(fn, &fi, REPLACEMENT_CHAR);
+             gl_itr->index = evas_common_get_char_index(fi, REPLACEMENT_CHAR);
              is_replacement = EINA_TRUE;
           }
-        index = gl_itr->index;
+        idx = gl_itr->index;
         LKL(fi->ft_mutex);
-        fg = evas_common_font_int_cache_glyph_get(fi, index);
+        fg = evas_common_font_int_cache_glyph_get(fi, idx);
         if (!fg)
           {
              LKU(fi->ft_mutex);
              continue;
           }
         LKU(fi->ft_mutex);
-        if (is_replacement)
-          {
-             /* Update the advance accordingly */
-             gl_itr->advance =
-                fg->glyph->advance.x >> 10;
-             /* FIXME: reload fi, a bit slow, but I have no choice. */
-             evas_common_font_glyph_search(fn, &fi, *base_char);
-          }
+
         gl_itr->x_bear = fg->glyph_out->left;
         gl_itr->width = fg->glyph_out->bitmap.width;
         /* text_props->info->glyph[char_index].advance =
@@ -255,8 +286,31 @@ evas_common_text_props_content_create(void *_fn, const Eina_Unicode *text,
          * already done by the ot function */
         if (EVAS_FONT_CHARACTER_IS_INVISIBLE(
               text[text_props->info->ot[char_index].source_cluster]))
-           gl_itr->index = 0;
+          {
+             gl_itr->index = 0;
+             /* Reduce the current advance */
+             if (gl_itr > text_props->info->glyph)
+               {
+                  adjust_x -= gl_itr->pen_after - (gl_itr - 1)->pen_after;
+               }
+             else
+               {
+                  adjust_x -= gl_itr->pen_after;
+               }
+          }
+        else
+          {
+             if (is_replacement)
+               {
+                  /* Update the advance accordingly */
+                  adjust_x += (pen_x + (fg->glyph->advance.x >> 16)) -
+                     gl_itr->pen_after;
+               }
+             pen_x = gl_itr->pen_after;
+          }
+        gl_itr->pen_after += adjust_x;
 
+        fi = text_props->font_instance;
         gl_itr++;
      }
 #else
@@ -265,7 +319,20 @@ evas_common_text_props_content_create(void *_fn, const Eina_Unicode *text,
    Eina_Bool use_kerning;
    FT_UInt prev_index;
    FT_Face pface = NULL;
+   Evas_Coord pen_x = 0;
    int adv_d, i;
+#if !defined(OT_SUPPORT) && defined(BIDI_SUPPORT)
+   Eina_Unicode *base_str = NULL;
+   if (text_props->bidi.dir == EVAS_BIDI_DIRECTION_RTL)
+     {
+        text = base_str = eina_unicode_strndup(text, len);
+        evas_bidi_shape_string(base_str, par_props, par_pos, len);
+     }
+#else
+   (void) par_props;
+   (void) par_pos;
+#endif
+
    FTLOCK();
    use_kerning = FT_HAS_KERNING(fi->src->ft.face);
    FTUNLOCK();
@@ -288,32 +355,21 @@ evas_common_text_props_content_create(void *_fn, const Eina_Unicode *text,
    gl_itr = text_props->info->glyph;
    for ( ; i > 0 ; gl_itr++, text += adv_d, i--)
      {
-        FT_UInt index;
+        FT_UInt idx;
         RGBA_Font_Glyph *fg;
         int _gl, kern;
+        Evas_Coord adv;
         _gl = *text;
         if (_gl == 0) break;
 
-        index = evas_common_font_glyph_search(fn, &fi, _gl);
-        if (index == 0)
+        idx = evas_common_get_char_index(fi, _gl);
+        if (idx == 0)
           {
-             index = evas_common_font_glyph_search(fn, &fi, REPLACEMENT_CHAR);
-          }
-
-        /* Should we really set the size per fi? This fixes a bug for Korean
-         * because for some reason different fis are chosen for different
-         * chars in some cases. But we should find the source of the problem
-         * and not just fix the symptom. */
-        if (fi->src->current_size != fi->size)
-          {
-             FTLOCK();
-             FT_Activate_Size(fi->ft.size);
-             FTUNLOCK();
-             fi->src->current_size = fi->size;
+             idx = evas_common_get_char_index(fi, REPLACEMENT_CHAR);
           }
 
         LKL(fi->ft_mutex);
-        fg = evas_common_font_int_cache_glyph_get(fi, index);
+        fg = evas_common_font_int_cache_glyph_get(fi, idx);
         if (!fg)
           {
              LKU(fi->ft_mutex);
@@ -321,49 +377,45 @@ evas_common_text_props_content_create(void *_fn, const Eina_Unicode *text,
           }
         kern = 0;
 
-        if ((use_kerning) && (prev_index) && (index) &&
+        if ((use_kerning) && (prev_index) && (idx) &&
             (pface == fi->src->ft.face))
           {
-# ifdef BIDI_SUPPORT
-             /* if it's rtl, the kerning matching should be reversed, */
-             /* i.e prev index is now the index and the other way */
-             /* around. There is a slight exception when there are */
-             /* compositing chars involved.*/
-             if (text_props &&
-                 (text_props->bidi.dir != EVAS_BIDI_DIRECTION_RTL))
+             if (evas_common_font_query_kerning(fi, prev_index, idx, &kern))
                {
-                  if (evas_common_font_query_kerning(fi, index, prev_index, &kern))
-                    {
-                       (gl_itr - 1)->advance += kern;
-                    }
-               }
-             else
-# endif
-               {
-                  if (evas_common_font_query_kerning(fi, prev_index, index, &kern))
-                    {
-                       (gl_itr - 1)->advance += kern;
-                    }
+                  pen_x += kern;
+                  (gl_itr - 1)->pen_after +=
+                     EVAS_FONT_ROUND_26_6_TO_INT(kern);
                }
           }
 
         pface = fi->src->ft.face;
         LKU(fi->ft_mutex);
 
-        if (EVAS_FONT_CHARACTER_IS_INVISIBLE(_gl))
-           gl_itr->index = 0;
-
-        gl_itr->index = index;
+        gl_itr->index = idx;
         gl_itr->x_bear = fg->glyph_out->left;
-        gl_itr->advance = fg->glyph->advance.x >> 10;
+        adv = fg->glyph->advance.x >> 10;
         gl_itr->width = fg->glyph_out->bitmap.width;
 
-        prev_index = index;
+        if (EVAS_FONT_CHARACTER_IS_INVISIBLE(_gl))
+          {
+             gl_itr->index = 0;
+          }
+        else
+          {
+             pen_x += adv;
+          }
+
+        gl_itr->pen_after = EVAS_FONT_ROUND_26_6_TO_INT(pen_x);
+
+        prev_index = idx;
      }
    text_props->len = len;
+# if !defined(OT_SUPPORT) && defined(BIDI_SUPPORT)
+   if (base_str)
+      free(base_str);
+# endif
 #endif
    text_props->text_len = len;
    text_props->info->refcount = 1;
    return EINA_TRUE;
 }
-

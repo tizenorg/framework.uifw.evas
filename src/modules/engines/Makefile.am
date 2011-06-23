@@ -21,9 +21,6 @@ endif
 if !EVAS_STATIC_BUILD_GL_COMMON
 SUBDIRS += gl_common
 endif
-if !EVAS_STATIC_BUILD_GL_GLEW
-SUBDIRS += gl_glew
-endif
 if !EVAS_STATIC_BUILD_GL_X11
 SUBDIRS += gl_x11
 endif
@@ -31,9 +28,6 @@ if !EVAS_STATIC_BUILD_GL_SDL
 SUBDIRS += gl_sdl
 endif
 
-if !EVAS_STATIC_BUILD_QUARTZ
-SUBDIRS += quartz
-endif
 if !EVAS_STATIC_BUILD_SOFTWARE_8
 SUBDIRS += software_8
 endif
@@ -64,16 +58,4 @@ endif
 if !EVAS_STATIC_BUILD_SOFTWARE_X11
 SUBDIRS += software_x11
 endif
-if !EVAS_STATIC_BUILD_XRENDER_X11
-SUBDIRS += xrender_x11
-endif
 
-
-#if !EVAS_STATIC_BUILD_CAIRO_X11
-#SUBDIRS +=
-#cairo_common
-#cairo_x11
-#endif
-#if !EVAS_STATIC_BUILD_SOFTWARE_QTOPIA
-#SUBDIRS += software_qtopia
-#endif

@@ -4,10 +4,9 @@
 #include <Eina.h>
 #include "evas_bidi_utils.h"
 
-/* Unicode Script property - conforming to HARFBUZZ's */
+/* Unicode Script property */
 typedef enum
 {
-  EVAS_SCRIPT_INVALID_CODE = -1,
   EVAS_SCRIPT_COMMON       = 0,   /* Zyyy */
   EVAS_SCRIPT_INHERITED,          /* Qaai */
   EVAS_SCRIPT_ARABIC,             /* Arab */
@@ -105,27 +104,29 @@ typedef enum
   EVAS_SCRIPT_JAVANESE,               /* Java */
   EVAS_SCRIPT_KAITHI,                 /* Kthi */
   EVAS_SCRIPT_LISU,                   /* Lisu */
-  EVAS_SCRIPT_MEITEI_MAYEK,           /* Mtei */
+  EVAS_SCRIPT_MEETEI_MAYEK,           /* Mtei */
   EVAS_SCRIPT_OLD_SOUTH_ARABIAN,      /* Sarb */
   EVAS_SCRIPT_OLD_TURKIC,             /* Orkh */
   EVAS_SCRIPT_SAMARITAN,              /* Samr */
   EVAS_SCRIPT_TAI_THAM,               /* Lana */
-  EVAS_SCRIPT_TAI_VIET                /* Tavt */
+  EVAS_SCRIPT_TAI_VIET,                /* Tavt */
+
+  /* Unicode-6.0 additions */
+  EVAS_SCRIPT_BATAK,                  /* Batk */
+  EVAS_SCRIPT_BRAHMI,                 /* Brah */
+  EVAS_SCRIPT_MANDAIC,                /* Mand */
 } Evas_Script_Type;
 
 int
 evas_common_language_script_end_of_run_get(const Eina_Unicode *str, const Evas_BiDi_Paragraph_Props *bidi_props, size_t start, int len);
 
 Evas_Script_Type
-evas_common_language_script_type_get(const Eina_Unicode *str);
+evas_common_language_script_type_get(const Eina_Unicode *str, size_t len);
 
 Evas_Script_Type
 evas_common_language_char_script_get(Eina_Unicode unicode);
 
 const char *
 evas_common_language_from_locale_get(void);
-
-void *
-evas_common_language_unicode_funcs_get(void);
 #endif
 

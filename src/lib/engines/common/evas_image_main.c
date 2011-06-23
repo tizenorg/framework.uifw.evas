@@ -140,24 +140,26 @@ _evas_common_rgba_image_new(void)
 #ifdef EVAS_FRAME_QUEUING
    LKI(im->cache_entry.ref_fq_add);
    LKI(im->cache_entry.ref_fq_del);
-   pthread_cond_init(&(im->cache_entry.cond_fq_del), NULL);
+   eina_condition_new(&(im->cache_entry.cond_fq_del),
+		      &(im->cache_entry.ref_fq_del));
 #endif
 
    evas_common_rgba_image_scalecache_init(&im->cache_entry);
+   
    return &im->cache_entry;
 }
 
 static void
 _evas_common_rgba_image_delete(Image_Entry *ie)
 {
-   RGBA_Image   *im = (RGBA_Image *) ie;
+   RGBA_Image *im = (RGBA_Image *)ie;
 
 #ifdef BUILD_PIPE_RENDER
    evas_common_pipe_free(im);
 # ifdef EVAS_FRAME_QUEUING
    LKD(im->cache_entry.ref_fq_add);
    LKD(im->cache_entry.ref_fq_del);
-   pthread_cond_destroy(&(im->cache_entry.cond_fq_del));
+   eina_condition_free(&(im->cache_entry.cond_fq_del));
 # endif
 #endif   
    evas_common_rgba_image_scalecache_shutdown(&im->cache_entry);
@@ -246,6 +248,42 @@ evas_common_rgba_image_unload(Image_Entry *ie)
 #endif
 }
 
+void
+_evas_common_rgba_image_post_surface(Image_Entry *ie)
+{
+#ifdef HAVE_PIXMAN
+   RGBA_Image   *im = (RGBA_Image *) ie;
+   
+   if (im->pixman.im) pixman_image_unref(im->pixman.im);
+   if (im->cache_entry.flags.alpha)
+     {
+        im->pixman.im = pixman_image_create_bits
+        (
+// FIXME: endianess determines this            
+            PIXMAN_a8r8g8b8,
+//            PIXMAN_b8g8r8a8, 
+            im->cache_entry.w, im->cache_entry.h,
+            im->image.data, 
+            im->cache_entry.w * 4
+        );
+     }
+   else
+     {
+        im->pixman.im = pixman_image_create_bits
+        (
+// FIXME: endianess determines this            
+            PIXMAN_x8r8g8b8,
+//            PIXMAN_b8g8r8x8,
+            im->cache_entry.w, im->cache_entry.h,
+            im->image.data, 
+            im->cache_entry.w * 4
+        );
+     }
+#else
+   ie = NULL;
+#endif
+}
+
 static int
 _evas_common_rgba_image_surface_alloc(Image_Entry *ie, unsigned int w, unsigned int h)
 {
@@ -275,7 +313,8 @@ _evas_common_rgba_image_surface_alloc(Image_Entry *ie, unsigned int w, unsigned 
 #  endif
 # endif
 #endif
-
+   _evas_common_rgba_image_post_surface(ie);
+   
    return 0;
 }
 
@@ -284,6 +323,13 @@ _evas_common_rgba_image_surface_delete(Image_Entry *ie)
 {
    RGBA_Image   *im = (RGBA_Image *) ie;
 
+#ifdef HAVE_PIXMAN
+   if (im->pixman.im)
+     {
+        pixman_image_unref(im->pixman.im);
+        im->pixman.im = NULL;
+     }
+#endif   
    if (ie->file)
      DBG("unload: [%p] %s %s", ie, ie->file, ie->key);
    if ((im->cs.data) && (im->image.data))
@@ -368,13 +414,13 @@ _evas_common_rgba_image_dirty(Image_Entry *ie_dst, const Image_Entry *ie_src)
 static int
 _evas_common_rgba_image_ram_usage(Image_Entry *ie)
 {
-   RGBA_Image   *im = (RGBA_Image *) ie;
+   RGBA_Image *im = (RGBA_Image *)ie;
    int size = sizeof(struct _RGBA_Image);
    
    if (ie->cache_key) size += strlen(ie->cache_key);
    if (ie->file) size += strlen(ie->file);
    if (ie->key) size += strlen(ie->key);
-
+   
    if (im->image.data)
      {
 #ifdef EVAS_CSERVE

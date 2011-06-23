@@ -34,18 +34,12 @@ struct _Evas_Font_OT_Info
 #  define EVAS_FONT_OT_POS_GET(a)   ((a).source_cluster)
 # endif
 
-EAPI void
-evas_common_font_ot_load_face(void *_font);
-
-EAPI void
-evas_common_font_ot_unload_face(void *_font);
-
 # include "evas_text_utils.h"
 EAPI int
 evas_common_font_ot_cluster_size_get(const Evas_Text_Props *props, size_t char_index);
 
 EAPI Eina_Bool
-evas_common_font_ot_populate_text_props(void *fn, const Eina_Unicode *text,
+evas_common_font_ot_populate_text_props(const Eina_Unicode *text,
       Evas_Text_Props *props, int len);
 #endif
 

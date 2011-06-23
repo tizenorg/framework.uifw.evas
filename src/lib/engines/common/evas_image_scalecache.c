@@ -100,6 +100,7 @@ evas_common_rgba_image_scalecache_init(Image_Entry *ie)
 {
 #ifdef SCALECACHE
    RGBA_Image *im = (RGBA_Image *)ie;
+   // NOTE: this conflicts with evas image cache init and del of lock
    LKI(im->cache.lock);
 #endif
 }
@@ -110,6 +111,7 @@ evas_common_rgba_image_scalecache_shutdown(Image_Entry *ie)
 #ifdef SCALECACHE
    RGBA_Image *im = (RGBA_Image *)ie;
    evas_common_rgba_image_scalecache_dirty(ie);
+   // NOTE: this conflicts with evas image cache init and del of lock
    LKD(im->cache.lock);
 #endif
 }
@@ -247,7 +249,6 @@ _sci_find(RGBA_Image *im,
           _sci_fix_newest(im);
         if (sci->im)
           {
-             LKL(cache_lock);
              evas_common_rgba_image_free(&sci->im->cache_entry);
              if (!sci->forced_unload)
                cache_size -= sci->dst_w * sci->dst_h * 4;
@@ -255,7 +256,6 @@ _sci_find(RGBA_Image *im,
                cache_size -= sci->size_adjust;
 //             INF(" 1- %i", sci->dst_w * sci->dst_h * 4);
              cache_list = eina_inlist_remove(cache_list, (Eina_Inlist *)sci);
-             LKU(cache_lock);
           }
 #ifdef EVAS_FRAME_QUEUING
         RWLKU(sci->lock);
@@ -398,19 +398,63 @@ evas_common_rgba_image_scalecache_prepare(Image_Entry *ie, RGBA_Image *dst __UNU
                                           int dst_region_w, int dst_region_h)
 {
 #ifdef SCALECACHE
+   int locked = 0;
+   Eina_Lock_Result ret;
    RGBA_Image *im = (RGBA_Image *)ie;
    Scaleitem *sci;
    if (!im->image.data) return;
    if ((dst_region_w == 0) || (dst_region_h == 0) ||
        (src_region_w == 0) || (src_region_h == 0)) return;
-   LKL(im->cache.lock);
+   // was having major lock issues here - LKL was deadlocking. what was
+   // going on? it may have been an eina treads badness but this will stay here
+   // for now for debug
+#if 1
+   ret = LKT(im->cache.lock);
+   if (ret == EINA_FALSE) /* can't get image lock */
+     {
+        useconds_t slp = 1, slpt = 0;
+        
+        while (slpt < 500000)
+          {
+#ifdef _WIN32
+             Sleep(slp / 1000);
+#else
+             usleep(slp);
+#endif
+             slpt += slp;
+             slp++;
+             ret = LKT(im->cache.lock);
+             if (ret == EINA_LOCK_DEADLOCK)
+               {
+                  printf("WARNING: DEADLOCK on image %p (%s)\n", im, ie->file);
+               }
+             else
+               {
+                  locked = 1;
+                  break;
+               }
+          }
+        if (ret == EINA_FALSE)
+          {
+             printf("WARNING: lock still there after %i usec\n", slpt);
+             printf("WARNING: stucklock on image %p (%s)\n", im, ie->file);
+             LKDBG(im->cache.lock);
+          }
+     }
+   else if (ret == EINA_LOCK_DEADLOCK)
+     {
+        printf("WARNING: DEADLOCK on image %p (%s)\n", im, ie->file);
+     }
+   else locked = 1;
+#endif   
+   if (!locked) { LKL(im->cache.lock); locked = 1; }
    use_counter++;
    if ((src_region_w == dst_region_w) && (src_region_h == dst_region_h))
      {
         // 1:1 scale.
         im->cache.orig_usage++;
         im->cache.usage_count = use_counter;
-        LKU(im->cache.lock);
+        if (locked) LKU(im->cache.lock);
         return;
      }
    if ((!im->cache_entry.flags.alpha) && (!smooth))
@@ -419,7 +463,7 @@ evas_common_rgba_image_scalecache_prepare(Image_Entry *ie, RGBA_Image *dst __UNU
         // or in some cases faster not cached
         im->cache.orig_usage++;
         im->cache.usage_count = use_counter;
-        LKU(im->cache.lock);
+        if (locked) LKU(im->cache.lock);
         return;
      }
    LKL(cache_lock);
@@ -429,7 +473,7 @@ evas_common_rgba_image_scalecache_prepare(Image_Entry *ie, RGBA_Image *dst __UNU
    if (!sci)
      {
         LKU(cache_lock);
-        LKU(im->cache.lock);
+        if (locked) LKU(im->cache.lock);
         return;
      }
 //   INF("%10i | %4i %4i %4ix%4i -> %4i %4i %4ix%4i | %i",
@@ -466,7 +510,7 @@ evas_common_rgba_image_scalecache_prepare(Image_Entry *ie, RGBA_Image *dst __UNU
    if (sci->usage_count > im->cache.newest_usage_count) 
      im->cache.newest_usage_count = sci->usage_count;
 //   INF("  -------------- used %8i#, %8i@", (int)sci->usage, (int)sci->usage_count);
-   LKU(im->cache.lock);
+   if (locked) LKU(im->cache.lock);
 #endif
 }
 
@@ -518,18 +562,11 @@ evas_common_rgba_image_scalecache_do(Image_Entry *ie, RGBA_Image *dst,
         LKU(im->cache.lock);
         if (im->image.data)
           {
-             if (smooth)
-               evas_common_scale_rgba_in_to_out_clip_smooth(im, dst, dc,
-                                                            src_region_x, src_region_y, 
-                                                            src_region_w, src_region_h,
-                                                            dst_region_x, dst_region_y, 
-                                                            dst_region_w, dst_region_h);
-             else
-               evas_common_scale_rgba_in_to_out_clip_sample(im, dst, dc,
-                                                            src_region_x, src_region_y, 
-                                                            src_region_w, src_region_h,
-                                                            dst_region_x, dst_region_y, 
-                                                            dst_region_w, dst_region_h);
+             evas_common_scale_rgba_in_to_out_clip_sample(im, dst, dc,
+                                                          src_region_x, src_region_y, 
+                                                          src_region_w, src_region_h,
+                                                          dst_region_x, dst_region_y, 
+                                                          dst_region_w, dst_region_h);
           }
         return;
      }

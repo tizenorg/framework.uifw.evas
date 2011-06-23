@@ -11,6 +11,11 @@
 
 #include <Eina.h>
 #include "Evas.h"
+//#include "Evas_GL.h"
+
+#ifdef HAVE_PIXMAN
+#include <pixman.h>
+#endif
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -123,73 +128,25 @@ extern EAPI int _evas_log_dom_global;
 
 #ifdef BUILD_PTHREAD
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
+#define LK(x)  Eina_Lock x
+#define LKI(x) eina_lock_new(&(x))
+#define LKD(x) eina_lock_free(&(x))
+#define LKL(x) eina_lock_take(&(x))
+#define LKT(x) eina_lock_take_try(&(x))
+#define LKU(x) eina_lock_release(&(x))
+#define LKDBG(x) eina_lock_debug(&(x))
 
-# include <pthread.h>
-# include <sched.h>
-#ifdef __linux__
-# include <sys/time.h>
-# include <sys/resource.h>
-# include <errno.h>
-#endif
-
-//#define LKDEBUG 1
-
-#ifdef LKDEBUG
-EAPI Eina_Bool lockdebug;
-EAPI int lockmax;
-#endif
-
-#define LK(x)  pthread_mutex_t x
-#ifndef EVAS_FRAME_QUEUING
-# define LKI(x) pthread_mutex_init(&(x), NULL)
-#else
-# define LKI(x) do {pthread_mutexattr_t    __attr;\
-         pthread_mutexattr_init(&__attr); \
-         pthread_mutexattr_settype(&__attr, PTHREAD_MUTEX_RECURSIVE);	\
-         pthread_mutex_init(&(x), &__attr);} while (0)
-#endif
-# define LKD(x) pthread_mutex_destroy(&(x))
-# ifdef LKDEBUG
-#  define LKL(x) \
-   do { \
-      if (lockdebug) { \
-         struct timeval t0, t1; \
-         int dt; \
-         gettimeofday(&t0, NULL); \
-         pthread_mutex_lock(&(x)); \
-         gettimeofday(&t1, NULL); \
-         dt = (t1.tv_sec - t0.tv_sec) * 1000000; \
-         if (t1.tv_usec > t0.tv_usec) dt += (t1.tv_usec - t0.tv_usec); \
-         else dt -= t0.tv_usec - t1.tv_usec; \
-         dt /= 1000; \
-         if (dt > lockmax) { \
-            fprintf(stderr, "HANG %ims - %s:%i - %s()\n", \
-                    dt, __FILE__, __LINE__, __FUNCTION__); \
-         } \
-      } \
-      else { \
-         pthread_mutex_lock(&(x)); \
-      } \
-   } while (0)
-# else
-#  define LKL(x) pthread_mutex_lock(&(x))
-# endif
-# define LKT(x) pthread_mutex_trylock(&(x))
-# define LKU(x) pthread_mutex_unlock(&(x))
 # define TH(x)  pthread_t x
 # define THI(x) int x
 # define TH_MAX 8
 
 /* for rwlocks */
 #define RWLK(x) pthread_rwlock_t x
-#define RWLKI(x) pthread_rwlock_init(&(x), NULL);
-#define RWLKD(x) pthread_rwlock_destroy(&(x));
-#define RDLKL(x) pthread_rwlock_rdlock(&(x));
-#define WRLKL(x) pthread_rwlock_wrlock(&(x));
-#define RWLKU(x) pthread_rwlock_unlock(&(x));
+#define RWLKI(x) pthread_rwlock_init(&(x), NULL)
+#define RWLKD(x) pthread_rwlock_destroy(&(x))
+#define RDLKL(x) pthread_rwlock_rdlock(&(x))
+#define WRLKL(x) pthread_rwlock_wrlock(&(x))
+#define RWLKU(x) pthread_rwlock_unlock(&(x))
 
 
 // even though in theory having every Nth rendered line done by a different
@@ -206,6 +163,7 @@ EAPI int lockmax;
 # define TH(x)
 # define THI(x)
 # define TH_MAX 0
+# define LKDBG(x)
 
 /* for rwlocks */
 #define RWLK(x) 
@@ -509,7 +467,18 @@ typedef enum _Font_Hint_Flags
    FONT_BYTECODE_HINT
 } Font_Hint_Flags;
 
+typedef enum _Font_Rend_Flags
+{
+   FONT_REND_REGULAR   = 0,
+   FONT_REND_ITALIC    = (1 << 0),
+   FONT_REND_BOLD      = (1 << 1),
+} Font_Rend_Flags;
+
 /*****************************************************************************/
+
+#if 0 // filtering disabled
+typedef struct _Filtered_Image Filtered_Image;
+#endif
 
 struct _RGBA_Image_Loadopts
 {
@@ -519,6 +488,8 @@ struct _RGBA_Image_Loadopts
    struct {
       unsigned int      x, y, w, h;
    } region;
+
+   Eina_Bool            orientation; // if EINA_TRUE => should honor orientation information provided by file (like jpeg exif info)
 };
 
 struct _Image_Entry_Flags
@@ -585,7 +556,7 @@ struct _Image_Entry
 #ifdef EVAS_FRAME_QUEUING
    LK(ref_fq_add);
    LK(ref_fq_del);
-   pthread_cond_t cond_fq_del;
+   Eina_Condition cond_fq_del;
    int ref_fq[2];		// ref_fq[0] is for addition, ref_fq[1] is for deletion
 #endif
 #endif
@@ -621,6 +592,7 @@ struct _Image_Entry
    int                    server_id;
    int                    connect_num;
    int                    channel;
+   int                    load_error;
 };
 
 struct _Engine_Image_Entry
@@ -677,7 +649,6 @@ struct _RGBA_Draw_Context
       DATA32 col;
    } col;
    struct RGBA_Draw_Context_clip {
-      DATA8  *mask;
       int    x, y, w, h;
       Eina_Bool use : 1;
    } clip;
@@ -727,7 +698,6 @@ struct _RGBA_Pipe_Op
       struct {
 	 RGBA_Font          *font;
 	 int                 x, y;
-	 Eina_Unicode       *text;
          Evas_Text_Props     intl_props;
       } text;
       struct {
@@ -799,6 +769,10 @@ struct _RGBA_Image
       Eina_Bool          dirty: 1;
    } mask;
 
+#if 0 // filtering disabled
+   Eina_List            *filtered;
+#endif
+   
    struct {
       LK(lock);
       Eina_List *list;
@@ -808,6 +782,12 @@ struct _RGBA_Image
       unsigned long long newest_usage;
       unsigned long long newest_usage_count;
    } cache;
+
+#ifdef HAVE_PIXMAN
+   struct {
+      pixman_image_t *im;
+   } pixman;
+#endif   
 };
 
 struct _RGBA_Polygon_Point
@@ -827,6 +807,16 @@ struct _RGBA_Map_Point
    // for perspective correctness - only point 0 has relevant info
    FPc px, py, z0, foc;
 };
+
+#if 0 // filtering disabled
+struct _Filtered_Image
+{
+   void       *key;
+   size_t      keylen;
+   RGBA_Image *image;
+   int ref;
+};
+#endif
 
 // for fonts...
 /////
@@ -880,7 +870,7 @@ struct _RGBA_Font
    int              references;
 #ifdef EVAS_FRAME_QUEUING
    int              ref_fq[2]; //ref_fq[0] is for addition, ref_fq[1] is for deletion
-   pthread_cond_t   cond_fq_del;
+   Eina_Condition   cond_fq_del;
    LK(ref_fq_add);
    LK(ref_fq_del);
 #endif
@@ -904,6 +894,9 @@ struct _RGBA_Font_Int
    } ft;
    LK(ft_mutex);
    Font_Hint_Flags  hinting;
+   Font_Rend_Flags  wanted_rend; /* The wanted rendering style */
+   Font_Rend_Flags  runtime_rend; /* The rendering we need to do on runtime
+                                     in order to comply with the wanted_rend. */
    unsigned char    sizeok : 1;
    unsigned char    inuse : 1;
 };
@@ -922,11 +915,6 @@ struct _RGBA_Font_Source
       int            orig_upem;
       FT_Face        face;
    } ft;
-#ifdef OT_SUPPORT
-   struct {
-      void *face;
-   } hb;
-#endif
 };
 
 struct _RGBA_Font_Glyph
@@ -1089,18 +1077,18 @@ struct _Convert_Pal
 
 #ifndef WORDS_BIGENDIAN
 /* x86 */
-#define A_VAL(p) ((DATA8 *)(p))[3]
-#define R_VAL(p) ((DATA8 *)(p))[2]
-#define G_VAL(p) ((DATA8 *)(p))[1]
-#define B_VAL(p) ((DATA8 *)(p))[0]
+#define A_VAL(p) (((DATA8 *)(p))[3])
+#define R_VAL(p) (((DATA8 *)(p))[2])
+#define G_VAL(p) (((DATA8 *)(p))[1])
+#define B_VAL(p) (((DATA8 *)(p))[0])
 #define AR_VAL(p) ((DATA16 *)(p)[1])
 #define GB_VAL(p) ((DATA16 *)(p)[0])
 #else
 /* ppc */
-#define A_VAL(p) ((DATA8 *)(p))[0]
-#define R_VAL(p) ((DATA8 *)(p))[1]
-#define G_VAL(p) ((DATA8 *)(p))[2]
-#define B_VAL(p) ((DATA8 *)(p))[3]
+#define A_VAL(p) (((DATA8 *)(p))[0])
+#define R_VAL(p) (((DATA8 *)(p))[1])
+#define G_VAL(p) (((DATA8 *)(p))[2])
+#define B_VAL(p) (((DATA8 *)(p))[3])
 #define AR_VAL(p) ((DATA16 *)(p)[0])
 #define GB_VAL(p) ((DATA16 *)(p)[1])
 #endif

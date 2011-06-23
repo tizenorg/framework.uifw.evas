@@ -16,38 +16,47 @@
 #include <Eina.h>
 
 #include "evas_language_utils.h"
-#include "evas_bidi_utils.h" /* Used for fallback. */
+#include "evas_bidi_utils.h" /* Used for splitting according to bidi */
 #include "../evas_font_ot.h" /* Used for harfbuzz info */
 
 #ifdef USE_HARFBUZZ
 # include <hb.h>
-# ifdef HAVE_HARFBUZZ_GLIB
-#  include <hb-glib.h>
-# endif
 #endif
 
-/* FIXME: rename and move */
-void *
-evas_common_language_unicode_funcs_get(void)
+#include "evas_script_table.h"
+
+static Evas_Script_Type
+_evas_common_language_char_script_search(Eina_Unicode unicode)
 {
-#if defined(USE_HARFBUZZ) && defined(HAVE_HARFBUZZ_GLIB)
-   return hb_glib_get_unicode_funcs();
-#endif
-   return NULL;
+   int min = 0;
+   int max  = (sizeof(_evas_script_slow_table) /
+      sizeof(_evas_script_slow_table[0])) - 1;
+   int mid;
+
+   do
+     {
+        mid = (min + max) / 2;
+
+        if (unicode < _evas_script_slow_table[mid].start)
+           max = mid - 1;
+        else if (unicode >= _evas_script_slow_table[mid].start +
+              _evas_script_slow_table[mid].len)
+           min = mid + 1;
+        else
+           return _evas_script_slow_table[mid].script;
+     }
+   while (min <= max);
+
+   return EVAS_SCRIPT_UNKNOWN;
 }
 
 Evas_Script_Type
 evas_common_language_char_script_get(Eina_Unicode unicode)
 {
-#ifdef USE_HARFBUZZ
-   static hb_unicode_funcs_t *funcs;
-   if (!funcs)
-        funcs = evas_common_language_unicode_funcs_get();
-   return hb_unicode_get_script(funcs, unicode);
-#else
-   (void) unicode;
-#endif
-   return EVAS_SCRIPT_COMMON;
+   if ((unicode >= 0) && (unicode < EVAS_SCRIPT_DIRECT_TABLE_LIMIT))
+      return _evas_script_fast_table[unicode];
+   else
+      return _evas_common_language_char_script_search(unicode);
 }
 
 int
@@ -55,7 +64,6 @@ evas_common_language_script_end_of_run_get(const Eina_Unicode *str,
       const Evas_BiDi_Paragraph_Props *bidi_props, size_t start, int len)
 {
    /* FIXME: Use the standard segmentation instead */
-#ifdef OT_SUPPORT
    Evas_Script_Type first = EVAS_SCRIPT_UNKNOWN;
    int i;
    for (i = 0 ; i < len ; i++, str++)
@@ -74,7 +82,7 @@ evas_common_language_script_end_of_run_get(const Eina_Unicode *str,
              break;
           }
      }
-# ifdef BIDI_SUPPORT
+#ifdef BIDI_SUPPORT
      {
         int bidi_end;
         bidi_end = evas_bidi_end_of_run_get(bidi_props, start, len);
@@ -83,29 +91,20 @@ evas_common_language_script_end_of_run_get(const Eina_Unicode *str,
              i = (i < bidi_end) ? i : bidi_end;
           }
      }
-# else
-   (void) bidi_props;
-   (void) start;
-# endif
-   return (i < len) ? i : 0;
-#elif defined(BIDI_SUPPORT)
-   (void) str;
-   return evas_bidi_end_of_run_get(bidi_props, start, len);
 #else
    (void) bidi_props;
    (void) start;
-   (void) str;
-   (void) len;
-   return 0;
 #endif
+   return (i < len) ? i : 0;
 }
 
 Evas_Script_Type
-evas_common_language_script_type_get(const Eina_Unicode *str)
+evas_common_language_script_type_get(const Eina_Unicode *str, size_t len)
 {
    Evas_Script_Type script = EVAS_SCRIPT_COMMON;
+   const Eina_Unicode *end = str + len;
    /* Arabic is the first script in the array that's not a common/inherited */
-   for ( ; *str && ((script = evas_common_language_char_script_get(*str)) < EVAS_SCRIPT_ARABIC) ; str++)
+   for ( ; str < end && ((script = evas_common_language_char_script_get(*str)) < EVAS_SCRIPT_ARABIC) ; str++)
      ;
    return script;
 }

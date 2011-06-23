@@ -92,9 +92,10 @@ scale_rgba_in_to_out_clip_sample_internal(RGBA_Image *src, RGBA_Image *dst,
    DATA32  *ptr, *dst_ptr, *src_data, *dst_data;
    int      dst_jump;
    int      dst_clip_x, dst_clip_y, dst_clip_w, dst_clip_h;
+   int      m_clip_x = 0, m_clip_y = 0, m_clip_w = 0, m_clip_h = 0, mdx = 0, mdy = 0;
    int      src_w, src_h, dst_w, dst_h;
    RGBA_Gfx_Func func;
-   RGBA_Image *maskobj;
+   RGBA_Image *maskobj = NULL;
    DATA8   *mask = NULL;
 
    if (!(RECTS_INTERSECT(dst_region_x, dst_region_y, dst_region_w, dst_region_h, 0, 0, dst->cache_entry.w, dst->cache_entry.h)))
@@ -139,6 +140,21 @@ scale_rgba_in_to_out_clip_sample_internal(RGBA_Image *src, RGBA_Image *dst,
 	dst_clip_h = dst_h;
      }
 
+   if (dc->mask.mask)
+     {
+        m_clip_x = dc->mask.x;
+        m_clip_y = dc->mask.y;
+        m_clip_w = dc->mask.mask->cache_entry.w;
+        m_clip_h = dc->mask.mask->cache_entry.h;
+        RECTS_CLIP_TO_RECT(m_clip_x, m_clip_y, m_clip_w, m_clip_h,
+                           dst_clip_x, dst_clip_y, dst_clip_w, dst_clip_h);
+        if ((m_clip_w <= 0) || (m_clip_h <= 0)) return;
+        dst_clip_x = m_clip_x;
+        dst_clip_y = m_clip_y;
+        dst_clip_w = m_clip_w;
+        dst_clip_h = m_clip_h;
+     }
+   
    if (dst_clip_x < dst_region_x)
      {
 	dst_clip_w += dst_clip_x - dst_region_x;
@@ -242,6 +258,15 @@ scale_rgba_in_to_out_clip_sample_internal(RGBA_Image *src, RGBA_Image *dst,
        func = evas_common_gfx_func_composite_pixel_mask_span_get(src, dst, dst_clip_w, dc->render_op);
        maskobj = dc->mask.mask;
        mask = maskobj->mask.mask;
+/*        
+       if (1 || dst_region_w > src_region_w || dst_region_h > src_region_h){
+	       printf("Mask w/h: %d/%d\n",maskobj->cache_entry.w,
+			       maskobj->cache_entry.h);
+	       printf("Warning: Unscaled mask (%d/%d) // (%d/%d)\n",
+			       dst_region_w,src_region_w,
+			       dst_region_h,src_region_h);
+       }
+ */
      }
    else if (dc->mul.use)
      func = evas_common_gfx_func_composite_pixel_color_span_get(src, dc->mul.col, dst, dst_clip_w, dc->render_op);
@@ -250,24 +275,49 @@ scale_rgba_in_to_out_clip_sample_internal(RGBA_Image *src, RGBA_Image *dst,
 
    if ((dst_region_w == src_region_w) && (dst_region_h == src_region_h))
      {
-	ptr = src_data + ((dst_clip_y - dst_region_y + src_region_y) * src_w) + (dst_clip_x - dst_region_x) + src_region_x;
-	for (y = 0; y < dst_clip_h; y++)
-	  {
-	    /* * blend here [clip_w *] ptr -> dst_ptr * */
-            if (mask)
-	      {
-		  mask += dst_clip_x - dc->mask.x;
-		  mask += (dst_clip_y - dc->mask.y) * maskobj->cache_entry.w;
-	      }
-#ifdef EVAS_SLI
-	     if (((y + dst_clip_y) % dc->sli.h) == dc->sli.y)
+#ifdef HAVE_PIXMAN
+        if ((1) &&
+            (src->pixman.im) && (dst->pixman.im) && 
+            ((!dc->mul.use) ||
+                ((dc->mul.use) && (dc->mul.col == 0xffffffff))) &&
+            ((dc->render_op == _EVAS_RENDER_COPY) ||
+                (dc->render_op == _EVAS_RENDER_BLEND))
+            )
+          {
+             pixman_op_t op = PIXMAN_OP_SRC; // _EVAS_RENDER_COPY
+             if (dc->render_op == _EVAS_RENDER_BLEND) op = PIXMAN_OP_OVER;
+             pixman_image_composite(op,
+                                    src->pixman.im, NULL,
+                                    dst->pixman.im,
+                                    (dst_clip_x - dst_region_x) + src_region_x,
+                                    (dst_clip_y - dst_region_y) + src_region_y, 
+                                    0, 0,
+                                    dst_clip_x, dst_clip_y, 
+                                    dst_clip_w, dst_clip_h);
+          }
+        else
 #endif
-	       {
-		  func(ptr, mask, dc->mul.col, dst_ptr, dst_clip_w);
-	       }
-	    ptr += src_w;
-	    dst_ptr += dst_w;
-	    if (mask) mask += maskobj->cache_entry.w;
+          {
+             ptr = src_data + ((dst_clip_y - dst_region_y + src_region_y) * src_w) + (dst_clip_x - dst_region_x) + src_region_x;
+             if (mask)
+               {
+                  mdx = (m_clip_x - dc->mask.x) + (m_clip_x - dst_clip_x);
+                  mdy = (m_clip_y - dc->mask.y) + (m_clip_y - dst_clip_y);
+                  mask += mdx + (mdy * maskobj->cache_entry.w);
+               }
+             for (y = 0; y < dst_clip_h; y++)
+               {
+                  /* * blend here [clip_w *] ptr -> dst_ptr * */
+#ifdef EVAS_SLI
+                  if (((y + dst_clip_y) % dc->sli.h) == dc->sli.y)
+#endif
+                    {
+                       func(ptr, mask, dc->mul.col, dst_ptr, dst_clip_w);
+                    }
+                  ptr += src_w;
+                  dst_ptr += dst_w;
+                  if (mask) mask += maskobj->cache_entry.w;
+               }
 	  }
      }
    else

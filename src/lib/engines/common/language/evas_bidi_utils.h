@@ -84,8 +84,7 @@ struct _Evas_BiDi_Props
 
 #ifdef USE_FRIBIDI
 
-
-#define EVAS_BIDI_PARAGRAPH_NATURAL FRIBIDI_PAR_ON
+#define EVAS_BIDI_PARAGRAPH_NEUTRAL FRIBIDI_PAR_ON
 #define EVAS_BIDI_PARAGRAPH_LTR     FRIBIDI_PAR_LTR
 #define EVAS_BIDI_PARAGRAPH_RTL     FRIBIDI_PAR_RTL
 #define EVAS_BIDI_PARAGRAPH_WLTR    FRIBIDI_PAR_WLTR
@@ -120,7 +119,7 @@ Eina_Bool
 evas_bidi_props_reorder_line(Eina_Unicode *eina_ustr, size_t start, size_t len, const Evas_BiDi_Paragraph_Props *props, EvasBiDiStrIndex **_v_to_l);
 
 Evas_BiDi_Paragraph_Props *
-evas_bidi_paragraph_props_get(const Eina_Unicode *eina_ustr) EINA_ARG_NONNULL(1) EINA_MALLOC EINA_WARN_UNUSED_RESULT;
+evas_bidi_paragraph_props_get(const Eina_Unicode *eina_ustr, size_t len, int *segment_idxs) EINA_ARG_NONNULL(1) EINA_MALLOC EINA_WARN_UNUSED_RESULT;
 
 void
 evas_bidi_props_copy_and_ref(const Evas_BiDi_Props *src, Evas_BiDi_Props *dst);
@@ -142,6 +141,9 @@ evas_bidi_paragraph_props_unref(Evas_BiDi_Paragraph_Props *bidi_props) EINA_ARG_
 
 Evas_BiDi_Paragraph_Props *
 evas_bidi_paragraph_props_new(void) EINA_MALLOC EINA_WARN_UNUSED_RESULT;
+
+int *
+evas_bidi_segment_idxs_get(const Eina_Unicode *str, const char *delim) EINA_ARG_NONNULL(1, 2) EINA_WARN_UNUSED_RESULT EINA_MALLOC;
 
 #endif
 /**

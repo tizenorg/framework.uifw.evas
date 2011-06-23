@@ -10,17 +10,14 @@
 #define WORD_CACHE_MAXLEN	50
 /* How many to cache */
 #define WORD_CACHE_NWORDS 40
+
 static int max_cached_words = WORD_CACHE_NWORDS;
 
 struct prword 
 {
    EINA_INLIST;
-   /* FIXME: Need to save font/size et al */
-   int size;
    struct cinfo *cinfo;
-   RGBA_Font *font;
-   const Eina_Unicode *str;
-   int len;
+   Evas_Text_Props text_props;
    DATA8 *im;
    int roww;
    int width;
@@ -49,7 +46,7 @@ struct cinfo
 #if defined(METRIC_CACHE) || defined(WORD_CACHE)
 LK(lock_words); // for word cache call
 static Eina_Inlist *words = NULL;
-static struct prword *evas_font_word_prerender(RGBA_Draw_Context *dc, const Eina_Unicode *text, const Evas_Text_Props *text_props, int len, RGBA_Font *fn, RGBA_Font_Int *fi);
+static struct prword *evas_font_word_prerender(RGBA_Draw_Context *dc, const Evas_Text_Props *text_props);
 #endif
 
 EAPI void
@@ -75,322 +72,6 @@ evas_common_font_draw_finish(void)
 }
 #endif
 
-static void
-_fash_int2_free(Fash_Int_Map2 *fash)
-{
-   int i;
-
-   for (i = 0; i < 256; i++) if (fash->bucket[i]) free(fash->bucket[i]);
-   free(fash);
-}
-
-static void
-_fash_int_free(Fash_Int *fash)
-{
-   int i;
-
-   for (i = 0; i < 256; i++) if (fash->bucket[i]) _fash_int2_free(fash->bucket[i]);
-   free(fash);
-}
-
-static Fash_Int *
-_fash_int_new(void)
-{
-   Fash_Int *fash = calloc(1, sizeof(Fash_Int));
-   fash->freeme = _fash_int_free;
-   return fash;
-}
-
-static Fash_Item_Index_Map *
-_fash_int_find(Fash_Int *fash, int item)
-{
-   int grp, maj, min;
-
-   // 24bits for unicode - v6 up to E01EF (chrs) & 10FFFD for private use (plane 16)
-   grp = (item >> 16) & 0xff;
-   maj = (item >> 8) & 0xff;
-   min = item & 0xff;
-   if (!fash->bucket[grp]) return NULL;
-   if (!fash->bucket[grp]->bucket[maj]) return NULL;
-   return &(fash->bucket[grp]->bucket[maj]->item[min]);
-}
-
-static void
-_fash_int_add(Fash_Int *fash, int item, RGBA_Font_Int *fint, int index)
-{
-   int grp, maj, min;
-
-   // 24bits for unicode - v6 up to E01EF (chrs) & 10FFFD for private use (plane 16)
-   grp = (item >> 16) & 0xff;
-   maj = (item >> 8) & 0xff;
-   min = item & 0xff;
-   if (!fash->bucket[grp])
-     fash->bucket[grp] = calloc(1, sizeof(Fash_Int_Map2));
-   EINA_SAFETY_ON_NULL_RETURN(fash->bucket[grp]);
-   if (!fash->bucket[grp]->bucket[maj])
-     fash->bucket[grp]->bucket[maj] = calloc(1, sizeof(Fash_Int_Map));
-   EINA_SAFETY_ON_NULL_RETURN(fash->bucket[grp]->bucket[maj]);
-   fash->bucket[grp]->bucket[maj]->item[min].fint = fint;
-   fash->bucket[grp]->bucket[maj]->item[min].index = index;
-}
-
-static void
-_fash_gl2_free(Fash_Glyph_Map2 *fash)
-{
-   int i;
-
-   for (i = 0; i < 256; i++) if (fash->bucket[i]) free(fash->bucket[i]);
-   free(fash);
-}
-
-static void
-_fash_gl_free(Fash_Glyph *fash)
-{
-   int i;
-
-   for (i = 0; i < 256; i++) if (fash->bucket[i]) _fash_gl2_free(fash->bucket[i]);
-   free(fash);
-}
-
-static Fash_Glyph *
-_fash_gl_new(void)
-{
-   Fash_Glyph *fash = calloc(1, sizeof(Fash_Glyph));
-   fash->freeme = _fash_gl_free;
-   return fash;
-}
-
-static RGBA_Font_Glyph *
-_fash_gl_find(Fash_Glyph *fash, int item)
-{
-   int grp, maj, min;
-
-   // 24bits for unicode - v6 up to E01EF (chrs) & 10FFFD for private use (plane 16)
-   grp = (item >> 16) & 0xff;
-   maj = (item >> 8) & 0xff;
-   min = item & 0xff;
-   if (!fash->bucket[grp]) return NULL;
-   if (!fash->bucket[grp]->bucket[maj]) return NULL;
-   return fash->bucket[grp]->bucket[maj]->item[min];
-}
-
-static void
-_fash_gl_add(Fash_Glyph *fash, int item, RGBA_Font_Glyph *glyph)
-{
-   int grp, maj, min;
-
-   // 24bits for unicode - v6 up to E01EF (chrs) & 10FFFD for private use (plane 16)
-   grp = (item >> 16) & 0xff;
-   maj = (item >> 8) & 0xff;
-   min = item & 0xff;
-   if (!fash->bucket[grp])
-     fash->bucket[grp] = calloc(1, sizeof(Fash_Glyph_Map2));
-   EINA_SAFETY_ON_NULL_RETURN(fash->bucket[grp]);
-   if (!fash->bucket[grp]->bucket[maj])
-     fash->bucket[grp]->bucket[maj] = calloc(1, sizeof(Fash_Glyph_Map));
-   EINA_SAFETY_ON_NULL_RETURN(fash->bucket[grp]->bucket[maj]);
-   fash->bucket[grp]->bucket[maj]->item[min] = glyph;
-}
-
-EAPI RGBA_Font_Glyph *
-evas_common_font_int_cache_glyph_get(RGBA_Font_Int *fi, FT_UInt index)
-{
-   RGBA_Font_Glyph *fg;
-   FT_UInt hindex;
-   FT_Error error;
-   int size;
-   const FT_Int32 hintflags[3] =
-     { FT_LOAD_NO_HINTING, FT_LOAD_FORCE_AUTOHINT, FT_LOAD_NO_AUTOHINT };
-
-   evas_common_font_int_promote(fi);
-   if (fi->fash)
-     {
-        fg = _fash_gl_find(fi->fash, index);
-        if (fg == (void *)(-1)) return NULL;
-        else if (fg) return fg;
-     }
-
-   hindex = index + (fi->hinting * 500000000);
-
-//   fg = eina_hash_find(fi->glyphs, &hindex);
-//   if (fg) return fg;
-
-   evas_common_font_int_reload(fi);
-   FTLOCK();
-//   error = FT_Load_Glyph(fi->src->ft.face, index, FT_LOAD_NO_BITMAP);
-   error = FT_Load_Glyph(fi->src->ft.face, index,
-			 FT_LOAD_RENDER | hintflags[fi->hinting]);
-   FTUNLOCK();
-   if (error)
-     {
-        if (!fi->fash) fi->fash = _fash_gl_new();
-        if (fi->fash) _fash_gl_add(fi->fash, index, (void *)(-1));
-        return NULL;
-     }
-
-   fg = malloc(sizeof(struct _RGBA_Font_Glyph));
-   if (!fg) return NULL;
-   memset(fg, 0, (sizeof(struct _RGBA_Font_Glyph)));
-
-   FTLOCK();
-   error = FT_Get_Glyph(fi->src->ft.face->glyph, &(fg->glyph));
-   FTUNLOCK();
-   if (error)
-     {
-	free(fg);
-        if (!fi->fash) fi->fash = _fash_gl_new();
-        if (fi->fash) _fash_gl_add(fi->fash, index, (void *)(-1));
-	return NULL;
-     }
-   if (fg->glyph->format != FT_GLYPH_FORMAT_BITMAP)
-     {
-        FTLOCK();
-	error = FT_Glyph_To_Bitmap(&(fg->glyph), FT_RENDER_MODE_NORMAL, 0, 1);
-	if (error)
-	  {
-	     FT_Done_Glyph(fg->glyph);
-             FTUNLOCK();
-	     free(fg);
-             if (!fi->fash) fi->fash = _fash_gl_new();
-             if (fi->fash) _fash_gl_add(fi->fash, index, (void *)(-1));
-	     return NULL;
-	  }
-        FTUNLOCK();
-     }
-   fg->glyph_out = (FT_BitmapGlyph)fg->glyph;
-   fg->index = hindex;
-   fg->fi = fi;
-
-   if (!fi->fash) fi->fash = _fash_gl_new();
-   if (fi->fash) _fash_gl_add(fi->fash, index, fg);
-   /* This '+ 200' is just an estimation of how much memory freetype will use
-    * on it's size. This value is not really used anywhere in code - it's
-    * only for statistics. */
-   size = sizeof(RGBA_Font_Glyph) + sizeof(Eina_List) +
-    (fg->glyph_out->bitmap.width * fg->glyph_out->bitmap.rows) + 200;
-   fi->usage += size;
-   if (fi->inuse) evas_common_font_int_use_increase(size);
-
-//   eina_hash_direct_add(fi->glyphs, &fg->index, fg);
-   return fg;
-}
-
-typedef struct _Font_Char_Index Font_Char_Index;
-struct _Font_Char_Index
-{
-   FT_UInt index;
-   int gl;
-};
-
-static FT_UInt
-_evas_common_get_char_index(RGBA_Font_Int* fi, int gl)
-{
-   Font_Char_Index result;
-   //FT_UInt ret;
-
-#ifdef HAVE_PTHREAD
-///   pthread_mutex_lock(&fi->ft_mutex);
-#endif
-
-//   result = eina_hash_find(fi->indexes, &gl);
-//   if (result) goto on_correct;
-//
-//   result = malloc(sizeof (Font_Char_Index));
-//   if (!result)
-//     {
-//#ifdef HAVE_PTHREAD
-//	pthread_mutex_unlock(&fi->ft_mutex);
-//#endif
-//	return FT_Get_Char_Index(fi->src->ft.face, gl);
-//     }
-
-   evas_common_font_int_reload(fi);
-   FTLOCK();
-   result.index = FT_Get_Char_Index(fi->src->ft.face, gl);
-   FTUNLOCK();
-   result.gl = gl;
-
-//   eina_hash_direct_add(fi->indexes, &result->gl, result);
-//
-// on_correct:
-#ifdef HAVE_PTHREAD
-//   pthread_mutex_unlock(&fi->ft_mutex);
-#endif
-   return result.index;
-}
-
-EAPI int
-evas_common_font_glyph_search(RGBA_Font *fn, RGBA_Font_Int **fi_ret, int gl)
-{
-   Eina_List *l;
-
-   if (fn->fash)
-     {
-        Fash_Item_Index_Map *fm = _fash_int_find(fn->fash, gl);
-        if (fm)
-          {
-             if (fm->fint)
-               {
-                  *fi_ret = fm->fint;
-                  return fm->index;
-               }
-             else if (fm->index == -1) return 0;
-          }
-     }
-
-   for (l = fn->fonts; l; l = l->next)
-     {
-	RGBA_Font_Int *fi;
-	int index;
-
-	fi = l->data;
-
-#if 0 /* FIXME: charmap user is disabled and use a deprecated data type. */
-/*        
-	if (fi->src->charmap) // Charmap loaded, FI/FS blank
-	  {
-	     index = evas_array_hash_search(fi->src->charmap, gl);
-	     if (index != 0)
-	       {
-		  evas_common_font_source_load_complete(fi->src);
-		  evas_common_font_int_load_complete(fi);
-
-		  evas_array_hash_free(fi->src->charmap);
-		  fi->src->charmap = NULL;
-
-		  *fi_ret = fi;
-		  return index;
-               }
-           }
-        else
-*/
-#endif
-        if (!fi->src->ft.face) /* Charmap not loaded, FI/FS blank */
-	  {
-             evas_common_font_int_reload(fi);
-	  }
-        if (fi->src->ft.face)
-	  {
-	     index = _evas_common_get_char_index(fi, gl);
-	     if (index != 0)
-	       {
-		  if (!fi->ft.size)
-                     evas_common_font_int_load_complete(fi);
-                  if (!fn->fash) fn->fash = _fash_int_new();
-                  if (fn->fash) _fash_int_add(fn->fash, gl, fi, index);
-		  *fi_ret = fi;
-		  return index;
-	       }
-             else
-               {
-                  if (!fn->fash) fn->fash = _fash_int_new();
-                  if (fn->fash) _fash_int_add(fn->fash, gl, NULL, -1);
-               }
-	  }
-     }
-   return 0;
-}
-
 /* 
  * BiDi handling: We receive the shaped string + other props from text_props,
  * we need to reorder it so we'll have the visual string (the way we draw)
@@ -398,28 +79,41 @@ evas_common_font_glyph_search(RGBA_Font *fn, RGBA_Font_Int **fi_ret, int gl)
  * is on the right, and not on the left).
  */
 static void
-evas_common_font_draw_internal(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font *fn, int x, int y, const Eina_Unicode *in_text,
+evas_common_font_draw_internal(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font *fn __UNUSED__, int x, int y,
                                const Evas_Text_Props *text_props, RGBA_Gfx_Func func, int ext_x, int ext_y, int ext_w, 
-                               int ext_h, RGBA_Font_Int *fi, int im_w, int im_h __UNUSED__)
+                               int ext_h, int im_w, int im_h __UNUSED__)
 {
-   const Eina_Unicode *text = in_text;
    DATA32 *im;
    FT_Face pface = NULL;
+   RGBA_Font_Int *fi;
    EVAS_FONT_WALK_TEXT_INIT();
+
+   fi = text_props->font_instance;
+   if (fi)
+     {
+        evas_common_font_int_reload(fi);
+
+        if (fi->src->current_size != fi->size)
+          {
+             FTLOCK();
+             FT_Activate_Size(fi->ft.size);
+             FTUNLOCK();
+             fi->src->current_size = fi->size;
+          }
+     }
+
 
 #if defined(METRIC_CACHE) || defined(WORD_CACHE)
    unsigned int len;
 
-   /* A fast strNlen would be nice (there is a wcsnlen strangely) */
-   len = eina_unicode_strnlen(text,WORD_CACHE_MAXLEN);
+   len = text_props->len;
 
    if (len > 2 && (len < WORD_CACHE_MAXLEN))
      {
         struct prword *word;
 
         word =
-          evas_font_word_prerender(dc, text, text_props,
-                                   len, fn, fi);
+          evas_font_word_prerender(dc, text_props);
         if (word)
           {
              int j, rowstart, rowend, xstart, xrun;
@@ -466,7 +160,7 @@ evas_common_font_draw_internal(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font
                   return;
                }
 # elif defined(METRIC_CACHE)
-             int ind;
+             unsigned int ind;
 
              y += word->baseline;
              for (ind = 0 ; ind < len ; ind ++)
@@ -498,54 +192,19 @@ evas_common_font_draw_internal(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font
 #endif
 
    im = dst->image.data;
-   /* Load the glyph according to the first letter of the script, preety
-    * bad, but will have to do */
-     {
-        /* Skip common chars */
-        const Eina_Unicode *tmp;
-        for (tmp = text ;
-              *tmp &&
-              evas_common_language_char_script_get(*tmp) ==
-              EVAS_SCRIPT_COMMON ;
-              tmp++)
-          ;
-        if (!*tmp && (tmp > text)) tmp--;
-        evas_common_font_glyph_search(fn, &fi, *tmp);
-     }
 
-   if (fi->src->current_size != fi->size)
+   EVAS_FONT_WALK_TEXT_START()
      {
-        FTLOCK();
-        FT_Activate_Size(fi->ft.size);
-        FTUNLOCK();
-        fi->src->current_size = fi->size;
-     }
-
-   EVAS_FONT_WALK_TEXT_VISUAL_START()
-     {
-        FT_UInt index;
+        FT_UInt idx;
         RGBA_Font_Glyph *fg;
         int chr_x, chr_y, chr_w;
+
         if (!EVAS_FONT_WALK_IS_VISIBLE) continue;
 
-#ifdef OT_SUPPORT
-        index = EVAS_FONT_WALK_INDEX;
-#else
-        /* FIXME: Should be removed once we split according to script without
-         * the use of harfbuzz */
-        index =
-           evas_common_font_glyph_search(fn, &fi, text[EVAS_FONT_WALK_POS]);
+        idx = EVAS_FONT_WALK_INDEX;
 
-        if (fi->src->current_size != fi->size)
-          {
-             FTLOCK();
-             FT_Activate_Size(fi->ft.size);
-             FTUNLOCK();
-             fi->src->current_size = fi->size;
-          }
-#endif
         LKL(fi->ft_mutex);
-        fg = evas_common_font_int_cache_glyph_get(fi, index);
+        fg = evas_common_font_int_cache_glyph_get(fi, idx);
         if (!fg)
           {
              LKU(fi->ft_mutex);
@@ -595,7 +254,7 @@ evas_common_font_draw_internal(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font
                        else
                          {
                             if ((fg->glyph_out->bitmap.num_grays == 256) &&
-                                  (fg->glyph_out->bitmap.pixel_mode == ft_pixel_mode_grays))
+                                  (fg->glyph_out->bitmap.pixel_mode == FT_PIXEL_MODE_GRAY))
                               {
                                  for (i = 0; i < h; i++)
                                    {
@@ -698,19 +357,15 @@ evas_common_font_draw_internal(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font
 }
 
 EAPI void
-evas_common_font_draw(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font *fn, int x, int y, const Eina_Unicode *text,
-                      const Evas_Text_Props *text_props)
+evas_common_font_draw(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font *fn, int x, int y, const Evas_Text_Props *text_props)
 {
    int ext_x, ext_y, ext_w, ext_h;
    int im_w, im_h;
    RGBA_Gfx_Func func;
-   RGBA_Font_Int *fi;
    Cutout_Rects *rects;
    Cutout_Rect  *r;
    int c, cx, cy, cw, ch;
    int i;
-
-   fi = fn->fonts->data;
 
    im_w = dst->cache_entry.w;
    im_h = dst->cache_entry.h;
@@ -743,14 +398,13 @@ evas_common_font_draw(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font *fn, int
 #ifdef EVAS_FRAME_QUEUING
    LKL(fn->lock);
 #endif
-   evas_common_font_int_reload(fi);
 //   evas_common_font_size_use(fn);
    func = evas_common_gfx_func_composite_mask_color_span_get(dc->col.col, dst, 1, dc->render_op);
 
    if (!dc->cutout.rects)
      {
-        evas_common_font_draw_internal(dst, dc, fn, x, y, text, text_props,
-                                       func, ext_x, ext_y, ext_w, ext_h, fi,
+        evas_common_font_draw_internal(dst, dc, fn, x, y, text_props,
+                                       func, ext_x, ext_y, ext_w, ext_h,
                                        im_w, im_h);
      }
    else
@@ -765,8 +419,8 @@ evas_common_font_draw(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font *fn, int
                {
                   r = rects->rects + i;
                   evas_common_draw_context_set_clip(dc, r->x, r->y, r->w, r->h);
-                  evas_common_font_draw_internal(dst, dc, fn, x, y, text, text_props,
-                                                 func, r->x, r->y, r->w, r->h, fi,
+                  evas_common_font_draw_internal(dst, dc, fn, x, y, text_props,
+                                                 func, r->x, r->y, r->w, r->h,
                                                  im_w, im_h);
                }
              evas_common_draw_context_apply_clear_cutouts(rects);
@@ -778,22 +432,42 @@ evas_common_font_draw(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font *fn, int
 #endif
 }
 
-/* FIXME: Where is it freed at? */
 /* Only used if cache is on */
 #if defined(METRIC_CACHE) || defined(WORD_CACHE)
-struct prword *
-evas_font_word_prerender(RGBA_Draw_Context *dc, const Eina_Unicode *in_text, const Evas_Text_Props *text_props, int len, RGBA_Font *fn, RGBA_Font_Int *fi)
+
+static Eina_Bool
+_evas_font_word_prerender_text_props_equal(const Evas_Text_Props *_a, const Evas_Text_Props *_b)
+{
+   Evas_Font_Glyph_Info *gl1, *gl2;
+   size_t i;
+
+   if ((_a->len != _b->len) ||
+       (_a->font_instance != _b->font_instance))
+     return EINA_FALSE;
+
+   gl1 = _a->info->glyph + _a->start;
+   gl2 = _b->info->glyph + _b->start;
+   i = _a->len;
+   for ( ; (i > 0) && (gl1->index == gl2->index) ; i--, gl1++, gl2++)
+      ;
+
+   return (i == 0);
+}
+
+static struct prword *
+evas_font_word_prerender(RGBA_Draw_Context *dc, const Evas_Text_Props *text_props)
 {
    struct cinfo *metrics;
-   const Eina_Unicode *text = in_text;
    unsigned char *im;
    int width;
    int height, above, below, baseline, descent;
-   int i,j;
+   unsigned int i,j;
    struct prword *w;
    int last_delta = 0;
-   int gl;
+   Eina_Unicode gl;
    struct cinfo *ci;
+   unsigned int len = text_props->len;
+   RGBA_Font_Int *fi = (RGBA_Font_Int *) text_props->font_instance;
    EVAS_FONT_WALK_TEXT_INIT();
 
 # ifndef METRIC_CACHE
@@ -804,67 +478,28 @@ evas_font_word_prerender(RGBA_Draw_Context *dc, const Eina_Unicode *in_text, con
    LKL(lock_words);
    EINA_INLIST_FOREACH(words,w)
      {
-	if (w->len == len && w->font == fn && fi->size == w->size &&
-            (w->str == in_text || memcmp(w->str, in_text, len * sizeof(Eina_Unicode)) == 0)){
-           words = eina_inlist_promote(words, EINA_INLIST_GET(w));
-           LKU(lock_words);
-           return w;
-	}
+        if (_evas_font_word_prerender_text_props_equal(&w->text_props,
+                                                       text_props))
+          {
+             words = eina_inlist_promote(words, EINA_INLIST_GET(w));
+             LKU(lock_words);
+             return w;
+          }
      }
    LKU(lock_words);
 
    gl = dc->font_ext.func.gl_new ? 1: 0;
 
    above = 0; below = 0; baseline = 0; height = 0; descent = 0;
-   /* Load the glyph according to the first letter of the script, preety
-    * bad, but will have to do */
-     {
-        /* Skip common chars */
-        const Eina_Unicode *tmp;
-        for (tmp = text ;
-              *tmp &&
-              evas_common_language_char_script_get(*tmp) ==
-              EVAS_SCRIPT_COMMON ;
-              tmp++)
-          ;
-        if (!*tmp && (tmp > text)) tmp--;
-        evas_common_font_glyph_search(fn, &fi, *tmp);
-     }
-
-   if (fi->src->current_size != fi->size)
-     {
-        FTLOCK();
-        FT_Activate_Size(fi->ft.size);
-        FTUNLOCK();
-        fi->src->current_size = fi->size;
-     }
 
    /* First pass: Work out how big and populate */
-   /* It's a bit hackish to use index and fg here as they are internal,
-    * but that'll have to be good enough ATM */
-   len = text_props->len;
    metrics = malloc(sizeof(struct cinfo) * len);
    ci = metrics;
-   EVAS_FONT_WALK_TEXT_VISUAL_START()
+   EVAS_FONT_WALK_TEXT_START()
      {
         FT_UInt index;
         RGBA_Font_Glyph *fg;
-#ifdef OT_SUPPORT
         index = EVAS_FONT_WALK_INDEX;
-#else
-        /* FIXME: Should be removed once we split according to script without
-         * the use of harfbuzz */
-        index =
-           evas_common_font_glyph_search(fn, &fi, text[EVAS_FONT_WALK_POS]);
-
-        if (fi->src->current_size != fi->size)
-          {
-             FTLOCK();
-             FT_Activate_Size(fi->ft.size);
-             FTUNLOCK();
-             fi->src->current_size = fi->size;
-          }
-#endif
         LKL(fi->ft_mutex);
         fg = evas_common_font_int_cache_glyph_get(fi, index);
         if (!fg)
@@ -940,10 +575,7 @@ evas_font_word_prerender(RGBA_Draw_Context *dc, const Eina_Unicode *in_text, con
 
    save = malloc(sizeof(struct prword));
    save->cinfo = metrics;
-   save->str = eina_ustringshare_add(in_text);
-   save->font = fn;
-   save->size = fi->size;
-   save->len = len;
+   evas_common_text_props_content_copy_and_ref(&save->text_props, text_props);
    save->im = im;
    save->width = EVAS_FONT_WALK_PEN_X;
    if (last_delta < 0)
@@ -963,7 +595,7 @@ evas_font_word_prerender(RGBA_Draw_Context *dc, const Eina_Unicode *in_text, con
           {
              if (last->im) free(last->im);
              if (last->cinfo) free(last->cinfo);
-             eina_ustringshare_del(last->str);
+             evas_common_text_props_content_unref(&last->text_props);
              words = eina_inlist_remove(words, EINA_INLIST_GET(last));
              free(last);
           }
