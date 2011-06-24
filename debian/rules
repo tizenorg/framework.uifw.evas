@@ -38,13 +38,10 @@ DEB_CONFIGURE_EXTRA_FLAGS := --disable-image-loader-svg \
 	--enable-xrender-x11 \
 	--enable-line-dither-mask \
 	--disable-image-loader-edb \
-	--disable-rpath $(arch_flags)
-
-ifneq (i386,$(DEB_HOST_ARCH))
-	DEB_CONFIGURE_EXTRA_FLAGS  += --enable-gl-x11 \
+	--disable-rpath $(arch_flags) \
+	--enable-gl-x11 \
 	--enable-gl-flavor-gles \
 	--enable-gles-variety-sgx
-endif
 
 build/libevas-doc::
 	cd $(DEB_SRCDIR)/doc && make doc
