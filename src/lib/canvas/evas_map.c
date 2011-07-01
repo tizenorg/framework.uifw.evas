@@ -40,7 +40,6 @@ _evas_map_calc_map_geometry(Evas_Object *obj)
    Eina_Bool ch = EINA_FALSE;
 
    if (!obj->cur.map) return;
-   /*
    if (obj->prev.map)
      {
         // FIXME: this causes an infinite loop somewhere... hard to debug
@@ -76,7 +75,6 @@ _evas_map_calc_map_geometry(Evas_Object *obj)
      }
    else
       ch = 1;
-   */
 
    p = obj->cur.map->points;
    p_end = p + obj->cur.map->count;
@@ -170,6 +168,46 @@ _evas_map_free(Evas_Object *obj, Evas_Map *m)
      }
    m->magic = 0;
    free(m);
+}
+
+/****************************************************************************/
+/* util functions for manipulating maps, so you don't need to know the math */
+/****************************************************************************/
+static inline void
+_evas_map_util_points_populate(Evas_Map *m, const Evas_Coord x, const Evas_Coord y, const Evas_Coord w, const Evas_Coord h, const Evas_Coord z)
+{
+   Evas_Map_Point *p = m->points;
+   int i;
+
+   p[0].x = x;
+   p[0].y = y;
+   p[0].z = z;
+   p[0].u = 0.0;
+   p[0].v = 0.0;
+
+   p[1].x = x + w;
+   p[1].y = y;
+   p[1].z = z;
+   p[1].u = w;
+   p[1].v = 0.0;
+
+   p[2].x = x + w;
+   p[2].y = y + h;
+   p[2].z = z;
+   p[2].u = w;
+   p[2].v = h;
+
+   p[3].x = x;
+   p[3].y = y + h;
+   p[3].z = z;
+   p[3].u = 0.0;
+   p[3].v = h;
+
+   for (i = 0; i < 4; i++)
+     {
+        p[i].px = p[i].x;
+        p[i].py = p[i].y;
+     }
 }
 
 Eina_Bool
@@ -296,7 +334,7 @@ evas_map_coords_get(const Evas_Map *m, Evas_Coord x, Evas_Coord y,
                     *my = v[0] + (((x - xe[0]) * (v[1] - v[0])) /
                                   (xe[1] - xe[0]));
                }
-             return 1;
+             return EINA_TRUE;
           }
         if (grab)
           {
@@ -309,10 +347,10 @@ evas_map_coords_get(const Evas_Map *m, Evas_Coord x, Evas_Coord y,
                     *my = v[0] + (((x - xe[0]) * (v[1] - v[0])) /
                                   (xe[1] - xe[0]));
                }
-             return 1;
+             return EINA_TRUE;
           }
      }
-   return 0;
+   return EINA_FALSE;
 }
 
 Eina_Bool
@@ -321,13 +359,13 @@ evas_map_inside_get(const Evas_Map *m, Evas_Coord x, Evas_Coord y)
    return evas_map_coords_get(m, x, y, NULL, NULL, 0);
 }
 
-
 EAPI void
 evas_object_map_enable_set(Evas_Object *obj, Eina_Bool enabled)
 {
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    return;
    MAGIC_CHECK_END();
+
    enabled = !!enabled;
    if (obj->cur.usemap == enabled) return;
    obj->cur.usemap = enabled;
@@ -356,7 +394,7 @@ EAPI Eina_Bool
 evas_object_map_enable_get(const Evas_Object *obj)
 {
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
-   return 0;
+   return EINA_FALSE;
    MAGIC_CHECK_END();
    return obj->cur.usemap;
 }
@@ -386,6 +424,7 @@ evas_object_map_set(Evas_Object *obj, const Evas_Map *map)
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    return;
    MAGIC_CHECK_END();
+
    if (!map)
      {
         if (obj->cur.map)
@@ -415,7 +454,7 @@ evas_object_map_set(Evas_Object *obj, const Evas_Map *map)
         return;
      }
 
-   if (obj->cur.map && obj->cur.map->count == map->count)
+   if ((obj->cur.map) && (obj->cur.map->count == map->count))
      {
         Evas_Map *omap = obj->cur.map;
         obj->cur.map = _evas_map_new(map->count);
@@ -440,8 +479,8 @@ evas_object_map_get(const Evas_Object *obj)
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    return NULL;
    MAGIC_CHECK_END();
-   if (obj->cur.map) return obj->cur.map;
-   return NULL;
+
+   return obj->cur.map;
 }
 
 EAPI Evas_Map *
@@ -452,6 +491,7 @@ evas_map_new(int count)
         ERR("map point count (%i) != 4 is unsupported!", count);
         return NULL;
      }
+
    return _evas_map_new(count);
 }
 
@@ -533,7 +573,7 @@ evas_map_point_coord_set(Evas_Map *m, int idx, Evas_Coord x, Evas_Coord y, Evas_
    MAGIC_CHECK_END();
 
    Evas_Map_Point *p;
-   if (!m) return;
+
    if (idx >= m->count) return;
    p = m->points + idx;
    p->x = p->px = x;
@@ -550,7 +590,6 @@ evas_map_point_coord_get(const Evas_Map *m, int idx, Evas_Coord *x, Evas_Coord *
 
    const Evas_Map_Point *p;
 
-   if (!m) goto error;
    if (idx >= m->count) goto error;
    p = m->points + idx;
    if (x) *x = p->x;
@@ -572,7 +611,7 @@ evas_map_point_image_uv_set(Evas_Map *m, int idx, double u, double v)
    MAGIC_CHECK_END();
 
    Evas_Map_Point *p;
-   if (!m) return;
+
    if (idx >= m->count) return;
    p = m->points + idx;
    p->u = u;
@@ -587,7 +626,7 @@ evas_map_point_image_uv_get(const Evas_Map *m, int idx, double *u, double *v)
    MAGIC_CHECK_END();
 
    const Evas_Map_Point *p;
-   if (!m) goto error;
+
    if (idx >= m->count) goto error;
    p = m->points + idx;
    if (u) *u = p->u;
@@ -607,7 +646,7 @@ evas_map_point_color_set(Evas_Map *m, int idx, int r, int g, int b, int a)
    MAGIC_CHECK_END();
 
    Evas_Map_Point *p;
-   if (!m) return;
+
    if (idx >= m->count) return;
    p = m->points + idx;
    p->r = r;
@@ -624,7 +663,7 @@ evas_map_point_color_get(const Evas_Map *m, int idx, int *r, int *g, int *b, int
    MAGIC_CHECK_END();
 
    const Evas_Map_Point *p;
-   if (!m) return;
+
    if (idx >= m->count) return;
    p = m->points + idx;
    if (r) *r = p->r;
@@ -633,57 +672,13 @@ evas_map_point_color_get(const Evas_Map *m, int idx, int *r, int *g, int *b, int
    if (a) *a = p->a;
 }
 
-/****************************************************************************/
-/* util functions for manipulating maps, so you don't need to know the math */
-/****************************************************************************/
-static inline void
-_evas_map_util_points_populate(Evas_Map *m, const Evas_Coord x, const Evas_Coord y, const Evas_Coord w, const Evas_Coord h, const Evas_Coord z)
-{
-   Evas_Map_Point *p = m->points;
-   int i;
-
-   p[0].x = x;
-   p[0].y = y;
-   p[0].z = z;
-   p[0].u = 0.0;
-   p[0].v = 0.0;
-
-   p[1].x = x + w;
-   p[1].y = y;
-   p[1].z = z;
-   p[1].u = w;
-   p[1].v = 0.0;
-
-   p[2].x = x + w;
-   p[2].y = y + h;
-   p[2].z = z;
-   p[2].u = w;
-   p[2].v = h;
-
-   p[3].x = x;
-   p[3].y = y + h;
-   p[3].z = z;
-   p[3].u = 0.0;
-   p[3].v = h;
-
-   for (i = 0; i < 4; i++)
-     {
-        p[i].px = p[i].x;
-        p[i].py = p[i].y;
-     }
-}
-
 EAPI void
 evas_map_util_points_populate_from_object_full(Evas_Map *m, const Evas_Object *obj, Evas_Coord z)
 {
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    return;
    MAGIC_CHECK_END();
-   if (!m)
-     {
-        ERR("map == NULL");
-        return;
-     }
+
    if (m->count != 4)
      {
         ERR("map has count=%d where 4 was expected.", m->count);
@@ -703,11 +698,7 @@ evas_map_util_points_populate_from_object(Evas_Map *m, const Evas_Object *obj)
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    return;
    MAGIC_CHECK_END();
-   if (!m)
-     {
-        ERR("map == NULL");
-        return;
-     }
+
    if (m->count != 4)
      {
         ERR("map has count=%d where 4 was expected.", m->count);
@@ -740,11 +731,7 @@ evas_map_util_points_color_set(Evas_Map *m, int r, int g, int b, int a)
    MAGIC_CHECK_END();
 
    Evas_Map_Point *p, *p_end;
-   if (!m)
-     {
-        ERR("map == NULL");
-        return;
-     }
+
    p = m->points;
    p_end = p + m->count;
    for (; p < p_end; p++)
@@ -766,7 +753,6 @@ evas_map_util_rotate(Evas_Map *m, double degrees, Evas_Coord cx, Evas_Coord cy)
    double r = (degrees * M_PI) / 180.0;
    Evas_Map_Point *p, *p_end;
 
-   if (!m) return;
    p = m->points;
    p_end = p + m->count;
 
@@ -777,10 +763,10 @@ evas_map_util_rotate(Evas_Map *m, double degrees, Evas_Coord cx, Evas_Coord cy)
         x = p->x - cx;
         y = p->y - cy;
 
-        xx = (x * cos(r));
-        yy = (x * sin(r));
-        x = xx + (y * cos(r + (M_PI / 2.0)));
-        y = yy + (y * sin(r + (M_PI / 2.0)));
+        xx = x * cos(r);
+        yy = x * sin(r);
+        x = xx - (y * sin(r));
+        y = yy + (y * cos(r));
 
         p->px = p->x = x + cx;
         p->py = p->y = y + cy;
@@ -796,7 +782,6 @@ evas_map_util_zoom(Evas_Map *m, double zoomx, double zoomy, Evas_Coord cx, Evas_
 
    Evas_Map_Point *p, *p_end;
 
-   if (!m) return;
    p = m->points;
    p_end = p + m->count;
 
@@ -828,7 +813,6 @@ evas_map_util_3d_rotate(Evas_Map *m, double dx, double dy, double dz,
    double ry = (dy * M_PI) / 180.0;
    Evas_Map_Point *p, *p_end;
 
-   if (!m) return;
    p = m->points;
    p_end = p + m->count;
 
@@ -880,8 +864,6 @@ evas_map_util_3d_lighting(Evas_Map *m,
    MAGIC_CHECK_END();
 
    int i;
-
-   if (!m) return;
 
    for (i = 0; i < m->count; i++)
      {
@@ -962,7 +944,6 @@ evas_map_util_3d_perspective(Evas_Map *m,
 
    Evas_Map_Point *p, *p_end;
 
-   if (!m) return;
    p = m->points;
    p_end = p + m->count;
 
@@ -970,26 +951,26 @@ evas_map_util_3d_perspective(Evas_Map *m,
    m->persp.py = py;
    m->persp.z0 = z0;
    m->persp.foc = foc;
+
+   if (foc <= 0) return;
+
    for (; p < p_end; p++)
      {
         double x, y, zz;
 
-        if (foc > 0)
+        x = p->x - px;
+        y = p->y - py;
+
+        zz = ((p->z - z0) + foc);
+
+        if (zz > 0)
           {
-             x = p->x - px;
-             y = p->y - py;
-
-             zz = ((p->z - z0) + foc);
-
-             if (zz > 0)
-               {
-                  x = (x * foc) / zz;
-                  y = (y * foc) / zz;
-               }
-
-             p->x = px + x;
-             p->y = py + y;
+             x = (x * foc) / zz;
+             y = (y * foc) / zz;
           }
+
+        p->x = px + x;
+        p->y = py + y;
      }
 }
 
@@ -1003,8 +984,7 @@ evas_map_util_clockwise_get(Evas_Map *m)
    int i, j, k, count;
    long long c;
 
-   if (!m) return 0;
-   if (m->count < 3) return 0;
+   if (m->count < 3) return EINA_FALSE;
 
    count = 0;
    for (i = 0; i < m->count; i++)
@@ -1020,6 +1000,6 @@ evas_map_util_clockwise_get(Evas_Map *m)
         if (c < 0) count--;
         else if (c > 0) count++;
      }
-   if (count > 0) return 1;
-   return 0;
+   if (count > 0) return EINA_TRUE;
+   return EINA_FALSE;
 }
