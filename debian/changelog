@@ -1,3 +1,11 @@
+evas (1.0.0.001+svn.60295slp2+build02) unstable; urgency=low
+
+  * Upload Package 
+  * Git: 165.213.180.234:slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.60295slp2+build02
+
+ -- ChunEon Park <chuneon.park@samsung.com>  Tue, 05 Jul 2011 19:51:07 +0900
+
 evas (1.0.0.001+svn.60295slp2+build01) unstable; urgency=low
 
   * [SVN EFL Migration] evas in SLP is merged with SVN r60295
