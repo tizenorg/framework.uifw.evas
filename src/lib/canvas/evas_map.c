@@ -40,6 +40,7 @@ _evas_map_calc_map_geometry(Evas_Object *obj)
    Eina_Bool ch = EINA_FALSE;
 
    if (!obj->cur.map) return;
+   /*
    if (obj->prev.map)
      {
         // FIXME: this causes an infinite loop somewhere... hard to debug
@@ -75,6 +76,7 @@ _evas_map_calc_map_geometry(Evas_Object *obj)
      }
    else
       ch = 1;
+   */
 
    p = obj->cur.map->points;
    p_end = p + obj->cur.map->count;
