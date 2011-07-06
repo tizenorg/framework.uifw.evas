@@ -4045,7 +4045,11 @@ _layout(const Evas_Object *obj, int w, int h, int *w_ret, int *h_ret)
       EINA_INLIST_GET(c->paragraphs)->last;
    if (!c->par->logical_items)
      {
-        _layout_text_append(c, c->fmt, NULL, 0, 0, NULL);
+        Evas_Object_Textblock_Text_Item *ti;
+        ti = _layout_text_item_new(c, c->fmt);
+        ti->parent.text_node = o->text_nodes;
+        ti->parent.text_pos = 0;
+        _layout_text_add_logical_item(c, ti, NULL);
      }
 
    /* End of logical layout creation */
@@ -4291,8 +4295,8 @@ evas_textblock_style_set(Evas_Textblock_Style *ts, const char *text)
         Evas_Object_Textblock *o;
 
         o = (Evas_Object_Textblock *)(obj->object_data);
-        _evas_textblock_changed(o, obj);
         _evas_textblock_invalidate_all(o);
+        _evas_textblock_changed(o, obj);
      }
 
    _style_replace(ts, text);
@@ -4418,8 +4422,8 @@ evas_object_textblock_style_set(Evas_Object *obj, Evas_Textblock_Style *ts)
      }
    o->style = ts;
 
-   _evas_textblock_changed(o, obj);
    _evas_textblock_invalidate_all(o);
+   _evas_textblock_changed(o, obj);
 }
 
 EAPI const Evas_Textblock_Style *
@@ -4436,8 +4440,8 @@ evas_object_textblock_replace_char_set(Evas_Object *obj, const char *ch)
    if (o->repch) eina_stringshare_del(o->repch);
    if (ch) o->repch = eina_stringshare_add(ch);
    else o->repch = NULL;
-   _evas_textblock_changed(o, obj);
    _evas_textblock_invalidate_all(o);
+   _evas_textblock_changed(o, obj);
 }
 
 EAPI void
@@ -7602,6 +7606,21 @@ evas_textblock_cursor_char_coord_set(Evas_Textblock_Cursor *cur, Evas_Coord x, E
              if (ln->par->y + ln->y > y) break;
              if ((ln->par->y + ln->y <= y) && ((ln->par->y + ln->y + ln->h) > y))
                {
+                  if (x < ln->x)
+                    {
+                       cur->pos = ln->items->text_pos;
+                       cur->node = found_par->text_node;
+                       return EINA_TRUE;
+                    }
+                  else if (x >= ln->x + ln->w)
+                    {
+                       cur->pos =
+                          _ITEM(EINA_INLIST_GET(ln->items)->last)->text_pos;
+                       cur->node = found_par->text_node;
+                       evas_textblock_cursor_line_char_last(cur);
+                       return EINA_TRUE;
+                    }
+
                   EINA_INLIST_FOREACH(ln->items, it)
                     {
                        if ((it->x + ln->x) > x)
@@ -7661,6 +7680,14 @@ evas_textblock_cursor_char_coord_set(Evas_Textblock_Cursor *cur, Evas_Coord x, E
                }
           }
      }
+   else if (y > o->formatted.h)
+     {
+        /* If we are after the last paragraph, use the last position in the
+         * text. */
+        evas_textblock_cursor_paragraph_last(cur);
+        evas_textblock_cursor_char_next(cur);
+        return EINA_TRUE;
+     }
    return EINA_FALSE;
 }
 
@@ -7691,6 +7718,24 @@ evas_textblock_cursor_line_coord_set(Evas_Textblock_Cursor *cur, Evas_Coord y)
                   return ln->par->line_no + ln->line_no;
                }
           }
+     }
+   else if (y > o->formatted.h)
+     {
+        int line_no = 0;
+        /* If we are after the last paragraph, use the last position in the
+         * text. */
+        evas_textblock_cursor_paragraph_last(cur);
+        evas_textblock_cursor_char_next(cur);
+        if (cur->node && cur->node->par)
+          {
+             line_no = cur->node->par->line_no;
+             if (cur->node->par->lines)
+               {
+                  line_no += ((Evas_Object_Textblock_Line *)
+                        EINA_INLIST_GET(cur->node->par->lines)->last)->line_no;
+               }
+          }
+        return line_no;
      }
    return -1;
 }
@@ -8866,11 +8911,10 @@ static void
 evas_object_textblock_scale_update(Evas_Object *obj)
 {
    Evas_Object_Textblock *o;
-   
+
    o = (Evas_Object_Textblock *)(obj->object_data);
-   o->content_changed = 1;
-   o->formatted.valid = 0;
-   o->changed = 1;
+   _evas_textblock_invalidate_all(o);
+   _evas_textblock_changed(o, obj);
 }
 
 void
@@ -8905,8 +8949,8 @@ _evas_object_textblock_rehint(Evas_Object *obj)
                }
           }
      }
-   _evas_textblock_changed(o, obj);
    _evas_textblock_invalidate_all(o);
+   _evas_textblock_changed(o, obj);
 }
 
 /**
