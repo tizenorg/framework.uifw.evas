@@ -1,3 +1,11 @@
+evas (1.0.0.001+svn.60295slp2+build05) unstable; urgency=low
+
+  * Upload Package : A routine to check Mali is added.
+  * Git: 165.213.180.234:/slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.60295slp2+build05
+
+ -- Seungsoo Woo <om101.woo@samsung.com>  Tue, 12 Jul 2011 11:04:12 +0900
+
 evas (1.0.0.001+svn.60295slp2+build04) unstable; urgency=low
 
   * Package Upload : for fixing single line entry error
