@@ -756,6 +756,7 @@ _evas_gl_common_shader_program_binary_init(Evas_GL_Program *p,
    int res = 0, num = 0, length = 0;
    int *formats = NULL;
    void *data = NULL;
+   GLint ok = 0;
 
    if (!ef) return res;
 
@@ -790,6 +791,16 @@ _evas_gl_common_shader_program_binary_init(Evas_GL_Program *p,
    glBindAttribLocation(p->prog, SHAD_TEXUV2, "tex_coord2");
    glBindAttribLocation(p->prog, SHAD_TEXUV3, "tex_coord3");
    glBindAttribLocation(p->prog, SHAD_TEXM,   "tex_coordm");
+
+   glGetProgramiv(p->prog, GL_LINK_STATUS, &ok);
+   GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+   if (!ok)
+     {
+        gl_compile_link_error(p->prog, "load a program object");
+        ERR("Abort load of program (%s)", pname);
+        goto finish;
+     }
+
    res = 1;
 
 finish:
@@ -810,7 +821,7 @@ _evas_gl_common_shader_program_binary_save(Evas_GL_Program *p,
 {
    void* data = NULL;
    GLenum format;
-   int length = 0;
+   int length = 0, size = 0;
 
    if (!glsym_glGetProgramBinary) return 0;
 
@@ -821,8 +832,14 @@ _evas_gl_common_shader_program_binary_save(Evas_GL_Program *p,
    data = malloc(length);
    if (!data) return 0;
 
-   glsym_glGetProgramBinary(p->prog, length, NULL, &format, data);
+   glsym_glGetProgramBinary(p->prog, length, &size, &format, data);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   if (length != size)
+     {
+        free(data);
+        return 0;
+     }
 
    if (eet_write(ef, pname, data, length, 0) < 0)
      {
