@@ -1,3 +1,11 @@
+evas (1.0.0.001+svn.60295slp2+build07) unstable; urgency=low
+
+  * Upload Package
+  * Git: 165.213.180.234:/slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.60295slp2+build07
+
+ -- Seungsoo Woo <om101.woo@samsung.com>  Mon, 18 Jul 2011 21:30:46 +0900
+
 evas (1.0.0.001+svn.60295slp2+build06) unstable; urgency=low
 
   * Upload Package
@@ -771,7 +779,7 @@ evas (0.9.9.060+svn.49540slp2+3build02) unstable; urgency=low
   * Git: 165.213.180.234:/git/slp2.0/slp2.0-pkgs/EFL-pkgs/evas
   * Tag: evas_0.9.9.060+svn.49540slp2+3build02
 
- -- Daniel Juyung Seo <juyung.seo@samsung.com>  목, 10  6월 2010 21:00:53 +0900
+ -- Daniel Juyung Seo <juyung.seo@samsung.com>  �? 10  6??2010 21:00:53 +0900
 
 evas (0.9.9.060+svn.49540slp2+3) unstable; urgency=low
 
