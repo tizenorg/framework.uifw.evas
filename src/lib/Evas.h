@@ -2433,6 +2433,21 @@ EAPI void              evas_event_feed_key_up            (Evas *e, const char *k
 EAPI void              evas_event_feed_hold              (Evas *e, int hold, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1);
 
 /**
+ * Re feed event.
+ *
+ * @param e The given canvas pointer.
+ * @param event_copy the event to refeed
+ * @param event_type Event type
+ *
+ * This function re-feeds the event pointed by event_copy
+ *
+ * This function call evas_event_feed_* functions, so it can
+ * cause havoc if not used wisely. Please use it responsibly.
+ */
+EAPI void              evas_event_refeed_event           (Evas *e, void *event_copy, Evas_Callback_Type event_type);  EINA_ARG_NONNULL(1);
+
+
+/**
  * @}
  */
 
@@ -8099,6 +8114,21 @@ EAPI void                                evas_object_table_mirrored_set    (Evas
  */
 EAPI Eina_Bool                           evas_object_table_mirrored_get    (const Evas_Object *o) EINA_ARG_NONNULL(1);
 
+
+/**
+ * Get packing location of a child of table
+ *
+ * @param o The given table object.
+ * @param child The child object to add.
+ * @param col pointer to store relative-horizontal position to place child.
+ * @param row pointer to store relative-vertical position to place child.
+ * @param colspan pointer to store how many relative-horizontal position to use for this child.
+ * @param rowspan pointer to store how many relative-vertical position to use for this child.
+ *
+ * @return 1 on success, 0 on failure.
+ * @since 1.1.0
+ */
+EAPI Eina_Bool                           evas_object_table_pack_get(Evas_Object *o, Evas_Object *child, unsigned short *col, unsigned short *row, unsigned short *colspan, unsigned short *rowspan);
 
 /**
  * Add a new child to a table object.
