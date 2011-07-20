@@ -1,3 +1,11 @@
+evas (1.0.0.001+svn.60295slp2+build08) unstable; urgency=low
+
+  * Added evas_event_refeed_event, evas_object_table_pack_get.
+  * Git: 165.213.180.234:slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.60295slp2+build08
+
+ -- Daniel Juyung Seo <juyung.seo@samsung.com>  Wed, 20 Jul 2011 17:40:11 +0900
+
 evas (1.0.0.001+svn.60295slp2+build07) unstable; urgency=low
 
   * Upload Package
