@@ -697,6 +697,13 @@ typedef enum _Evas_Image_Scale_Hint
    EVAS_IMAGE_SCALE_HINT_STATIC = 2
 } Evas_Image_Scale_Hint;
 
+typedef enum _Evas_Image_Animated_Loop_Hint
+{
+   EVAS_IMAGE_ANIMATED_HINT_NONE = 0,
+   EVAS_IMAGE_ANIMATED_HINT_LOOP = 1, /**< Image's animation mode is loop like 1->2->3->1->2->3 */
+   EVAS_IMAGE_ANIMATED_HINT_PINGPONG = 2 /**< Image's animation mode is pingpong like 1->2->3->2->1-> ... */
+} Evas_Image_Animated_Loop_Hint;
+
 typedef enum _Evas_Engine_Render_Mode
 {
    EVAS_RENDER_MODE_BLOCKING = 0,
@@ -5497,6 +5504,59 @@ EAPI Eina_Bool evas_object_image_extension_can_load_get(const char *file);
  * This functions is threadsafe.
  */
 EAPI Eina_Bool evas_object_image_extension_can_load_fast_get(const char *file);
+
+/**
+ * Get the animation of an image object.
+ *
+ * @param obj Image object
+ * @return whether obj support animation
+ *
+ */
+EAPI Eina_Bool evas_object_image_animated_get(const Evas_Object *obj);
+
+/**
+ * Get the frame number of image object's file.
+ *
+ * @param obj Image object
+ * @return the number of frame
+ *
+ */
+EAPI int evas_object_image_animated_frame_num_get(const Evas_Object *obj);
+
+/**
+ * Get the loop type of an animated image object.
+ *
+ * @param obj Image object
+ * @return loop type of animated image object
+ */
+EAPI Evas_Image_Animated_Loop_Hint evas_object_image_animated_loop_type_get(const Evas_Object *obj);
+
+/**
+ * Get the number of loop of an animated image object.
+ *
+ * @param obj Image object
+ * @return the number of loop of an animated image object
+ */
+EAPI int evas_object_image_animated_loop_count_get(const Evas_Object *obj);
+
+/**
+ * Get the duration of frames of an image object.
+ *
+ * @param obj Image object
+ * @param start_frame start frame
+ * @param fram_num number of frames which want to duration
+ *
+ */
+EAPI double evas_object_image_animated_frame_duration_get(const Evas_Object *obj, int start_frame, int fram_num);
+
+/**
+ * Set the frame to current frame of an image object must render
+ *
+ * @param obj The given image object.
+ * @param frame_num The index of current frame
+ *
+ */
+EAPI void evas_object_image_animated_frame_set(Evas_Object *obj, int frame_num);
 
 /**
  * @defgroup Evas_Object_Text Text Object Functions

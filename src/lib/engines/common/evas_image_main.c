@@ -351,6 +351,17 @@ _evas_common_rgba_image_surface_delete(Image_Entry *ie)
    else if (ie->data1)
      evas_cserve_image_free(ie);
 #endif   
+   if ( ie->flags.animated)
+     {
+        if (ie->frames)
+          {
+             Eina_List *l;
+             void *data;
+
+             EINA_LIST_FOREACH(ie->frames, l, data)
+               if (data) free(data);
+          }
+     }
    im->image.data = NULL;
    ie->allocated.w = 0;
    ie->allocated.h = 0;

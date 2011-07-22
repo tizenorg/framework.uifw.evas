@@ -511,6 +511,7 @@ struct _Image_Entry_Flags
    Eina_Bool delete_me    : 1;
    Eina_Bool pending      : 1;
 #endif
+   Eina_Bool animated     : 1;
 };
 
 struct _Evas_Cache_Target
@@ -593,6 +594,13 @@ struct _Image_Entry
    int                    connect_num;
    int                    channel;
    int                    load_error;
+
+   /* for animation feature */
+   int                    frame_count;
+   Evas_Image_Animated_Loop_Hint loop_hint;
+   int                    loop_count;
+   int                    cur_frame;
+   Eina_List             *frames;
 };
 
 struct _Engine_Image_Entry
