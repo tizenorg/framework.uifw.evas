@@ -1,3 +1,11 @@
+evas (1.0.0.001+svn.60295slp2+build10) unstable; urgency=low
+
+  * Upload Package
+  * Git: 165.213.180.234:/slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.60295slp2+build10
+
+ -- Jiyoun Park <jy0703.park@samsung.com>  Mon, 01 Aug 2011 17:57:53 +0900
+
 evas (1.0.0.001+svn.60295slp2+build09) unstable; urgency=low
 
   * Upload Package:animation gif feature
