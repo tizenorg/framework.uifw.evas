@@ -20,9 +20,6 @@ typedef enum _Frame_Load_Type
 
 struct _Gif_Frame
 {
-   int index;
-   Eina_Bool loaded       : 1;
-
    struct {
       /* Image descriptor */
       int        x;
@@ -39,10 +36,9 @@ struct _Gif_Frame
       int        delay;
       int        input;
    } frame_info;
-   DATA32    *data;
 };
 
-static Eina_Bool evas_image_load_file_data_gif_internal(Image_Entry *ie, Gif_Frame *frame, int *error);
+static Eina_Bool evas_image_load_file_data_gif_internal(Image_Entry *ie, Image_Entry_Frame *frame, int *error);
 
 static Eina_Bool evas_image_load_file_head_gif(Image_Entry *ie, const char *file, const char *key, int *error) EINA_ARG_NONNULL(1, 2, 4);
 static Eina_Bool evas_image_load_file_data_gif(Image_Entry *ie, const char *file, const char *key, int *error) EINA_ARG_NONNULL(1, 2, 4);
@@ -62,10 +58,10 @@ static Evas_Image_Load_Func evas_image_load_gif_func =
 
 /* find specific frame in image entry */
 static Eina_Bool
-_find_frame(Image_Entry *ie, int frame_index, Gif_Frame **frame)
+_find_frame(Image_Entry *ie, int frame_index, Image_Entry_Frame **frame)
 {
    Eina_List *l;
-   Gif_Frame *hit_frame;
+   Image_Entry_Frame *hit_frame = NULL;
 
    if (!ie) return EINA_FALSE;
    if (!ie->frames) return EINA_FALSE;
@@ -82,7 +78,7 @@ _find_frame(Image_Entry *ie, int frame_index, Gif_Frame **frame)
 }
 
 static Eina_Bool
-_find_close_frame(Image_Entry *ie, int frame_index, Gif_Frame **frame)
+_find_close_frame(Image_Entry *ie, int frame_index, Image_Entry_Frame **frame)
 {
   int i;
   Eina_Bool hit = EINA_FALSE;
@@ -151,39 +147,47 @@ _evas_image_skip_frame(GifFileType *gif, int frame)
         if (rec == TERMINATE_RECORD_TYPE) return EINA_FALSE;  /* end of file */
 
      } while ((rec != TERMINATE_RECORD_TYPE) && (remain_frame > 0));
+   return EINA_FALSE;
 }
 
-static Eina_Bool _evas_image_load_frame_graphic_info(Gif_Frame *frame, GifByteType  *ext)
+static Eina_Bool _evas_image_load_frame_graphic_info(Image_Entry_Frame *frame, GifByteType  *ext)
 {
-   if (!frame || !ext) return EINA_FALSE;
+   Gif_Frame *gif_frame = NULL;
+   if ((!frame) || (!ext)) return EINA_FALSE;
+
+   gif_frame = (Gif_Frame *) frame->info;
 
    /* transparent */
    if ((ext[1] & 0x1) != 0)
-     frame->frame_info.transparent = ext[4];
+     gif_frame->frame_info.transparent = ext[4];
    else
-     frame->frame_info.transparent = -1;
+     gif_frame->frame_info.transparent = -1;
 
-   frame->frame_info.input = (ext[1] >>1) & 0x1;
-   frame->frame_info.disposal = (ext[1] >>2) & 0x7;
-   frame->frame_info.delay = byte2_to_int(ext[2], ext[3]);
+   gif_frame->frame_info.input = (ext[1] >>1) & 0x1;
+   gif_frame->frame_info.disposal = (ext[1] >>2) & 0x7;
+   gif_frame->frame_info.delay = byte2_to_int(ext[2], ext[3]);
+   return EINA_TRUE;
 }
 
-static Eina_Bool _evas_image_load_frame_image_des_info(GifFileType *gif, Gif_Frame *frame)
+static Eina_Bool _evas_image_load_frame_image_des_info(GifFileType *gif, Image_Entry_Frame *frame)
 {
-   if (!gif || !frame) return EINA_FALSE;
-   frame->image_des.x = gif->Image.Left;
-   frame->image_des.y = gif->Image.Top;
-   frame->image_des.w = gif->Image.Width;
-   frame->image_des.h = gif->Image.Height;
-   frame->image_des.interlace = gif->Image.Interlace;
+   Gif_Frame *gif_frame = NULL;
+   if ((!gif) || (!frame)) return EINA_FALSE;
+
+   gif_frame = (Gif_Frame *) frame->info;
+   gif_frame->image_des.x = gif->Image.Left;
+   gif_frame->image_des.y = gif->Image.Top;
+   gif_frame->image_des.w = gif->Image.Width;
+   gif_frame->image_des.h = gif->Image.Height;
+   gif_frame->image_des.interlace = gif->Image.Interlace;
+   return EINA_TRUE;
 }
 
-static Eina_Bool _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType *gif, Gif_Frame *frame, int *error)
+static Eina_Bool _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType *gif, Image_Entry_Frame *frame, int *error)
 {
    int                 w;
    int                 h;
    int                 i,j;
-   int                 img_code;
    int                 bg;
    int                 r;
    int                 g;
@@ -192,7 +196,6 @@ static Eina_Bool _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType 
    double              per;
    double              per_inc;
    ColorMapObject     *cmap;
-   GifByteType        *img;
    GifRowType         *rows;
    int                 intoffset[] = { 0, 4, 2, 1 };
    int                 intjump[] = { 8, 8, 4, 2 };
@@ -200,9 +203,11 @@ static Eina_Bool _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType 
    int                 cache_w;
    int                 cache_h;
    DATA32             *ptr;
+   Gif_Frame          *gif_frame = NULL;
 
-   if (!gif || !frame) return EINA_FALSE;
+   if ((!gif) || (!frame)) return EINA_FALSE;
 
+   gif_frame = (Gif_Frame *) frame->info;
    w = gif->Image.Width;
    h = gif->Image.Height;
    cache_w = ie->w;
@@ -256,9 +261,14 @@ static Eina_Bool _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType 
               }
           }
      }
-   alpha = frame->frame_info.transparent;
+   alpha = gif_frame->frame_info.transparent;
    siz = cache_w *cache_h * sizeof(DATA32);
    frame->data = malloc(siz);
+   if (!frame->data)
+     {
+        *error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
+        goto error;
+     }
    ptr = frame->data;
    bg = gif->SBackGroundColor;
    cmap = (gif->Image.ColorMap ? gif->Image.ColorMap : gif->SColorMap);
@@ -268,7 +278,7 @@ static Eina_Bool _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType 
      {
         /* get previous frame only frame index is bigger than 1 */
         DATA32    *ptr_src;
-        Gif_Frame *new_frame = NULL;
+        Image_Entry_Frame *new_frame = NULL;
         int        cur_x, cur_y;
         int        cur_frame = frame->index;
 
@@ -287,8 +297,8 @@ static Eina_Bool _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType 
           }
 
         /* composite frames */
-        cur_x = frame->image_des.x;
-        cur_y = frame->image_des.y;
+        cur_x = gif_frame->image_des.x;
+        cur_y = gif_frame->image_des.y;
         ptr = ptr + cache_w * cur_y;
 
         for (i = 0; i < h; i++)
@@ -314,8 +324,8 @@ static Eina_Bool _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType 
      }
    else
      {
-        int cur_x = frame->image_des.x;
-        int cur_y = frame->image_des.y;
+        int cur_x = gif_frame->image_des.x;
+        int cur_y = gif_frame->image_des.y;
         ptr = ptr + cache_w * cur_y;
 
         for (i = 0; i < h; i++)
@@ -351,13 +361,16 @@ error:
 }
 
 static Eina_Bool
-_evas_image_load_frame(Image_Entry *ie, GifFileType *gif, Gif_Frame *frame, Frame_Load_Type type, int *error)
+_evas_image_load_frame(Image_Entry *ie, GifFileType *gif, Image_Entry_Frame *frame, Frame_Load_Type type, int *error)
 {
    GifRecordType       rec;
    int                 gra_res = 0, img_res = 0;
    Eina_Bool           res = EINA_FALSE;
+   Gif_Frame          *gif_frame = NULL;
 
-   if (!gif || !frame) return EINA_FALSE;
+   if ((!gif) || (!frame)) return EINA_FALSE;
+   gif_frame = (Gif_Frame *) frame->info;
+
    if (LOAD_FRAME_NONE > type || LOAD_FRAME_DATA_INFO < type) return EINA_FALSE;
 
    do
@@ -404,25 +417,25 @@ _evas_image_load_frame(Image_Entry *ie, GifFileType *gif, Gif_Frame *frame, Fram
 
 
 /* set frame data to cache entry's data */
-static Eina_Bool evas_image_load_file_data_gif_internal(Image_Entry *ie, Gif_Frame *frame,  int *error)
+static Eina_Bool evas_image_load_file_data_gif_internal(Image_Entry *ie, Image_Entry_Frame *frame,  int *error)
 {
    int w;
    int h;
    int dst_x;
    int dst_y;
-   int i;
-   int j;
    DATA32 *dst;
    DATA32 *src;
    int cache_w, cache_h;
    size_t   siz;
+   Gif_Frame *gif_frame = NULL;
 
+   gif_frame = (Gif_Frame *) frame->info;
    cache_w = ie->w;
    cache_h = ie->h;
-   w = frame->image_des.w;
-   h = frame->image_des.h;
-   dst_x = frame->image_des.x;
-   dst_y = frame->image_des.y;
+   w = gif_frame->image_des.w;
+   h = gif_frame->image_des.h;
+   dst_x = gif_frame->image_des.x;
+   dst_y = gif_frame->image_des.y;
 
    src = frame->data;
 
@@ -471,16 +484,16 @@ evas_image_load_file_head_gif(Image_Entry *ie, const char *file, const char *key
 #endif
    if (fd < 0)
      {
-	*error = EVAS_LOAD_ERROR_DOES_NOT_EXIST;
-	return EINA_FALSE;
+        *error = EVAS_LOAD_ERROR_DOES_NOT_EXIST;
+        return EINA_FALSE;
      }
 
    gif = DGifOpenFileHandle(fd);
    if (!gif)
      {
         close(fd);
-	*error = EVAS_LOAD_ERROR_UNKNOWN_FORMAT;
-	return EINA_FALSE;
+        *error = EVAS_LOAD_ERROR_UNKNOWN_FORMAT;
+        return EINA_FALSE;
      }
 
    /* check logical screen size */
@@ -525,16 +538,16 @@ evas_image_load_file_head_gif(Image_Entry *ie, const char *file, const char *key
                }
              /* we have to count frame, so use DGifGetCode and skip decoding */
              if (DGifGetCode(gif, &img_code, &img) == GIF_ERROR)
-	       {
+               {
                   /* PrintGifError(); */
-		  DGifCloseFile(gif);
+                  DGifCloseFile(gif);
                   *error = EVAS_LOAD_ERROR_UNKNOWN_FORMAT;
-		  return EINA_FALSE;
-	       }
+                  return EINA_FALSE;
+               }
              while (img)
                {
                   img = NULL;
-                  DGifGetExtensionNext(gif, &img);
+                  DGifGetCodeNext(gif, &img);
                }
           }
         else if (rec == EXTENSION_RECORD_TYPE)
@@ -593,7 +606,8 @@ evas_image_load_specific_frame(Image_Entry *ie, const char *file, int frame_inde
 {
    int                 fd;
    GifFileType        *gif;
-   Gif_Frame *frame = NULL;
+   Image_Entry_Frame *frame = NULL;
+   Gif_Frame *gif_frame = NULL;
 
 #ifndef __EMX__
    fd = open(file, O_RDONLY);
@@ -602,53 +616,59 @@ evas_image_load_specific_frame(Image_Entry *ie, const char *file, int frame_inde
 #endif
    if (fd < 0)
      {
-	*error = EVAS_LOAD_ERROR_DOES_NOT_EXIST;
-	return EINA_FALSE;
+        *error = EVAS_LOAD_ERROR_DOES_NOT_EXIST;
+        return EINA_FALSE;
      }
 
    gif = DGifOpenFileHandle(fd);
    if (!gif)
      {
-        close(fd);
-	*error = EVAS_LOAD_ERROR_UNKNOWN_FORMAT;
-	return EINA_FALSE;
+        if (fd) close(fd);
+        *error = EVAS_LOAD_ERROR_UNKNOWN_FORMAT;
+        return EINA_FALSE;
      }
    if (!_evas_image_skip_frame(gif, frame_index-1))
      {
-        close(fd);
+        if (fd) close(fd);
         *error = EVAS_LOAD_ERROR_UNKNOWN_FORMAT;
         return EINA_FALSE;
      }
 
-   frame = malloc(sizeof (Gif_Frame));
+   frame = malloc(sizeof (Image_Entry_Frame));
    if (!frame)
-          {
-        if (fd)
-          close(fd);
+     {
+        if (fd) close(fd);
         *error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
         return EINA_FALSE;
-          }
+     }
 
+   gif_frame = malloc(sizeof (Gif_Frame));
+   if (!gif_frame)
+     {
+        if (fd) close(fd);
+        *error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
+        return EINA_FALSE;
+     }
+   frame->info = gif_frame;
    frame->index = frame_index;
+
    if (!_evas_image_load_frame(ie,gif, frame, LOAD_FRAME_DATA_INFO,error))
-          {
-        if (fd)
-          close(fd);
+     {
+        if (fd) close(fd);
         *error = EVAS_LOAD_ERROR_UNKNOWN_FORMAT;
         return EINA_FALSE;
      }
 
    ie->frames = eina_list_append(ie->frames, frame);
-   if (fd)
-     close(fd);
+   DGifCloseFile(gif);
    return EINA_TRUE;
-               }
+}
 
 static Eina_Bool
 evas_image_load_file_data_gif(Image_Entry *ie, const char *file, const char *key __UNUSED__, int *error)
-               {
+{
    int cur_frame_index;
-   Gif_Frame *frame = NULL;
+   Image_Entry_Frame *frame = NULL;
    Eina_Bool hit;
 
    if(!ie->flags.animated)
@@ -657,11 +677,11 @@ evas_image_load_file_data_gif(Image_Entry *ie, const char *file, const char *key
    cur_frame_index = ie->cur_frame;
 
    if ((ie->flags.animated) &&
-   	((cur_frame_index <0) || (cur_frame_index > FRAME_MAX) || (cur_frame_index > ie->frame_count)))
-               {
+       ((cur_frame_index <0) || (cur_frame_index > FRAME_MAX) || (cur_frame_index > ie->frame_count)))
+     {
         *error = EVAS_LOAD_ERROR_GENERIC;
         return EINA_FALSE;
-               }
+     }
 
    /* first time frame is set to be 0. so default is 1 */
    if (cur_frame_index == 0) cur_frame_index++;
@@ -671,11 +691,11 @@ evas_image_load_file_data_gif(Image_Entry *ie, const char *file, const char *key
 
    /* if current frame exist in has table, check load flag */
    if (hit)
-               {
+     {
         if (frame->loaded)
           evas_image_load_file_data_gif_internal(ie,frame,error);
         else
-                    {
+          {
              int fd;
              GifFileType        *gif;
 
@@ -685,41 +705,43 @@ evas_image_load_file_data_gif(Image_Entry *ie, const char *file, const char *key
              fd = open(file, O_RDONLY | O_BINARY);
 #endif
              if (fd < 0)
-                         {
+               {
                   *error = EVAS_LOAD_ERROR_DOES_NOT_EXIST;
                   return EINA_FALSE;
                }
 
              gif = DGifOpenFileHandle(fd);
              if (!gif)
-                              {
-                  close(fd);
+               {
+                  if (fd) close(fd);
                   *error = EVAS_LOAD_ERROR_UNKNOWN_FORMAT;
                   return EINA_FALSE;
-                              }
+               }
              _evas_image_skip_frame(gif, cur_frame_index-1);
              if (!_evas_image_load_frame(ie, gif, frame, LOAD_FRAME_DATA,error))
                {
-                  close(fd);
-                  *error = EVAS_LOAD_ERROR_UNKNOWN_FORMAT;
-		       return EINA_FALSE;
-                    }
-             if (!evas_image_load_file_data_gif_internal(ie, frame, error))
-               {
-                  close(fd);
+                  if (fd) close(fd);
                   *error = EVAS_LOAD_ERROR_UNKNOWN_FORMAT;
                   return EINA_FALSE;
-                         }
-             return EINA_TRUE;
-                    }
                }
-   /* current frame does is not exist */
-             else
+             if (!evas_image_load_file_data_gif_internal(ie, frame, error))
                {
+                  if (fd) close(fd);
+                  *error = EVAS_LOAD_ERROR_UNKNOWN_FORMAT;
+                  return EINA_FALSE;
+               }
+             DGifCloseFile(gif);
+             *error = EVAS_LOAD_ERROR_NONE;
+             return EINA_TRUE;
+          }
+     }
+   /* current frame does is not exist */
+   else
+     {
         if (!evas_image_load_specific_frame(ie, file, cur_frame_index, error))
-                    {
+          {
              return EINA_FALSE;
-                    }
+          }
         hit = EINA_FALSE;
         frame = NULL;
         hit = _find_frame(ie, cur_frame_index, &frame);
@@ -728,14 +750,15 @@ evas_image_load_file_data_gif(Image_Entry *ie, const char *file, const char *key
           {
              *error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
              return EINA_FALSE;
-               }
+          }
         return EINA_TRUE;
      }
-          }
+   return EINA_FALSE;
+}
 
 static double
 evas_image_load_frame_duration_gif(Image_Entry *ie, const char *file, const int start_frame, const int frame_num)
-          {
+{
    int                 fd;
    GifFileType        *gif;
    GifRecordType       rec;
@@ -762,10 +785,10 @@ evas_image_load_frame_duration_gif(Image_Entry *ie, const char *file, const int 
 
    gif = DGifOpenFileHandle(fd);
    if (!gif)
-               {
+     {
         close(fd);
         return -1;
-               }
+     }
 
    do
      {
@@ -782,19 +805,19 @@ evas_image_load_frame_duration_gif(Image_Entry *ie, const char *file, const int 
                {
                   /* PrintGifError(); */
                   rec = TERMINATE_RECORD_TYPE;
-     }
+               }
              current_frame++;
              /* we have to count frame, so use DGifGetCode and skip decoding */
              if (DGifGetCode(gif, &img_code, &img) == GIF_ERROR)
-     {
+               {
                   rec = TERMINATE_RECORD_TYPE;
                }
              while (img)
-          {
+               {
                   img = NULL;
                   DGifGetExtensionNext(gif, &img);
+               }
           }
-     }
         else if (rec == EXTENSION_RECORD_TYPE)
           {
              int                 ext_code;
@@ -803,27 +826,25 @@ evas_image_load_frame_duration_gif(Image_Entry *ie, const char *file, const int 
              ext = NULL;
              DGifGetExtension(gif, &ext_code, &ext);
              while (ext)
-     {
+               {
                   if (ext_code == 0xf9) /* Graphic Control Extension */
-         {
-                       int *test = NULL;
-
+                    {
                        if ((current_frame  >= start_frame) && (current_frame <= frame_count))
-             {
+                         {
                             int frame_duration = 0;
                             if (remain_frames < 0) break;
                             frame_duration = byte2_to_int (ext[2], ext[3]);
                             if (frame_duration == 0)
                               duration += 0.1;
-           else
+                            else
                               duration += (double)frame_duration/100;
                             remain_frames --;
-             }
-         }
+                         }
+                    }
                   ext = NULL;
                   DGifGetExtensionNext(gif, &ext);
-     }
-     }
+              }
+          }
      } while (rec != TERMINATE_RECORD_TYPE);
 
    DGifCloseFile(gif);

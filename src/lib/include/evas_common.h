@@ -350,13 +350,14 @@ void *alloca (size_t);
 
 /*****************************************************************************/
 
-typedef unsigned long long		DATA64;
-typedef unsigned int			DATA32;
-typedef unsigned short			DATA16;
+typedef unsigned long long              DATA64;
+typedef unsigned int                    DATA32;
+typedef unsigned short                  DATA16;
 typedef unsigned char                   DATA8;
 
 typedef struct _Image_Entry             Image_Entry;
-typedef struct _Image_Entry_Flags	Image_Entry_Flags;
+typedef struct _Image_Entry_Flags       Image_Entry_Flags;
+typedef struct _Image_Entry_Frame       Image_Entry_Frame;
 typedef struct _Image_Timestamp         Image_Timestamp;
 typedef struct _Engine_Image_Entry      Engine_Image_Entry;
 typedef struct _Evas_Cache_Target       Evas_Cache_Target;
@@ -512,6 +513,14 @@ struct _Image_Entry_Flags
    Eina_Bool pending      : 1;
 #endif
    Eina_Bool animated     : 1;
+};
+
+struct _Image_Entry_Frame
+{
+   int       index;
+   DATA32   *data;     /* frame decoding data */
+   void     *info;     /* special image type info */
+   Eina_Bool loaded       : 1;
 };
 
 struct _Evas_Cache_Target
