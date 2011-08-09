@@ -187,6 +187,8 @@ static Eina_Bool _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType 
 {
    int                 w;
    int                 h;
+   int                 x;
+   int                 y;
    int                 i,j;
    int                 bg;
    int                 r;
@@ -202,6 +204,8 @@ static Eina_Bool _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType 
    size_t              siz;
    int                 cache_w;
    int                 cache_h;
+   int                 cur_h;
+   int                 cur_w;
    DATA32             *ptr;
    Gif_Frame          *gif_frame = NULL;
 
@@ -210,6 +214,8 @@ static Eina_Bool _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType 
    gif_frame = (Gif_Frame *) frame->info;
    w = gif->Image.Width;
    h = gif->Image.Height;
+   x = gif->Image.Left;
+   y = gif->Image.Top;
    cache_w = ie->w;
    cache_h = ie->h;
 
@@ -274,12 +280,16 @@ static Eina_Bool _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType 
    cmap = (gif->Image.ColorMap ? gif->Image.ColorMap : gif->SColorMap);
 
    per_inc = 100.0 / (((double)w) * h);
+   cur_h = h;
+   cur_w = w;
+   if (cur_h > cache_h) cur_h = cache_h;
+   if (cur_w > cache_w) cur_w = cache_w;
+
    if (frame->index > 1)
      {
         /* get previous frame only frame index is bigger than 1 */
         DATA32    *ptr_src;
         Image_Entry_Frame *new_frame = NULL;
-        int        cur_x, cur_y;
         int        cur_frame = frame->index;
 
         if (!_find_close_frame(ie, cur_frame,  &new_frame))
@@ -297,14 +307,12 @@ static Eina_Bool _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType 
           }
 
         /* composite frames */
-        cur_x = gif_frame->image_des.x;
-        cur_y = gif_frame->image_des.y;
-        ptr = ptr + cache_w * cur_y;
+        ptr = ptr + cache_w * y;
 
-        for (i = 0; i < h; i++)
+        for (i = 0; i < cur_h; i++)
           {
-             ptr = ptr + cur_x;
-             for (j = 0; j < w; j++)
+             ptr = ptr + x;
+             for (j = 0; j < cur_w; j++)
                {
                   if (rows[i][j] == alpha)
                     {
@@ -319,19 +327,17 @@ static Eina_Bool _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType 
                     }
                   per += per_inc;
                }
-             ptr = ptr + (cache_w - (cur_x + w));
+             ptr = ptr + (cache_w - (x + cur_w));
           }
      }
    else
      {
-        int cur_x = gif_frame->image_des.x;
-        int cur_y = gif_frame->image_des.y;
-        ptr = ptr + cache_w * cur_y;
+        ptr = ptr + cache_w * y;
 
-        for (i = 0; i < h; i++)
+        for (i = 0; i < cur_h; i++)
           {
-             ptr = ptr + cur_x;
-             for (j = 0; j < w; j++)
+             ptr = ptr + x;
+             for (j = 0; j < cur_w; j++)
                {
                   r = cmap->Colors[rows[i][j]].Red;
                   g = cmap->Colors[rows[i][j]].Green;
@@ -340,7 +346,7 @@ static Eina_Bool _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType 
 
                   per += per_inc;
                }
-             ptr = ptr + (cache_w - (cur_x + w));
+             ptr = ptr + (cache_w - (x + cur_w));
           }
      }
 
@@ -354,9 +360,9 @@ static Eina_Bool _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType 
 error:
    for (i = 0; i < h; i++)
      {
-        free(rows[i]);
+        if (rows[i]) free(rows[i]);
      }
-   free(rows);
+   if (rows) free(rows);
    return EINA_FALSE;
 }
 
