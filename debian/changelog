@@ -1,3 +1,14 @@
+evas (1.0.0.001+svn.60295slp2+build12) unstable; urgency=low
+
+  * Upload Package
+  * Important Changes
+    Merge "   [Evas_image_load_gif] deal with the case frame's size is wrong if frame size exceed logigal screen size, we only draw logigal screen size area"
+       [Evas_image_load_gif] deal with the case frame's size is wrong
+  * Git: 165.213.180.234:/slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.60295slp2+build12
+
+ -- Jiyoun Park <jy0703.park@samsung.com>  Tue, 09 Aug 2011 13:14:46 +0900
+
 evas (1.0.0.001+svn.60295slp2+build11) unstable; urgency=low
 
   * Upload Package
