@@ -947,6 +947,11 @@ evas_object_hide(Evas_Object *obj)
      }
    else
      {
+        if (obj->mouse_grabbed > 0)
+          {
+//             if (obj->layer->evas->pointer.mouse_grabbed >= obj->mouse_grabbed)
+             obj->layer->evas->pointer.mouse_grabbed -= obj->mouse_grabbed;
+          }
         if ((obj->mouse_in) || (obj->mouse_grabbed > 0))
           obj->layer->evas->pointer.object.in = eina_list_remove(obj->layer->evas->pointer.object.in, obj);
         obj->mouse_grabbed = 0;
@@ -1249,12 +1254,6 @@ evas_objects_in_rectangle_get(const Evas *e, Evas_Coord x, Evas_Coord y, Evas_Co
    return in;
 }
 
-/**
- * Retrieves the name of the type of the given evas object.
- * @param   obj The given object.
- * @return  The name.
- * @ingroup Evas_Object_Group_Basic
- */
 EAPI const char *
 evas_object_type_get(const Evas_Object *obj)
 {
@@ -1265,13 +1264,6 @@ evas_object_type_get(const Evas_Object *obj)
    return obj->type;
 }
 
-/**
- * Set whether to use a precise (usually expensive) point collision detection.
- * @param obj The given object.
- * @param precise wheter to use a precise point collision detection or not
- * The default value is false.
- * @ingroup Evas_Object_Group_Extras
- */
 EAPI void
 evas_object_precise_is_inside_set(Evas_Object *obj, Eina_Bool precise)
 {
@@ -1281,12 +1273,6 @@ evas_object_precise_is_inside_set(Evas_Object *obj, Eina_Bool precise)
    obj->precise_is_inside = precise;
 }
 
-/**
- * Determine whether an object is set to use a precise point collision
- * detection.
- * @param obj The given object.
- * @ingroup Evas_Object_Group_Extras
- */
 EAPI Eina_Bool
 evas_object_precise_is_inside_get(const Evas_Object *obj)
 {
@@ -1296,17 +1282,6 @@ evas_object_precise_is_inside_get(const Evas_Object *obj)
    return obj->precise_is_inside;
 }
 
-/**
- * Set a hint flag on the object that this is used as a static "clipper".
- * 
- * This is a hint to evas that this object is used as a big static clipper
- * and shouldn't be moved with children and otherwise considered specially. The
- * Default is off.
- * 
- * @param obj The given object.
- * @param is_static_clip The static clip flag (on or off)
- * @ingroup Evas_Object_Group_Extras
- */
 EAPI void
 evas_object_static_clip_set(Evas_Object *obj, Eina_Bool is_static_clip)
 {
@@ -1316,15 +1291,6 @@ evas_object_static_clip_set(Evas_Object *obj, Eina_Bool is_static_clip)
    obj->is_static_clip = is_static_clip;
 }
 
-/**
- * Get static "clipper" hint flag.
- * 
- * @see evas_object_static_clip_set()
- * 
- * @param obj The given object.
- * @return The static clip flag (on or off)
- * @ingroup Evas_Object_Group_Extras
- */
 EAPI Eina_Bool
 evas_object_static_clip_get(const Evas_Object *obj)
 {

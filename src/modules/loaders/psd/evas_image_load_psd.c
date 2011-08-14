@@ -13,7 +13,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <sys/mman.h>
 
 #ifdef HAVE_NETINET_IN_H
 # include <netinet/in.h>
@@ -941,7 +940,8 @@ get_compressed_channels_length(PSD_Header *head,
 static const Evas_Image_Load_Func evas_image_load_psd_func = {
   EINA_TRUE,
   evas_image_load_file_head_psd,
-  evas_image_load_file_data_psd
+  evas_image_load_file_data_psd,
+  NULL
 };
 
 static int

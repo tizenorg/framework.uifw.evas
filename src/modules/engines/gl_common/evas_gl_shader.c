@@ -709,7 +709,7 @@ _evas_gl_shader_dir_check(char *bin_shader_dir, int num)
 
    home = getenv("HOME");
    if ((!home) || (!home[0])) return 0;
-   
+
    snprintf(bin_shader_dir, num, "%s/%s", home, subdir);
    return _evas_gl_shader_file_exists(bin_shader_dir);
 }
@@ -857,7 +857,7 @@ _evas_gl_common_shader_program_source_init(Evas_GL_Program *p,
                                            const char *name)
 {
    GLint ok;
-   
+
    p->vert = glCreateShader(GL_VERTEX_SHADER);
    p->frag = glCreateShader(GL_FRAGMENT_SHADER);
 #if defined (GLES_VARIETY_S3C6410)
@@ -899,9 +899,9 @@ _evas_gl_common_shader_program_source_init(Evas_GL_Program *p,
 #if defined(GLES_VARIETY_S3C6410) || defined(GLES_VARIETY_SGX)
 #else
    if ((glsym_glGetProgramBinary) && (glsym_glProgramParameteri))
-      glsym_glProgramParameteri(p->prog, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, 
+      glsym_glProgramParameteri(p->prog, GL_PROGRAM_BINARY_RETRIEVABLE_HINT,
                                 GL_TRUE);
-#endif   
+#endif
    glAttachShader(p->prog, p->vert);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
    glAttachShader(p->prog, p->frag);
@@ -982,7 +982,7 @@ _evas_gl_common_shader_source_init(Evas_GL_Shared *shared)
                                                    &(shader_yuv_nomul_vert_src),
                                                    &(shader_yuv_nomul_frag_src),
                                                    "yuv_nomul")) return 0;
-   
+
    /* Most of the filters use the image fragment shader */
    if (!_evas_gl_common_shader_program_source_init(&(shared->shader.filter_invert),
                                                    &(shader_img_vert_src),
@@ -1000,7 +1000,7 @@ _evas_gl_common_shader_source_init(Evas_GL_Shared *shared)
                                                    &(shader_img_vert_src),
                                                    &(shader_filter_invert_bgra_nomul_frag_src),
                                                    "filter_invert_bgra_nomul")) return 0;
-   
+
    if (!_evas_gl_common_shader_program_source_init(&(shared->shader.filter_sepia),
                                                    &(shader_img_vert_src),
                                                    &(shader_filter_sepia_frag_src),
@@ -1017,7 +1017,7 @@ _evas_gl_common_shader_source_init(Evas_GL_Shared *shared)
                                                    &(shader_img_vert_src),
                                                    &(shader_filter_sepia_bgra_nomul_frag_src),
                                                    "filter_sepia_bgra_nomul")) return 0;
-   
+
    if (!_evas_gl_common_shader_program_source_init(&(shared->shader.filter_greyscale),
                                                    &(shader_img_vert_src),
                                                    &(shader_filter_greyscale_frag_src),
@@ -1052,7 +1052,7 @@ _evas_gl_common_shader_source_init(Evas_GL_Shared *shared)
                                                    &(shader_filter_blur_bgra_nomul_frag_src),
                                                    "filter_blur_bgra_nomul")) return 0;
 #endif
-   
+
    return 1;
 }
 
@@ -1066,11 +1066,11 @@ _evas_gl_common_shader_binary_init(Evas_GL_Shared *shared)
 
    if (!_evas_gl_shader_dir_check(bin_dir_path, sizeof(bin_dir_path)))
       return 0;
-   
+
    if (!_evas_gl_shader_file_check(bin_dir_path, bin_file_path,
-                                   sizeof(bin_dir_path))) 
+                                   sizeof(bin_dir_path)))
       return 0;
-   
+
    /* use eet */
    if (!eet_init()) return 0;
    et = eet_open(bin_file_path, EET_FILE_MODE_READ);
@@ -1134,10 +1134,10 @@ _evas_gl_common_shader_binary_save(Evas_GL_Shared *shared)
    if (!_evas_gl_shader_dir_check(bin_dir_path, sizeof(bin_dir_path)))
       res = _evas_gl_shader_file_mkpath(bin_dir_path);
    if (!res) return 0; /* we can't make directory */
-   
-   _evas_gl_shader_file_check(bin_dir_path, bin_file_path, 
+
+   _evas_gl_shader_file_check(bin_dir_path, bin_file_path,
                               sizeof(bin_dir_path));
-   
+
    /* use mkstemp for writing */
    snprintf(tmp_file, sizeof(tmp_file), "%s.XXXXXX", bin_file_path);
    tmpfd = mkstemp(tmp_file);
@@ -1199,7 +1199,7 @@ int
 evas_gl_common_shader_program_init(Evas_GL_Shared *shared)
 {
    // gl support binary shader and get env of binary shader path
-   if (shared->info.bin_program && 
+   if (shared->info.bin_program &&
        _evas_gl_common_shader_binary_init(shared)) return 1;
    /* compile all shader.*/
    if (!_evas_gl_common_shader_source_init(shared)) return 0;

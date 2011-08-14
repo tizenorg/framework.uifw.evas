@@ -95,19 +95,20 @@ want_evas_cserve="yes"
 
 want_evas_engine_buffer="yes"
 want_evas_engine_software_xlib="no"
-want_evas_engine_gl_x11="no"
-want_evas_engine_gl_sdl="no"
 want_evas_engine_software_xcb="no"
 want_evas_engine_software_gdi="no"
 want_evas_engine_software_ddraw="no"
-want_evas_engine_direct3d="no"
 want_evas_engine_software_sdl="no"
-want_evas_engine_fb="no"
-want_evas_engine_directfb="no"
 want_evas_engine_software_8_x11="no"
 want_evas_engine_software_16_x11="no"
 want_evas_engine_software_16_ddraw="no"
 want_evas_engine_software_16_wince="no"
+want_evas_engine_gl_xlib="no"
+want_evas_engine_gl_xcb="no"
+want_evas_engine_gl_sdl="no"
+want_evas_engine_direct3d="no"
+want_evas_engine_fb="no"
+want_evas_engine_directfb="no"
 
 want_evas_image_loader_edb="yes"
 want_evas_image_loader_eet="yes"
@@ -149,7 +150,9 @@ case "$host_os" in
       ;;
    *)
       want_evas_engine_software_xlib="auto"
-      want_evas_engine_gl_x11="auto"
+      want_evas_engine_gl_xlib="auto"
+      want_evas_engine_software_xcb="no"
+      want_evas_engine_gl_xcb="no"
       want_evas_engine_fb="auto"
 ### no - not ready/usable/complete
 #      want_evas_engine_software_8_x11="auto"
@@ -646,7 +649,7 @@ if test "x$gl_flavor_gles" = "xyes"; then
           --enable-gles-variety-sgx (Most GL-ES2 GPUs with shader compiler)
           --enable-gles-variety-s3c6410 (s3c6410 with offline shader compiler)
         You will also need to enable the OpenGL engine for X11 with:
-          --enable-gl-x11
+          --enable-gl-xlib or --enable-gl-xcb
        ])
   fi
 fi
@@ -656,12 +659,6 @@ fi
 
 EVAS_CHECK_ENGINE([buffer], [${want_evas_engine_buffer}], [yes], [Buffer])
 
-EVAS_CHECK_ENGINE([software-xlib], [${want_evas_engine_software_xlib}], [yes], [Software Xlib])
-
-EVAS_CHECK_ENGINE([gl-x11], [${want_evas_engine_gl_x11}], [yes], [OpenGL X11])
-
-EVAS_CHECK_ENGINE([software-xcb], [${want_evas_engine_software_xcb}], [no], [Software XCB])
-
 EVAS_CHECK_ENGINE([software-gdi], [${want_evas_engine_software_gdi}], [no], [Software GDI])
 
 EVAS_CHECK_ENGINE([software-ddraw], [${want_evas_engine_software_ddraw}], [no], [Software DirectDraw])
@@ -670,59 +667,19 @@ EVAS_CHECK_ENGINE([direct3d], [${want_evas_engine_direct3d}], [no], [Direct3D])
 
 EVAS_CHECK_ENGINE([software-sdl], [${want_evas_engine_software_sdl}], [no], [Software SDL])
 
-EVAS_CHECK_ENGINE([gl-sdl], [${want_evas_engine_gl_sdl}], [yes], [OpenGL SDL])
+EVAS_CHECK_ENGINE([gl-sdl], [${want_evas_engine_gl_sdl}], [no], [OpenGL SDL])
 
-EVAS_CHECK_ENGINE([fb], [${want_evas_engine_fb}], [yes], [Framebuffer])
+EVAS_CHECK_ENGINE([fb], [${want_evas_engine_fb}], [no], [Framebuffer])
 
 EVAS_CHECK_ENGINE([directfb], [${want_evas_engine_directfb}], [no], [DirectFB])
 
-EVAS_CHECK_ENGINE([software-8-x11], [${want_evas_engine_software_8_x11}], [yes], [Software X11 8 bits grayscale])
+EVAS_CHECK_ENGINE([software-8-x11], [${want_evas_engine_software_8_x11}], [no], [Software X11 8 bits grayscale])
 
-EVAS_CHECK_ENGINE([software-16-x11], [${want_evas_engine_software_16_x11}], [yes], [Software X11 16 bits])
+EVAS_CHECK_ENGINE([software-16-x11], [${want_evas_engine_software_16_x11}], [no], [Software X11 16 bits])
 
 EVAS_CHECK_ENGINE([software-16-ddraw], [${want_evas_engine_software_16_ddraw}], [no], [Software DirectDraw 16 bits])
 
 EVAS_CHECK_ENGINE([software-16-wince], [${want_evas_engine_software_16_wince}], [no], [Software Windows CE 16 bits])
-
-# common gl
-have_evas_engine_gl_common="no"
-have_static_evas_engine_gl_common="no"
-if test "x$have_evas_engine_gl_x11" = "xyes" \
-   || test "x$have_evas_engine_gl_sdl" = "xyes"; then
-   have_evas_engine_gl_common="yes"
-fi
-if test "x$have_evas_engine_gl_x11" = "xstatic" \
-   || test "x$have_evas_engine_gl_sdl" = "xstatic"; then
-   have_evas_engine_gl_common="yes"
-   have_static_evas_engine_gl_common="yes"
-fi
-
-if test "x$have_evas_engine_gl_common" = "xyes"; then
-   evas_engine_gl_common_libs=""
-   AC_DEFINE(BUILD_ENGINE_GL_COMMON, [1], [Generic OpenGL Rendering Support])
-fi
-
-AC_SUBST([evas_engine_gl_common_libs])
-
-AM_CONDITIONAL(BUILD_ENGINE_GL_COMMON, [test "x$have_evas_engine_gl_common" = "xyes"])
-
-AM_CONDITIONAL(EVAS_STATIC_BUILD_GL_COMMON, test "x${have_static_evas_engine_gl_common}" = "xyes")
-if test "x${have_static_evas_engine_gl_common}" = "xyes"; then
-   AC_DEFINE(EVAS_STATIC_BUILD_GL_COMMON, [1], [Build GL generic engine as part of libevas])
-fi
-
-# gl_sdl
-if test "x$have_evas_engine_gl_sdl" = "xyes" || test "x$have_evas_engine_gl_sdl" = "xstatic" ; then
-   AC_CHECK_DECL(SDL_GL_CONTEXT_MAJOR_VERSION,
-      [AC_DEFINE(HAVE_SDL_GL_CONTEXT_VERSION, [1], [SDL_GL version attributes present])],,
-      [#include <SDL/SDL_video.h>])
-fi
-
-if test "x$gl_flavor_gles" = "xyes"; then
-   AC_CHECK_DECL(SDL_OPENGLES,
-      [AC_DEFINE(HAVE_SDL_FLAG_OPENGLES, [1], [SDL_OPENGLES flag is present])],,
-      [#include <SDL/SDL_video.h>])
-fi
 
 # SDL primitive
 sdl_primitive="no"
@@ -757,37 +714,160 @@ if test "x${have_static_software_generic}" = "xyes"; then
    AC_DEFINE(EVAS_STATIC_BUILD_SOFTWARE_GENERIC, [1], [Build software generic engine as part of libevas])
 fi
 
-# if software_xlib or software_xcb are available, define everything needed for X11
+
+######## Software Engine ########
 have_evas_engine_software_x11="no"
-if test "x$have_evas_engine_software_xlib" = "xstatic" -o "x$have_evas_engine_software_xcb" = "xstatic" ; then
-   have_evas_engine_software_x11="static"
+have_evas_engine_software_xcb="no"
+have_evas_engine_software_xlib="no"
+build_software_xcb=
+
+## XCB Checks ##
+want_xcb="no"
+AC_MSG_CHECKING(whether to build Software XCB Engine)
+AC_ARG_ENABLE(software-xcb,
+  AC_HELP_STRING([--enable-software-xcb], [enable Software XCB Engine. @<:@default=disabled@:>@]), [want_xcb=$enableval]
+)
+if test "x$want_xcb" != "xno" ; then
+  EVAS_CHECK_ENGINE([software-xcb], [${want_evas_engine_software_xcb}], [no], [Software XCB])
+  if test "x$have_evas_engine_software_xcb" != "xno" ; then
+    build_software_xcb="yes"
+    have_evas_engine_software_x11="yes"
+    AC_DEFINE_UNQUOTED(BUILD_ENGINE_SOFTWARE_X11, [1], [Build software X11 engine])
+    AC_DEFINE_UNQUOTED(BUILD_ENGINE_SOFTWARE_XCB, [1], [Build software XCB backend])
+  fi
 else
-   if test "x$have_evas_engine_software_xlib" = "xyes" -o "x$have_evas_engine_software_xcb" = "xyes" ; then
-      have_evas_engine_software_x11="yes"
-   fi
+  AC_MSG_RESULT(no)
+  build_software_xcb="no"
 fi
 
-if test "x$have_evas_engine_software_xlib" = "xstatic" ; then
-   have_evas_engine_software_xlib="yes"
+## If we are not building XCB, then we can build XLib ##
+
+if test "x$build_software_xcb" = "xno" ; then
+  EVAS_CHECK_ENGINE([software-xlib], [${want_evas_engine_software_xlib}], [no], [Software Xlib])
+  # if software_x11 is available, define everything needed for X11
+  if test "x$have_evas_engine_software_xlib" != "xno" ; then
+    have_evas_engine_software_x11="yes"
+    AC_DEFINE_UNQUOTED(BUILD_ENGINE_SOFTWARE_X11, [1], [Build software X11 engine])
+    AC_DEFINE_UNQUOTED(BUILD_ENGINE_SOFTWARE_XLIB, [1], [Build software Xlib backend])
+  fi
+else
+  have_evas_engine_software_xlib="no"
 fi
 
-if test "x$have_evas_engine_software_xcb" = "xstatic" ; then
-   have_evas_engine_software_xcb="yes"
+if test "x$have_evas_engine_software_xlib" = "xstatic" -o "x$have_evas_engine_software_xcb" = "xstatic"; then
+   AC_DEFINE_UNQUOTED(EVAS_STATIC_BUILD_SOFTWARE_X11, [1], [Build software X11 engine as part of libevas])
 fi
 
-if test "x$have_evas_engine_software_x11" = "xyes" -o "x$have_evas_engine_software_x11" = "xstatic" ; then
-   AC_DEFINE(BUILD_ENGINE_SOFTWARE_X11, [1], [Build software X11 engines])
-fi
-
-if test "x$have_evas_engine_software_x11" = "xstatic" ; then
-   AC_DEFINE(EVAS_STATIC_BUILD_SOFTWARE_X11, [1], [Build software X11 engines as part of libevas])
-fi
-
-AM_CONDITIONAL([BUILD_ENGINE_SOFTWARE_X11], [test "x${have_evas_engine_software_x11}" = "xyes" -o "x${have_evas_engine_software_x11}" = "xstatic"])
-AM_CONDITIONAL([EVAS_STATIC_BUILD_SOFTWARE_X11], [test "x${have_evas_engine_software_x11}" = "xstatic"])
-
-AC_SUBST(have_evas_engine_software_xlib)
 AC_SUBST(have_evas_engine_software_xcb)
+AC_SUBST(have_evas_engine_software_xlib)
+
+AM_CONDITIONAL([BUILD_ENGINE_SOFTWARE_XLIB], [test "x${have_evas_engine_software_xlib}" != "xno"])
+AM_CONDITIONAL([BUILD_ENGINE_SOFTWARE_XCB], [test "x${have_evas_engine_software_xcb}" != "xno"])
+AM_CONDITIONAL([BUILD_ENGINE_SOFTWARE_X11], [test "x${have_evas_engine_software_x11}" != "xno"])
+
+AM_CONDITIONAL([EVAS_STATIC_BUILD_SOFTWARE_X11], [test "x${have_evas_engine_software_xcb}" = "xstatic" -o "x${have_evas_engine_software_xlib}" = "xstatic"])
+AM_CONDITIONAL([EVAS_STATIC_BUILD_SOFTWARE_XLIB], [test "x${have_evas_engine_software_xlib}" = "xstatic"])
+AM_CONDITIONAL([EVAS_STATIC_BUILD_SOFTWARE_XCB], [test "x${have_evas_engine_software_xcb}" = "xstatic"])
+
+AC_SUBST(have_evas_engine_software_x11)
+
+
+######## OpenGL Engine ########
+have_evas_engine_gl_x11="no"
+have_evas_engine_gl_xcb="no"
+build_gl_xcb="no"
+
+## XCB Checks ##
+want_gl_xcb="no"
+AC_MSG_CHECKING(whether to build OpenGL XCB Engine)
+AC_ARG_ENABLE(gl-xcb,
+  AC_HELP_STRING([--enable-gl-xcb], [enable OpenGL XCB Engine. @<:@default=disabled@:>@]), [want_gl_xcb=$enableval]
+)
+if test "x$want_gl_xcb" = "xyes" ; then
+  EVAS_CHECK_ENGINE([gl-xcb], [${want_evas_engine_gl_xcb}], [no], [OpenGL XCB])
+  if test "x$have_evas_engine_gl_xcb" != "xno" ; then
+    build_gl_xcb="yes"
+    have_evas_engine_gl_x11="yes"
+   AC_DEFINE(BUILD_ENGINE_GL_X11, [1], [Build GL X11 engine])
+   AC_DEFINE(BUILD_ENGINE_GL_XCB, [1], [Build GL Xcb backend])
+    if test "x$have_evas_engine_gl_xcb" = "xstatic" ; then
+      AC_DEFINE(EVAS_STATIC_BUILD_GL_X11, [1], [Build GL X11 engine as part of libevas])
+    fi
+  fi
+  AC_SUBST(have_evas_engine_gl_xcb)
+else
+  AC_MSG_RESULT(no)
+  build_gl_xcb="no"
+fi
+
+## If we are not building XCB, then we can build XLib ##
+
+if test "x$build_gl_xcb" = "xno" ; then
+  EVAS_CHECK_ENGINE([gl-xlib], [${want_evas_engine_gl_xlib}], [no], [OpenGL XLib])
+  if test "x$have_evas_engine_gl_xlib" != "xno" ; then
+    have_evas_engine_gl_x11="yes"
+    AC_DEFINE_UNQUOTED(BUILD_ENGINE_GL_X11, [1], [Build OpenGL X11 engine])
+    AC_DEFINE_UNQUOTED(BUILD_ENGINE_GL_XLIB, [1], [Build OpenGL Xlib backend])
+    if test "x$have_evas_engine_gl_xlib" = "xstatic" ; then
+      AC_DEFINE_UNQUOTED(EVAS_STATIC_BUILD_GL_X11, [1], [Build OpenGL X11 engine as part of libevas])
+    fi
+  fi
+else
+  have_evas_engine_gl_xlib="no"
+fi
+AC_SUBST(have_evas_engine_gl_xlib)
+
+AM_CONDITIONAL([BUILD_ENGINE_GL_XLIB], [test "x${have_evas_engine_gl_xlib}" != "xno"])
+AM_CONDITIONAL([BUILD_ENGINE_GL_XCB], [test "x${have_evas_engine_gl_xcb}" != "xno"])
+AM_CONDITIONAL([BUILD_ENGINE_GL_X11], [test "x${have_evas_engine_gl_x11}" != "xno"])
+
+AM_CONDITIONAL([EVAS_STATIC_BUILD_GL_X11], [test "x${have_evas_engine_gl_xcb}" = "xstatic" -o "x${have_evas_engine_gl_xlib}" = "xstatic"])
+AM_CONDITIONAL([EVAS_STATIC_BUILD_GL_XLIB], [test "x${have_evas_engine_gl_xlib}" = "xstatic"])
+AM_CONDITIONAL([EVAS_STATIC_BUILD_GL_XCB], [test "x${have_evas_engine_gl_xcb}" = "xstatic"])
+
+AC_SUBST(have_evas_engine_gl_x11)
+
+# common gl
+have_evas_engine_gl_common="no"
+have_static_evas_engine_gl_common="no"
+if test "x$have_evas_engine_gl_xlib" = "xyes" \
+   || test "x$have_evas_engine_gl_xcb" = "xyes" \
+   || test "x$have_evas_engine_gl_sdl" = "xyes"; then
+   have_evas_engine_gl_common="yes"
+fi
+if test "x$have_evas_engine_gl_xlib" = "xstatic" \
+   || test "x$have_evas_engine_gl_xcb" = "xstatic" \
+   || test "x$have_evas_engine_gl_sdl" = "xstatic"; then
+   have_evas_engine_gl_common="yes"
+   have_static_evas_engine_gl_common="yes"
+fi
+
+if test "x$have_evas_engine_gl_common" = "xyes"; then
+   evas_engine_gl_common_libs=""
+   AC_DEFINE(BUILD_ENGINE_GL_COMMON, [1], [Generic OpenGL Rendering Support])
+fi
+
+AC_SUBST([evas_engine_gl_common_libs])
+
+AM_CONDITIONAL(BUILD_ENGINE_GL_COMMON, [test "x$have_evas_engine_gl_common" = "xyes"])
+
+AM_CONDITIONAL(EVAS_STATIC_BUILD_GL_COMMON, test "x${have_static_evas_engine_gl_common}" = "xyes")
+if test "x${have_static_evas_engine_gl_common}" = "xyes"; then
+   AC_DEFINE(EVAS_STATIC_BUILD_GL_COMMON, [1], [Build GL generic engine as part of libevas])
+fi
+
+# gl_sdl
+if test "x$have_evas_engine_gl_sdl" = "xyes" || test "x$have_evas_engine_gl_sdl" = "xstatic" ; then
+   AC_CHECK_DECL(SDL_GL_CONTEXT_MAJOR_VERSION,
+      [AC_DEFINE(HAVE_SDL_GL_CONTEXT_VERSION, [1], [SDL_GL version attributes present])],,
+      [#include <SDL/SDL_video.h>])
+fi
+
+if test "x$gl_flavor_gles" = "xyes"; then
+   AC_CHECK_DECL(SDL_OPENGLES,
+      [AC_DEFINE(HAVE_SDL_FLAG_OPENGLES, [1], [SDL_OPENGLES flag is present])],,
+      [#include <SDL/SDL_video.h>])
+fi
 
 # if software 16 x11 is enabled - build software_16 (the generic 16bit
 # engine). later enable it fb_16 or other "16" bit engines are enabled.
@@ -1576,7 +1656,11 @@ AC_ARG_ENABLE([build-examples],
        # put in here the dependencies for Evas' examples. they are
        # meant to be 'real world' usage examples, thus one will be
        # using higher level libraries on these programs
-       PKG_CHECK_MODULES([ECORE_EVAS], [ecore-evas ecore])
+       PKG_CHECK_MODULES([ECORE_EVAS], [ecore-evas ecore], [], [build_examples="no"])
+       PKG_CHECK_MODULES([EDJE], [edje],
+        [edje_cc=$($PKG_CONFIG --variable=prefix edje)/bin/edje_cc],
+        [build_examples="no"])
+       AC_SUBST(edje_cc)
     else
        build_examples="no"
     fi
@@ -1584,6 +1668,19 @@ AC_ARG_ENABLE([build-examples],
    [build_examples="no"])
 AM_CONDITIONAL([BUILD_EXAMPLES], [test "x${build_examples}" = "xyes"])
 
+## Unit tests, coverage
+
+EFL_CHECK_TESTS([enable_tests="yes"], [enable_tests="no"])
+
+EFL_CHECK_COVERAGE([${enable_tests}], [enable_coverage="yes"], [enable_coverage="no"])
+EVAS_CFLAGS="${EVAS_CFLAGS} ${EFL_COVERAGE_CFLAGS}"
+EVAS_LIBS="${EVAS_LIBS} ${EFL_COVERAGE_LIBS}"
+if test "x$enable_coverage" = "xyes" ; then
+   EVAS_CFLAGS="${EVAS_CFLAGS} ${EFL_DEBUG_CFLAGS}"
+fi
+
+AC_SUBST(EVAS_CFLAGS)
+AC_SUBST(EVAS_LIBS)
 
 #####################################################################
 ## Fill in flags
@@ -1681,6 +1778,7 @@ src/static_deps/Makefile
 src/static_deps/liblinebreak/Makefile
 src/lib/include/Makefile
 src/examples/Makefile
+src/tests/Makefile
 README
 evas.spec
 ])
@@ -1724,7 +1822,7 @@ echo
 echo "Engines:"
 echo "  Software Memory Buffer.....: $have_evas_engine_buffer"
 echo "  Software X11...............: $have_evas_engine_software_x11 (Xlib: $have_evas_engine_software_xlib) (XCB: $have_evas_engine_software_xcb)"
-echo $ECHO_N "  OpenGL X11.................: $have_evas_engine_gl_x11 $ECHO_C"
+echo $ECHO_N "  OpenGL X11.................: $have_evas_engine_gl_x11 (Xlib: $have_evas_engine_gl_xlib) (XCB: $have_evas_engine_gl_xcb) $ECHO_C"
 if test "x$have_evas_engine_gl_x11" = "xyes"; then
   echo "(GLES: $gl_flavor_gles) (SGX: $gles_variety_sgx) (s3c6410: $gles_variety_s3c6410)"
 else
@@ -1856,6 +1954,16 @@ echo "  32bpp Rotation 270......: $conv_32_rgb_rot_270"
 echo
 echo "Documentation.............: ${build_doc}"
 echo "Examples..................: install:${install_examples} build:${build_examples}"
+if test "x${enable_tests}" = "xyes" ; then
+   echo "Tests.....................: ${enable_tests} (make check)"
+else
+   echo "Tests.....................: ${enable_tests}"
+fi
+if test "x${enable_coverage}" = "xyes" ; then
+   echo "Coverage..................: ${enable_coverage} (make coverage)"
+else
+   echo "Coverage..................: ${enable_coverage}"
+fi
 echo
 echo "Compilation............: make (or gmake)"
 echo "  CPPFLAGS.............: $CPPFLAGS"

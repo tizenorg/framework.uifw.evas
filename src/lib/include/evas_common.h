@@ -166,10 +166,10 @@ extern EAPI int _evas_log_dom_global;
 # define LKDBG(x)
 
 /* for rwlocks */
-#define RWLK(x) 
-#define RWLKI(x) 
+#define RWLK(x)
+#define RWLKI(x)
 #define RWLKD(x)
-#define RDLKL(x) 
+#define RDLKL(x)
 #define WRLKL(x)
 #define RWLKU(x)
 
@@ -471,8 +471,8 @@ typedef enum _Font_Hint_Flags
 typedef enum _Font_Rend_Flags
 {
    FONT_REND_REGULAR   = 0,
-   FONT_REND_ITALIC    = (1 << 0),
-   FONT_REND_BOLD      = (1 << 1),
+   FONT_REND_SLANT     = (1 << 0),
+   FONT_REND_WEIGHT    = (1 << 1),
 } Font_Rend_Flags;
 
 /*****************************************************************************/
@@ -499,12 +499,12 @@ struct _Image_Entry_Flags
    Eina_Bool in_progress  : 1;
    Eina_Bool dirty        : 1;
    Eina_Bool activ        : 1;
-   
+
    Eina_Bool need_data    : 1;
    Eina_Bool lru_nodata   : 1;
    Eina_Bool cached       : 1;
    Eina_Bool alpha        : 1;
-   
+
    Eina_Bool lru          : 1;
    Eina_Bool alpha_sparse : 1;
 #ifdef BUILD_ASYNC_PRELOAD
@@ -537,7 +537,7 @@ struct _Image_Timestamp
    ino_t  ino;
 #ifdef _STAT_VER_LINUX
    unsigned long int mtime_nsec;
-#endif   
+#endif
 };
 
 struct _Image_Entry
@@ -789,7 +789,7 @@ struct _RGBA_Image
 #if 0 // filtering disabled
    Eina_List            *filtered;
 #endif
-   
+
    struct {
       LK(lock);
       Eina_List *list;
@@ -804,7 +804,7 @@ struct _RGBA_Image
    struct {
       pixman_image_t *im;
    } pixman;
-#endif   
+#endif
 };
 
 struct _RGBA_Polygon_Point
