@@ -21,8 +21,16 @@ BuildRequires:  pkgconfig(fontconfig)
 BuildRequires:  pkgconfig(freetype2)
 BuildRequires:  pkgconfig(fribidi)
 BuildRequires:  pkgconfig(xext)
+BuildRequires:  pkgconfig(libpng)
+BuildRequires:  pkgconfig(xpm)
+BuildRequires:  pkgconfig(zlib)
+BuildRequires:  pkgconfig(harfbuzz)
+BuildRequires:  pkgconfig(sm)
+%ifarch %{arm}
+BuildRequires:  pkgconfig(gles20)
+%endif
 BuildRequires:  libjpeg-devel
-BuildRequires:  libpng-devel
+BuildRequires:  giflib-devel
 
 
 %description
@@ -52,17 +60,31 @@ Enlightenment DR17 advanced canvas library (devel)
 
 %build
 
+export CFLAGS+=" -fvisibility=hidden -ffast-math -fPIC"
+export LDFLAGS+=" -fvisibility=hidden -Wl,--hash-style=both -Wl,--as-needed"
+
 %autogen --disable-static
 %configure --disable-static \
 %ifarch %{arm}
-    --enable-cpu-neon --enable-winkcodec=yes --enable-gl-x11 --enable-gl-flavor-gles --enable-gles-variety-sgx \
+     	--enable-pthreads --enable-cpu-neon \
+     	--enable-winkcodec=yes \
+ 	--disable-image-loader-svg \
+        --enable-simple-x11 \
+        --with-x \
+        --enable-fb \
+        --enable-xrender-x11 \
+        --enable-line-dither-mask \
+        --disable-image-loader-edb \
+        --disable-rpath $(arch_flags) \
+        --enable-gl-x11 \
+        --enable-gl-flavor-gles \
+        --enable-gles-variety-sgx
 %endif
 %ifarch %{ix86}
     --enable-winkcodec=no \
+    --enable-pthreads 
 %endif
-    --enable-line-dither-mask
-
-#    --disable-image-loader-svg --enable-simple-x11 --with-x --enable-fb --enable-xrender-x11 --enable-line-dither-mask --disable-image-loader-edb --disable-rpath --enable-pthreads
+  
 
 make %{?jobs:-j%jobs}
 
