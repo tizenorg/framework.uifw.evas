@@ -17,7 +17,6 @@ struct _Outbuf_Region
 static Xcb_Output_Buffer *_find_xcbob(xcb_connection_t *conn, xcb_visualtype_t *vis, int depth, int w, int h, Eina_Bool shm, void *data);
 static void _unfind_xcbob(Xcb_Output_Buffer *xcbob, Eina_Bool sync);
 static void _clear_xcbob(Eina_Bool sync);
-static xcb_format_t *_find_format_by_depth(const xcb_setup_t *setup, uint8_t depth);
 static void _xcbob_sync(xcb_connection_t *conn);
 
 /* local variables */
@@ -91,13 +90,11 @@ evas_software_xcb_outbuf_setup(int w, int h, int rot, Outbuf_Depth depth, xcb_co
    Outbuf *buf = NULL;
    Gfx_Func_Convert func_conv= NULL;
    const xcb_setup_t *setup;
-   xcb_format_t *fmt;
 
    if (!(buf = calloc(1, sizeof(Outbuf)))) 
      return NULL;
 
    setup = xcb_get_setup(conn);
-   fmt = _find_format_by_depth(setup, xdepth);
 
    buf->w = w;
    buf->h = h;
@@ -203,7 +200,7 @@ evas_software_xcb_outbuf_setup(int w, int h, int rot, Outbuf_Depth depth, xcb_co
    if (buf->priv.pal) 
      {
         func_conv = 
-          evas_common_convert_func_get(0, w, h, fmt->bits_per_pixel, 
+          evas_common_convert_func_get(0, w, h, xdepth, 
                                        buf->priv.mask.r, 
                                        buf->priv.mask.g, 
                                        buf->priv.mask.b, 
@@ -212,7 +209,7 @@ evas_software_xcb_outbuf_setup(int w, int h, int rot, Outbuf_Depth depth, xcb_co
    else 
      {
         func_conv = 
-          evas_common_convert_func_get(0, w, h, fmt->bits_per_pixel, 
+          evas_common_convert_func_get(0, w, h, xdepth, 
                                        buf->priv.mask.r, 
                                        buf->priv.mask.g, 
                                        buf->priv.mask.b, 
@@ -225,7 +222,7 @@ evas_software_xcb_outbuf_setup(int w, int h, int rot, Outbuf_Depth depth, xcb_co
             "  At depth         %i:"
             "  RGB format mask: %08x, %08x, %08x"
             "  Palette mode:    %i"
-            "  Not supported by and compiled in converters!"
+            "  Not supported by any compiled in converters!"
             " }", buf->priv.x11.xcb.depth, buf->priv.mask.r,
             buf->priv.mask.g, buf->priv.mask.b,
             buf->priv.pal ? (int)buf->priv.pal->colors : -1);
@@ -613,7 +610,6 @@ evas_software_xcb_outbuf_flush(Outbuf *buf)
         /* FIXME: Async Push Disabled */
 
         _xcbob_sync(buf->priv.x11.xcb.conn);
-
         while (buf->priv.pending_writes) 
           {
              im = eina_list_data_get(buf->priv.pending_writes);
@@ -625,7 +621,7 @@ evas_software_xcb_outbuf_flush(Outbuf *buf)
              if (obr->xcbob) _unfind_xcbob(obr->xcbob, EINA_FALSE);
              if (obr->mask) _unfind_xcbob(obr->mask, EINA_FALSE);
              free(obr);
-//             evas_cache_image_drop(&im->cache_entry);
+             evas_cache_image_drop(&im->cache_entry);
           }
 #endif
      }
@@ -643,12 +639,12 @@ evas_software_xcb_outbuf_idle_flush(Outbuf *buf)
         im = buf->priv.onebuf;
         buf->priv.onebuf = NULL;
         obr = im->extended_info;
-        evas_cache_image_drop(&im->cache_entry);
         if (obr->xcbob) 
           evas_software_xcb_output_buffer_free(obr->xcbob, EINA_FALSE);
         if (obr->mask) 
           evas_software_xcb_output_buffer_free(obr->mask, EINA_FALSE);
         free(obr);
+        evas_cache_image_drop(&im->cache_entry);
      }
    else 
      {
@@ -688,22 +684,9 @@ evas_software_xcb_outbuf_push_updated_region(Outbuf *buf, RGBA_Image *update, in
    unsigned char *data = NULL;
    int bpl = 0, yy = 0;
    int bw = 0, bh = 0;
-   int bpp = 0;
 
    obr = update->extended_info;
    if (!obr->xcbob) return;
-
-   if (obr->xcbob->xim)
-     bpp = obr->xcbob->xim->bpp;
-   else 
-     {
-        const xcb_setup_t *setup;
-        xcb_format_t *fmt;
-
-        setup = xcb_get_setup(buf->priv.x11.xcb.conn);
-        fmt = _find_format_by_depth(setup, buf->priv.x11.xcb.depth);
-        bpp = fmt->bits_per_pixel;
-     }
 
    if ((buf->rot == 0) || (buf->rot == 180)) 
      {
@@ -718,18 +701,19 @@ evas_software_xcb_outbuf_push_updated_region(Outbuf *buf, RGBA_Image *update, in
    if (buf->priv.pal) 
      {
         func_conv = 
-          evas_common_convert_func_get(0, bw, bh, bpp, buf->priv.mask.r, 
+          evas_common_convert_func_get(0, bw, bh, buf->depth, buf->priv.mask.r, 
                                        buf->priv.mask.g, buf->priv.mask.b, 
                                        buf->priv.pal->colors, buf->rot);
      }
    else 
      {
         func_conv = 
-          evas_common_convert_func_get(0, bw, bh, bpp, buf->priv.mask.r, 
+          evas_common_convert_func_get(0, bw, bh, buf->depth, buf->priv.mask.r, 
                                        buf->priv.mask.g, buf->priv.mask.b, 
                                        PAL_MODE_NONE, buf->rot);
      }
    if (!func_conv) return;
+
    if (!(data = evas_software_xcb_output_buffer_data(obr->xcbob, &bpl)))
      return;
    if (!(src_data = update->image.data)) return;
@@ -764,18 +748,17 @@ evas_software_xcb_outbuf_push_updated_region(Outbuf *buf, RGBA_Image *update, in
    if (buf->onebuf)
      {
         src_data += x + (y * update->cache_entry.w);
-        data += (bpl * obr->y) +
-           (obr->x * (evas_software_xcb_output_buffer_depth(obr->xcbob) / 8));
+        data += (bpl * obr->y) + (obr->x * (buf->depth / 8));
      }
    if (data != (unsigned char *)src_data) 
      {
         if (buf->priv.pal)
           func_conv(src_data, data, update->cache_entry.w - w, 
-                    (bpl / (bpp / 8)) - obr->w, 
+                    (bpl / (buf->depth / 8)) - obr->w, 
                     obr->w, obr->h, x, y, buf->priv.pal->lookup);
         else
           func_conv(src_data, data, update->cache_entry.w - w, 
-                    (bpl / (bpp / 8)) - obr->w, 
+                    (bpl / (buf->depth / 8)) - obr->w, 
                     obr->w, obr->h, x, y, NULL);
      }
 #if 1
@@ -827,7 +810,7 @@ evas_software_xcb_outbuf_push_updated_region(Outbuf *buf, RGBA_Image *update, in
 #else
         /* Async Push */
         if (!((buf->priv.onebuf) && (buf->priv.onebuf_regions))) 
-          evas_software_xcb_output_buffer_paste(obr->xcbob, 
+          evas_software_xcb_output_buffer_paste(obr->mask, 
                                                 buf->priv.x11.xcb.mask, 
                                                 buf->priv.x11.xcb.gcm, 
                                                 obr->x, obr->y, 0);
@@ -897,7 +880,7 @@ evas_software_xcb_outbuf_mask_set(Outbuf *buf, xcb_drawable_t mask)
      {
         buf->priv.x11.xcb.gcm = xcb_generate_id(buf->priv.x11.xcb.conn);
         xcb_create_gc(buf->priv.x11.xcb.conn, 
-                      buf->priv.x11.xcb.gcm, buf->priv.x11.xcb.win, 0, NULL);
+                      buf->priv.x11.xcb.gcm, buf->priv.x11.xcb.mask, 0, NULL);
      }
 }
 
@@ -1065,7 +1048,7 @@ _unfind_xcbob(Xcb_Output_Buffer *xcbob, Eina_Bool sync)
         _shmpool = eina_list_prepend(_shmpool, xcbob);
         _shmsize += xcbob->psize * xcbob->xim->depth / 8;
         while ((_shmsize > _shmlimit) || 
-               ((int)eina_list_count(_shmpool) > _shmcountlimit))
+               (eina_list_count(_shmpool) > _shmcountlimit))
           {
              Eina_List *xl = NULL;
 
@@ -1099,21 +1082,6 @@ _clear_xcbob(Eina_Bool sync)
      }
    _shmsize = 0;
    SHMPOOL_UNLOCK();
-}
-
-static xcb_format_t *
-_find_format_by_depth(const xcb_setup_t *setup, uint8_t depth) 
-{
-   xcb_format_t *fmt, *fmt_end;
-
-   fmt = xcb_setup_pixmap_formats(setup);
-   fmt_end = fmt + xcb_setup_pixmap_formats_length(setup);
-
-   for (; fmt != fmt_end; ++fmt)
-     if (fmt->depth == depth)
-       return fmt;
-
-   return 0;
 }
 
 static void 

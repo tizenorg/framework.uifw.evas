@@ -2159,7 +2159,7 @@ _proxy_error(Evas_Object *proxy, void *context, void *output, void *surface,
    return;
 }
 
-
+/*
 static void
 _proxy_subrender_recurse(Evas_Object *obj, Evas_Object *clip, void *output, void *surface, void *ctx, int x, int y)
 {
@@ -2167,7 +2167,6 @@ _proxy_subrender_recurse(Evas_Object *obj, Evas_Object *clip, void *output, void
    Evas *e = obj->layer->evas;
    
    if (obj->clip.clipees) return;
-   /* evas_object_is_visible, inline and tweaked to handle it's clip hidden*/
    if (!obj->cur.visible) return;
    if ((!clip) || (clip != obj->cur.clipper))
      {
@@ -2193,6 +2192,7 @@ _proxy_subrender_recurse(Evas_Object *obj, Evas_Object *clip, void *output, void
      }
    e->engine.func->context_free(output, ctx);
 }
+*/
 
 /**
  * Render the source object when a proxy is set.
@@ -2203,7 +2203,7 @@ static void
 _proxy_subrender(Evas *e, Evas_Object *source)
 {
    void *ctx;
-   Evas_Object *obj2, *clip;
+/*   Evas_Object *obj2, *clip;*/
    int w, h;
 
    if (!source) return;
@@ -2231,7 +2231,7 @@ _proxy_subrender(Evas *e, Evas_Object *source)
         source->proxy.w = w;
         source->proxy.h = h;
      }
-   
+
    ctx = e->engine.func->context_new(e->engine.data.output);
    e->engine.func->context_color_set(e->engine.data.output, ctx, 0, 0, 0, 0);
    e->engine.func->context_render_op_set(e->engine.data.output, ctx, EVAS_RENDER_COPY);
@@ -2239,6 +2239,15 @@ _proxy_subrender(Evas *e, Evas_Object *source)
                                   source->proxy.surface, 0, 0, w, h);
    e->engine.func->context_free(e->engine.data.output, ctx);
    
+   ctx = e->engine.func->context_new(e->engine.data.output);
+   evas_render_mapped(e, source, ctx, source->proxy.surface,
+                      -source->cur.geometry.x,
+                      -source->cur.geometry.y,
+                      1, 0, 0, e->output.w, e->output.h);
+   e->engine.func->context_free(e->engine.data.output, ctx);
+   source->proxy.surface = e->engine.func->image_dirty_region
+      (e->engine.data.output, source->proxy.surface, 0, 0, w, h);
+/*   
    ctx = e->engine.func->context_new(e->engine.data.output);
    if (source->smart.smart)
      {
@@ -2265,6 +2274,7 @@ _proxy_subrender(Evas *e, Evas_Object *source)
    e->engine.func->context_free(e->engine.data.output, ctx);
    source->proxy.surface = e->engine.func->image_dirty_region
       (e->engine.data.output, source->proxy.surface, 0, 0, w, h);
+ */
 }
 
 #if 0 // filtering disabled
