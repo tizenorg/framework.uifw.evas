@@ -22,8 +22,8 @@
 /* Visual walk helper macros */
 #ifdef OT_SUPPORT
 #define _EVAS_FONT_WALK_TEXT_START() \
-        Evas_Font_OT_Info *_ot_itr = (text_props->info) ? \
-           text_props->info->ot + text_props->start : NULL; \
+        Evas_Font_OT_Info *_ot_itr = \
+           text_props->info->ot + text_props->start; \
         for (char_index = 0 ; char_index < text_props->len ; char_index++, _glyph_itr++, _ot_itr++) \
           {
 #else
@@ -53,21 +53,21 @@
 /*FIXME: doc */
 #ifdef OT_SUPPORT
 # define EVAS_FONT_WALK_X_OFF \
-              (EVAS_FONT_ROUND_26_6_TO_INT(EVAS_FONT_OT_X_OFF_GET(*_ot_itr))
+             (EVAS_FONT_ROUND_26_6_TO_INT(EVAS_FONT_OT_X_OFF_GET(*_ot_itr)))
 # define EVAS_FONT_WALK_Y_OFF \
-              (EVAS_FONT_ROUND_26_6_TO_INT(EVAS_FONT_OT_Y_OFF_GET(*_ot_itr))
+             (EVAS_FONT_ROUND_26_6_TO_INT(EVAS_FONT_OT_Y_OFF_GET(*_ot_itr)))
 # define EVAS_FONT_WALK_POS \
-              (EVAS_FONT_OT_POS_GET(*_ot_itr) - text_props->text_offset)
+             (EVAS_FONT_OT_POS_GET(*_ot_itr) - text_props->text_offset)
 # define EVAS_FONT_WALK_POS_NEXT \
               ((!EVAS_FONT_WALK_IS_LAST) ? \
-               (EVAS_FONT_OT_POS_GET(*(_ot_itr + 1)) \
-                - text_props->text_offset : \
+               EVAS_FONT_OT_POS_GET(*(_ot_itr + 1)) - \
+                text_props->text_offset : \
                EVAS_FONT_WALK_POS \
               )
 # define EVAS_FONT_WALK_POS_PREV \
              ((char_index > 0) ? \
-              (EVAS_FONT_OT_POS_GET(*(_ot_itr - 1)) \
-               - text_props->text_offset : \
+             EVAS_FONT_OT_POS_GET(*(_ot_itr - 1)) - \
+              text_props->text_offset : \
               EVAS_FONT_WALK_POS \
              )
 #else
