@@ -1,3 +1,13 @@
+evas (1.0.0.001+svn.60295slp2+build15) unstable; urgency=low
+
+  * Upload Package
+  * Fixed the BindFramebuffer issue
+  * Adding BGRA support
+  * Git: 165.213.180.234:/slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.60295slp2+build15
+
+ -- Seungsoo Woo <om101.woo@samsung.com>  Fri, 26 Aug 2011 08:18:35 +0900
+
 evas (1.0.0.001+svn.60295slp2+build14) unstable; urgency=low
 
   * Upload Package
