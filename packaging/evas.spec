@@ -11,6 +11,7 @@ Requires(postun): /sbin/ldconfig
 BuildRequires:  pkgconfig(eina)
 BuildRequires:  pkgconfig(eet)
 BuildRequires:  pkgconfig(x11)
+BuildRequires:  pkgconfig(xi)
 BuildRequires:  pkgconfig(xrender)
 BuildRequires:  pkgconfig(fontconfig)
 BuildRequires:  pkgconfig(freetype2)
@@ -23,6 +24,7 @@ BuildRequires:  pkgconfig(harfbuzz)
 BuildRequires:  pkgconfig(sm)
 %ifarch %{arm}
 BuildRequires:  pkgconfig(gles20)
+BuildRequires:   opengl-es-devel
 %endif
 BuildRequires:  libjpeg-devel
 BuildRequires:  giflib-devel
@@ -56,10 +58,11 @@ Enlightenment DR17 advanced canvas library (devel)
 export CFLAGS+=" -fvisibility=hidden -ffast-math -fPIC"
 export LDFLAGS+=" -fvisibility=hidden -Wl,--hash-style=both -Wl,--as-needed"
 
-%autogen --disable-static
+%autogen 
 %configure --disable-static \
 %ifarch %{arm}
-     	--enable-pthreads --enable-cpu-neon \
+     	--enable-pthreads \
+	--enable-cpu-neon \
      	--enable-winkcodec=yes \
  	--disable-image-loader-svg \
         --enable-simple-x11 \
@@ -70,12 +73,12 @@ export LDFLAGS+=" -fvisibility=hidden -Wl,--hash-style=both -Wl,--as-needed"
         --disable-image-loader-edb \
         --disable-rpath $(arch_flags) \
         --enable-gl-x11 \
+        --enable-harfbuzz \
         --enable-gl-flavor-gles \
         --enable-gles-variety-sgx
-%endif
-%ifarch %{ix86}
-    --enable-winkcodec=no \
-    --enable-pthreads 
+%else
+    	--enable-winkcodec=no \
+    	--enable-pthreads 
 %endif
   
 
