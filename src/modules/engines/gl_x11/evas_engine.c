@@ -62,10 +62,8 @@ struct _Render_Engine_GL_Context
 #else
    GLXContext  context;
 #endif
-   GLuint      context_fbo;
+   GLuint      context_fbo;     
    GLuint      current_fbo;
-
-   GLuint      fbo;
 
    Render_Engine_GL_Surface   *current_sfc;
 };
@@ -2556,31 +2554,6 @@ eng_gl_make_current(void *data, void *surface, void *context)
    sfc = (Render_Engine_GL_Surface*)surface;
    ctx = (Render_Engine_GL_Context*)context;
 
-<<<<<<< HEAD
-=======
-   // Flush remainder of what's in Evas' pipeline
-   if (re->win)
-     {
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-        if ((eglGetCurrentContext() == re->win->egl_context[0]) ||
-            (eglGetCurrentSurface(EGL_READ) == re->win->egl_surface[0]) ||
-            (eglGetCurrentSurface(EGL_DRAW) == re->win->egl_surface[0]))
-          {
-             evas_gl_common_context_use(re->win->gl_context);
-             evas_gl_common_context_flush(re->win->gl_context);
-          }
-#else
-        if (glXGetCurrentContext() == re->win->context)
-          {
-             evas_gl_common_context_use(re->win->gl_context);
-             evas_gl_common_context_flush(re->win->gl_context);
-          }
-#endif
-        eng_window_use(NULL);
-        evas_gl_common_context_use(NULL);
-     }
-
->>>>>>> svn_merge
    // Unset surface/context
    if ((!sfc) || (!ctx))
      {
@@ -2603,20 +2576,14 @@ eng_gl_make_current(void *data, void *surface, void *context)
 
    // Don't do a make current if it's already current
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-<<<<<<< HEAD
-   if ((eglGetCurrentContext() == ctx->context) &&
+   if ((eglGetCurrentContext() == ctx->context) && 
        (eglGetCurrentSurface(EGL_READ) == re->win->egl_surface[0]) &&
-       (eglGetCurrentSurface(EGL_DRAW) == re->win->egl_surface[0]) )
+       (eglGetCurrentSurface(EGL_DRAW) == re->win->egl_surface[0]) ) 
      {
 
         DBG("Context same\n");
         return 1;
      }
-=======
-   if ((eglGetCurrentContext() != ctx->context))
-      ret = eglMakeCurrent(re->win->egl_disp, re->win->egl_surface[0],
-                           re->win->egl_surface[0], ctx->context);
->>>>>>> svn_merge
 #else
    if ((glXGetCurrentContext() == ctx->context) &&
        (glXGetCurrentDrawable() == re->win->win) )
@@ -2625,20 +2592,16 @@ eng_gl_make_current(void *data, void *surface, void *context)
         return 1;
      }
 #endif
-<<<<<<< HEAD
 
 
    // Flush remainder of what's in Evas' pipeline
    if (re->win)
-     {
-        eng_window_use(NULL);
-        //evas_gl_common_context_use(NULL);
-     }
+      eng_window_use(NULL);
 
 
-   // Don't do a make current if it's already current
+   // Set the context current
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-   ret = eglMakeCurrent(re->win->egl_disp, re->win->egl_surface[0],
+   ret = eglMakeCurrent(re->win->egl_disp, re->win->egl_surface[0], 
                               re->win->egl_surface[0], ctx->context);
    if (!ret)
      {
@@ -2648,9 +2611,6 @@ eng_gl_make_current(void *data, void *surface, void *context)
 #else
    ret = glXMakeCurrent(re->info->info.display, re->win->win, ctx->context);
    if (!ret) 
-=======
-   if (!ret)
->>>>>>> svn_merge
      {
         ERR("xxxMakeCurrent() failed!");
         return 0;
@@ -2672,12 +2632,7 @@ eng_gl_make_current(void *data, void *surface, void *context)
              ERR("_attach_fbo_surface() failed.");
              return 0;
           }
-        sfc->fbo_attached = 1;
-     }
 
-<<<<<<< HEAD
-   if (ctx->current_sfc != sfc)
-     {
         if (ctx->current_fbo)
            // Bind to the previously bound buffer
            glBindFramebuffer(GL_FRAMEBUFFER, ctx->current_fbo);
@@ -2686,10 +2641,7 @@ eng_gl_make_current(void *data, void *surface, void *context)
            glBindFramebuffer(GL_FRAMEBUFFER, ctx->context_fbo);
      }
 
-   // Set the current surface/context 
-=======
    // Set the current surface/context
->>>>>>> svn_merge
    ctx->current_sfc = sfc;
    sfc->current_ctx = ctx;
 
