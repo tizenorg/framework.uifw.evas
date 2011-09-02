@@ -19,7 +19,7 @@ Evas_Image_Load_Func evas_image_load_pmaps_func = {
    EINA_TRUE,
    evas_image_load_file_head_pmaps,
    evas_image_load_file_data_pmaps,
-NULL
+   NULL
 };
 
 /* The buffer to load pmaps images */

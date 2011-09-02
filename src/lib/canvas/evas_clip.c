@@ -153,9 +153,9 @@ evas_object_mapped_clip_across_mark(Evas_Object *obj)
            evas_object_child_map_across_mark
            (obj, obj->smart.parent->cur.map_parent, 0);
         else
-           evas_object_child_map_across_mark(obj, NULL, 0); 
+           evas_object_child_map_across_mark(obj, NULL, 0);
     }
-#endif   
+#endif
 }
 
 /* public functions */
@@ -179,7 +179,11 @@ evas_object_clip_set(Evas_Object *obj, Evas_Object *clip)
    if (obj == clip) return;
    if (evas_object_intercept_call_clip_set(obj, clip)) return;
    // illegal to set anything but a rect as a clip
-   if (clip->type != o_rect_type) return;
+   if (clip->type != o_rect_type)
+     {
+        ERR("For now a clip on other object than a rectangle is disabled\n");
+        return;
+     }
    if (obj->smart.smart)
      {
        if (obj->smart.smart->smart_class->clip_set)

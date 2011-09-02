@@ -91,14 +91,13 @@ evas_common_font_query_run_font_end_get(RGBA_Font *fn, RGBA_Font_Int **script_fi
                }
           }
 
+        /* Abort if we reached the end */
         if (itr == run_end)
-          {
-             /* We should do nothing. */
-          }
-        else if (itr == text)
-          {
-             /* If the script font doesn't fit even one char, find a new font. */
+           break;
 
+        /* If the script font doesn't fit even one char, find a new font. */
+        if (itr == text)
+          {
              /* If we can find a font, use it. Otherwise, find the first
               * char the run of chars that can't be rendered until the first
               * one that can. */

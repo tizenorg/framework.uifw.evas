@@ -22,6 +22,7 @@ struct _Evas_Smart_Callback
    const char *event;
    Evas_Smart_Cb func;
    void *func_data;
+   Evas_Callback_Priority priority;
    char  delete_me : 1;
 };
 
@@ -324,8 +325,27 @@ evas_object_smart_add(Evas *e, Evas_Smart *s)
    return obj;
 }
 
+static int
+_callback_priority_cmp(const void *_a, const void *_b)
+{
+   const Evas_Smart_Callback *a, *b;
+   a = (const Evas_Smart_Callback *) _a;
+   b = (const Evas_Smart_Callback *) _b;
+   if (a->priority < b->priority)
+      return -1;
+   else
+      return 1;
+}
+
 EAPI void
 evas_object_smart_callback_add(Evas_Object *obj, const char *event, Evas_Smart_Cb func, const void *data)
+{
+   evas_object_smart_callback_priority_add(obj, event,
+         EVAS_CALLBACK_PRIORITY_DEFAULT, func, data);
+}
+
+EAPI void
+evas_object_smart_callback_priority_add(Evas_Object *obj, const char *event, Evas_Callback_Priority priority, Evas_Smart_Cb func, const void *data)
 {
    Evas_Object_Smart *o;
    Evas_Smart_Callback *cb;
@@ -346,7 +366,9 @@ evas_object_smart_callback_add(Evas_Object *obj, const char *event, Evas_Smart_C
    cb->event = eina_stringshare_add(event);
    cb->func = func;
    cb->func_data = (void *)data;
-   o->callbacks = eina_list_prepend(o->callbacks, cb);
+   cb->priority = priority;
+   o->callbacks = eina_list_sorted_insert(o->callbacks, _callback_priority_cmp,
+         cb);
 }
 
 EAPI void *
@@ -529,6 +551,14 @@ evas_object_smart_need_recalculate_set(Evas_Object *obj, Eina_Bool value)
    value = !!value;
    if (o->need_recalculate == value)
      return;
+
+   if (obj->recalculate_cycle > 64)
+     {
+        ERR("Object %p is not stable during recalc loop", obj);
+        return ;
+     }
+   if (obj->layer->evas->in_smart_calc)
+     obj->recalculate_cycle++;
    o->need_recalculate = value;
 
    if (!obj->smart.smart->smart_class->calculate) return;
@@ -598,22 +628,20 @@ void
 evas_call_smarts_calculate(Evas *e)
 {
    Eina_Array *calculate;
+   Evas_Object *obj;
+   Eina_Array_Iterator it;
    unsigned int i;
-   static int in_smart_calc = 0;
 
-   in_smart_calc++;
+   e->in_smart_calc++;
    calculate = &e->calculate_objects;
-   for (i = 0; i < calculate->count; i++)
+   for (i = 0; i < eina_array_count_get(calculate); ++i)
      {
-        Evas_Object *obj;
         Evas_Object_Smart *o;
-        int before;
 
         obj = eina_array_data_get(calculate, i);
         if (obj->delete_me)
           continue;
 
-        before = calculate->count;
         o = obj->object_data;
         if (o->need_recalculate)
           {
@@ -621,8 +649,12 @@ evas_call_smarts_calculate(Evas *e)
              obj->smart.smart->smart_class->calculate(obj);
           }
      }
-   in_smart_calc--;
-   if (in_smart_calc == 0) eina_array_flush(calculate);
+   EINA_ARRAY_ITER_NEXT(calculate, i, obj, it)
+     {
+        obj->recalculate_cycle = 0;
+     }
+   e->in_smart_calc--;
+   if (e->in_smart_calc == 0) eina_array_clean(calculate);
 }
 
 EAPI void

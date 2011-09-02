@@ -220,7 +220,7 @@ _evas_cache_image_entry_delete(Evas_Cache_Image *cache, Image_Entry *ie)
    _evas_cache_image_activ_del(ie);
    _evas_cache_image_lru_del(ie);
    _evas_cache_image_lru_nodata_del(ie);
-   
+
    cache->func.destructor(ie);
    FREESTRC(ie->cache_key);
    FREESTRC(ie->file);
@@ -825,9 +825,9 @@ evas_cache_image_request(Evas_Cache_Image *cache, const char *file,
    _timestamp_build(&tstamp, &st);
    im = _evas_cache_image_entry_new(cache, hkey, &tstamp, file, key, 
                                     lo, error);
-   if (!im) return NULL;
+   if (!im) goto on_stat_error;
    if (cache->func.debug) cache->func.debug("request", im);
-   
+
  on_ok:
    *error = EVAS_LOAD_ERROR_NONE;
 #ifdef EVAS_FRAME_QUEUING
@@ -909,7 +909,7 @@ evas_cache_image_drop(Image_Entry *im)
 	     return;
 	  }
         _evas_cache_image_lru_add(im);
-	evas_cache_image_flush(cache);
+	if (cache) evas_cache_image_flush(cache);
      }
 }
 
@@ -1047,7 +1047,8 @@ evas_cache_image_copied_data(Evas_Cache_Image *cache,
    Image_Entry *im;
    
    if ((cspace == EVAS_COLORSPACE_YCBCR422P601_PL) ||
-       (cspace == EVAS_COLORSPACE_YCBCR422P709_PL))
+       (cspace == EVAS_COLORSPACE_YCBCR422P709_PL) ||
+       (cspace == EVAS_COLORSPACE_YCBCR422601_PL))
       w &= ~0x1;
    
    im = _evas_cache_image_entry_new(cache, NULL, NULL, NULL, NULL, NULL, NULL);
@@ -1077,7 +1078,8 @@ evas_cache_image_data(Evas_Cache_Image *cache, unsigned int w, unsigned int h, D
    Image_Entry *im;
 
    if ((cspace == EVAS_COLORSPACE_YCBCR422P601_PL) ||
-       (cspace == EVAS_COLORSPACE_YCBCR422P709_PL))
+       (cspace == EVAS_COLORSPACE_YCBCR422P709_PL) ||
+       (cspace == EVAS_COLORSPACE_YCBCR422601_PL))
       w &= ~0x1;
    
    im = _evas_cache_image_entry_new(cache, NULL, NULL, NULL, NULL, NULL, NULL);
@@ -1107,7 +1109,8 @@ evas_cache_image_surface_alloc(Image_Entry *im, unsigned int w, unsigned int h)
    Evas_Cache_Image *cache = im->cache;
    
    if ((im->space == EVAS_COLORSPACE_YCBCR422P601_PL) ||
-       (im->space == EVAS_COLORSPACE_YCBCR422P709_PL))
+       (im->space == EVAS_COLORSPACE_YCBCR422P709_PL) ||
+       (im->space == EVAS_COLORSPACE_YCBCR422601_PL))
      w &= ~0x1;
 
    _evas_cache_image_entry_surface_alloc(cache, im, w, h);
@@ -1122,7 +1125,8 @@ evas_cache_image_size_set(Image_Entry *im, unsigned int w, unsigned int h)
    int error;
 
    if ((im->space == EVAS_COLORSPACE_YCBCR422P601_PL) ||
-       (im->space == EVAS_COLORSPACE_YCBCR422P709_PL))
+       (im->space == EVAS_COLORSPACE_YCBCR422P709_PL) ||
+       (im->space == EVAS_COLORSPACE_YCBCR422601_PL))
      w &= ~0x1;
    if ((im->w == w) && (im->h == h)) return im;
 

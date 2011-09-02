@@ -23,7 +23,8 @@ Evas_Image_Load_Func evas_image_load_generic_func =
 {
   EINA_TRUE,
   evas_image_load_file_head_generic,
-  evas_image_load_file_data_generic
+  evas_image_load_file_data_generic,
+  NULL
 };
 
 static Eina_Bool
@@ -326,6 +327,8 @@ getdata:
                {
                   void *addr;
 
+                  eina_mmap_safety_enabled_set(EINA_TRUE);
+                  
                   // mmap
                   addr = mmap(NULL, w * h * sizeof(DATA32),
                               PROT_READ, MAP_SHARED, fd, 0);

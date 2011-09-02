@@ -60,8 +60,10 @@
 	  (with some other changes).  You can set most objects as a clip on
 	  other objects.  This will use the alpha channel of the object as a
 	  clip on the object.  This is still buggy.
+        * CLIPPING DISABLED AND REMOVED DUE TO BEING TOO BUGGY AND INCOMPLETE *
 	* Software support for arbitrary maps.  So you can use any size map
 	  (not just 4 points) for maps.  Once again this is a little buggy.
+        * ARBITRARY MAPS DISABLED AND REMOVED DUE TO BEING TOO BUGGY AND INCOMPLETE *
 
 2011-02-02  Carsten Haitzler (The Rasterman)
 
@@ -262,6 +264,7 @@
 	  Supports a filter object or filter under (the area where the object
 	  is filtered).  Various parameters to tweak, and potential for
 	  additional filters (but you get to write the shader ;-)
+        * FILTERS DISABLED AND REMOVED DUE TO BEING TOO BUGGY AND INCOMPLETE *
 
 2011-04-24 Thierry el Borgi
 
@@ -399,3 +402,66 @@
 	* Use Eina_File for JPEG loader.
 	* Add evas_object_image_load_orientation_get and evas_object_image_load_orientation_set,
 	that tell if we should honor the orientation information when loading image file.
+
+2011-06-17  Carsten Haitzler (The Rasterman)
+
+	* Allow evas table to re-pack the same object without error and just
+        update packing parameters
+        * Allow to get packing location of table child
+
+2011-06-28  Tom Hacohen (TAsn)
+
+	* Polygon: Implemented "is_inside".
+
+2011-07-05  Hyoyoung Chang
+
+	* Fix bug where event causes event in callback on same object, but
+        with same event counter, so also filter out same event types.
+
+2011-07-06  Carsten Haitzler (The Rasterman)
+
+	* Fix bug in grab counting on object hide while events are frozen
+
+2011-07-07  Cedric Bail
+
+	* Fix infite loop when reinserting object during recalc stage.
+
+2011-07-27  Tom Hacohen (TAsn)
+
+	* Textblock: Closing tags formats is now well-defined for complex
+	  formats.
+	  For example: <font=Sans font_size=23 color=#FFF> should now be
+	  closed with </font> (or, like before, with the generic poper).
+	* Textblock: Add support for out-of-order tag openers/closers.
+	  Markup sequences like <b><i></b></i> are now legal and work as
+	  expeceted.
+
+2011-07-28  Tom Hacohen (TAsn)
+
+	* Textblock: Added support for quoting format parameters.
+	  Formats like: <font='Sans' color='#FFF'> are now legal.
+	* Textblock: Added font_weight and font_style formats.
+	  These format allow overriding the font style set using:
+	  font=':style=Bold'.
+
+2011-07-31  Tom Hacohen (TAsn)
+
+	* Textblock: Added font_width.
+	  This allows overriding the font width set using:
+	  font=':style=Condensed'
+
+2011-08-01  Tom Hacohen (TAsn)
+
+	* Textblock: Added lang to markup to set the lang of the text.
+
+2011-08-09  Tom Hacohen (TAsn)
+
+	* Textblock: Added evas_textblock_cursor_range_formats_get which
+	returns the formats inside a range.
+	* Textblock: Added evas_textblock_cursor_visible_range_get which
+	updates the cursors to the ends of the area currently visible on
+	screen.
+
+2011-08-17  Tom Hacohen (TAsn)
+
+	* Callbacks: Added priority support to callbacks.

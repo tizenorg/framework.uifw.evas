@@ -213,6 +213,9 @@ _create_tmpf(Evas_Object *obj, void *data, int size, char *format __UNUSED__)
         return;
      }
    unlink(buf);
+   
+   eina_mmap_safety_enabled_set(EINA_TRUE);
+   
    dst = mmap(NULL, size, 
               PROT_READ | PROT_WRITE, 
               MAP_SHARED, 
@@ -225,7 +228,7 @@ _create_tmpf(Evas_Object *obj, void *data, int size, char *format __UNUSED__)
    o->tmpf_fd = fd;
 #ifdef __linux__
    snprintf(buf, sizeof(buf), "/proc/%li/fd/%i", (long)getpid(), fd);
-#endif   
+#endif
    o->tmpf = eina_stringshare_add(buf);
    memcpy(dst, data, size);
    munmap(dst, size);
@@ -245,18 +248,20 @@ evas_object_image_memfile_set(Evas_Object *obj, void *data, int size, char *form
    MAGIC_CHECK_END();
    _cleanup_tmpf(obj);
    evas_object_image_file_set(obj, NULL, NULL);
+   // invalidate the cache effectively
+   evas_object_image_alpha_set(obj, !o->cur.has_alpha);
+   evas_object_image_alpha_set(obj, !o->cur.has_alpha);
+
    if ((size < 1) || (!data)) return;
-       
+
    _create_tmpf(obj, data, size, format);
    evas_object_image_file_set(obj, o->tmpf, key);
    if (!o->engine_data)
      {
+        ERR("unable to load '%s' from memory", o->tmpf);
         _cleanup_tmpf(obj);
         return;
      }
-   // invalidate the cache effectively
-   evas_object_image_alpha_set(obj, !o->cur.has_alpha);
-   evas_object_image_alpha_set(obj, !o->cur.has_alpha);
 }
 
 EAPI void
@@ -393,6 +398,7 @@ evas_object_image_source_set(Evas_Object *obj, Evas_Object *src)
    if (src == obj) return EINA_FALSE;
    if (o->cur.source == src) return EINA_TRUE;
 
+   if (o->tmpf) _cleanup_tmpf(obj);
    /* Kill the image if any */
    if (o->cur.file || o->cur.key)
       evas_object_image_file_set(obj, NULL, NULL);
@@ -715,6 +721,7 @@ evas_object_image_size_set(Evas_Object *obj, int w, int h)
    if (h > 32768) return;
    if ((w == o->cur.image.w) &&
        (h == o->cur.image.h)) return;
+   if (o->tmpf) _cleanup_tmpf(obj);
    o->cur.image.w = w;
    o->cur.image.h = h;
    if (o->engine_data)
@@ -864,6 +871,7 @@ evas_object_image_data_set(Evas_Object *obj, void *data)
      evas_common_pipe_op_image_flush(o->engine_data);
 #endif
    p_data = o->engine_data;
+   if (o->tmpf) _cleanup_tmpf(obj);
    if (data)
      {
 	if (o->engine_data)
@@ -1042,6 +1050,7 @@ evas_object_image_data_copy_set(Evas_Object *obj, void *data)
      }
    if ((o->cur.image.w <= 0) ||
        (o->cur.image.h <= 0)) return;
+   if (o->tmpf) _cleanup_tmpf(obj);
    if (o->engine_data)
      obj->layer->evas->engine.func->image_free(obj->layer->evas->engine.data.output,
 					       o->engine_data);
@@ -1323,6 +1332,7 @@ evas_object_image_pixels_import(Evas_Object *obj, Evas_Pixel_Import_Source *pixe
                                                                  obj);
      }
    if ((pixels->w != o->cur.image.w) || (pixels->h != o->cur.image.h)) return 0;
+   if (o->tmpf) _cleanup_tmpf(obj);
    switch (pixels->format)
      {
 #if 0
@@ -1662,6 +1672,7 @@ evas_object_image_colorspace_set(Evas_Object *obj, Evas_Colorspace cspace)
                                                                  o->engine_data,
                                                                  obj);
      }
+   if (o->tmpf) _cleanup_tmpf(obj);
 #ifdef EVAS_FRAME_QUEUING
    if ((Evas_Colorspace)o->cur.cspace != cspace)
      {
@@ -1711,6 +1722,7 @@ evas_object_image_native_surface_set(Evas_Object *obj, Evas_Native_Surface *surf
                                                                  o->engine_data,
                                                                  obj);
      }
+   if (o->tmpf) _cleanup_tmpf(obj);
    if (o->cur.source) _proxy_unset(obj);
    if (!obj->layer->evas->engine.func->image_native_set) return;
    if ((surf) &&
@@ -1975,8 +1987,6 @@ evas_object_image_animated_frame_set(Evas_Object *obj, int frame_index)
 {
    Evas_Object_Image *o;
    int frame_count = 0;
-   Eina_Bool animated = EINA_FALSE;
-   char frame_index_char[4];
 
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    return;
@@ -2149,7 +2159,7 @@ _proxy_error(Evas_Object *proxy, void *context, void *output, void *surface,
    return;
 }
 
-
+/*
 static void
 _proxy_subrender_recurse(Evas_Object *obj, Evas_Object *clip, void *output, void *surface, void *ctx, int x, int y)
 {
@@ -2157,7 +2167,6 @@ _proxy_subrender_recurse(Evas_Object *obj, Evas_Object *clip, void *output, void
    Evas *e = obj->layer->evas;
    
    if (obj->clip.clipees) return;
-   /* evas_object_is_visible, inline and tweaked to handle it's clip hidden*/
    if (!obj->cur.visible) return;
    if ((!clip) || (clip != obj->cur.clipper))
      {
@@ -2183,6 +2192,7 @@ _proxy_subrender_recurse(Evas_Object *obj, Evas_Object *clip, void *output, void
      }
    e->engine.func->context_free(output, ctx);
 }
+*/
 
 /**
  * Render the source object when a proxy is set.
@@ -2193,7 +2203,7 @@ static void
 _proxy_subrender(Evas *e, Evas_Object *source)
 {
    void *ctx;
-   Evas_Object *obj2, *clip;
+/*   Evas_Object *obj2, *clip;*/
    int w, h;
 
    if (!source) return;
@@ -2221,7 +2231,7 @@ _proxy_subrender(Evas *e, Evas_Object *source)
         source->proxy.w = w;
         source->proxy.h = h;
      }
-   
+
    ctx = e->engine.func->context_new(e->engine.data.output);
    e->engine.func->context_color_set(e->engine.data.output, ctx, 0, 0, 0, 0);
    e->engine.func->context_render_op_set(e->engine.data.output, ctx, EVAS_RENDER_COPY);
@@ -2229,6 +2239,15 @@ _proxy_subrender(Evas *e, Evas_Object *source)
                                   source->proxy.surface, 0, 0, w, h);
    e->engine.func->context_free(e->engine.data.output, ctx);
    
+   ctx = e->engine.func->context_new(e->engine.data.output);
+   evas_render_mapped(e, source, ctx, source->proxy.surface,
+                      -source->cur.geometry.x,
+                      -source->cur.geometry.y,
+                      1, 0, 0, e->output.w, e->output.h);
+   e->engine.func->context_free(e->engine.data.output, ctx);
+   source->proxy.surface = e->engine.func->image_dirty_region
+      (e->engine.data.output, source->proxy.surface, 0, 0, w, h);
+/*   
    ctx = e->engine.func->context_new(e->engine.data.output);
    if (source->smart.smart)
      {
@@ -2255,6 +2274,7 @@ _proxy_subrender(Evas *e, Evas_Object *source)
    e->engine.func->context_free(e->engine.data.output, ctx);
    source->proxy.surface = e->engine.func->image_dirty_region
       (e->engine.data.output, source->proxy.surface, 0, 0, w, h);
+ */
 }
 
 #if 0 // filtering disabled

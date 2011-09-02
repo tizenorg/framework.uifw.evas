@@ -31,6 +31,7 @@ typedef struct _Evas_Size_Hints             Evas_Size_Hints;
 typedef struct _Evas_Font_Dir               Evas_Font_Dir;
 typedef struct _Evas_Font                   Evas_Font;
 typedef struct _Evas_Font_Alias             Evas_Font_Alias;
+typedef struct _Evas_Font_Description       Evas_Font_Description;
 typedef struct _Evas_Data_Node              Evas_Data_Node;
 typedef struct _Evas_Func_Node              Evas_Func_Node;
 typedef RGBA_Image_Loadopts                 Evas_Image_Load_Opts;
@@ -45,6 +46,11 @@ typedef struct _Evas_Format                 Evas_Format;
 typedef struct _Evas_Map_Point              Evas_Map_Point;
 typedef struct _Evas_Smart_Cb_Description_Array Evas_Smart_Cb_Description_Array;
 typedef struct _Evas_Post_Callback          Evas_Post_Callback;
+
+typedef enum _Evas_Font_Style               Evas_Font_Style;
+typedef enum _Evas_Font_Slant               Evas_Font_Slant;
+typedef enum _Evas_Font_Weight              Evas_Font_Weight;
+typedef enum _Evas_Font_Width               Evas_Font_Width;
 
 /* General types - used for script type chceking */
 #define OPAQUE_TYPE(type) struct __##type { int a; }; \
@@ -96,27 +102,27 @@ MAGIC_CHECK_FAILED(o, t, m)
 #define EVAS_OBJECT_IMAGE_FREE_FILE_AND_KEY(o)                              \
    if ((o)->cur.file)                                                       \
      {                                                                      \
-         eina_stringshare_del((o)->cur.file);                               \
-	 if ((o)->prev.file == (o)->cur.file)                               \
-	       (o)->prev.file = NULL;                                       \
-	 (o)->cur.file = NULL;                                              \
+        eina_stringshare_del((o)->cur.file);                                \
+        if ((o)->prev.file == (o)->cur.file)                                \
+          (o)->prev.file = NULL;                                            \
+        (o)->cur.file = NULL;                                               \
      }                                                                      \
    if ((o)->cur.key)                                                        \
      {                                                                      \
-         eina_stringshare_del((o)->cur.key);                                \
-	 if ((o)->prev.key == (o)->cur.key)                                 \
-	       (o)->prev.key = NULL;                                        \
-	 (o)->cur.key = NULL;                                               \
+        eina_stringshare_del((o)->cur.key);                                 \
+        if ((o)->prev.key == (o)->cur.key)                                  \
+          (o)->prev.key = NULL;                                             \
+        (o)->cur.key = NULL;                                                \
      }                                                                      \
    if ((o)->prev.file)                                                      \
      {                                                                      \
-         eina_stringshare_del((o)->prev.file);                              \
-	 (o)->prev.file = NULL;                                             \
+        eina_stringshare_del((o)->prev.file);                               \
+        (o)->prev.file = NULL;                                              \
      }                                                                      \
    if ((o)->prev.key)                                                       \
      {                                                                      \
-         eina_stringshare_del((o)->prev.key);                               \
-	 (o)->prev.key = NULL;                                              \
+        eina_stringshare_del((o)->prev.key);                                \
+        (o)->prev.key = NULL;                                               \
      }
 
 struct _Evas_Key_Grab
@@ -248,7 +254,7 @@ struct _Evas
       DATA32         button;
       Evas_Coord     x, y;
       struct {
-	 Eina_List *in;
+          Eina_List *in;
       } object;
 
    } pointer;
@@ -280,9 +286,9 @@ struct _Evas
       Evas_Module *module;
       Evas_Func *func;
       struct {
-	 void *output;
+         void *output;
 
-	 void *context;
+         void *context;
       } data;
 
       void *info;
@@ -308,6 +314,8 @@ struct _Evas
    Eina_List     *grabs;
 
    Eina_List     *font_path;
+
+   int            in_smart_calc;
 
    Evas_Object   *focused;
    void          *attach_data;
@@ -437,16 +445,16 @@ struct _Evas_Object
       double                scale;
       Evas_Coord_Rectangle  geometry;
       struct {
-	 struct {
-	    Evas_Coord      x, y, w, h;
-	    unsigned char   r, g, b, a;
-	    Eina_Bool       visible : 1;
-	    Eina_Bool       dirty : 1;
-	 } clip;
+         struct {
+            Evas_Coord      x, y, w, h;
+            unsigned char   r, g, b, a;
+            Eina_Bool       visible : 1;
+            Eina_Bool       dirty : 1;
+         } clip;
       } cache;
       short                 layer;
       struct {
-	 unsigned char      r, g, b, a;
+         unsigned char      r, g, b, a;
       } color;
       Eina_Bool             usemap : 1;
       Eina_Bool             visible : 1;
@@ -484,14 +492,14 @@ struct _Evas_Object
    struct {
       Eina_List               *proxies;
       void                    *surface;
-      int		       w,h;
+      int                      w,h;
       Eina_Bool                redraw;
    } proxy;
 
 #if 0 // filtering disabled
    Evas_Filter_Info           *filter;
 #endif
-   
+
    Evas_Size_Hints            *size_hints;
 
    int                         last_mouse_down_counter;
@@ -500,14 +508,16 @@ struct _Evas_Object
 
    int                         last_event;
    Evas_Callback_Type          last_event_type;
-   
+
    struct {
-      int                      in_move, in_resize;
+        int                      in_move, in_resize;
    } doing;
-   
+
    unsigned int                ref;
 
    unsigned char               delete_me;
+
+   unsigned char               recalculate_cycle;
 
    Evas_Object_Pointer_Mode    pointer_mode : 1;
 
@@ -543,6 +553,7 @@ struct _Evas_Func_Node
    void (*func) ();
    void *data;
    Evas_Callback_Type type;
+   Evas_Callback_Priority priority;
    unsigned char delete_me : 1;
 };
 
@@ -578,6 +589,63 @@ struct _Evas_Font_Alias
 {
    const char *alias;
    Evas_Font  *fn;
+};
+
+enum _Evas_Font_Style
+{
+   EVAS_FONT_STYLE_SLANT,
+   EVAS_FONT_STYLE_WEIGHT,
+   EVAS_FONT_STYLE_WIDTH
+};
+
+enum _Evas_Font_Slant
+{
+   EVAS_FONT_SLANT_NORMAL,
+   EVAS_FONT_SLANT_OBLIQUE,
+   EVAS_FONT_SLANT_ITALIC
+};
+
+enum _Evas_Font_Weight
+{
+   EVAS_FONT_WEIGHT_NORMAL,
+   EVAS_FONT_WEIGHT_THIN,
+   EVAS_FONT_WEIGHT_ULTRALIGHT,
+   EVAS_FONT_WEIGHT_LIGHT,
+   EVAS_FONT_WEIGHT_BOOK,
+   EVAS_FONT_WEIGHT_MEDIUM,
+   EVAS_FONT_WEIGHT_SEMIBOLD,
+   EVAS_FONT_WEIGHT_BOLD,
+   EVAS_FONT_WEIGHT_ULTRABOLD,
+   EVAS_FONT_WEIGHT_BLACK,
+   EVAS_FONT_WEIGHT_EXTRABLACK
+};
+
+enum _Evas_Font_Width
+{
+   EVAS_FONT_WIDTH_NORMAL,
+   EVAS_FONT_WIDTH_ULTRACONDENSED,
+   EVAS_FONT_WIDTH_EXTRACONDENSED,
+   EVAS_FONT_WIDTH_CONDENSED,
+   EVAS_FONT_WIDTH_SEMICONDENSED,
+   EVAS_FONT_WIDTH_SEMIEXPANDED,
+   EVAS_FONT_WIDTH_EXPANDED,
+   EVAS_FONT_WIDTH_EXTRAEXPANDED,
+   EVAS_FONT_WIDTH_ULTRAEXPANDED
+};
+
+struct _Evas_Font_Description
+{
+   int ref;
+   /* We assume everywhere this is stringshared */
+   const char *name;
+   const char *fallbacks;
+   const char *lang;
+
+   Evas_Font_Slant slant;
+   Evas_Font_Weight weight;
+   Evas_Font_Width width;
+
+   Eina_Bool new : 1;
 };
 
 struct _Evas_Object_Func
@@ -638,8 +706,8 @@ struct _Evas_Func
    void (*context_clip_clip)               (void *data, void *context, int x, int y, int w, int h);
    void (*context_clip_unset)              (void *data, void *context);
    int  (*context_clip_get)                (void *data, void *context, int *x, int *y, int *w, int *h);
-   void (*context_mask_set)	           (void *data, void *context, void *mask, int x, int y, int w, int h);
-   void (*context_mask_unset)	           (void *data, void *context);
+   void (*context_mask_set)                (void *data, void *context, void *mask, int x, int y, int w, int h);
+   void (*context_mask_unset)              (void *data, void *context);
    void (*context_color_set)               (void *data, void *context, int r, int g, int b, int a);
    int  (*context_color_get)               (void *data, void *context, int *r, int *g, int *b, int *a);
    void (*context_multiplier_set)          (void *data, void *context, int r, int g, int b, int a);
@@ -739,13 +807,13 @@ struct _Evas_Func
    Filtered_Image *(*image_filtered_save)  (void *image, void *filtered, uint8_t *key, size_t len);
    void (*image_filtered_free)             (void *image, Filtered_Image *);
 #endif
-   
+
    /* EFL-GL Glue Layer */
    void *(*gl_surface_create)            (void *data, void *config, int w, int h);
    int  (*gl_surface_destroy)            (void *data, void *surface);
    void *(*gl_context_create)            (void *data, void *share_context);
    int  (*gl_context_destroy)            (void *data, void *context);
-   int  (*gl_make_current)               (void *data, void *surface, void *context); 
+   int  (*gl_make_current)               (void *data, void *surface, void *context);
    void *(*gl_proc_address_get)          (void *data, const char *name);
    int  (*gl_native_surface_get)         (void *data, void *surface, void *native_surface);
    void *(*gl_api_get)                   (void *data);
@@ -876,7 +944,14 @@ void evas_font_dir_available_list_free(Eina_List *available);
 void evas_font_free(Evas *evas, void *font);
 void evas_fonts_zero_free(Evas *evas);
 void evas_fonts_zero_presure(Evas *evas);
-void *evas_font_load(Evas *evas, const char *name, const char *source, int size);
+void evas_font_name_parse(Evas_Font_Description *fdesc, const char *name);
+int evas_font_style_find(const char *start, const char *end, Evas_Font_Style style);
+Evas_Font_Description *evas_font_desc_new(void);
+Evas_Font_Description *evas_font_desc_dup(const Evas_Font_Description *fdesc);
+void evas_font_desc_unref(Evas_Font_Description *fdesc);
+int evas_font_desc_cmp(const Evas_Font_Description *a, const Evas_Font_Description *b);
+Evas_Font_Description *evas_font_desc_ref(Evas_Font_Description *fdesc);
+void * evas_font_load(Evas *evas, Evas_Font_Description *fdesc, const char *source, Evas_Font_Size size);
 void evas_font_load_hinting_set(Evas *evas, void *font, int hinting);
 void evas_object_smart_member_cache_invalidate(Evas_Object *obj);
 void evas_text_style_pad_get(Evas_Text_Style_Type style, int *l, int *r, int *t, int *b);
@@ -903,9 +978,9 @@ int evas_async_target_del(const void *target);
 void _evas_preload_thread_init(void);
 void _evas_preload_thread_shutdown(void);
 Evas_Preload_Pthread *evas_preload_thread_run(void (*func_heavy)(void *data),
-					     void (*func_end)(void *data),
-					     void (*func_cancel)(void *data),
-					     const void *data);
+                                              void (*func_end)(void *data),
+                                              void (*func_cancel)(void *data),
+                                              const void *data);
 Eina_Bool evas_preload_thread_cancel(Evas_Preload_Pthread *thread);
 
 void _evas_walk(Evas *e);
@@ -914,12 +989,16 @@ void _evas_unwalk(Evas *e);
 // expose for use in engines
 EAPI int _evas_module_engine_inherit(Evas_Func *funcs, char *name);
 
+Eina_Bool evas_render_mapped(Evas *e, Evas_Object *obj, 
+                             void *context, void *surface,
+                             int off_x, int off_y, int mapped,
+                             int ecx, int ecy, int ecw, int ech);
 void evas_render_invalidate(Evas *e);
 void evas_render_object_recalc(Evas_Object *obj);
 
 Eina_Bool evas_map_inside_get(const Evas_Map *m, Evas_Coord x, Evas_Coord y);
 Eina_Bool evas_map_coords_get(const Evas_Map *m, Evas_Coord x, Evas_Coord y, Evas_Coord *mx, Evas_Coord *my, int grab);
-   
+
 /****************************************************************************/
 /*****************************************/
 /********************/
@@ -927,7 +1006,7 @@ Eina_Bool evas_map_coords_get(const Evas_Map *m, Evas_Coord x, Evas_Coord y, Eva
 
 #ifdef MPOOL 
 typedef struct _Evas_Mempool Evas_Mempool;
-  
+
 struct _Evas_Mempool
 {
   int           count;
@@ -973,11 +1052,11 @@ struct _Evas_Mempool
    calloc(1, sizeof(siz))
 # define EVAS_MEMPOOL_FREE(x, p) \
    free(p)
-#endif  
+#endif
 /********************/
 /*****************************************/
 /****************************************************************************/
-  
+
 #define EVAS_API_OVERRIDE(func, api, prefix) \
      (api)->func = prefix##func
 #define EVAS_API_RESET(func, api) \

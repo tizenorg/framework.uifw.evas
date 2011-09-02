@@ -142,7 +142,7 @@ _evas_render_cur_clip_cache_del(Evas *e, Evas_Object *obj)
 
 static void
 _evas_render_phase1_direct(Evas *e,
-                           Eina_Array *active_objects __UNUSED__,
+                           Eina_Array *active_objects,
                            Eina_Array *restack_objects __UNUSED__,
                            Eina_Array *delete_objects __UNUSED__,
                            Eina_Array *render_objects)
@@ -647,7 +647,7 @@ pending_change(void *data, void *gdata __UNUSED__)
    }
  */
 
-static Eina_Bool
+Eina_Bool
 evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
                    int off_x, int off_y, int mapped,
                    int ecx, int ecy, int ecw, int ech
@@ -1187,7 +1187,6 @@ evas_render_updates_internal(Evas *e,
 
         alpha = e->engine.func->canvas_alpha_get(e->engine.data.output,
                                                  e->engine.data.context);
-
         while ((surface =
                 e->engine.func->output_redraws_next_update_get
                 (e->engine.data.output,
@@ -1263,7 +1262,7 @@ evas_render_updates_internal(Evas *e,
                {
                   e->engine.func->context_clip_set(e->engine.data.output,
                                                    e->engine.data.context,
-                                                   ux, uy, uw, uh);
+                                                   ux + off_x, uy + off_y, uw, uh);
                   e->engine.func->context_color_set(e->engine.data.output,
                                                     e->engine.data.context,
                                                     0, 0, 0, 0);
@@ -1572,7 +1571,7 @@ evas_sync(Evas *e)
    return;
    MAGIC_CHECK_END();
 
-   evas_common_frameq_flush ();
+   evas_common_frameq_flush();
 #else
    (void) e;
 #endif
