@@ -209,6 +209,8 @@ _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType *gif, Image_Entry
    int                 cache_h;
    int                 cur_h;
    int                 cur_w;
+   int                 disposal = 0;
+   int                 bg_val = 0;
    DATA32             *ptr;
    Gif_Frame          *gif_frame = NULL;
 
@@ -282,6 +284,25 @@ _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType *gif, Image_Entry
    bg = gif->SBackGroundColor;
    cmap = (gif->Image.ColorMap ? gif->Image.ColorMap : gif->SColorMap);
 
+   if (!cmap)
+     {
+        DGifCloseFile(gif);
+        for (i = 0; i < h; i++)
+          {
+             free(rows[i]);
+          }
+        free(rows);
+        if (frame->data) free(frame->data);
+        *error = EVAS_LOAD_ERROR_CORRUPT_FILE;
+        return EINA_FALSE;
+     }
+
+   /* get the background value */
+   r = cmap->Colors[bg].Red;
+   g = cmap->Colors[bg].Green;
+   b = cmap->Colors[bg].Blue;
+   bg_val =  ARGB_JOIN(0xff, r, g, b);
+
    per_inc = 100.0 / (((double)w) * h);
    cur_h = h;
    cur_w = w;
@@ -294,62 +315,180 @@ _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType *gif, Image_Entry
         DATA32            *ptr_src;
         Image_Entry_Frame *new_frame = NULL;
         int                cur_frame = frame->index;
+        int                start_frame = 1;
+        int                j = 0;
 
-        if (!_find_close_frame(ie, cur_frame,  &new_frame))
+        if (_find_close_frame(ie, cur_frame, &new_frame))
+          start_frame = new_frame->index + 1;
+
+        if ((start_frame < 1) || (start_frame > cur_frame))
           {
-             if (!evas_image_load_specific_frame(ie, ie->file, cur_frame-1, error))
+             *error = EVAS_LOAD_ERROR_CORRUPT_FILE;
+             goto error;
+          }
+        /* load previous frame of cur_frame */
+        for (j = start_frame; j < cur_frame ; j++)
+          {
+             if (!evas_image_load_specific_frame(ie, ie->file, j, error))
                {
                   *error = EVAS_LOAD_ERROR_CORRUPT_FILE;
                   goto error;
                }
           }
-        else
+        if (!_find_frame(ie, cur_frame - 1, &new_frame))
           {
-             ptr_src = new_frame->data;
-             memcpy(ptr, ptr_src, siz);
+             *error = EVAS_LOAD_ERROR_CORRUPT_FILE;
+             goto error;
           }
-
-        /* composite frames */
-        ptr = ptr + cache_w * y;
-
-        for (i = 0; i < cur_h; i++)
+        else /* find previous frame */
           {
-             ptr = ptr + x;
-             for (j = 0; j < cur_w; j++)
+             Gif_Frame *gif_frame = NULL;
+             ptr_src = new_frame->data;
+             if (new_frame->info)
                {
-                  if (rows[i][j] == alpha)
-                    {
-                       ptr++ ;
-                    }
-                  else
-                    {
-                       r = cmap->Colors[rows[i][j]].Red;
-                       g = cmap->Colors[rows[i][j]].Green;
-                       b = cmap->Colors[rows[i][j]].Blue;
-                       *ptr++ = ARGB_JOIN(0xff, r, g, b);
-                    }
-                  per += per_inc;
+                  gif_frame = (Gif_Frame *)(new_frame->info);
+                  disposal = gif_frame->frame_info.disposal;
                }
-             ptr = ptr + (cache_w - (x + cur_w));
+             switch(disposal) /* we only support disposal flag 0,1,2 */
+               {
+                case 1: /* Do not dispose. need previous frame*/
+                   memcpy(ptr, ptr_src, siz);
+                   /* only decoding image descriptor's region */
+                   ptr = ptr + cache_w * y;
+
+                   for (i = 0; i < cur_h; i++)
+                     {
+                        ptr = ptr + x;
+                        for (j = 0; j < cur_w; j++)
+                          {
+                             if (rows[i][j] == alpha)
+                               {
+                                  ptr++ ;
+                               }
+                             else
+                               {
+                                  r = cmap->Colors[rows[i][j]].Red;
+                                  g = cmap->Colors[rows[i][j]].Green;
+                                  b = cmap->Colors[rows[i][j]].Blue;
+                                  *ptr++ = ARGB_JOIN(0xff, r, g, b);
+                               }
+                             per += per_inc;
+                          }
+                        ptr = ptr + (cache_w - (x + cur_w));
+                     }
+                   break;
+                case 2: /* Restore to background color */
+                   memcpy(ptr, ptr_src, siz);
+                   /* composite frames */
+                   for (i = 0; i < cache_h; i++)
+                     {
+                        if ((i < y) || (i >= (y + cur_h)))
+                          {
+                             for (j = 0; j < cache_w; j++)
+                               {
+                                  *ptr = bg_val;
+                                  ptr++;
+                               }
+                          }
+                        else
+                          {
+                             int i1, j1;
+                             i1 = i -y;
+
+                             for (j = 0; j < cache_w; j++)
+                               {
+                                  j1 = j - x;
+                                  if ((j < x) || (j >= (x + cur_w)))
+                                    {
+                                       *ptr = bg_val;
+                                       ptr++;
+                                    }
+                                  else
+                                    {
+                                       r = cmap->Colors[rows[i1][j1]].Red;
+                                       g = cmap->Colors[rows[i1][j1]].Green;
+                                       b = cmap->Colors[rows[i1][j1]].Blue;
+                                       *ptr++ = ARGB_JOIN(0xff, r, g, b);
+                                    }
+                               }
+                          }
+                     }
+                   break;
+                case 0: /* No disposal specified */
+                default:
+                   memset(ptr, 0, siz);
+                   for (i = 0; i < cache_h; i++)
+                     {
+                        if ((i < y) || (i >= (y + cur_h)))
+                          {
+                             for (j = 0; j < cache_w; j++)
+                               {
+                                  *ptr = bg_val;
+                                  ptr++;
+                               }
+                          }
+                        else
+                          {
+                             int i1, j1;
+                             i1 = i -y;
+
+                             for (j = 0; j < cache_w; j++)
+                               {
+                                  j1 = j - x;
+                                  if ((j < x) || (j >= (x + cur_w)))
+                                    {
+                                       *ptr = bg_val;
+                                       ptr++;
+                                    }
+                                  else
+                                    {
+                                       r = cmap->Colors[rows[i1][j1]].Red;
+                                       g = cmap->Colors[rows[i1][j1]].Green;
+                                       b = cmap->Colors[rows[i1][j1]].Blue;
+                                       *ptr++ = ARGB_JOIN(0xff, r, g, b);
+                                    }
+                               }
+                          }
+                     }
+                   break;
+               }
           }
      }
-   else
+   else /* first frame decoding */
      {
-        ptr = ptr + cache_w * y;
-
-        for (i = 0; i < cur_h; i++)
+        /* fill background color */
+        for (i = 0; i < cache_h; i++)
           {
-             ptr = ptr + x;
-             for (j = 0; j < cur_w; j++)
+             if ((i < y) || (i >= (y + cur_h)))
                {
-                  r = cmap->Colors[rows[i][j]].Red;
-                  g = cmap->Colors[rows[i][j]].Green;
-                  b = cmap->Colors[rows[i][j]].Blue;
-                  *ptr++ = ARGB_JOIN(0xff, r, g, b);
-
-                  per += per_inc;
+                  for (j = 0; j < cache_w; j++)
+                    {
+                       *ptr = bg_val;
+                       ptr++;
+                    }
                }
-             ptr = ptr + (cache_w - (x + cur_w));
+             else
+               {
+                  int i1, j1;
+                  i1 = i -y;
+
+                  for (j = 0; j < cache_w; j++)
+                    {
+                       j1 = j - x;
+                       if ((j < x) || (j >= (x + cur_w)))
+                         {
+                            *ptr = bg_val;
+                            ptr++;
+                         }
+                       else
+                         {
+                            r = cmap->Colors[rows[i1][j1]].Red;
+                            g = cmap->Colors[rows[i1][j1]].Green;
+                            b = cmap->Colors[rows[i1][j1]].Blue;
+                            *ptr++ = ARGB_JOIN(0xff, r, g, b);
+                         }
+                    }
+               }
           }
      }
 
@@ -381,7 +520,7 @@ _evas_image_load_frame(Image_Entry *ie, GifFileType *gif, Image_Entry_Frame *fra
    gif_frame = (Gif_Frame *) frame->info;
 
    if (type > LOAD_FRAME_DATA_INFO) return EINA_FALSE;
-   
+
    do
      {
         if (DGifGetRecordType(gif, &rec) == GIF_ERROR) return EINA_FALSE;
@@ -505,23 +644,6 @@ evas_image_load_file_head_gif(Image_Entry *ie, const char *file, const char *key
         *error = EVAS_LOAD_ERROR_UNKNOWN_FORMAT;
         return EINA_FALSE;
      }
-
-   /* check logical screen size */
-   w = gif->SWidth;
-   h = gif->SHeight;
-
-   if ((w < 1) || (h < 1) || (w > IMG_MAX_SIZE) || (h > IMG_MAX_SIZE) ||
-       IMG_TOO_BIG(w, h))
-     {
-        DGifCloseFile(gif);
-        if (IMG_TOO_BIG(w, h))
-          *error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
-        else
-          *error = EVAS_LOAD_ERROR_GENERIC;
-        return EINA_FALSE;
-     }
-   ie->w = w;
-   ie->h = h;
 
    /* check logical screen size */
    w = gif->SWidth;
