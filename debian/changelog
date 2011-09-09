@@ -1,3 +1,14 @@
+evas (1.0.0.001+svn.62695slp2+build17) unstable; urgency=low
+
+  * Upload Package
+  * Fixed font noise issue
+  * Implement rotation decoding for image viewer
+  * fix after image problem of gif
+  * Git: 165.213.180.234:/slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.60295slp2+build17
+
+ -- Seungsoo Woo <om101.woo@samsung.com>  Fri, 09 Sep 2011 18:50:03 +0900
+
 evas (1.0.0.001+svn.62695slp2+build01) unstable; urgency=low
 
   * [SVN EFL Migration] evas in SLP is merged with SVN r62695
