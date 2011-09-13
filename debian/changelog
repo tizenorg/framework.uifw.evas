@@ -5,7 +5,7 @@ evas (1.0.0.001+svn.62695slp2+build17) unstable; urgency=low
   * Implement rotation decoding for image viewer
   * fix after image problem of gif
   * Git: 165.213.180.234:/slp/pkgs/e/evas
-  * Tag: evas_1.0.0.001+svn.60295slp2+build17
+  * Tag: evas_1.0.0.001+svn.62695slp2+build17
 
  -- ChunEon Park <chuneon.park@samsung.com>  Fri, 09 Sep 2011 18:50:03 +0900
 
