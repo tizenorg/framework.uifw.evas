@@ -1,3 +1,13 @@
+evas (1.0.0.001+svn.62695slp2+build19) unstable; urgency=low
+
+  * Upload Package
+  * Important Changes
+       cherrypick upstream r62856 for elm_factory.
+  * Git: 165.213.180.234:/slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.62695slp2+build19
+
+ -- Daniel Juyung Seo <juyung.seo@samsung.com>  Thu, 15 Sep 2011 15:56:32 +0900
+
 evas (1.0.0.001+svn.62695slp2+build18) unstable; urgency=low
 
   * Upload Package
