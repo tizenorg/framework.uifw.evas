@@ -1,3 +1,11 @@
+evas (1.0.0.001+svn.62695slp2+build20) unstable; urgency=low
+
+  * Package Upload.
+  * Git: 165.213.180.234:slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.62695slp2+build20
+
+ -- Daniel Juyung Seo <juyung.seo@samsung.com>  Thu, 15 Sep 2011 17:56:29 +0900
+
 evas (1.0.0.001+svn.62695slp2+build19) unstable; urgency=low
 
   * Upload Package
