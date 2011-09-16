@@ -1,3 +1,13 @@
+evas (1.0.0.001+svn.62695slp2+build21) unstable; urgency=low
+
+  * Package Upload.
+  * Important Changes
+       Rollback to evas_1.0.0.001+svn.62695slp2+build18.
+  * Git: 165.213.180.234:slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.62695slp2+build21
+
+ -- Daniel Juyung Seo <juyung.seo@samsung.com>  Fri, 16 Sep 2011 11:13:32 +0900
+
 evas (1.0.0.001+svn.62695slp2+build20) unstable; urgency=low
 
   * Package Upload.
