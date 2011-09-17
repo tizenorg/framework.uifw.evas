@@ -89,7 +89,7 @@ AC_DEFINE_UNQUOTED(MODULE_ARCH, "$MODULE_ARCH", "Module architecture")
 
 want_fontconfig="auto"
 want_fribidi="auto"
-want_harfbuzz="auto"
+want_harfbuzz="no"
 want_pixman="no"
 want_evas_cserve="yes"
 
