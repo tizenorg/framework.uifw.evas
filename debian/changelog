@@ -1,3 +1,13 @@
+evas (1.0.0.001+svn.62695slp2+build23) unstable; urgency=low
+
+  * Package Upload.
+  * Important Changes
+       [Textblock] Replace the rbtree index with a fixed ptr array (changeset 63474)
+  * Git: 165.213.180.234:slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.62695slp2+build23
+
+ -- Myungjae Lee <mjae.lee@samsung.com>  Mon, 19 Sep 2011 20:31:31 +0900
+
 evas (1.0.0.001+svn.62695slp2+build22) unstable; urgency=low
 
   * Package Upload.
