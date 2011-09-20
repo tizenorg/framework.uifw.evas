@@ -5989,11 +5989,11 @@ _evas_textblock_node_format_remove_matching(Evas_Object_Textblock *o,
                   _evas_textblock_node_format_remove(o, fmt, 0);
                }
              /* Find the matching format and pop it, if the matching format
-              * is out format, i.e the last one, pop and break. */
+              * is our format, i.e the last one, pop and break. */
              else
                {
-                  Eina_List *i;
-                  EINA_LIST_FOREACH(formats, i, fnode)
+                  Eina_List *i, *next;
+                  EINA_LIST_FOREACH_SAFE(formats, i, next, fnode)
                     {
                        if (_FORMAT_IS_CLOSER_OF(
                                 fnode->orig_format, fstr, fstr_len))
@@ -6002,6 +6002,7 @@ _evas_textblock_node_format_remove_matching(Evas_Object_Textblock *o,
                             formats = eina_list_remove_list(formats, i);
                             _evas_textblock_node_format_remove(o, fnode, 0);
                             _evas_textblock_node_format_remove(o, fmt, 0);
+                            break;
                          }
                     }
                }
