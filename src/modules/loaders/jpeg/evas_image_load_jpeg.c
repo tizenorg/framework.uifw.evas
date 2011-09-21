@@ -694,9 +694,9 @@ evas_image_load_file_data_jpeg_internal(Image_Entry *ie,
         if (region && ie->flags.rotated)
           {
              ie->load_opts.region.x = load_region_x;
-             ie->load_opts.region.y = load_region_x;
-             ie->load_opts.region.w = load_region_x;
-             ie->load_opts.region.h = load_region_x;
+             ie->load_opts.region.y = load_region_y;
+             ie->load_opts.region.w = load_region_w;
+             ie->load_opts.region.h = load_region_h;
           }
         return EINA_TRUE;
      }
@@ -1056,9 +1056,9 @@ done:
         if (region )
           {
              ie->load_opts.region.x = load_region_x;
-             ie->load_opts.region.y = load_region_x;
-             ie->load_opts.region.w = load_region_x;
-             ie->load_opts.region.h = load_region_x;
+             ie->load_opts.region.y = load_region_y;
+             ie->load_opts.region.w = load_region_w;
+             ie->load_opts.region.h = load_region_h;
           }
      }
 
