@@ -1,3 +1,13 @@
+evas (1.0.0.001+svn.62695slp2+build25) unstable; urgency=low
+
+  * Upload Package
+  * Important Changes
+        evas_jpeg_loader
+  * Git: 165.213.180.234:/slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.62695slp2+build25
+
+ -- Jiyoun Park <jy0703.park@samsung.com>  Wed, 21 Sep 2011 20:44:31 +0900
+
 evas (1.0.0.001+svn.62695slp2+build24) unstable; urgency=low
 
   * Package Upload
