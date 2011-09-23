@@ -1,3 +1,13 @@
+evas (1.0.0.001+svn.62695slp2+build26) unstable; urgency=low
+
+  * Upload Package
+  * Important Changes
+        evas grab event bug fix
+  * Git: 165.213.180.234:/slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.62695slp2+build26
+
+ -- Jiyoun Park <jy0703.park@samsung.com>  Fri, 23 Sep 2011 19:01:55 +0900
+
 evas (1.0.0.001+svn.62695slp2+build25) unstable; urgency=low
 
   * Upload Package
