@@ -201,25 +201,6 @@ evas_event_thaw_eval(Evas *e)
                               e->last_timestamp, NULL);
 }
 
-static Eina_Bool
-_evas_object_event_valid_check(Evas_Object *obj)
-{
-   return ((obj->cur.visible) && (obj->delete_me == 0) &&
-           (!obj->clip.clipees) &&
-           (!evas_event_passes_through(obj)) &&
-           (evas_object_clippers_is_visible(obj)) &&
-           (obj->mouse_in));
-}
-
-static Eina_Bool
-_evas_object_event_visible_check(Evas_Object *obj)
-{
-   return ((obj->cur.visible) && (obj->delete_me == 0) &&
-           (!obj->clip.clipees) &&
-           (!evas_event_passes_through(obj)) &&
-           (evas_object_clippers_is_visible(obj)));
-}
-
 EAPI void
 evas_event_feed_mouse_down(Evas *e, int b, Evas_Button_Flags flags, unsigned int timestamp, const void *data)
 {
@@ -267,23 +248,20 @@ evas_event_feed_mouse_down(Evas *e, int b, Evas_Button_Flags flags, unsigned int
    copy = evas_event_list_copy(e->pointer.object.in);
    EINA_LIST_FOREACH(copy, l, obj)
      {
-        if (_evas_object_event_valid_check(obj))
-          {
-             ev.canvas.x = e->pointer.x;
-             ev.canvas.y = e->pointer.y;
-             _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y,
-                                        obj->mouse_grabbed);
-             if (obj->pointer_mode != EVAS_OBJECT_POINTER_MODE_NOGRAB)
-               {
-                  obj->mouse_grabbed++;
-                  e->pointer.mouse_grabbed++;
-               }
+        if (obj->delete_me) continue;
+        
+        ev.canvas.x = e->pointer.x;
+        ev.canvas.y = e->pointer.y;
+        _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y, obj->mouse_grabbed);
+	if (obj->pointer_mode != EVAS_OBJECT_POINTER_MODE_NOGRAB)
+	  {
+	     obj->mouse_grabbed++;
+	     e->pointer.mouse_grabbed++;
+	  }
 
-             if (e->events_frozen <= 0)
-               evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_DOWN,
-                                               &ev);
-          }
-        if (e->delete_me) break;
+	if (e->events_frozen <= 0)
+	  evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_DOWN, &ev);
+	if (e->delete_me) break;
      }
    if (copy) eina_list_free(copy);
    e->last_mouse_down_counter++;
@@ -298,9 +276,9 @@ _post_up_handle(Evas *e, unsigned int timestamp, const void *data)
    Evas_Event_Mouse_Out ev;
    Evas_Object *obj;
    int post_called = 0;
-
+   
    _evas_object_event_new();
-
+   
    ev.buttons = e->pointer.button;
    ev.output.x = e->pointer.x;
    ev.output.y = e->pointer.y;
@@ -311,7 +289,7 @@ _post_up_handle(Evas *e, unsigned int timestamp, const void *data)
    ev.locks = &(e->locks);
    ev.timestamp = timestamp;
    ev.event_flags = EVAS_EVENT_FLAG_NONE;
-
+   
    /* get new list of ins */
    ins = evas_event_objects_event_list(e, NULL, e->pointer.x, e->pointer.y);
    /* go thru old list of in objects */
@@ -328,21 +306,21 @@ _post_up_handle(Evas *e, unsigned int timestamp, const void *data)
                {
                   obj->mouse_in = 0;
                   if (e->events_frozen <= 0)
-                    evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_OUT, &ev);
+                     evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_OUT, &ev);
                }
           }
         if (e->delete_me) break;
      }
    _evas_post_event_callback_call(e);
-
+   
    if (copy) copy = eina_list_free(copy);
    if (e->pointer.inside)
      {
         Evas_Event_Mouse_In ev_in;
         Evas_Object *obj_itr;
-
+        
         _evas_object_event_new();
-
+        
         ev_in.buttons = e->pointer.button;
         ev_in.output.x = e->pointer.x;
         ev_in.output.y = e->pointer.y;
@@ -353,7 +331,7 @@ _post_up_handle(Evas *e, unsigned int timestamp, const void *data)
         ev_in.locks = &(e->locks);
         ev_in.timestamp = timestamp;
         ev_in.event_flags = EVAS_EVENT_FLAG_NONE;
-
+        
         EINA_LIST_FOREACH(ins, l, obj_itr)
           {
              ev_in.canvas.x = e->pointer.x;
@@ -365,7 +343,7 @@ _post_up_handle(Evas *e, unsigned int timestamp, const void *data)
                     {
                        obj_itr->mouse_in = 1;
                        if (e->events_frozen <= 0)
-                         evas_object_event_callback_call(obj_itr, EVAS_CALLBACK_MOUSE_IN, &ev_in);
+                          evas_object_event_callback_call(obj_itr, EVAS_CALLBACK_MOUSE_IN, &ev_in);
                     }
                }
              if (e->delete_me) break;
@@ -391,7 +369,7 @@ _post_up_handle(Evas *e, unsigned int timestamp, const void *data)
         eina_list_free(ins);
      }
    if (e->pointer.inside)
-     evas_event_feed_mouse_move(e, e->pointer.x, e->pointer.y, timestamp, data);
+      evas_event_feed_mouse_move(e, e->pointer.x, e->pointer.y, timestamp, data);
    return post_called;
 }
 
@@ -412,46 +390,45 @@ evas_event_feed_mouse_up(Evas *e, int b, Evas_Button_Flags flags, unsigned int t
    e->last_timestamp = timestamp;
 
      {
-        Evas_Event_Mouse_Up ev;
-        Evas_Object *obj;
+	Evas_Event_Mouse_Up ev;
+	Evas_Object *obj;
 
-        _evas_object_event_new();
+	_evas_object_event_new();
 
-        ev.button = b;
-        ev.output.x = e->pointer.x;
-        ev.output.y = e->pointer.y;
-        ev.canvas.x = e->pointer.x;
-        ev.canvas.y = e->pointer.y;
-        ev.data = (void *)data;
-        ev.modifiers = &(e->modifiers);
-        ev.locks = &(e->locks);
-        ev.flags = flags;
-        ev.timestamp = timestamp;
-        ev.event_flags = EVAS_EVENT_FLAG_NONE;
+	ev.button = b;
+	ev.output.x = e->pointer.x;
+	ev.output.y = e->pointer.y;
+	ev.canvas.x = e->pointer.x;
+	ev.canvas.y = e->pointer.y;
+	ev.data = (void *)data;
+	ev.modifiers = &(e->modifiers);
+	ev.locks = &(e->locks);
+	ev.flags = flags;
+	ev.timestamp = timestamp;
+	ev.event_flags = EVAS_EVENT_FLAG_NONE;
 
-        _evas_walk(e);
-        copy = evas_event_list_copy(e->pointer.object.in);
-        EINA_LIST_FOREACH(copy, l, obj)
-          {
-             if (_evas_object_event_valid_check(obj))
+	_evas_walk(e);
+	copy = evas_event_list_copy(e->pointer.object.in);
+	EINA_LIST_FOREACH(copy, l, obj)
+	  {
+             ev.canvas.x = e->pointer.x;
+             ev.canvas.y = e->pointer.y;
+             _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y, obj->mouse_grabbed);
+	     if ((obj->pointer_mode != EVAS_OBJECT_POINTER_MODE_NOGRAB) &&
+		 (obj->mouse_grabbed > 0))
+	       {
+		  obj->mouse_grabbed--;
+		  e->pointer.mouse_grabbed--;
+	       }
+             if (!obj->delete_me)
                {
-                  ev.canvas.x = e->pointer.x;
-                  ev.canvas.y = e->pointer.y;
-                  _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y,
-                                             obj->mouse_grabbed);
-                  if ((obj->pointer_mode != EVAS_OBJECT_POINTER_MODE_NOGRAB) &&
-                      (obj->mouse_grabbed > 0))
-                    {
-                       obj->mouse_grabbed--;
-                       e->pointer.mouse_grabbed--;
-                    }
                   if (e->events_frozen <= 0)
-                    evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_UP, &ev);
+                     evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_UP, &ev);
                }
-             if (e->delete_me) break;
-          }
-        if (copy) copy = eina_list_free(copy);
-        e->last_mouse_up_counter++;
+	     if (e->delete_me) break;
+	  }
+	if (copy) copy = eina_list_free(copy);
+	e->last_mouse_up_counter++;
         _evas_post_event_callback_call(e);
      }
 
@@ -463,17 +440,17 @@ evas_event_feed_mouse_up(Evas *e, int b, Evas_Button_Flags flags, unsigned int t
    if (e->pointer.mouse_grabbed < 0)
      {
         ERR("BUG? e->pointer.mouse_grabbed (=%d) < 0!",
-            e->pointer.mouse_grabbed);
+	      e->pointer.mouse_grabbed);
      }
-   /* don't need this anymore - havent actually triggered this for a long
-    * time and this also doesn't account for multitouch, so leave here if we
-    * ever find bugs again so we can turn it on, but otherwise.. dont use this
-    if ((e->pointer.button == 0) && (e->pointer.mouse_grabbed != 0))
-    {
-    INF("restore to 0 grabs (from %i)", e->pointer.mouse_grabbed);
-    e->pointer.mouse_grabbed = 0;
-    }
-    */
+/* don't need this anymore - havent actually triggered this for a long
+ * time and this also doesn't account for multitouch, so leave here if we
+ * ever find bugs again so we can turn it on, but otherwise.. dont use this
+   if ((e->pointer.button == 0) && (e->pointer.mouse_grabbed != 0))
+     {
+        INF("restore to 0 grabs (from %i)", e->pointer.mouse_grabbed);
+	e->pointer.mouse_grabbed = 0;
+     }
+ */
    _evas_unwalk(e);
 }
 
@@ -530,16 +507,12 @@ evas_event_feed_mouse_wheel(Evas *e, int direction, int z, unsigned int timestam
 
    EINA_LIST_FOREACH(copy, l, obj)
      {
-        if (_evas_object_event_valid_check(obj))
-          {
-             ev.canvas.x = e->pointer.x;
-             ev.canvas.y = e->pointer.y;
-             _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y,
-                                        obj->mouse_grabbed);
-             if (e->events_frozen <= 0)
-               evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_WHEEL, &ev);
-          }
-        if (e->delete_me) break;
+        ev.canvas.x = e->pointer.x;
+        ev.canvas.y = e->pointer.y;
+        _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y, obj->mouse_grabbed);
+	if (e->events_frozen <= 0)
+	  evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_WHEEL, &ev);
+	if (e->delete_me) break;
      }
    if (copy) copy = eina_list_free(copy);
    _evas_post_event_callback_call(e);
@@ -551,7 +524,7 @@ EAPI void
 evas_event_feed_mouse_move(Evas *e, int x, int y, unsigned int timestamp, const void *data)
 {
    int px, py;
-   ////   Evas_Coord pcx, pcy;
+////   Evas_Coord pcx, pcy;
 
    MAGIC_CHECK(e, Evas, MAGIC_EVAS);
    return;
@@ -559,189 +532,192 @@ evas_event_feed_mouse_move(Evas *e, int x, int y, unsigned int timestamp, const 
 
    px = e->pointer.x;
    py = e->pointer.y;
-   ////   pcx = e->pointer.canvas_x;
-   ////   pcy = e->pointer.canvas_y;
+////   pcx = e->pointer.canvas_x;
+////   pcy = e->pointer.canvas_y;
 
    if (e->events_frozen > 0) return;
    e->last_timestamp = timestamp;
 
    e->pointer.x = x;
    e->pointer.y = y;
-   ////   e->pointer.canvas_x = x;
-   ////   e->pointer.canvas_y = y;
-   ////   e->pointer.canvas_x = evas_coord_screen_x_to_world(e, x);
-   ////   e->pointer.canvas_y = evas_coord_screen_y_to_world(e, y);
+////   e->pointer.canvas_x = x;
+////   e->pointer.canvas_y = y;
+////   e->pointer.canvas_x = evas_coord_screen_x_to_world(e, x);
+////   e->pointer.canvas_y = evas_coord_screen_y_to_world(e, y);
    if ((!e->pointer.inside) && (e->pointer.mouse_grabbed == 0)) return;
    _evas_walk(e);
    /* if our mouse button is grabbed to any objects */
    if (e->pointer.mouse_grabbed > 0)
      {
-        /* go thru old list of in objects */
-        Eina_List *outs = NULL;
-        Eina_List *l, *copy;
+	/* go thru old list of in objects */
+	Eina_List *outs = NULL;
+	Eina_List *l, *copy;
 
-          {
-             Evas_Event_Mouse_Move ev;
-             Evas_Object *obj;
+	  {
+	     Evas_Event_Mouse_Move ev;
+	     Evas_Object *obj;
 
-             _evas_object_event_new();
+	     _evas_object_event_new();
 
-             ev.buttons = e->pointer.button;
-             ev.cur.output.x = e->pointer.x;
-             ev.cur.output.y = e->pointer.y;
-             ev.cur.canvas.x = e->pointer.x;
-             ev.cur.canvas.y = e->pointer.y;
-             ev.prev.output.x = px;
-             ev.prev.output.y = py;
-             ev.prev.canvas.x = px;
-             ev.prev.canvas.y = py;
-             ev.data = (void *)data;
-             ev.modifiers = &(e->modifiers);
-             ev.locks = &(e->locks);
-             ev.timestamp = timestamp;
-             ev.event_flags = EVAS_EVENT_FLAG_NONE;
-             copy = evas_event_list_copy(e->pointer.object.in);
-             EINA_LIST_FOREACH(copy, l, obj)
-               {
-                  if (_evas_object_event_valid_check(obj))
-                    {
-                       ev.cur.canvas.x = e->pointer.x;
-                       ev.cur.canvas.y = e->pointer.y;
-                       _evas_event_havemap_adjust(obj, &ev.cur.canvas.x, &ev.cur.canvas.y, obj->mouse_grabbed);
-                       if ((px != x) || (py != y))
-                         {
-                            if (e->events_frozen <= 0)
-                              evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_MOVE, &ev);
-                         }
-                    }
-                  else
-                    outs = eina_list_append(outs, obj);
-                  if (e->delete_me) break;
-               }
+	     ev.buttons = e->pointer.button;
+	     ev.cur.output.x = e->pointer.x;
+	     ev.cur.output.y = e->pointer.y;
+	     ev.cur.canvas.x = e->pointer.x;
+	     ev.cur.canvas.y = e->pointer.y;
+	     ev.prev.output.x = px;
+	     ev.prev.output.y = py;
+	     ev.prev.canvas.x = px;
+	     ev.prev.canvas.y = py;
+	     ev.data = (void *)data;
+	     ev.modifiers = &(e->modifiers);
+	     ev.locks = &(e->locks);
+	     ev.timestamp = timestamp;
+	     ev.event_flags = EVAS_EVENT_FLAG_NONE;
+	     copy = evas_event_list_copy(e->pointer.object.in);
+	     EINA_LIST_FOREACH(copy, l, obj)
+	       {
+                  ev.cur.canvas.x = e->pointer.x;
+                  ev.cur.canvas.y = e->pointer.y;
+                  _evas_event_havemap_adjust(obj, &ev.cur.canvas.x, &ev.cur.canvas.y, obj->mouse_grabbed);
+		  if ((obj->cur.visible) &&
+		      (evas_object_clippers_is_visible(obj)) &&
+		      (!evas_event_passes_through(obj)) &&
+		      (!obj->clip.clipees))
+		    {
+		       if ((px != x) || (py != y))
+			 {
+			    if (e->events_frozen <= 0)
+			      evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_MOVE, &ev);
+			 }
+		    }
+		  else
+		    outs = eina_list_append(outs, obj);
+		  if (e->delete_me) break;
+	       }
              _evas_post_event_callback_call(e);
-          }
-          {
-             Evas_Event_Mouse_Out ev;
+	  }
+	  {
+	     Evas_Event_Mouse_Out ev;
 
-             _evas_object_event_new();
+	     _evas_object_event_new();
 
-             ev.buttons = e->pointer.button;
-             ev.output.x = e->pointer.x;
-             ev.output.y = e->pointer.y;
-             ev.canvas.x = e->pointer.x;
-             ev.canvas.y = e->pointer.y;
-             ev.data = (void *)data;
-             ev.modifiers = &(e->modifiers);
-             ev.locks = &(e->locks);
-             ev.timestamp = timestamp;
-             ev.event_flags = EVAS_EVENT_FLAG_NONE;
+	     ev.buttons = e->pointer.button;
+	     ev.output.x = e->pointer.x;
+	     ev.output.y = e->pointer.y;
+	     ev.canvas.x = e->pointer.x;
+	     ev.canvas.y = e->pointer.y;
+	     ev.data = (void *)data;
+	     ev.modifiers = &(e->modifiers);
+	     ev.locks = &(e->locks);
+	     ev.timestamp = timestamp;
+	     ev.event_flags = EVAS_EVENT_FLAG_NONE;
 
-             if (copy) eina_list_free(copy);
-             while (outs)
-               {
-                  Evas_Object *obj;
+	     if (copy) eina_list_free(copy);
+	     while (outs)
+	       {
+		  Evas_Object *obj;
 
-                  obj = outs->data;
-                  outs = eina_list_remove(outs, obj);
-                  if ((obj->mouse_grabbed == 0) && (!e->delete_me))
-                    {
+		  obj = outs->data;
+		  outs = eina_list_remove(outs, obj);
+		  if ((obj->mouse_grabbed == 0) && (!e->delete_me))
+		    {
                        ev.canvas.x = e->pointer.x;
                        ev.canvas.y = e->pointer.y;
                        _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y, obj->mouse_grabbed);
-                       e->pointer.object.in = eina_list_remove(e->pointer.object.in, obj);
+		       e->pointer.object.in = eina_list_remove(e->pointer.object.in, obj);
                        if (obj->mouse_in)
                          {
                             obj->mouse_in = 0;
                             if (!obj->delete_me)
                               {
                                  if (e->events_frozen <= 0)
-                                   evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_OUT, &ev);
+                                    evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_OUT, &ev);
                               }
                          }
-                    }
-               }
+		    }
+	       }
              _evas_post_event_callback_call(e);
-          }
+	  }
      }
    else
      {
-        Eina_List *ins;
-        Eina_List *l, *copy;
-        Evas_Event_Mouse_Move ev;
-        Evas_Event_Mouse_Out ev2;
-        Evas_Event_Mouse_In ev3;
-        Evas_Object *obj;
+	Eina_List *ins;
+	Eina_List *l, *copy;
+	Evas_Event_Mouse_Move ev;
+	Evas_Event_Mouse_Out ev2;
+	Evas_Event_Mouse_In ev3;
+	Evas_Object *obj;
 
-        _evas_object_event_new();
+	_evas_object_event_new();
 
-        ev.buttons = e->pointer.button;
-        ev.cur.output.x = e->pointer.x;
-        ev.cur.output.y = e->pointer.y;
-        ev.cur.canvas.x = e->pointer.x;
-        ev.cur.canvas.y = e->pointer.y;
-        ev.prev.output.x = px;
-        ev.prev.output.y = py;
-        ev.prev.canvas.x = px;
-        ev.prev.canvas.y = py;
-        ev.data = (void *)data;
-        ev.modifiers = &(e->modifiers);
-        ev.locks = &(e->locks);
-        ev.timestamp = timestamp;
-        ev.event_flags = EVAS_EVENT_FLAG_NONE;
+	ev.buttons = e->pointer.button;
+	ev.cur.output.x = e->pointer.x;
+	ev.cur.output.y = e->pointer.y;
+	ev.cur.canvas.x = e->pointer.x;
+	ev.cur.canvas.y = e->pointer.y;
+	ev.prev.output.x = px;
+	ev.prev.output.y = py;
+	ev.prev.canvas.x = px;
+	ev.prev.canvas.y = py;
+	ev.data = (void *)data;
+	ev.modifiers = &(e->modifiers);
+	ev.locks = &(e->locks);
+	ev.timestamp = timestamp;
+	ev.event_flags = EVAS_EVENT_FLAG_NONE;
 
-        ev2.buttons = e->pointer.button;
-        ev2.output.x = e->pointer.x;
-        ev2.output.y = e->pointer.y;
-        ev2.canvas.x = e->pointer.x;
-        ev2.canvas.y = e->pointer.y;
-        ev2.data = (void *)data;
-        ev2.modifiers = &(e->modifiers);
-        ev2.locks = &(e->locks);
-        ev2.timestamp = timestamp;
-        ev2.event_flags = EVAS_EVENT_FLAG_NONE;
+	ev2.buttons = e->pointer.button;
+	ev2.output.x = e->pointer.x;
+	ev2.output.y = e->pointer.y;
+	ev2.canvas.x = e->pointer.x;
+	ev2.canvas.y = e->pointer.y;
+	ev2.data = (void *)data;
+	ev2.modifiers = &(e->modifiers);
+	ev2.locks = &(e->locks);
+	ev2.timestamp = timestamp;
+	ev2.event_flags = EVAS_EVENT_FLAG_NONE;
 
-        ev3.buttons = e->pointer.button;
-        ev3.output.x = e->pointer.x;
-        ev3.output.y = e->pointer.y;
-        ev3.canvas.x = e->pointer.x;
-        ev3.canvas.y = e->pointer.y;
-        ev3.data = (void *)data;
-        ev3.modifiers = &(e->modifiers);
-        ev3.locks = &(e->locks);
-        ev3.timestamp = timestamp;
-        ev3.event_flags = EVAS_EVENT_FLAG_NONE;
+	ev3.buttons = e->pointer.button;
+	ev3.output.x = e->pointer.x;
+	ev3.output.y = e->pointer.y;
+	ev3.canvas.x = e->pointer.x;
+	ev3.canvas.y = e->pointer.y;
+	ev3.data = (void *)data;
+	ev3.modifiers = &(e->modifiers);
+	ev3.locks = &(e->locks);
+	ev3.timestamp = timestamp;
+	ev3.event_flags = EVAS_EVENT_FLAG_NONE;
 
-        /* get all new in objects */
-        ins = evas_event_objects_event_list(e, NULL, x, y);
-        /* go thru old list of in objects */
-        copy = evas_event_list_copy(e->pointer.object.in);
-        EINA_LIST_FOREACH(copy, l, obj)
-          {
-             /* if its under the pointer and its visible and its in the new */
-             /* in list */
-             // FIXME: i don't think we need this
-             //	     evas_object_clip_recalc(obj);
-             if (evas_object_is_in_output_rect(obj, x, y, 1, 1) &&
-                 (obj->cur.visible) &&
-                 (evas_object_clippers_is_visible(obj)) &&
-                 (eina_list_data_find(ins, obj)) &&
-                 (!evas_event_passes_through(obj)) &&
-                 (!obj->clip.clipees) &&
-                 ((!obj->precise_is_inside) ||
-                  (evas_object_is_inside(obj, x, y))))
-               {
-                  if ((px != x) || (py != y))
-                    {
+	/* get all new in objects */
+	ins = evas_event_objects_event_list(e, NULL, x, y);
+	/* go thru old list of in objects */
+	copy = evas_event_list_copy(e->pointer.object.in);
+	EINA_LIST_FOREACH(copy, l, obj)
+	  {
+	     /* if its under the pointer and its visible and its in the new */
+	     /* in list */
+// FIXME: i don't think we need this
+//	     evas_object_clip_recalc(obj);
+	     if (evas_object_is_in_output_rect(obj, x, y, 1, 1) &&
+		 (obj->cur.visible) &&
+		 (evas_object_clippers_is_visible(obj)) &&
+		 (eina_list_data_find(ins, obj)) &&
+		 (!evas_event_passes_through(obj)) &&
+		 (!obj->clip.clipees) &&
+		 ((!obj->precise_is_inside) ||
+		  (evas_object_is_inside(obj, x, y))))
+	       {
+		  if ((px != x) || (py != y))
+		    {
                        ev.cur.canvas.x = e->pointer.x;
                        ev.cur.canvas.y = e->pointer.y;
                        _evas_event_havemap_adjust(obj, &ev.cur.canvas.x, &ev.cur.canvas.y, obj->mouse_grabbed);
-                       if (e->events_frozen <= 0)
-                         evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_MOVE, &ev);
-                    }
-               }
-             /* otherwise it has left the object */
-             else
-               {
+		       if (e->events_frozen <= 0)
+			 evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_MOVE, &ev);
+		    }
+	       }
+	     /* otherwise it has left the object */
+	     else
+	       {
                   if (obj->mouse_in)
                     {
                        obj->mouse_in = 0;
@@ -749,34 +725,34 @@ evas_event_feed_mouse_move(Evas *e, int x, int y, unsigned int timestamp, const 
                        ev2.canvas.y = e->pointer.y;
                        _evas_event_havemap_adjust(obj, &ev2.canvas.x, &ev2.canvas.y, obj->mouse_grabbed);
                        if (e->events_frozen <= 0)
-                         evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_OUT, &ev2);
+                          evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_OUT, &ev2);
                     }
-               }
-             if (e->delete_me) break;
-          }
+	       }
+	     if (e->delete_me) break;
+	  }
         _evas_post_event_callback_call(e);
 
-        _evas_object_event_new();
+	_evas_object_event_new();
 
-        if (copy) copy = eina_list_free(copy);
-        /* go thru our current list of ins */
-        EINA_LIST_FOREACH(ins, l, obj)
-          {
+	if (copy) copy = eina_list_free(copy);
+	/* go thru our current list of ins */
+	EINA_LIST_FOREACH(ins, l, obj)
+	  {
              ev3.canvas.x = e->pointer.x;
              ev3.canvas.y = e->pointer.y;
              _evas_event_havemap_adjust(obj, &ev3.canvas.x, &ev3.canvas.y, obj->mouse_grabbed);
-             /* if its not in the old list of ins send an enter event */
-             if (!eina_list_data_find(e->pointer.object.in, obj))
-               {
+	     /* if its not in the old list of ins send an enter event */
+	     if (!eina_list_data_find(e->pointer.object.in, obj))
+	       {
                   if (!obj->mouse_in)
                     {
                        obj->mouse_in = 1;
                        if (e->events_frozen <= 0)
-                         evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_IN, &ev3);
+                          evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_IN, &ev3);
                     }
-               }
-             if (e->delete_me) break;
-          }
+	       }
+	     if (e->delete_me) break;
+	  }
         if (e->pointer.mouse_grabbed == 0)
           {
              /* free our old list of ins */
@@ -830,22 +806,19 @@ evas_event_feed_mouse_in(Evas *e, unsigned int timestamp, const void *data)
    ins = evas_event_objects_event_list(e, NULL, e->pointer.x, e->pointer.y);
    EINA_LIST_FOREACH(ins, l, obj)
      {
-        if (_evas_object_event_visible_check(obj))
-          {
-             ev.canvas.x = e->pointer.x;
-             ev.canvas.y = e->pointer.y;
-             _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y, obj->mouse_grabbed);
-             if (!eina_list_data_find(e->pointer.object.in, obj))
+        ev.canvas.x = e->pointer.x;
+        ev.canvas.y = e->pointer.y;
+        _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y, obj->mouse_grabbed);
+	if (!eina_list_data_find(e->pointer.object.in, obj))
+	  {
+             if (!obj->mouse_in)
                {
-                  if (!obj->mouse_in)
-                    {
-                       obj->mouse_in = 1;
-                       if (e->events_frozen <= 0)
-                         evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_IN, &ev);
-                    }
+                  obj->mouse_in = 1;
+                  if (e->events_frozen <= 0)
+                     evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_IN, &ev);
                }
-          }
-        if (e->delete_me) break;
+	  }
+	if (e->delete_me) break;
      }
    /* free our old list of ins */
    e->pointer.object.in = eina_list_free(e->pointer.object.in);
@@ -886,13 +859,13 @@ evas_event_feed_mouse_out(Evas *e, unsigned int timestamp, const void *data)
    /* if our mouse button is grabbed to any objects */
    if (e->pointer.mouse_grabbed == 0)
      {
-        /* go thru old list of in objects */
-        Eina_List *l, *copy;
-        Evas_Object *obj;
+	/* go thru old list of in objects */
+	Eina_List *l, *copy;
+	Evas_Object *obj;
 
-        copy = evas_event_list_copy(e->pointer.object.in);
-        EINA_LIST_FOREACH(copy, l, obj)
-          {
+	copy = evas_event_list_copy(e->pointer.object.in);
+	EINA_LIST_FOREACH(copy, l, obj)
+	  {
              ev.canvas.x = e->pointer.x;
              ev.canvas.y = e->pointer.y;
              _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y, obj->mouse_grabbed);
@@ -902,14 +875,14 @@ evas_event_feed_mouse_out(Evas *e, unsigned int timestamp, const void *data)
                   if (!obj->delete_me)
                     {
                        if (e->events_frozen <= 0)
-                         evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_OUT, &ev);
+                          evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_OUT, &ev);
                     }
                }
-             if (e->delete_me) break;
-          }
-        if (copy) copy = eina_list_free(copy);
-        /* free our old list of ins */
-        e->pointer.object.in =  eina_list_free(e->pointer.object.in);
+	    if (e->delete_me) break;
+	  }
+	if (copy) copy = eina_list_free(copy);
+	/* free our old list of ins */
+	e->pointer.object.in =  eina_list_free(e->pointer.object.in);
         _evas_post_event_callback_call(e);
      }
    _evas_unwalk(e);
@@ -960,26 +933,23 @@ evas_event_feed_multi_down(Evas *e,
    copy = evas_event_list_copy(e->pointer.object.in);
    EINA_LIST_FOREACH(copy, l, obj)
      {
-        if (_evas_object_event_valid_check(obj))
-          {
-             ev.canvas.x = x;
-             ev.canvas.y = y;
-             ev.canvas.xsub = fx;
-             ev.canvas.ysub = fy;
-             _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y, obj->mouse_grabbed);
-             if (x != ev.canvas.x)
-               ev.canvas.xsub = ev.canvas.x; // fixme - lost precision
-             if (y != ev.canvas.y)
-               ev.canvas.ysub = ev.canvas.y; // fixme - lost precision
-             if (obj->pointer_mode != EVAS_OBJECT_POINTER_MODE_NOGRAB)
-               {
-                  obj->mouse_grabbed++;
-                  e->pointer.mouse_grabbed++;
-               }
-             if (e->events_frozen <= 0)
-               evas_object_event_callback_call(obj, EVAS_CALLBACK_MULTI_DOWN, &ev);
-          }
-        if (e->delete_me) break;
+        ev.canvas.x = x;
+        ev.canvas.y = y;
+        ev.canvas.xsub = fx;
+        ev.canvas.ysub = fy;
+        _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y, obj->mouse_grabbed);
+        if (x != ev.canvas.x) 
+          ev.canvas.xsub = ev.canvas.x; // fixme - lost precision
+        if (y != ev.canvas.y)
+          ev.canvas.ysub = ev.canvas.y; // fixme - lost precision
+	if (obj->pointer_mode != EVAS_OBJECT_POINTER_MODE_NOGRAB)
+	  {
+	     obj->mouse_grabbed++;
+             e->pointer.mouse_grabbed++;
+	  }
+	if (e->events_frozen <= 0)
+	  evas_object_event_callback_call(obj, EVAS_CALLBACK_MULTI_DOWN, &ev);
+	if (e->delete_me) break;
      }
    if (copy) eina_list_free(copy);
    _evas_post_event_callback_call(e);
@@ -987,12 +957,12 @@ evas_event_feed_multi_down(Evas *e,
 }
 
 EAPI void
-evas_event_feed_multi_up(Evas *e,
-                         int d, int x, int y,
+evas_event_feed_multi_up(Evas *e, 
+                         int d, int x, int y, 
                          double rad, double radx, double rady,
                          double pres, double ang,
                          double fx, double fy,
-                         Evas_Button_Flags flags, unsigned int timestamp,
+                         Evas_Button_Flags flags, unsigned int timestamp, 
                          const void *data)
 {
    Eina_List *l, *copy;
@@ -1026,19 +996,17 @@ evas_event_feed_multi_up(Evas *e,
    ev.flags = flags;
    ev.timestamp = timestamp;
    ev.event_flags = EVAS_EVENT_FLAG_NONE;
-
+   
    _evas_walk(e);
    copy = evas_event_list_copy(e->pointer.object.in);
    EINA_LIST_FOREACH(copy, l, obj)
      {
-        if (_evas_object_event_valid_check(obj))
-          {
         ev.canvas.x = x;
         ev.canvas.y = y;
         ev.canvas.xsub = fx;
         ev.canvas.ysub = fy;
         _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y, obj->mouse_grabbed);
-        if (x != ev.canvas.x)
+        if (x != ev.canvas.x) 
           ev.canvas.xsub = ev.canvas.x; // fixme - lost precision
         if (y != ev.canvas.y)
           ev.canvas.ysub = ev.canvas.y; // fixme - lost precision
@@ -1050,7 +1018,6 @@ evas_event_feed_multi_up(Evas *e,
           }
         if (e->events_frozen <= 0)
           evas_object_event_callback_call(obj, EVAS_CALLBACK_MULTI_UP, &ev);
-          }
         if (e->delete_me) break;
      }
    if (copy) copy = eina_list_free(copy);
@@ -1060,8 +1027,8 @@ evas_event_feed_multi_up(Evas *e,
 }
 
 EAPI void
-evas_event_feed_multi_move(Evas *e,
-                           int d, int x, int y,
+evas_event_feed_multi_move(Evas *e, 
+                           int d, int x, int y, 
                            double rad, double radx, double rady,
                            double pres, double ang,
                            double fx, double fy,
@@ -1075,17 +1042,17 @@ evas_event_feed_multi_move(Evas *e,
    e->last_timestamp = timestamp;
 
    if (!e->pointer.inside) return;
-
+   
    _evas_walk(e);
    /* if our mouse button is grabbed to any objects */
    if (e->pointer.mouse_grabbed > 0)
      {
-        /* go thru old list of in objects */
-        Eina_List *l, *copy;
+	/* go thru old list of in objects */
+	Eina_List *l, *copy;
         Evas_Event_Multi_Move ev;
         Evas_Object *obj;
 
-        _evas_object_event_new();
+	_evas_object_event_new();
 
         ev.device = d;
         ev.cur.output.x = x;
@@ -1108,38 +1075,41 @@ evas_event_feed_multi_move(Evas *e,
         copy = evas_event_list_copy(e->pointer.object.in);
         EINA_LIST_FOREACH(copy, l, obj)
           {
-             if (_evas_object_event_valid_check(obj))
+             if ((obj->cur.visible) &&
+                 (evas_object_clippers_is_visible(obj)) &&
+                 (!evas_event_passes_through(obj)) &&
+                 (!obj->clip.clipees))
                {
                   ev.cur.canvas.x = x;
                   ev.cur.canvas.y = y;
                   ev.cur.canvas.xsub = fx;
                   ev.cur.canvas.ysub = fy;
                   _evas_event_havemap_adjust(obj, &ev.cur.canvas.x, &ev.cur.canvas.y, obj->mouse_grabbed);
-                  if (x != ev.cur.canvas.x)
+                  if (x != ev.cur.canvas.x) 
                     ev.cur.canvas.xsub = ev.cur.canvas.x; // fixme - lost precision
                   if (y != ev.cur.canvas.y)
                     ev.cur.canvas.ysub = ev.cur.canvas.y; // fixme - lost precision
                   if (e->events_frozen <= 0)
                     evas_object_event_callback_call(obj, EVAS_CALLBACK_MULTI_MOVE, &ev);
-               }
+	       }
              if (e->delete_me) break;
-          }
+	  }
         _evas_post_event_callback_call(e);
      }
    else
      {
-        Eina_List *ins;
-        Eina_List *l, *copy;
-        Evas_Event_Multi_Move ev;
-        Evas_Object *obj;
+	Eina_List *ins;
+	Eina_List *l, *copy;
+	Evas_Event_Multi_Move ev;
+	Evas_Object *obj;
 
-        _evas_object_event_new();
+	_evas_object_event_new();
 
-        ev.device = d;
-        ev.cur.output.x = x;
-        ev.cur.output.y = y;
-        ev.cur.canvas.x = x;
-        ev.cur.canvas.y = y;
+	ev.device = d;
+	ev.cur.output.x = x;
+	ev.cur.output.y = y;
+	ev.cur.canvas.x = x;
+	ev.cur.canvas.y = y;
         ev.radius = rad;
         ev.radius_x = radx;
         ev.radius_y = rady;
@@ -1147,46 +1117,46 @@ evas_event_feed_multi_move(Evas *e,
         ev.angle = ang;
         ev.cur.canvas.xsub = fx;
         ev.cur.canvas.ysub = fy;
-        ev.data = (void *)data;
-        ev.modifiers = &(e->modifiers);
-        ev.locks = &(e->locks);
-        ev.timestamp = timestamp;
-        ev.event_flags = EVAS_EVENT_FLAG_NONE;
-
-        /* get all new in objects */
-        ins = evas_event_objects_event_list(e, NULL, x, y);
-        /* go thru old list of in objects */
-        copy = evas_event_list_copy(e->pointer.object.in);
-        EINA_LIST_FOREACH(copy, l, obj)
-          {
-             /* if its under the pointer and its visible and its in the new */
-             /* in list */
-             // FIXME: i don't think we need this
-             //	     evas_object_clip_recalc(obj);
-             if (evas_object_is_in_output_rect(obj, x, y, 1, 1) &&
-                 (obj->cur.visible) &&
-                 (evas_object_clippers_is_visible(obj)) &&
-                 (eina_list_data_find(ins, obj)) &&
-                 (!evas_event_passes_through(obj)) &&
-                 (!obj->clip.clipees) &&
-                 ((!obj->precise_is_inside) ||
-                  (evas_object_is_inside(obj, x, y))))
-               {
+	ev.data = (void *)data;
+	ev.modifiers = &(e->modifiers);
+	ev.locks = &(e->locks);
+	ev.timestamp = timestamp;
+	ev.event_flags = EVAS_EVENT_FLAG_NONE;
+        
+	/* get all new in objects */
+	ins = evas_event_objects_event_list(e, NULL, x, y);
+	/* go thru old list of in objects */
+	copy = evas_event_list_copy(e->pointer.object.in);
+	EINA_LIST_FOREACH(copy, l, obj)
+	  {
+	     /* if its under the pointer and its visible and its in the new */
+	     /* in list */
+// FIXME: i don't think we need this
+//	     evas_object_clip_recalc(obj);
+	     if (evas_object_is_in_output_rect(obj, x, y, 1, 1) &&
+		 (obj->cur.visible) &&
+		 (evas_object_clippers_is_visible(obj)) &&
+		 (eina_list_data_find(ins, obj)) &&
+		 (!evas_event_passes_through(obj)) &&
+		 (!obj->clip.clipees) &&
+		 ((!obj->precise_is_inside) ||
+		  (evas_object_is_inside(obj, x, y))))
+	       {
                   ev.cur.canvas.x = x;
                   ev.cur.canvas.y = y;
                   ev.cur.canvas.xsub = fx;
                   ev.cur.canvas.ysub = fy;
                   _evas_event_havemap_adjust(obj, &ev.cur.canvas.x, &ev.cur.canvas.y, obj->mouse_grabbed);
-                  if (x != ev.cur.canvas.x)
+                  if (x != ev.cur.canvas.x) 
                     ev.cur.canvas.xsub = ev.cur.canvas.x; // fixme - lost precision
                   if (y != ev.cur.canvas.y)
                     ev.cur.canvas.ysub = ev.cur.canvas.y; // fixme - lost precision
                   if (e->events_frozen <= 0)
                     evas_object_event_callback_call(obj, EVAS_CALLBACK_MULTI_MOVE, &ev);
-               }
-             if (e->delete_me) break;
-          }
-        if (copy) copy = eina_list_free(copy);
+	       }
+	     if (e->delete_me) break;
+	  }
+	if (copy) copy = eina_list_free(copy);
         if (e->pointer.mouse_grabbed == 0)
           {
              /* free our old list of ins */
@@ -1215,69 +1185,69 @@ evas_event_feed_key_down(Evas *e, const char *keyname, const char *key, const ch
    e->last_timestamp = timestamp;
    _evas_walk(e);
      {
-        Evas_Event_Key_Down ev;
-        int exclusive;
+	Evas_Event_Key_Down ev;
+	int exclusive;
 
-        _evas_object_event_new();
+	_evas_object_event_new();
 
-        exclusive = 0;
-        ev.keyname = (char *)keyname;
-        ev.data = (void *)data;
-        ev.modifiers = &(e->modifiers);
-        ev.locks = &(e->locks);
-        ev.key = key;
-        ev.string = string;
-        ev.compose = compose;
-        ev.timestamp = timestamp;
-        ev.event_flags = EVAS_EVENT_FLAG_NONE;
-        if (e->grabs)
-          {
-             Eina_List *l;
-             Evas_Key_Grab *g;
+	exclusive = 0;
+	ev.keyname = (char *)keyname;
+	ev.data = (void *)data;
+	ev.modifiers = &(e->modifiers);
+	ev.locks = &(e->locks);
+	ev.key = key;
+	ev.string = string;
+	ev.compose = compose;
+	ev.timestamp = timestamp;
+	ev.event_flags = EVAS_EVENT_FLAG_NONE;
+	if (e->grabs)
+	  {
+	     Eina_List *l;
+	     Evas_Key_Grab *g;
 
-             e->walking_grabs++;
-             EINA_LIST_FOREACH(e->grabs, l, g)
-               {
-                  if (g->just_added)
-                    {
-                       g->just_added = 0;
-                       continue;
-                    }
-                  if (g->delete_me) continue;
-                  if (((e->modifiers.mask & g->modifiers) ||
-                       (g->modifiers == e->modifiers.mask)) &&
-                      (!strcmp(keyname, g->keyname)))
-                    {
-                       if (!(e->modifiers.mask & g->not_modifiers))
-                         {
-                            if (e->events_frozen <= 0)
-                              evas_object_event_callback_call(g->object, EVAS_CALLBACK_KEY_DOWN, &ev);
-                            if (g->exclusive) exclusive = 1;
-                         }
-                    }
-                  if (e->delete_me) break;
-               }
-             e->walking_grabs--;
-             if (e->walking_grabs <= 0)
-               {
-                  while (e->delete_grabs > 0)
-                    {
-                       e->delete_grabs--;
-                       for (l = e->grabs; l;)
-                         {
-                            g = eina_list_data_get(l);
-                            l = eina_list_next(l);
-                            if (g->delete_me)
-                              evas_key_grab_free(g->object, g->keyname, g->modifiers, g->not_modifiers);
-                         }
-                    }
-               }
-          }
-        if ((e->focused) && (!exclusive))
-          {
-             if (e->events_frozen <= 0)
+	     e->walking_grabs++;
+	     EINA_LIST_FOREACH(e->grabs, l, g)
+	       {
+		  if (g->just_added)
+		    {
+		       g->just_added = 0;
+		       continue;
+		    }
+		  if (g->delete_me) continue;
+		  if (((e->modifiers.mask & g->modifiers) ||
+		       (g->modifiers == e->modifiers.mask)) &&
+		      (!strcmp(keyname, g->keyname)))
+		    {
+		       if (!(e->modifiers.mask & g->not_modifiers))
+			 {
+			    if (e->events_frozen <= 0)
+			      evas_object_event_callback_call(g->object, EVAS_CALLBACK_KEY_DOWN, &ev);
+			    if (g->exclusive) exclusive = 1;
+			 }
+		    }
+		  if (e->delete_me) break;
+	       }
+	     e->walking_grabs--;
+	     if (e->walking_grabs <= 0)
+	       {
+		  while (e->delete_grabs > 0)
+		    {
+		       e->delete_grabs--;
+		       for (l = e->grabs; l;)
+			 {
+			    g = eina_list_data_get(l);
+			    l = eina_list_next(l);
+			    if (g->delete_me)
+			      evas_key_grab_free(g->object, g->keyname, g->modifiers, g->not_modifiers);
+			 }
+		    }
+	       }
+	  }
+	if ((e->focused) && (!exclusive))
+	  {
+	     if (e->events_frozen <= 0)
                evas_object_event_callback_call(e->focused, EVAS_CALLBACK_KEY_DOWN, &ev);
-          }
+	  }
         _evas_post_event_callback_call(e);
      }
    _evas_unwalk(e);
@@ -1294,69 +1264,69 @@ evas_event_feed_key_up(Evas *e, const char *keyname, const char *key, const char
    e->last_timestamp = timestamp;
    _evas_walk(e);
      {
-        Evas_Event_Key_Up ev;
-        int exclusive;
+	Evas_Event_Key_Up ev;
+	int exclusive;
 
-        _evas_object_event_new();
+	_evas_object_event_new();
 
-        exclusive = 0;
-        ev.keyname = (char *)keyname;
-        ev.data = (void *)data;
-        ev.modifiers = &(e->modifiers);
-        ev.locks = &(e->locks);
-        ev.key = key;
-        ev.string = string;
-        ev.compose = compose;
-        ev.timestamp = timestamp;
-        ev.event_flags = EVAS_EVENT_FLAG_NONE;
-        if (e->grabs)
-          {
-             Eina_List *l;
-             Evas_Key_Grab *g;
+	exclusive = 0;
+	ev.keyname = (char *)keyname;
+	ev.data = (void *)data;
+	ev.modifiers = &(e->modifiers);
+	ev.locks = &(e->locks);
+	ev.key = key;
+	ev.string = string;
+	ev.compose = compose;
+	ev.timestamp = timestamp;
+	ev.event_flags = EVAS_EVENT_FLAG_NONE;
+	if (e->grabs)
+	  {
+	     Eina_List *l;
+	     Evas_Key_Grab *g;
 
-             e->walking_grabs++;
-             EINA_LIST_FOREACH(e->grabs, l, g)
-               {
-                  if (g->just_added)
-                    {
-                       g->just_added = 0;
-                       continue;
-                    }
-                  if (g->delete_me) continue;
-                  if (((e->modifiers.mask & g->modifiers) ||
-                       (g->modifiers == e->modifiers.mask)) &&
-                      (!((e->modifiers.mask & g->not_modifiers) ||
-                         (g->not_modifiers == ~e->modifiers.mask))) &&
-                      (!strcmp(keyname, g->keyname)))
-                    {
-                       if (e->events_frozen <= 0)
-                         evas_object_event_callback_call(g->object, EVAS_CALLBACK_KEY_UP, &ev);
-                       if (g->exclusive) exclusive = 1;
-                    }
-                  if (e->delete_me) break;
-               }
-             e->walking_grabs--;
-             if (e->walking_grabs <= 0)
-               {
-                  while (e->delete_grabs > 0)
-                    {
-                       Eina_List *ll, *l_next;
-                       Evas_Key_Grab *gr;
+	     e->walking_grabs++;
+	     EINA_LIST_FOREACH(e->grabs, l, g)
+	       {
+		  if (g->just_added)
+		    {
+		       g->just_added = 0;
+		       continue;
+		    }
+		  if (g->delete_me) continue;
+		  if (((e->modifiers.mask & g->modifiers) ||
+		       (g->modifiers == e->modifiers.mask)) &&
+		      (!((e->modifiers.mask & g->not_modifiers) ||
+			 (g->not_modifiers == ~e->modifiers.mask))) &&
+		      (!strcmp(keyname, g->keyname)))
+		    {
+		       if (e->events_frozen <= 0)
+			 evas_object_event_callback_call(g->object, EVAS_CALLBACK_KEY_UP, &ev);
+		       if (g->exclusive) exclusive = 1;
+		    }
+		  if (e->delete_me) break;
+	       }
+	     e->walking_grabs--;
+	     if (e->walking_grabs <= 0)
+	       {
+		  while (e->delete_grabs > 0)
+		    {
+		       Eina_List *ll, *l_next;
+		       Evas_Key_Grab *gr;
 
-                       e->delete_grabs--;
-                       EINA_LIST_FOREACH_SAFE(e->grabs, ll, l_next, gr)
-                         {
-                            if (gr->delete_me)
-                              evas_key_grab_free(gr->object, gr->keyname, gr->modifiers, gr->not_modifiers);
-                         }
-                    }
-               }
-          }
-        if ((e->focused) && (!exclusive))
-          {
-             if (e->events_frozen <= 0)
+		       e->delete_grabs--;
+		       EINA_LIST_FOREACH_SAFE(e->grabs, ll, l_next, gr)
+			 {
+			    if (gr->delete_me)
+			      evas_key_grab_free(gr->object, gr->keyname, gr->modifiers, gr->not_modifiers);
+			 }
+		    }
+	       }
+	  }
+	if ((e->focused) && (!exclusive))
+	  {
+	     if (e->events_frozen <= 0)
                evas_object_event_callback_call(e->focused, EVAS_CALLBACK_KEY_UP, &ev);
-          }
+	  }
         _evas_post_event_callback_call(e);
      }
    _evas_unwalk(e);
