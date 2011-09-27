@@ -413,6 +413,12 @@ evas_object_del(Evas_Object *obj)
    _evas_object_event_new();
    evas_object_event_callback_call(obj, EVAS_CALLBACK_DEL, NULL);
    _evas_post_event_callback_call(obj->layer->evas);
+   if (obj->mouse_grabbed > 0)
+      obj->layer->evas->pointer.mouse_grabbed -= obj->mouse_grabbed;
+   if ((obj->mouse_in) || (obj->mouse_grabbed > 0))
+      obj->layer->evas->pointer.object.in = eina_list_remove(obj->layer->evas->pointer.object.in, obj);
+   obj->mouse_grabbed = 0;
+   obj->mouse_in = 0;
    if (obj->name) evas_object_name_set(obj, NULL);
    if (!obj->layer)
      {
@@ -898,64 +904,66 @@ evas_object_hide(Evas_Object *obj)
              if ((!obj->smart.smart) ||
                  ((obj->cur.map) && (obj->cur.map->count == 4) && (obj->cur.usemap)))
                {
-                  if (evas_object_is_in_output_rect(obj,
+                  if (!obj->mouse_grabbed)
+                    {
+                       if (evas_object_is_in_output_rect(obj,
+                                                         obj->layer->evas->pointer.x,
+                                                         obj->layer->evas->pointer.y, 1, 1))
+                         evas_event_feed_mouse_move(obj->layer->evas,
                                                     obj->layer->evas->pointer.x,
-                                                    obj->layer->evas->pointer.y, 1, 1))
-                    evas_event_feed_mouse_move(obj->layer->evas,
-                                               obj->layer->evas->pointer.x,
-                                               obj->layer->evas->pointer.y,
-                                               obj->layer->evas->last_timestamp,
-                                               NULL);
-                  if (obj->delete_me) return;
-                  if (obj->mouse_grabbed > 0)
-                    {
-//		       if (obj->layer->evas->pointer.mouse_grabbed >= obj->mouse_grabbed)
-                       obj->layer->evas->pointer.mouse_grabbed -= obj->mouse_grabbed;
+                                                    obj->layer->evas->pointer.y,
+                                                    obj->layer->evas->last_timestamp,
+                                                    NULL);
                     }
-                  if ((obj->mouse_in) || (obj->mouse_grabbed > 0))
-                    {
-                       obj->layer->evas->pointer.object.in = eina_list_remove(obj->layer->evas->pointer.object.in, obj);
-                    }
-                  obj->mouse_grabbed = 0;
-                  if (obj->layer->evas->events_frozen > 0)
-                    {
-                       obj->mouse_in = 0;
-                       return;
-                    }
-                  if (obj->mouse_in)
-                    {
-                       Evas_Event_Mouse_Out ev;
+                  /* this is at odds to handling events when an obj is moved out of the mouse
+                   * ore resized out or clipped out. if mouse is grabbed - regardless of
+                   * visibility, mouse move events should keep happening and mouse up.
+                   * for better or worse it's at least consistent.
+                   if (obj->delete_me) return;
+                   if (obj->mouse_grabbed > 0)
+                   obj->layer->evas->pointer.mouse_grabbed -= obj->mouse_grabbed;
+                   if ((obj->mouse_in) || (obj->mouse_grabbed > 0))
+                   obj->layer->evas->pointer.object.in = eina_list_remove(obj->layer->evas->pointer.object.in, obj);
+                   obj->mouse_grabbed = 0;
+                   if (obj->layer->evas->events_frozen > 0)
+                   {
+                   obj->mouse_in = 0;
+                   return;
+                   }
+                   if (obj->mouse_in)
+                   {
+                   Evas_Event_Mouse_Out ev;
 
-                       _evas_object_event_new();
+                   _evas_object_event_new();
 
-                       obj->mouse_in = 0;
-                       ev.buttons = obj->layer->evas->pointer.button;
-                       ev.output.x = obj->layer->evas->pointer.x;
-                       ev.output.y = obj->layer->evas->pointer.y;
-                       ev.canvas.x = obj->layer->evas->pointer.x;
-                       ev.canvas.y = obj->layer->evas->pointer.y;
-                       ev.data = NULL;
-                       ev.modifiers = &(obj->layer->evas->modifiers);
-                       ev.locks = &(obj->layer->evas->locks);
-                       ev.timestamp = obj->layer->evas->last_timestamp;
-                       ev.event_flags = EVAS_EVENT_FLAG_NONE;
-                       evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_OUT, &ev);
-                       _evas_post_event_callback_call(obj->layer->evas);
-                    }
+                   obj->mouse_in = 0;
+                   ev.buttons = obj->layer->evas->pointer.button;
+                   ev.output.x = obj->layer->evas->pointer.x;
+                   ev.output.y = obj->layer->evas->pointer.y;
+                   ev.canvas.x = obj->layer->evas->pointer.x;
+                   ev.canvas.y = obj->layer->evas->pointer.y;
+                   ev.data = NULL;
+                   ev.modifiers = &(obj->layer->evas->modifiers);
+                   ev.locks = &(obj->layer->evas->locks);
+                   ev.timestamp = obj->layer->evas->last_timestamp;
+                   ev.event_flags = EVAS_EVENT_FLAG_NONE;
+                   evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_OUT, &ev);
+                   _evas_post_event_callback_call(obj->layer->evas);
+                   }
+                   */
                }
           }
      }
    else
      {
-        if (obj->mouse_grabbed > 0)
-          {
-//             if (obj->layer->evas->pointer.mouse_grabbed >= obj->mouse_grabbed)
-             obj->layer->evas->pointer.mouse_grabbed -= obj->mouse_grabbed;
-          }
-        if ((obj->mouse_in) || (obj->mouse_grabbed > 0))
-          obj->layer->evas->pointer.object.in = eina_list_remove(obj->layer->evas->pointer.object.in, obj);
-        obj->mouse_grabbed = 0;
-        obj->mouse_in = 0;
+        /*        
+                  if (obj->mouse_grabbed > 0)
+                  obj->layer->evas->pointer.mouse_grabbed -= obj->mouse_grabbed;
+                  if ((obj->mouse_in) || (obj->mouse_grabbed > 0))
+                  obj->layer->evas->pointer.object.in = eina_list_remove(obj->layer->evas->pointer.object.in, obj);
+                  obj->mouse_grabbed = 0;
+                  obj->mouse_in = 0;
+                  */
      }
    evas_object_inform_call_hide(obj);
 }
