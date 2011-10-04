@@ -107,8 +107,21 @@ evas_image_load_file_head_png(Image_Entry *ie, const char *file, const char *key
 	  *error = EVAS_LOAD_ERROR_GENERIC;
 	goto close_file;
      }
-   ie->w = (int) w32;
-   ie->h = (int) h32;
+   if (ie->load_opts.scale_down_by > 1)
+     {
+        ie->w = (int) w32 / ie->load_opts.scale_down_by ;
+        ie->h = (int) h32 / ie->load_opts.scale_down_by ;
+        if((ie->w < 1) || (ie->h < 1))
+          {
+             *error = EVAS_LOAD_ERROR_GENERIC;
+             goto close_file;
+          }
+     }
+   else
+     {
+        ie->w = (int) w32;
+        ie->h = (int) h32;
+     }
    if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS)) hasa = 1;
    if (color_type == PNG_COLOR_TYPE_RGB_ALPHA) hasa = 1;
    if (color_type == PNG_COLOR_TYPE_GRAY_ALPHA) hasa = 1;
@@ -137,7 +150,10 @@ evas_image_load_file_data_png(Image_Entry *ie, const char *file, const char *key
    unsigned char buf[PNG_BYTES_TO_CHECK];
    unsigned char **lines;
    char hasa;
-   int i;
+   int i, j;
+   int scale_ratio = 1, image_w = 0;
+   unsigned char *tmp_line;
+   unsigned char *src_ptr, *dst_ptr;
 
    hasa = 0;
    f = E_FOPEN(file, "rb");
@@ -184,6 +200,13 @@ evas_image_load_file_data_png(Image_Entry *ie, const char *file, const char *key
    png_get_IHDR(png_ptr, info_ptr, (png_uint_32 *) (&w32),
 		(png_uint_32 *) (&h32), &bit_depth, &color_type,
 		&interlace_type, NULL, NULL);
+   image_w = w32;
+   if (ie->load_opts.scale_down_by > 1)
+     {
+        scale_ratio = ie->load_opts.scale_down_by;
+        w32 /= scale_ratio;
+        h32 /= scale_ratio;
+     }
    evas_cache_image_surface_alloc(ie, w32, h32);
    surface = (unsigned char *) evas_cache_image_pixels(ie);
    if (!surface)
@@ -233,10 +256,47 @@ evas_image_load_file_data_png(Image_Entry *ie, const char *file, const char *key
 #endif
    lines = (unsigned char **) alloca(h * sizeof(unsigned char *));
 
-   for (i = 0; i < h; i++)
-     lines[i] = surface + (i * w * sizeof(DATA32));
-   png_read_image(png_ptr, lines);
-   png_read_end(png_ptr, info_ptr);
+   /* we read image line by line if scale down was set */
+   if (scale_ratio == 1)
+     {
+        for (i = 0; i < h; i++)
+          lines[i] = surface + (i * w * sizeof(DATA32));
+     }
+   else
+     {
+        tmp_line = (unsigned char *) malloc(image_w * sizeof(DATA32));
+     }
+
+   if (scale_ratio == 1)
+     {
+        png_read_image(png_ptr, lines);
+        png_read_end(png_ptr, info_ptr);
+     }
+   else
+     {
+        src_ptr = surface;
+        for (i = 0; i < h; i++)
+          {
+             png_read_row(png_ptr, tmp_line, NULL);
+             dst_ptr = tmp_line;
+             for (j = 0; j < w; j++)
+               {
+                  src_ptr[0] = dst_ptr[0];
+                  src_ptr[1] = dst_ptr[1];
+                  src_ptr[2] = dst_ptr[2];
+                  src_ptr[3] = dst_ptr[3];
+                  src_ptr += 4;
+                  dst_ptr += scale_ratio * 4;
+               }
+             for (j = 0; j < (scale_ratio - 1); j++)
+               {
+                  png_read_row(png_ptr, tmp_line, NULL);
+               }
+          }
+        if (tmp_line)
+          free(tmp_line);
+     }
+
    png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
    E_FCLOSE(f);
    evas_common_image_premul(ie);

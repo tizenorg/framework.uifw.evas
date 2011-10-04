@@ -259,7 +259,20 @@ evas_image_load_file_head_bmp(Image_Entry *ie, const char *file, const char *key
           *error = EVAS_LOAD_ERROR_GENERIC;
 	goto close_file;
      }
-   
+   /* It is not bad idea that bmp loader support scale down decoding
+    * because of memory issue in mobile world.
+    * But there are many bit count(bit per pixel) type in BMP format.
+    * Generally, 1,2,4,8 bit count have row risk of memory problem,
+    * so I add scale down feature only when bit count is 16 or 24 or 32 */
+   if (ie->load_opts.scale_down_by > 1)
+     {
+        if ((bit_count == 16) || (bit_count == 24) || (bit_count == 32))
+          {
+             w /= ie->load_opts.scale_down_by;
+             h /= ie->load_opts.scale_down_by;
+          }
+     }
+
    if (bit_count < 16)
      {
         if ((palette_size < 0) || (palette_size > 256)) pal_num = 256;
@@ -337,6 +350,7 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
    char hasa = 0;
    int x = 0, y = 0, w = 0, h = 0, planes = 0, bit_count = 0, image_size = 0,
      comp = 0, hdpi = 0, vdpi = 0, palette_size = -1, important_colors = 0;
+   int scale_ratio = 1, image_w = 0, image_h = 0;
    unsigned int offset = 0, head_size = 0;
    unsigned int *pal = NULL, pal_num = 0, *pix = NULL, *surface = NULL, fix,
      rmask = 0, gmask = 0, bmask = 0, amask = 0;
@@ -533,13 +547,37 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
           *error = EVAS_LOAD_ERROR_GENERIC;
 	goto close_file;
      }
-   
+   /* It is not bad idea that bmp loader support scale down decoding
+    * because of memory issue in mobile world.
+    * But there are many bit count(bit per pixel) type in BMP format.
+    * Generally, 1,2,4,8 bit count have row risk of memory problem,
+    * so I add scale down feature only when bit count is 16 or 24 or 32 */
+   if(ie->load_opts.scale_down_by > 1)
+     {
+        if ((bit_count == 16) || (bit_count == 24) || (bit_count == 32))
+          scale_ratio = ie->load_opts.scale_down_by;
+     }
+
+   if (scale_ratio > 1)
+     {
+        image_w = w;
+        image_h = h;
+        w /= scale_ratio;
+        h /= scale_ratio;
+
+        if ((w < 1) || (h < 1) )
+          {
+             *error = EVAS_LOAD_ERROR_GENERIC;
+             goto close_file;
+          }
+     }
+
    if ((w != (int)ie->w) || (h != (int)ie->h))
      {
 	*error = EVAS_LOAD_ERROR_GENERIC;
 	goto close_file;
      }
-   evas_cache_image_surface_alloc(ie, w, h);
+   evas_cache_image_surface_alloc(ie, ie->w, ie->h);
    surface = evas_cache_image_pixels(ie);
    if (!surface)
      {
@@ -892,22 +930,41 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
      }
    else if ((bit_count == 16) || (bit_count == 24) || (bit_count == 32))
      {
+        /* Row size is rounded up to a multiple of 4bytes */
+        int row_size = 0;
+        int read_line = 0; /* total read line */
+
+        row_size = ceil((double)(image_w * bit_count) / 32) * 4;
         if (comp == 0) // no compression
           {
              fseek(f, offset, SEEK_SET);
-             buffer = malloc(image_size + 8); // add 8 for padding to avoid checks
+             if (scale_ratio == 1)
+               buffer = malloc(image_size + 8); // add 8 for padding to avoid checks
+             else
+               buffer = malloc(row_size); // scale down is usually set because of memory issue, so read line by line
              if (!buffer)
                {
                   *error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
                   goto close_file;
                }
-             buffer_end = buffer + image_size;
+             if (scale_ratio == 1)
+               buffer_end = buffer + image_size;
+             else
+               buffer_end = buffer + row_size;
+
              p = buffer;
-             if (fread(buffer, image_size, 1, f) != 1) goto close_file;
+             if (scale_ratio == 1)
+               {
+                  if (fread(buffer, image_size, 1, f) != 1) goto close_file;
+               }
+             else
+               {
+                  if (fread(buffer, row_size, 1, f) != 1) goto close_file;
+               }
              if (bit_count == 16)
                {
                   unsigned short tmp;
-                  
+
                   pix = surface;
                   for (y = 0; y < h; y++)
                     {
@@ -920,13 +977,29 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
                             g = (tmp >> 2) & 0xf8; g |= g >> 5;
                             b = (tmp << 3) & 0xf8; b |= b >> 5;
                             *pix = ARGB_JOIN(0xff, r, g, b);
-                            p += 2;
+                            if (scale_ratio > 1)
+                              p += 2 * scale_ratio;
+                            else
+                              p += 2;
                             if (p >= buffer_end) break;
                             pix++;
                          }
-                       fix = (int)(((unsigned long)p) & 0x3);
-                       if (fix > 0) p += 4 - fix; // align row read
-                       if (p >= buffer_end) break;
+                       if (scale_ratio > 1)
+                         {
+                            read_line += scale_ratio;
+                            if (read_line >= image_h) break;
+
+                            fseek(f, row_size * (scale_ratio - 1), SEEK_CUR);
+                            if (fread(buffer, row_size, 1, f) != 1) goto close_file;
+                            p = buffer;
+                            buffer_end = buffer + row_size;
+                         }
+                       else
+                         {
+                            fix = (int)(((unsigned long)p) & 0x3);
+                            if (fix > 0) p += 4 - fix; // align row read
+                            if (p >= buffer_end) break;
+                         }
                     }
                }
              else if (bit_count == 24)
@@ -941,13 +1014,29 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
                             g = p[1];
                             r = p[2];
                             *pix = ARGB_JOIN(0xff, r, g, b);
-                            p += 3;
+                            if (scale_ratio > 1)
+                              p += 3 * scale_ratio;
+                            else
+                              p += 3;
                             if (p >= buffer_end) break;
                             pix++;
                          }
-                       fix = (int)(((unsigned long)p) & 0x3);
-                       if (fix > 0) p += 4 - fix; // align row read
-                       if (p >= buffer_end) break;
+                       if (scale_ratio > 1)
+                         {
+                            read_line += scale_ratio;
+                            if (read_line >= image_h) break;
+
+                            fseek(f, row_size * (scale_ratio - 1), SEEK_CUR);
+                            if (fread(buffer, row_size, 1, f) != 1) goto close_file;
+                            p = buffer;
+                            buffer_end = buffer + row_size;
+                         }
+                       else
+                         {
+                            fix = (int)(((unsigned long)p) & 0x3);
+                            if (fix > 0) p += 4 - fix; // align row read
+                            if (p >= buffer_end) break;
+                         }
                     }
                }
              else if (bit_count == 32)
@@ -966,13 +1055,29 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
                             if (a) none_zero_alpha = 1;
                             if (!hasa) a = 0xff;
                             *pix = ARGB_JOIN(a, r, g, b);
-                            p += 4;
+                            if (scale_ratio > 1)
+                              p += 4 * scale_ratio;
+                            else
+                              p += 4;
                             if (p >= buffer_end) break;
                             pix++;
                          }
-                       fix = (int)(((unsigned long)p) & 0x3);
-                       if (fix > 0) p += 4 - fix; // align row read
-                       if (p >= buffer_end) break;
+                       if (scale_ratio > 1)
+                         {
+                            read_line += scale_ratio;
+                            if (read_line >= image_h) break;
+
+                            fseek(f, row_size * (scale_ratio - 1), SEEK_CUR);
+                            if (fread(buffer, row_size, 1, f) != 1) goto close_file;
+                            p = buffer;
+                            buffer_end = buffer + row_size;
+                         }
+                       else
+                         {
+                            fix = (int)(((unsigned long)p) & 0x3);
+                            if (fix > 0) p += 4 - fix; // align row read
+                            if (p >= buffer_end) break;
+                         }
                     }
                   if (!none_zero_alpha)
                     {
@@ -996,15 +1101,32 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
              if (!read_uint(f, &bmask)) goto close_file;
 
              fseek(f, offset, SEEK_SET);
-             buffer = malloc(image_size + 8); // add 8 for padding to avoid checks
+
+             if (scale_ratio == 1)
+               buffer = malloc(image_size + 8); // add 8 for padding to avoid checks
+             else
+               buffer = malloc(row_size); // scale down is usually set because of memory issue, so read line by line
+
              if (!buffer)
                {
                   *error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
                   goto close_file;
                }
-             buffer_end = buffer + image_size;
+             if (scale_ratio == 1)
+               buffer_end = buffer + image_size;
+             else
+               buffer_end = buffer + row_size;
+
              p = buffer;
-             if (fread(buffer, image_size, 1, f) != 1) goto close_file;
+             if (scale_ratio == 1)
+               {
+                  if (fread(buffer, image_size, 1, f) != 1) goto close_file;
+               }
+             else
+               {
+                  if (fread(buffer, row_size, 1, f) != 1) goto close_file;
+               }
+
              if ((bit_count == 16) && 
                  (rmask == 0xf800) && (gmask == 0x07e0) && (bmask == 0x001f)
                  )
@@ -1023,13 +1145,28 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
                             g = (tmp >> 3) & 0xfc; g |= g >> 6;
                             b = (tmp << 3) & 0xf8; b |= b >> 5;
                             *pix = ARGB_JOIN(0xff, r, g, b);
-                            p += 2;
+                            if (scale_ratio > 1)
+                              p += 2 * scale_ratio;
+                            else
+                              p += 2;
                             if (p >= buffer_end) break;
                             pix++;
                          }
-                       fix = (int)(((unsigned long)p) & 0x3);
-                       if (fix > 0) p += 4 - fix; // align row read
-                       if (p >= buffer_end) break;
+                       if (scale_ratio > 1)
+                         {
+                            read_line += scale_ratio;
+                            if (read_line >= image_h) break;
+                            fseek(f, row_size * (scale_ratio - 1), SEEK_CUR);
+                            if (fread(buffer, row_size, 1, f) != 1) goto close_file;
+                            p = buffer;
+                            buffer_end = buffer + row_size;
+                         }
+                       else
+                         {
+                            fix = (int)(((unsigned long)p) & 0x3);
+                            if (fix > 0) p += 4 - fix; // align row read
+                            if (p >= buffer_end) break;
+                         }
                     }
                }
              else if ((bit_count == 16) && 
@@ -1050,13 +1187,28 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
                             g = (tmp >> 2) & 0xf8; g |= g >> 5;
                             b = (tmp << 3) & 0xf8; b |= b >> 5;
                             *pix = ARGB_JOIN(0xff, r, g, b);
-                            p += 2;
+                            if (scale_ratio > 1)
+                              p += 2 * scale_ratio;
+                            else
+                              p += 2;
                             if (p >= buffer_end) break;
                             pix++;
                          }
-                       fix = (int)(((unsigned long)p) & 0x3);
-                       if (fix > 0) p += 4 - fix; // align row read
-                       if (p >= buffer_end) break;
+                       if (scale_ratio > 1)
+                         {
+                            read_line += scale_ratio;
+                            if (read_line >= image_h) break;
+                            fseek(f, row_size * (scale_ratio - 1), SEEK_CUR);
+                            if (fread(buffer, row_size, 1, f) != 1) goto close_file;
+                            p = buffer;
+                            buffer_end = buffer + row_size;
+                         }
+                       else
+                         {
+                            fix = (int)(((unsigned long)p) & 0x3);
+                            if (fix > 0) p += 4 - fix; // align row read
+                            if (p >= buffer_end) break;
+                         }
                     }
                }
              else if (bit_count == 32)
@@ -1073,13 +1225,28 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
                             a = p[3];
                             if (!hasa) a = 0xff;
                             *pix = ARGB_JOIN(a, r, g, b);
-                            p += 4;
+                            if (scale_ratio > 1)
+                              p += 4 * scale_ratio;
+                            else
+                              p += 4;
                             if (p >= buffer_end) break;
                             pix++;
                          }
-                       fix = (int)(((unsigned long)p) & 0x3);
-                       if (fix > 0) p += 4 - fix; // align row read
-                       if (p >= buffer_end) break;
+                       if (scale_ratio > 1)
+                         {
+                            read_line += scale_ratio;
+                            if (read_line >= image_h) break;
+                            fseek(f, row_size * (scale_ratio - 1), SEEK_CUR);
+                            if (fread(buffer, row_size, 1, f) != 1) goto close_file;
+                            p = buffer;
+                            buffer_end = buffer + row_size;
+                         }
+                       else
+                         {
+                            fix = (int)(((unsigned long)p) & 0x3);
+                            if (fix > 0) p += 4 - fix; // align row read
+                            if (p >= buffer_end) break;
+                         }
                     }
                }
              else
