@@ -350,9 +350,9 @@ void *alloca (size_t);
 
 /*****************************************************************************/
 
-typedef unsigned long long              DATA64;
-typedef unsigned int                    DATA32;
-typedef unsigned short                  DATA16;
+typedef unsigned long long		DATA64;
+typedef unsigned int			DATA32;
+typedef unsigned short			DATA16;
 typedef unsigned char                   DATA8;
 
 typedef struct _Image_Entry             Image_Entry;

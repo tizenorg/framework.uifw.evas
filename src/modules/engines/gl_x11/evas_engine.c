@@ -2678,8 +2678,7 @@ eng_gl_make_current(void *data, void *surface, void *context)
    // Set the current surface/context
    ctx->current_sfc = sfc;
    sfc->current_ctx = ctx;
-
-   current_evgl_ctx = ctx;
+   current_evgl_ctx = ctx; 
 
    return 1;
 }
