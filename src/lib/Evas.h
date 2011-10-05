@@ -7337,7 +7337,6 @@ EAPI Eina_Bool evas_object_image_animated_get(const Evas_Object *obj);
  * @since 1.1.0
  */
 EAPI int evas_object_image_animated_frame_count_get(const Evas_Object *obj);
-EINA_DEPRECATED EAPI int evas_object_image_animated_frame_num_get(const Evas_Object *obj);
 
 /**
  * Get the kind of looping the image object does.
