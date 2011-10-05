@@ -289,6 +289,20 @@ evas_module_register(const Evas_Module_Api *module, Evas_Module_Type type)
    return EINA_TRUE;
 }
 
+Eina_List *
+evas_module_engine_list(void)
+{
+   Evas_Module *em;
+   Eina_List *r = NULL;
+   Eina_Array_Iterator iterator;
+   unsigned int i;
+
+   EINA_ARRAY_ITER_NEXT(evas_engines, i, em, iterator)
+     r = eina_list_append(r, em->definition->name);
+
+   return r;
+}
+
 Eina_Bool
 evas_module_unregister(const Evas_Module_Api *module, Evas_Module_Type type)
 {
@@ -553,4 +567,16 @@ _evas_module_engine_inherit(Evas_Func *funcs, char *name)
 	  }
      }
    return 0;
+}
+
+static Eina_Prefix *pfx = NULL;
+
+EAPI const char *
+_evas_module_libdir_get(void)
+{
+   if (!pfx) pfx = eina_prefix_new
+      (NULL, _evas_module_libdir_get, "EVAS", "evas", NULL,
+       PACKAGE_BIN_DIR, PACKAGE_LIB_DIR, PACKAGE_DATA_DIR, PACKAGE_DATA_DIR);
+   if (!pfx) return NULL;
+   return eina_prefix_lib_get(pfx);
 }

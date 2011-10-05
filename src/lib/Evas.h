@@ -296,6 +296,8 @@ Recommended reading:
 @author Myoungwoon Roy Kim(roy_kim) <myoungwoon.kim@@samsung.com> <myoungwoon@@gmail.com>
 @author Thierry el Borgi <thierry@@substantiel.fr>
 @author ChunEon Park <hermet@@hermet.pe.kr>
+@author Christopher 'devilhorns' Michael <cpmichael1@comcast.net>
+@author Seungsoo Woo <om101.woo@samsung.com>
 
 Please contact <enlightenment-devel@lists.sourceforge.net> to get in
 contact with the developers and maintainers.
@@ -428,6 +430,7 @@ typedef enum _Evas_Callback_Type
     * More Evas object event types - see evas_object_event_callback_add():
     */
    EVAS_CALLBACK_IMAGE_UNLOADED, /**< Image data has been unloaded (by some mechanims in Evas that throw out original image data) */
+   EVAS_CALLBACK_TOUCH, /**< Touch Event */
 
    EVAS_CALLBACK_LAST /**< kept as last element/sentinel -- not really an event */
 } Evas_Callback_Type; /**< The types of events triggering a callback */
@@ -486,6 +489,29 @@ typedef enum _Evas_Event_Flags
 } Evas_Event_Flags; /**< Flags for Events */
 
 /**
+ * State of Evas_Coord_Touch_Point
+ */
+typedef enum _Evas_Touch_Point_State
+{
+   EVAS_TOUCH_POINT_DOWN, /**< Touch point is pressed down */
+   EVAS_TOUCH_POINT_UP, /**< Touch point is released */
+   EVAS_TOUCH_POINT_MOVE, /**< Touch point is moved */
+   EVAS_TOUCH_POINT_STILL, /**< Touch point is not moved after pressed */
+   EVAS_TOUCH_POINT_CANCEL /**< Touch point is calcelled */
+} Evas_Touch_Point_State;
+
+/**
+ * Types for Evas_Touch_Event
+ */
+typedef enum _Evas_Event_Touch_Type
+{
+   EVAS_EVENT_TOUCH_BEGIN, /**< Begin touch event with pressed new touch point */
+   EVAS_EVENT_TOUCH_END, /**< End touch event with released touch point */
+   EVAS_EVENT_TOUCH_MOVE, /**< Any touch point in the touch_points list is moved */
+   EVAS_EVENT_TOUCH_CANCEL /**< Touch event is cancelled */
+} Evas_Event_Touch_Type;
+
+/**
  * Flags for Font Hinting
  * @ingroup Evas_Font_Group
  */
@@ -508,7 +534,9 @@ typedef enum _Evas_Colorspace
    EVAS_COLORSPACE_YCBCR422P709_PL,/**< YCbCr 4:2:2 Planar, ITU.BT-709 specifications. The data pointed to is just an array of row pointer, pointing to the Y rows, then the Cb, then Cr rows */
    EVAS_COLORSPACE_RGB565_A5P, /**< 16bit rgb565 + Alpha plane at end - 5 bits of the 8 being used per alpha byte */
    EVAS_COLORSPACE_GRY8, /**< 8bit grayscale */
-   EVAS_COLORSPACE_YCBCR422601_PL /**<  YCbCr 4:2:2, ITU.BT-601 specifications. The data poitned to is just an array of row pointer, pointing to line of Y,Cb,Y,Cr bytes */
+   EVAS_COLORSPACE_YCBCR422601_PL, /**<  YCbCr 4:2:2, ITU.BT-601 specifications. The data poitned to is just an array of row pointer, pointing to line of Y,Cb,Y,Cr bytes */
+   EVAS_COLORSPACE_YCBCR420NV12601_PL, /**< YCbCr 4:2:0, ITU.BT-601 specification. The data pointed to is just an array of row pointer, pointing to the Y rows, then the Cb,Cr rows. */
+   EVAS_COLORSPACE_YCBCR420TM12601_PL, /**< YCbCr 4:2:0, ITU.BT-601 specification. The data pointed to is just an array of tiled row pointer, pointing to the Y rows, then the Cb,Cr rows. */
 } Evas_Colorspace; /**< Colorspaces for pixel data supported by Evas */
 
 /**
@@ -530,6 +558,7 @@ typedef struct _Evas_Point                   Evas_Point; /**< integer point */
 
 typedef struct _Evas_Coord_Point             Evas_Coord_Point;  /**< Evas_Coord point */
 typedef struct _Evas_Coord_Precision_Point   Evas_Coord_Precision_Point; /**< Evas_Coord point with sub-pixel precision */
+typedef struct _Evas_Coord_Touch_Point       Evas_Coord_Touch_Point; /**< Evas_Coord point with touch type and id */
 
 typedef struct _Evas_Position                Evas_Position; /**< associates given point in Canvas and Output */
 typedef struct _Evas_Precision_Position      Evas_Precision_Position; /**< associates given point in Canvas and Output, with sub-pixel precision */
@@ -589,6 +618,17 @@ typedef struct _Evas_Modifier       Evas_Modifier; /**< An opaque type containin
 typedef struct _Evas_Lock           Evas_Lock; /**< An opaque type containing information on which lock keys are registered in an Evas canvas */
 typedef struct _Evas_Smart          Evas_Smart; /**< An Evas Smart Object handle */
 typedef struct _Evas_Native_Surface Evas_Native_Surface; /**< A generic datatype for engine specific native surface information */
+
+ /**
+  * @typedef Evas_Video_Surface
+  *
+  * A generic datatype for video specific surface information
+  * @see evas_object_image_video_surface_set
+  * @see evas_object_image_video_surface_get
+  * @since 1.1.0
+  */
+typedef struct _Evas_Video_Surface  Evas_Video_Surface;
+
 typedef unsigned long long          Evas_Modifier_Mask; /**< An Evas modifier mask type */
 
 typedef int                         Evas_Coord;
@@ -617,6 +657,13 @@ struct _Evas_Coord_Precision_Point
 {
    Evas_Coord x, y;
    double xsub, ysub;
+};
+
+struct _Evas_Coord_Touch_Point
+{
+   Evas_Coord x, y;
+   int id; /**< id in order to distinguish each point */
+   Evas_Touch_Point_State state;
 };
 
 struct _Evas_Position
@@ -655,6 +702,7 @@ typedef struct _Evas_Event_Multi_Move Evas_Event_Multi_Move; /**< Event structur
 typedef struct _Evas_Event_Key_Down   Evas_Event_Key_Down; /**< Event structure for #EVAS_CALLBACK_KEY_DOWN event callbacks */
 typedef struct _Evas_Event_Key_Up     Evas_Event_Key_Up; /**< Event structure for #EVAS_CALLBACK_KEY_UP event callbacks */
 typedef struct _Evas_Event_Hold       Evas_Event_Hold; /**< Event structure for #EVAS_CALLBACK_HOLD event callbacks */
+typedef struct _Evas_Event_Touch      Evas_Event_Touch; /**< Event structure for #EVAS_CALLBACK_TOUCH event callbacks */
 
 typedef enum _Evas_Load_Error
 {
@@ -726,6 +774,30 @@ struct _Evas_Native_Surface
        unsigned int   x, y, w, h; /**< region inside the texture to use (image size is assumed as texture size, with 0, 0 being the top-left and co-ordinates working down to the right and bottom being positive) */
      } opengl;
    } data;
+};
+
+/**
+ * @def EVAS_VIDEO_SURFACE_VERSION
+ * Magic version number to know what the video surf struct looks like
+ * @since 1.1.0
+ */
+#define EVAS_VIDEO_SURFACE_VERSION 1
+
+typedef void (*Evas_Video_Cb)(void *data, Evas_Object *obj, const Evas_Video_Surface *surface);
+typedef void (*Evas_Video_Coord_Cb)(void *data, Evas_Object *obj, const Evas_Video_Surface *surface, Evas_Coord a, Evas_Coord b);
+
+struct _Evas_Video_Surface
+{
+   int version;
+
+   Evas_Video_Coord_Cb move; /**< Move the video surface to this position */
+   Evas_Video_Coord_Cb resize; /**< Resize the video surface to that size */
+   Evas_Video_Cb show; /**< Show the video overlay surface */
+   Evas_Video_Cb hide; /**< Hide the video overlay surface */
+   Evas_Video_Cb update_pixels; /**< Please update the Evas_Object_Image pixels when called */
+
+   Evas_Object   *parent;
+   void          *data;
 };
 
 #define EVAS_LAYER_MIN -32768 /**< bottom-most layer number */
@@ -991,6 +1063,14 @@ struct _Evas_Event_Hold /** Hold change event */
    Evas_Device      *dev;
 };
 
+struct _Evas_Event_Touch /** Touch event */
+{
+   Eina_List            *points; /**< Evas_Coord_Touch_Point list */
+   Evas_Modifier        *modifiers;
+   unsigned int          timestamp;
+   Evas_Event_Touch_Type type; /**< Type for Evas_Event_Touch */
+};
+
 /**
  * How the mouse pointer should be handled by Evas.
  *
@@ -1030,7 +1110,7 @@ typedef void      (*Evas_Async_Events_Put_Cb)(void *target, Evas_Callback_Type t
  * @return The init counter value.
  *
  * This function initializes Evas and increments a counter of the
- * number of calls to it. It returs the new counter's value.
+ * number of calls to it. It returns the new counter's value.
  *
  * @see evas_shutdown().
  *
@@ -3327,6 +3407,7 @@ EAPI Eina_Bool         evas_object_visible_get           (const Evas_Object *obj
  * @param a   The alpha component of the given color.
  *
  * @see evas_object_color_get() (for an example)
+ * @note These color values are expected to be premultiplied by @p a.
  *
  * @ingroup Evas_Object_Group_Basic
  */
@@ -3347,8 +3428,9 @@ EAPI void              evas_object_color_set             (Evas_Object *obj, int 
  *
  * Retrieves the “main” color's RGB component (and alpha channel)
  * values, <b>which range from 0 to 255</b>. For the alpha channel,
- * which defines the object's transparency level, the former value
- * means totally trasparent, while the latter means opaque.
+ * which defines the object's transparency level, 0 means totally
+ * trasparent, while 255 means opaque. These color values are
+ * premultiplied by the alpha value.
  *
  * Usually you’ll use this attribute for text and rectangle objects,
  * where the “main” color is their unique one. If set for objects
@@ -7015,6 +7097,30 @@ EAPI void                     evas_object_image_native_surface_set     (Evas_Obj
 EAPI Evas_Native_Surface     *evas_object_image_native_surface_get     (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
 
 /**
+ * Set the video surface linked to a given image of the canvas
+ *
+ * @param obj The given canvas pointer.
+ * @param surf The new video surface.
+ * @since 1.1.0
+ *
+ * This function link a video surface to a given canvas image.
+ *
+ */
+EAPI void                     evas_object_image_video_surface_set      (Evas_Object *obj, Evas_Video_Surface *surf) EINA_ARG_NONNULL(1, 2);
+
+/**
+ * Get the video surface linekd to a given image of the canvas
+ *
+ * @param obj The given canvas pointer.
+ * @return The video surface of the given canvas image.
+ * @since 1.1.0
+ *
+ * This function returns the video surface linked to a given canvas image.
+ *
+ */
+EAPI const Evas_Video_Surface *evas_object_image_video_surface_get      (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+
+/**
  * Set the scale hint of a given image of the canvas.
  *
  * @param obj The given image object pointer.
@@ -7205,7 +7311,7 @@ EAPI Eina_Bool evas_object_image_extension_can_load_fast_get(const char *file);
  * @endcode
  * 
  * @see evas_object_image_animated_get()
- * @see evas_object_image_animated_frame_num_get() 
+ * @see evas_object_image_animated_frame_count_get() 
  * @see evas_object_image_animated_loop_type_get()
  * @see evas_object_image_animated_loop_count_get()
  * @see evas_object_image_animated_frame_duration_get()
@@ -7223,7 +7329,7 @@ EAPI Eina_Bool evas_object_image_animated_get(const Evas_Object *obj);
  * This returns total number of frames the image object supports (if animated)
  * 
  * @see evas_object_image_animated_get()
- * @see evas_object_image_animated_frame_num_get() 
+ * @see evas_object_image_animated_frame_count_get() 
  * @see evas_object_image_animated_loop_type_get()
  * @see evas_object_image_animated_loop_count_get()
  * @see evas_object_image_animated_frame_duration_get()
@@ -7249,7 +7355,7 @@ EINA_DEPRECATED EAPI int evas_object_image_animated_frame_num_get(const Evas_Obj
  * The default type is EVAS_IMAGE_ANIMATED_HINT_LOOP.
  *
  * @see evas_object_image_animated_get()
- * @see evas_object_image_animated_frame_num_get() 
+ * @see evas_object_image_animated_frame_count_get() 
  * @see evas_object_image_animated_loop_type_get()
  * @see evas_object_image_animated_loop_count_get()
  * @see evas_object_image_animated_frame_duration_get()
@@ -7272,7 +7378,7 @@ EAPI Evas_Image_Animated_Loop_Hint evas_object_image_animated_loop_type_get(cons
  * the number of times it loops).
  *
  * @see evas_object_image_animated_get()
- * @see evas_object_image_animated_frame_num_get() 
+ * @see evas_object_image_animated_frame_count_get() 
  * @see evas_object_image_animated_loop_type_get()
  * @see evas_object_image_animated_loop_count_get()
  * @see evas_object_image_animated_frame_duration_get()
@@ -7296,7 +7402,7 @@ EAPI int evas_object_image_animated_loop_count_get(const Evas_Object *obj);
  * frame2's duration
  *
  * @see evas_object_image_animated_get()
- * @see evas_object_image_animated_frame_num_get() 
+ * @see evas_object_image_animated_frame_count_get() 
  * @see evas_object_image_animated_loop_type_get()
  * @see evas_object_image_animated_loop_count_get()
  * @see evas_object_image_animated_frame_duration_get()
@@ -7315,7 +7421,7 @@ EAPI double evas_object_image_animated_frame_duration_get(const Evas_Object *obj
  * frame.
  *
  * @see evas_object_image_animated_get()
- * @see evas_object_image_animated_frame_num_get() 
+ * @see evas_object_image_animated_frame_count_get() 
  * @see evas_object_image_animated_loop_type_get()
  * @see evas_object_image_animated_loop_count_get()
  * @see evas_object_image_animated_frame_duration_get()
@@ -9752,6 +9858,24 @@ EAPI void              evas_object_smart_calculate       (Evas_Object *obj) EINA
  */
 EAPI void              evas_smart_objects_calculate      (Evas *e);
 
+/**
+ * This gets the internal counter that counts the number of smart calculations
+ * 
+ * @param e The canvas to get the calculate counter from
+ * 
+ * Whenever evas performs smart object calculations on the whole canvas
+ * it increments a counter by 1. This is the smart object calculate counter
+ * that this function returns the value of. It starts at the value of 0 and
+ * will increase (and eventually wrap around to negative values and so on) by
+ * 1 every time objects are calculated. You can use this counter to ensure
+ * you dont re-do calculations withint the same calculation generation/run
+ * if the calculations maybe cause self-feeding effects.
+ * 
+ * @ingroup Evas_Smart_Object_Group
+ * @since 1.1
+ */
+EAPI int               evas_smart_objects_calculate_count_get (const Evas *e);
+   
 /**
  * Moves all children objects of a given smart object relative to a
  * given offset.

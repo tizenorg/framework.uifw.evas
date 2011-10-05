@@ -218,7 +218,7 @@ struct _Evas_Object_Textblock_Node_Text
    Evas_Object_Textblock_Node_Format  *format_node;
    Evas_Object_Textblock_Paragraph    *par;
    Eina_Bool                           dirty : 1;
-   Eina_Bool                           new : 1;
+   Eina_Bool                           is_new : 1;
 };
 
 struct _Evas_Object_Textblock_Node_Format
@@ -231,7 +231,7 @@ struct _Evas_Object_Textblock_Node_Format
    unsigned char                       anchor : 2;
    Eina_Bool                           visible : 1;
    Eina_Bool                           format_change : 1;
-   Eina_Bool                           new : 1;
+   Eina_Bool                           is_new : 1;
 };
 
 #define ANCHOR_NONE 0
@@ -1167,7 +1167,7 @@ _format_command(Evas_Object *obj, Evas_Object_Textblock_Format *fmt, const char 
           {
              fmt->font.fdesc = evas_font_desc_new();
           }
-        else if (!fmt->font.fdesc->new)
+        else if (!fmt->font.fdesc->is_new)
           {
              Evas_Font_Description *old = fmt->font.fdesc;
              fmt->font.fdesc = evas_font_desc_dup(fmt->font.fdesc);
@@ -3529,11 +3529,12 @@ _layout_par(Ctxt *c)
    /* Check if we need to skip this paragraph because it's already layouted
     * correctly, and mark handled nodes as dirty. */
    c->par->line_no = c->line_no;
+
    if (c->par->text_node)
      {
         /* Skip this paragraph if width is the same, there is no ellipsis
          * and we aren't just calculating. */
-        if (!c->par->text_node->new && !c->par->text_node->dirty &&
+        if (!c->par->text_node->is_new && !c->par->text_node->dirty &&
               !c->width_changed && c->par->lines &&
               !c->o->have_ellipsis)
           {
@@ -3546,7 +3547,7 @@ _layout_par(Ctxt *c)
              return 0;
           }
         c->par->text_node->dirty = EINA_FALSE;
-        c->par->text_node->new = EINA_FALSE;
+        c->par->text_node->is_new = EINA_FALSE;
         c->par->rendered = EINA_FALSE;
 
         /* Merge back and clear the paragraph */
@@ -3822,7 +3823,7 @@ _format_changes_invalidate_text_nodes(Ctxt *c)
    int balance = 0;
    while (fnode)
      {
-        if (fnode->new)
+        if (fnode->is_new)
           {
              const char *fstr = fnode->orig_format;
              /* balance < 0 means we gave up and everything should be
@@ -3932,7 +3933,7 @@ _layout_pre(Ctxt *c, int *style_pad_l, int *style_pad_r, int *style_pad_t,
 
              /* If it's not a new paragraph, either update it or skip it.
               * Remove all the paragraphs that were deleted */
-             if (!n->new)
+             if (!n->is_new)
                {
                   /* Remove all the deleted paragraphs at this point */
                   while (c->par->text_node != n)
@@ -4025,7 +4026,7 @@ _layout_pre(Ctxt *c, int *style_pad_l, int *style_pad_r, int *style_pad_t,
                     {
                        off = 0;
                     }
-                  fnode->new = EINA_FALSE;
+                  fnode->is_new = EINA_FALSE;
                   fnode = _NODE_FORMAT(EINA_INLIST_GET(fnode)->next);
                }
              _layout_text_append(c, c->fmt, n, start, -1, o->repch);
@@ -5126,7 +5127,7 @@ _evas_textblock_nodes_merge(Evas_Object_Textblock *o, Evas_Object_Textblock_Node
       to->par->text_node = NULL;
    to->par = NULL;
 
-   to->new = EINA_TRUE;
+   to->is_new = EINA_TRUE;
 
    _evas_textblock_cursors_set_node(o, from, to);
    _evas_textblock_node_text_remove(o, from);
@@ -6519,7 +6520,7 @@ _evas_textblock_node_text_new(void)
    n->unicode = eina_ustrbuf_new();
    /* We want to layout each paragraph at least once. */
    n->dirty = EINA_TRUE;
-   n->new = EINA_TRUE;
+   n->is_new = EINA_TRUE;
 
    return n;
 }
@@ -6916,7 +6917,7 @@ _evas_textblock_node_format_new(Evas_Object_Textblock *o, const char *_format)
      {
         o->anchors_item = eina_list_append(o->anchors_item, n);
      }
-   n->new = EINA_TRUE;
+   n->is_new = EINA_TRUE;
 
    return n;
 }
@@ -7052,7 +7053,7 @@ evas_textblock_cursor_format_append(Evas_Textblock_Cursor *cur, const char *form
           {
              /* Handle visible format nodes here */
              cur->node->dirty = EINA_TRUE;
-             n->new = EINA_FALSE;
+             n->is_new = EINA_FALSE;
           }
      }
    else
@@ -7960,12 +7961,13 @@ evas_textblock_cursor_line_geometry_get(const Evas_Textblock_Cursor *cur, Evas_C
 EAPI Eina_Bool
 evas_textblock_cursor_visible_range_get(Evas_Textblock_Cursor *start, Evas_Textblock_Cursor *end)
 {
+   Evas *e;
    Evas_Coord cy, ch;
    Evas_Object *obj = start->obj;
    TB_HEAD_RETURN(EINA_FALSE);
-   /* Clip is relative to the object */
-   cy = obj->cur.cache.clip.y - obj->cur.geometry.y;
-   ch = obj->cur.cache.clip.h;
+   e = evas_object_evas_get(obj);
+   cy = 0 - obj->cur.geometry.y;
+   ch = e->viewport.h;
    evas_textblock_cursor_line_coord_set(start, cy);
    evas_textblock_cursor_line_coord_set(end, cy + ch);
    evas_textblock_cursor_line_char_last(end);
@@ -8270,14 +8272,17 @@ _evas_textblock_cursor_range_in_line_geometry_get(
         Evas_Coord x1, w1, x2, w2;
         Evas_Coord x, w, y, h;
         Evas_Object_Textblock_Text_Item *ti;
-        int ret;
+        int ret = 0;
 
         ti = _ITEM_TEXT(it1);
-        ret = cur->ENFN->font_pen_coords_get(cur->ENDT,
-              ti->parent.format->font.font,
-              &ti->text_props,
-              start,
-              &x1, &y, &w1, &h);
+        if (ti->parent.format->font.font)
+          {
+             ret = cur->ENFN->font_pen_coords_get(cur->ENDT,
+                   ti->parent.format->font.font,
+                   &ti->text_props,
+                   start,
+                   &x1, &y, &w1, &h);
+          }
         if (!ret)
           {
              return NULL;
@@ -8742,6 +8747,17 @@ evas_object_textblock_style_insets_get(const Evas_Object *obj, Evas_Coord *l, Ev
    if (b) *b = o->style_pad.b;
 }
 
+/** @internal
+ * FIXME: DELETE ME! DELETE ME!
+ * This is an ugly workaround to get around the fact that
+ * evas_object_textblock_coords_recalc isn't really called when it's supposed
+ * to. When that bug is fixed please remove this. */
+static void
+_workaround_object_coords_recalc(void *data __UNUSED__, Evas *e __UNUSED__, Evas_Object *obj, void *event_info __UNUSED__)
+{
+   evas_object_textblock_coords_recalc(obj);
+}
+
 /* all nice and private */
 static void
 evas_object_textblock_init(Evas_Object *obj)
@@ -8777,6 +8793,8 @@ evas_object_textblock_init(Evas_Object *obj)
    o = (Evas_Object_Textblock *)(obj->object_data);
    o->cursor->obj = obj;
    o->legacy_newline = EINA_TRUE;
+   evas_object_event_callback_priority_add(obj, EVAS_CALLBACK_RESIZE, -1000,
+         _workaround_object_coords_recalc, NULL);
 }
 
 static void *

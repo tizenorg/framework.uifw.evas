@@ -1064,6 +1064,9 @@ eng_image_colorspace_set(void *data, void *image, int cspace)
 	break;
       case EVAS_COLORSPACE_YCBCR422P601_PL:
       case EVAS_COLORSPACE_YCBCR422P709_PL:
+      case EVAS_COLORSPACE_YCBCR422601_PL:
+      case EVAS_COLORSPACE_YCBCR420NV12601_PL:
+      case EVAS_COLORSPACE_YCBCR420TM12601_PL:
         if (im->tex) evas_gl_common_texture_free(im->tex);
         im->tex = NULL;
 	if (im->cs.data)
@@ -1707,9 +1710,18 @@ eng_image_size_set(void *data, void *image, int w, int h)
         return image;
      }
    im_old = image;
-   if ((eng_image_colorspace_get(data, image) == EVAS_COLORSPACE_YCBCR422P601_PL) ||
-       (eng_image_colorspace_get(data, image) == EVAS_COLORSPACE_YCBCR422P709_PL))
-     w &= ~0x1;
+
+   switch (eng_image_colorspace_get(data, image))
+     {
+      case EVAS_COLORSPACE_YCBCR422P601_PL:
+      case EVAS_COLORSPACE_YCBCR422P709_PL:
+      case EVAS_COLORSPACE_YCBCR422601_PL:
+      case EVAS_COLORSPACE_YCBCR420NV12601_PL:
+      case EVAS_COLORSPACE_YCBCR420TM12601_PL:
+         w &= ~0x1;
+         break;
+     }
+
    if ((im_old) &&
        ((int)im_old->im->cache_entry.w == w) &&
        ((int)im_old->im->cache_entry.h == h))
@@ -1773,7 +1785,7 @@ eng_image_data_get(void *data, void *image, int to_write, DATA32 **image_data, i
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
    eng_window_use(re->win);
 
-   if ((im->tex) && (im->tex->pt) && (im->tex->pt->dyn.img))
+   if ((im->tex) && (im->tex->pt) && (im->tex->pt->dyn.img) && (im->cs.space == EVAS_COLORSPACE_ARGB8888))
      {
         *image_data = im->tex->pt->dyn.data = glsym_eglMapImageSEC(re->win->egl_disp, im->tex->pt->dyn.img);
 
@@ -1798,6 +1810,16 @@ eng_image_data_get(void *data, void *image, int to_write, DATA32 **image_data, i
    eng_window_use(re->win);
 #endif
 
+   /* Engine can be fail to create texture after cache drop like eng_image_content_hint_set function,
+        so it is need to add code which check im->im's NULL value*/ 
+
+   if (!im->im)
+    {
+       *image_data = NULL;
+       if (err) *err = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
+       return NULL;
+    }
+
    error = evas_cache_image_load_data(&im->im->cache_entry);
    switch (im->cs.space)
      {
@@ -1817,7 +1839,7 @@ eng_image_data_get(void *data, void *image, int to_write, DATA32 **image_data, i
 		    {
 		       *image_data = NULL;
                        if (err) *err = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
-		       return im;
+   		       return NULL;
 		    }
 		  evas_gl_common_image_free(im);
 		  im = im_new;
@@ -1829,6 +1851,9 @@ eng_image_data_get(void *data, void *image, int to_write, DATA32 **image_data, i
 	break;
       case EVAS_COLORSPACE_YCBCR422P601_PL:
       case EVAS_COLORSPACE_YCBCR422P709_PL:
+      case EVAS_COLORSPACE_YCBCR422601_PL:
+      case EVAS_COLORSPACE_YCBCR420NV12601_PL:
+      case EVAS_COLORSPACE_YCBCR420TM12601_PL:
 	*image_data = im->cs.data;
 	break;
       default:
@@ -1850,13 +1875,16 @@ eng_image_data_put(void *data, void *image, DATA32 *image_data)
    im = image;
    if (im->native.data) return image;
    eng_window_use(re->win);
-   if ((im->tex) && (im->tex->pt) && (im->tex->pt->dyn.data))
+   if ((im->tex) && (im->tex->pt)
+       && (im->tex->pt->dyn.data)
+       && (im->cs.space == EVAS_COLORSPACE_ARGB8888))
      {
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
         glsym_eglUnmapImageSEC(re->win->egl_disp, im->tex->pt->dyn.img);
 #endif
         if (im->tex->pt->dyn.data == image_data)
           {
+	     evas_gl_common_image_dirty(im, 0, 0, 0, 0);
              return image;
           }
         else
@@ -1894,6 +1922,9 @@ eng_image_data_put(void *data, void *image, DATA32 *image_data)
         break;
       case EVAS_COLORSPACE_YCBCR422P601_PL:
       case EVAS_COLORSPACE_YCBCR422P709_PL:
+      case EVAS_COLORSPACE_YCBCR422601_PL:
+      case EVAS_COLORSPACE_YCBCR420NV12601_PL:
+      case EVAS_COLORSPACE_YCBCR420TM12601_PL:
         if (image_data != im->cs.data)
 	  {
 	     if (im->cs.data)
@@ -2571,6 +2602,7 @@ eng_gl_make_current(void *data, void *surface, void *context)
 
         ctx->current_sfc = NULL;
         sfc->current_ctx = NULL;
+        current_evgl_ctx = NULL;
         return ret;
      }
 
@@ -2639,6 +2671,8 @@ eng_gl_make_current(void *data, void *surface, void *context)
         else
            // Bind FBO
            glBindFramebuffer(GL_FRAMEBUFFER, ctx->context_fbo);
+
+        sfc->fbo_attached = 1;
      }
 
    // Set the current surface/context
