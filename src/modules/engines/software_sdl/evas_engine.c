@@ -80,6 +80,7 @@ evas_engine_sdl_info_free	(Evas* e __UNUSED__, void* info)
    Evas_Engine_Info_SDL*	in;
    in = (Evas_Engine_Info_SDL*) info;
    free(in);
+   in = NULL;
 }
 
 /* SDL engine output manipulation function */
@@ -122,14 +123,12 @@ evas_engine_sdl_output_free	(void *data)
 {
    Render_Engine*		re = data;
 
-   if (re->tb)
-     evas_common_tilebuf_free(re->tb);
-   if (re->rects)
-      evas_common_tilebuf_free_render_rects(re->rects);
-   if (re->rgba_engine_image)
-     evas_cache_engine_image_drop(&re->rgba_engine_image->cache_entry);
    if (re->cache)
      evas_cache_engine_image_shutdown(re->cache);
+
+   evas_common_tilebuf_free(re->tb);
+   if (re->rects)
+      evas_common_tilebuf_free_render_rects(re->rects);
 
    if (re->update_rects)
      free(re->update_rects);
@@ -234,11 +233,7 @@ evas_engine_sdl_output_redraws_next_update_get	(void *data,
 	re->cur_rect = EINA_INLIST_GET(re->rects);
      }
    if (!re->cur_rect)
-     {
-        if (re->rects) evas_common_tilebuf_free_render_rects(re->rects);
-        re->rects = NULL;
-        return NULL;
-     }
+      return NULL;
 
    tb_rect = (Tilebuf_Rect*) re->cur_rect;
    *cx = *x = tb_rect->x;
@@ -747,7 +742,7 @@ evas_engine_sdl_image_format_get(void *data __UNUSED__, void *image __UNUSED__)
 }
 
 static void
-evas_engine_sdl_font_draw(void *data __UNUSED__, void *context, void *surface, void *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const Evas_Text_Props *intl_props)
+evas_engine_sdl_font_draw(void *data __UNUSED__, void *context, void *surface, void *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const Eina_Unicode *text, const Evas_Text_Props *intl_props)
 {
    SDL_Engine_Image_Entry       *eim = surface;
    int                           mustlock_im = 0;
@@ -963,9 +958,6 @@ _sdl_output_setup		(int w, int h, int fullscreen, int noframe, int alpha, int hw
    Render_Engine		*re = calloc(1, sizeof(Render_Engine));
    SDL_Surface                  *surface;
 
-   if (!re)
-     return NULL;
-
    /* if we haven't initialized - init (automatic abort if already done) */
    evas_common_cpu_init();
    evas_common_blend_init();
@@ -985,9 +977,8 @@ _sdl_output_setup		(int w, int h, int fullscreen, int noframe, int alpha, int hw
    re->cache = evas_cache_engine_image_init(&_sdl_cache_engine_image_cb, evas_common_image_cache_get());
    if (!re->cache)
      {
-        ERR("Evas_Cache_Engine_Image allocation failed!");
-        free (re);
-        return NULL;
+        CRIT("Evas_Cache_Engine_Image allocation failed!");
+        exit(-1);
      }
 
    re->tb = evas_common_tilebuf_new(w, h);
@@ -1001,10 +992,8 @@ _sdl_output_setup		(int w, int h, int fullscreen, int noframe, int alpha, int hw
 
    if (!surface)
      {
-        ERR("SDL_SetVideoMode [ %i x %i x 32 ] failed.", w, h);
-        evas_cache_engine_image_shutdown(re->cache);
-        free (re);
-        return NULL;
+        CRIT("SDL_SetVideoMode [ %i x %i x 32 ] failed.", w, h);
+        exit(-1);
      }
 
    SDL_SetAlpha(surface, SDL_SRCALPHA | SDL_RLEACCEL, 0);
@@ -1016,9 +1005,7 @@ _sdl_output_setup		(int w, int h, int fullscreen, int noframe, int alpha, int hw
    if (!re->rgba_engine_image)
      {
 	CRIT("RGBA_Image allocation from SDL failed");
-        evas_cache_engine_image_shutdown(re->cache);
-        free (re);
-        return NULL;
+        exit(-1);
      }
 
    SDL_FillRect(surface, NULL, 0);

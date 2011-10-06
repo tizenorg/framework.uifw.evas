@@ -43,7 +43,6 @@
 
 /*#define BUILD_MMX*/
 /*#define BUILD_SSE*/
-/*#define BUILD_SSE3*/
 /*#define BUILD_C*/
 
 /*#define BUILD_LOADER_PNG*/
@@ -55,11 +54,9 @@
 
 /* check in that the user configured it right */
 #ifndef BUILD_MMX
-# ifndef BUILD_SSE3
-#  ifndef BUILD_SSE
-#   ifndef BUILD_C
+# ifndef BUILD_SSE
+#  ifndef BUILD_C
 #   error "Please Read the README"
-    #endif
 #  endif
 # endif
 #endif

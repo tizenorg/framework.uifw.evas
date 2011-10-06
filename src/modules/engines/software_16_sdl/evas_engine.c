@@ -229,19 +229,12 @@ evas_engine_sdl16_output_free(void *data)
    if (re->tb) evas_common_tilebuf_free(re->tb);
    if (re->rects) evas_common_tilebuf_free_render_rects(re->rects);
    if (re->tmp_out) evas_cache_image_drop(&re->tmp_out->cache_entry);
-   if (re->soft16_engine_image)
-     evas_cache_engine_image_drop(&re->soft16_engine_image->cache_entry);
-   if (re->cache) evas_cache_engine_image_shutdown(re->cache);
-
-   if (re->update_rects)
-     free(re->update_rects);
+   if (re->soft16_engine_image) evas_cache_engine_image_drop(&re->soft16_engine_image->cache_entry);
    free(re);
 
    evas_common_font_shutdown();
    evas_common_image_shutdown();
    evas_common_soft16_image_shutdown();
-
-   SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
 static void
@@ -250,7 +243,7 @@ evas_engine_sdl16_output_resize(void *data, int w, int h)
    Render_Engine        *re = data;
    SDL_Surface          *surface;
 
-   if ((re->tb->outbuf_w == w) && (re->tb->outbuf_h == h)) return;
+   if ((re->w == w) && (re->h == h)) return;
 
    evas_cache_engine_image_drop(&re->soft16_engine_image->cache_entry);
 
@@ -342,7 +335,6 @@ evas_engine_sdl16_output_redraws_next_update_get(void *data,
 	re->cur_rect = re->rects;
 	if (re->rot != 0) _tmp_out_alloc(re); /* grows if required */
      }
-
    if (!re->cur_rect)
      {
 	if (re->rects) evas_common_tilebuf_free_render_rects(re->rects);
@@ -536,8 +528,6 @@ evas_engine_sdl16_output_redraws_next_update_push(void *data, void *surface __UN
      _tmp_out_process(re, rect.x, rect.y, w, h);
 
    ++re->update_rects_count;
-
-   evas_common_cpu_end_opt();
 }
 
 static void
@@ -581,13 +571,7 @@ evas_engine_sdl16_image_alpha_get(void *data __UNUSED__, void *image)
 
    if (!eim) return 1;
    im = (Soft16_Image *) eim->cache_entry.src;
-   switch (eim->cache_entry.src->space)
-     {
-     case EVAS_COLORSPACE_ARGB8888:
-        if (im->cache_entry.flags.alpha) return 1;
-     default:
-        break;
-     }
+   if (im->cache_entry.flags.alpha) return 1;
    return 0;
 }
 
@@ -597,28 +581,20 @@ evas_engine_sdl16_image_size_get(void *data __UNUSED__, void *image, int *w, int
    SDL_Engine_Image_Entry       *eim;
 
    eim = image;
-   if (w) *w = eim->cache_entry.src->w;
-   if (h) *h = eim->cache_entry.src->h;
+   if (w) *w = eim->cache_entry.w;
+   if (h) *h = eim->cache_entry.h;
 }
 
 static int
 evas_engine_sdl16_image_colorspace_get(void *data __UNUSED__, void *image __UNUSED__)
 {
-   SDL_Engine_Image_Entry       *eim = image;
-
-   if (!eim) return EVAS_COLORSPACE_RGB565_A5P;
-   return eim->cache_entry.src->space;
+   return EVAS_COLORSPACE_RGB565_A5P;
 }
 
 static void
 evas_engine_sdl16_image_colorspace_set(void *data __UNUSED__, void *image __UNUSED__, int cspace __UNUSED__)
 {
-   SDL_Engine_Image_Entry       *eim = image;
-
-   if (!eim) return;
-   if (eim->cache_entry.src->space == cspace) return;
-
-   evas_cache_engine_image_colorspace(&eim->cache_entry, cspace, NULL);
+   /* FIXME: Not implemented. */
 }
 
 static void*
@@ -695,20 +671,19 @@ evas_engine_sdl16_image_data_get(void *data __UNUSED__, void *image,
    SDL_Engine_Image_Entry       *eim = image;
    Soft16_Image                 *im;
    int                           error;
-
+   
    if (!eim)
      {
         *image_data = NULL;
-        if (err) *err = EVAS_LOAD_ERROR_GENERIC;
         return NULL;
      }
    im = (Soft16_Image *) eim->cache_entry.src;
+   error = evas_cache_image_load_data(&im->cache_entry);
 
    if (to_write)
-     eim = (SDL_Engine_Image_Entry *) evas_cache_engine_image_dirty(&eim->cache_entry,
-         0, 0, eim->cache_entry.src->w, eim->cache_entry.src->h);
+     eim = (SDL_Engine_Image_Entry *) evas_cache_engine_image_alone(&eim->cache_entry,
+                                                                    NULL);
 
-   error = evas_cache_image_load_data(&im->cache_entry);
    /* FIXME: Handle colorspace conversion correctly. */
    if (image_data) *image_data = (DATA32 *) im->pixels;
 
@@ -777,8 +752,10 @@ evas_engine_sdl16_image_alpha_set(void *data __UNUSED__, void *image, int has_al
 
    if (im->cache_entry.flags.alpha == has_alpha) return eim;
 
-   //eim = (SDL_Engine_Image_Entry *) evas_cache_engine_image_alone(&eim->cache_entry,  NULL);
-   //im = (Soft16_Image *) eim->cache_entry.src;
+   eim = (SDL_Engine_Image_Entry *) evas_cache_engine_image_alone(&eim->cache_entry,
+                                                                  NULL);
+
+   im = (Soft16_Image *) eim->cache_entry.src;
 
    im->cache_entry.flags.alpha = has_alpha;
    eim = (SDL_Engine_Image_Entry *) evas_cache_engine_image_dirty(&eim->cache_entry, 0, 0, eim->cache_entry.w, eim->cache_entry.h);
@@ -833,7 +810,6 @@ evas_engine_sdl16_image_draw(void *data __UNUSED__, void *context, void *surface
                      dst_region_x, dst_region_y, dst_region_w, dst_region_h,
                      smooth);
 
-   evas_common_cpu_end_opt ();
    if (mustlock_im)
      SDL_UnlockSurface(eim->surface);
 
@@ -906,6 +882,10 @@ evas_engine_sdl16_font_draw(void *data __UNUSED__, void *context, void *surface,
    Soft16_Image                 *dst = (Soft16_Image *) eim->cache_entry.src;
    int                           mustlock_im = 0;
 
+   if (!im)
+     im = (RGBA_Image *) evas_cache_image_empty(evas_common_image_cache_get());
+   evas_cache_image_surface_alloc(&im->cache_entry, dst->cache_entry.w, dst->cache_entry.h);
+
    if (eim->surface && SDL_MUSTLOCK(eim->surface))
      {
         mustlock_im = 1;
@@ -917,7 +897,7 @@ evas_engine_sdl16_font_draw(void *data __UNUSED__, void *context, void *surface,
                                          evas_common_soft16_font_glyph_new,
                                          evas_common_soft16_font_glyph_free,
                                          evas_common_soft16_font_glyph_draw);
-   evas_common_font_draw((RGBA_Image *) eim->cache_entry.src, context, font, x, y, intl_props);
+   evas_common_font_draw(im, context, font, x, y, intl_props);
    evas_common_draw_context_font_ext_set(context,
                                          NULL,
                                          NULL,
@@ -944,7 +924,6 @@ evas_engine_sdl16_line_draw(void *data __UNUSED__, void *context, void *surface,
    evas_common_soft16_line_draw((Soft16_Image *) eim->cache_entry.src,
                     context,
                     x1, y1, x2, y2);
-   evas_common_cpu_end_opt();
 
    if (mustlock_im)
      SDL_UnlockSurface(eim->surface);
@@ -976,7 +955,6 @@ evas_engine_sdl16_rectangle_draw(void *data __UNUSED__, void *context, void *sur
              im = (Soft16_Image *) eim->cache_entry.src;
 
              evas_common_soft16_rectangle_draw(im, context, x, y, w, h);
-             evas_common_cpu_end_opt();
 
              if (mustlock_im)
                SDL_UnlockSurface(eim->surface);
@@ -1026,7 +1004,6 @@ evas_engine_sdl16_polygon_draw(void *data __UNUSED__, void *context, void *surfa
      }
 
    evas_common_soft16_polygon_draw((Soft16_Image *) eim->cache_entry.src, context, polygon, x, y);
-   evas_common_cpu_end_opt();
 
    if (mustlock_im)
      SDL_UnlockSurface(eim->surface);
@@ -1167,20 +1144,15 @@ _sdl16_image_constructor(Engine_Image_Entry *ie, void* data __UNUSED__)
 
    im = (Soft16_Image *) ie->src;
 
-   if (im)
+   if (im->pixels)
      {
-        evas_cache_image_load_data(&im->cache_entry);
-
-        if (im->pixels)
-          {
-            /* FIXME: Take care of CSPACE */
-            sdl = SDL_CreateRGBSurfaceFrom(im->pixels,
-                                           ie->w, ie->h,
-                                           16, ie->w * 2,
-                                           RMASK565, GMASK565, BMASK565, AMASK565);
-            eim->surface = sdl;
-            eim->flags.engine_surface = 0;
-          }
+        /* FIXME: Take care of CSPACE */
+        sdl = SDL_CreateRGBSurfaceFrom(im->pixels,
+                                       ie->w, ie->h,
+                                       16, ie->w * 2,
+                                       RMASK565, GMASK565, BMASK565, AMASK565);
+        eim->surface = sdl;
+        eim->flags.engine_surface = 0;
      }
 
    return EVAS_LOAD_ERROR_NONE;

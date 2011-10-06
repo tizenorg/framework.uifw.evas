@@ -3,11 +3,7 @@
 #include "evas_mmx.h"
 #endif
 
-#if defined BUILD_SSE3
-#include <immintrin.h>
-#endif
-
-#if defined (HAVE_STRUCT_SIGACTION) && defined (HAVE_SIGLONGJMP)
+#ifndef _WIN32
 #include <signal.h>
 #include <setjmp.h>
 #include <errno.h>
@@ -17,7 +13,7 @@ static sigjmp_buf detect_buf;
 
 static int cpu_feature_mask = 0;
 
-#if defined (HAVE_STRUCT_SIGACTION) && defined (HAVE_SIGLONGJMP)
+#ifndef _WIN32
 static void evas_common_cpu_catch_ill(int sig);
 static void evas_common_cpu_catch_segv(int sig);
 
@@ -64,16 +60,6 @@ evas_common_cpu_sse_test(void)
 #endif
 }
 
-void evas_common_op_sse3_test(void);
-
-void
-evas_common_cpu_sse3_test(void)
-{
-#ifdef BUILD_SSE3
-   evas_common_op_sse3_test();
-#endif
-}
-
 void
 evas_common_cpu_altivec_test(void)
 {
@@ -113,7 +99,7 @@ evas_common_cpu_vis_test(void)
 int
 evas_common_cpu_feature_test(void (*feature)(void))
 {
-#if defined (HAVE_STRUCT_SIGACTION) && defined (HAVE_SIGLONGJMP)
+#ifndef _WIN32
    int enabled = 1;
    struct sigaction act, oact, oact2;
 
@@ -168,13 +154,6 @@ evas_common_cpu_init(void)
    evas_common_cpu_end_opt();
    if (getenv("EVAS_CPU_NO_SSE"))
      cpu_feature_mask &= ~CPU_FEATURE_SSE;
-#ifdef BUILD_SSE3
-   cpu_feature_mask |= CPU_FEATURE_SSE3 *
-     evas_common_cpu_feature_test(evas_common_cpu_sse3_test); 
-   evas_common_cpu_end_opt();
-   if (getenv("EVAS_CPU_NO_SSE3"))
-     cpu_feature_mask &= ~CPU_FEATURE_SSE3; 
-#endif /* BUILD_SSE3 */
 #endif /* BUILD_SSE */
 #endif /* BUILD_MMX */
 #ifdef __POWERPC__

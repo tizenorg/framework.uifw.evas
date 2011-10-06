@@ -78,20 +78,14 @@
 #ifndef EGL_MAP_GL_TEXTURE_RGBA_SEC
 # define EGL_MAP_GL_TEXTURE_RGBA_SEC 0x3206
 #endif
-#ifndef EGL_MAP_GL_TEXTURE_LUMINANCE_SEC
-# define EGL_MAP_GL_TEXTURE_LUMINANCE_SEC 0x3207
-#endif
-#ifndef EGL_MAP_GL_TEXTURE_LUMINANCE_ALPHA_SEC
-# define EGL_MAP_GL_TEXTURE_LUMINANCE_ALPHA_SEC	0x3208
-#endif
 #ifndef EGL_MAP_GL_TEXTURE_PIXEL_TYPE_SEC
-# define EGL_MAP_GL_TEXTURE_PIXEL_TYPE_SEC 0x3209
+# define EGL_MAP_GL_TEXTURE_PIXEL_TYPE_SEC 0x3206
 #endif
 #ifndef EGL_MAP_GL_TEXTURE_UNSIGNED_BYTE_SEC
-# define EGL_MAP_GL_TEXTURE_UNSIGNED_BYTE_SEC 0x3210
+# define EGL_MAP_GL_TEXTURE_UNSIGNED_BYTE_SEC 0x3207
 #endif
 #ifndef EGL_MAP_GL_TEXTURE_STRIDE_IN_BYTES_SEC
-# define EGL_MAP_GL_TEXTURE_STRIDE_IN_BYTES_SEC 0x3211
+# define EGL_MAP_GL_TEXTURE_STRIDE_IN_BYTES_SEC 0x3208
 #endif
 #ifndef GL_PROGRAM_BINARY_LENGTH
 # define GL_PROGRAM_BINARY_LENGTH 0x8741
@@ -124,46 +118,9 @@ typedef struct _Evas_GL_Font_Texture                 Evas_GL_Font_Texture;
 typedef struct _Evas_GL_Polygon                      Evas_GL_Polygon;
 typedef struct _Evas_GL_Polygon_Point                Evas_GL_Polygon_Point;
 
-typedef enum {
-  SHADER_RECT,
-  SHADER_FONT,
-  SHADER_IMG,
-  SHADER_IMG_NOMUL,
-  SHADER_IMG_BGRA,
-  SHADER_IMG_BGRA_NOMUL,
-  SHADER_IMG_MASK,
-  SHADER_YUV,
-  SHADER_YUV_NOMUL,
-  SHADER_YUY2,
-  SHADER_YUY2_NOMUL,
-  SHADER_NV12,
-  SHADER_NV12_NOMUL,
-  SHADER_TEX,
-  SHADER_TEX_NOMUL,
-  SHADER_FILTER_INVERT,
-  SHADER_FILTER_INVERT_NOMUL,
-  SHADER_FILTER_INVERT_BGRA,
-  SHADER_FILTER_INVERT_BGRA_NOMUL,
-  SHADER_FILTER_GREYSCALE,
-  SHADER_FILTER_GREYSCALE_NOMUL,
-  SHADER_FILTER_GREYSCALE_BGRA,
-  SHADER_FILTER_GREYSCALE_BGRA_NOMUL,
-  SHADER_FILTER_SEPIA,
-  SHADER_FILTER_SEPIA_NOMUL,
-  SHADER_FILTER_SEPIA_BGRA,
-  SHADER_FILTER_SEPIA_BGRA_NOMUL,
-  /* SHADER_FILTER_BLUR, */
-  /* SHADER_FILTER_BLUR_NOMUL, */
-  /* SHADER_FILTER_BLUR_BGRA, */
-  /* SHADER_FILTER_BLUR_BGRA_NOMUL, */
-  SHADER_LAST
-} Evas_GL_Shader;
-
 struct _Evas_GL_Program
 {
    GLuint vert, frag, prog;
-
-   int tex_count;
 };
 
 struct _Evas_GL_Program_Source
@@ -243,8 +200,28 @@ struct _Evas_GL_Shared
    Eina_Hash          *native_pm_hash;
    Eina_Hash          *native_tex_hash;
 
-   Evas_GL_Program     shader[SHADER_LAST];
+   struct {
+      Evas_GL_Program  rect;
+      Evas_GL_Program  font;
 
+      Evas_GL_Program  img,            img_nomul;
+      Evas_GL_Program  img_bgra,       img_bgra_nomul;
+      Evas_GL_Program  img_mask;
+      Evas_GL_Program  yuv,            yuv_nomul;
+      Evas_GL_Program  tex,            tex_nomul;
+
+      Evas_GL_Program  filter_invert,         filter_invert_nomul;
+      Evas_GL_Program  filter_invert_bgra,    filter_invert_bgra_nomul;
+      Evas_GL_Program  filter_greyscale,      filter_greyscale_nomul;
+      Evas_GL_Program  filter_greyscale_bgra, filter_greyscale_bgra_nomul;
+      Evas_GL_Program  filter_sepia,          filter_sepia_nomul;
+      Evas_GL_Program  filter_sepia_bgra,     filter_sepia_bgra_nomul;
+#if 0
+      Evas_GL_Program  filter_blur_vert;
+      Evas_GL_Program  filter_blur,           filter_blur_nomul;
+      Evas_GL_Program  filter_blur_bgra,      filter_blur_bgra_nomul;
+#endif
+   } shader;
    int references;
    int w, h;
    int rot;
@@ -260,8 +237,8 @@ struct _Evas_GL_Shared
 #define RTYPE_YUV   4
 #define RTYPE_MAP   5 /* need to merge with image */
 #define RTYPE_IMASK 6
-#define RTYPE_YUY2  7
-#define RTYPE_NV12  8
+
+
 
 struct _Evas_Engine_GL_Context
 {
@@ -278,7 +255,7 @@ struct _Evas_Engine_GL_Context
       int                top_pipe;
       struct {
          GLuint          cur_prog;
-	 GLuint          cur_tex, cur_texu, cur_texv;
+         GLuint          cur_tex, cur_texu, cur_texv;
          GLuint          cur_texm, cur_texmu, cur_texmv;
          int             render_op;
          int             cx, cy, cw, ch;
@@ -301,8 +278,7 @@ struct _Evas_Engine_GL_Context
          Evas_GL_Image  *surface;
          GLuint          cur_prog;
          GLuint          cur_tex, cur_texu, cur_texv, cur_texm;
-	 void           *cur_tex_dyn, *cur_texu_dyn, *cur_texv_dyn;
-	 int             render_op;
+         int             render_op;
          int             cx, cy, cw, ch;
          int             smooth;
          int             blend;
@@ -369,19 +345,12 @@ struct _Evas_GL_Texture
 {
    Evas_Engine_GL_Context *gc;
    Evas_GL_Image   *im;
-   Evas_GL_Texture_Pool *pt, *ptu, *ptv, *ptuv;
+   Evas_GL_Texture_Pool *pt, *ptu, *ptv;
    int              x, y, w, h;
    double           sx1, sy1, sx2, sy2;
    int              references;
 
-   struct
-   {
-      Evas_GL_Texture_Pool *pt[2], *ptuv[2];
-      int              source;
-   } double_buffer;
-
    Eina_Bool        alpha : 1;
-   Eina_Bool        dyn : 1;
 };
 
 struct _Evas_GL_Image
@@ -440,7 +409,6 @@ struct _Evas_GL_Polygon_Point
    int x, y;
 };
 
-#if 0
 extern Evas_GL_Program_Source shader_rect_frag_src;
 extern Evas_GL_Program_Source shader_rect_vert_src;
 extern Evas_GL_Program_Source shader_font_frag_src;
@@ -462,11 +430,6 @@ extern Evas_GL_Program_Source shader_yuv_vert_src;
 extern Evas_GL_Program_Source shader_yuv_nomul_frag_src;
 extern Evas_GL_Program_Source shader_yuv_nomul_vert_src;
 
-extern Evas_GL_Program_Source shader_yuy2_frag_src;
-extern Evas_GL_Program_Source shader_yuy2_vert_src;
-extern Evas_GL_Program_Source shader_yuy2_nomul_frag_src;
-extern Evas_GL_Program_Source shader_yuy2_nomul_vert_src;
-
 extern Evas_GL_Program_Source shader_tex_frag_src;
 extern Evas_GL_Program_Source shader_tex_vert_src;
 extern Evas_GL_Program_Source shader_tex_nomul_frag_src;
@@ -484,6 +447,7 @@ extern Evas_GL_Program_Source shader_filter_greyscale_frag_src;
 extern Evas_GL_Program_Source shader_filter_greyscale_nomul_frag_src;
 extern Evas_GL_Program_Source shader_filter_greyscale_bgra_frag_src;
 extern Evas_GL_Program_Source shader_filter_greyscale_bgra_nomul_frag_src;
+#if 0
 /* blur (annoyingly) needs (aka is faster with) a vertex shader */
 extern Evas_GL_Program_Source shader_filter_blur_vert_src;
 extern Evas_GL_Program_Source shader_filter_blur_frag_src;
@@ -535,18 +499,6 @@ void             evas_gl_common_context_yuv_push(Evas_Engine_GL_Context *gc,
                                                  int x, int y, int w, int h,
                                                  int r, int g, int b, int a,
                                                  Eina_Bool smooth);
-void             evas_gl_common_context_yuy2_push(Evas_Engine_GL_Context *gc,
-						  Evas_GL_Texture *tex,
-						  double sx, double sy, double sw, double sh,
-						  int x, int y, int w, int h,
-						  int r, int g, int b, int a,
-						  Eina_Bool smooth);
-void             evas_gl_common_context_nv12_push(Evas_Engine_GL_Context *gc,
-						  Evas_GL_Texture *tex,
-						  double sx, double sy, double sw, double sh,
-						  int x, int y, int w, int h,
-						  int r, int g, int b, int a,
-						  Eina_Bool smooth);
 void             evas_gl_common_context_image_map_push(Evas_Engine_GL_Context *gc,
                                                        Evas_GL_Texture *tex,
                                                        int npoints,
@@ -555,7 +507,7 @@ void             evas_gl_common_context_image_map_push(Evas_Engine_GL_Context *g
                                                        int r, int g, int b, int a,
                                                        Eina_Bool smooth,
                                                        Eina_Bool tex_only,
-						       Evas_Colorspace cspace);
+                                                       Eina_Bool yuv);
 void              evas_gl_common_context_flush(Evas_Engine_GL_Context *gc);
 
 int               evas_gl_common_shader_program_init(Evas_GL_Shared *shared);
@@ -575,12 +527,6 @@ Evas_GL_Texture  *evas_gl_common_texture_alpha_new(Evas_Engine_GL_Context *gc, D
 void              evas_gl_common_texture_alpha_update(Evas_GL_Texture *tex, DATA8 *pixels, unsigned int w, unsigned int h, int fh);
 Evas_GL_Texture  *evas_gl_common_texture_yuv_new(Evas_Engine_GL_Context *gc, DATA8 **rows, unsigned int w, unsigned int h);
 void              evas_gl_common_texture_yuv_update(Evas_GL_Texture *tex, DATA8 **rows, unsigned int w, unsigned int h);
-Evas_GL_Texture  *evas_gl_common_texture_yuy2_new(Evas_Engine_GL_Context *gc, DATA8 **rows, unsigned int w, unsigned int h);
-void              evas_gl_common_texture_yuy2_update(Evas_GL_Texture *tex, DATA8 **rows, unsigned int w, unsigned int h);
-Evas_GL_Texture  *evas_gl_common_texture_nv12_new(Evas_Engine_GL_Context *gc, DATA8 **rows, unsigned int w, unsigned int h);
-void              evas_gl_common_texture_nv12_update(Evas_GL_Texture *tex, DATA8 **row, unsigned int w, unsigned int h);
-Evas_GL_Texture  *evas_gl_common_texture_nv12tiled_new(Evas_Engine_GL_Context *gc, DATA8 **rows, unsigned int w, unsigned int h);
-void              evas_gl_common_texture_nv12tiled_update(Evas_GL_Texture *tex, DATA8 **row, unsigned int w, unsigned int h);
 
 void              evas_gl_common_image_all_unload(Evas_Engine_GL_Context *gc);
 
@@ -637,7 +583,7 @@ extern unsigned int   (*secsym_eglUnmapImageSEC)             (void *a, void *b);
 extern unsigned int   (*secsym_eglGetImageAttribSEC)         (void *a, void *b, int c, int *d);
 #endif
 
-#define GL_ERRORS 1
+//#define GL_ERRORS 1
 
 #ifdef GL_ERRORS
 # define GLERR(fn, fl, ln, op) \

@@ -285,8 +285,8 @@ _evas_cache_image_entry_new(Evas_Cache_Image *cache,
    ie = cache->func.alloc();
    if (!ie)
      {
-	*error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
-	return NULL;
+        *error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
+        return NULL;
      }
    ie->cache = cache;
    if (hkey) ie->cache_key = eina_stringshare_add(hkey);
@@ -326,8 +326,8 @@ _evas_cache_image_entry_new(Evas_Cache_Image *cache,
 
 static void
 _evas_cache_image_entry_surface_alloc__locked(Evas_Cache_Image *cache,
-					      Image_Entry *ie,
-					      unsigned int wmin,
+                                              Image_Entry *ie,
+                                              unsigned int wmin,
                                               unsigned int hmin)
 {
    if ((ie->allocated.w == wmin) && (ie->allocated.h == hmin)) return;
@@ -461,7 +461,6 @@ _evas_cache_image_entry_preload_add(Image_Entry *ie, const void *target)
    Evas_Cache_Target *tg;
 
    if (ie->flags.preload_done) return 0;
-
    tg = malloc(sizeof (Evas_Cache_Target));
    if (!tg) return 0;
 
@@ -642,8 +641,8 @@ evas_cache_image_shutdown(Evas_Cache_Image *cache)
    eina_hash_foreach(cache->activ, _evas_cache_image_free_cb, &delete_list);
    while (delete_list)
      {
-	_evas_cache_image_entry_delete(cache, eina_list_data_get(delete_list));
-	delete_list = eina_list_remove_list(delete_list, delete_list);
+        _evas_cache_image_entry_delete(cache, eina_list_data_get(delete_list));
+        delete_list = eina_list_remove_list(delete_list, delete_list);
      }
 
 #ifdef BUILD_ASYNC_PRELOAD
@@ -680,7 +679,7 @@ evas_cache_image_request(Evas_Cache_Image *cache, const char *file,
    const char           *ckey = "(null)";
    char                 *hkey;
    Image_Entry          *im;
-   Evas_Image_Load_Opts  prevent = { 0, 0.0, 0, 0, 0, { 0, 0, 0, 0 }, EINA_FALSE };
+   Evas_Image_Load_Opts  prevent = { 0, 0, 0, 0, { 0, 0, 0, 0 }, 0 };
    size_t                size;
    int                   stat_done = 0, stat_failed = 0;
    size_t                file_length;
@@ -690,8 +689,8 @@ evas_cache_image_request(Evas_Cache_Image *cache, const char *file,
 
    if ((!file) || ((!file) && (!key)))
      {
-	*error = EVAS_LOAD_ERROR_GENERIC;
-	return NULL;
+        *error = EVAS_LOAD_ERROR_GENERIC;
+        return NULL;
      }
 
    /* generate hkey from file+key+load opts */
@@ -747,9 +746,8 @@ evas_cache_image_request(Evas_Cache_Image *cache, const char *file,
 	if (lo->orientation)
 	  {
              hkey[size] = '/';
-             size += 1;
              hkey[size] = 'o';
-             size += 1;
+             size += 2;
 	  }
      }
    hkey[size] = '\0';
@@ -879,7 +877,7 @@ evas_cache_image_drop(Image_Entry *im)
 #ifdef EVAS_FRAME_QUEUING
    LKU(im->lock_references);
 #endif
-   
+
    cache = im->cache;
 
    if (references == 0)
@@ -893,8 +891,8 @@ evas_cache_image_drop(Image_Entry *im)
              LKU(im->ref_fq_del);
              return;
           }
-	LKU(im->ref_fq_add);
-	LKU(im->ref_fq_del);
+        LKU(im->ref_fq_add);
+        LKU(im->ref_fq_del);
 #endif
 
 #ifdef BUILD_ASYNC_PRELOAD
@@ -1234,7 +1232,7 @@ evas_cache_image_unload_data(Image_Entry *im)
 #ifdef BUILD_ASYNC_PRELOAD
         LKU(im->lock);
 #endif
-	return;
+        return;
      }
    im->cache->func.destructor(im);
 #ifdef BUILD_ASYNC_PRELOAD
@@ -1276,8 +1274,8 @@ evas_cache_image_preload_data(Image_Entry *im, const void *target)
    
    if ((im->flags.loaded) && (img->image.data))
      {
-	evas_object_inform_call_image_preloaded((Evas_Object *)target);
-	return;
+        evas_object_inform_call_image_preloaded((Evas_Object *)target);
+        return;
      }
    im->flags.loaded = 0;
    if (!_evas_cache_image_entry_preload_add(im, target))
@@ -1350,7 +1348,7 @@ evas_cache_image_flush(Evas_Cache_Image *cache)
 {
 #ifdef CACHEDUMP
   _dump_cache(cache);
-#endif  
+#endif
    if (cache->limit == (unsigned int)-1) return -1;
 
    while ((cache->lru) && (cache->limit < (unsigned int)cache->usage))

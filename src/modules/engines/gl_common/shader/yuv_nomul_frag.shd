@@ -1,5 +1,5 @@
 #ifdef GL_ES
-precision highp float;
+precision mediump float;
 #endif
 uniform sampler2D tex, texu, texv;
 varying vec2 tex_c, tex_c2, tex_c3;

@@ -47,48 +47,6 @@ typedef struct _Evas_Map_Point              Evas_Map_Point;
 typedef struct _Evas_Smart_Cb_Description_Array Evas_Smart_Cb_Description_Array;
 typedef struct _Evas_Post_Callback          Evas_Post_Callback;
 
-enum _Evas_Font_Style
-{
-   EVAS_FONT_STYLE_SLANT,
-   EVAS_FONT_STYLE_WEIGHT,
-   EVAS_FONT_STYLE_WIDTH
-};
-
-enum _Evas_Font_Slant
-{
-   EVAS_FONT_SLANT_NORMAL,
-   EVAS_FONT_SLANT_OBLIQUE,
-   EVAS_FONT_SLANT_ITALIC
-};
-
-enum _Evas_Font_Weight
-{
-   EVAS_FONT_WEIGHT_NORMAL,
-   EVAS_FONT_WEIGHT_THIN,
-   EVAS_FONT_WEIGHT_ULTRALIGHT,
-   EVAS_FONT_WEIGHT_LIGHT,
-   EVAS_FONT_WEIGHT_BOOK,
-   EVAS_FONT_WEIGHT_MEDIUM,
-   EVAS_FONT_WEIGHT_SEMIBOLD,
-   EVAS_FONT_WEIGHT_BOLD,
-   EVAS_FONT_WEIGHT_ULTRABOLD,
-   EVAS_FONT_WEIGHT_BLACK,
-   EVAS_FONT_WEIGHT_EXTRABLACK
-};
-
-enum _Evas_Font_Width
-{
-   EVAS_FONT_WIDTH_NORMAL,
-   EVAS_FONT_WIDTH_ULTRACONDENSED,
-   EVAS_FONT_WIDTH_EXTRACONDENSED,
-   EVAS_FONT_WIDTH_CONDENSED,
-   EVAS_FONT_WIDTH_SEMICONDENSED,
-   EVAS_FONT_WIDTH_SEMIEXPANDED,
-   EVAS_FONT_WIDTH_EXPANDED,
-   EVAS_FONT_WIDTH_EXTRAEXPANDED,
-   EVAS_FONT_WIDTH_ULTRAEXPANDED
-};
-
 typedef enum _Evas_Font_Style               Evas_Font_Style;
 typedef enum _Evas_Font_Slant               Evas_Font_Slant;
 typedef enum _Evas_Font_Weight              Evas_Font_Weight;
@@ -347,10 +305,6 @@ struct _Evas
    Eina_Array     calculate_objects;
    Eina_Array     clip_changes;
 
-   Eina_List     *calc_list;
-   Eina_List     *calc_list_current;
-   Eina_List     *video_objects;
-
    Eina_List     *post_events; // free me on evas_free
 
    Evas_Callbacks *callbacks;
@@ -362,7 +316,6 @@ struct _Evas
    Eina_List     *font_path;
 
    int            in_smart_calc;
-   int            smart_calc_count;
 
    Evas_Object   *focused;
    void          *attach_data;
@@ -378,8 +331,6 @@ struct _Evas
    unsigned char  invalidate : 1;
    unsigned char  cleanup : 1;
    unsigned char  focus : 1;
-
-   Eina_List     *touch_points;
 };
 
 struct _Evas_Layer
@@ -640,6 +591,48 @@ struct _Evas_Font_Alias
    Evas_Font  *fn;
 };
 
+enum _Evas_Font_Style
+{
+   EVAS_FONT_STYLE_SLANT,
+   EVAS_FONT_STYLE_WEIGHT,
+   EVAS_FONT_STYLE_WIDTH
+};
+
+enum _Evas_Font_Slant
+{
+   EVAS_FONT_SLANT_NORMAL,
+   EVAS_FONT_SLANT_OBLIQUE,
+   EVAS_FONT_SLANT_ITALIC
+};
+
+enum _Evas_Font_Weight
+{
+   EVAS_FONT_WEIGHT_NORMAL,
+   EVAS_FONT_WEIGHT_THIN,
+   EVAS_FONT_WEIGHT_ULTRALIGHT,
+   EVAS_FONT_WEIGHT_LIGHT,
+   EVAS_FONT_WEIGHT_BOOK,
+   EVAS_FONT_WEIGHT_MEDIUM,
+   EVAS_FONT_WEIGHT_SEMIBOLD,
+   EVAS_FONT_WEIGHT_BOLD,
+   EVAS_FONT_WEIGHT_ULTRABOLD,
+   EVAS_FONT_WEIGHT_BLACK,
+   EVAS_FONT_WEIGHT_EXTRABLACK
+};
+
+enum _Evas_Font_Width
+{
+   EVAS_FONT_WIDTH_NORMAL,
+   EVAS_FONT_WIDTH_ULTRACONDENSED,
+   EVAS_FONT_WIDTH_EXTRACONDENSED,
+   EVAS_FONT_WIDTH_CONDENSED,
+   EVAS_FONT_WIDTH_SEMICONDENSED,
+   EVAS_FONT_WIDTH_SEMIEXPANDED,
+   EVAS_FONT_WIDTH_EXPANDED,
+   EVAS_FONT_WIDTH_EXTRAEXPANDED,
+   EVAS_FONT_WIDTH_ULTRAEXPANDED
+};
+
 struct _Evas_Font_Description
 {
    int ref;
@@ -652,7 +645,7 @@ struct _Evas_Font_Description
    Evas_Font_Weight weight;
    Evas_Font_Width width;
 
-   Eina_Bool is_new : 1;
+   Eina_Bool new : 1;
 };
 
 struct _Evas_Object_Func
@@ -904,9 +897,6 @@ const Evas_Smart_Cb_Description *evas_smart_cb_description_find(const Evas_Smart
 Eina_Bool _evas_object_image_preloading_get(const Evas_Object *obj);
 void _evas_object_image_preloading_set(Evas_Object *obj, Eina_Bool preloading);
 void _evas_object_image_preloading_check(Evas_Object *obj);
-Evas_Object *_evas_object_image_video_parent_get(Evas_Object *obj);
-void _evas_object_image_video_overlay_show(Evas_Object *obj);
-void _evas_object_image_video_overlay_hide(Evas_Object *obj);
 void evas_object_smart_del(Evas_Object *obj);
 void evas_object_smart_cleanup(Evas_Object *obj);
 void evas_object_smart_member_raise(Evas_Object *member);
@@ -998,8 +988,7 @@ void _evas_unwalk(Evas *e);
 
 // expose for use in engines
 EAPI int _evas_module_engine_inherit(Evas_Func *funcs, char *name);
-EAPI const char *_evas_module_libdir_get(void);
-         
+
 Eina_Bool evas_render_mapped(Evas *e, Evas_Object *obj, 
                              void *context, void *surface,
                              int off_x, int off_y, int mapped,
@@ -1009,13 +998,6 @@ void evas_render_object_recalc(Evas_Object *obj);
 
 Eina_Bool evas_map_inside_get(const Evas_Map *m, Evas_Coord x, Evas_Coord y);
 Eina_Bool evas_map_coords_get(const Evas_Map *m, Evas_Coord x, Evas_Coord y, Evas_Coord *mx, Evas_Coord *my, int grab);
-
-Eina_List *evas_module_engine_list(void);
-
-/* for touch event */
-void _evas_event_touch_down(Evas *e, Evas_Coord x, Evas_Coord y, int id, unsigned int timestamp);
-void _evas_event_touch_up(Evas *e, Evas_Coord x, Evas_Coord y, int id, unsigned int timestamp);
-void _evas_event_touch_move(Evas *e, Evas_Coord x, Evas_Coord y, int id, unsigned int timestamp);
 
 /****************************************************************************/
 /*****************************************/

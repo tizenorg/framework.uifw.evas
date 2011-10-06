@@ -47,10 +47,7 @@ if !EVAS_STATIC_BUILD_SOFTWARE_16_X11
 SUBDIRS += software_16_x11
 endif
 if !EVAS_STATIC_BUILD_SOFTWARE_SDL
-SUBDIRS += software_sdl
-endif
-if !EVAS_STATIC_BUILD_SOFTWARE_16_SDL
-SUBDIRS += software_16_sdl
+SUBDIRS += software_16_sdl software_sdl
 endif
 if !EVAS_STATIC_BUILD_SOFTWARE_DDRAW
 SUBDIRS += software_ddraw
