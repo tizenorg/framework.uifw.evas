@@ -51,6 +51,10 @@ shader/img_bgra_nomul_vert.h \
 shader/img_bgra_nomul_vert_bin_s3c6410.h \
 shader/img_mask_frag.h \
 shader/img_mask_vert.h \
+shader/nv12_nomul_vert.h \
+shader/nv12_vert.h \
+shader/nv12_nomul_frag.h \
+shader/nv12_frag.h \
 shader/yuv_frag.h \
 shader/yuv_frag_bin_s3c6410.h \
 shader/yuv_vert.h \
@@ -82,7 +86,11 @@ shader/filter_greyscale_bgra_nomul.h \
 shader/filter_blur.h \
 shader/filter_blur_nomul.h \
 shader/filter_blur_bgra.h \
-shader/filter_blur_bgra_nomul.h
+shader/filter_blur_bgra_nomul.h \
+shader/yuy2_frag.h \
+shader/yuy2_vert.h \
+shader/yuy2_nomul_frag.h \
+shader/yuy2_nomul_vert.h
 
 libevas_engine_gl_common_la_LIBADD = @EINA_LIBS@ @GL_EET_LIBS@ @evas_engine_gl_common_libs@ @dlopen_libs@
 endif

@@ -122,7 +122,7 @@ evas_new(void)
    e->name_hash = eina_hash_string_superfast_new(NULL);
 
 #define EVAS_ARRAY_SET(E, Array)		\
-   eina_array_step_set(&E->Array, sizeof (E->Array), 256);
+   eina_array_step_set(&E->Array, sizeof (E->Array), 4096);
 
    EVAS_ARRAY_SET(e, delete_objects);
    EVAS_ARRAY_SET(e, active_objects);
@@ -143,6 +143,7 @@ EAPI void
 evas_free(Evas *e)
 {
    Eina_Rectangle *r;
+   Evas_Coord_Touch_Point *touch_point;
    Evas_Layer *lay;
    int i;
    int del;
@@ -249,6 +250,11 @@ evas_free(Evas *e)
    eina_array_flush(&e->calculate_objects);
    eina_array_flush(&e->clip_changes);
 
+   EINA_LIST_FREE(e->touch_points, touch_point)
+     free(touch_point);
+
+   eina_list_free(e->calc_list);
+   
    e->magic = 0;
    free(e);
 }
@@ -458,50 +464,7 @@ evas_render_method_lookup(const char *name)
 EAPI Eina_List *
 evas_render_method_list(void)
 {
-   Eina_List *methods = NULL;
-
-   /* FIXME: get from modules - this is currently coded-in */
-#ifdef BUILD_ENGINE_SOFTWARE_GDI
-   methods = eina_list_append(methods, "software_gdi");
-#endif
-#ifdef BUILD_ENGINE_SOFTWARE_DDRAW
-   methods = eina_list_append(methods, "software_ddraw");
-#endif
-#ifdef BUILD_ENGINE_SOFTWARE_16_DDRAW
-   methods = eina_list_append(methods, "software_16_ddraw");
-#endif
-#ifdef BUILD_ENGINE_DIRECT3D
-   methods = eina_list_append(methods, "direct3d");
-#endif
-#ifdef BUILD_ENGINE_SOFTWARE_16_WINCE
-   methods = eina_list_append(methods, "software_16_wince");
-#endif
-#ifdef BUILD_ENGINE_SOFTWARE_X11
-   methods = eina_list_append(methods, "software_x11");
-#endif
-#ifdef BUILD_ENGINE_SOFTWARE_16_X11
-   methods = eina_list_append(methods, "software_16_x11");
-#endif
-#ifdef BUILD_ENGINE_GL_X11
-   methods = eina_list_append(methods, "gl_x11");
-#endif
-#ifdef BUILD_ENGINE_DIRECTFB
-   methods = eina_list_append(methods, "directfb");
-#endif
-#ifdef BUILD_ENGINE_FB
-   methods = eina_list_append(methods, "fb");
-#endif
-#ifdef BUILD_ENGINE_BUFFER
-   methods = eina_list_append(methods, "buffer");
-#endif
-#ifdef BUILD_ENGINE_SOFTWARE_WIN32_GDI
-   methods = eina_list_append(methods, "software_win32_gdi");
-#endif
-#ifdef BUILD_ENGINE_SOFTWARE_SDL
-   methods = eina_list_append(methods, "software_sdl");
-#endif
-
-   return methods;
+   return evas_module_engine_list();
 }
 
 EAPI void

@@ -158,7 +158,7 @@ extern EAPI int _evas_log_dom_global;
 # define LKI(x)
 # define LKD(x)
 # define LKL(x)
-# define LKT(x) 0
+# define LKT(x) 1
 # define LKU(x)
 # define TH(x)
 # define THI(x)
@@ -350,9 +350,9 @@ void *alloca (size_t);
 
 /*****************************************************************************/
 
-typedef unsigned long long              DATA64;
-typedef unsigned int                    DATA32;
-typedef unsigned short                  DATA16;
+typedef unsigned long long		DATA64;
+typedef unsigned int			DATA32;
+typedef unsigned short			DATA16;
 typedef unsigned char                   DATA8;
 
 typedef struct _Image_Entry             Image_Entry;
@@ -458,7 +458,8 @@ typedef enum _CPU_Features
    CPU_FEATURE_ALTIVEC = (1 << 3),
    CPU_FEATURE_VIS     = (1 << 4),
    CPU_FEATURE_VIS2    = (1 << 5),
-   CPU_FEATURE_NEON    = (1 << 6)
+   CPU_FEATURE_NEON    = (1 << 6),
+   CPU_FEATURE_SSE3    = (1 << 7)
 } CPU_Features;
 
 typedef enum _Font_Hint_Flags

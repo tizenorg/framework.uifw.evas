@@ -371,7 +371,7 @@ _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType *gif, Image_Entry
              *error = EVAS_LOAD_ERROR_CORRUPT_FILE;
              goto error;
           }
-        else /* find previous frame */
+        else
           {
              Gif_Frame *gif_frame = NULL;
              ptr_src = new_frame->data;

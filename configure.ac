@@ -77,7 +77,7 @@ AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 
 case "$host_os" in
-   mingw32ce* | cegcc*)
+   mingw32ce*)
       MODULE_ARCH="$host_os-$host_cpu"
       ;;
    *)
@@ -103,6 +103,7 @@ want_evas_engine_software_8_x11="no"
 want_evas_engine_software_16_x11="no"
 want_evas_engine_software_16_ddraw="no"
 want_evas_engine_software_16_wince="no"
+want_evas_engine_software_16_sdl="no"
 want_evas_engine_gl_xlib="no"
 want_evas_engine_gl_xcb="no"
 want_evas_engine_gl_sdl="no"
@@ -129,7 +130,7 @@ want_evas_image_loader_generic="yes"
 want_evas_font_loader_eet="yes"
 
 case "$host_os" in
-   mingw32ce* | cegcc*)
+   mingw32ce*)
       want_fontconfig="no"
       want_evas_engine_software_16_wince="yes"
       want_evas_image_loader_edb="no"
@@ -223,7 +224,7 @@ EFL_CHECK_DOXYGEN([build_doc="yes"], [build_doc="no"])
 # Evil library for compilation on Windows CE
 
 case "$host_os" in
-   mingw* | cegcc*)
+   mingw*)
       PKG_CHECK_MODULES([EVIL], [evil])
       AC_DEFINE(HAVE_EVIL, 1, [Set to 1 if evil package is installed])
       requirement_evas="evil ${requirement_evas}"
@@ -262,7 +263,7 @@ AC_ARG_ENABLE([fontconfig],
 
 if test "x${want_fontconfig}" = "xyes" -o "x${want_fontconfig}" = "xauto" ; then
    PKG_CHECK_MODULES([FONTCONFIG],
-      [fontconfig],
+      [fontconfig >= 2.5.0],
       [
        have_fontconfig="yes"
        AC_DEFINE(HAVE_FONTCONFIG, 1, [have fontconfig searching capabilities])
@@ -422,11 +423,12 @@ fi
 ### Checks for header files
 AC_HEADER_STDC
 AC_CHECK_HEADERS([unistd.h stdint.h sys/param.h netinet/in.h])
-
 EFL_CHECK_PATH_MAX
 
 
 ### Checks for types
+AC_CHECK_TYPES([struct sigaction], [], [],
+               [[#include <signal.h>]])
 
 
 ### Checks for structures
@@ -435,12 +437,14 @@ EFL_CHECK_PATH_MAX
 ### Checks for compiler characteristics
 AC_C_CONST
 AC_C_BIGENDIAN
-AC_C___ATTRIBUTE__
 AM_PROG_CC_STDC
+EFL_ATTRIBUTE_UNUSED
+EFL_ATTRIBUTE_VECTOR
+EFL_ATTRIBUTE_ALWAYS_INLINE
 
 WIN32_CPPFLAGS=""
 case "$host_os" in
-   mingw32ce* | cegcc*)
+   mingw32ce*)
       WIN32_CPPFLAGS="-D_WIN32_WCE=0x0420"
       ;;
    mingw*)
@@ -450,18 +454,13 @@ esac
 AC_SUBST(WIN32_CPPFLAGS)
 
 WIN32_CFLAGS=""
-case "${host_os}" in
-   cegcc*)
-      WIN32_CFLAGS="-mwin32"
-   ;;
-esac
 AC_SUBST(WIN32_CFLAGS)
 
 
 ### Checks for linker characteristics
 lt_enable_auto_import=""
 case "${host_os}" in
-   mingw* | cegcc*)
+   mingw*)
       AC_DEFINE(EFL_EVAS_BUILD, 1, [Define to mention that evas is built])
       lt_enable_auto_import="-Wl,--enable-auto-import"
    ;;
@@ -472,6 +471,7 @@ AC_SUBST(lt_enable_auto_import)
 ### Checks for library functions
 
 AC_ISC_POSIX
+AC_CHECK_FUNCS([siglongjmp])
 
 # alloca
 AC_FUNC_ALLOCA
@@ -482,7 +482,7 @@ EFL_CHECK_FNMATCH([], [AC_MSG_ERROR([Cannot find fnmatch()])])
 # dlopen
 dlopen_libs=""
 case "$host_os" in
-  mingw32ce* | cegcc*)
+  mingw32ce*)
 # managed by evil
     AC_DEFINE(HAVE_DLADDR)
   ;;
@@ -681,6 +681,8 @@ EVAS_CHECK_ENGINE([software-16-ddraw], [${want_evas_engine_software_16_ddraw}], 
 
 EVAS_CHECK_ENGINE([software-16-wince], [${want_evas_engine_software_16_wince}], [no], [Software Windows CE 16 bits])
 
+EVAS_CHECK_ENGINE([software-16-sdl], [${want_evas_engine_software_16_sdl}], [no], [Software SDL 16 bits])
+
 # SDL primitive
 sdl_primitive="no"
 
@@ -875,7 +877,7 @@ have_evas_engine_software_16="no"
 if test "x$have_evas_engine_software_16_x11" = "xyes" -o "x$have_evas_engine_software_16_x11" = "xstatic"; then
    have_evas_engine_software_16="yes"
 fi
-if test "x$have_evas_engine_software_sdl" = "xyes" -o "x$have_evas_engine_software_sdl" = "xstatic"; then
+if test "x$have_evas_engine_software_16_sdl" = "xyes" -o "x$have_evas_engine_software_16_sdl" = "xstatic"; then
    have_evas_engine_software_16="yes"
 fi
 if test "x$have_evas_engine_software_16_ddraw" = "xyes" -o "x$have_evas_engine_software_16_ddraw" = "xstatic"; then
@@ -939,7 +941,7 @@ dnl Windows has no sigsetjmp function, nor equivalent.
 dnl So we disable the jpeg saver.
 dnl TODO: must find a workaround
 case "$host_os" in
-   mingw* | cegcc*)
+   mingw*)
       ;;
    *)
       if test "x${have_evas_image_loader_jpeg}" = "xyes" ; then
@@ -1217,6 +1219,64 @@ AC_ARG_ENABLE(cpu-sse,
     fi
   ]
 )
+
+#######################################
+## SSE3
+build_cpu_sse3="no"
+case $host_cpu in
+  i*86)
+    build_cpu_sse3="yes"
+    ;;
+  x86_64)
+    build_cpu_sse3="yes"
+    ;;
+  amd64)
+    build_cpu_sse3="yes"
+    ;;
+esac
+AC_MSG_CHECKING(whether to build sse3 code)
+AC_ARG_ENABLE(cpu-sse3,
+  AS_HELP_STRING([--enable-cpu-sse3], [enable sse3 code]),
+  [
+      if test "x$enableval" = "xyes" ; then
+        AC_MSG_RESULT(yes)
+        AC_DEFINE(BUILD_SSE3, 1, [Build SSE3 Code])
+        build_cpu_sse3="yes"
+      else
+        AC_MSG_RESULT(no)
+        build_cpu_sse3="no"
+      fi
+  ],
+  [
+    AC_MSG_RESULT($build_cpu_sse3)
+    if test "x$build_cpu_sse3" = "xyes" ; then
+      AC_DEFINE(BUILD_SSE3, 1, [Build SSE3 Code])
+    fi
+  ]
+)
+
+
+# as a big warning flag to anyone doing stuff like this...
+# NEVER EVER EVER EVER put **OPTIMIZATION** flags in
+# build flags in makefiles (from configure or anywhere else)
+# EVER as this screws your ability to build 1 binary and
+# cover ALL x86 arch's. This is the HEIGHT of WRONG. If the
+# person building choses to add optimization flags themselves
+# and decide the minimum baseline cpu arch is X then that's
+# their business, but NEVER should it be done here. NEVER.
+# I now have to do this due to the way this sse3 code was done - using
+# intrinsics and "functions" (opcodes) and types that only compile *IF*
+# you compile with -msse3. this ALSO tries to optimize REGULAR c code
+# with sse3 asm.. and this breaks things so badly. so... sse3 will be
+# off until further notice for 32bit x86.
+EVAS_SSE3_CFLAGS=" "
+if test "x$build_cpu_sse3" = "xyes" ; then
+    EVAS_SSE3_CFLAGS="-msse3 "
+#   CFLAGS="${CFLAGS} ${EVAS_SSE3_CFLAGS}"
+fi
+
+AC_SUBST(CFLAGS)
+AC_SUBST(EVAS_SSE3_CFLAGS)
 
 #######################################
 ## ALTIVEC
@@ -1846,7 +1906,7 @@ echo "  Software 16bit ............: $have_evas_engine_software_16"
 echo "  Software 16bit X11.........: $have_evas_engine_software_16_x11"
 echo "  Software 16bit Directdraw..: $have_evas_engine_software_16_ddraw"
 echo "  Software 16bit WinCE.......: $have_evas_engine_software_16_wince"
-echo "  Software 16bit SDL.........: $have_evas_engine_software_sdl (primitive: $sdl_primitive)"
+echo "  Software 16bit SDL.........: $have_evas_engine_software_16_sdl (primitive: $sdl_primitive)"
 echo
 echo "Image Loaders:"
 echo "  BMP.....................: $have_evas_image_loader_bmp"
@@ -1882,6 +1942,7 @@ echo "CPU Specific Extensions:"
 echo "  Fallback C Code.........: $build_cpu_c"
 echo "  MMX.....................: $build_cpu_mmx"
 echo "  SSE.....................: $build_cpu_sse"
+echo "  SSE3....................: $build_cpu_sse3"
 echo "  ALTIVEC.................: $build_cpu_altivec"
 echo "  NEON....................: $build_cpu_neon"
 echo "  Thread Support..........: $build_pthreads"

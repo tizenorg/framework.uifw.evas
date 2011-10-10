@@ -1,3 +1,11 @@
+evas (1.0.0.001+svn.63811slp2+build01) unstable; urgency=low
+
+  * Merge with upstream
+  * Git: 165.213.180.234:/slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.63811slp2+build01
+
+ -- Mike McCormack <mj.mccormack@samsung.com>  Wed, 05 Oct 2011 14:39:09 +0900
+
 evas (1.0.0.001+svn.62695slp2+build32) unstable; urgency=low
 
   * Package Upload.
