@@ -11,7 +11,7 @@ varying vec2 tex_c, tex_cuv;
 void main()
 {
   float y,u,v,vmu,r,g,b;
-  y=texture2D(tex,tex_c).r;
+  y=texture2D(tex,tex_c).g;
   u=texture2D(texuv,tex_cuv).g;
   v=texture2D(texuv,tex_cuv).a;
 
@@ -20,6 +20,7 @@ void main()
   vmu=v*0.813+u*0.391;
   u=u*2.018;
   v=v*1.596;
+  y=(y-0.062)*1.164;
 
   r=y+v;
   g=y-vmu;
