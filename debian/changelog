@@ -1,3 +1,13 @@
+evas (1.0.0.001+svn.62695slp2+build33) unstable; urgency=low
+
+  * Upload package
+  * Changing image format of egl_image to BGRA
+  * Update shaders from svn
+  * Git: 165.213.180.234:/slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.62695slp2+build33
+
+ -- Seungsoo Woo <om101.woo@samsung.com>  Tue, 11 Oct 2011 09:10:47 +0900
+
 evas (1.0.0.001+svn.63811slp2+build01) unstable; urgency=low
 
   * Merge with upstream
