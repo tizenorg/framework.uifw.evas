@@ -1,3 +1,12 @@
+evas (1.0.0.001+svn.62695slp2+build35) unstable; urgency=low
+
+  * Upload package
+  * Float precision of vertex shader is fixed
+  * Git: 165.213.180.234:/slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.62695slp2+build35
+
+ -- Seungsoo Woo <om101.woo@samsung.com>  Wed, 12 Oct 2011 13:45:30 +0900
+
 evas (1.0.0.001+svn.62695slp2+build34) unstable; urgency=low
 
   * Package Upload
