@@ -195,8 +195,8 @@ _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType *gif, Image_Entry
    int                 alpha;
    double              per, per_inc;
    ColorMapObject     *cmap;
-   GifRowType         *rows;
-   GifRowType         *tmp; /*for skip gif line */
+   GifRowType         *rows = NULL;
+   GifPixelType       *tmp = NULL; /*for skip gif line */
    int                 intoffset[] = { 0, 4, 2, 1 };
    int                 intjump[] = { 8, 8, 4, 2 };
    size_t              siz;
@@ -225,16 +225,6 @@ _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType *gif, Image_Entry
    scale_h = h / scale_ratio;
    scale_x = x / scale_ratio;
    scale_y = y / scale_ratio;
-
-   if (scale_ratio > 1)
-     {
-        tmp = malloc(w * sizeof(GifPixelType));
-        if (!tmp)
-          {
-             *error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
-             return EINA_FALSE;
-          }
-     }
 
    rows = malloc(scale_h * sizeof(GifRowType *));
 
@@ -266,14 +256,30 @@ _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType *gif, Image_Entry
              return EINA_FALSE;
           }
      }
+
+   if (scale_ratio > 1)
+     {
+        tmp = malloc(w * sizeof(GifPixelType));
+        if (!tmp)
+          {
+             *error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
+             goto error;
+          }
+     }
+
    if (gif->Image.Interlace)
      {
+        Eina_Bool multiple;
+        int scale_j;
         for (i = 0; i < 4; i++)
           {
              for (j = intoffset[i]; j < h; j += intjump[i])
                {
-                  if ((j % scale_ratio) == 0)
-                    DGifGetLine(gif, rows[(j / scale_ratio)], w);
+                  scale_j = j / scale_ratio;
+                  multiple = ((j % scale_ratio) ? EINA_FALSE : EINA_TRUE);
+
+                  if (multiple && (scale_j < scale_h))
+                    DGifGetLine(gif, rows[scale_j], w);
                   else
                     DGifGetLine(gif, tmp, w);
                }
@@ -302,6 +308,13 @@ _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType *gif, Image_Entry
                }
           }
      }
+
+   if (scale_ratio > 1)
+     {
+        if (tmp) free(tmp);
+        tmp = NULL;
+     }
+
    alpha = gif_frame->frame_info.transparent;
    siz = cache_w *cache_h * sizeof(DATA32);
    frame->data = malloc(siz);
@@ -537,6 +550,7 @@ error:
         if (rows[i]) free(rows[i]);
      }
    if (rows) free(rows);
+   if (tmp) free(tmp);
    return EINA_FALSE;
 }
 
