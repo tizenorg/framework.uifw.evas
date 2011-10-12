@@ -1,3 +1,13 @@
+evas (1.0.0.001+svn.62695slp2+build36) unstable; urgency=low
+
+  * Upload Package
+  * Important Changes
+        modify gifloader's interace code
+  * Git: 165.213.180.234:/slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.62695slp2+build36
+
+ -- Jiyoun Park <jy0703.park@samsung.com>  Wed, 12 Oct 2011 22:58:00 +0900
+
 evas (1.0.0.001+svn.62695slp2+build35) unstable; urgency=low
 
   * Upload package
