@@ -1,5 +1,6 @@
 #include "evas_gl_private.h"
 
+#define PRG_INVALID 0xffffffff
 #define GLPIPES 1
 
 static int sym_done = 0;
@@ -454,7 +455,9 @@ _evas_gl_common_viewport_set(Evas_Engine_GL_Context *gc)
         GLERR(__FUNCTION__, __FILE__, __LINE__, "");
      }
 
-   glUseProgram(gc->pipe[0].shader.cur_prog);
+   if (gc->state.current.cur_prog == PRG_INVALID)
+      glUseProgram(gc->shared->shader[0].prog);
+   else glUseProgram(gc->state.current.cur_prog);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 }
 
@@ -703,7 +706,9 @@ evas_gl_common_context_new(void)
         SHADER_TEXTURE_ADD(shared, IMG_MASK, tex);
         SHADER_TEXTURE_ADD(shared, IMG_MASK, texm);
 
-        glUseProgram(gc->pipe[0].shader.cur_prog);
+        if (gc->state.current.cur_prog == PRG_INVALID)
+           glUseProgram(gc->shared->shader[0].prog);
+        else glUseProgram(gc->state.current.cur_prog);
         GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 
         evas_gl_common_shader_program_init_done();
@@ -891,7 +896,9 @@ evas_gl_common_context_newframe(Evas_Engine_GL_Context *gc)
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
    glEnableVertexAttribArray(SHAD_COLOR);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   glUseProgram(gc->pipe[0].shader.cur_prog);
+   if (gc->state.current.cur_prog == PRG_INVALID)
+      glUseProgram(gc->shared->shader[0].prog);
+   else glUseProgram(gc->state.current.cur_prog);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 
    glActiveTexture(GL_TEXTURE0);
@@ -922,7 +929,7 @@ evas_gl_common_context_target_surface_set(Evas_Engine_GL_Context *gc,
 
    evas_gl_common_context_flush(gc);
 
-   gc->state.current.cur_prog = -1;
+   gc->state.current.cur_prog = PRG_INVALID;
    gc->state.current.cur_tex = -1;
    gc->state.current.cur_texu = -1;
    gc->state.current.cur_texv = -1;
@@ -2101,7 +2108,7 @@ evas_gl_common_context_image_map_push(Evas_Engine_GL_Context *gc,
               if (tex->pt->dyn.img)
                 {
                    prog = gc->shared->shader[evas_gl_common_shader_choice(npoints, p, r, g, b, a,
-                                                                          SHADER_IMG_NOMUL, SHADER_IMG)].prog;
+                                                                          SHADER_IMG_BGRA_NOMUL, SHADER_IMG_BGRA)].prog;
                 }
               else
                 {
@@ -2648,14 +2655,14 @@ shader_array_flush(Evas_Engine_GL_Context *gc)
 
         gc->state.current.cur_prog  = gc->pipe[i].shader.cur_prog;
         gc->state.current.cur_tex   = gc->pipe[i].shader.cur_tex;
-        gc->state.current.blend     = gc->pipe[i].shader.blend;
-        gc->state.current.smooth    = gc->pipe[i].shader.smooth;
         gc->state.current.render_op = gc->pipe[i].shader.render_op;
-        gc->state.current.clip      = gc->pipe[i].shader.clip;
         gc->state.current.cx        = gc->pipe[i].shader.cx;
         gc->state.current.cy        = gc->pipe[i].shader.cy;
         gc->state.current.cw        = gc->pipe[i].shader.cw;
         gc->state.current.ch        = gc->pipe[i].shader.ch;
+        gc->state.current.smooth    = gc->pipe[i].shader.smooth;
+        gc->state.current.blend     = gc->pipe[i].shader.blend;
+        gc->state.current.clip      = gc->pipe[i].shader.clip;
 
         if (gc->pipe[i].array.vertex) free(gc->pipe[i].array.vertex);
         if (gc->pipe[i].array.color) free(gc->pipe[i].array.color);
