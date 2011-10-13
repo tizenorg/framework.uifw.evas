@@ -1,3 +1,13 @@
+evas (1.0.0.001+svn.62695slp2+build37) unstable; urgency=low
+
+  * Upload package
+  * fix gl pipeline problem with textures and map and the wrong program id
+  * fix shader for nv12
+  * Git: 165.213.180.234:/slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.62695slp2+build37
+
+ -- Seungsoo woo <om101.woo@samsung.com>  Thu, 13 Oct 2011 13:49:21 +0900
+
 evas (1.0.0.001+svn.63811+build02) unstable; urgency=low
 
   * cherry-pick 64030 from upstream (depends on new eina)
