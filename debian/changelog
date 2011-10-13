@@ -1,3 +1,9 @@
+evas (1.0.0.001+svn.63811+build02) unstable; urgency=low
+
+  * cherry-pick 64030 from upstream (depends on new eina)
+
+ -- Mike McCormack <mj.mccormack@samsung.com>  Thu, 13 Oct 2011 12:49:22 +0900
+
 evas (1.0.0.001+svn.62695slp2+build36) unstable; urgency=low
 
   * Upload Package
