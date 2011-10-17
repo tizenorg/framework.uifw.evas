@@ -1,3 +1,12 @@
+evas (1.0.0.001+svn.62695slp2+build38) unstable; urgency=low
+
+  * upload package
+  * evas_object_image about map and unmap pairing
+  * Git :* Git: 165.213.180.234:/slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.62695slp2+build38
+
+ -- Sanghee Park <sh15.park@samsung.com>  Mon, 17 Oct 2011 19:39:46 +0900
+
 evas (1.0.0.001+svn.62695slp2+build37) unstable; urgency=low
 
   * Upload package
