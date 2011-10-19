@@ -1,3 +1,12 @@
+evas (1.0.0.001+svn.62695slp2+build40) unstable; urgency=low
+
+  * Upload Package
+  * Unnecessary image_dirty_set is removed.
+  * Git: 165.213.180.234:/slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.62695slp2+build40
+
+ -- Seungsoo Woo <om101.woo@samsung.com>  Wed, 19 Oct 2011 21:37:54 +0900
+
 evas (1.0.0.001+svn.62695slp2+build39) unstable; urgency=low
 
   * Upload Package
