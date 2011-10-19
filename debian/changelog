@@ -1,3 +1,13 @@
+evas (1.0.0.001+svn.62695slp2+build39) unstable; urgency=low
+
+  * Upload Package
+  * Important Changes
+        fix the gl engine's animated code.
+  * Git: 165.213.180.234:/slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.62695slp2+build39
+
+ -- Jiyoun Park <jy0703.park@samsung.com>  Wed, 19 Oct 2011 10:23:23 +0900
+
 evas (1.0.0.001+svn.62695slp2+build38) unstable; urgency=low
 
   * upload package
