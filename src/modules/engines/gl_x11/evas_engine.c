@@ -1879,46 +1879,41 @@ eng_image_data_put(void *data, void *image, DATA32 *image_data)
        && (im->tex->pt->dyn.data)
        && (im->cs.space == EVAS_COLORSPACE_ARGB8888))
      {
+        int w, h;
+
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
         glsym_eglUnmapImageSEC(re->win->egl_disp, im->tex->pt->dyn.img);
 #endif
         if (im->tex->pt->dyn.data == image_data)
-          {
-	     evas_gl_common_image_dirty(im, 0, 0, 0, 0);
-             return image;
-          }
-        else
-          {
-	     int w, h;
+          return image;
 
-	     w = im->im->cache_entry.w;
-	     h = im->im->cache_entry.h;
-	     im2 = eng_image_new_from_data(data, w, h, image_data,
-					   eng_image_alpha_get(data, image),
-					   eng_image_colorspace_get(data, image));
-	     if (!im2) return im;
-	     evas_gl_common_image_free(im);
-	     im = im2;
-             evas_gl_common_image_dirty(im, 0, 0, 0, 0);
-             return im;
-          }
+        w = im->im->cache_entry.w;
+        h = im->im->cache_entry.h;
+        im2 = eng_image_new_from_data(data, w, h, image_data,
+                                      eng_image_alpha_get(data, image),
+                                      eng_image_colorspace_get(data, image));
+        if (!im2) return im;
+        evas_gl_common_image_free(im);
+        im = im2;
+        evas_gl_common_image_dirty(im, 0, 0, 0, 0);
+        return im;
      }
    switch (im->cs.space)
      {
       case EVAS_COLORSPACE_ARGB8888:
-	if (image_data != im->im->image.data)
-	  {
-	     int w, h;
+        if (image_data != im->im->image.data)
+          {
+             int w, h;
 
-	     w = im->im->cache_entry.w;
-	     h = im->im->cache_entry.h;
-	     im2 = eng_image_new_from_data(data, w, h, image_data,
-					   eng_image_alpha_get(data, image),
-					   eng_image_colorspace_get(data, image));
-	     if (!im2) return im;
-	     evas_gl_common_image_free(im);
-	     im = im2;
-	  }
+             w = im->im->cache_entry.w;
+             h = im->im->cache_entry.h;
+             im2 = eng_image_new_from_data(data, w, h, image_data,
+                                           eng_image_alpha_get(data, image),
+                                           eng_image_colorspace_get(data, image));
+             if (!im2) return im;
+             evas_gl_common_image_free(im);
+             im = im2;
+          }
         break;
       case EVAS_COLORSPACE_YCBCR422P601_PL:
       case EVAS_COLORSPACE_YCBCR422P709_PL:
@@ -1926,20 +1921,18 @@ eng_image_data_put(void *data, void *image, DATA32 *image_data)
       case EVAS_COLORSPACE_YCBCR420NV12601_PL:
       case EVAS_COLORSPACE_YCBCR420TM12601_PL:
         if (image_data != im->cs.data)
-	  {
-	     if (im->cs.data)
-	       {
-		  if (!im->cs.no_free) free(im->cs.data);
-	       }
-	     im->cs.data = image_data;
-	  }
-	break;
+          {
+            if (im->cs.data)
+               {
+                 if (!im->cs.no_free) free(im->cs.data);
+               }
+            im->cs.data = image_data;
+          }
+        break;
       default:
-	abort();
-	break;
+        abort();
+        break;
      }
-   /* hmmm - but if we wrote... why bother? */
-   evas_gl_common_image_dirty(im, 0, 0, 0, 0);
    return im;
 }
 
