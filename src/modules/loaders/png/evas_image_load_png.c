@@ -109,9 +109,9 @@ evas_image_load_file_head_png(Image_Entry *ie, const char *file, const char *key
      }
    if (ie->load_opts.scale_down_by > 1)
      {
-        ie->w = (int) w32 / ie->load_opts.scale_down_by ;
-        ie->h = (int) h32 / ie->load_opts.scale_down_by ;
-        if((ie->w < 1) || (ie->h < 1))
+        ie->w = (int) w32 / ie->load_opts.scale_down_by;
+        ie->h = (int) h32 / ie->load_opts.scale_down_by;
+        if ((ie->w < 1) || (ie->h < 1))
           {
              *error = EVAS_LOAD_ERROR_GENERIC;
              goto close_file;
@@ -153,7 +153,7 @@ evas_image_load_file_data_png(Image_Entry *ie, const char *file, const char *key
    int i, j;
    int scale_ratio = 1, image_w = 0;
    unsigned char *tmp_line;
-   unsigned char *src_ptr, *dst_ptr;
+   DATA32 *src_ptr, *dst_ptr;
 
    hasa = 0;
    f = E_FOPEN(file, "rb");
@@ -254,47 +254,35 @@ evas_image_load_file_data_png(Image_Entry *ie, const char *file, const char *key
    png_set_bgr(png_ptr);
    if (!hasa) png_set_filler(png_ptr, 0xff, PNG_FILLER_AFTER);
 #endif
-   lines = (unsigned char **) alloca(h * sizeof(unsigned char *));
 
    /* we read image line by line if scale down was set */
    if (scale_ratio == 1)
      {
+        lines = (unsigned char **) alloca(h * sizeof(unsigned char *));
         for (i = 0; i < h; i++)
           lines[i] = surface + (i * w * sizeof(DATA32));
-     }
-   else
-     {
-        tmp_line = (unsigned char *) malloc(image_w * sizeof(DATA32));
-     }
-
-   if (scale_ratio == 1)
-     {
         png_read_image(png_ptr, lines);
         png_read_end(png_ptr, info_ptr);
      }
    else
      {
-        src_ptr = surface;
+        tmp_line = (unsigned char *) alloca(image_w * sizeof(DATA32));
+        dst_ptr = (DATA32 *)surface;
         for (i = 0; i < h; i++)
           {
              png_read_row(png_ptr, tmp_line, NULL);
-             dst_ptr = tmp_line;
+             src_ptr = (DATA32 *)tmp_line;
              for (j = 0; j < w; j++)
                {
-                  src_ptr[0] = dst_ptr[0];
-                  src_ptr[1] = dst_ptr[1];
-                  src_ptr[2] = dst_ptr[2];
-                  src_ptr[3] = dst_ptr[3];
-                  src_ptr += 4;
-                  dst_ptr += scale_ratio * 4;
+                  *dst_ptr = *src_ptr;
+                  dst_ptr++;
+                  src_ptr += scale_ratio;
                }
              for (j = 0; j < (scale_ratio - 1); j++)
                {
                   png_read_row(png_ptr, tmp_line, NULL);
                }
           }
-        if (tmp_line)
-          free(tmp_line);
      }
 
    png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
