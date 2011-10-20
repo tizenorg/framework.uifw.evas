@@ -6,6 +6,11 @@
 #include "evas_font_private.h" /* for Frame-Queuing support */
 #include "evas_font_ot.h"
 
+#ifdef USE_HARFBUZZ
+# include <hb.h>
+# include <hb-ft.h>
+#endif
+
 extern FT_Library         evas_ft_lib;
 
 static int                font_cache_usage = 0;
@@ -68,6 +73,9 @@ _evas_common_font_int_free(RGBA_Font_Int *fi)
 
 #ifdef HAVE_PTHREAD
    pthread_mutex_destroy(&fi->ft_mutex);
+#endif
+#ifdef USE_HARFBUZZ
+   hb_font_destroy(fi->ft.hb_font);
 #endif
    evas_common_font_source_free(fi->src);
    if (fi->references == 0) fonts_lru = eina_list_remove(fonts_lru, fi);
