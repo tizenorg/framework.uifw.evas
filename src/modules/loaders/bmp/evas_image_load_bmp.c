@@ -8,6 +8,8 @@
 # include <Evil.h>
 #endif
 
+#include <math.h>
+
 #include "evas_common.h"
 #include "evas_private.h"
 
@@ -259,18 +261,12 @@ evas_image_load_file_head_bmp(Image_Entry *ie, const char *file, const char *key
           *error = EVAS_LOAD_ERROR_GENERIC;
 	goto close_file;
      }
-   /* It is not bad idea that bmp loader support scale down decoding
-    * because of memory issue in mobile world.
-    * But there are many bit count(bit per pixel) type in BMP format.
-    * Generally, 1,2,4,8 bit count have row risk of memory problem,
-    * so I add scale down feature only when bit count is 16 or 24 or 32 */
+   /* It is not bad idea that bmp loader support scale down decoding 
+    * because of memory issue in mobile world.*/
    if (ie->load_opts.scale_down_by > 1)
      {
-        if ((bit_count == 16) || (bit_count == 24) || (bit_count == 32))
-          {
-             w /= ie->load_opts.scale_down_by;
-             h /= ie->load_opts.scale_down_by;
-          }
+        w /= ie->load_opts.scale_down_by;
+        h /= ie->load_opts.scale_down_by;
      }
 
    if (bit_count < 16)
@@ -350,7 +346,6 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
    char hasa = 0;
    int x = 0, y = 0, w = 0, h = 0, planes = 0, bit_count = 0, image_size = 0,
      comp = 0, hdpi = 0, vdpi = 0, palette_size = -1, important_colors = 0;
-   int scale_ratio = 1, image_w = 0, image_h = 0;
    unsigned int offset = 0, head_size = 0;
    unsigned int *pal = NULL, pal_num = 0, *pix = NULL, *surface = NULL, fix,
      rmask = 0, gmask = 0, bmask = 0, amask = 0;
@@ -359,7 +354,14 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
    int fsize = 0;
    unsigned int bmpsize;
    unsigned short res1, res2;
-   
+
+   /* for scale decoding */
+   unsigned int *scale_surface = NULL, *scale_pix = NULL;
+   int scale_ratio = 1, image_w = 0, image_h = 0;
+   int row_size = 0; /* Row size is rounded up to a multiple of 4bytes */
+   int read_line = 0; /* total read line */
+
+
    f = fopen(file, "rb");
    if (!f)
      {
@@ -547,21 +549,15 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
           *error = EVAS_LOAD_ERROR_GENERIC;
 	goto close_file;
      }
-   /* It is not bad idea that bmp loader support scale down decoding
-    * because of memory issue in mobile world.
-    * But there are many bit count(bit per pixel) type in BMP format.
-    * Generally, 1,2,4,8 bit count have row risk of memory problem,
-    * so I add scale down feature only when bit count is 16 or 24 or 32 */
-   if(ie->load_opts.scale_down_by > 1)
-     {
-        if ((bit_count == 16) || (bit_count == 24) || (bit_count == 32))
-          scale_ratio = ie->load_opts.scale_down_by;
-     }
+   /* It is not bad idea that bmp loader support scale down decoding 
+    * because of memory issue in mobile world. */
+   if (ie->load_opts.scale_down_by > 1)
+     scale_ratio = ie->load_opts.scale_down_by;
+   image_w = w;
+   image_h = h;
 
    if (scale_ratio > 1)
      {
-        image_w = w;
-        image_h = h;
         w /= scale_ratio;
         h /= scale_ratio;
 
@@ -584,7 +580,9 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
 	*error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
 	goto close_file;
      }
-   
+
+   row_size = ceil((double)(image_w * bit_count) / 32) * 4;
+
    if (bit_count < 16)
      {
         unsigned int i;
@@ -618,25 +616,52 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
              pal[i] = ARGB_JOIN(a, r, g, b);
           }
         fseek(f, offset, SEEK_SET);
-        buffer = malloc(image_size + 8); // add 8 for padding to avoid checks
+
+        if ((scale_ratio == 1) || (comp !=0))
+          buffer = malloc(image_size + 8); // add 8 for padding to avoid checks
+        else
+          {
+             scale_surface = malloc(image_w * sizeof(DATA32)); //for one line decoding
+             if (!scale_surface)
+               {
+                  *error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
+                  goto close_file;
+               }
+             buffer = malloc(row_size); // scale down is usually set because of memory issue, so read line by line
+          }
+
         if (!buffer)
           {
              *error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
              goto close_file;
           }
-        buffer_end = buffer + image_size;
+        if ((scale_ratio == 1) || (comp !=0))
+          buffer_end = buffer + image_size;
+        else
+          buffer_end = buffer + row_size;
         p = buffer;
-        if (fread(buffer, image_size, 1, f) != 1) goto close_file;
-        
+
+        if ((scale_ratio == 1) || (comp !=0))
+          {
+             if (fread(buffer, image_size, 1, f) != 1) goto close_file;
+          }
+        else
+          {
+             if (fread(buffer, row_size, 1, f) != 1) goto close_file;
+          }
+
         if (bit_count == 1)
           {
              if (comp == 0) // no compression
                {
                   pix = surface;
+
                   for (y = 0; y < h; y++)
                     {
                        if (!right_way_up) pix = surface + ((h - 1 - y) * w);
-                       for (x = 0; x < w; x++)
+                       if (scale_ratio > 1) pix = scale_surface; // one line decoding
+
+                       for (x = 0; x < image_w; x++)
                          {
                             if ((x & 0x7) == 0x0)
                               {
@@ -674,10 +699,34 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
                             if (p >= buffer_end) break;
                             pix++;
                          }
-                       if ((x & 0x7) != 0) p++;
-                       fix = (int)(((unsigned long)p) & 0x3);
-                       if (fix > 0) p += 4 - fix; // align row read
-                       if (p >= buffer_end) break;
+
+                       if (scale_ratio > 1)
+                         {
+                            if (!right_way_up) scale_pix = surface + ((h - 1 - y) * w);
+                            else scale_pix = surface + (y * w);
+
+                            pix = scale_surface;
+                            for (x = 0; x < w; x++)
+                              {
+                                 *scale_pix = *pix;
+                                 scale_pix ++;
+                                 pix += scale_ratio;
+                              }
+                            read_line += scale_ratio;
+                            if (read_line >= image_h) break;
+
+                            fseek(f, row_size * (scale_ratio - 1), SEEK_CUR);
+                            if (fread(buffer, row_size, 1, f) != 1) goto close_file;
+                            p = buffer;
+                            buffer_end = buffer + row_size;
+                         }
+                       else
+                         {
+                            if ((x & 0x7) != 0) p++;
+                            fix = (int)(((unsigned long)p) & 0x3);
+                            if (fix > 0) p += 4 - fix; // align row read
+                            if (p >= buffer_end) break;
+                         }
                     }
                }
              else
@@ -691,7 +740,8 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
                   for (y = 0; y < h; y++)
                     {
                        if (!right_way_up) pix = surface + ((h - 1 - y) * w);
-                       for (x = 0; x < w; x++)
+                       if (scale_ratio > 1) pix = scale_surface; // one line decoding
+                       for (x = 0; x < image_w; x++)
                          {
                             if ((x & 0x1) == 0x1)
                               {
@@ -705,116 +755,184 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
                             if (p >= buffer_end) break;
                             pix++;
                          }
-                       if ((x & 0x1) != 0) p++;
-                       fix = (int)(((unsigned long)p) & 0x3);
-                       if (fix > 0) p += 4 - fix; // align row read
-                       if (p >= buffer_end) break;
+                       if (scale_ratio > 1)
+                         {
+                            if (!right_way_up) scale_pix = surface + ((h - 1 - y) * w);
+                            else scale_pix = surface + (y * w);
+
+                            pix = scale_surface;
+                            for (x = 0; x < w; x++)
+                              {
+                                 *scale_pix = *pix;
+                                 scale_pix ++;
+                                 pix += scale_ratio;
+                              }
+                            read_line += scale_ratio;
+                            if (read_line >= image_h) break;
+
+                            fseek(f, row_size * (scale_ratio - 1), SEEK_CUR);
+                            if (fread(buffer, row_size, 1, f) != 1) goto close_file;
+                            p = buffer;
+                            buffer_end = buffer + row_size;
+                         }
+                       else
+                         {
+                            if ((x & 0x1) != 0) p++;
+                            fix = (int)(((unsigned long)p) & 0x3);
+                            if (fix > 0) p += 4 - fix; // align row read
+                            if (p >= buffer_end) break;
+                         }
                     }
                }
              else if (comp == 2) // rle 4bit/pixel
                {
                   int count = 0, done = 0, wpad;
+                  int scale_x = 0, scale_y = 0;
+                  Eina_Bool scale_down_line = EINA_TRUE;
 
                   pix = surface;
                   if (!right_way_up) pix = surface + ((h - 1 - y) * w);
-                  wpad = ((w + 1) / 2) * 2;
+                  wpad = ((image_w + 1) / 2) * 2;
                   while (p < buffer_end)
                     {
                        if (p[0])
                          {
-			    if ((x + p[0]) <= wpad)
-			      {
-                                 unsigned int col1 = pal[p[1] >> 4];
-                                 unsigned int col2 = pal[p[1] & 0xf];
-                            
-                                 count = p[0] / 2;
-                                 while (count > 0)
+                            if (scale_down_line)
+                              {
+                                 if ((x + p[0]) <= wpad)
                                    {
-                                      if (x < w)
+                                      unsigned int col1 = pal[p[1] >> 4];
+                                      unsigned int col2 = pal[p[1] & 0xf];
+
+                                      count = p[0] / 2;
+                                      while (count > 0)
                                         {
-                                           pix[0] = col1;
+                                           if (x < w)
+                                             {
+                                                if (((x % scale_ratio) == 0) && (scale_x < w))
+                                                  {
+                                                     *pix = col1;
+                                                     pix++;
+                                                     scale_x++;
+                                                  }
+                                                x++;
+                                             }
+                                           if (x < w)
+                                             {
+                                                if (((x % scale_ratio) == 0) && (scale_x < w))
+                                                  {
+                                                     *pix = col2;
+                                                     pix++;
+                                                     scale_x++;
+                                                  }
+                                                x++;
+                                             }
+                                           count--;
+                                        }
+                                      if (p[0] & 0x1)
+                                        {
+                                           if (((x % scale_ratio) == 0) && (scale_x < w))
+                                             {
+                                                *pix = col1;
+                                                pix++;
+                                                scale_x++;
+                                             }
                                            x++;
                                         }
-                                      if (x < w)
-                                        {
-                                           pix[1] = col2;
-                                           x++;
-                                        }
-                                      pix += 2;
-                                      count--;
                                    }
-                                 if (p[0] & 0x1)
-                                   {
-                                      *pix = col1;
-                                      x++;
-                                      pix++;
-                                   }
-			      }
+                              }
                             p += 2;
                          }
                        else
                          {
                             switch (p[1])
                               {
-                              case 0: // EOL
-                                 x = 0;
-                                 y++;
-                                 if (!right_way_up)
-                                   pix = surface + ((h - 1 - y) * w);
-                                 else
-                                   pix = surface + (y * w);
-                                 if (y >= h)
-                                   {
-                                      p = buffer_end;
-                                   }
-                                 p += 2;
-                                 break;
-                              case 1: // EOB
-                                 p = buffer_end;
-                                 break;
-                              case 2: // DELTA
-                                 x += p[2];
-                                 y += p[3];
-                                 if ((x >= w) || (y >= h))
-                                   {
-                                      p = buffer_end;
-                                   }
-                                 if (!right_way_up)
-                                   pix = surface + x + ((h - 1 - y) * w);
-                                 else
-                                   pix = surface + x + (y * w);
-                                 p += 4;
-                                 break;
-                              default:
-                                 count = p[1];
-                                 if (((p + count) > buffer_end) ||
-                                     ((x + count) > w))
-                                   {
-                                      p = buffer_end;
-                                      break;
-                                   }
-                                 p += 2;
-                                 done = count;
-                                 count /= 2;
-                                 while (count > 0)
-                                   {
-                                      pix[0] = pal[*p >> 4];
-                                      pix[1] = pal[*p & 0xf];
-                                      pix += 2;
-                                      p++;
-                                      count--;
-                                   }
-                                 x += done;
-                                 if (done & 0x1)
-                                   {
-                                      *pix = pal[*p >> 4];
-                                      p++;
-                                   }
-                                 if ((done & 0x3) == 0x1)
-                                   p += 2;
-                                 else if ((done & 0x3) == 0x2)
-                                   p += 1;
-                                 break;
+                               case 0: // EOL
+                                  x = 0;
+                                  scale_x = 0;
+                                  y++;
+                                  if ((y % scale_ratio) == 0)
+                                    {
+                                       scale_y++;
+                                       scale_down_line = EINA_TRUE;
+                                       if (!right_way_up)
+                                         pix = surface + ((h - 1 - scale_y) * w);
+                                       else
+                                         pix = surface + (scale_y * w);
+                                    }
+                                  else
+                                    scale_down_line = EINA_FALSE;
+                                  if (scale_y >= h)
+                                    {
+                                       p = buffer_end;
+                                    }
+                                  p += 2;
+                                  break;
+                               case 1: // EOB
+                                  p = buffer_end;
+                                  break;
+                               case 2: // DELTA
+                                  x += p[2];
+                                  y += p[3];
+                                  scale_x = x / scale_ratio;
+                                  scale_y = y / scale_ratio;
+                                  if ((scale_x >= w) || (scale_y >= h))
+                                    {
+                                       p = buffer_end;
+                                    }
+                                  if (!right_way_up)
+                                    pix = surface + scale_x + ((h - 1 - scale_y) * w);
+                                  else
+                                    pix = surface + scale_x + (scale_y * w);
+                                  p += 4;
+                                  break;
+                               default:
+                                  count = p[1];
+                                  if (((p + count) > buffer_end) ||
+                                      ((x + count) > w))
+                                    {
+                                       p = buffer_end;
+                                       break;
+                                    }
+                                  p += 2;
+                                  done = count;
+                                  count /= 2;
+                                  while (count > 0)
+                                    {
+                                       if (((x % scale_ratio) == 0) && (scale_x < w))
+                                         {
+                                            *pix = pal[*p >> 4];
+                                            pix++;
+                                            scale_x++;
+                                         }
+                                       x++;
+                                       if (((x % scale_ratio) == 0) && (scale_x < w))
+                                         {
+                                            *pix = pal[*p & 0xf];
+                                            pix++;
+                                            scale_x++;
+                                         }
+                                       x++;
+
+                                       p++;
+                                       count--;
+                                    }
+
+                                  if (done & 0x1)
+                                    {
+                                       if (((x % scale_ratio) == 0) && (scale_x < w))
+                                         {
+                                            *pix = pal[*p >> 4];
+                                            scale_x++;
+                                         }
+                                       x++;
+                                       p++;
+                                    }
+                                  if ((done & 0x3) == 0x1)
+                                    p += 2;
+                                  else if ((done & 0x3) == 0x2)
+                                    p += 1;
+                                  break;
                               }
                          }
                     }
@@ -833,93 +951,131 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
                        for (x = 0; x < w; x++)
                          {
                             *pix = pal[*p];
-                            p++;
+                            p += scale_ratio;
                             if (p >= buffer_end) break;
                             pix++;
                          }
-                       fix = (int)(((unsigned long)p) & 0x3);
-                       if (fix > 0) p += 4 - fix; // align row read
-                       if (p >= buffer_end) break;
+                       if (scale_ratio > 1)
+                         {
+                            read_line += scale_ratio;
+                            if (read_line >= image_h) break;
+
+                            fseek(f, row_size * (scale_ratio - 1), SEEK_CUR);
+                            if (fread(buffer, row_size, 1, f) != 1) goto close_file;
+                            p = buffer;
+                            buffer_end = buffer + row_size;
+                         }
+                       else
+                         {
+                            fix = (int)(((unsigned long)p) & 0x3);
+                            if (fix > 0) p += 4 - fix; // align row read
+                            if (p >= buffer_end) break;
+                         }
                     }
                }
              else if (comp == 1) // rle 8bit/pixel
                {
                   int count = 0, done = 0;
+                  int scale_x = 0, scale_y = 0;
+                  Eina_Bool scale_down_line = EINA_TRUE;
 
                   pix = surface;
                   if (!right_way_up) pix = surface + ((h - 1 - y) * w);
+
                   while (p < buffer_end)
                     {
                        if (p[0])
                          {
-		            if ((x + p[0]) <= w)
-			      {
-                                 unsigned int col = pal[p[1]];
-                            
-                                 count = p[0];
-                                 while (count > 0)
+                            if (scale_down_line)
+                              {
+                                 if ((x + p[0]) <= image_w)
                                    {
-                                      *pix = col;
-                                      pix++;
-                                      count--;
+                                      unsigned int col = pal[p[1]];
+
+                                      count = p[0];
+                                      while (count > 0)
+                                        {
+                                           if (((x % scale_ratio) == 0) && (scale_x < w))
+                                             {
+                                                *pix = col;
+                                                pix++;
+                                                scale_x ++;
+                                             }
+                                           x++;
+                                           count--;
+                                        }
                                    }
-                                 x += p[0];
-			      }
+                              }
                             p += 2;
                          }
                        else
                          {
                             switch (p[1])
                               {
-                              case 0: // EOL
-                                 x = 0;
-                                 y++;
-                                 if (!right_way_up)
-                                   pix = surface + ((h - 1 - y) * w);
-                                 else
-                                   pix = surface + (y * w);
-                                 if (y >= h)
-                                   {
-                                      p = buffer_end;
-                                   }
-                                 p += 2;
-                                 break;
-                              case 1: // EOB
-                                 p = buffer_end;
-                                 break;
-                              case 2: // DELTA
-                                 x += p[2];
-                                 y += p[3];
-                                 if ((x >= w) || (y >= h))
-                                   {
-                                      p = buffer_end;
-                                   }
-                                 if (!right_way_up)
-                                   pix = surface + x + ((h - 1 - y) * w);
-                                 else
-                                   pix = surface + x + (y * w);
-                                 p += 4;
-                                 break;
-                              default:
-                                 count = p[1];
-                                 if (((p + count) > buffer_end) ||
-                                     ((x + count) > w))
-                                   {
-                                      p = buffer_end;
-                                      break;
-                                   }
-                                 p += 2;
-                                 done = count;
-                                 while (count > 0)
-                                   {
-                                      *pix = pal[*p];
-                                      pix++;
-                                      p++;
-                                      count--;
-                                   }
-                                 x += done;
-                                 if (done & 0x1) p++;
-                                 break;
+                               case 0: // EOL
+                                  x = 0;
+                                  scale_x = 0;
+                                  y++;
+                                  if ((y % scale_ratio) == 0)
+                                    {
+                                       scale_y++;
+                                       scale_down_line = EINA_TRUE;
+                                       if (!right_way_up)
+                                         pix = surface + ((h - 1 - scale_y) * w);
+                                       else
+                                         pix = surface + (scale_y * w);
+                                    }
+                                  else
+                                    scale_down_line = EINA_FALSE;
+
+                                  if (scale_y >= h)
+                                    {
+                                       p = buffer_end;
+                                    }
+                                  p += 2;
+                                  break;
+                               case 1: // EOB
+                                  p = buffer_end;
+                                  break;
+                               case 2: // DELTA
+                                  x += p[2];
+                                  y += p[3];
+                                  scale_x = x / scale_ratio;
+                                  scale_y = y / scale_ratio;
+                                  if ((scale_x >= w) || (scale_y >= h))
+                                    {
+                                       p = buffer_end;
+                                    }
+                                  if (!right_way_up)
+                                    pix = surface + scale_x + ((h - 1 - scale_y) * w);
+                                  else
+                                    pix = surface + scale_x + (scale_y * w);
+                                  p += 4;
+                                  break;
+                               default:
+                                  count = p[1];
+                                  if (((p + count) > buffer_end) ||
+                                      ((x + count) > image_w))
+                                    {
+                                       p = buffer_end;
+                                       break;
+                                    }
+                                  p += 2;
+                                  done = count;
+                                  while (count > 0)
+                                    {
+                                       if (((x % scale_ratio) == 0) && (scale_x < w))
+                                         {
+                                            *pix = pal[*p];
+                                            pix++;
+                                            scale_x ++;
+                                         }
+                                       p++;
+                                       x++;
+                                       count--;
+                                    }
+                                  if (done & 0x1) p++;
+                                  break;
                               }
                          }
                     }
@@ -930,11 +1086,6 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
      }
    else if ((bit_count == 16) || (bit_count == 24) || (bit_count == 32))
      {
-        /* Row size is rounded up to a multiple of 4bytes */
-        int row_size = 0;
-        int read_line = 0; /* total read line */
-
-        row_size = ceil((double)(image_w * bit_count) / 32) * 4;
         if (comp == 0) // no compression
           {
              fseek(f, offset, SEEK_SET);
@@ -977,10 +1128,9 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
                             g = (tmp >> 2) & 0xf8; g |= g >> 5;
                             b = (tmp << 3) & 0xf8; b |= b >> 5;
                             *pix = ARGB_JOIN(0xff, r, g, b);
-                            if (scale_ratio > 1)
+
                               p += 2 * scale_ratio;
-                            else
-                              p += 2;
+
                             if (p >= buffer_end) break;
                             pix++;
                          }
@@ -1014,10 +1164,7 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
                             g = p[1];
                             r = p[2];
                             *pix = ARGB_JOIN(0xff, r, g, b);
-                            if (scale_ratio > 1)
-                              p += 3 * scale_ratio;
-                            else
-                              p += 3;
+                            p += 3 * scale_ratio;
                             if (p >= buffer_end) break;
                             pix++;
                          }
@@ -1055,10 +1202,8 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
                             if (a) none_zero_alpha = 1;
                             if (!hasa) a = 0xff;
                             *pix = ARGB_JOIN(a, r, g, b);
-                            if (scale_ratio > 1)
-                              p += 4 * scale_ratio;
-                            else
-                              p += 4;
+                            p += 4 * scale_ratio;
+
                             if (p >= buffer_end) break;
                             pix++;
                          }
@@ -1101,7 +1246,6 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
              if (!read_uint(f, &bmask)) goto close_file;
 
              fseek(f, offset, SEEK_SET);
-
              if (scale_ratio == 1)
                buffer = malloc(image_size + 8); // add 8 for padding to avoid checks
              else
@@ -1132,7 +1276,7 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
                  )
                {
                   unsigned short tmp;
-                  
+
                   pix = surface;
                   for (y = 0; y < h; y++)
                     {
@@ -1145,10 +1289,9 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
                             g = (tmp >> 3) & 0xfc; g |= g >> 6;
                             b = (tmp << 3) & 0xf8; b |= b >> 5;
                             *pix = ARGB_JOIN(0xff, r, g, b);
-                            if (scale_ratio > 1)
-                              p += 2 * scale_ratio;
-                            else
-                              p += 2;
+
+                            p += 2 * scale_ratio;
+
                             if (p >= buffer_end) break;
                             pix++;
                          }
@@ -1174,7 +1317,6 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
                      )
                {
                   unsigned short tmp;
-                  
                   pix = surface;
                   for (y = 0; y < h; y++)
                     {
@@ -1187,10 +1329,8 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
                             g = (tmp >> 2) & 0xf8; g |= g >> 5;
                             b = (tmp << 3) & 0xf8; b |= b >> 5;
                             *pix = ARGB_JOIN(0xff, r, g, b);
-                            if (scale_ratio > 1)
                               p += 2 * scale_ratio;
-                            else
-                              p += 2;
+
                             if (p >= buffer_end) break;
                             pix++;
                          }
@@ -1225,10 +1365,9 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
                             a = p[3];
                             if (!hasa) a = 0xff;
                             *pix = ARGB_JOIN(a, r, g, b);
-                            if (scale_ratio > 1)
+
                               p += 4 * scale_ratio;
-                            else
-                              p += 4;
+
                             if (p >= buffer_end) break;
                             pix++;
                          }
@@ -1267,6 +1406,7 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
      goto close_file;
    
    if (buffer) free(buffer);
+   if (scale_surface) free(scale_surface);
    fclose(f);
 
    evas_common_image_premul(ie);
@@ -1275,6 +1415,7 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
 
  close_file:
    if (buffer) free(buffer);
+   if (scale_surface) free(scale_surface);
    fclose(f);
    return EINA_FALSE;
 }
