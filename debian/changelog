@@ -1,3 +1,12 @@
+evas (1.0.0.001+svn.62695slp2+build43) unstable; urgency=low
+
+  * Upload package
+  * Evas GL Extensions + a bug fix by Sung W. Park from svn(64139)
+  * Git: 165.213.180.234:/slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.62695slp2+build43
+
+ -- Seungsoo Woo <om101.woo@samsung.com>  Tue, 25 Oct 2011 16:18:25 +0900
+
 evas (1.0.0.001+svn.62695slp2+build42) unstable; urgency=low
 
   * Upload Package
