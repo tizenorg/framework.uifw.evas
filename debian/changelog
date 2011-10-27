@@ -1,3 +1,12 @@
+evas (1.0.0.001+svn.62695slp2+build44) unstable; urgency=low
+
+  * Upload package
+  * The left and right pixel duplication for interpolation had the WRONG PIXELS.
+  * Git: 165.213.180.234:/slp/pkgs/e/evas
+  * Tag: evas_1.0.0.001+svn.62695slp2+build44
+
+ -- Seungsoo woo <om101.woo@samsung.com>  Thu, 27 Oct 2011 13:06:32 +0900
+
 evas (1.0.0.001+svn.62695slp2+build43) unstable; urgency=low
 
   * Upload package
