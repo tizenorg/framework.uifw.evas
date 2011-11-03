@@ -430,7 +430,6 @@ typedef enum _Evas_Callback_Type
     * More Evas object event types - see evas_object_event_callback_add():
     */
    EVAS_CALLBACK_IMAGE_UNLOADED, /**< Image data has been unloaded (by some mechanims in Evas that throw out original image data) */
-   EVAS_CALLBACK_TOUCH, /**< Touch Event */
 
    EVAS_CALLBACK_LAST /**< kept as last element/sentinel -- not really an event */
 } Evas_Callback_Type; /**< The types of events triggering a callback */
@@ -501,17 +500,6 @@ typedef enum _Evas_Touch_Point_State
 } Evas_Touch_Point_State;
 
 /**
- * Types for Evas_Touch_Event
- */
-typedef enum _Evas_Event_Touch_Type
-{
-   EVAS_EVENT_TOUCH_BEGIN, /**< Begin touch event with pressed new touch point */
-   EVAS_EVENT_TOUCH_END, /**< End touch event with released touch point */
-   EVAS_EVENT_TOUCH_MOVE, /**< Any touch point in the touch_points list is moved */
-   EVAS_EVENT_TOUCH_CANCEL /**< Touch event is cancelled */
-} Evas_Event_Touch_Type;
-
-/**
  * Flags for Font Hinting
  * @ingroup Evas_Font_Group
  */
@@ -558,7 +546,6 @@ typedef struct _Evas_Point                   Evas_Point; /**< integer point */
 
 typedef struct _Evas_Coord_Point             Evas_Coord_Point;  /**< Evas_Coord point */
 typedef struct _Evas_Coord_Precision_Point   Evas_Coord_Precision_Point; /**< Evas_Coord point with sub-pixel precision */
-typedef struct _Evas_Coord_Touch_Point       Evas_Coord_Touch_Point; /**< Evas_Coord point with touch type and id */
 
 typedef struct _Evas_Position                Evas_Position; /**< associates given point in Canvas and Output */
 typedef struct _Evas_Precision_Position      Evas_Precision_Position; /**< associates given point in Canvas and Output, with sub-pixel precision */
@@ -659,13 +646,6 @@ struct _Evas_Coord_Precision_Point
    double xsub, ysub;
 };
 
-struct _Evas_Coord_Touch_Point
-{
-   Evas_Coord x, y;
-   int id; /**< id in order to distinguish each point */
-   Evas_Touch_Point_State state;
-};
-
 struct _Evas_Position
 {
     Evas_Point output;
@@ -702,7 +682,6 @@ typedef struct _Evas_Event_Multi_Move Evas_Event_Multi_Move; /**< Event structur
 typedef struct _Evas_Event_Key_Down   Evas_Event_Key_Down; /**< Event structure for #EVAS_CALLBACK_KEY_DOWN event callbacks */
 typedef struct _Evas_Event_Key_Up     Evas_Event_Key_Up; /**< Event structure for #EVAS_CALLBACK_KEY_UP event callbacks */
 typedef struct _Evas_Event_Hold       Evas_Event_Hold; /**< Event structure for #EVAS_CALLBACK_HOLD event callbacks */
-typedef struct _Evas_Event_Touch      Evas_Event_Touch; /**< Event structure for #EVAS_CALLBACK_TOUCH event callbacks */
 
 typedef enum _Evas_Load_Error
 {
@@ -1061,14 +1040,6 @@ struct _Evas_Event_Hold /** Hold change event */
    unsigned int   timestamp;
    Evas_Event_Flags  event_flags;
    Evas_Device      *dev;
-};
-
-struct _Evas_Event_Touch /** Touch event */
-{
-   Eina_List            *points; /**< Evas_Coord_Touch_Point list */
-   Evas_Modifier        *modifiers;
-   unsigned int          timestamp;
-   Evas_Event_Touch_Type type; /**< Type for Evas_Event_Touch */
 };
 
 /**
@@ -2694,20 +2665,37 @@ EAPI void              evas_image_cache_reload           (Evas *e) EINA_ARG_NONN
  * @param e The given evas pointer.
  * @param size The cache size.
  *
- * This function sets the image cache of canvas.
+ * This function sets the image cache of canvas in bytes.
  *
  */
 EAPI void              evas_image_cache_set              (Evas *e, int size) EINA_ARG_NONNULL(1);
 
 /**
- * Set the image cache
+ * Get the image cache
  *
  * @param e The given evas pointer.
  *
- * This function returns the image cache of canvas.
+ * This function returns the image cache size of canvas in bytes.
  *
  */
 EAPI int               evas_image_cache_get              (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+
+/**
+ * Get the maximum image size evas can possibly handle
+ *
+ * @param e The given evas pointer.
+ * @param maxw Pointer to hold the return value in pixels of the maxumum width
+ * @param maxh Pointer to hold the return value in pixels of the maximum height
+ *
+ * This function returns the larges image or surface size that evas can handle
+ * in pixels, and if there is one, returns EINA_TRUE. It returns EINA_FALSE
+ * if no extra constraint on maximum image size exists. You still should
+ * check the return values of @p maxw and @p maxh as there may still be a
+ * limit, just a much higher one.
+ *
+ * @since 1.1
+ */
+EAPI Eina_Bool         evas_image_max_size_get           (const Evas *e, int *maxw, int *maxh) EINA_ARG_NONNULL(1) EINA_PURE;
 
 /**
  * @}
@@ -3934,6 +3922,7 @@ EAPI void             *evas_object_event_callback_del_full(Evas_Object *obj, Eva
  * @see evas_object_pass_events_get() for an example
  * @see evas_object_repeat_events_set()
  * @see evas_object_propagate_events_set()
+ * @see evas_object_freeze_events_set()
  */
 EAPI void              evas_object_pass_events_set        (Evas_Object *obj, Eina_Bool pass) EINA_ARG_NONNULL(1);
 
@@ -3954,6 +3943,7 @@ EAPI void              evas_object_pass_events_set        (Evas_Object *obj, Ein
  * @see evas_object_pass_events_set()
  * @see evas_object_repeat_events_get()
  * @see evas_object_propagate_events_get()
+ * @see evas_object_freeze_events_get()
  */
 EAPI Eina_Bool         evas_object_pass_events_get        (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
 
@@ -3979,8 +3969,9 @@ EAPI Eina_Bool         evas_object_pass_events_get        (const Evas_Object *ob
  * See the full @ref Example_Evas_Stacking "example".
  *
  * @see evas_object_repeat_events_get()
- * @see evas_object_pass_events_get()
- * @see evas_object_propagate_events_get()
+ * @see evas_object_pass_events_set()
+ * @see evas_object_propagate_events_set()
+ * @see evas_object_freeze_events_set()
  */
 EAPI void              evas_object_repeat_events_set      (Evas_Object *obj, Eina_Bool repeat) EINA_ARG_NONNULL(1);
 
@@ -3992,8 +3983,9 @@ EAPI void              evas_object_repeat_events_set      (Evas_Object *obj, Ein
  * or not (@c EINA_FALSE)
  *
  * @see evas_object_repeat_events_set() for an example
- * @see evas_object_pass_events_set()
- * @see evas_object_propagate_events_set()
+ * @see evas_object_pass_events_get()
+ * @see evas_object_propagate_events_get()
+ * @see evas_object_freeze_events_get()
  */
 EAPI Eina_Bool         evas_object_repeat_events_get      (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
 
@@ -4014,10 +4006,10 @@ EAPI Eina_Bool         evas_object_repeat_events_get      (const Evas_Object *ob
  * not be propagated on to the smart object of which @p obj is a
  * member.  The default value is @c EINA_TRUE.
  *
- * @see evas_object_event_callback_add()
  * @see evas_object_propagate_events_get()
- * @see evas_object_repeat_events_get()
- * @see evas_object_pass_events_get()
+ * @see evas_object_repeat_events_set()
+ * @see evas_object_pass_events_set()
+ * @see evas_object_freeze_events_set()
  */
 EAPI void              evas_object_propagate_events_set   (Evas_Object *obj, Eina_Bool prop) EINA_ARG_NONNULL(1);
 
@@ -4028,12 +4020,50 @@ EAPI void              evas_object_propagate_events_set   (Evas_Object *obj, Ein
  * @return whether @p obj is set to propagate events (@c EINA_TRUE)
  * or not (@c EINA_FALSE)
  *
- * @see evas_object_event_callback_add()
  * @see evas_object_propagate_events_set()
- * @see evas_object_repeat_events_set()
- * @see evas_object_pass_events_set()
+ * @see evas_object_repeat_events_get()
+ * @see evas_object_pass_events_get()
+ * @see evas_object_freeze_events_get()
  */
 EAPI Eina_Bool         evas_object_propagate_events_get   (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
+
+/**
+ * Set whether an Evas object is to freeze (discard) events.
+ *
+ * @param obj the Evas object to operate on
+ * @param pass whether @p obj is to freeze events (@c EINA_TRUE) or not
+ * (@c EINA_FALSE)
+ *
+ * If @p freeze is @c EINA_TRUE, it will make events on @p obj to be @b
+ * discarded. Unlike evas_object_pass_events_set(), events will not be
+ * passed to @b next lower object. This API can be used for blocking 
+ * events while @p obj is on transiting. 
+ *
+ * If @p freeze is @c EINA_FALSE, events will be processed on that
+ * object as normal.
+ *
+ * @see evas_object_freeze_events_get()
+ * @see evas_object_pass_events_set()
+ * @see evas_object_repeat_events_set()
+ * @see evas_object_propagate_events_set()
+ * @since 1.1.0
+ */
+EAPI void              evas_object_freeze_events_set(Evas_Object *obj, Eina_Bool freeze) EINA_ARG_NONNULL(1);
+
+/**
+ * Determine whether an object is set to freeze (discard) events.
+ *
+ * @param obj the Evas object to get information from.
+ * @return freeze whether @p obj is set to freeze events (@c EINA_TRUE) or
+ * not (@c EINA_FALSE)
+ *
+ * @see evas_object_freeze_events_set()
+ * @see evas_object_pass_events_get()
+ * @see evas_object_repeat_events_get()
+ * @see evas_object_propagate_events_get()
+ * @since 1.1.0
+ */
+EAPI Eina_Bool         evas_object_freeze_events_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
 
 /**
  * @}
@@ -12058,6 +12088,141 @@ EAPI Eina_Bool            evas_object_key_grab           (Evas_Object *obj, cons
  * @see evas_focus_get
  */
 EAPI void                 evas_object_key_ungrab         (Evas_Object *obj, const char *keyname, Evas_Modifier_Mask modifiers, Evas_Modifier_Mask not_modifiers) EINA_ARG_NONNULL(1, 2);
+
+/**
+ * @}
+ */
+
+/**
+ * @defgroup Evas_Touch_Point_List Touch Point List Functions
+ *
+ * Functions to get information of touched points in the Evas.
+ *
+ * Evas maintains list of touched points on the canvas. Each point has
+ * its co-ordinates, id and state. You can get the number of touched
+ * points and information of each point using evas_touch_point_list
+ * functions.
+ *
+ * @ingroup Evas_Canvas
+ */
+
+/**
+ * @addtogroup Evas_Touch_Point_List
+ * @{
+ */
+
+/**
+ * Get the number of touched point in the evas.
+ *
+ * @param e The pointer to the Evas canvas.
+ * @return The number of touched point on the evas.
+ *
+ * New touched point is added to the list whenever touching the evas
+ * and point is removed whenever removing touched point from the evas.
+ *
+ * Example:
+ * @code
+ * extern Evas *evas;
+ * int count;
+ *
+ * count = evas_touch_point_list_count(evas);
+ * printf("The count of touch points: %i\n", count);
+ * @endcode
+ *
+ * @see evas_touch_point_list_nth_xy_get()
+ * @see evas_touch_point_list_nth_id_get()
+ * @see evas_touch_point_list_nth_state_get()
+ */
+EAPI unsigned int           evas_touch_point_list_count(Evas *e) EINA_ARG_NONNULL(1);
+
+/**
+ * This function returns the nth touch point's co-ordinates.
+ *
+ * @param e The pointer to the Evas canvas.
+ * @param n The number of the touched point (0 being the first).
+ * @param x The pointer to a Evas_Coord to be filled in.
+ * @param y The pointer to a Evas_Coord to be filled in.
+ *
+ * Touch point's co-ordinates is updated whenever moving that point
+ * on the canvas.
+ *
+ * Example:
+ * @code
+ * extern Evas *evas;
+ * Evas_Coord x, y;
+ *
+ * if (evas_touch_point_list_count(evas))
+ *   {
+ *      evas_touch_point_nth_xy_get(evas, 0, &x, &y);
+ *      printf("The first touch point's co-ordinate: (%i, %i)\n", x, y);
+ *   }
+ * @endcode
+ *
+ * @see evas_touch_point_list_count()
+ * @see evas_touch_point_list_nth_id_get()
+ * @see evas_touch_point_list_nth_state_get()
+ */
+EAPI void                   evas_touch_point_list_nth_xy_get(Evas *e, unsigned int n, Evas_Coord *x, Evas_Coord *y) EINA_ARG_NONNULL(1);
+
+/**
+ * This function returns the @p id of nth touch point.
+ *
+ * @param e The pointer to the Evas canvas.
+ * @param n The number of the touched point (0 being the first).
+ * @return id of nth touch point, if the call succeeded, -1 otherwise.
+ *
+ * The point which comes from Mouse Event has @p id 0 and The point
+ * which comes from Multi Event has @p id that is same as Multi
+ * Event's device id.
+ *
+ * Example:
+ * @code
+ * extern Evas *evas;
+ * int id;
+ *
+ * if (evas_touch_point_list_count(evas))
+ *   {
+ *      id = evas_touch_point_nth_id_get(evas, 0);
+ *      printf("The first touch point's id: %i\n", id);
+ *   }
+ * @endcode
+ *
+ * @see evas_touch_point_list_count()
+ * @see evas_touch_point_list_nth_xy_get()
+ * @see evas_touch_point_list_nth_state_get()
+ */
+EAPI int                    evas_touch_point_list_nth_id_get(Evas *e, unsigned int n) EINA_ARG_NONNULL(1);
+
+/**
+ * This function returns the @p state of nth touch point.
+ *
+ * @param e The pointer to the Evas canvas.
+ * @param n The number of the touched point (0 being the first).
+ * @return @p state of nth touch point, if the call succeeded,
+ *         EVAS_TOUCH_POINT_CANCEL otherwise.
+ *
+ * The point's @p state is EVAS_TOUCH_POINT_DOWN when pressed,
+ * EVAS_TOUCH_POINT_STILL when the point is not moved after pressed,
+ * EVAS_TOUCH_POINT_MOVE when moved at least once after pressed and
+ * EVAS_TOUCH_POINT_UP when released.
+ *
+ * Example:
+ * @code
+ * extern Evas *evas;
+ * Evas_Touch_Point_State state;
+ *
+ * if (evas_touch_point_list_count(evas))
+ *   {
+ *      state = evas_touch_point_nth_state_get(evas, 0);
+ *      printf("The first touch point's state: %i\n", state);
+ *   }
+ * @endcode
+ *
+ * @see evas_touch_point_list_count()
+ * @see evas_touch_point_list_nth_xy_get()
+ * @see evas_touch_point_list_nth_id_get()
+ */
+EAPI Evas_Touch_Point_State evas_touch_point_list_nth_state_get(Evas *e, unsigned int n) EINA_ARG_NONNULL(1);
 
 /**
  * @}

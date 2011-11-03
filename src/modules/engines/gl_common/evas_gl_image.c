@@ -45,14 +45,14 @@ _evas_gl_image_cache_trim(Evas_Engine_GL_Context *gc)
           }
         if ((gc->shared->images_size > size) && (l))
           {
-             printf("EEK %i > %i, no 0 ref imgs\n",
-                    gc->shared->images_size, size);
+//             printf("EEK %i > %i, no 0 ref imgs\n",
+//                    gc->shared->images_size, size);
              break;
           }
         if (!gc->shared->images)
           {
-             printf("EEK %i > %i, no imgs\n",
-                    gc->shared->images_size, size);
+//             printf("EEK %i > %i, no imgs\n",
+//                    gc->shared->images_size, size);
              break;
           }
      }
@@ -125,7 +125,7 @@ evas_gl_common_image_load(Evas_Engine_GL_Context *gc, const char *file, const ch
 	  {
 // why did i put this here? i think to free the rgba pixel data once a texture
 // exists.
-//             evas_cache_image_drop(&im_im->cache_entry);
+//             evas_cache_image_drop(&(im_im->cache_entry));
 	     gc->shared->images = eina_list_remove_list(gc->shared->images, l);
 	     gc->shared->images = eina_list_prepend(gc->shared->images, im);
              evas_gl_common_image_ref(im);
@@ -137,6 +137,7 @@ evas_gl_common_image_load(Evas_Engine_GL_Context *gc, const char *file, const ch
    im = calloc(1, sizeof(Evas_GL_Image));
    if (!im)
      {
+        evas_cache_image_drop(&(im_im->cache_entry));
 	*error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
 	return NULL;
      }
@@ -159,6 +160,10 @@ evas_gl_common_image_new_from_data(Evas_Engine_GL_Context *gc, unsigned int w, u
    Evas_GL_Image *im;
    Eina_List *l;
 
+   if (((int)w > gc->shared->info.max_texture_size) ||
+       ((int)h > gc->shared->info.max_texture_size))
+     return NULL;
+     
    if (data)
      {
         EINA_LIST_FOREACH(gc->shared->images, l, im)
@@ -212,6 +217,10 @@ evas_gl_common_image_new_from_copied_data(Evas_Engine_GL_Context *gc, unsigned i
 {
    Evas_GL_Image *im;
 
+   if (((int)w > gc->shared->info.max_texture_size) ||
+       ((int)h > gc->shared->info.max_texture_size))
+     return NULL;
+   
    im = calloc(1, sizeof(Evas_GL_Image));
    if (!im) return NULL;
    im->references = 1;
@@ -253,6 +262,10 @@ evas_gl_common_image_new(Evas_Engine_GL_Context *gc, unsigned int w, unsigned in
 {
    Evas_GL_Image *im;
 
+   if (((int)w > gc->shared->info.max_texture_size) ||
+       ((int)h > gc->shared->info.max_texture_size))
+     return NULL;
+   
    im = calloc(1, sizeof(Evas_GL_Image));
    if (!im) return NULL;
    im->references = 1;
@@ -487,6 +500,10 @@ evas_gl_common_image_surface_new(Evas_Engine_GL_Context *gc, unsigned int w, uns
 {
    Evas_GL_Image *im;
 
+   if (((int)w > gc->shared->info.max_texture_size) ||
+       ((int)h > gc->shared->info.max_texture_size))
+     return NULL;
+   
    im = calloc(1, sizeof(Evas_GL_Image));
    if (!im) return NULL;
    im->references = 1;

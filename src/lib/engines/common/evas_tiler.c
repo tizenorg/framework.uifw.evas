@@ -878,14 +878,14 @@ EAPI void
 evas_common_tilebuf_free(Tilebuf *tb)
 {
 #ifdef RECTUPDATE
-/*
+/*   
    evas_common_regionbuf_free(tb->rb);
  */
 #elif defined(EVAS_RECT_SPLIT)
    rect_list_clear(&tb->rects);
    rect_list_node_pool_flush();
 #else
-/*
+/*   
    if (tb->tiles.tiles) free(tb->tiles.tiles);
  */
 #endif
@@ -897,7 +897,7 @@ evas_common_tilebuf_set_tile_size(Tilebuf *tb, int tw, int th)
 {
    tb->tile_size.w = tw;
    tb->tile_size.h = th;
-/*
+/*   
    tilebuf_setup(tb);
  */
 }
@@ -939,7 +939,7 @@ EAPI int
 evas_common_tilebuf_add_redraw(Tilebuf *tb, int x, int y, int w, int h)
 {
 #ifdef RECTUPDATE
-/*
+/*   
    int i;
 
    if ((w <= 0) || (h <= 0)) return 0;
@@ -954,14 +954,14 @@ evas_common_tilebuf_add_redraw(Tilebuf *tb, int x, int y, int w, int h)
    RECTS_CLIP_TO_RECT(x, y, w, h, 0, 0, tb->outbuf_w, tb->outbuf_h);
    if ((w <= 0) || (h <= 0)) return 0;
    // optimize a common case -> adding the exact same rect 2x in a row
-   if ((tb->prev_add.x == x) && (tb->prev_add.y == y) &&
+   if ((tb->prev_add.x == x) && (tb->prev_add.y == y) && 
        (tb->prev_add.w == w) && (tb->prev_add.h == h)) return 1;
    tb->prev_add.x = x; tb->prev_add.y = y;
    tb->prev_add.w = w; tb->prev_add.h = h;
    tb->prev_del.w = 0; tb->prev_del.h = 0;
    return _add_redraw(&tb->rects, x, y, w, h);
 #else
-/*
+/*   
    int tx1, tx2, ty1, ty2, tfx1, tfx2, tfy1, tfy2, xx, yy;
    int num;
 
@@ -1003,7 +1003,7 @@ EAPI int
 evas_common_tilebuf_del_redraw(Tilebuf *tb, int x, int y, int w, int h)
 {
 #ifdef RECTUPDATE
-/*
+/*   
    int i;
 
    for (i = 0; i < h; i++)
@@ -1016,7 +1016,7 @@ evas_common_tilebuf_del_redraw(Tilebuf *tb, int x, int y, int w, int h)
    if ((w <= 0) || (h <= 0)) return 0;
    RECTS_CLIP_TO_RECT(x, y, w, h, 0, 0, tb->outbuf_w, tb->outbuf_h);
    if ((w <= 0) || (h <= 0)) return 0;
-
+   
 /* we dont need to do this fuzz stuff - it actually creates overdraw bugs
  * when evas shouldnt draw at all.
    x += 1;
@@ -1030,9 +1030,9 @@ evas_common_tilebuf_del_redraw(Tilebuf *tb, int x, int y, int w, int h)
 
    if ((w <= 0) || (h <= 0)) return 0;
  */
-
+   
    // optimize a common case -> deleting the exact same rect 2x in a row
-   if ((tb->prev_del.x == x) && (tb->prev_del.y == y) &&
+   if ((tb->prev_del.x == x) && (tb->prev_del.y == y) && 
        (tb->prev_del.w == w) && (tb->prev_del.h == h)) return 1;
    tb->prev_del.x = x; tb->prev_del.y = y;
    tb->prev_del.w = w; tb->prev_del.h = h;
@@ -1043,7 +1043,7 @@ evas_common_tilebuf_del_redraw(Tilebuf *tb, int x, int y, int w, int h)
    tb->need_merge = 1;
    return 0;
 #else
-/*
+/*   
    int tx1, tx2, ty1, ty2, tfx1, tfx2, tfy1, tfy2, xx, yy;
    int num;
 
@@ -1087,7 +1087,7 @@ EAPI int
 evas_common_tilebuf_add_motion_vector(Tilebuf *tb __UNUSED__, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__, int dx __UNUSED__, int dy __UNUSED__, int alpha __UNUSED__)
 {
 #ifdef EVAS_RECT_SPLIT
-/* motion vector handling never has been used -> disable it
+/* motion vector handling never has been used -> disable it   
    list_t lr = list_zeroed;
    int num;
 
@@ -1103,7 +1103,7 @@ evas_common_tilebuf_add_motion_vector(Tilebuf *tb __UNUSED__, int x __UNUSED__, 
  */
    return 0;
 #else
-/*
+/*   
    int num;
 
    num = evas_common_tilebuf_add_redraw(tb, x, y, w, h);
@@ -1117,7 +1117,7 @@ EAPI void
 evas_common_tilebuf_clear(Tilebuf *tb)
 {
 #ifdef RECTUPDATE
-/*
+/*   
    evas_common_regionbuf_clear(tb->rb);
  */
 #elif defined(EVAS_RECT_SPLIT)
@@ -1126,7 +1126,7 @@ evas_common_tilebuf_clear(Tilebuf *tb)
    rect_list_clear(&tb->rects);
    tb->need_merge = 0;
 #else
-/*
+/*   
    if (!tb->tiles.tiles) return;
    memset(tb->tiles.tiles, 0, tb->tiles.w * tb->tiles.h * sizeof(Tilebuf_Tile));
  */
@@ -1137,7 +1137,7 @@ EAPI Tilebuf_Rect *
 evas_common_tilebuf_get_render_rects(Tilebuf *tb)
 {
 #ifdef RECTUPDATE
-/*
+/*   
    return evas_common_regionbuf_rects_get(tb->rb);
  */
 #elif defined(EVAS_RECT_SPLIT)
@@ -1180,7 +1180,7 @@ evas_common_tilebuf_get_render_rects(Tilebuf *tb)
    return rects;
 
 #else
-/*
+/*   
    Tilebuf_Rect *rects = NULL;
    Tilebuf_Tile *tbt;
    int x, y;

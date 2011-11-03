@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/mman.h>
+#include <math.h>
 
 #include "evas_common.h"
 #include "evas_private.h"
@@ -2148,6 +2149,23 @@ evas_image_cache_get(const Evas *e)
    return e->engine.func->image_cache_get(e->engine.data.output);
 }
 
+EAPI Eina_Bool
+evas_image_max_size_get(const Evas *e, int *maxw, int *maxh)
+{
+   int w = 0, h = 0;
+   MAGIC_CHECK(e, Evas, MAGIC_EVAS);
+   return EINA_FALSE;
+   MAGIC_CHECK_END();
+   
+   if (maxw) *maxw = 0xffff;
+   if (maxh) *maxh = 0xffff;
+   if (!e->engine.func->image_max_size_get) return EINA_FALSE;
+   e->engine.func->image_max_size_get(e->engine.data.output, &w, &h);
+   if (maxw) *maxw = w;
+   if (maxh) *maxh = h;
+   return EINA_TRUE;
+}
+
 /* all nice and private */
 static void
 _proxy_unset(Evas_Object *proxy)
@@ -2729,8 +2747,6 @@ evas_object_image_render(Evas_Object *obj, void *output, void *context, void *su
    /* We are displaying the overlay */
    if (o->video_visible)
      {
-        fprintf(stderr, "overlay visible, make a hole\n");
-
         /* Create a transparent rectangle */
         obj->layer->evas->engine.func->context_color_set(output,
                                                          context,
@@ -2897,14 +2913,14 @@ evas_object_image_render(Evas_Object *obj, void *output, void *context, void *su
              // draw geom +x +y
              for (; p < p_end; p++, pt++)
                {
-                  pt->x = (p->x + (double)x) * FP1;
-                  pt->y = (p->y + (double)y) * FP1;
-                  pt->z = (p->z)             * FP1;
+                  pt->x = (lround(p->x) + x) * FP1;
+                  pt->y = (lround(p->y) + y) * FP1;
+                  pt->z = (lround(p->z)    ) * FP1;
                   pt->fx = p->px;
                   pt->fy = p->py;
                   pt->fz = p->z;
-                  pt->u = ((p->u * imagew) / uvw) * FP1;
-                  pt->v = ((p->v * imageh) / uvh) * FP1;
+                  pt->u = ((lround(p->u) * imagew) / uvw) * FP1;
+                  pt->v = ((lround(p->v) * imageh) / uvh) * FP1;
                   if      (pt->u < 0) pt->u = 0;
                   else if (pt->u > (imagew * FP1)) pt->u = (imagew * FP1);
                   if      (pt->v < 0) pt->v = 0;
@@ -3473,7 +3489,7 @@ evas_object_image_is_opaque(Evas_Object *obj)
    if ((obj->cur.map) && (obj->cur.usemap))
      {
         Evas_Map *m = obj->cur.map;
-
+        
         if ((m->points[0].a == 255) &&
             (m->points[1].a == 255) &&
             (m->points[2].a == 255) &&
@@ -3857,7 +3873,18 @@ _evas_object_image_video_overlay_show(Evas_Object *obj)
        o->created || !o->video_visible)
      o->video.resize(o->video.data, obj, &o->video, obj->cur.cache.clip.w, obj->cur.cache.clip.h);
    if (!o->video_visible || o->created)
-     o->video.show(o->video.data, obj, &o->video);
+     {
+        o->video.show(o->video.data, obj, &o->video);
+     }
+   else
+     {
+        /* Cancel dirty on the image */
+        Eina_Rectangle *r;
+
+        o->dirty_pixels = 0;
+        EINA_LIST_FREE(o->pixel_updates, r)
+          eina_rectangle_free(r);
+     }
    o->video_visible = EINA_TRUE;
    o->created = EINA_FALSE;
 }

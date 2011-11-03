@@ -13,34 +13,32 @@ typedef struct _Evas_GL_Surface       Evas_GL_Surface;
 typedef struct _Evas_GL_Context       Evas_GL_Context;
 typedef struct _Evas_GL_Config        Evas_GL_Config;
 typedef struct _Evas_GL_API           Evas_GL_API;
-typedef void*                         Evas_GL_Func;
+typedef void                         *Evas_GL_Func;
 typedef void                         *EvasGLImage;
 
 typedef enum _Evas_GL_Color_Format
 {
-    EVAS_GL_RGB_8,      // 8 bits per channel
-    EVAS_GL_RGBA_8,
-    EVAS_GL_RGB_32,     // 32-bits per channel
-    EVAS_GL_RGBA_32,
+    EVAS_GL_RGB_888   = 0,
+    EVAS_GL_RGBA_8888 = 1
 } Evas_GL_Color_Format;
 
 typedef enum _Evas_GL_Depth_Bits
 {
-    EVAS_GL_DEPTH_BIT_8,
-    EVAS_GL_DEPTH_BIT_16,
-    EVAS_GL_DEPTH_BIT_24,
-    EVAS_GL_DEPTH_BIT_32,
-    EVAS_GL_DEPTH_NONE
+    EVAS_GL_DEPTH_NONE   = 0,
+    EVAS_GL_DEPTH_BIT_8  = 1,
+    EVAS_GL_DEPTH_BIT_16 = 2,
+    EVAS_GL_DEPTH_BIT_24 = 3,
+    EVAS_GL_DEPTH_BIT_32 = 4,
 } Evas_GL_Depth_Bits;
 
 typedef enum _Evas_GL_Stencil_Bits
 {
-    EVAS_GL_STENCIL_BIT_1,
-    EVAS_GL_STENCIL_BIT_2,
-    EVAS_GL_STENCIL_BIT_4,
-    EVAS_GL_STENCIL_BIT_8,
-    EVAS_GL_STENCIL_BIT_16,
-    EVAS_GL_STENCIL_NONE
+    EVAS_GL_STENCIL_NONE   = 0,
+    EVAS_GL_STENCIL_BIT_1  = 1,
+    EVAS_GL_STENCIL_BIT_2  = 2,
+    EVAS_GL_STENCIL_BIT_4  = 3,
+    EVAS_GL_STENCIL_BIT_8  = 4,
+    EVAS_GL_STENCIL_BIT_16 = 5,
 } Evas_GL_Stencil_Bits;
 
 struct _Evas_GL_Config
@@ -98,7 +96,7 @@ main(int argc, char **argv)
    // config for the surface for evas_gl
    Evas_GL_Config config =
      {
-        EVAS_GL_RGBA_8,
+        EVAS_GL_RGBA_8888,
         EVAS_GL_DEPTH_NONE,
         EVAS_GL_STENCIL_NONE
      };
@@ -1328,71 +1326,71 @@ struct _Evas_GL_API
    void         (*glEvasGLImageTargetRenderbufferStorageOES) (GLenum target, EvasGLImage image);
 
    /* GL_OES_get_program_binary */
-   void         (*glGetProgramBinaryOES) (GLuint program, GLsizei bufSize, GLsizei *length, GLenum *binaryFormat, void *binary);
-   void         (*glProgramBinaryOES) (GLuint program, GLenum binaryFormat, const void *binary, GLint length);
+   void 	(*glGetProgramBinaryOES) (GLuint program, GLsizei bufSize, GLsizei *length, GLenum *binaryFormat, void *binary);
+   void 	(*glProgramBinaryOES) (GLuint program, GLenum binaryFormat, const void *binary, GLint length);   
    /* GL_OES_mapbuffer */
-   void*        (*glMapBufferOES) (GLenum target, GLenum access);
-   GLboolean    (*glUnmapBufferOES) (GLenum target);
-   void         (*glGetBufferPointervOES) (GLenum target, GLenum pname, void** params);
+   void* 	(*glMapBufferOES) (GLenum target, GLenum access);
+   GLboolean 	(*glUnmapBufferOES) (GLenum target);
+   void 	(*glGetBufferPointervOES) (GLenum target, GLenum pname, void** params);
    /* GL_OES_texture_3D */
-   void         (*glTexImage3DOES) (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const void* pixels);
-   void         (*glTexSubImage3DOES) (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void* pixels);
-   void         (*glCopyTexSubImage3DOES) (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLint x, GLint y, GLsizei width, GLsizei height);
-   void         (*glCompressedTexImage3DOES) (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLsizei imageSize, const void* data);
-   void         (*glCompressedTexSubImage3DOES) (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void* data);
-   void         (*glFramebufferTexture3DOES) (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset);
+   void 	(*glTexImage3DOES) (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const void* pixels);
+   void 	(*glTexSubImage3DOES) (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void* pixels);
+   void 	(*glCopyTexSubImage3DOES) (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLint x, GLint y, GLsizei width, GLsizei height);
+   void 	(*glCompressedTexImage3DOES) (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLsizei imageSize, const void* data);
+   void 	(*glCompressedTexSubImage3DOES) (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void* data);
+   void 	(*glFramebufferTexture3DOES) (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset);
 
    /* AMD_performance_monitor */
-   void         (*glGetPerfMonitorGroupsAMD) (GLint* numGroups, GLsizei groupsSize, GLuint* groups);
-   void         (*glGetPerfMonitorCountersAMD) (GLuint group, GLint* numCounters, GLint* maxActiveCounters, GLsizei counterSize, GLuint* counters);
-   void         (*glGetPerfMonitorGroupStringAMD) (GLuint group, GLsizei bufSize, GLsizei* length, char* groupString);
-   void         (*glGetPerfMonitorCounterStringAMD) (GLuint group, GLuint counter, GLsizei bufSize, GLsizei* length, char* counterString);
-   void         (*glGetPerfMonitorCounterInfoAMD) (GLuint group, GLuint counter, GLenum pname, void* data);
-   void         (*glGenPerfMonitorsAMD) (GLsizei n, GLuint* monitors);
-   void         (*glDeletePerfMonitorsAMD) (GLsizei n, GLuint* monitors);
-   void         (*glSelectPerfMonitorCountersAMD) (GLuint monitor, GLboolean enable, GLuint group, GLint numCounters, GLuint* countersList);
-   void         (*glBeginPerfMonitorAMD) (GLuint monitor);
-   void         (*glEndPerfMonitorAMD) (GLuint monitor);
-   void         (*glGetPerfMonitorCounterDataAMD) (GLuint monitor, GLenum pname, GLsizei dataSize, GLuint* data, GLint* bytesWritten);
+   void 	(*glGetPerfMonitorGroupsAMD) (GLint* numGroups, GLsizei groupsSize, GLuint* groups);
+   void 	(*glGetPerfMonitorCountersAMD) (GLuint group, GLint* numCounters, GLint* maxActiveCounters, GLsizei counterSize, GLuint* counters);
+   void 	(*glGetPerfMonitorGroupStringAMD) (GLuint group, GLsizei bufSize, GLsizei* length, char* groupString);
+   void 	(*glGetPerfMonitorCounterStringAMD) (GLuint group, GLuint counter, GLsizei bufSize, GLsizei* length, char* counterString);
+   void 	(*glGetPerfMonitorCounterInfoAMD) (GLuint group, GLuint counter, GLenum pname, void* data);
+   void 	(*glGenPerfMonitorsAMD) (GLsizei n, GLuint* monitors);
+   void 	(*glDeletePerfMonitorsAMD) (GLsizei n, GLuint* monitors);
+   void 	(*glSelectPerfMonitorCountersAMD) (GLuint monitor, GLboolean enable, GLuint group, GLint numCounters, GLuint* countersList);
+   void 	(*glBeginPerfMonitorAMD) (GLuint monitor);
+   void 	(*glEndPerfMonitorAMD) (GLuint monitor);
+   void 	(*glGetPerfMonitorCounterDataAMD) (GLuint monitor, GLenum pname, GLsizei dataSize, GLuint* data, GLint* bytesWritten);
 
    /* GL_EXT_discard_framebuffer */
-   void         (*glDiscardFramebufferEXT) (GLenum target, GLsizei numAttachments, const GLenum* attachments);
+   void 	(*glDiscardFramebufferEXT) (GLenum target, GLsizei numAttachments, const GLenum* attachments);
 
    /* GL_EXT_multi_draw_arrays */
-   void         (*glMultiDrawArraysEXT) (GLenum mode, GLint* first, GLsizei* count, GLsizei primcount);
-   void         (*glMultiDrawElementsEXT) (GLenum mode, const GLsizei* count, GLenum type, const GLvoid** indices, GLsizei primcount);
+   void 	(*glMultiDrawArraysEXT) (GLenum mode, GLint* first, GLsizei* count, GLsizei primcount);
+   void 	(*glMultiDrawElementsEXT) (GLenum mode, const GLsizei* count, GLenum type, const GLvoid** indices, GLsizei primcount);
 
    /* GL_NV_fence */
-   void         (*glDeleteFencesNV) (GLsizei n, const GLuint* fences);
-   void         (*glGenFencesNV) (GLsizei n, GLuint* fences);
-   GLboolean    (*glIsFenceNV) (GLuint fence);
-   GLboolean    (*glTestFenceNV) (GLuint fence);
-   void         (*glGetFenceivNV) (GLuint fence, GLenum pname, GLint* params);
-   void         (*glFinishFenceNV) (GLuint fence);
-   void         (*glSetFenceNV) (GLuint, GLenum);
+   void 	(*glDeleteFencesNV) (GLsizei n, const GLuint* fences);
+   void 	(*glGenFencesNV) (GLsizei n, GLuint* fences);
+   GLboolean 	(*glIsFenceNV) (GLuint fence);
+   GLboolean 	(*glTestFenceNV) (GLuint fence);
+   void 	(*glGetFenceivNV) (GLuint fence, GLenum pname, GLint* params);
+   void 	(*glFinishFenceNV) (GLuint fence);
+   void 	(*glSetFenceNV) (GLuint, GLenum);
 
    /* GL_QCOM_driver_control */
-   void         (*glGetDriverControlsQCOM) (GLint* num, GLsizei size, GLuint* driverControls);
-   void         (*glGetDriverControlStringQCOM) (GLuint driverControl, GLsizei bufSize, GLsizei* length, char* driverControlString);
-   void         (*glEnableDriverControlQCOM) (GLuint driverControl);
-   void         (*glDisableDriverControlQCOM) (GLuint driverControl);
+   void 	(*glGetDriverControlsQCOM) (GLint* num, GLsizei size, GLuint* driverControls);
+   void 	(*glGetDriverControlStringQCOM) (GLuint driverControl, GLsizei bufSize, GLsizei* length, char* driverControlString);
+   void 	(*glEnableDriverControlQCOM) (GLuint driverControl);
+   void 	(*glDisableDriverControlQCOM) (GLuint driverControl);
 
    /* GL_QCOM_extended_get */
-   void         (*glExtGetTexturesQCOM) (GLuint* textures, GLint maxTextures, GLint* numTextures);
-   void         (*glExtGetBuffersQCOM) (GLuint* buffers, GLint maxBuffers, GLint* numBuffers);
-   void         (*glExtGetRenderbuffersQCOM) (GLuint* renderbuffers, GLint maxRenderbuffers, GLint* numRenderbuffers);
-   void         (*glExtGetFramebuffersQCOM) (GLuint* framebuffers, GLint maxFramebuffers, GLint* numFramebuffers);
-   void         (*glExtGetTexLevelParameterivQCOM) (GLuint texture, GLenum face, GLint level, GLenum pname, GLint* params);
-   void         (*glExtTexObjectStateOverrideiQCOM) (GLenum target, GLenum pname, GLint param);
-   void         (*glExtGetTexSubImageQCOM) (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, void* texels);
-   void         (*glExtGetBufferPointervQCOM) (GLenum target, void** params);
+   void 	(*glExtGetTexturesQCOM) (GLuint* textures, GLint maxTextures, GLint* numTextures);
+   void 	(*glExtGetBuffersQCOM) (GLuint* buffers, GLint maxBuffers, GLint* numBuffers);
+   void 	(*glExtGetRenderbuffersQCOM) (GLuint* renderbuffers, GLint maxRenderbuffers, GLint* numRenderbuffers);
+   void 	(*glExtGetFramebuffersQCOM) (GLuint* framebuffers, GLint maxFramebuffers, GLint* numFramebuffers);
+   void 	(*glExtGetTexLevelParameterivQCOM) (GLuint texture, GLenum face, GLint level, GLenum pname, GLint* params);
+   void 	(*glExtTexObjectStateOverrideiQCOM) (GLenum target, GLenum pname, GLint param);
+   void 	(*glExtGetTexSubImageQCOM) (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, void* texels);
+   void 	(*glExtGetBufferPointervQCOM) (GLenum target, void** params);
 
 
    /* GL_QCOM_extended_get2 */
-   void         (*glExtGetShadersQCOM) (GLuint* shaders, GLint maxShaders, GLint* numShaders);
-   void         (*glExtGetProgramsQCOM) (GLuint* programs, GLint maxPrograms, GLint* numPrograms);
-   GLboolean    (*glExtIsProgramBinaryQCOM) (GLuint program);
-   void         (*glExtGetProgramBinarySourceQCOM) (GLuint program, GLenum shadertype, char* source, GLint* length);
+   void 	(*glExtGetShadersQCOM) (GLuint* shaders, GLint maxShaders, GLint* numShaders);
+   void 	(*glExtGetProgramsQCOM) (GLuint* programs, GLint maxPrograms, GLint* numPrograms);
+   GLboolean 	(*glExtIsProgramBinaryQCOM) (GLuint program);
+   void 	(*glExtGetProgramBinarySourceQCOM) (GLuint program, GLenum shadertype, char* source, GLint* length);
 
    //------- EGL Related Extensions -------//
    /* EvasGL_KHR_image */

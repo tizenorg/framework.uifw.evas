@@ -21,6 +21,14 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#ifndef HAVE_LROUND
+/* right now i dont care about rendering bugs on platforms without lround
+ (e.g. windows/vc++... yay!)
+ FIXME: http://cgit.freedesktop.org/cairo/tree/src/cairo-misc.c#n487
+*/
+#define lround(x) (((x) < 0) ? (long int)ceil((x) - 0.5) : (long int)floor((x) + 0.5))
+#endif
+
 /* macros needed to log message through eina_log */
 extern EAPI int _evas_log_dom_global;
 #ifdef  _EVAS_DEFAULT_LOG_DOM
@@ -1041,14 +1049,14 @@ struct _Tilebuf
       int x, y, w, h;
    } prev_add, prev_del;
 #ifdef RECTUPDATE
-/*
+/*   
    Regionbuf *rb;
  */
 #elif defined(EVAS_RECT_SPLIT)
    int need_merge;
    list_t rects;
 #else
-/*
+/*   
    struct {
       int           w, h;
       Tilebuf_Tile *tiles;

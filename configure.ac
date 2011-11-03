@@ -107,6 +107,7 @@ want_evas_engine_software_16_sdl="no"
 want_evas_engine_gl_xlib="no"
 want_evas_engine_gl_xcb="no"
 want_evas_engine_gl_sdl="no"
+want_evas_engine_gl_cocoa="yes"
 want_evas_engine_direct3d="no"
 want_evas_engine_fb="no"
 want_evas_engine_directfb="no"
@@ -148,6 +149,7 @@ case "$host_os" in
       ;;
    darwin*)
       want_evas_engine_software_xlib="auto"
+      want_evas_engine_gl_cocoa="auto"
       ;;
    *)
       want_evas_engine_software_xlib="auto"
@@ -234,7 +236,7 @@ esac
 ## strong dependencies
 
 # Eina
-PKG_CHECK_MODULES([EINA], [eina >= 1.0.0])
+PKG_CHECK_MODULES([EINA], [eina >= 1.0.999])
 CPPFLAGS_SAVE="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS $EINA_CFLAGS"
 AC_CHECK_SIZEOF(Eina_Unicode,, [#include <Eina.h>])
@@ -484,26 +486,34 @@ dlopen_libs=""
 case "$host_os" in
   mingw32ce*)
 # managed by evil
-    AC_DEFINE(HAVE_DLADDR)
+    AC_DEFINE(HAVE_DLSYM)
   ;;
   mingw*)
 # nothing on mingw platform
   ;;
   *)
-    AC_CHECK_FUNCS(dlopen, res=yes, res=no)
+    AC_CHECK_FUNCS(dlsym, res=yes, res=no)
     if test "x$res" = "xyes"; then
-      AC_CHECK_FUNCS(dladdr, AC_DEFINE(HAVE_DLADDR))
+      AC_DEFINE(HAVE_DLSYM)
     else
-      AC_CHECK_LIB(dl, dlopen, res=yes, res=no)
+      AC_CHECK_LIB(dl, dlsym, res=yes, res=no)
       if test "x$res" = "xyes"; then
-        AC_CHECK_LIB(dl, dladdr, AC_DEFINE(HAVE_DLADDR))
         dlopen_libs=-ldl
+        AC_DEFINE(HAVE_DLSYM)
       else
-        AC_MSG_ERROR(Cannot find dlopen)
+        want_evas_engine_gl_xlib="no"
+        want_evas_engine_gl_xcb="no"
+        want_evas_engine_gl_sdl="no"
       fi
     fi
 esac
 AC_SUBST(dlopen_libs)
+
+res=no
+AC_CHECK_LIB(m, lround, res=yes, res=no)
+if test "x$res" = "xyes"; then
+  AC_DEFINE(HAVE_LROUND, 1, C99 lround function exists)
+fi
 
 SHM_OPEN_LINK=""
 AC_MSG_CHECKING([whether shm_open() is present])
@@ -668,6 +678,8 @@ EVAS_CHECK_ENGINE([direct3d], [${want_evas_engine_direct3d}], [no], [Direct3D])
 EVAS_CHECK_ENGINE([software-sdl], [${want_evas_engine_software_sdl}], [no], [Software SDL])
 
 EVAS_CHECK_ENGINE([gl-sdl], [${want_evas_engine_gl_sdl}], [no], [OpenGL SDL])
+
+EVAS_CHECK_ENGINE([gl-cocoa], [${want_evas_engine_gl_cocoa}], [no], [OpenGL Cocoa])
 
 EVAS_CHECK_ENGINE([fb], [${want_evas_engine_fb}], [no], [Framebuffer])
 
@@ -834,12 +846,14 @@ have_evas_engine_gl_common="no"
 have_static_evas_engine_gl_common="no"
 if test "x$have_evas_engine_gl_xlib" = "xyes" \
    || test "x$have_evas_engine_gl_xcb" = "xyes" \
-   || test "x$have_evas_engine_gl_sdl" = "xyes"; then
+   || test "x$have_evas_engine_gl_sdl" = "xyes" \
+   || test "x$have_evas_engine_gl_cocoa" = "xyes"; then
    have_evas_engine_gl_common="yes"
 fi
 if test "x$have_evas_engine_gl_xlib" = "xstatic" \
    || test "x$have_evas_engine_gl_xcb" = "xstatic" \
-   || test "x$have_evas_engine_gl_sdl" = "xstatic"; then
+   || test "x$have_evas_engine_gl_sdl" = "xstatic" \
+   || test "x$have_evas_engine_gl_cocoa" = "xstatic"; then
    have_evas_engine_gl_common="yes"
    have_static_evas_engine_gl_common="yes"
 fi
@@ -1760,6 +1774,7 @@ evas-directfb.pc
 evas-fb.pc
 evas-opengl-x11.pc
 evas-opengl-sdl.pc
+evas-opengl-cocoa.pc
 evas-software-buffer.pc
 evas-software-x11.pc
 evas-software-8-x11.pc
@@ -1805,6 +1820,7 @@ src/modules/engines/directfb/Makefile
 src/modules/engines/gl_common/Makefile
 src/modules/engines/gl_x11/Makefile
 src/modules/engines/gl_sdl/Makefile
+src/modules/engines/gl_cocoa/Makefile
 src/modules/engines/software_sdl/Makefile
 src/modules/engines/software_8/Makefile
 src/modules/engines/software_8_x11/Makefile
@@ -1898,6 +1914,7 @@ if test "x$have_evas_engine_gl_sdl" = "xyes"; then
 else
   echo
 fi
+echo "  OpenGL Cocoa...............: $have_evas_engine_gl_cocoa"
 echo "  Software Framebuffer.......: $have_evas_engine_fb"
 echo "  DirectFB...................: $have_evas_engine_directfb"
 echo "  Software 8bit grayscale....: $have_evas_engine_software_8"

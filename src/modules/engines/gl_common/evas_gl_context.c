@@ -1,5 +1,11 @@
 #include "evas_gl_private.h"
 
+#ifdef HAVE_DLSYM
+# include <dlfcn.h>      /* dlopen,dlclose,etc */
+#else
+# error gl_common should not get compiled if dlsym is not found on the system!
+#endif
+
 #define PRG_INVALID 0xffffffff
 #define GLPIPES 1
 
@@ -48,11 +54,11 @@ gl_symbols(void)
    if (sym_done) return;
    sym_done = 1;
 
-#ifdef _EVAS_ENGINE_SDL_H
-# define FINDSYM(dst, sym, typ) if (!dst) dst = (typ)SDL_GL_GetProcAddress(sym)
-#else
-# define FINDSYM(dst, sym, typ) if (!dst) dst = (typ)dlsym(RTLD_DEFAULT, sym)
-#endif
+   /* FIXME: If using the SDL engine, we should use SDL_GL_GetProcAddress
+    * instead of dlsym
+    * if (!dst) dst = (typ)SDL_GL_GetProcAddress(sym)
+    */
+#define FINDSYM(dst, sym, typ) if (!dst) dst = (typ)dlsym(RTLD_DEFAULT, sym)
 #define FALLBAK(dst, typ) if (!dst) dst = (typ)sym_missing;
 
    FINDSYM(glsym_glGenFramebuffers, "glGenFramebuffers", glsym_func_void);
@@ -2133,18 +2139,18 @@ evas_gl_common_context_image_map_push(Evas_Engine_GL_Context *gc,
            }
      }
 
-   x = w = (p[points[0]].x >> FP);
-   y = h = (p[points[0]].y >> FP);
+   x = w = (p[0].x >> FP);
+   y = h = (p[0].y >> FP);
    for (i = 0; i < 4; i++)
      {
         tx[i] = ((double)(tex->x) + (((double)p[i].u) / FP1)) /
           (double)tex->pt->w;
         ty[i] = ((double)(tex->y) + (((double)p[i].v) / FP1)) /
           (double)tex->pt->h;
-        px = (p[points[i]].x >> FP);
+        px = (p[i].x >> FP);
         if      (px < x) x = px;
         else if (px > w) w = px;
-        py = (p[points[i]].y >> FP);
+        py = (p[i].y >> FP);
         if      (py < y) y = py;
         else if (py > h) h = py;
         if (utexture)
@@ -2191,7 +2197,6 @@ evas_gl_common_context_image_map_push(Evas_Engine_GL_Context *gc,
 				     blend,
 				     smooth,
 				     clip, cx, cy, cw, ch);
-
    gc->pipe[pn].region.type = RTYPE_MAP;
    gc->pipe[pn].shader.cur_tex = tex->pt->texture;
    if (utexture)

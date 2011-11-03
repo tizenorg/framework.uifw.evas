@@ -164,7 +164,7 @@ evas_object_smart_member_add(Evas_Object *obj, Evas_Object *smart_obj)
    obj->layer->usage++;
    obj->smart.parent = smart_obj;
    o->contained = eina_inlist_append(o->contained, EINA_INLIST_GET(obj));
-   evas_object_smart_member_cache_invalidate(obj);
+   evas_object_smart_member_cache_invalidate(obj, EINA_TRUE, EINA_TRUE);
    obj->restack = 1;
    evas_object_change(obj);
    evas_object_mapped_clip_across_mark(obj);
@@ -191,7 +191,7 @@ evas_object_smart_member_del(Evas_Object *obj)
    o = (Evas_Object_Smart *)(obj->smart.parent->object_data);
    o->contained = eina_inlist_remove(o->contained, EINA_INLIST_GET(obj));
    obj->smart.parent = NULL;
-   evas_object_smart_member_cache_invalidate(obj);
+   evas_object_smart_member_cache_invalidate(obj, EINA_TRUE, EINA_TRUE);
    obj->layer->usage--;
    obj->cur.layer = obj->layer->layer;
    evas_object_inject(obj, obj->layer->evas);
@@ -561,7 +561,7 @@ evas_object_smart_need_recalculate_set(Evas_Object *obj, Eina_Bool value)
 
    if (o->need_recalculate == value) return;
 
-   if (obj->recalculate_cycle > 256)
+   if (obj->recalculate_cycle > 254)
      {
         ERR("Object %p is not stable during recalc loop", obj);
         return;
@@ -668,7 +668,6 @@ evas_call_smarts_calculate(Evas *e)
    if (e->in_smart_calc == 0) e->smart_calc_count++;
    evas_event_thaw(e);
    evas_event_thaw_eval(e);
-//   printf("-CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAALC-----------^\n");
 }
 
 EAPI void
@@ -737,9 +736,7 @@ evas_object_smart_cleanup(Evas_Object *obj)
 
         while (o->callbacks)
           {
-             Evas_Smart_Callback *cb;
-             
-             cb = o->callbacks->data;
+             Evas_Smart_Callback *cb = o->callbacks->data;
              o->callbacks = eina_list_remove(o->callbacks, cb);
              if (cb->event) eina_stringshare_del(cb->event);
              EVAS_MEMPOOL_FREE(_mp_cb, cb);
@@ -754,22 +751,29 @@ evas_object_smart_cleanup(Evas_Object *obj)
 }
 
 void
-evas_object_smart_member_cache_invalidate(Evas_Object *obj)
+evas_object_smart_member_cache_invalidate(Evas_Object *obj,
+                                          Eina_Bool pass_events,
+                                          Eina_Bool freeze_events)
 {
    Evas_Object_Smart *o;
-   Eina_Inlist *l;
+   Evas_Object *member;
 
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    return;
    MAGIC_CHECK_END();
 
-   obj->parent_cache_valid = 0;
+   if (pass_events)
+     obj->parent_cache.pass_events_valid = EINA_FALSE;
+   if (freeze_events)
+     obj->parent_cache.freeze_events_valid = EINA_FALSE;
 
-   o = (Evas_Object_Smart *)(obj->object_data);
+   o = obj->object_data;
    if (o->magic != MAGIC_OBJ_SMART) return;
 
-   for (l = o->contained; l; l = l->next)
-     evas_object_smart_member_cache_invalidate((Evas_Object *) l);
+   EINA_INLIST_FOREACH(o->contained, member)
+     evas_object_smart_member_cache_invalidate(member,
+                                               pass_events,
+                                               freeze_events);
 }
 
 void

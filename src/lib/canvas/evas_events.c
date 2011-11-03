@@ -7,15 +7,12 @@ _evas_event_havemap_adjust(Evas_Object *obj, Evas_Coord *x, Evas_Coord *y, Eina_
    if (obj->smart.parent)
       _evas_event_havemap_adjust(obj->smart.parent, x, y, mouse_grabbed);
 
-   if ((!obj->cur.map) || (!obj->cur.map->count == 4) || (!obj->cur.usemap))
+   if ((!obj->cur.usemap) || (!obj->cur.map) || (!obj->cur.map->count == 4))
       return;
 
-   if (obj->cur.map)
-     {
-        evas_map_coords_get(obj->cur.map, *x, *y, x, y, mouse_grabbed);
-        *x += obj->cur.geometry.x;
-        *y += obj->cur.geometry.y;
-     }
+   evas_map_coords_get(obj->cur.map, *x, *y, x, y, mouse_grabbed);
+   *x += obj->cur.geometry.x;
+   *y += obj->cur.geometry.y;
 }
 
 static Eina_List *
@@ -39,11 +36,10 @@ _evas_event_object_list_in_get(Evas *e, Eina_List *in,
           {
              if (obj->smart.smart)
                {
-                  int norep;
+                  int norep = 0;
                   int inside;
 
-                  norep = 0;
-                  if (((obj->cur.map) && (obj->cur.map->count == 4) && (obj->cur.usemap)))
+                  if (((obj->cur.usemap) && (obj->cur.map) && (obj->cur.map->count == 4)))
                     {
                        inside = evas_object_is_in_output_rect(obj, x, y, 1, 1);
                        if (inside)
@@ -79,11 +75,10 @@ _evas_event_object_list_in_get(Evas *e, Eina_List *in,
                }
              else
                {
-                  int inside = 1;
+                  int inside = evas_object_is_in_output_rect(obj, x, y, 1, 1);
 
-                  if (((obj->cur.map) && (obj->cur.map->count == 4) && (obj->cur.usemap)))
+                  if (((obj->cur.usemap) && (obj->cur.map) && (obj->cur.map->count == 4)))
                     {
-                       inside = evas_object_is_in_output_rect(obj, x, y, 1, 1);
                        if ((inside) && (!evas_map_coords_get(obj->cur.map, x, y,
                                                              &(obj->cur.map->mx),
                                                              &(obj->cur.map->my), 0)))
@@ -91,15 +86,12 @@ _evas_event_object_list_in_get(Evas *e, Eina_List *in,
                             inside = 0;
                          }
                     }
-                  else
-                    {
-                       inside = evas_object_is_in_output_rect(obj, x, y, 1, 1);
-                    }
 
                   if (inside && ((!obj->precise_is_inside) ||
                                  (evas_object_is_inside(obj, x, y))))
                     {
-                       in = eina_list_append(in, obj);
+                       if (!evas_event_freezes_through(obj))
+                         in = eina_list_append(in, obj);
                        if (!obj->repeat_events)
                          {
                             *no_rep = 1;
@@ -122,9 +114,7 @@ evas_event_objects_event_list(Evas *e, Evas_Object *stop, int x, int y)
    if (!e->layers) return NULL;
    EINA_INLIST_REVERSE_FOREACH((EINA_INLIST_GET(e->layers)), lay)
      {
-        int norep;
-
-        norep = 0;
+        int norep = 0;
         in = _evas_event_object_list_in_get(e, in,
                                             EINA_INLIST_GET(lay->objects),
                                             stop, x, y, &norep);
@@ -234,12 +224,16 @@ evas_event_feed_mouse_down(Evas *e, int b, Evas_Button_Flags flags, unsigned int
    ev.event_flags = EVAS_EVENT_FLAG_NONE;
 
    _evas_walk(e);
+   /* append new touch point to the touch point list */
+   _evas_touch_point_append(e, 0, e->pointer.x, e->pointer.y);
    /* If this is the first finger down, i.e no other fingers pressed,
     * get a new event list, otherwise, keep the current grabbed list. */
    if (e->pointer.mouse_grabbed == 0)
      {
-        Eina_List *ins;
-        ins = evas_event_objects_event_list(e, NULL, e->pointer.x, e->pointer.y);
+        Eina_List *ins = evas_event_objects_event_list(e,
+                                                       NULL,
+                                                       e->pointer.x,
+                                                       e->pointer.y);
         /* free our old list of ins */
         e->pointer.object.in = eina_list_free(e->pointer.object.in);
         /* and set up the new one */
@@ -257,7 +251,6 @@ evas_event_feed_mouse_down(Evas *e, int b, Evas_Button_Flags flags, unsigned int
    EINA_LIST_FOREACH(copy, l, obj)
      {
         if (obj->delete_me) continue;
-
         ev.canvas.x = e->pointer.x;
         ev.canvas.y = e->pointer.y;
         _evas_event_havemap_adjust(obj, &ev.canvas.x, &ev.canvas.y, obj->mouse_grabbed);
@@ -269,10 +262,9 @@ evas_event_feed_mouse_down(Evas *e, int b, Evas_Button_Flags flags, unsigned int
    if (copy) eina_list_free(copy);
    e->last_mouse_down_counter++;
    _evas_post_event_callback_call(e);
+   /* update touch point's state to EVAS_TOUCH_POINT_STILL */
+   _evas_touch_point_update(e, 0, e->pointer.x, e->pointer.y, EVAS_TOUCH_POINT_STILL);
    _evas_unwalk(e);
-
-   /* process mouse down for touch */
-   _evas_event_touch_down(e, e->pointer.x, e->pointer.y, 0, timestamp);
 }
 
 static int
@@ -414,6 +406,8 @@ evas_event_feed_mouse_up(Evas *e, int b, Evas_Button_Flags flags, unsigned int t
         ev.event_flags = EVAS_EVENT_FLAG_NONE;
 
         _evas_walk(e);
+        /* update released touch point */
+        _evas_touch_point_update(e, 0, e->pointer.x, e->pointer.y, EVAS_TOUCH_POINT_UP);
         copy = evas_event_list_copy(e->pointer.object.in);
         EINA_LIST_FOREACH(copy, l, obj)
           {
@@ -448,19 +442,8 @@ evas_event_feed_mouse_up(Evas *e, int b, Evas_Button_Flags flags, unsigned int t
         ERR("BUG? e->pointer.mouse_grabbed (=%d) < 0!",
             e->pointer.mouse_grabbed);
      }
-/* don't need this anymore - havent actually triggered this for a long
- * time and this also doesn't account for multitouch, so leave here if we
- * ever find bugs again so we can turn it on, but otherwise.. dont use this
-   if ((e->pointer.button == 0) && (e->pointer.mouse_grabbed != 0))
-     {
-        INF("restore to 0 grabs (from %i)", e->pointer.mouse_grabbed);
-	e->pointer.mouse_grabbed = 0;
-     }
- */
-   _evas_unwalk(e);
 
-   /* process mouse up for touch */
-   _evas_event_touch_up(e, e->pointer.x, e->pointer.y, 0, timestamp);
+   _evas_unwalk(e);
 }
 
 EAPI void
@@ -480,6 +463,8 @@ evas_event_feed_mouse_cancel(Evas *e, unsigned int timestamp, const void *data)
         if ((e->pointer.button & (1 << i)))
           evas_event_feed_mouse_up(e, i + 1, 0, timestamp, data);
      }
+   /* remove released touch point from the touch point list */
+   _evas_touch_point_remove(e, 0);
    _evas_unwalk(e);
 }
 
@@ -555,6 +540,9 @@ evas_event_feed_mouse_move(Evas *e, int x, int y, unsigned int timestamp, const 
 ////   e->pointer.canvas_y = evas_coord_screen_y_to_world(e, y);
    if ((!e->pointer.inside) && (e->pointer.mouse_grabbed == 0)) return;
    _evas_walk(e);
+   /* update moved touch point */
+   if ((px != x) || (py != y))
+     _evas_touch_point_update(e, 0, e->pointer.x, e->pointer.y, EVAS_TOUCH_POINT_MOVE);
    /* if our mouse button is grabbed to any objects */
    if (e->pointer.mouse_grabbed > 0)
      {
@@ -591,6 +579,7 @@ evas_event_feed_mouse_move(Evas *e, int x, int y, unsigned int timestamp, const 
                   if (((evas_object_clippers_is_visible(obj)) ||
                        (obj->mouse_grabbed)) &&
                       (!evas_event_passes_through(obj)) &&
+                      (!evas_event_freezes_through(obj)) &&
                       (!obj->clip.clipees))
                     {
                        if ((px != x) || (py != y))
@@ -711,6 +700,7 @@ evas_event_feed_mouse_move(Evas *e, int x, int y, unsigned int timestamp, const 
                      (obj->mouse_grabbed)) &&
                  (eina_list_data_find(ins, obj)) &&
                  (!evas_event_passes_through(obj)) &&
+                 (!evas_event_freezes_through(obj)) &&
                  (!obj->clip.clipees) &&
                  ((!obj->precise_is_inside) ||
                   (evas_object_is_inside(obj, x, y))))
@@ -777,9 +767,6 @@ evas_event_feed_mouse_move(Evas *e, int x, int y, unsigned int timestamp, const 
         _evas_post_event_callback_call(e);
      }
    _evas_unwalk(e);
-
-   /* process mouse move for touch */
-   _evas_event_touch_move(e, e->pointer.x, e->pointer.y, 0, timestamp);
 }
 
 EAPI void
@@ -942,6 +929,8 @@ evas_event_feed_multi_down(Evas *e,
    ev.event_flags = EVAS_EVENT_FLAG_NONE;
 
    _evas_walk(e);
+   /* append new touch point to the touch point list */
+   _evas_touch_point_append(e, d, x, y);
    copy = evas_event_list_copy(e->pointer.object.in);
    EINA_LIST_FOREACH(copy, l, obj)
      {
@@ -968,10 +957,9 @@ evas_event_feed_multi_down(Evas *e,
      }
    if (copy) eina_list_free(copy);
    _evas_post_event_callback_call(e);
+   /* update touch point's state to EVAS_TOUCH_POINT_STILL */
+   _evas_touch_point_update(e, d, x, y, EVAS_TOUCH_POINT_STILL);
    _evas_unwalk(e);
-
-   /* process multi down for touch */
-   _evas_event_touch_down(e, x, y, d, timestamp);
 }
 
 EAPI void
@@ -1016,6 +1004,8 @@ evas_event_feed_multi_up(Evas *e,
    ev.event_flags = EVAS_EVENT_FLAG_NONE;
 
    _evas_walk(e);
+   /* update released touch point */
+   _evas_touch_point_update(e, d, x, y, EVAS_TOUCH_POINT_UP);
    copy = evas_event_list_copy(e->pointer.object.in);
    EINA_LIST_FOREACH(copy, l, obj)
      {
@@ -1041,10 +1031,9 @@ evas_event_feed_multi_up(Evas *e,
    if (copy) copy = eina_list_free(copy);
    if ((e->pointer.mouse_grabbed == 0) && !_post_up_handle(e, timestamp, data))
       _evas_post_event_callback_call(e);
+   /* remove released touch point from the touch point list */
+   _evas_touch_point_remove(e, d);
    _evas_unwalk(e);
-
-   /* process multi up for touch */
-   _evas_event_touch_up(e, x, y, d, timestamp);
 }
 
 EAPI void
@@ -1065,6 +1054,8 @@ evas_event_feed_multi_move(Evas *e,
    if (!e->pointer.inside) return;
 
    _evas_walk(e);
+   /* update moved touch point */
+   _evas_touch_point_update(e, d, x, y, EVAS_TOUCH_POINT_MOVE);
    /* if our mouse button is grabbed to any objects */
    if (e->pointer.mouse_grabbed > 0)
      {
@@ -1099,6 +1090,7 @@ evas_event_feed_multi_move(Evas *e,
              if (((evas_object_clippers_is_visible(obj)) ||
                   (obj->mouse_grabbed)) &&
                  (!evas_event_passes_through(obj)) &&
+                 (!evas_event_freezes_through(obj)) &&
                  (!obj->clip.clipees))
                {
                   ev.cur.canvas.x = x;
@@ -1159,6 +1151,7 @@ evas_event_feed_multi_move(Evas *e,
                      (obj->mouse_grabbed)) &&
                  (eina_list_data_find(ins, obj)) &&
                  (!evas_event_passes_through(obj)) &&
+                 (!evas_event_freezes_through(obj)) &&
                  (!obj->clip.clipees) &&
                  ((!obj->precise_is_inside) ||
                   (evas_object_is_inside(obj, x, y))))
@@ -1193,9 +1186,6 @@ evas_event_feed_multi_move(Evas *e,
         _evas_post_event_callback_call(e);
      }
    _evas_unwalk(e);
-
-   /* process multi move for touch */
-   _evas_event_touch_move(e, x, y, d, timestamp);
 }
 
 EAPI void
@@ -1392,6 +1382,40 @@ evas_event_feed_hold(Evas *e, int hold, unsigned int timestamp, const void *data
 }
 
 EAPI void
+evas_object_freeze_events_set(Evas_Object *obj, Eina_Bool freeze)
+{
+   MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
+   return;
+   MAGIC_CHECK_END();
+
+   freeze = !!freeze;
+   if (obj->freeze_events == freeze) return;
+   obj->freeze_events = freeze;
+   evas_object_smart_member_cache_invalidate(obj, EINA_FALSE, EINA_TRUE);
+   if (evas_object_is_in_output_rect(obj,
+                                     obj->layer->evas->pointer.x,
+                                     obj->layer->evas->pointer.y, 1, 1) &&
+       ((!obj->precise_is_inside) ||
+        (evas_object_is_inside(obj,
+                               obj->layer->evas->pointer.x,
+                               obj->layer->evas->pointer.y))))
+     evas_event_feed_mouse_move(obj->layer->evas,
+                                obj->layer->evas->pointer.x,
+                                obj->layer->evas->pointer.y,
+                                obj->layer->evas->last_timestamp,
+                                NULL);
+}
+
+EAPI Eina_Bool
+evas_object_freeze_events_get(const Evas_Object *obj)
+{
+   MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
+   return 0;
+   MAGIC_CHECK_END();
+   return obj->freeze_events;
+}
+
+EAPI void
 evas_object_pass_events_set(Evas_Object *obj, Eina_Bool pass)
 {
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
@@ -1400,7 +1424,7 @@ evas_object_pass_events_set(Evas_Object *obj, Eina_Bool pass)
    pass = !!pass;
    if (obj->pass_events == pass) return;
    obj->pass_events = pass;
-   evas_object_smart_member_cache_invalidate(obj);
+   evas_object_smart_member_cache_invalidate(obj, EINA_TRUE, EINA_FALSE);
    if (evas_object_is_in_output_rect(obj,
                                      obj->layer->evas->pointer.x,
                                      obj->layer->evas->pointer.y, 1, 1) &&

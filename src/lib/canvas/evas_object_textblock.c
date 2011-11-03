@@ -354,7 +354,7 @@ struct _Evas_Object_Textblock_Format
    struct {
       struct {
 	 unsigned char  r, g, b, a;
-      } normal, underline, underline2, outline, shadow, glow, glow2, backing,
+      } normal, underline, underline2, underline_dash, outline, shadow, glow, glow2, backing,
 	strikethrough;
    } color;
    struct {
@@ -364,6 +364,8 @@ struct _Evas_Object_Textblock_Format
    int                  tabstops;
    int                  linesize;
    int                  linegap;
+   int                  underline_dash_width;
+   int                  underline_dash_gap;
    double               linerelsize;
    double               linerelgap;
    double               linefill;
@@ -374,6 +376,7 @@ struct _Evas_Object_Textblock_Format
    Eina_Bool            wrap_mixed : 1;
    Eina_Bool            underline : 1;
    Eina_Bool            underline2 : 1;
+   Eina_Bool            underline_dash : 1;
    Eina_Bool            strikethrough : 1;
    Eina_Bool            backing : 1;
    Eina_Bool            password : 1;
@@ -997,6 +1000,7 @@ static const char *langstr = NULL;
 static const char *colorstr = NULL;
 static const char *underline_colorstr = NULL;
 static const char *underline2_colorstr = NULL;
+static const char *underline_dash_colorstr = NULL;
 static const char *outline_colorstr = NULL;
 static const char *shadow_colorstr = NULL;
 static const char *glow_colorstr = NULL;
@@ -1021,6 +1025,8 @@ static const char *itemstr = NULL;
 static const char *linefillstr = NULL;
 static const char *ellipsisstr = NULL;
 static const char *passwordstr = NULL;
+static const char *underline_dash_widthstr = NULL;
+static const char *underline_dash_gapstr = NULL;
 
 /**
  * @internal
@@ -1042,6 +1048,7 @@ _format_command_init(void)
         colorstr = eina_stringshare_add("color");
         underline_colorstr = eina_stringshare_add("underline_color");
         underline2_colorstr = eina_stringshare_add("underline2_color");
+        underline_dash_colorstr = eina_stringshare_add("underline_dash_color");
         outline_colorstr = eina_stringshare_add("outline_color");
         shadow_colorstr = eina_stringshare_add("shadow_color");
         glow_colorstr = eina_stringshare_add("glow_color");
@@ -1066,6 +1073,8 @@ _format_command_init(void)
         linefillstr = eina_stringshare_add("linefill");
         ellipsisstr = eina_stringshare_add("ellipsis");
         passwordstr = eina_stringshare_add("password");
+        underline_dash_widthstr = eina_stringshare_add("underline_dash_width");
+        underline_dash_gapstr = eina_stringshare_add("underline_dash_gap");
      }
    format_refcount++;
 }
@@ -1090,6 +1099,7 @@ _format_command_shutdown(void)
    eina_stringshare_del(colorstr);
    eina_stringshare_del(underline_colorstr);
    eina_stringshare_del(underline2_colorstr);
+   eina_stringshare_del(underline_dash_colorstr);
    eina_stringshare_del(outline_colorstr);
    eina_stringshare_del(shadow_colorstr);
    eina_stringshare_del(glow_colorstr);
@@ -1114,6 +1124,8 @@ _format_command_shutdown(void)
    eina_stringshare_del(linefillstr);
    eina_stringshare_del(ellipsisstr);
    eina_stringshare_del(passwordstr);
+   eina_stringshare_del(underline_dash_widthstr);
+   eina_stringshare_del(underline_dash_gapstr);
 }
 
 /**
@@ -1234,6 +1246,10 @@ _format_command(Evas_Object *obj, Evas_Object_Textblock_Format *fmt, const char 
      _format_color_parse(tmp_param,
            &(fmt->color.underline2.r), &(fmt->color.underline2.g),
            &(fmt->color.underline2.b), &(fmt->color.underline2.a));
+   else if (cmd == underline_dash_colorstr)
+     _format_color_parse(tmp_param,
+           &(fmt->color.underline_dash.r), &(fmt->color.underline_dash.g),
+           &(fmt->color.underline_dash.b), &(fmt->color.underline_dash.a));
    else if (cmd == outline_colorstr)
      _format_color_parse(tmp_param,
            &(fmt->color.outline.r), &(fmt->color.outline.g),
@@ -1382,6 +1398,8 @@ _format_command(Evas_Object *obj, Evas_Object_Textblock_Format *fmt, const char 
              fmt->underline = 1;
              fmt->underline2 = 1;
           }
+        else if (!strcmp(tmp_param, "dashed"))
+          fmt->underline_dash = 1;
      }
    else if (cmd == strikethroughstr)
      {
@@ -1541,6 +1559,16 @@ _format_command(Evas_Object *obj, Evas_Object_Textblock_Format *fmt, const char 
           fmt->password = 0;
         else if (!strcmp(tmp_param, "on"))
           fmt->password = 1;
+     }
+   else if (cmd == underline_dash_widthstr)
+     {
+        fmt->underline_dash_width = atoi(tmp_param);
+        if (fmt->underline_dash_width <= 0) fmt->underline_dash_width = 1;
+     }
+   else if (cmd == underline_dash_gapstr)
+     {
+        fmt->underline_dash_gap = atoi(tmp_param);
+        if (fmt->underline_dash_gap <= 0) fmt->underline_dash_gap = 1;
      }
 }
 
@@ -2077,6 +2105,8 @@ _layout_format_push(Ctxt *c, Evas_Object_Textblock_Format *fmt,
         fmt->linesize = 0;
         fmt->linerelsize = 0.0;
         fmt->linegap = 0;
+        fmt->underline_dash_width = 6;
+        fmt->underline_dash_gap = 2;
         fmt->linerelgap = 0.0;
         fmt->password = 1;
      }
@@ -3161,7 +3191,7 @@ _layout_do_format(const Evas_Object *obj __UNUSED__, Ctxt *c,
 
    if (fmt->underline2)
      c->have_underline2 = 1;
-   else if (fmt->underline)
+   else if (fmt->underline || fmt->underline_dash)
      c->have_underline = 1;
    *_fmt = fmt;
 }
@@ -7710,7 +7740,7 @@ evas_textblock_cursor_geometry_get(const Evas_Textblock_Cursor *cur, Evas_Coord 
                    dir_cur, &x, &y, &w, &h);
 #ifdef BIDI_SUPPORT
              Eina_Bool is_rtl = EINA_FALSE;
-             if (dir_cur->node->par->is_bidi)
+             if (dir_cur->node && dir_cur->node->par->is_bidi)
                {
                   Evas_Object_Textblock_Line *ln;
                   Evas_Object_Textblock_Item *it;
@@ -8845,9 +8875,6 @@ evas_object_textblock_render(Evas_Object *obj, void *output, void *context, void
    Evas_Object_Textblock_Line *ln;
    Evas_Object_Textblock *o;
    int i, j;
-   unsigned char r = 0, g = 0, b = 0, a = 0;
-   unsigned char r2 = 0, g2 = 0, b2 = 0, a2 = 0;
-   unsigned char r3 = 0, g3 = 0, b3 = 0, a3 = 0;
    int cx, cy, cw, ch, clip;
    const char vals[5][5] =
      {
@@ -8960,22 +8987,55 @@ evas_object_textblock_render(Evas_Object *obj, void *output, void *context, void
      } \
    while (0)
 
-#define DRAW_FORMAT(oname, oy, oh, or, og, ob, oa) \
+#define DRAW_FORMAT_DASHED(oname, oy, oh, dw, dp) \
    do \
      { \
         if (itr->format->oname) \
           { \
-             or = itr->format->color.oname.r; \
-             og = itr->format->color.oname.g; \
-             ob = itr->format->color.oname.b; \
-             oa = itr->format->color.oname.a; \
+             unsigned char _or, _og, _ob, _oa; \
+             int _ind, _dx = 0, _dn, _dr; \
+             _or = itr->format->color.oname.r; \
+             _og = itr->format->color.oname.g; \
+             _ob = itr->format->color.oname.b; \
+             _oa = itr->format->color.oname.a; \
              if (!EINA_INLIST_GET(itr)->next) \
                { \
-                  DRAW_RECT(itr->x, oy, itr->w, oh, or, og, ob, oa); \
+                  _dn = itr->w / (dw + dp); \
+                  _dr = itr->w % (dw + dp); \
                } \
              else \
                { \
-                  DRAW_RECT(itr->x, oy, itr->adv, oh, or, og, ob, oa); \
+                  _dn = itr->adv / (dw + dp); \
+                  _dr = itr->adv % (dw + dp); \
+               } \
+             if (_dr > dw) _dr = dw; \
+             for (_ind = 0 ; _ind < _dn ; _ind++) \
+               { \
+                  DRAW_RECT(itr->x + _dx, oy, dw, oh, _or, _og, _ob, _oa); \
+                  _dx += dw + dp; \
+               } \
+             DRAW_RECT(itr->x + _dx, oy, _dr, oh, _or, _og, _ob, _oa); \
+          } \
+     } \
+   while (0)
+
+#define DRAW_FORMAT(oname, oy, oh) \
+   do \
+     { \
+        if (itr->format->oname) \
+          { \
+             unsigned char _or, _og, _ob, _oa; \
+             _or = itr->format->color.oname.r; \
+             _og = itr->format->color.oname.g; \
+             _ob = itr->format->color.oname.b; \
+             _oa = itr->format->color.oname.a; \
+             if (!EINA_INLIST_GET(itr)->next) \
+               { \
+                  DRAW_RECT(itr->x, oy, itr->w, oh, _or, _og, _ob, _oa); \
+               } \
+             else \
+               { \
+                  DRAW_RECT(itr->x, oy, itr->adv, oh, _or, _og, _ob, _oa); \
                } \
           } \
      } \
@@ -8999,7 +9059,7 @@ evas_object_textblock_render(Evas_Object *obj, void *output, void *context, void
 
    ITEM_WALK()
      {
-        DRAW_FORMAT(backing, 0, ln->h, r, g, b, a);
+        DRAW_FORMAT(backing, 0, ln->h);
      }
    ITEM_WALK_END();
 
@@ -9187,13 +9247,18 @@ evas_object_textblock_render(Evas_Object *obj, void *output, void *context, void
           }
 
         /* STRIKETHROUGH */
-        DRAW_FORMAT(strikethrough, (ln->h / 2), 1, r, g, b, a);
+        DRAW_FORMAT(strikethrough, (ln->h / 2), 1);
 
         /* UNDERLINE */
-        DRAW_FORMAT(underline, ln->baseline + 1, 1, r2, g2, b2, a2);
+        DRAW_FORMAT(underline, ln->baseline + 1, 1);
+
+        /* UNDERLINE DASHED */
+        DRAW_FORMAT_DASHED(underline_dash, ln->baseline + 1, 1,
+                         ti->parent.format->underline_dash_width,
+                         ti->parent.format->underline_dash_gap);
 
         /* UNDERLINE2 */
-        DRAW_FORMAT(underline2, ln->baseline + 3, 1, r3, g3, b3, a3);
+        DRAW_FORMAT(underline2, ln->baseline + 3, 1);
      }
    ITEM_WALK_END();
 }

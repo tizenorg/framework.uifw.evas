@@ -46,6 +46,7 @@ typedef struct _Evas_Format                 Evas_Format;
 typedef struct _Evas_Map_Point              Evas_Map_Point;
 typedef struct _Evas_Smart_Cb_Description_Array Evas_Smart_Cb_Description_Array;
 typedef struct _Evas_Post_Callback          Evas_Post_Callback;
+typedef struct _Evas_Coord_Touch_Point      Evas_Coord_Touch_Point;
 
 enum _Evas_Font_Style
 {
@@ -166,6 +167,13 @@ MAGIC_CHECK_FAILED(o, t, m)
         eina_stringshare_del((o)->prev.key);                                \
         (o)->prev.key = NULL;                                               \
      }
+
+struct _Evas_Coord_Touch_Point
+{
+   Evas_Coord x, y; // point's x, y position
+   int id; // id in order to distinguish each point
+   Evas_Touch_Point_State state;
+};
 
 struct _Evas_Key_Grab
 {
@@ -572,9 +580,14 @@ struct _Evas_Object
 
    Eina_Bool                   store : 1;
    Eina_Bool                   pass_events : 1;
-   Eina_Bool                   parent_pass_events : 1;
-   Eina_Bool                   parent_cache_valid : 1;
+   Eina_Bool                   freeze_events : 1;
    Eina_Bool                   repeat_events : 1;
+   struct  {
+      Eina_Bool                pass_events : 1;
+      Eina_Bool                pass_events_valid : 1;
+      Eina_Bool                freeze_events : 1;
+      Eina_Bool                freeze_events_valid : 1;
+   } parent_cache;
    Eina_Bool                   restack : 1;
    Eina_Bool                   is_active : 1;
    Eina_Bool                   precise_is_inside : 1;
@@ -836,6 +849,9 @@ struct _Evas_Func
    int (*image_animated_loop_count_get)  (void *data, void *image);
    double (*image_animated_frame_duration_get) (void *data, void *image, int start_frame, int frame_num);
    Eina_Bool (*image_animated_frame_set) (void *data, void *image, int frame_index);
+
+   /* max size query */
+   void (*image_max_size_get)            (void *data, int *maxw, int *maxh);
 };
 
 struct _Evas_Image_Load_Func
@@ -965,7 +981,7 @@ int evas_font_desc_cmp(const Evas_Font_Description *a, const Evas_Font_Descripti
 Evas_Font_Description *evas_font_desc_ref(Evas_Font_Description *fdesc);
 void * evas_font_load(Evas *evas, Evas_Font_Description *fdesc, const char *source, Evas_Font_Size size);
 void evas_font_load_hinting_set(Evas *evas, void *font, int hinting);
-void evas_object_smart_member_cache_invalidate(Evas_Object *obj);
+void evas_object_smart_member_cache_invalidate(Evas_Object *obj, Eina_Bool pass_events, Eina_Bool freeze_events);
 void evas_text_style_pad_get(Evas_Text_Style_Type style, int *l, int *r, int *t, int *b);
 void _evas_object_text_rehint(Evas_Object *obj);
 void _evas_object_textblock_rehint(Evas_Object *obj);
@@ -1014,10 +1030,10 @@ Eina_Bool evas_map_coords_get(const Evas_Map *m, Evas_Coord x, Evas_Coord y, Eva
 
 Eina_List *evas_module_engine_list(void);
 
-/* for touch event */
-void _evas_event_touch_down(Evas *e, Evas_Coord x, Evas_Coord y, int id, unsigned int timestamp);
-void _evas_event_touch_up(Evas *e, Evas_Coord x, Evas_Coord y, int id, unsigned int timestamp);
-void _evas_event_touch_move(Evas *e, Evas_Coord x, Evas_Coord y, int id, unsigned int timestamp);
+/* for updating touch point list */
+void _evas_touch_point_append(Evas *e, int id, Evas_Coord x, Evas_Coord y);
+void _evas_touch_point_update(Evas *e, int id, Evas_Coord x, Evas_Coord y, Evas_Touch_Point_State state);
+void _evas_touch_point_remove(Evas *e, int id);
 
 /****************************************************************************/
 /*****************************************/

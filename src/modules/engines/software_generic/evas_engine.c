@@ -481,8 +481,8 @@ eng_image_data_put(void *data, void *image, DATA32 *image_data)
 		  if (!im->cs.no_free) free(im->cs.data);
 	       }
 	     im->cs.data = image_data;
-	     evas_common_image_colorspace_dirty(im);
 	  }
+        evas_common_image_colorspace_dirty(im);
         break;
       default:
 	abort();
@@ -1177,7 +1177,8 @@ static Evas_Func func =
      eng_image_animated_loop_type_get,
      eng_image_animated_loop_count_get,
      eng_image_animated_frame_duration_get,
-     eng_image_animated_frame_set
+     eng_image_animated_frame_set,
+     NULL
    /* FUTURE software generic calls go here */
 };
 
