@@ -192,7 +192,7 @@ _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType *gif, Image_Entry
    int                 h;
    int                 x;
    int                 y;
-   int                 i, j;
+   int                 i,j;
    int                 bg;
    int                 r;
    int                 g;
@@ -201,15 +201,15 @@ _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType *gif, Image_Entry
    double              per;
    double              per_inc;
    ColorMapObject     *cmap;
-   GifRowType         *rows = NULL;
+   GifRowType         *rows;
    GifPixelType       *tmp = NULL; /*for skip gif line */
    int                 intoffset[] = { 0, 4, 2, 1 };
    int                 intjump[] = { 8, 8, 4, 2 };
    size_t              siz;
    int                 cache_w;
    int                 cache_h;
-   int                 cur_w;
    int                 cur_h;
+   int                 cur_w;
    int                 disposal = 0;
    int                 bg_val = 0;
    DATA32             *ptr;
@@ -242,7 +242,6 @@ _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType *gif, Image_Entry
         *error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
         return EINA_FALSE;
      }
-
    for (i = 0; i < scale_h; i++)
      {
         rows[i] = NULL;
