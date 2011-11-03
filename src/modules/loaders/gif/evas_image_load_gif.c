@@ -188,19 +188,28 @@ _evas_image_load_frame_image_des_info(GifFileType *gif, Image_Entry_Frame *frame
 static Eina_Bool
 _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType *gif, Image_Entry_Frame *frame, int *error)
 {
-   int                 w, h, x, y;
+   int                 w;
+   int                 h;
+   int                 x;
+   int                 y;
    int                 i, j;
    int                 bg;
-   int                 r, g, b;
+   int                 r;
+   int                 g;
+   int                 b;
    int                 alpha;
-   double              per, per_inc;
+   double              per;
+   double              per_inc;
    ColorMapObject     *cmap;
    GifRowType         *rows = NULL;
    GifPixelType       *tmp = NULL; /*for skip gif line */
    int                 intoffset[] = { 0, 4, 2, 1 };
    int                 intjump[] = { 8, 8, 4, 2 };
    size_t              siz;
-   int                 cache_w, cache_h, cur_w, cur_h;
+   int                 cache_w;
+   int                 cache_h;
+   int                 cur_w;
+   int                 cur_h;
    int                 disposal = 0;
    int                 bg_val = 0;
    DATA32             *ptr;
@@ -293,7 +302,7 @@ _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType *gif, Image_Entry
                {
                   *error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
                   goto error;
-               }
+              }
              if (scale_ratio > 1)
                {
                   /* we use down sample method for scale down, so skip other line */
@@ -566,7 +575,7 @@ _evas_image_load_frame(Image_Entry *ie, GifFileType *gif, Image_Entry_Frame *fra
    gif_frame = (Gif_Frame *) frame->info;
 
    if (type > LOAD_FRAME_DATA_INFO) return EINA_FALSE;
-
+   
    do
      {
         if (DGifGetRecordType(gif, &rec) == GIF_ERROR) return EINA_FALSE;
