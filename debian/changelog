@@ -1,3 +1,9 @@
+evas (1.0.0.001+svn.64664slp2+build02) unstable; urgency=low
+
+  * Make sure elementary builds correctly
+
+ -- Mike McCormack <mj.mccormack@samsung.com>  Thu, 03 Nov 2011 17:48:25 +0900
+
 evas (1.0.0.001+svn.64664slp2+build01) unstable; urgency=low
 
   * Merge with upstream @64664
