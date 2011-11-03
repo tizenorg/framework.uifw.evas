@@ -405,31 +405,31 @@ _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType *gif, Image_Entry
              switch(disposal) /* we only support disposal flag 0,1,2 */
                {
                 case 1: /* Do not dispose. need previous frame*/
-                   memcpy(ptr, ptr_src, siz);
-                   /* only decoding image descriptor's region */
-                   ptr = ptr + cache_w * scale_y;
+                  memcpy(ptr, ptr_src, siz);
+                  /* only decoding image descriptor's region */
+                  ptr = ptr + cache_w * scale_y;
 
-                   for (i = 0; i < cur_h; i++)
-                     {
-                        ptr = ptr + scale_x;
-                        for (j = 0; j < cur_w; j++)
-                          {
-                             if (rows[i][j * scale_ratio] == alpha)
-                               {
-                                  ptr++ ;
-                               }
-                             else
-                               {
-                                  r = cmap->Colors[rows[i][j * scale_ratio]].Red;
-                                  g = cmap->Colors[rows[i][j * scale_ratio]].Green;
-                                  b = cmap->Colors[rows[i][j * scale_ratio]].Blue;
-                                  *ptr++ = ARGB_JOIN(0xff, r, g, b);
-                               }
-                             per += per_inc;
-                          }
-                        ptr = ptr + (cache_w - (scale_x + cur_w));
-                     }
-                   break;
+                  for (i = 0; i < cur_h; i++)
+                    {
+                       ptr = ptr + scale_x;
+                       for (j = 0; j < cur_w; j++)
+                         {
+                            if (rows[i][j * scale_ratio] == alpha)
+                              {
+                                 ptr++ ;
+                              }
+                            else
+                              {
+                                 r = cmap->Colors[rows[i][j * scale_ratio]].Red;
+                                 g = cmap->Colors[rows[i][j * scale_ratio]].Green;
+                                 b = cmap->Colors[rows[i][j * scale_ratio]].Blue;
+                                 *ptr++ = ARGB_JOIN(0xff, r, g, b);
+                              }
+                            per += per_inc;
+                         }
+                       ptr = ptr + (cache_w - (scale_x + cur_w));
+                    }
+                  break;
                 case 2: /* Restore to background color */
                    memcpy(ptr, ptr_src, siz);
                    /* composite frames */
