@@ -434,38 +434,38 @@ _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType *gif, Image_Entry
                    memcpy(ptr, ptr_src, siz);
                    /* composite frames */
                    for (i = 0; i < cache_h; i++)
-                     {
-                        if ((i < scale_y) || (i >= (scale_y + cur_h)))
-                          {
-                             for (j = 0; j < cache_w; j++)
-                               {
-                                  *ptr = bg_val;
-                                  ptr++;
-                               }
-                          }
-                        else
-                          {
-                             int i1, j1;
-                             i1 = i - scale_y;
+                    {
+                       if ((i < scale_y) || (i >= (scale_y + cur_h)))
+                         {
+                            for (j = 0; j < cache_w; j++)
+                              {
+                                 *ptr = bg_val;
+                                 ptr++;
+                              }
+                         }
+                       else
+                         {
+                            int i1, j1;
+                            i1 = i - scale_y;
 
-                             for (j = 0; j < cache_w; j++)
-                               {
-                                  j1 = j - scale_x;
-                                  if ((j < scale_x) || (j >= (scale_x + cur_w)))
-                                    {
-                                       *ptr = bg_val;
-                                       ptr++;
-                                    }
-                                  else
-                                    {
-                                       r = cmap->Colors[rows[i1][j1 * scale_ratio]].Red;
-                                       g = cmap->Colors[rows[i1][j1 * scale_ratio]].Green;
-                                       b = cmap->Colors[rows[i1][j1 * scale_ratio]].Blue;
-                                       *ptr++ = ARGB_JOIN(0xff, r, g, b);
-                                    }
-                               }
-                          }
-                     }
+                            for (j = 0; j < cache_w; j++)
+                              {
+                                 j1 = j - scale_x;
+                                 if ((j < scale_x) || (j >= (scale_x + cur_w)))
+                                   {
+                                      *ptr = bg_val;
+                                      ptr++;
+                                   }
+                                 else
+                                   {
+                                      r = cmap->Colors[rows[i1][j1 * scale_ratio]].Red;
+                                      g = cmap->Colors[rows[i1][j1 * scale_ratio]].Green;
+                                      b = cmap->Colors[rows[i1][j1 * scale_ratio]].Blue;
+                                      *ptr++ = ARGB_JOIN(0xff, r, g, b);
+                                   }
+                              }
+                         }
+                    }
                    break;
                 case 0: /* No disposal specified */
                 default:
