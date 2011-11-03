@@ -26,11 +26,11 @@ struct _Evas_Object_Image
       int                  spread;
       Evas_Coord_Rectangle fill;
       struct {
-         short         w, h, stride;
+	 short         w, h, stride;
       } image;
       struct {
-         short         l, r, t, b;
-         unsigned char fill;
+	 short         l, r, t, b;
+	 unsigned char fill;
          double        scale;
       } border;
 
@@ -176,7 +176,7 @@ evas_object_image_add(Evas *e)
    evas_object_inject(obj, e);
    o = (Evas_Object_Image *)(obj->object_data);
    o->cur.cspace = obj->layer->evas->engine.func->image_colorspace_get(obj->layer->evas->engine.data.output,
-                                                                       o->engine_data);
+								       o->engine_data);
    return obj;
 }
 
@@ -193,7 +193,7 @@ static void
 _cleanup_tmpf(Evas_Object *obj)
 {
    Evas_Object_Image *o;
-
+   
    o = (Evas_Object_Image *)(obj->object_data);
    if (!o->tmpf) return;
 #ifdef __linux__
@@ -213,16 +213,16 @@ _create_tmpf(Evas_Object *obj, void *data, int size, char *format __UNUSED__)
    char buf[4096];
    void *dst;
    int fd = -1;
-
+   
    o = (Evas_Object_Image *)(obj->object_data);
 #ifdef __linux__
-   snprintf(buf, sizeof(buf), "/dev/shm/.evas-tmpf-%i-%p-%i-XXXXXX",
+   snprintf(buf, sizeof(buf), "/dev/shm/.evas-tmpf-%i-%p-%i-XXXXXX", 
             (int)getpid(), data, (int)size);
    fd = mkstemp(buf);
-#endif
+#endif   
    if (fd < 0)
      {
-        snprintf(buf, sizeof(buf), "/tmp/.evas-tmpf-%i-%p-%i-XXXXXX",
+        snprintf(buf, sizeof(buf), "/tmp/.evas-tmpf-%i-%p-%i-XXXXXX", 
                  (int)getpid(), data, (int)size);
         fd = mkstemp(buf);
      }
@@ -234,12 +234,12 @@ _create_tmpf(Evas_Object *obj, void *data, int size, char *format __UNUSED__)
         return;
      }
    unlink(buf);
-
+   
    eina_mmap_safety_enabled_set(EINA_TRUE);
-
-   dst = mmap(NULL, size,
-              PROT_READ | PROT_WRITE,
-              MAP_SHARED,
+   
+   dst = mmap(NULL, size, 
+              PROT_READ | PROT_WRITE, 
+              MAP_SHARED, 
               fd, 0);
    if (dst == MAP_FAILED)
      {
@@ -301,17 +301,17 @@ evas_object_image_file_set(Evas_Object *obj, const char *file, const char *key)
    if ((o->tmpf) && (file != o->tmpf)) _cleanup_tmpf(obj);
    if ((o->cur.file) && (file) && (!strcmp(o->cur.file, file)))
      {
-        if ((!o->cur.key) && (!key))
-          return;
-        if ((o->cur.key) && (key) && (!strcmp(o->cur.key, key)))
-          return;
+	if ((!o->cur.key) && (!key))
+	  return;
+	if ((o->cur.key) && (key) && (!strcmp(o->cur.key, key)))
+	  return;
      }
 /*
  * WTF? why cancel a null image preload? this is just silly (tm)
    if (!o->engine_data)
      obj->layer->evas->engine.func->image_data_preload_cancel(obj->layer->evas->engine.data.output,
-                                  o->engine_data,
-                                  obj);
+							      o->engine_data,
+							      obj);
  */
    if (o->cur.source) _proxy_unset(obj);
    if (o->cur.file) eina_stringshare_del(o->cur.file);
@@ -345,39 +345,39 @@ evas_object_image_file_set(Evas_Object *obj, const char *file, const char *key)
    lo.region.h = o->load_opts.region.h;
    lo.orientation = o->load_opts.orientation;
    o->engine_data = obj->layer->evas->engine.func->image_load(obj->layer->evas->engine.data.output,
-                                                              o->cur.file,
-                                                              o->cur.key,
-                                                              &o->load_error,
-                                                              &lo);
+							      o->cur.file,
+							      o->cur.key,
+							      &o->load_error,
+							      &lo);
    if (o->engine_data)
      {
-        int w, h;
-        int stride;
+	int w, h;
+	int stride;
 
-        obj->layer->evas->engine.func->image_size_get(obj->layer->evas->engine.data.output,
-                                                      o->engine_data, &w, &h);
-        if (obj->layer->evas->engine.func->image_stride_get)
-          obj->layer->evas->engine.func->image_stride_get(obj->layer->evas->engine.data.output,
-                                                          o->engine_data, &stride);
-        else
-          stride = w * 4;
-        o->cur.has_alpha = obj->layer->evas->engine.func->image_alpha_get(obj->layer->evas->engine.data.output,
-                                                                          o->engine_data);
-        o->cur.cspace = obj->layer->evas->engine.func->image_colorspace_get(obj->layer->evas->engine.data.output,
-                                                                            o->engine_data);
-        o->cur.image.w = w;
-        o->cur.image.h = h;
-        o->cur.image.stride = stride;
+	obj->layer->evas->engine.func->image_size_get(obj->layer->evas->engine.data.output,
+						      o->engine_data, &w, &h);
+	if (obj->layer->evas->engine.func->image_stride_get)
+	  obj->layer->evas->engine.func->image_stride_get(obj->layer->evas->engine.data.output,
+							  o->engine_data, &stride);
+	else
+	  stride = w * 4;
+	o->cur.has_alpha = obj->layer->evas->engine.func->image_alpha_get(obj->layer->evas->engine.data.output,
+									  o->engine_data);
+	o->cur.cspace = obj->layer->evas->engine.func->image_colorspace_get(obj->layer->evas->engine.data.output,
+									    o->engine_data);
+	o->cur.image.w = w;
+	o->cur.image.h = h;
+	o->cur.image.stride = stride;
      }
    else
      {
-        if (o->load_error == EVAS_LOAD_ERROR_NONE)
-          o->load_error = EVAS_LOAD_ERROR_GENERIC;
-        o->cur.has_alpha = 1;
-        o->cur.cspace = EVAS_COLORSPACE_ARGB8888;
-        o->cur.image.w = 0;
-        o->cur.image.h = 0;
-        o->cur.image.stride = 0;
+	if (o->load_error == EVAS_LOAD_ERROR_NONE)
+	  o->load_error = EVAS_LOAD_ERROR_GENERIC;
+	o->cur.has_alpha = 1;
+	o->cur.cspace = EVAS_COLORSPACE_ARGB8888;
+	o->cur.image.w = 0;
+	o->cur.image.h = 0;
+	o->cur.image.stride = 0;
      }
    o->changed = 1;
    evas_object_change(obj);
@@ -564,12 +564,12 @@ evas_object_image_filled_set(Evas_Object *obj, Eina_Bool setting)
      evas_object_event_callback_del(obj, EVAS_CALLBACK_RESIZE, evas_object_image_filled_resize_listener);
    else
      {
-        Evas_Coord w, h;
+	Evas_Coord w, h;
 
-        evas_object_geometry_get(obj, NULL, NULL, &w, &h);
-        evas_object_image_fill_set(obj, 0, 0, w, h);
+	evas_object_geometry_get(obj, NULL, NULL, &w, &h);
+	evas_object_image_fill_set(obj, 0, 0, w, h);
 
-        evas_object_event_callback_add(obj, EVAS_CALLBACK_RESIZE, evas_object_image_filled_resize_listener, NULL);
+	evas_object_event_callback_add(obj, EVAS_CALLBACK_RESIZE, evas_object_image_filled_resize_listener, NULL);
      }
 }
 
@@ -646,7 +646,7 @@ evas_object_image_fill_set(Evas_Object *obj, Evas_Coord x, Evas_Coord y, Evas_Co
    o->cur.fill.y = y;
    o->cur.fill.w = w;
    o->cur.fill.h = h;
-   o->cur.opaque_valid = 0;
+   o->cur.opaque_valid = 0;   
    o->changed = 1;
    evas_object_change(obj);
 }
@@ -766,8 +766,8 @@ evas_object_image_size_set(Evas_Object *obj, int w, int h)
 /* FIXME - in engine call above
    if (o->engine_data)
      o->engine_data = obj->layer->evas->engine.func->image_alpha_set(obj->layer->evas->engine.data.output,
-                                     o->engine_data,
-                                     o->cur.has_alpha);
+								     o->engine_data,
+								     o->cur.has_alpha);
 */
    EVAS_OBJECT_IMAGE_FREE_FILE_AND_KEY(o);
    o->changed = 1;
@@ -883,21 +883,21 @@ evas_object_image_data_set(Evas_Object *obj, void *data)
    p_data = o->engine_data;
    if (data)
      {
-        if (o->engine_data)
-          o->engine_data = obj->layer->evas->engine.func->image_data_put(obj->layer->evas->engine.data.output,
-                                                                         o->engine_data,
-                                                                         data);
-        else
-          o->engine_data = obj->layer->evas->engine.func->image_new_from_data(obj->layer->evas->engine.data.output,
-                                                                              o->cur.image.w,
-                                                                              o->cur.image.h,
-                                                                              data,
-                                                                              o->cur.has_alpha,
-                                                                              o->cur.cspace);
+	if (o->engine_data)
+	  o->engine_data = obj->layer->evas->engine.func->image_data_put(obj->layer->evas->engine.data.output,
+									 o->engine_data,
+									 data);
+	else
+	  o->engine_data = obj->layer->evas->engine.func->image_new_from_data(obj->layer->evas->engine.data.output,
+									      o->cur.image.w,
+									      o->cur.image.h,
+									      data,
+									      o->cur.has_alpha,
+									      o->cur.cspace);
         if (o->engine_data)
           {
              int stride = 0;
-
+             
              if (obj->layer->evas->engine.func->image_scale_hint_set)
                 obj->layer->evas->engine.func->image_scale_hint_set
                 (obj->layer->evas->engine.data.output,
@@ -905,7 +905,7 @@ evas_object_image_data_set(Evas_Object *obj, void *data)
              if (obj->layer->evas->engine.func->image_content_hint_set)
                 obj->layer->evas->engine.func->image_content_hint_set
                 (obj->layer->evas->engine.data.output,
-                    o->engine_data, o->content_hint);
+                    o->engine_data, o->content_hint); 
              if (obj->layer->evas->engine.func->image_stride_get)
                 obj->layer->evas->engine.func->image_stride_get
                 (obj->layer->evas->engine.data.output,
@@ -917,26 +917,26 @@ evas_object_image_data_set(Evas_Object *obj, void *data)
      }
    else
      {
-        if (o->engine_data)
-          obj->layer->evas->engine.func->image_free(obj->layer->evas->engine.data.output,
-                                                    o->engine_data);
-        o->load_error = EVAS_LOAD_ERROR_NONE;
-        o->cur.image.w = 0;
-        o->cur.image.h = 0;
-        o->cur.image.stride = 0;
-        o->engine_data = NULL;
+	if (o->engine_data)
+	  obj->layer->evas->engine.func->image_free(obj->layer->evas->engine.data.output,
+						    o->engine_data);
+	o->load_error = EVAS_LOAD_ERROR_NONE;
+	o->cur.image.w = 0;
+	o->cur.image.h = 0;
+	o->cur.image.stride = 0;
+	o->engine_data = NULL;
      }
 /* FIXME - in engine call above
    if (o->engine_data)
      o->engine_data = obj->layer->evas->engine.func->image_alpha_set(obj->layer->evas->engine.data.output,
-                                     o->engine_data,
-                                     o->cur.has_alpha);
+								     o->engine_data,
+								     o->cur.has_alpha);
 */
    if (o->pixels_checked_out > 0) o->pixels_checked_out--;
    if (p_data != o->engine_data)
      {
-        EVAS_OBJECT_IMAGE_FREE_FILE_AND_KEY(o);
-        o->pixels_checked_out = 0;
+	EVAS_OBJECT_IMAGE_FREE_FILE_AND_KEY(o);
+	o->pixels_checked_out = 0;
      }
    o->changed = 1;
    evas_object_change(obj);
@@ -970,9 +970,9 @@ evas_object_image_data_get(const Evas_Object *obj, Eina_Bool for_writing)
       (obj->layer->evas->engine.data.output,
           o->engine_data, o->content_hint);
    o->engine_data = obj->layer->evas->engine.func->image_data_get(obj->layer->evas->engine.data.output,
-                                                                  o->engine_data,
-                                                                  for_writing,
-                                                                  &data,
+								  o->engine_data,
+								  for_writing,
+								  &data,
                                                                   &o->load_error);
 
    /* if we fail to get engine_data, we have to return NULL */
@@ -993,7 +993,7 @@ evas_object_image_data_get(const Evas_Object *obj, Eina_Bool for_writing)
    o->pixels_checked_out++;
    if (for_writing)
      {
-        EVAS_OBJECT_IMAGE_FREE_FILE_AND_KEY(o);
+	EVAS_OBJECT_IMAGE_FREE_FILE_AND_KEY(o);
      }
 
    return data;
@@ -1014,8 +1014,8 @@ evas_object_image_preload(Evas_Object *obj, Eina_Bool cancel)
    if (!o->engine_data)
      {
         o->preloading = 1;
-        evas_object_inform_call_image_preloaded(obj);
-        return;
+	evas_object_inform_call_image_preloaded(obj);
+	return;
      }
    // FIXME: if already busy preloading, then dont request again until
    // preload done
@@ -1059,13 +1059,13 @@ evas_object_image_data_copy_set(Evas_Object *obj, void *data)
        (o->cur.image.h <= 0)) return;
    if (o->engine_data)
      obj->layer->evas->engine.func->image_free(obj->layer->evas->engine.data.output,
-                                               o->engine_data);
+					       o->engine_data);
    o->engine_data = obj->layer->evas->engine.func->image_new_from_copied_data(obj->layer->evas->engine.data.output,
-                                                                              o->cur.image.w,
-                                                                              o->cur.image.h,
-                                                                              data,
-                                                                              o->cur.has_alpha,
-                                                                              o->cur.cspace);
+									      o->cur.image.w,
+									      o->cur.image.h,
+									      data,
+									      o->cur.has_alpha,
+									      o->cur.cspace);
    if (o->engine_data)
      {
         int stride = 0;
@@ -1145,8 +1145,8 @@ evas_object_image_alpha_set(Evas_Object *obj, Eina_Bool has_alpha)
         evas_common_pipe_op_image_flush(o->engine_data);
 #endif
         o->engine_data = obj->layer->evas->engine.func->image_alpha_set(obj->layer->evas->engine.data.output,
-                                                                        o->engine_data,
-                                                                        o->cur.has_alpha);
+								     o->engine_data,
+								     o->cur.has_alpha);
         if (obj->layer->evas->engine.func->image_scale_hint_set)
            obj->layer->evas->engine.func->image_scale_hint_set
            (obj->layer->evas->engine.data.output,
@@ -1268,27 +1268,27 @@ evas_object_image_save(const Evas_Object *obj, const char *file, const char *key
 
    if (!o->engine_data) return 0;
    o->engine_data = obj->layer->evas->engine.func->image_data_get(obj->layer->evas->engine.data.output,
-                                                                  o->engine_data,
-                                                                  0,
-                                                                  &data,
+								  o->engine_data,
+								  0,
+								  &data,
                                                                   &o->load_error);
    if (flags)
      {
-        char *p, *pp;
-        char *tflags;
+	char *p, *pp;
+	char *tflags;
 
-        tflags = alloca(strlen(flags) + 1);
-        strcpy(tflags, flags);
-        p = tflags;
-        while (p)
-         {
-            pp = strchr(p, ' ');
-            if (pp) *pp = 0;
-            sscanf(p, "quality=%i", &quality);
-            sscanf(p, "compress=%i", &compress);
-            if (pp) p = pp + 1;
-            else break;
-         }
+	tflags = alloca(strlen(flags) + 1);
+	strcpy(tflags, flags);
+	p = tflags;
+	while (p)
+	  {
+	     pp = strchr(p, ' ');
+	     if (pp) *pp = 0;
+	     sscanf(p, "quality=%i", &quality);
+	     sscanf(p, "compress=%i", &compress);
+	     if (pp) p = pp + 1;
+	     else break;
+	  }
      }
    im = (RGBA_Image*) evas_cache_image_data(evas_common_image_cache_get(),
                                             o->cur.image.w,
@@ -1298,21 +1298,21 @@ evas_object_image_save(const Evas_Object *obj, const char *file, const char *key
                                             EVAS_COLORSPACE_ARGB8888);
    if (im)
      {
-        if (o->cur.cspace == EVAS_COLORSPACE_ARGB8888)
-          im->image.data = data;
-        else
-          im->image.data = evas_object_image_data_convert_internal(o,
-                                                                   data,
-                                                                   EVAS_COLORSPACE_ARGB8888);
-        if (im->image.data)
-          {
-             ok = evas_common_save_image_to_file(im, file, key, quality, compress);
+	if (o->cur.cspace == EVAS_COLORSPACE_ARGB8888)
+	  im->image.data = data;
+	else
+	  im->image.data = evas_object_image_data_convert_internal(o,
+								   data,
+								   EVAS_COLORSPACE_ARGB8888);
+	if (im->image.data)
+	  {
+	     ok = evas_common_save_image_to_file(im, file, key, quality, compress);
 
-             if (o->cur.cspace != EVAS_COLORSPACE_ARGB8888)
-               free(im->image.data);
-          }
+	     if (o->cur.cspace != EVAS_COLORSPACE_ARGB8888)
+	       free(im->image.data);
+	  }
 
-        evas_cache_image_drop(&im->cache_entry);
+	evas_cache_image_drop(&im->cache_entry);
      }
    o->engine_data = obj->layer->evas->engine.func->image_data_put(obj->layer->evas->engine.data.output,
                                                                   o->engine_data,
@@ -1338,72 +1338,72 @@ evas_object_image_pixels_import(Evas_Object *obj, Evas_Pixel_Import_Source *pixe
      {
 #if 0
       case EVAS_PIXEL_FORMAT_ARGB32:
-      {
-         if (o->engine_data)
-           {
-          DATA32 *image_pixels = NULL;
+	  {
+	     if (o->engine_data)
+	       {
+		  DATA32 *image_pixels = NULL;
 
-          o->engine_data =
-            obj->layer->evas->engine.func->image_data_get(obj->layer->evas->engine.data.output,
-                                  o->engine_data,
-                                  1,
-                                  &image_pixels,
+		  o->engine_data =
+		    obj->layer->evas->engine.func->image_data_get(obj->layer->evas->engine.data.output,
+								  o->engine_data,
+								  1,
+								  &image_pixels,
                                                                   &o->load_error);
 /* FIXME: need to actualyl support this */
-/*        memcpy(image_pixels, pixels->rows, o->cur.image.w * o->cur.image.h * 4);*/
-          if (o->engine_data)
-            o->engine_data =
-            obj->layer->evas->engine.func->image_data_put(obj->layer->evas->engine.data.output,
-                                  o->engine_data,
-                                  image_pixels);
-          if (o->engine_data)
-            o->engine_data =
-            obj->layer->evas->engine.func->image_alpha_set(obj->layer->evas->engine.data.output,
-                                   o->engine_data,
-                                   o->cur.has_alpha);
-          o->changed = 1;
-          evas_object_change(obj);
-           }
-      }
-    break;
+/*		  memcpy(image_pixels, pixels->rows, o->cur.image.w * o->cur.image.h * 4);*/
+		  if (o->engine_data)
+		    o->engine_data =
+		    obj->layer->evas->engine.func->image_data_put(obj->layer->evas->engine.data.output,
+								  o->engine_data,
+								  image_pixels);
+		  if (o->engine_data)
+		    o->engine_data =
+		    obj->layer->evas->engine.func->image_alpha_set(obj->layer->evas->engine.data.output,
+								   o->engine_data,
+								   o->cur.has_alpha);
+		  o->changed = 1;
+		  evas_object_change(obj);
+	       }
+	  }
+	break;
 #endif
 #ifdef BUILD_CONVERT_YUV
       case EVAS_PIXEL_FORMAT_YUV420P_601:
-      {
-         if (o->engine_data)
-           {
-              DATA32 *image_pixels = NULL;
+	  {
+	     if (o->engine_data)
+	       {
+		  DATA32 *image_pixels = NULL;
 
-              o->engine_data =
-                obj->layer->evas->engine.func->image_data_get(obj->layer->evas->engine.data.output,
-                                                              o->engine_data,
-                                                              1,
-                                                              &image_pixels,
-                                                              &o->load_error);
-              if (image_pixels)
-                evas_common_convert_yuv_420p_601_rgba((DATA8 **) pixels->rows,
-                                                      (DATA8 *) image_pixels,
-                                                      o->cur.image.w,
-                                                      o->cur.image.h);
-              if (o->engine_data)
-                o->engine_data =
-                  obj->layer->evas->engine.func->image_data_put(obj->layer->evas->engine.data.output,
-                                                                o->engine_data,
-                                                                image_pixels);
-              if (o->engine_data)
-                o->engine_data =
-                  obj->layer->evas->engine.func->image_alpha_set(obj->layer->evas->engine.data.output,
-                                                                 o->engine_data,
-                                                                 o->cur.has_alpha);
-              o->changed = 1;
-              evas_object_change(obj);
-           }
-      }
-      break;
+		  o->engine_data =
+		    obj->layer->evas->engine.func->image_data_get(obj->layer->evas->engine.data.output,
+								  o->engine_data,
+								  1,
+								  &image_pixels,
+                                                                  &o->load_error);
+		  if (image_pixels)
+		    evas_common_convert_yuv_420p_601_rgba((DATA8 **) pixels->rows,
+							  (DATA8 *) image_pixels,
+							  o->cur.image.w,
+							  o->cur.image.h);
+		  if (o->engine_data)
+		    o->engine_data =
+		    obj->layer->evas->engine.func->image_data_put(obj->layer->evas->engine.data.output,
+								  o->engine_data,
+								  image_pixels);
+		  if (o->engine_data)
+		    o->engine_data =
+		    obj->layer->evas->engine.func->image_alpha_set(obj->layer->evas->engine.data.output,
+								   o->engine_data,
+								   o->cur.has_alpha);
+		  o->changed = 1;
+		  evas_object_change(obj);
+	       }
+	  }
+	break;
 #endif
       default:
-        return 0;
-        break;
+	return 0;
+	break;
      }
    return 1;
 }
@@ -1474,11 +1474,11 @@ evas_object_image_load_dpi_set(Evas_Object *obj, double dpi)
    o->load_opts.dpi = dpi;
    if (o->cur.file)
      {
-        evas_object_image_unload(obj, 0);
+	evas_object_image_unload(obj, 0);
         evas_object_inform_call_image_unloaded(obj);
-        evas_object_image_load(obj);
-        o->changed = 1;
-        evas_object_change(obj);
+	evas_object_image_load(obj);
+	o->changed = 1;
+	evas_object_change(obj);
      }
 }
 
@@ -1514,11 +1514,11 @@ evas_object_image_load_size_set(Evas_Object *obj, int w, int h)
    o->load_opts.h = h;
    if (o->cur.file)
      {
-        evas_object_image_unload(obj, 0);
+	evas_object_image_unload(obj, 0);
         evas_object_inform_call_image_unloaded(obj);
-        evas_object_image_load(obj);
-        o->changed = 1;
-        evas_object_change(obj);
+	evas_object_image_load(obj);
+	o->changed = 1;
+	evas_object_change(obj);
      }
 }
 
@@ -1554,11 +1554,11 @@ evas_object_image_load_scale_down_set(Evas_Object *obj, int scale_down)
    o->load_opts.scale_down_by = scale_down;
    if (o->cur.file)
      {
-        evas_object_image_unload(obj, 0);
+	evas_object_image_unload(obj, 0);
         evas_object_inform_call_image_unloaded(obj);
-        evas_object_image_load(obj);
-        o->changed = 1;
-        evas_object_change(obj);
+	evas_object_image_load(obj);
+	o->changed = 1;
+	evas_object_change(obj);
      }
 }
 
@@ -1597,11 +1597,11 @@ evas_object_image_load_region_set(Evas_Object *obj, int x, int y, int w, int h)
    o->load_opts.region.h = h;
    if (o->cur.file)
      {
-        evas_object_image_unload(obj, 0);
+	evas_object_image_unload(obj, 0);
         evas_object_inform_call_image_unloaded(obj);
-        evas_object_image_load(obj);
-        o->changed = 1;
-        evas_object_change(obj);
+	evas_object_image_load(obj);
+	o->changed = 1;
+	evas_object_change(obj);
      }
 }
 
@@ -1678,8 +1678,8 @@ evas_object_image_colorspace_set(Evas_Object *obj, Evas_Colorspace cspace)
    o->cur.cspace = cspace;
    if (o->engine_data)
      obj->layer->evas->engine.func->image_colorspace_set(obj->layer->evas->engine.data.output,
-                                                         o->engine_data,
-                                                         cspace);
+							 o->engine_data,
+							 cspace);
 }
 
 EAPI Evas_Colorspace
@@ -1713,7 +1713,7 @@ evas_object_image_video_surface_set(Evas_Object *obj, Evas_Video_Surface *surf)
    if (o->video_surface)
      {
         o->video_surface = 0;
-        obj->layer->evas->video_objects = eina_list_remove(obj->layer->evas->video_objects, obj);
+	obj->layer->evas->video_objects = eina_list_remove(obj->layer->evas->video_objects, obj);
      }
 
    if (surf)
@@ -1721,29 +1721,29 @@ evas_object_image_video_surface_set(Evas_Object *obj, Evas_Video_Surface *surf)
         fprintf(stderr, "video surface ?\n");
         if (surf->version != EVAS_VIDEO_SURFACE_VERSION) return ;
 
-        if (!surf->update_pixels ||
-          !surf->move ||
-          !surf->resize ||
-          !surf->hide ||
-          !surf->show)
-          return ;
+	if (!surf->update_pixels ||
+	    !surf->move ||
+	    !surf->resize ||
+	    !surf->hide ||
+	    !surf->show)
+	  return ;
 
         o->created = EINA_TRUE;
-        o->video_surface = 1;
-        o->video = *surf;
+	o->video_surface = 1;
+	o->video = *surf;
 
         fprintf(stderr, "yes\n");
-        obj->layer->evas->video_objects = eina_list_append(obj->layer->evas->video_objects, obj);
+	obj->layer->evas->video_objects = eina_list_append(obj->layer->evas->video_objects, obj);
      }
    else
      {
         o->video_surface = 0;
-        o->video.update_pixels = NULL;
-        o->video.move = NULL;
-        o->video.resize = NULL;
-        o->video.hide = NULL;
-        o->video.show = NULL;
-        o->video.data = NULL;
+	o->video.update_pixels = NULL;
+	o->video.move = NULL;
+	o->video.resize = NULL;
+	o->video.hide = NULL;
+	o->video.show = NULL;
+	o->video.data = NULL;
      }
 }
 
@@ -1780,7 +1780,7 @@ evas_object_image_native_surface_set(Evas_Object *obj, Evas_Native_Surface *surf
    if ((surf) &&
        ((surf->version < 2) ||
         (surf->version > EVAS_NATIVE_SURFACE_VERSION))) return;
-   o->engine_data =
+   o->engine_data = 
       obj->layer->evas->engine.func->image_native_set(obj->layer->evas->engine.data.output,
                                                       o->engine_data,
                                                       surf);
@@ -1800,7 +1800,7 @@ evas_object_image_native_surface_get(const Evas_Object *obj)
    MAGIC_CHECK_END();
    if (!obj->layer->evas->engine.func->image_native_get) return NULL;
    return obj->layer->evas->engine.func->image_native_get(obj->layer->evas->engine.data.output,
-                                                          o->engine_data);
+							  o->engine_data);
 }
 
 EAPI void
@@ -1824,7 +1824,7 @@ evas_object_image_scale_hint_set(Evas_Object *obj, Evas_Image_Scale_Hint hint)
    if (o->engine_data)
      {
         int stride = 0;
-
+        
         if (obj->layer->evas->engine.func->image_scale_hint_set)
            obj->layer->evas->engine.func->image_scale_hint_set
            (obj->layer->evas->engine.data.output,
@@ -1875,7 +1875,7 @@ evas_object_image_content_hint_set(Evas_Object *obj, Evas_Image_Content_Hint hin
    if (o->engine_data)
      {
         int stride = 0;
-
+        
         if (obj->layer->evas->engine.func->image_content_hint_set)
            obj->layer->evas->engine.func->image_content_hint_set
            (obj->layer->evas->engine.data.output,
@@ -2093,37 +2093,37 @@ evas_image_cache_reload(Evas *e)
    evas_image_cache_flush(e);
    EINA_INLIST_FOREACH(e->layers, layer)
      {
-        Evas_Object *obj;
+	Evas_Object *obj;
 
-        EINA_INLIST_FOREACH(layer->objects, obj)
-          {
-             Evas_Object_Image *o;
+	EINA_INLIST_FOREACH(layer->objects, obj)
+	  {
+	     Evas_Object_Image *o;
 
-             o = (Evas_Object_Image *)(obj->object_data);
-             if (o->magic == MAGIC_OBJ_IMAGE)
-               {
-                  evas_object_image_unload(obj, 1);
+	     o = (Evas_Object_Image *)(obj->object_data);
+	     if (o->magic == MAGIC_OBJ_IMAGE)
+	       {
+		  evas_object_image_unload(obj, 1);
                   evas_object_inform_call_image_unloaded(obj);
-               }
-          }
+	       }
+	  }
      }
    evas_image_cache_flush(e);
    EINA_INLIST_FOREACH(e->layers, layer)
      {
-        Evas_Object *obj;
+	Evas_Object *obj;
 
-        EINA_INLIST_FOREACH(layer->objects, obj)
-          {
-             Evas_Object_Image *o;
+	EINA_INLIST_FOREACH(layer->objects, obj)
+	  {
+	     Evas_Object_Image *o;
 
-             o = (Evas_Object_Image *)(obj->object_data);
-             if (o->magic == MAGIC_OBJ_IMAGE)
-               {
-                  evas_object_image_load(obj);
-                  o->changed = 1;
-                  evas_object_change(obj);
-               }
-          }
+	     o = (Evas_Object_Image *)(obj->object_data);
+	     if (o->magic == MAGIC_OBJ_IMAGE)
+	       {
+		  evas_object_image_load(obj);
+		  o->changed = 1;
+		  evas_object_change(obj);
+	       }
+	  }
      }
    evas_image_cache_flush(e);
 }
@@ -2212,11 +2212,11 @@ _proxy_error(Evas_Object *proxy, void *context, void *output, void *surface,
    int r = rand() % 255;
    int g = rand() % 255;
    int b = rand() % 255;
-
+   
    /* XXX: Eina log error or something I'm sure
     * If it bugs you, just fix it.  Don't tell me */
    if (VERBOSE_PROXY_ERROR) printf("Err: Argh! Recursive proxies.\n");
-
+   
    func = proxy->layer->evas->engine.func;
    func->context_color_set(output, context, r, g, b, 255);
    func->context_multiplier_unset(output, context);
@@ -2234,7 +2234,7 @@ _proxy_subrender_recurse(Evas_Object *obj, Evas_Object *clip, void *output, void
 {
    Evas_Object *obj2;
    Evas *e = obj->layer->evas;
-
+   
    if (obj->clip.clipees) return;
    if (!obj->cur.visible) return;
    if ((!clip) || (clip != obj->cur.clipper))
@@ -2244,7 +2244,7 @@ _proxy_subrender_recurse(Evas_Object *obj, Evas_Object *clip, void *output, void
             (obj->cur.render_op == EVAS_RENDER_BLEND)) return;
      }
    if ((obj->func->is_visible) && (!obj->func->is_visible(obj))) return;
-
+   
    if (!obj->pre_render_done)
       obj->func->render_pre(obj);
    ctx = e->engine.func->context_new(output);
@@ -2283,14 +2283,14 @@ _proxy_subrender(Evas *e, Evas_Object *source)
    source->proxy.redraw = EINA_FALSE;
 
    /* We need to redraw surface then */
-   if ((source->proxy.surface) &&
+   if ((source->proxy.surface) && 
        ((source->proxy.w != w) || (source->proxy.h != h)))
      {
         e->engine.func->image_map_surface_free(e->engine.data.output,
                                                source->proxy.surface);
         source->proxy.surface = NULL;
      }
-
+   
    /* FIXME: Hardcoded alpha 'on' */
    /* FIXME (cont): Should see if the object has alpha */
    if (!source->proxy.surface)
@@ -2307,7 +2307,7 @@ _proxy_subrender(Evas *e, Evas_Object *source)
    e->engine.func->rectangle_draw(e->engine.data.output, ctx,
                                   source->proxy.surface, 0, 0, w, h);
    e->engine.func->context_free(e->engine.data.output, ctx);
-
+   
    ctx = e->engine.func->context_new(e->engine.data.output);
    evas_render_mapped(e, source, ctx, source->proxy.surface,
                       -source->cur.geometry.x,
@@ -2316,7 +2316,7 @@ _proxy_subrender(Evas *e, Evas_Object *source)
    e->engine.func->context_free(e->engine.data.output, ctx);
    source->proxy.surface = e->engine.func->image_dirty_region
       (e->engine.data.output, source->proxy.surface, 0, 0, w, h);
-/*
+/*   
    ctx = e->engine.func->context_new(e->engine.data.output);
    if (source->smart.smart)
      {
@@ -2339,7 +2339,7 @@ _proxy_subrender(Evas *e, Evas_Object *source)
                              -source->cur.geometry.x,
                              -source->cur.geometry.y);
      }
-
+   
    e->engine.func->context_free(e->engine.data.output, ctx);
    source->proxy.surface = e->engine.func->image_dirty_region
       (e->engine.data.output, source->proxy.surface, 0, 0, w, h);
@@ -2358,7 +2358,7 @@ image_filter_draw_under_recurse(Evas *e, Evas_Object *obj, Evas_Object *stop,
                                 int x, int y)
 {
    Evas_Object *obj2;
-
+   
    if (obj->clip.clipees) return;
    /* FIXME: Doing bounding box test */
    if (!evas_object_is_in_output_rect(obj, stop->cur.geometry.x,
@@ -2366,17 +2366,17 @@ image_filter_draw_under_recurse(Evas *e, Evas_Object *obj, Evas_Object *stop,
                                       stop->cur.geometry.w,
                                       stop->cur.geometry.h))
       return;
-
+   
    if (!evas_object_is_visible(obj)) return;
    obj->pre_render_done = 1;
    ctx = e->engine.func->context_new(output);
-
+   
    if (obj->smart.smart)
      {
         EINA_INLIST_FOREACH(evas_object_smart_members_get_direct(obj), obj2)
           {
              if (obj2 == stop) return;
-             image_filter_draw_under_recurse(e, obj2, stop, output, surface,
+             image_filter_draw_under_recurse(e, obj2, stop, output, surface, 
                                              ctx, x, y);
           }
      }
@@ -2393,10 +2393,10 @@ image_filter_draw_under(Evas *e, Evas_Object *stop, void *output, void *ctx, voi
 {
    Evas_Layer *lay;
    int x, y;
-
+   
    x = stop->cur.geometry.x - dx;
    y = stop->cur.geometry.y - dy;
-
+   
    EINA_INLIST_FOREACH(e->layers, lay)
      {
         Evas_Object *obj;
@@ -2405,7 +2405,7 @@ image_filter_draw_under(Evas *e, Evas_Object *stop, void *output, void *ctx, voi
              if (obj->delete_me) continue;
              if (obj == stop) return;
              /* FIXME: Do bounding box check */
-             image_filter_draw_under_recurse(e, obj, stop, output, ctx,
+             image_filter_draw_under_recurse(e, obj, stop, output, ctx, 
                                              surface, -x, -y);
           }
      }
@@ -2426,9 +2426,9 @@ image_filter_update(Evas *e, Evas_Object *obj, void *src, int imagew, int imageh
    Evas_Filter_Info *info;
    void *surface;
    Eina_Bool alpha;
-
+   
    info = obj->filter;
-
+   
    if (info->mode == EVAS_FILTER_MODE_BELOW)
      {
         w = obj->cur.geometry.w;
@@ -2441,13 +2441,13 @@ image_filter_update(Evas *e, Evas_Object *obj, void *src, int imagew, int imageh
         evas_filter_get_size(info, imagew, imageh, &w, &h, EINA_FALSE);
         alpha = e->engine.func->image_alpha_get(e->engine.data.output, src);
      }
-
+   
    /* Certain filters may make alpha images anyway */
    if (alpha == EINA_FALSE) alpha = evas_filter_always_alpha(info);
-
+   
    surface = e->engine.func->image_map_surface_new(e->engine.data.output, w, h,
                                                    alpha);
-
+   
    if (info->mode == EVAS_FILTER_MODE_BELOW)
      {
         void *subsurface;
@@ -2464,19 +2464,19 @@ image_filter_update(Evas *e, Evas_Object *obj, void *src, int imagew, int imageh
         e->engine.func->context_render_op_set(e->engine.data.output, ctx, EVAS_RENDER_COPY);
         e->engine.func->rectangle_draw(e->engine.data.output, ctx,
                                        subsurface, 0, 0, imagew, imageh);
-
+        
         image_filter_draw_under(e, obj, e->engine.data.output, ctx,
                                 subsurface, dx, dy);
-
+        
         e->engine.func->context_free(e->engine.data.output, ctx);
-
+        
         ctx = e->engine.func->context_new(e->engine.data.output);
-
+        
         e->engine.func->image_draw_filtered(e->engine.data.output,
                                             ctx, surface, subsurface, info);
-
+        
         e->engine.func->context_free(e->engine.data.output, ctx);
-
+        
         e->engine.func->image_map_surface_free(e->engine.data.output,
                                                subsurface);
      }
@@ -2487,8 +2487,8 @@ image_filter_update(Evas *e, Evas_Object *obj, void *src, int imagew, int imageh
                                             ctx, surface, src, info);
         e->engine.func->context_free(e->engine.data.output, ctx);
      }
-
-   e->engine.func->image_dirty_region(e->engine.data.output, surface,
+   
+   e->engine.func->image_dirty_region(e->engine.data.output, surface, 
                                       0, 0, w, h);
    if (outw) *outw = w;
    if (outh) *outh = h;
@@ -2502,9 +2502,9 @@ static void
 evas_object_image_unload(Evas_Object *obj, Eina_Bool dirty)
 {
    Evas_Object_Image *o;
-
+   
    o = (Evas_Object_Image *)(obj->object_data);
-
+   
    if ((!o->cur.file) ||
        (o->pixels_checked_out > 0)) return;
    if (dirty)
@@ -2563,31 +2563,31 @@ evas_object_image_load(Evas_Object *obj)
           &lo);
    if (o->engine_data)
      {
-        int w, h;
-        int stride = 0;
+	int w, h;
+	int stride = 0;
 
-        obj->layer->evas->engine.func->image_size_get
+	obj->layer->evas->engine.func->image_size_get
            (obj->layer->evas->engine.data.output,
-            o->engine_data, &w, &h);
-        if (obj->layer->evas->engine.func->image_stride_get)
-          obj->layer->evas->engine.func->image_stride_get
-            (obj->layer->evas->engine.data.output,
-             o->engine_data, &stride);
-        else
-          stride = w * 4;
-        o->cur.has_alpha = obj->layer->evas->engine.func->image_alpha_get
-          (obj->layer->evas->engine.data.output,
-           o->engine_data);
-        o->cur.cspace = obj->layer->evas->engine.func->image_colorspace_get
-          (obj->layer->evas->engine.data.output,
-           o->engine_data);
-        o->cur.image.w = w;
-        o->cur.image.h = h;
-        o->cur.image.stride = stride;
+               o->engine_data, &w, &h);
+	if (obj->layer->evas->engine.func->image_stride_get)
+	  obj->layer->evas->engine.func->image_stride_get
+           (obj->layer->evas->engine.data.output,
+               o->engine_data, &stride);
+	else
+	  stride = w * 4;
+	o->cur.has_alpha = obj->layer->evas->engine.func->image_alpha_get
+           (obj->layer->evas->engine.data.output,
+               o->engine_data);
+	o->cur.cspace = obj->layer->evas->engine.func->image_colorspace_get
+           (obj->layer->evas->engine.data.output,
+               o->engine_data);
+	o->cur.image.w = w;
+	o->cur.image.h = h;
+	o->cur.image.stride = stride;
      }
    else
      {
-        o->load_error = EVAS_LOAD_ERROR_GENERIC;
+	o->load_error = EVAS_LOAD_ERROR_GENERIC;
      }
 }
 
@@ -2597,18 +2597,18 @@ evas_object_image_figure_x_fill(Evas_Object *obj, Evas_Coord start, Evas_Coord s
    Evas_Coord w;
 
    w = ((size * obj->layer->evas->output.w) /
-     (Evas_Coord)obj->layer->evas->viewport.w);
+	(Evas_Coord)obj->layer->evas->viewport.w);
    if (size <= 0) size = 1;
    if (start > 0)
      {
-        while (start - size > 0) start -= size;
+	while (start - size > 0) start -= size;
      }
    else if (start < 0)
      {
-        while (start < 0) start += size;
+	while (start < 0) start += size;
      }
    start = ((start * obj->layer->evas->output.w) /
-     (Evas_Coord)obj->layer->evas->viewport.w);
+	    (Evas_Coord)obj->layer->evas->viewport.w);
    *size_ret = w;
    return start;
 }
@@ -2619,18 +2619,18 @@ evas_object_image_figure_y_fill(Evas_Object *obj, Evas_Coord start, Evas_Coord s
    Evas_Coord h;
 
    h = ((size * obj->layer->evas->output.h) /
-    (Evas_Coord)obj->layer->evas->viewport.h);
+	(Evas_Coord)obj->layer->evas->viewport.h);
    if (size <= 0) size = 1;
    if (start > 0)
      {
-        while (start - size > 0) start -= size;
+	while (start - size > 0) start -= size;
      }
    else if (start < 0)
      {
-        while (start < 0) start += size;
+	while (start < 0) start += size;
      }
    start = ((start * obj->layer->evas->output.h) /
-     (Evas_Coord)obj->layer->evas->viewport.h);
+	    (Evas_Coord)obj->layer->evas->viewport.h);
    *size_ret = h;
    return start;
 }
@@ -2715,7 +2715,7 @@ evas_object_image_free(Evas_Object *obj)
    if (o->video_surface)
      {
         o->video_surface = 0;
-        obj->layer->evas->video_objects = eina_list_remove(obj->layer->evas->video_objects, obj);
+	obj->layer->evas->video_objects = eina_list_remove(obj->layer->evas->video_objects, obj);
      }
    o->engine_data = NULL;
    o->magic = 0;
@@ -2767,27 +2767,27 @@ evas_object_image_render(Evas_Object *obj, void *output, void *context, void *su
      }
 
    obj->layer->evas->engine.func->context_color_set(output,
-                                                    context,
-                                                    255, 255, 255, 255);
+						    context,
+						    255, 255, 255, 255);
 
    if ((obj->cur.cache.clip.r == 255) &&
        (obj->cur.cache.clip.g == 255) &&
        (obj->cur.cache.clip.b == 255) &&
        (obj->cur.cache.clip.a == 255))
      {
-        obj->layer->evas->engine.func->context_multiplier_unset(output,
-                                                                context);
+	obj->layer->evas->engine.func->context_multiplier_unset(output,
+								context);
      }
    else
      obj->layer->evas->engine.func->context_multiplier_set(output,
-                                                           context,
-                                                           obj->cur.cache.clip.r,
-                                                           obj->cur.cache.clip.g,
-                                                           obj->cur.cache.clip.b,
-                                                           obj->cur.cache.clip.a);
+							   context,
+							   obj->cur.cache.clip.r,
+							   obj->cur.cache.clip.g,
+							   obj->cur.cache.clip.b,
+							   obj->cur.cache.clip.a);
 
    obj->layer->evas->engine.func->context_render_op_set(output, context,
-                                                        obj->cur.render_op);
+							obj->cur.render_op);
 
    if (!o->cur.source)
      {
@@ -2840,7 +2840,7 @@ evas_object_image_render(Evas_Object *obj, void *output, void *context, void *su
                {
                   uint32_t len;
                   uint8_t *key;
-
+                  
                   if (obj->filter->key) free(obj->filter->key);
                   obj->filter->key = NULL;
                   obj->filter->len = 0;
@@ -2865,7 +2865,7 @@ evas_object_image_render(Evas_Object *obj, void *output, void *context, void *su
                      (o->engine_data, obj->filter->cached);
                }
              if (!fi)
-                fi = image_filter_update(obj->layer->evas, obj, pixels,
+                fi = image_filter_update(obj->layer->evas, obj, pixels, 
                                          imagew, imageh, &imagew, &imageh);
              pixels = fi->image;
              obj->filter->dirty = 0;
@@ -2878,34 +2878,34 @@ evas_object_image_render(Evas_Object *obj, void *output, void *context, void *su
           }
      }
 #endif
-
+   
    if (pixels)
      {
-        Evas_Coord idw, idh, idx, idy;
-        int ix, iy, iw, ih;
+	Evas_Coord idw, idh, idx, idy;
+	int ix, iy, iw, ih;
 
-        if (o->dirty_pixels)
-          {
-            if (o->func.get_pixels)
-              {
-                 o->func.get_pixels(o->func.get_pixels_data, obj);
-                 if (o->engine_data != pixels)
-                   pixels = o->engine_data;
-                 o->engine_data = obj->layer->evas->engine.func->image_dirty_region
-                   (obj->layer->evas->engine.data.output, o->engine_data,
-                    0, 0, o->cur.image.w, o->cur.image.h);
-              }
-            o->dirty_pixels = 0;
-          }
+	if (o->dirty_pixels)
+	  {
+	     if (o->func.get_pixels)
+	       {
+		  o->func.get_pixels(o->func.get_pixels_data, obj);
+		  if (o->engine_data != pixels)
+		    pixels = o->engine_data;
+		  o->engine_data = obj->layer->evas->engine.func->image_dirty_region
+                     (obj->layer->evas->engine.data.output, o->engine_data,
+                         0, 0, o->cur.image.w, o->cur.image.h);
+	       }
+	     o->dirty_pixels = 0;
+	  }
         if ((obj->cur.map) && (obj->cur.map->count > 3) && (obj->cur.usemap))
           {
-             const Evas_Map_Point *p, *p_end;
+	     const Evas_Map_Point *p, *p_end;
              RGBA_Map_Point pts[obj->cur.map->count], *pt;
 
-             p = obj->cur.map->points;
-             p_end = p + obj->cur.map->count;
-             pt = pts;
-
+	     p = obj->cur.map->points;
+	     p_end = p + obj->cur.map->count;
+	     pt = pts;
+             
              pts[0].px = obj->cur.map->persp.px << FP;
              pts[0].py = obj->cur.map->persp.py << FP;
              pts[0].foc = obj->cur.map->persp.foc << FP;
@@ -2927,14 +2927,14 @@ evas_object_image_render(Evas_Object *obj, void *output, void *context, void *su
                   else if (pt->v > (imageh * FP1)) pt->v = (imageh * FP1);
                   pt->col = ARGB_JOIN(p->a, p->r, p->g, p->b);
               }
-            if (obj->cur.map->count & 0x1)
-              {
-                 pts[obj->cur.map->count] = pts[obj->cur.map->count -1];
-              }
+	     if (obj->cur.map->count & 0x1)
+	       {
+		  pts[obj->cur.map->count] = pts[obj->cur.map->count -1];
+	       }
 
-            obj->layer->evas->engine.func->image_map_draw
-              (output, context, surface, pixels, obj->cur.map->count,
-               pts, o->cur.smooth_scale | obj->cur.map->smooth, 0);
+             obj->layer->evas->engine.func->image_map_draw
+               (output, context, surface, pixels, obj->cur.map->count,
+		pts, o->cur.smooth_scale | obj->cur.map->smooth, 0);
           }
         else
           {
@@ -2957,7 +2957,7 @@ evas_object_image_render(Evas_Object *obj, void *output, void *context, void *su
                {
                   Evas_Coord ydy;
                   int dobreak_w = 0;
-
+                  
                   ydy = idy;
                   ix = idx;
                   if ((o->cur.fill.w == obj->cur.geometry.w) &&
@@ -2971,7 +2971,7 @@ evas_object_image_render(Evas_Object *obj, void *output, void *context, void *su
                   while ((int)idy < obj->cur.geometry.h)
                     {
                        int dobreak_h = 0;
-
+                       
                        iy = idy;
                        if ((o->cur.fill.h == obj->cur.geometry.h) &&
                            (o->cur.fill.y == 0))
@@ -3002,7 +3002,7 @@ evas_object_image_render(Evas_Object *obj, void *output, void *context, void *su
                             int inx, iny, inw, inh, outx, outy, outw, outh;
                             int bl, br, bt, bb, bsl, bsr, bst, bsb;
                             int imw, imh, ox, oy;
-
+                            
                             ox = obj->cur.geometry.x + ix + x;
                             oy = obj->cur.geometry.y + iy + y;
                             imw = imagew;
@@ -3064,7 +3064,7 @@ evas_object_image_render(Evas_Object *obj, void *output, void *context, void *su
                             outw = bsr; outh = bst;
                             obj->layer->evas->engine.func->image_draw(output, context, surface, pixels, inx, iny, inw, inh, outx, outy, outw, outh, o->cur.smooth_scale);
                             // .--
-                            // #
+                            // #  
                             inx = 0; iny = bt;
                             inw = bl; inh = imh - bt - bb;
                             outx = ox; outy = oy + bst;
@@ -3106,7 +3106,7 @@ evas_object_image_render(Evas_Object *obj, void *output, void *context, void *su
                             outw = bsl; outh = bsb;
                             obj->layer->evas->engine.func->image_draw(output, context, surface, pixels, inx, iny, inw, inh, outx, outy, outw, outh, o->cur.smooth_scale);
                             // |
-                            // .##
+                            // .## 
                             inx = bl; iny = imh - bb;
                             inw = imw - bl - br; inh = bb;
                             outx = ox + bsl; outy = oy + ih - bsb;
@@ -3127,7 +3127,7 @@ evas_object_image_render(Evas_Object *obj, void *output, void *context, void *su
                   idy = ydy;
                   if (dobreak_w) break;
                }
-          }
+	  }
      }
 }
 
@@ -3153,18 +3153,18 @@ evas_object_image_render_pre(Evas_Object *obj)
      {
         ERR("%p has invalid fill size: %dx%d. Ignored",
             obj, o->cur.fill.w, o->cur.fill.h);
-        return;
+	return;
      }
 
    /* if someone is clipping this obj - go calculate the clipper */
    if (obj->cur.clipper)
      {
-        if (obj->cur.cache.clip.dirty)
-          evas_object_clip_recalc(obj->cur.clipper);
-        obj->cur.clipper->func->render_pre(obj->cur.clipper);
+	if (obj->cur.cache.clip.dirty)
+	  evas_object_clip_recalc(obj->cur.clipper);
+	obj->cur.clipper->func->render_pre(obj->cur.clipper);
      }
    /* Proxy: Do it early */
-   if (o->cur.source &&
+   if (o->cur.source && 
        (o->cur.source->proxy.redraw || o->cur.source->changed))
      {
         /* XXX: Do I need to sort out the map here? */
@@ -3178,13 +3178,13 @@ evas_object_image_render_pre(Evas_Object *obj)
    was_v = evas_object_was_visible(obj);
    if (is_v != was_v)
      {
-        evas_object_render_pre_visible_change(&e->clip_changes, obj, is_v, was_v);
-        if (!o->pixel_updates) goto done;
+	evas_object_render_pre_visible_change(&e->clip_changes, obj, is_v, was_v);
+	if (!o->pixel_updates) goto done;
      }
    if ((obj->cur.map != obj->prev.map) ||
        (obj->cur.usemap != obj->prev.usemap))
      {
-        evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
+	evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
         goto done;
      }
    /* it's not visible - we accounted for it appearing or not so just abort */
@@ -3194,8 +3194,8 @@ evas_object_image_render_pre(Evas_Object *obj)
    /* if we restacked (layer or just within a layer) and don't clip anyone */
    if (obj->restack)
      {
-        evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
-        if (!o->pixel_updates) goto done;
+	evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
+	if (!o->pixel_updates) goto done;
      }
    /* if it changed color */
    if ((obj->cur.color.r != obj->prev.color.r) ||
@@ -3203,70 +3203,71 @@ evas_object_image_render_pre(Evas_Object *obj)
        (obj->cur.color.b != obj->prev.color.b) ||
        (obj->cur.color.a != obj->prev.color.a))
      {
-        evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
-        if (!o->pixel_updates) goto done;
+	evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
+	if (!o->pixel_updates) goto done;
      }
    /* if it changed render op */
    if (obj->cur.render_op != obj->prev.render_op)
      {
-        evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
-        if (!o->pixel_updates) goto done;
+	evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
+	if (!o->pixel_updates) goto done;
      }
    /* if it changed anti_alias */
    if (obj->cur.anti_alias != obj->prev.anti_alias)
      {
-        evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
-        if (!o->pixel_updates) goto done;
+	evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
+	if (!o->pixel_updates) goto done;
      }
    if (o->changed)
      {
-        if (((o->cur.file) && (!o->prev.file)) ||
-            ((!o->cur.file) && (o->prev.file)) ||
-            ((o->cur.key) && (!o->prev.key)) ||
-            ((!o->cur.key) && (o->prev.key)))
-          {
-             evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
-             if (!o->pixel_updates) goto done;
-          }
-        if ((o->cur.image.w != o->prev.image.w) ||
-            (o->cur.image.h != o->prev.image.h) ||
-            (o->cur.has_alpha != o->prev.has_alpha) ||
-            (o->cur.cspace != o->prev.cspace) ||
-            (o->cur.smooth_scale != o->prev.smooth_scale))
-          {
-             evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
-             if (!o->pixel_updates) goto done;
-          }
-    if ((o->cur.border.l != o->prev.border.l) ||
-        (o->cur.border.r != o->prev.border.r) ||
-        (o->cur.border.t != o->prev.border.t) ||
-        (o->cur.border.b != o->prev.border.b) ||
-        (o->cur.border.fill != o->prev.border.fill) ||
-        (o->cur.border.scale != o->prev.border.scale))
-      {
-         evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
-         if (!o->pixel_updates) goto done;
-      }
-    if (o->dirty_pixels)
-      {
-         evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
-         if (!o->pixel_updates) goto done;
-      }
-    if (o->cur.frame != o->prev.frame)
-      {
-         evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
-         if (!o->pixel_updates) goto done;
-      }
-
+	if (((o->cur.file) && (!o->prev.file)) ||
+	    ((!o->cur.file) && (o->prev.file)) ||
+	    ((o->cur.key) && (!o->prev.key)) ||
+	    ((!o->cur.key) && (o->prev.key))
+	    )
+	  {
+	     evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
+	     if (!o->pixel_updates) goto done;
+	  }
+	if ((o->cur.image.w != o->prev.image.w) ||
+	    (o->cur.image.h != o->prev.image.h) ||
+	    (o->cur.has_alpha != o->prev.has_alpha) ||
+	    (o->cur.cspace != o->prev.cspace) ||
+	    (o->cur.smooth_scale != o->prev.smooth_scale))
+	  {
+	     evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
+	     if (!o->pixel_updates) goto done;
+	  }
+	if ((o->cur.border.l != o->prev.border.l) ||
+	    (o->cur.border.r != o->prev.border.r) ||
+	    (o->cur.border.t != o->prev.border.t) ||
+	    (o->cur.border.b != o->prev.border.b) ||
+            (o->cur.border.fill != o->prev.border.fill) ||
+            (o->cur.border.scale != o->prev.border.scale))
+	  {
+	     evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
+	     if (!o->pixel_updates) goto done;
+	  }
+	if (o->dirty_pixels)
+	  {
+	     evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
+	     if (!o->pixel_updates) goto done;
+	  }
+	if (o->cur.frame != o->prev.frame)
+	  {
+	     evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
+	     if (!o->pixel_updates) goto done;
+	  }
+	
      }
    /* if it changed geometry - and obviously not visibility or color */
    /* calculate differences since we have a constant color fill */
    /* we really only need to update the differences */
 #if 0 // XXX: maybe buggy?
    if (((obj->cur.geometry.x != obj->prev.geometry.x) ||
-    (obj->cur.geometry.y != obj->prev.geometry.y) ||
-    (obj->cur.geometry.w != obj->prev.geometry.w) ||
-    (obj->cur.geometry.h != obj->prev.geometry.h)) &&
+	(obj->cur.geometry.y != obj->prev.geometry.y) ||
+	(obj->cur.geometry.w != obj->prev.geometry.w) ||
+	(obj->cur.geometry.h != obj->prev.geometry.h)) &&
        (o->cur.fill.w == o->prev.fill.w) &&
        (o->cur.fill.h == o->prev.fill.h) &&
        ((o->cur.fill.x + obj->cur.geometry.x) == (o->prev.fill.x + obj->prev.geometry.x)) &&
@@ -3274,36 +3275,37 @@ evas_object_image_render_pre(Evas_Object *obj)
        (!o->pixel_updates)
        )
      {
-    evas_rects_return_difference_rects(&e->clip_changes,
-                       obj->cur.geometry.x,
-                       obj->cur.geometry.y,
-                       obj->cur.geometry.w,
-                       obj->cur.geometry.h,
-                       obj->prev.geometry.x,
-                       obj->prev.geometry.y,
-                       obj->prev.geometry.w,
-                       obj->prev.geometry.h);
-    if (!o->pixel_updates) goto done;
+	evas_rects_return_difference_rects(&e->clip_changes,
+					   obj->cur.geometry.x,
+					   obj->cur.geometry.y,
+					   obj->cur.geometry.w,
+					   obj->cur.geometry.h,
+					   obj->prev.geometry.x,
+					   obj->prev.geometry.y,
+					   obj->prev.geometry.w,
+					   obj->prev.geometry.h);
+	if (!o->pixel_updates) goto done;
      }
-#endif
+#endif   
    if (((obj->cur.geometry.x != obj->prev.geometry.x) ||
-       (obj->cur.geometry.y != obj->prev.geometry.y) ||
-       (obj->cur.geometry.w != obj->prev.geometry.w) ||
-       (obj->cur.geometry.h != obj->prev.geometry.h)))
+	(obj->cur.geometry.y != obj->prev.geometry.y) ||
+	(obj->cur.geometry.w != obj->prev.geometry.w) ||
+	(obj->cur.geometry.h != obj->prev.geometry.h))
+       )
      {
-        evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
-        if (!o->pixel_updates) goto done;
+	evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
+	if (!o->pixel_updates) goto done;
      }
    if (o->changed)
      {
-        if ((o->cur.fill.x != o->prev.fill.x) ||
-            (o->cur.fill.y != o->prev.fill.y) ||
-            (o->cur.fill.w != o->prev.fill.w) ||
-            (o->cur.fill.h != o->prev.fill.h))
-      {
-         evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
-         if (!o->pixel_updates) goto done;
-      }
+	if ((o->cur.fill.x != o->prev.fill.x) ||
+	    (o->cur.fill.y != o->prev.fill.y) ||
+	    (o->cur.fill.w != o->prev.fill.w) ||
+	    (o->cur.fill.h != o->prev.fill.h))
+	  {
+	     evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
+	     if (!o->pixel_updates) goto done;
+	  }
         if (o->pixel_updates)
           {
              if ((o->cur.border.l == 0) &&
@@ -3312,20 +3314,20 @@ evas_object_image_render_pre(Evas_Object *obj)
                  (o->cur.border.b == 0) &&
                  (o->cur.image.w > 0) &&
                  (o->cur.image.h > 0) &&
-                 (!((obj->cur.map) && (obj->cur.usemap))))
+                (!((obj->cur.map) && (obj->cur.usemap))))
                {
                   Eina_Rectangle *rr;
-
+                  
                   EINA_LIST_FREE(o->pixel_updates, rr)
                     {
                        Evas_Coord idw, idh, idx, idy;
                        int x, y, w, h;
-
+                       
                        e->engine.func->image_dirty_region(e->engine.data.output, o->engine_data, rr->x, rr->y, rr->w, rr->h);
-
+                       
                        idx = evas_object_image_figure_x_fill(obj, o->cur.fill.x, o->cur.fill.w, &idw);
                        idy = evas_object_image_figure_y_fill(obj, o->cur.fill.y, o->cur.fill.h, &idh);
-
+                       
                        if (idw < 1) idw = 1;
                        if (idh < 1) idh = 1;
                        if (idx > 0) idx -= idw;
@@ -3333,17 +3335,17 @@ evas_object_image_render_pre(Evas_Object *obj)
                        while (idx < obj->cur.geometry.w)
                          {
                             Evas_Coord ydy;
-
+                            
                             ydy = idy;
                             x = idx;
                             w = ((int)(idx + idw)) - x;
                             while (idy < obj->cur.geometry.h)
                               {
                                  Eina_Rectangle r;
-
+                                 
                                  y = idy;
                                  h = ((int)(idy + idh)) - y;
-
+                                 
                                  r.x = ((rr->x - 1) * w) / o->cur.image.w;
                                  r.y = ((rr->y - 1) * h) / o->cur.image.h;
                                  r.w = ((rr->w + 2) * w) / o->cur.image.w;
@@ -3365,22 +3367,22 @@ evas_object_image_render_pre(Evas_Object *obj)
                }
              else
                {
-                  Eina_Rectangle *r;
-
-                  EINA_LIST_FREE(o->pixel_updates, r)
-                    eina_rectangle_free(r);
-                  e->engine.func->image_dirty_region(e->engine.data.output, o->engine_data, 0, 0, o->cur.image.w, o->cur.image.h);
-                  evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
-                  goto done;
-               }
-          }
+		  Eina_Rectangle *r;
+                  
+		  EINA_LIST_FREE(o->pixel_updates, r)
+                     eina_rectangle_free(r);
+		  e->engine.func->image_dirty_region(e->engine.data.output, o->engine_data, 0, 0, o->cur.image.w, o->cur.image.h);
+		  evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
+		  goto done;
+	       }
+	  }
      }
 #if 0 // filtering disabled
    if (obj->filter && obj->filter->dirty)
      {
         evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
      }
-#endif
+#endif   
    /* it obviously didn't change - add a NO obscure - this "unupdates"  this */
    /* area so if there were updates for it they get wiped. don't do it if we */
    /* aren't fully opaque and we are visible */
@@ -3585,7 +3587,7 @@ evas_object_image_is_inside(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
    else
      {
         int bl, br, bt, bb, bsl, bsr, bst, bsb;
-
+        
         bl = o->cur.border.l;
         br = o->cur.border.r;
         bt = o->cur.border.t;
@@ -3621,17 +3623,17 @@ evas_object_image_is_inside(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
           {
              bsl = bl; bsr = br; bst = bt; bsb = bb;
           }
-
+        
         w = o->cur.fill.w;
         h = o->cur.fill.h;
         x -= o->cur.fill.x;
         y -= o->cur.fill.y;
         x %= w;
         y %= h;
-
+        
         if (x < 0) x += w;
         if (y < 0) y += h;
-
+        
         if (o->cur.border.fill != EVAS_BORDER_FILL_DEFAULT)
           {
              if ((x > bsl) && (x < (w - bsr)) &&
@@ -3641,25 +3643,25 @@ evas_object_image_is_inside(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
                   return 0;
                }
           }
-
+        
         if (x < bsl) x = (x * bl) / bsl;
         else if (x > (w - bsr)) x = iw - (((w - x) * br) / bsr);
         else if ((bsl + bsr) < w) x = bl + (((x - bsl) * (iw - bl - br)) / (w - bsl - bsr));
         else return 1;
-
+        
         if (y < bst) y = (y * bt) / bst;
         else if (y > (h - bsb)) y = ih - (((h - y) * bb) / bsb);
         else if ((bst + bsb) < h) y = bt + (((y - bst) * (ih - bt - bb)) / (h - bst - bsb));
         else return 1;
      }
-
+   
    if (x < 0) x = 0;
    if (y < 0) y = 0;
    if (x >= iw) x = iw - 1;
    if (y >= ih) y = ih - 1;
-
+   
    stride = o->cur.image.stride;
-
+   
    o->engine_data = obj->layer->evas->engine.func->image_data_get
       (obj->layer->evas->engine.data.output,
           o->engine_data,
@@ -3763,24 +3765,24 @@ evas_object_image_data_convert_internal(Evas_Object_Image *o, void *data, Evas_C
 
    switch (o->cur.cspace)
      {
-        case EVAS_COLORSPACE_ARGB8888:
-          out = evas_common_convert_argb8888_to(data,
-                                                o->cur.image.w,
-                                                o->cur.image.h,
-                                                o->cur.image.stride >> 2,
-                                                o->cur.has_alpha,
-                                                to_cspace);
-          break;
-        case EVAS_COLORSPACE_RGB565_A5P:
-          out = evas_common_convert_rgb565_a5p_to(data,
-                                                  o->cur.image.w,
-                                                  o->cur.image.h,
-                                                  o->cur.image.stride >> 1,
-                                                  o->cur.has_alpha,
-                                                  to_cspace);
-          break;
+	case EVAS_COLORSPACE_ARGB8888:
+	  out = evas_common_convert_argb8888_to(data,
+						o->cur.image.w,
+						o->cur.image.h,
+						o->cur.image.stride >> 2,
+						o->cur.has_alpha,
+						to_cspace);
+	  break;
+	case EVAS_COLORSPACE_RGB565_A5P:
+	  out = evas_common_convert_rgb565_a5p_to(data,
+						  o->cur.image.w,
+						  o->cur.image.h,
+						  o->cur.image.stride >> 1,
+						  o->cur.has_alpha,
+						  to_cspace);
+	  break;
         case EVAS_COLORSPACE_YCBCR422601_PL:
-          fprintf(stderr, "EVAS_COLORSPACE_YCBCR422601_PL:\n");
+           fprintf(stderr, "EVAS_COLORSPACE_YCBCR422601_PL:\n");
           out = evas_common_convert_yuv_422_601_to(data,
                                                    o->cur.image.w,
                                                    o->cur.image.h,
@@ -3800,13 +3802,13 @@ evas_object_image_data_convert_internal(Evas_Object_Image *o, void *data, Evas_C
           break;
         case EVAS_COLORSPACE_YCBCR420TM12601_PL:
           out = evas_common_convert_yuv_420T_601_to(data,
-                                                    o->cur.image.w,
-                                                    o->cur.image.h,
-                                                    to_cspace);
+						    o->cur.image.w,
+						    o->cur.image.h,
+						    to_cspace);
           break;
-        default:
-          fprintf(stderr, "unknow colorspace: %i\n", o->cur.cspace);
-          break;
+	default:
+           fprintf(stderr, "unknow colorspace: %i\n", o->cur.cspace);
+	  break;
      }
 
    return out;
