@@ -3437,50 +3437,36 @@ _layout_ellipsis_item_new(Ctxt *c, const Evas_Object_Textblock_Item *cur_it)
 static inline void
 _layout_handle_ellipsis(Ctxt *c, Evas_Object_Textblock_Item *it, Eina_List *i)
 {
-   Evas_Object_Textblock_Text_Item *ellip_ti, *last_ti;
+   Evas_Object_Textblock_Text_Item *ellip_ti;
    Evas_Object_Textblock_Item *last_it;
    Evas_Coord save_cx;
    int wrap;
    ellip_ti = _layout_ellipsis_item_new(c, it);
    last_it = it;
-   last_ti = _ITEM_TEXT(it);
 
    save_cx = c->x;
    c->w -= ellip_ti->parent.w;
-   do
+
+   if (it->type == EVAS_TEXTBLOCK_ITEM_TEXT)
      {
-        wrap = _layout_text_cutoff_get(c, last_it->format,
-              last_ti);
-        if ((wrap > 0) && !IS_AT_END(last_ti, (size_t) wrap))
+        Evas_Object_Textblock_Text_Item *ti = _ITEM_TEXT(it);
+
+        wrap = _layout_text_cutoff_get(c, last_it->format, ti);
+        if ((wrap > 0) && !IS_AT_END(ti, (size_t) wrap))
           {
-             _layout_item_text_split_strip_white(c, last_ti, i, wrap);
+             _layout_item_text_split_strip_white(c, ti, i, wrap);
           }
-        else if (wrap == 0)
+        else if ((wrap == 0) && (c->ln->items))
           {
-             if (!c->ln->items)
-                break;
-             /* We haven't added it yet at this point */
-             if (_ITEM(last_ti) != it)
-               {
-                  last_it =
-                     _ITEM(EINA_INLIST_GET(last_it)->prev);
-                  c->ln->items = _ITEM(eina_inlist_remove(
-                           EINA_INLIST_GET(c->ln->items),
-                           EINA_INLIST_GET(_ITEM(last_ti))));
-               }
-             else
-               {
-                  last_it =
-                     _ITEM(EINA_INLIST_GET(c->ln->items)->last);
-               }
-             last_ti = _ITEM_TEXT(last_it);
-             if (last_it)
-               {
-                  c->x -= last_it->adv;
-               }
+             last_it = _ITEM(EINA_INLIST_GET(c->ln->items)->last);
           }
      }
-   while (last_it && (wrap == 0));
+   else if (it->type == EVAS_TEXTBLOCK_ITEM_FORMAT)
+     {
+        /* We don't want to add this format item. */
+        last_it = NULL;
+     }
+
    c->x = save_cx;
    c->w += ellip_ti->parent.w;
    /* If we should add this item, do it */
@@ -6796,7 +6782,7 @@ evas_textblock_cursor_text_append(Evas_Textblock_Cursor *cur, const char *_text)
      }
    else if (o->text_nodes)
      {
-        cur->node = o->text_nodes;
+        n = cur->node = o->text_nodes;
         cur->pos = 0;
      }
    else
@@ -8252,6 +8238,8 @@ _evas_textblock_cursor_range_in_line_geometry_get(
 
    cur = (cur1) ? cur1 : cur2;
 
+   if (!cur) return NULL;
+
    /* Find the first and last items */
    it1 = it2 = NULL;
    start = end = 0;
@@ -8466,6 +8454,7 @@ _evas_textblock_cursor_range_in_line_geometry_get(
      }
    return rects;
 }
+
 EAPI Eina_List *
 evas_textblock_cursor_range_geometry_get(const Evas_Textblock_Cursor *cur1, const Evas_Textblock_Cursor *cur2)
 {

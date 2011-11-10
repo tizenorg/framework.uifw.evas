@@ -93,22 +93,20 @@ evas_common_font_draw_internal(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font
                                int ext_h, int im_w, int im_h __UNUSED__)
 {
    DATA32 *im;
-   FT_Face pface = NULL;
    RGBA_Font_Int *fi;
    EVAS_FONT_WALK_TEXT_INIT();
 
    fi = text_props->font_instance;
-   if (fi)
-     {
-        evas_common_font_int_reload(fi);
+   if (!fi) return;
 
-        if (fi->src->current_size != fi->size)
-          {
-             FTLOCK();
-             FT_Activate_Size(fi->ft.size);
-             FTUNLOCK();
-             fi->src->current_size = fi->size;
-          }
+   evas_common_font_int_reload(fi);
+
+   if (fi->src->current_size != fi->size)
+     {
+        FTLOCK();
+        FT_Activate_Size(fi->ft.size);
+        FTUNLOCK();
+        fi->src->current_size = fi->size;
      }
 
 
@@ -209,7 +207,7 @@ evas_common_font_draw_internal(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font
      {
         FT_UInt idx;
         RGBA_Font_Glyph *fg;
-        int chr_x, chr_y, chr_w;
+        int chr_x, chr_y;
 
         if (!EVAS_FONT_WALK_IS_VISIBLE) continue;
 
@@ -223,7 +221,6 @@ evas_common_font_draw_internal(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font
              continue;
           }
 
-        pface = fi->src->ft.face;
         LKU(fi->ft_mutex);
 
         if (dc->font_ext.func.gl_new)
@@ -235,7 +232,6 @@ evas_common_font_draw_internal(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font
 
         chr_x = x + EVAS_FONT_WALK_PEN_X + EVAS_FONT_WALK_X_OFF + EVAS_FONT_WALK_X_BEAR;
         chr_y = y + EVAS_FONT_WALK_PEN_Y + EVAS_FONT_WALK_Y_OFF + EVAS_FONT_WALK_Y_BEAR;
-        chr_w = EVAS_FONT_WALK_WIDTH;
 
         if (chr_x < (ext_x + ext_w))
           {
