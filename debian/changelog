@@ -2,7 +2,7 @@ evas (1.0.0.001+svn.65044slp2+build02) unstable; urgency=low
 
   * enable the Evas_GL
   * Git: 165.213.180.234:/slp/pkgs/e/evas
-  * Tag: 1.0.0.001+svn.65044slp2+build02
+  * Tag: evas_1.0.0.001+svn.65044slp2+build02
 
  -- ChunEon Park <chuneon.park@samsung.com>  Fri, 11 Nov 2011 16:59:30 +0900
 
