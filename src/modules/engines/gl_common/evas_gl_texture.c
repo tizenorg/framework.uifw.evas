@@ -647,12 +647,15 @@ evas_gl_texture_pool_empty(Evas_GL_Texture_Pool *pt)
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
    if (pt->dyn.img)
      {
+        if (pt->dyn.checked_out > 0)
+          secsym_eglUnmapImageSEC(pt->gc->egldisp, pt->dyn.img);
         secsym_eglDestroyImage(pt->gc->egldisp, pt->dyn.img);
         pt->dyn.img = NULL;
         pt->dyn.data = NULL;
         pt->dyn.w = 0;
         pt->dyn.h = 0;
         pt->dyn.stride = 0;
+        pt->dyn.checked_out = 0;
      }
 #endif
 
@@ -1053,17 +1056,7 @@ evas_gl_common_texture_yuv_new(Evas_Engine_GL_Context *gc, DATA8 **rows, unsigne
 
    tex->gc = gc;
    tex->references = 1;
-   tex->pt = _pool_tex_new(gc, w + 1, h  + 1, lum_ifmt, lum_fmt);
-   if (!tex->pt)
-     {
-        free(tex);
-        return NULL;
-     }
-   gc->shared->tex.whole = eina_list_prepend(gc->shared->tex.whole, tex->pt);
-   tex->pt->slot = -1;
-   tex->pt->fslot = -1;
-   tex->pt->whole = 1;
-   tex->ptu = _pool_tex_new(gc, (w / 2) + 1, (h / 2)  + 1, lum_ifmt, lum_fmt);
+   tex->ptu = _pool_tex_new(gc, w / 2 + 1, h / 2 + 1, lum_ifmt, lum_fmt);
    if (!tex->ptu)
      {
         free(tex);
@@ -1073,7 +1066,7 @@ evas_gl_common_texture_yuv_new(Evas_Engine_GL_Context *gc, DATA8 **rows, unsigne
    tex->ptu->slot = -1;
    tex->ptu->fslot = -1;
    tex->ptu->whole = 1;
-   tex->ptv = _pool_tex_new(gc, (w / 2) + 1, (h / 2)  + 1, lum_ifmt, lum_fmt);
+   tex->ptv = _pool_tex_new(gc,  tex->ptu->w, tex->ptu->h, lum_ifmt, lum_fmt);
    if (!tex->ptv)
      {
         pt_unref(tex->pt);
@@ -1085,6 +1078,16 @@ evas_gl_common_texture_yuv_new(Evas_Engine_GL_Context *gc, DATA8 **rows, unsigne
    tex->ptv->slot = -1;
    tex->ptv->fslot = -1;
    tex->ptv->whole = 1;
+   tex->pt = _pool_tex_new(gc, tex->ptu->w * 2, tex->ptu->h * 2, lum_ifmt, lum_fmt);
+   if (!tex->pt)
+     {
+        free(tex);
+        return NULL;
+     }
+   gc->shared->tex.whole = eina_list_prepend(gc->shared->tex.whole, tex->pt);
+   tex->pt->slot = -1;
+   tex->pt->fslot = -1;
+   tex->pt->whole = 1;
    tex->x = 0;
    tex->y = 0;
    tex->w = w;
@@ -1173,7 +1176,7 @@ evas_gl_common_texture_yuv_update(Evas_GL_Texture *tex, DATA8 **rows, unsigned i
 static Evas_GL_Texture *
 _evas_gl_common_texture_y2uv_new(Evas_Engine_GL_Context *gc,
 				 unsigned int yw, unsigned int yh,
-				 unsigned int uvw, unsigned int uvh,
+                                 Eina_Bool uv2w, Eina_Bool uv2h,
                                  GLenum y_ifmt, GLenum y_fmt,
                                  GLenum uv_ifmt, GLenum uv_fmt,
 				 Eina_Bool dynamic)
@@ -1181,27 +1184,53 @@ _evas_gl_common_texture_y2uv_new(Evas_Engine_GL_Context *gc,
    Evas_GL_Texture_Pool *pt[2] = { NULL, NULL };
    Evas_GL_Texture_Pool *ptuv[2] = { NULL, NULL };
    Evas_GL_Texture *tex;
+   unsigned int uvw, uvh;
+
+   uvw = uv2w ? yw / 2 + 1 : yw + 1;
+   uvh = uv2h ? yh / 2 + 1 : yh + 1;
 
    if (!dynamic)
      {
-       pt[0] = _pool_tex_new(gc, yw + 1, yh  + 1, y_ifmt, y_fmt);
-       pt[1] = _pool_tex_new(gc, yw + 1, yh  + 1, y_ifmt, y_fmt);
+        ptuv[0] = _pool_tex_new(gc, uvw, uvh, uv_ifmt, uv_fmt);
+        ptuv[1] = _pool_tex_new(gc, uvw, uvh, uv_ifmt, uv_fmt);
 
-       ptuv[0] = _pool_tex_new(gc, uvw + 1, uvh  + 1, uv_ifmt, uv_fmt);
-       ptuv[1] = _pool_tex_new(gc, uvw + 1, uvh  + 1, uv_ifmt, uv_fmt);
+	if (ptuv[0] && ptuv[1])
+	  {
+             pt[0] = _pool_tex_new(gc,
+                                   ptuv[0]->w * (uv2w ? 2 : 1),
+                                   ptuv[0]->h * (uv2h ? 2 : 1),
+                                   y_ifmt, y_fmt);
+             pt[1] = _pool_tex_new(gc,
+                                   ptuv[1]->w * (uv2w ? 2 : 1),
+                                   ptuv[1]->h * (uv2h ? 2 : 1),
+                                   y_ifmt, y_fmt);
+	  }
      }
    else
      {
-       pt[0] = _pool_tex_dynamic_new(gc, yw + 1, yh  + 1, y_ifmt, y_fmt);
-       pt[1] = _pool_tex_dynamic_new(gc, yw + 1, yh  + 1, y_ifmt, y_fmt);
+        ptuv[0] = _pool_tex_dynamic_new(gc, uvw, uvh, uv_ifmt, uv_fmt);
+        ptuv[1] = _pool_tex_dynamic_new(gc, uvw, uvh, uv_ifmt, uv_fmt);
 
-       ptuv[0] = _pool_tex_dynamic_new(gc, uvw + 1, uvh  + 1, uv_ifmt, uv_fmt);
-       ptuv[1] = _pool_tex_dynamic_new(gc, uvw + 1, uvh  + 1, uv_ifmt, uv_fmt);
+	if (ptuv[0] && ptuv[1])
+	  {
+             pt[0] = _pool_tex_dynamic_new(gc,
+                                           ptuv[0]->w * (uv2w ? 2 : 1),
+                                           ptuv[0]->h * (uv2h ? 2 : 1),
+                                           y_ifmt, y_fmt);
+             pt[1] = _pool_tex_dynamic_new(gc,
+                                           ptuv[1]->w * (uv2w ? 2 : 1),
+                                           ptuv[1]->h * (uv2h ? 2 : 1),
+                                           y_ifmt, y_fmt);
+	  }
      }
 
    if (!pt[0] || !pt[1] || !ptuv[0] || !ptuv[1])
      goto on_error;
 
+   INF("YUV [%i, %i] => Y[%i, %i], UV[%i, %i]",
+       yw, yh,
+       pt[0]->w, pt[0]->h,
+       ptuv[0]->w, ptuv[0]->h);
    tex = calloc(1, sizeof(Evas_GL_Texture));
    if (!tex)
      goto on_error;
@@ -1240,7 +1269,7 @@ evas_gl_common_texture_yuy2_new(Evas_Engine_GL_Context *gc, DATA8 **rows, unsign
 {
    Evas_GL_Texture *tex;
 
-   tex = _evas_gl_common_texture_y2uv_new(gc, w, h, w / 2, h, lum_alpha_ifmt, lum_alpha_fmt, rgba8_ifmt, rgba8_fmt, 0);
+   tex = _evas_gl_common_texture_y2uv_new(gc, w, h, EINA_TRUE, EINA_FALSE, lum_alpha_ifmt, lum_alpha_fmt, rgba8_ifmt, rgba8_fmt, 0);
    evas_gl_common_texture_yuy2_update(tex, rows, w, h);
    return tex;
 }
@@ -1251,10 +1280,10 @@ evas_gl_common_texture_nv12_new(Evas_Engine_GL_Context *gc, DATA8 **rows, unsign
    Evas_GL_Texture *tex;
 
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-   tex = _evas_gl_common_texture_y2uv_new(gc, w, h, w / 2, h / 2, lum_ifmt, lum_fmt, lum_alpha_ifmt, lum_alpha_fmt, 1);
+   tex = _evas_gl_common_texture_y2uv_new(gc, w, h, EINA_TRUE, EINA_TRUE, lum_ifmt, lum_fmt, lum_alpha_ifmt, lum_alpha_fmt, 1);
    if (!tex)
 #endif
-     tex = _evas_gl_common_texture_y2uv_new(gc, w, h, w / 2, h / 2, lum_ifmt, lum_fmt, lum_alpha_ifmt, lum_alpha_fmt, 0);
+     tex = _evas_gl_common_texture_y2uv_new(gc, w, h, EINA_TRUE, EINA_TRUE, lum_ifmt, lum_fmt, lum_alpha_ifmt, lum_alpha_fmt, 0);
 
    evas_gl_common_texture_nv12_update(tex, rows, w, h);
    return tex;
@@ -1266,10 +1295,10 @@ evas_gl_common_texture_nv12tiled_new(Evas_Engine_GL_Context *gc, DATA8 **rows, u
    Evas_GL_Texture *tex = NULL;
 
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-   tex = _evas_gl_common_texture_y2uv_new(gc, w, h, w, h, lum_ifmt, lum_fmt, lum_alpha_ifmt, lum_alpha_fmt, 1);
+   tex = _evas_gl_common_texture_y2uv_new(gc, w, h, EINA_TRUE, EINA_TRUE, lum_ifmt, lum_fmt, lum_alpha_ifmt, lum_alpha_fmt, 1);
    if (!tex)
 #endif
-     tex = _evas_gl_common_texture_y2uv_new(gc, w, h, w, h, lum_ifmt, lum_fmt, lum_alpha_ifmt, lum_alpha_fmt, 0);
+     tex = _evas_gl_common_texture_y2uv_new(gc, w, h, EINA_TRUE, EINA_TRUE, lum_ifmt, lum_fmt, lum_alpha_ifmt, lum_alpha_fmt, 0);
 
    evas_gl_common_texture_nv12tiled_update(tex, rows, w, h);
    return tex;
@@ -1302,9 +1331,15 @@ evas_gl_common_texture_yuy2_update(Evas_GL_Texture *tex, DATA8 **rows, unsigned 
    glBindTexture(GL_TEXTURE_2D, tex->ptuv->texture);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
    _tex_2d(tex->ptuv->intformat, w / 2, h, tex->ptuv->format, tex->ptuv->dataformat);
+#if 0
+   /*
+     FIXME: this piece of code doesn't work anymore since texture width
+     is not anymore exactly w / 2. I don't understand why.
+   */
    if ((rows[1] - rows[0]) == (int)(w * 2))
      _tex_sub_2d(0, 0, w / 2, h, tex->ptuv->format, tex->ptuv->dataformat, rows[0]);
    else
+#endif
      {
         for (y = 0; y < h; y++)
           _tex_sub_2d(0, y, w / 2, 1, tex->ptuv->format, tex->ptuv->dataformat, rows[y]);

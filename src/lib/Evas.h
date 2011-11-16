@@ -2615,7 +2615,7 @@ EAPI void              evas_event_feed_hold              (Evas *e, int hold, uns
  * This function call evas_event_feed_* functions, so it can
  * cause havoc if not used wisely. Please use it responsibly.
  */
-EAPI void              evas_event_refeed_event           (Evas *e, void *event_copy, Evas_Callback_Type event_type);  EINA_ARG_NONNULL(1);
+EAPI void              evas_event_refeed_event           (Evas *e, void *event_copy, Evas_Callback_Type event_type) EINA_ARG_NONNULL(1);
 
 
 /**
@@ -3487,7 +3487,7 @@ EAPI Evas             *evas_object_evas_get              (const Evas_Object *obj
 EAPI const char       *evas_object_type_get              (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_PURE;
 
 /**
- * Raise @p obj to the bottom of its layer.
+ * Raise @p obj to the top of its layer.
  *
  * @param obj the object to raise
  *
