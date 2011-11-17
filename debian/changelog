@@ -1,3 +1,9 @@
+evas (1.1.0+svn.65326slp2+build01) unstable; urgency=low
+
+  * Merge with upstream @65326
+
+ -- Mike McCormack <mj.mccormack@samsung.com>  Thu, 17 Nov 2011 15:23:54 +0900
+
 evas (1.1.0+svn.65301slp2+build01) unstable; urgency=low
 
   * Merge with upstream @65301
