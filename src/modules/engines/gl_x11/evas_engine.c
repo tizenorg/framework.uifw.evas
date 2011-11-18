@@ -3497,12 +3497,9 @@ evgl_glBindRenderbuffer(GLenum target, GLuint renderbuffer)
 static void
 evgl_glClear(GLbitfield mask)
 {
-   Render_Engine *re = current_engine;
    Render_Engine_GL_Context *ctx = current_evgl_ctx;
 
-   if (!re) return;
-
-   if ((ctx) && (current_img_obj) && (ctx->current_sfc->direct_fb))
+   if ((ctx) && (current_img_obj) && (!ctx->current_fbo) && (ctx->current_sfc->direct_fb))
      {
         // Check if it's fullscreen
         if ( (current_img_obj->cur.geometry.w == current_img_obj->layer->evas->output.w) &&
@@ -3563,13 +3560,9 @@ evgl_glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 {
    int nx1, ny1, nx2, ny2;
    int ox1, oy1, ox2, oy2;
-   int current_fb = 0;
    Render_Engine_GL_Context *ctx = current_evgl_ctx;
 
-   // Check for FB 0
-   glGetIntegerv(GL_FRAMEBUFFER_BINDING, &current_fb);
-
-   if ((!current_fb) && (ctx) && (current_img_obj) && (ctx->current_sfc->direct_fb))
+   if ((ctx) && (current_img_obj) && (!ctx->current_fbo) && (ctx->current_sfc->direct_fb))
      {
         // Check if it's fullscreen
         if ( (current_img_obj->cur.geometry.w == current_img_obj->layer->evas->output.w) &&
@@ -3623,7 +3616,7 @@ evgl_glScissor(GLint x, GLint y, GLsizei width, GLsizei height)
    int ox1, oy1, ox2, oy2;
    Render_Engine_GL_Context *ctx = current_evgl_ctx;
 
-   if ((ctx) && (current_img_obj) && (ctx->current_sfc->direct_fb))
+   if ((ctx) && (current_img_obj) && (!ctx->current_fbo) && (ctx->current_sfc->direct_fb))
      {
         // Check if it's fullscreen
         if ( (current_img_obj->cur.geometry.w == current_img_obj->layer->evas->output.w) &&
@@ -3677,7 +3670,7 @@ evgl_glViewport(GLint x, GLint y, GLsizei width, GLsizei height)
    int ox1, oy1, ox2, oy2;
    Render_Engine_GL_Context *ctx = current_evgl_ctx;
 
-   if ((ctx) && (current_img_obj) && (ctx->current_sfc->direct_fb))
+   if ((ctx) && (current_img_obj) && (!ctx->current_fbo) && (ctx->current_sfc->direct_fb))
      {
         // Check if it's fullscreen
         if ( (current_img_obj->cur.geometry.w == current_img_obj->layer->evas->output.w) &&
