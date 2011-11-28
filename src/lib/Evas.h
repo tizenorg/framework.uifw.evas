@@ -5,6 +5,7 @@
 @date 2000-2011
 
 Please see the @ref authors page for contact details.
+@link Evas.h Evas API @endlink
 
 @section toc Table of Contents
 
@@ -7136,7 +7137,7 @@ EAPI Evas_Native_Surface     *evas_object_image_native_surface_get     (const Ev
  * This function link a video surface to a given canvas image.
  *
  */
-EAPI void                     evas_object_image_video_surface_set      (Evas_Object *obj, Evas_Video_Surface *surf) EINA_ARG_NONNULL(1, 2);
+EAPI void                     evas_object_image_video_surface_set      (Evas_Object *obj, Evas_Video_Surface *surf) EINA_ARG_NONNULL(1);
 
 /**
  * Get the video surface linekd to a given image of the canvas
@@ -7596,7 +7597,7 @@ EAPI const char       *evas_object_text_font_source_get  (const Evas_Object *obj
  *
  * @see evas_object_text_font_set()
  */
-EAPI void              evas_object_text_font_get         (const Evas_Object *obj, const char **font, Evas_Font_Size *size) EINA_ARG_NONNULL(1, 2);
+EAPI void              evas_object_text_font_get         (const Evas_Object *obj, const char **font, Evas_Font_Size *size) EINA_ARG_NONNULL(1);
 
 /**
  * Sets the text string to be displayed by the given text object.
