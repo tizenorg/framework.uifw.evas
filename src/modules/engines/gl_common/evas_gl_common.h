@@ -426,6 +426,7 @@ struct _Evas_GL_Image
    unsigned char    cached : 1;
    unsigned char    alpha : 1;
    unsigned char    tex_only : 1;
+   unsigned char    direct_fb : 1;
 };
 
 struct _Evas_GL_Font_Texture

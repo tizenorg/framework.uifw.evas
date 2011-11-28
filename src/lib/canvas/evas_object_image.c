@@ -2888,6 +2888,9 @@ evas_object_image_render(Evas_Object *obj, void *output, void *context, void *su
 	  {
 	     if (o->func.get_pixels)
 	       {
+
+                  if (obj->layer->evas->engine.func->gl_img_obj_set)
+                     obj->layer->evas->engine.func->gl_img_obj_set(output, obj);
 		  o->func.get_pixels(o->func.get_pixels_data, obj);
 		  if (o->engine_data != pixels)
 		    pixels = o->engine_data;

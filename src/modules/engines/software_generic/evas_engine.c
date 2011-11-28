@@ -1170,6 +1170,7 @@ static Evas_Func func =
      NULL, // FIXME: need software mesa for gl rendering <- gl_proc_address_get
      NULL, // FIXME: need software mesa for gl rendering <- gl_native_surface_get
      NULL, // FIXME: need software mesa for gl rendering <- gl_api_get
+     NULL, // fixme: <- gl_img_obj_set
      eng_image_load_error_get,
      eng_font_run_font_end_get,
      eng_image_animated_get,
