@@ -1,13 +1,3 @@
-evas (1.1.0+svn.65326slp2+build02) unstable; urgency=low
-
-  * Upload package
-  * Added Evas Direct Rendering feature
-  * EvasGL Direct Rendering Fixed FBO Bug
-  * Git: 165.213.180.234:/slp/pkgs/e/evas
-  * Tag: evas_1.1.0+svn.65326slp2+build02
-
- -- root <mj.mccormack@samsung.com>  Mon, 28 Nov 2011 15:16:45 +0900
-
 evas (1.1.0+svn.65326slp2+build01) unstable; urgency=low
 
   * Merge with upstream @65326

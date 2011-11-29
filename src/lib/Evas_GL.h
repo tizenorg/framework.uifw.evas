@@ -19,10 +19,9 @@ typedef void                         *EvasGLImage;
 typedef enum _Evas_GL_Color_Format
 {
     EVAS_GL_RGB_888   = 0,
-    EVAS_GL_RGB_8     = EVAS_GL_RGB_888,
+    EVAS_GL_RGB_8 = EVAS_GL_RGB_888,
     EVAS_GL_RGBA_8888 = 1,
-    EVAS_GL_RGBA_8    = EVAS_GL_RGBA_8888,
-    EVAS_GL_DIRECT    = (1<<31)
+    EVAS_GL_RGBA_8 = EVAS_GL_RGBA_8888,
 } Evas_GL_Color_Format;
 
 typedef enum _Evas_GL_Depth_Bits

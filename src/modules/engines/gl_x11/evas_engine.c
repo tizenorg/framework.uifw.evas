@@ -51,8 +51,6 @@ struct _Render_Engine_GL_Surface
    int      depth_bits;
    int      stencil_bits;
 
-   int      direct_fb;
-
    // Render target texture/buffers
    GLuint   rt_tex;
    GLint    rt_internal_fmt;
@@ -61,12 +59,6 @@ struct _Render_Engine_GL_Surface
    GLenum   rb_depth_fmt;
    GLuint   rb_stencil;
    GLenum   rb_stencil_fmt;
-
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-   EGLSurface  direct_sfc;
-#else
-   Window      direct_sfc;
-#endif
 
    Render_Engine_GL_Context   *current_ctx;
 };
@@ -81,10 +73,6 @@ struct _Render_Engine_GL_Context
 #endif
    GLuint      context_fbo;
    GLuint      current_fbo;
-
-
-   int         scissor_enabled;
-   int         scissor_upated;
 
    Render_Engine_GL_Surface   *current_sfc;
 };
@@ -111,9 +99,7 @@ struct _Extension_Entry
 
 static int initted = 0;
 static int gl_wins = 0;
-static Render_Engine_GL_Context *current_evgl_ctx = NULL;
-static Render_Engine *current_engine = NULL;
-static Evas_Object *current_img_obj = NULL;
+static Render_Engine_GL_Context *current_evgl_ctx;
 static Render_Engine *current_engine;
 
 static char _gl_ext_string[1024];
@@ -2199,9 +2185,6 @@ eng_image_native_set(void *data, void *image, void *native)
               im->native.target      = GL_TEXTURE_2D;
               im->native.mipmap      = 0;
 
-              if (ns->data.opengl.texture_id == 0)
-                 im->direct_fb          = 1;
-
               // FIXME: need to implement mapping sub texture regions
               // x, y, w, h for possible texture atlasing
 
@@ -2613,21 +2596,16 @@ static void
 eng_image_draw(void *data, void *context, void *surface, void *image, int src_x, int src_y, int src_w, int src_h, int dst_x, int dst_y, int dst_w, int dst_h, int smooth)
 {
    Render_Engine *re;
-   Evas_GL_Image *img = image;
 
    re = (Render_Engine *)data;
    if (!image) return;
-
-   if (img->direct_fb==0)
-     {
-        eng_window_use(re->win);
-        evas_gl_common_context_target_surface_set(re->win->gl_context, surface);
-        re->win->gl_context->dc = context;
-        evas_gl_common_image_draw(re->win->gl_context, image,
-                                  src_x, src_y, src_w, src_h,
-                                  dst_x, dst_y, dst_w, dst_h,
-                                  smooth);
-     }
+   eng_window_use(re->win);
+   evas_gl_common_context_target_surface_set(re->win->gl_context, surface);
+   re->win->gl_context->dc = context;
+   evas_gl_common_image_draw(re->win->gl_context, image,
+                             src_x, src_y, src_w, src_h,
+                             dst_x, dst_y, dst_w, dst_h,
+                             smooth);
 }
 
 static void
@@ -2810,16 +2788,12 @@ static int
 _set_internal_config(Render_Engine_GL_Surface *sfc, Evas_GL_Config *cfg)
 {
    // Also initialize pixel format here as well...
-   switch((int)cfg->color_format)
+   switch(cfg->color_format)
      {
-      case (EVAS_GL_RGB_888|EVAS_GL_DIRECT):
-         sfc->direct_fb       = 1;
       case EVAS_GL_RGB_888:
          sfc->rt_fmt          = GL_RGB;
          sfc->rt_internal_fmt = GL_RGB;
          break;
-      case (EVAS_GL_RGBA_8888|EVAS_GL_DIRECT):
-         sfc->direct_fb       = 1;
       case EVAS_GL_RGBA_8888:
          sfc->rt_fmt          = GL_RGBA;
          sfc->rt_internal_fmt = GL_RGBA;
@@ -2982,64 +2956,52 @@ eng_gl_surface_create(void *data, void *config, int w, int h)
         return NULL;
      }
 
-   if (sfc->direct_fb)
+   // Create internal resource context if it hasn't been created already
+   if ((rsc = eina_tls_get(resource_key)) == NULL)
      {
-        printf("Directly rendering to the Evas' window. :-\)\n");
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-        sfc->direct_sfc = re->win->egl_surface[0];
-#else
-        sfc->direct_sfc = re->win->win;
-#endif
+        if ((rsc = _create_internal_glue_resources(re)) == NULL)
+          {
+             ERR("Error creating internal resources.");
+             free(sfc);
+             return NULL;
+          }
      }
-   else
+
+   // I'm using evas's original context to create the render target texture
+   // This is to prevent awkwardness in using native_surface_get() function
+   // If the rt texture creation is deferred till the context is created and
+   // make_current called, the user can't call native_surface_get() right
+   // after the surface is created. hence this is done here using evas' context.
+#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+   ret = eglMakeCurrent(re->win->egl_disp, rsc->surface, rsc->surface, rsc->context);
+#else
+   ret = glXMakeCurrent(re->info->info.display, re->win->win, rsc->context);
+#endif
+   if (!ret)
      {
-        // Create internal resource context if it hasn't been created already
-        if ((rsc = eina_tls_get(resource_key)) == NULL)
-          {
-             if ((rsc = _create_internal_glue_resources(re)) == NULL)
-               {
-                  ERR("Error creating internal resources.");
-                  free(sfc);
-                  return NULL;
-               }
-          }
+        ERR("xxxMakeCurrent() failed!");
+        free(sfc);
+        return NULL;
+     }
 
-        // I'm using evas's original context to create the render target texture
-        // This is to prevent awkwardness in using native_surface_get() function
-        // If the rt texture creation is deferred till the context is created and
-        // make_current called, the user can't call native_surface_get() right
-        // after the surface is created. hence this is done here using evas' context.
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-        ret = eglMakeCurrent(re->win->egl_disp, rsc->surface, rsc->surface, rsc->context);
-#else
-        ret = glXMakeCurrent(re->info->info.display, re->win->win, rsc->context);
-#endif
-        if (!ret)
-          {
-             ERR("xxxMakeCurrent() failed!");
-             free(sfc);
-             return NULL;
-          }
-
-        // Create Render texture
-        if (!_create_rt_buffers(re, sfc))
-          {
-             ERR("_create_rt_buffers() failed.");
-             free(sfc);
-             return NULL;
-          }
+   // Create Render texture
+   if (!_create_rt_buffers(re, sfc))
+     {
+        ERR("_create_rt_buffers() failed.");
+        free(sfc);
+        return NULL;
+     }
 
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-        ret = eglMakeCurrent(re->win->egl_disp, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+   ret = eglMakeCurrent(re->win->egl_disp, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 #else
-        ret = glXMakeCurrent(re->info->info.display, None, NULL);
+   ret = glXMakeCurrent(re->info->info.display, None, NULL);
 #endif
-        if (!ret)
-          {
-             ERR("xxxMakeCurrent() failed!");
-             free(sfc);
-             return NULL;
-          }
+   if (!ret)
+     {
+        ERR("xxxMakeCurrent() failed!");
+        free(sfc);
+        return NULL;
      }
 
    return sfc;
@@ -3058,53 +3020,45 @@ eng_gl_surface_destroy(void *data, void *surface)
 
    if (!sfc) return 0;
 
+   if ((rsc = eina_tls_get(resource_key)) == EINA_FALSE) return 0;
 
-   if (sfc->direct_fb)
+#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+   ret = eglMakeCurrent(re->win->egl_disp, rsc->surface, rsc->surface, rsc->context);
+#else
+   ret = glXMakeCurrent(re->info->info.display, re->win->win, rsc->context);
+#endif
+   if (!ret)
      {
-        return 1;
+        ERR("xxxMakeCurrent() failed!");
+        return 0;
      }
-   else
+
+   // Delete FBO/RBO and Texture here
+   if (sfc->rt_tex)
+      glDeleteTextures(1, &sfc->rt_tex);
+
+   if (sfc->rb_depth)
+      glDeleteRenderbuffers(1, &sfc->rb_depth);
+
+   if (sfc->rb_stencil)
+      glDeleteRenderbuffers(1, &sfc->rb_stencil);
+
+#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+   ret = eglMakeCurrent(re->win->egl_disp, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+#else
+   ret = glXMakeCurrent(re->info->info.display, None, NULL);
+#endif
+   if (!ret)
      {
-        if ((rsc = eina_tls_get(resource_key)) == EINA_FALSE) return 0;
-
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-        ret = eglMakeCurrent(re->win->egl_disp, rsc->surface, rsc->surface, rsc->context);
-#else
-        ret = glXMakeCurrent(re->info->info.display, re->win->win, rsc->context);
-#endif
-        if (!ret)
-          {
-             ERR("xxxMakeCurrent() failed!");
-             return 0;
-          }
-
-        // Delete FBO/RBO and Texture here
-        if (sfc->rt_tex)
-           glDeleteTextures(1, &sfc->rt_tex);
-
-        if (sfc->rb_depth)
-           glDeleteRenderbuffers(1, &sfc->rb_depth);
-
-        if (sfc->rb_stencil)
-           glDeleteRenderbuffers(1, &sfc->rb_stencil);
-
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-        ret = eglMakeCurrent(re->win->egl_disp, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-#else
-        ret = glXMakeCurrent(re->info->info.display, None, NULL);
-#endif
-        if (!ret)
-          {
-             ERR("xxxMakeCurrent() failed!");
-             free(sfc);
-             return 0;
-          }
-
+        ERR("xxxMakeCurrent() failed!");
         free(sfc);
-        surface = NULL;
-
-        return 1;
+        return 0;
      }
+
+   free(sfc);
+   surface = NULL;
+
+   return 1;
 }
 
 static void *
@@ -3279,110 +3233,67 @@ eng_gl_make_current(void *data __UNUSED__, void *surface, void *context)
         return 1;
      }
 
-   if (sfc->direct_fb)
-     {
-        // Do a make current only if it's not already current
+   // Do a make current only if it's not already current
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+   if ((rsc = eina_tls_get(resource_key)) == EINA_FALSE) return 0;
+
+   if ((eglGetCurrentContext() != ctx->context) ||
+       (eglGetCurrentSurface(EGL_READ) != rsc->surface) ||
+       (eglGetCurrentSurface(EGL_DRAW) != rsc->surface) )
+     {
         // Flush remainder of what's in Evas' pipeline
         if (re->win) eng_window_use(NULL);
 
-        if ((eglGetCurrentContext() != ctx->context))
+        // Do a make current
+        ret = eglMakeCurrent(re->win->egl_disp, rsc->surface,
+                             rsc->surface, ctx->context);
+        if (!ret)
           {
-             // Flush remainder of what's in Evas' pipeline
-             if (re->win) eng_window_use(NULL);
-
-             // Do a make current
-             ret = eglMakeCurrent(re->win->egl_disp, sfc->direct_sfc,
-                                  sfc->direct_sfc, ctx->context);
-             if (!ret)
-               {
-                  ERR("xxxMakeCurrent() failed!");
-                  return 0;
-               }
+             ERR("xxxMakeCurrent() failed!");
+             return 0;
           }
-#else
-        if ((glXGetCurrentContext() != ctx->context))
-          {
-             // Flush remainder of what's in Evas' pipeline
-             if (re->win) eng_window_use(NULL);
-
-             // Do a make current
-             ret = glXMakeCurrent(re->info->info.display, sfc->direct_sfc, ctx->context);
-             if (!ret)
-               {
-                  ERR("xxxMakeCurrent() failed!");
-                  return 0;
-               }
-          }
-
-#endif
-
      }
-   else
+#else
+   if ((glXGetCurrentContext() != ctx->context) ||
+       (glXGetCurrentDrawable() != re->win->win) )
      {
-        // Do a make current only if it's not already current
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-        if ((rsc = eina_tls_get(resource_key)) == EINA_FALSE) return 0;
+        // Flush remainder of what's in Evas' pipeline
+        if (re->win) eng_window_use(NULL);
 
-        if ((eglGetCurrentContext() != ctx->context) ||
-            (eglGetCurrentSurface(EGL_READ) != rsc->surface) ||
-            (eglGetCurrentSurface(EGL_DRAW) != rsc->surface) )
+        // Do a make current
+        ret = glXMakeCurrent(re->info->info.display, re->win->win, ctx->context);
+        if (!ret)
           {
-             // Flush remainder of what's in Evas' pipeline
-             if (re->win) eng_window_use(NULL);
-
-             // Do a make current
-             ret = eglMakeCurrent(re->win->egl_disp, rsc->surface,
-                                  rsc->surface, ctx->context);
-             if (!ret)
-               {
-                  ERR("xxxMakeCurrent() failed!");
-                  return 0;
-               }
-          }
-#else
-        if ((glXGetCurrentContext() != ctx->context) ||
-            (glXGetCurrentDrawable() != re->win->win) )
-          {
-             // Flush remainder of what's in Evas' pipeline
-             if (re->win) eng_window_use(NULL);
-
-             // Do a make current
-             ret = glXMakeCurrent(re->info->info.display, re->win->win, ctx->context);
-             if (!ret)
-               {
-                  ERR("xxxMakeCurrent() failed!");
-                  return 0;
-               }
+             ERR("xxxMakeCurrent() failed!");
+             return 0;
           }
      }
 #endif
 
-        // Create FBO if not already created
-        if (!ctx->initialized)
+   // Create FBO if not already created
+   if (!ctx->initialized)
+     {
+        glGenFramebuffers(1, &ctx->context_fbo);
+        ctx->initialized = 1;
+     }
+
+   // Attach FBO if it hasn't been attached or if surface changed
+   if ((!sfc->fbo_attached) || (ctx->current_sfc != sfc))
+     {
+        if (!_attach_fbo_surface(re, sfc, ctx))
           {
-             glGenFramebuffers(1, &ctx->context_fbo);
-             ctx->initialized = 1;
+             ERR("_attach_fbo_surface() failed.");
+             return 0;
           }
 
-        // Attach FBO if it hasn't been attached or if surface changed
-        if ((!sfc->fbo_attached) || (ctx->current_sfc != sfc))
-          {
-             if (!_attach_fbo_surface(re, sfc, ctx))
-               {
-                  ERR("_attach_fbo_surface() failed.");
-                  return 0;
-               }
+        if (ctx->current_fbo)
+           // Bind to the previously bound buffer
+           glBindFramebuffer(GL_FRAMEBUFFER, ctx->current_fbo);
+        else
+           // Bind FBO
+           glBindFramebuffer(GL_FRAMEBUFFER, ctx->context_fbo);
 
-             if (ctx->current_fbo)
-                // Bind to the previously bound buffer
-                glBindFramebuffer(GL_FRAMEBUFFER, ctx->current_fbo);
-             else
-                // Bind FBO
-                glBindFramebuffer(GL_FRAMEBUFFER, ctx->context_fbo);
-
-             sfc->fbo_attached = 1;
-          }
+        sfc->fbo_attached = 1;
      }
 
    // Set the current surface/context
@@ -3428,26 +3339,13 @@ eng_gl_native_surface_get(void *data, void *surface, void *native_surface)
    sfc = (Render_Engine_GL_Surface*)surface;
    ns  = (Evas_Native_Surface*)native_surface;
 
-   if (sfc->direct_fb)
-     {
-        ns->type = EVAS_NATIVE_SURFACE_OPENGL;
-        ns->version = EVAS_NATIVE_SURFACE_VERSION;
-        ns->data.opengl.texture_id = 0;
-        ns->data.opengl.x = 0;
-        ns->data.opengl.y = 0;
-        ns->data.opengl.w = sfc->w;
-        ns->data.opengl.h = sfc->h;
-     }
-   else
-     {
-        ns->type = EVAS_NATIVE_SURFACE_OPENGL;
-        ns->version = EVAS_NATIVE_SURFACE_VERSION;
-        ns->data.opengl.texture_id = sfc->rt_tex;
-        ns->data.opengl.x = 0;
-        ns->data.opengl.y = 0;
-        ns->data.opengl.w = sfc->w;
-        ns->data.opengl.h = sfc->h;
-     }
+   ns->type = EVAS_NATIVE_SURFACE_OPENGL;
+   ns->version = EVAS_NATIVE_SURFACE_VERSION;
+   ns->data.opengl.texture_id = sfc->rt_tex;
+   ns->data.opengl.x = 0;
+   ns->data.opengl.y = 0;
+   ns->data.opengl.w = sfc->w;
+   ns->data.opengl.h = sfc->h;
 
    return 1;
 }
@@ -3493,220 +3391,6 @@ evgl_glBindRenderbuffer(GLenum target, GLuint renderbuffer)
    // On a second thought we don't need this
    glBindRenderbuffer(target, renderbuffer);
 }
-
-static void
-evgl_glClear(GLbitfield mask)
-{
-   Render_Engine_GL_Context *ctx = current_evgl_ctx;
-
-   if ((ctx) && (current_img_obj) && (!ctx->current_fbo) && (ctx->current_sfc->direct_fb))
-     {
-        // Check if it's fullscreen
-        if ( (current_img_obj->cur.geometry.w == current_img_obj->layer->evas->output.w) &&
-             (current_img_obj->cur.geometry.h == current_img_obj->layer->evas->output.h) &&
-             (current_img_obj->cur.geometry.x == 0) &&
-             (current_img_obj->cur.geometry.h == 0))
-          {
-             glClear(mask);
-          }
-        else
-          {
-             int x, y, w, h;
-
-             if ((!ctx->scissor_enabled) || (!ctx->scissor_upated))
-               {
-
-                  w = current_img_obj->cur.geometry.w;
-                  h = current_img_obj->cur.geometry.h;
-
-                  x = current_img_obj->cur.geometry.x;
-                  y = current_img_obj->layer->evas->output.h -
-                     current_img_obj->cur.geometry.y -
-                     current_img_obj->cur.geometry.h;
-
-                  glEnable(GL_SCISSOR_TEST);
-                  glScissor(x,y,w,h);
-               }
-
-             glClear(mask);
-          }
-     }
-   else
-      glClear(mask);
-}
-
-static void
-evgl_glEnable(GLenum cap)
-{
-   Render_Engine_GL_Context *ctx = current_evgl_ctx;
-
-   if (cap == GL_SCISSOR_TEST)
-      if (ctx) ctx->scissor_enabled = 1;
-   glEnable(cap);
-}
-
-static void
-evgl_glDisable(GLenum cap)
-{
-   Render_Engine_GL_Context *ctx = current_evgl_ctx;
-
-   if (cap == GL_SCISSOR_TEST)
-      if (ctx) ctx->scissor_enabled = 0;
-   glEnable(cap);
-}
-
-static void
-evgl_glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, void* pixels)
-{
-   int nx1, ny1, nx2, ny2;
-   int ox1, oy1, ox2, oy2;
-   Render_Engine_GL_Context *ctx = current_evgl_ctx;
-
-   if ((ctx) && (current_img_obj) && (!ctx->current_fbo) && (ctx->current_sfc->direct_fb))
-     {
-        // Check if it's fullscreen
-        if ( (current_img_obj->cur.geometry.w == current_img_obj->layer->evas->output.w) &&
-             (current_img_obj->cur.geometry.h == current_img_obj->layer->evas->output.h) &&
-             (current_img_obj->cur.geometry.x == 0) &&
-             (current_img_obj->cur.geometry.h == 0))
-          {
-             glReadPixels(x, y, width, height, format, type, pixels);
-          }
-        else
-          {
-             // Oringinal Dimension
-             ox1 = current_img_obj->cur.geometry.x;
-             oy1 = current_img_obj->layer->evas->output.h -
-                   current_img_obj->cur.geometry.y -
-                   current_img_obj->cur.geometry.h;
-             ox2 = ox1 + current_img_obj->cur.geometry.w;
-             oy2 = oy1 + current_img_obj->cur.geometry.h;
-
-             // New dimension
-             nx1 = ox1 + x;
-             ny1 = oy1 + y;
-             nx2 = nx1 + width;
-             ny2 = ny1 + height;
-
-             // Clip New against Original
-             if (nx1 < ox1) nx1 = ox1;
-             if (nx1 > ox2) nx1 = ox2;
-
-             if (ny1 < oy1) ny1 = oy1;
-             if (ny1 > oy2) ny1 = oy2;
-
-             if (nx2 < ox1) nx1 = ox1;
-             if (nx2 > ox2) nx2 = ox2;
-
-             if (ny2 < oy1) ny1 = oy1;
-             if (ny2 > oy2) ny2 = oy2;
-
-             glReadPixels(nx1, ny1, nx2-nx1, ny2-ny1, format, type, pixels);
-          }
-     }
-   else
-      glReadPixels(x, y, width, height, format, type, pixels);
-
-}
-
-static void
-evgl_glScissor(GLint x, GLint y, GLsizei width, GLsizei height)
-{
-   int nx1, ny1, nx2, ny2;
-   int ox1, oy1, ox2, oy2;
-   Render_Engine_GL_Context *ctx = current_evgl_ctx;
-
-   if ((ctx) && (current_img_obj) && (!ctx->current_fbo) && (ctx->current_sfc->direct_fb))
-     {
-        // Check if it's fullscreen
-        if ( (current_img_obj->cur.geometry.w == current_img_obj->layer->evas->output.w) &&
-             (current_img_obj->cur.geometry.h == current_img_obj->layer->evas->output.h) &&
-             (current_img_obj->cur.geometry.x == 0) &&
-             (current_img_obj->cur.geometry.h == 0))
-          {
-             glScissor(x, y, width, height);
-          }
-        else
-          {
-             // Oringinal Dimension
-             ox1 = current_img_obj->cur.geometry.x;
-             oy1 = current_img_obj->layer->evas->output.h -
-                   current_img_obj->cur.geometry.y -
-                   current_img_obj->cur.geometry.h;
-             ox2 = ox1 + current_img_obj->cur.geometry.w;
-             oy2 = oy1 + current_img_obj->cur.geometry.h;
-
-             // New dimension
-             nx1 = ox1 + x;
-             ny1 = oy1 + y;
-             nx2 = nx1 + width;
-             ny2 = ny1 + height;
-
-             // Clip New against Original
-             if (nx1 < ox1) nx1 = ox1;
-             if (nx1 > ox2) nx1 = ox2;
-
-             if (ny1 < oy1) ny1 = oy1;
-             if (ny1 > oy2) ny1 = oy2;
-
-             if (nx2 < ox1) nx1 = ox1;
-             if (nx2 > ox2) nx2 = ox2;
-
-             if (ny2 < oy1) ny1 = oy1;
-             if (ny2 > oy2) ny2 = oy2;
-
-             glScissor(nx1, ny1, nx2-nx1, ny2-ny1);
-             ctx->scissor_upated = 1;
-          }
-     }
-   else
-      glScissor(x, y, width, height);
-}
-
-static void
-evgl_glViewport(GLint x, GLint y, GLsizei width, GLsizei height)
-{
-   int nx1, ny1, nx2, ny2;
-   int ox1, oy1, ox2, oy2;
-   Render_Engine_GL_Context *ctx = current_evgl_ctx;
-
-   if ((ctx) && (current_img_obj) && (!ctx->current_fbo) && (ctx->current_sfc->direct_fb))
-     {
-        // Check if it's fullscreen
-        if ( (current_img_obj->cur.geometry.w == current_img_obj->layer->evas->output.w) &&
-             (current_img_obj->cur.geometry.h == current_img_obj->layer->evas->output.h) &&
-             (current_img_obj->cur.geometry.x == 0) &&
-             (current_img_obj->cur.geometry.h == 0))
-          {
-             glViewport(x, y, width, height);
-          }
-        else
-          {
-             // Oringinal Dimension
-             ox1 = current_img_obj->cur.geometry.x;
-             oy1 = current_img_obj->layer->evas->output.h -
-                   current_img_obj->cur.geometry.y -
-                   current_img_obj->cur.geometry.h;
-             ox2 = ox1 + current_img_obj->cur.geometry.w;
-             oy2 = oy1 + current_img_obj->cur.geometry.h;
-
-             // New dimension
-             nx1 = ox1 + x;
-             ny1 = oy1 + y;
-             nx2 = nx1 + width;
-             ny2 = ny1 + height;
-
-             glEnable(GL_SCISSOR_TEST);
-             glScissor(ox1, oy1, ox2-ox1, oy2-oy1);
-             glViewport(nx1, ny1, nx2-nx1, ny2-ny1);
-          }
-     }
-   else
-      glViewport(x, y, width, height);
-}
-
-
-//----------------------------------------------//
 
 static void
 evgl_glClearDepthf(GLclampf depth)
@@ -3785,10 +3469,7 @@ evgl_evasglCreateImage(int target, void* buffer, int *attrib_list)
                                     attrib_list);
      }
    else
-     {
-        ERR("Invalid Engine... (Can't acccess EGL Display)\n");
-        return NULL;
-     }
+      ERR("Invalid Engine... (Can't acccess EGL Display)\n");
 }
 
 static void
@@ -3841,7 +3522,7 @@ eng_gl_api_get(void *data)
    ORD(glBufferData);
    ORD(glBufferSubData);
    ORD(glCheckFramebufferStatus);
-//   ORD(glClear);
+   ORD(glClear);
    ORD(glClearColor);
 //   ORD(glClearDepthf);
    ORD(glClearStencil);
@@ -3864,11 +3545,11 @@ eng_gl_api_get(void *data)
    ORD(glDepthMask);
 //   ORD(glDepthRangef);
    ORD(glDetachShader);
-//   ORD(glDisable);
+   ORD(glDisable);
    ORD(glDisableVertexAttribArray);
    ORD(glDrawArrays);
    ORD(glDrawElements);
-//   ORD(glEnable);
+   ORD(glEnable);
    ORD(glEnableVertexAttribArray);
    ORD(glFinish);
    ORD(glFlush);
@@ -3922,7 +3603,7 @@ eng_gl_api_get(void *data)
 //   ORD(glReleaseShaderCompiler);
    ORD(glRenderbufferStorage);
    ORD(glSampleCoverage);
-//   ORD(glScissor);
+   ORD(glScissor);
 //   ORD(glShaderBinary);
    ORD(glShaderSource);
    ORD(glStencilFunc);
@@ -3967,7 +3648,7 @@ eng_gl_api_get(void *data)
    ORD(glVertexAttrib4f);
    ORD(glVertexAttrib4fv);
    ORD(glVertexAttribPointer);
-//   ORD(glViewport);
+   ORD(glViewport);
 #undef ORD
 
 #define ORD(f) EVAS_API_OVERRIDE(f, &gl_funcs, glsym_)
@@ -4027,13 +3708,6 @@ eng_gl_api_get(void *data)
    ORD(glBindFramebuffer);
    ORD(glBindRenderbuffer);
 
-   ORD(glClear);
-   ORD(glEnable);
-   ORD(glDisable);
-   ORD(glReadPixels);
-   ORD(glScissor);
-   ORD(glViewport);
-
    // GLES2.0 API compat on top of desktop gl
    ORD(glClearDepthf);
    ORD(glDepthRangef);
@@ -4054,12 +3728,6 @@ eng_gl_api_get(void *data)
 #undef ORD
 
    return &gl_funcs;
-}
-
-static void
-eng_gl_img_obj_set(void *data __UNUSED__, void *image)
-{
-   current_img_obj = image;
 }
 
 static int
@@ -4271,7 +3939,6 @@ module_open(Evas_Module *em)
    ORD(gl_proc_address_get);
    ORD(gl_native_surface_get);
    ORD(gl_api_get);
-   ORD(gl_img_obj_set);
 
    ORD(image_load_error_get);
 
