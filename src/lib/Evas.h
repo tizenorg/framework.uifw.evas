@@ -5,6 +5,7 @@
 @date 2000-2011
 
 Please see the @ref authors page for contact details.
+
 @link Evas.h Evas API @endlink
 
 @section toc Table of Contents
@@ -2696,7 +2697,7 @@ EAPI int               evas_image_cache_get              (const Evas *e) EINA_WA
  *
  * @since 1.1
  */
-EAPI Eina_Bool         evas_image_max_size_get           (const Evas *e, int *maxw, int *maxh) EINA_ARG_NONNULL(1) EINA_PURE;
+EAPI Eina_Bool         evas_image_max_size_get           (const Evas *e, int *maxw, int *maxh) EINA_ARG_NONNULL(1);
 
 /**
  * @}
@@ -11268,7 +11269,7 @@ EAPI void                                evas_object_grid_size_set        (Evas_
  * @see evas_object_grid_size_set()
  * @since 1.1.0
  */
-EAPI void                                evas_object_grid_size_get        (const Evas_Object *o, int *w, int *h) EINA_ARG_NONNULL(1) EINA_PURE;
+EAPI void                                evas_object_grid_size_get        (const Evas_Object *o, int *w, int *h) EINA_ARG_NONNULL(1);
 
 /**
  * Sets the mirrored mode of the grid. In mirrored mode the grid items go
