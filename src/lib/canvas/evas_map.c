@@ -90,12 +90,16 @@ _evas_map_calc_map_geometry(Evas_Object *obj)
    p++;
    for (; p < p_end; p++)
      {
-        if (p->x < x1) x1 = p->x;
-        if (p->x > x2) x2 = p->x;
-        if (p->y < y1) y1 = p->y;
-        if (p->y > y2) y2 = p->y;
+	Evas_Coord x, y;
+	x = lround(p->x);
+	y = lround(p->y);
+
+        if (p->x < x1) x1 = x;
+        if (p->x > x2) x2 = x;
+        if (p->y < y1) y1 = y;
+        if (p->y > y2) y2 = y;
      }
-// this causes clip-out bugs now mapped objs canbe opaque!!!   
+// this causes clip-out bugs now mapped objs canbe opaque!!!
 //   // add 1 pixel of fuzz around the map region to ensure updates are correct
 //   x1 -= 1; y1 -= 1;
 //   x2 += 1; y2 += 1;
