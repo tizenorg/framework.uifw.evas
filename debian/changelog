@@ -1,3 +1,11 @@
+evas (1.1.0+svn.65865slp2+build03) unstable; urgency=low
+
+  * Upstream merge r66111
+  * Git: slp-scm.sec.samsung.net:slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.65865slp2+build03
+
+ -- Tae-Hwan Kim <the81.kim@samsung.com>  Fri, 23 Dec 2011 18:09:02 +0900
+
 evas (1.1.0+svn.65865slp2+build02) unstable; urgency=low
 
   * Package Upload
