@@ -301,12 +301,12 @@ struct _Evas
    struct {
       unsigned char  inside : 1;
       int            mouse_grabbed;
+      int            downs;
       DATA32         button;
       Evas_Coord     x, y;
       struct {
           Eina_List *in;
       } object;
-
    } pointer;
 
    struct  {
