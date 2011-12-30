@@ -1,3 +1,11 @@
+evas (1.1.0+svn.65865slp2+build04) unstable; urgency=low
+
+  * Repackaging
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.65865slp2+build04
+
+ -- ChunEon Park <chuneon.park@samsung.com>  Fri, 30 Dec 2011 15:06:07 +0900
+
 evas (1.1.0+svn.65865slp2+build03) unstable; urgency=low
 
   * Upstream merge r66111
