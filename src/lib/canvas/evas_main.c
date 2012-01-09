@@ -118,12 +118,16 @@ evas_new(void)
    e->output.render_method = RENDER_METHOD_INVALID;
    e->viewport.w = 1;
    e->viewport.h = 1;
+   e->framespace.x = 0;
+   e->framespace.y = 0;
+   e->framespace.w = 0;
+   e->framespace.h = 0;
    e->hinting = EVAS_FONT_HINTING_BYTECODE;
    e->name_hash = eina_hash_string_superfast_new(NULL);
    eina_clist_init(&e->calc_list);
    eina_clist_init(&e->calc_done);
 
-#define EVAS_ARRAY_SET(E, Array)		\
+#define EVAS_ARRAY_SET(E, Array) \
    eina_array_step_set(&E->Array, sizeof (E->Array), 4096);
 
    EVAS_ARRAY_SET(e, delete_objects);
@@ -406,6 +410,41 @@ evas_output_viewport_get(const Evas *e, Evas_Coord *x, Evas_Coord *y, Evas_Coord
    if (y) *y = e->viewport.y;
    if (w) *w = e->viewport.w;
    if (h) *h = e->viewport.h;
+}
+
+EAPI void 
+evas_output_framespace_set(Evas *e, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h) 
+{
+   MAGIC_CHECK(e, Evas, MAGIC_EVAS);
+   return;
+   MAGIC_CHECK_END();
+
+   if ((x == e->framespace.x) && (y == e->framespace.y) &&
+       (w == e->framespace.w) && (h == e->framespace.h)) return;
+   e->framespace.x = x;
+   e->framespace.y = y;
+   e->framespace.w = w;
+   e->framespace.h = h;
+   e->framespace.changed = 1;
+   e->output_validity++;
+   e->changed = 1;
+}
+
+EAPI void 
+evas_output_framespace_get(const Evas *e, Evas_Coord *x, Evas_Coord *y, Evas_Coord *w, Evas_Coord *h) 
+{
+   MAGIC_CHECK(e, Evas, MAGIC_EVAS);
+   if (x) *x = 0;
+   if (y) *y = 0;
+   if (w) *w = 0;
+   if (h) *h = 0;
+   return;
+   MAGIC_CHECK_END();
+
+   if (x) *x = e->framespace.x;
+   if (y) *y = e->framespace.y;
+   if (w) *w = e->framespace.w;
+   if (h) *h = e->framespace.h;
 }
 
 EAPI Evas_Coord

@@ -24,7 +24,8 @@ Evas_Image_Load_Func evas_image_load_generic_func =
   EINA_TRUE,
   evas_image_load_file_head_generic,
   evas_image_load_file_data_generic,
-  NULL
+  NULL,
+  EINA_FALSE
 };
 
 static Eina_Bool
@@ -117,7 +118,7 @@ _load(Image_Entry *ie, const char *file, const char *key, int *error, Eina_Bool 
    int read_data = 0;
    char *tmpfname = NULL, *shmfname = NULL;
    DATA32 *body;
-   FILE *f;
+   FILE *f = NULL;
 
    libdir = _evas_module_libdir_get();
    cmd_len = strlen(libdir);
@@ -125,6 +126,7 @@ _load(Image_Entry *ie, const char *file, const char *key, int *error, Eina_Bool 
    img_loader = alloca(cmd_len + 1);
    strcpy(img_loader, libdir);
    strcat(img_loader, loader);
+
    // params excluding file, key and loadopts
    cmd_len += 1024;
    cmd_len += strlen(file) * 2;
@@ -188,6 +190,8 @@ _load(Image_Entry *ie, const char *file, const char *key, int *error, Eina_Bool 
         // will interpret shell stuff and path hunt that will then exec the
         // program itself that will dynamically link that will again
         // parse the arguments and finally do something...
+        if (access(decoders[try_count], X_OK)) continue;
+
         strcpy(cmd, decoders[try_count]);
         strcat(cmd, " ");
         // filename first arg

@@ -320,6 +320,12 @@ struct _Evas
       unsigned char  changed : 1;
    } output;
 
+   struct 
+     {
+        Evas_Coord x, y, w, h;
+        Eina_Bool changed : 1;
+     } framespace;
+
    Eina_List        *damages;
    Eina_List        *obscures;
 
@@ -331,6 +337,7 @@ struct _Evas
 
    int               walking_list;
    int               events_frozen;
+   Evas_Event_Flags  default_event_flags;
 
    struct {
       Evas_Module *module;
@@ -608,6 +615,8 @@ struct _Evas_Object
    Eina_Bool                   changed_move_only : 1;
    Eina_Bool                   changed_nomove : 1;
    Eina_Bool                   del_ref : 1;
+
+   Eina_Bool                   is_frame : 1;
 };
 
 struct _Evas_Func_Node
@@ -772,6 +781,7 @@ struct _Evas_Func
    char *(*image_format_get)               (void *data, void *image);
    void (*image_colorspace_set)            (void *data, void *image, int cspace);
    int  (*image_colorspace_get)            (void *data, void *image);
+   Eina_Bool (*image_can_region_get)       (void *data, void *image);
    void (*image_mask_create)               (void *data, void *image);
    void *(*image_native_set)               (void *data, void *image, void *native);
    void *(*image_native_get)               (void *data, void *image);
@@ -861,6 +871,7 @@ struct _Evas_Image_Load_Func
   Eina_Bool (*file_head) (Image_Entry *ie, const char *file, const char *key, int *error);
   Eina_Bool (*file_data) (Image_Entry *ie, const char *file, const char *key, int *error);
   double    (*frame_duration) (Image_Entry *ie, const char *file, const int start, const int frame_num);
+  Eina_Bool do_region;
 };
 
 struct _Evas_Image_Save_Func

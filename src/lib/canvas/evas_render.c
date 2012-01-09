@@ -1139,7 +1139,7 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
                     }
                }
           }
-        if (surface == e->engine.data.output)
+//        if (surface == e->engine.data.output)
           e->engine.func->context_clip_clip(e->engine.data.output,
                                             e->engine.data.context,
                                             ecx, ecy, ecw, ech);
@@ -1360,6 +1360,8 @@ evas_render_updates_internal(Evas *e,
 
    RD("[--- RENDER EVAS (size: %ix%i)\n", e->viewport.w, e->viewport.h);
 
+   evas_event_callback_call(e, EVAS_CALLBACK_RENDER_PRE, NULL);
+   
    /* Check if the modified object mean recalculating every thing */
    if (!e->invalidate)
      _evas_render_check_pending_objects(&e->pending_objects, e);
@@ -1399,6 +1401,7 @@ evas_render_updates_internal(Evas *e,
         _evas_render_prev_cur_clip_cache_add(e, obj);
      }
    eina_array_clean(&e->restack_objects);
+
    /* phase 3. add exposes */
    EINA_LIST_FREE(e->damages, r)
      {
@@ -1406,7 +1409,20 @@ evas_render_updates_internal(Evas *e,
                                                 r->x, r->y, r->w, r->h);
         eina_rectangle_free(r);
      }
-   /* phase 4. output & viewport changes */
+
+   /* phase 4. framespace, output & viewport changes */
+   if (e->framespace.changed) 
+     {
+        int fx, fy, fw, fh;
+
+        fx = e->viewport.x - e->framespace.x;
+        fy = e->viewport.y - e->framespace.y;
+        fw = e->viewport.w + e->framespace.w;
+        fh = e->viewport.h + e->framespace.h;
+        e->engine.func->output_redraws_rect_add(e->engine.data.output, 
+                                                fx, fy, fw, fh);
+     }
+
    if (e->viewport.changed)
      {
         e->engine.func->output_redraws_rect_add(e->engine.data.output,
@@ -1431,6 +1447,7 @@ evas_render_updates_internal(Evas *e,
                                                 0, 0,
                                                 e->output.w, e->output.h);
      }
+
    /* phase 5. add obscures */
    EINA_LIST_FOREACH(e->obscures, ll, r)
      {
@@ -1562,13 +1579,6 @@ evas_render_updates_internal(Evas *e,
                             else
                               e->engine.func->context_mask_unset(e->engine.data.output,
                                                                  e->engine.data.context);
-                            if (obj->cur.clipper)
-                              e->engine.func->context_clip_set(e->engine.data.output,
-                                                               e->engine.data.context,
-                                                               x, y, w, h);
-                            else
-                              e->engine.func->context_clip_unset(e->engine.data.output,
-                                                                 e->engine.data.context);
 #if 1 /* FIXME: this can slow things down... figure out optimum... coverage */
                             for (j = offset; j < e->temporary_objects.count; ++j)
                               {
@@ -1671,6 +1681,7 @@ evas_render_updates_internal(Evas *e,
    e->changed = 0;
    e->viewport.changed = 0;
    e->output.changed = 0;
+   e->framespace.changed = 0;
    e->invalidate = 0;
 
    /* If their are some object to restack or some object to delete,
@@ -1686,6 +1697,8 @@ evas_render_updates_internal(Evas *e,
      }
 
    evas_module_clean();
+   
+   evas_event_callback_call(e, EVAS_CALLBACK_RENDER_POST, NULL);
 
    RD("---]\n");
 

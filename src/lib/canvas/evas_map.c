@@ -83,21 +83,19 @@ _evas_map_calc_map_geometry(Evas_Object *obj)
 
    p = obj->cur.map->points;
    p_end = p + obj->cur.map->count;
-   x1 = lround(p->x);
-   x2 = lround(p->x);
-   y1 = lround(p->y);
-   y2 = lround(p->y);
+   x1 = x2 = lround(p->x);
+   y1 = y2 = lround(p->y);
    p++;
    for (; p < p_end; p++)
      {
-	Evas_Coord x, y;
-	x = lround(p->x);
-	y = lround(p->y);
-
-        if (p->x < x1) x1 = x;
-        if (p->x > x2) x2 = x;
-        if (p->y < y1) y1 = y;
-        if (p->y > y2) y2 = y;
+        Evas_Coord x, y;
+        
+        x = lround(p->x);
+        y = lround(p->y);
+        if (x < x1) x1 = x;
+        if (x > x2) x2 = x;
+        if (y < y1) y1 = y;
+        if (y > y2) y2 = y;
      }
 // this causes clip-out bugs now mapped objs canbe opaque!!!
 //   // add 1 pixel of fuzz around the map region to ensure updates are correct

@@ -61,13 +61,13 @@
  * @subsection textblock_layout The layout system
  * @todo write @ref textblock_layout
  */
-#include <stdlib.h>
-
 #include "evas_common.h"
 #include "evas_private.h"
+#include <stdlib.h>
 
 #ifdef HAVE_LINEBREAK
 #include "linebreak.h"
+#include "wordbreak.h"
 #endif
 
 /* save typing */
@@ -78,12 +78,19 @@
 static const char o_type[] = "textblock";
 
 /* The char to be inserted instead of visible formats */
-#define EVAS_TEXTBLOCK_REPLACEMENT_CHAR 0xFFFC
+#define _REPLACEMENT_CHAR 0xFFFC
 #define _PARAGRAPH_SEPARATOR 0x2029
+#define _NEWLINE '\n'
+#define _TAB '\t'
+
+#define _REPLACEMENT_CHAR_UTF8 "\xEF\xBF\xBC"
+#define _PARAGRAPH_SEPARATOR_UTF8 "\xE2\x80\xA9"
+#define _NEWLINE_UTF8 "\n"
+#define _TAB_UTF8 "\t"
 #define EVAS_TEXTBLOCK_IS_VISIBLE_FORMAT_CHAR(ch) \
-   (((ch) == EVAS_TEXTBLOCK_REPLACEMENT_CHAR) || \
-    ((ch) == '\n') || \
-    ((ch) == '\t') || \
+   (((ch) == _REPLACEMENT_CHAR) || \
+    ((ch) ==  _NEWLINE) || \
+    ((ch) == _TAB) || \
     ((ch) == _PARAGRAPH_SEPARATOR))
 
 /* private struct for textblock object internal data */
@@ -99,6 +106,12 @@ typedef struct _Evas_Object_Textblock             Evas_Object_Textblock;
  * The structure used for finding style tags.
  */
 typedef struct _Evas_Object_Style_Tag             Evas_Object_Style_Tag;
+/**
+ * @internal
+ * @typedef Evas_Object_Style_Tag
+ * The structure used for finding style tags.
+ */
+typedef struct _Evas_Object_Style_Tag_Base        Evas_Object_Style_Tag_Base;
 /**
  * @internal
  * @typedef Evas_Object_Textblock_Node_Text
@@ -195,19 +208,24 @@ typedef struct _Evas_Object_Textblock_Format      Evas_Object_Textblock_Format;
  * Returns true if closer is the closer of base.
  */
 #define _FORMAT_IS_CLOSER_OF(base, closer, closer_len) \
-   (!strncmp(base + 1, closer, closer_len) && \
-    (!base[closer_len + 1] || \
-     (base[closer_len + 1] == '=') || \
-     _is_white(base[closer_len + 1])))
+   (!strncmp(base, closer, closer_len) && \
+    (!base[closer_len] || \
+     (base[closer_len] == '=') || \
+     _is_white(base[closer_len])))
 
 /*FIXME: document the structs and struct items. */
-struct _Evas_Object_Style_Tag
+struct _Evas_Object_Style_Tag_Base
 {
-   EINA_INLIST;
    char *tag;
    char *replace;
    size_t tag_len;
    size_t replace_len;
+};
+
+struct _Evas_Object_Style_Tag
+{
+   EINA_INLIST;
+   Evas_Object_Style_Tag_Base tag;
 };
 
 struct _Evas_Object_Textblock_Node_Text
@@ -229,10 +247,17 @@ struct _Evas_Object_Textblock_Node_Format
    Evas_Object_Textblock_Node_Text    *text_node;
    size_t                              offset;
    unsigned char                       anchor : 2;
+   Eina_Bool                           opener : 1;
+   Eina_Bool                           own_closer : 1;
    Eina_Bool                           visible : 1;
    Eina_Bool                           format_change : 1;
    Eina_Bool                           is_new : 1;
 };
+
+/* The default tags to use */
+static const Evas_Object_Style_Tag_Base default_tags[] = {
+          { "b", "+ font_weight=Bold", 1, 18 },
+          { "i", "+ font_style=Italic", 1, 19 }};
 
 #define ANCHOR_NONE 0
 #define ANCHOR_A 1
@@ -538,8 +563,8 @@ _style_replace(Evas_Textblock_Style *ts, const char *style_text)
 
 	tag = (Evas_Object_Style_Tag *)ts->tags;
 	ts->tags = (Evas_Object_Style_Tag *)eina_inlist_remove(EINA_INLIST_GET(ts->tags), EINA_INLIST_GET(tag));
-	free(tag->tag);
-	free(tag->replace);
+	free(tag->tag.tag);
+	free(tag->tag.replace);
 	free(tag);
      }
    ts->default_tag = NULL;
@@ -567,19 +592,38 @@ _style_clear(Evas_Textblock_Style *ts)
  * @return The replacement string found.
  */
 static inline const char *
-_style_match_tag(Evas_Textblock_Style *ts, const char *s, size_t tag_len, size_t *replace_len)
+_style_match_tag(const Evas_Textblock_Style *ts, const char *s, size_t tag_len, size_t *replace_len)
 {
    Evas_Object_Style_Tag *tag;
 
+   /* Try the style tags */
    EINA_INLIST_FOREACH(ts->tags, tag)
      {
-	if (tag->tag_len != tag_len) continue;
-	if (!strncmp(tag->tag, s, tag_len))
+	if (tag->tag.tag_len != tag_len) continue;
+	if (!strncmp(tag->tag.tag, s, tag_len))
 	  {
-	     *replace_len = tag->replace_len;
-	     return tag->replace;
+	     *replace_len = tag->tag.replace_len;
+	     return tag->tag.replace;
 	  }
      }
+
+   /* Try the default tags */
+   {
+      size_t i;
+      const Evas_Object_Style_Tag_Base *btag;
+      for (btag = default_tags, i = 0 ;
+            i < (sizeof(default_tags) / sizeof(default_tags[0])) ;
+            btag++, i++)
+        {
+           if (btag->tag_len != tag_len) continue;
+           if (!strncmp(btag->tag, s, tag_len))
+             {
+                *replace_len = btag->replace_len;
+                return btag->replace;
+             }
+        }
+   }
+
    *replace_len = 0;
    return NULL;
 }
@@ -1689,8 +1733,8 @@ _format_fill(Evas_Object *obj, Evas_Object_Textblock_Format *fmt, const char *st
 
    s = str;
 
-   /* get rid of anything +s or -s off the start of the string */
-   while ((*s == ' ') || (*s == '+') || (*s == '-')) s++;
+   /* get rid of any spaces at the start of the string */
+   while (*s == ' ') s++;
 
    while ((item = _format_parse(&s)))
      {
@@ -2131,7 +2175,6 @@ _layout_format_pop(Ctxt *c, const char *format)
    if ((c->format_stack) && (c->format_stack->next))
      {
         Eina_List *redo_nodes = NULL;
-        format++; /* Skip the '-' */
 
         /* Generic pop, should just pop. */
         if (((format[0] == ' ') && !format[1]) ||
@@ -2994,21 +3037,29 @@ _format_finalize(Evas_Object *obj, Evas_Object_Textblock_Format *fmt)
  * @def _IS_TAB(item)
  */
 #define _IS_TAB(item)                                             \
-   (!strcmp(item, "\t") || !strcmp(item, "\\t"))
+   (!strcmp(item, "tab") || !strcmp(item, "\t") || !strcmp(item, "\\t"))
 /**
  * @internal
  * Returns true if the item is a line spearator, false otherwise
  * @def _IS_LINE_SEPARATOR(item)
  */
 #define _IS_LINE_SEPARATOR(item)                                             \
-   (!strcmp(item, "\n") || !strcmp(item, "\\n"))
+   (!strcmp(item, "br") || !strcmp(item, "\n") || !strcmp(item, "\\n"))
 /**
  * @internal
  * Returns true if the item is a paragraph separator, false otherwise
  * @def _IS_PARAGRAPH_SEPARATOR(item)
  */
+#define _IS_PARAGRAPH_SEPARATOR_SIMPLE(item)                                 \
+   (!strcmp(item, "ps"))
+/**
+ * @internal
+ * Returns true if the item is a paragraph separator, false otherwise
+ * takes legacy mode into account.
+ * @def _IS_PARAGRAPH_SEPARATOR(item)
+ */
 #define _IS_PARAGRAPH_SEPARATOR(o, item)                                     \
-   (!strcmp(item, "ps") ||                                                   \
+   (_IS_PARAGRAPH_SEPARATOR_SIMPLE(item) ||                                  \
     (o->legacy_newline && _IS_LINE_SEPARATOR(item))) /* Paragraph separator */
 
 /**
@@ -3041,7 +3092,7 @@ _layout_do_format(const Evas_Object *obj __UNUSED__, Ctxt *c,
    int handled = 0;
 
    s = n->format;
-   if (!strncmp(s, "+ item ", 7))
+   if (!strncmp(s, "item ", 5))
      {
         // one of:
         //   item size=20x10 href=name
@@ -3133,16 +3184,14 @@ _layout_do_format(const Evas_Object *obj __UNUSED__, Ctxt *c,
    if (!handled)
      {
         Eina_Bool push_fmt = EINA_FALSE;
-        if (s[0] == '+')
+        if (n->opener && !n->own_closer)
           {
              fmt = _layout_format_push(c, fmt, n);
-             s++;
              push_fmt = EINA_TRUE;
           }
-        else if (s[0] == '-')
+        else if (!n->opener)
           {
              fmt = _layout_format_pop(c, n->orig_format);
-             s++;
           }
         while ((item = _format_parse(&s)))
           {
@@ -3166,7 +3215,7 @@ _layout_do_format(const Evas_Object *obj __UNUSED__, Ctxt *c,
 
                        fi->parent.w = fi->parent.adv = 0;
                     }
-                  else if ((!strcmp(item, "\t")) || (!strcmp(item, "\\t")))
+                  else if (_IS_TAB(item))
                     {
                        Evas_Object_Textblock_Format_Item *fi;
 
@@ -3503,7 +3552,7 @@ _layout_paragraph_reorder_lines(Evas_Object_Textblock_Paragraph *par)
 
 static void
 _layout_paragraph_render(Evas_Object_Textblock *o,
-      Evas_Object_Textblock_Paragraph *par)
+			 Evas_Object_Textblock_Paragraph *par)
 {
    if (par->rendered)
       return;
@@ -3521,6 +3570,8 @@ _layout_paragraph_render(Evas_Object_Textblock *o,
              par->bidi_props = NULL;
           }
      }
+#else
+   (void) o;
 #endif
 }
 
@@ -3844,18 +3895,16 @@ _format_changes_invalidate_text_nodes(Ctxt *c)
              const char *fstr = fnode->orig_format;
              /* balance < 0 means we gave up and everything should be
               * invalidated */
-             if (*fstr == '+')
+             if (fnode->opener && !fnode->own_closer)
                {
                   balance++;
                   if (!fstack)
                      start_n = fnode->text_node;
                   fstack = eina_list_prepend(fstack, fnode);
                }
-             else if (*fstr == '-')
+             else if (!fnode->opener)
                {
                   size_t fstr_len;
-                  /* Skip the '-' */
-                  fstr++;
                   fstr_len = strlen(fstr);
                   /* Generic popper, just pop */
                   if (((fstr[0] == ' ') && !fstr[1]) || !fstr[0])
@@ -4429,12 +4478,12 @@ evas_textblock_style_set(Evas_Textblock_Style *ts, const char *text)
           {
              if (!key_start)
                {
-                  if (!isspace(*p))
+		 if (!isspace((unsigned char)(*p)))
                     key_start = p;
                }
              else if (!key_stop)
                {
-                  if ((*p == '=') || (isspace(*p)))
+		 if ((*p == '=') || (isspace((unsigned char)(*p))))
                     key_stop = p;
                }
              else if (!val_start)
@@ -4479,10 +4528,10 @@ evas_textblock_style_set(Evas_Textblock_Style *ts, const char *text)
                             tag = calloc(1, sizeof(Evas_Object_Style_Tag));
                             if (tag)
                               {
-                                 tag->tag = tags;
-                                 tag->replace = replaces;
-                                 tag->tag_len = tag_len;
-                                 tag->replace_len = replace_len;
+                                 tag->tag.tag = tags;
+                                 tag->tag.replace = replaces;
+                                 tag->tag.tag_len = tag_len;
+                                 tag->tag.replace_len = replace_len;
                                  ts->tags = (Evas_Object_Style_Tag *)eina_inlist_append(EINA_INLIST_GET(ts->tags), EINA_INLIST_GET(tag));
                               }
                             else
@@ -4723,7 +4772,7 @@ _escaped_char_get(const char *s, const char *s_end)
         int base = 10;
         s += 2; /* Skip "&#" */
 
-        if (tolower(*s) == 'x')
+        if (tolower((unsigned char)(*s)) == 'x')
           {
              s++;
              base = 16;
@@ -4953,7 +5002,8 @@ evas_object_textblock_text_markup_prepend(Evas_Textblock_Cursor *cur, const char
                     }
                }
              /* Unicode object replcament char */
-             else if (!strncmp("\xEF\xBF\xBC", p, 3))
+             else if (!strncmp(_REPLACEMENT_CHAR_UTF8, p,
+                      strlen(_REPLACEMENT_CHAR_UTF8)))
                {
                   /*FIXME: currently just remove them, maybe do something
                    * fancier in the future, atm it breaks if this char
@@ -4979,19 +5029,19 @@ evas_object_textblock_text_markup_prepend(Evas_Textblock_Cursor *cur, const char
  * @param fnode the format node to process.
  */
 static void
-_markup_get_format_append(Evas_Object_Textblock *o __UNUSED__, Eina_Strbuf *txt, Evas_Object_Textblock_Node_Format *fnode)
+_markup_get_format_append(Eina_Strbuf *txt, Evas_Object_Textblock_Node_Format *fnode)
 {
    eina_strbuf_append_char(txt, '<');
      {
         const char *s;
-        int pop = 0;
 
         // FIXME: need to escape
         s = fnode->orig_format;
-        if (*s == '-') pop = 1;
-        while ((*s == ' ') || (*s == '+') || (*s == '-')) s++;
-        if (pop) eina_strbuf_append_char(txt, '/');
+        if (!fnode->opener && !fnode->own_closer)
+           eina_strbuf_append_char(txt, '/');
         eina_strbuf_append(txt, s);
+        if (fnode->own_closer)
+           eina_strbuf_append_char(txt, '/');
      }
    eina_strbuf_append_char(txt, '>');
 }
@@ -5061,7 +5111,7 @@ evas_object_textblock_text_markup_get(const Evas_Object *obj)
              tmp_ch = text[off];
              text[off] = 0; /* Null terminate the part of the string */
              _markup_get_text_append(txt, text);
-             _markup_get_format_append(o, txt, fnode);
+             _markup_get_format_append(txt, fnode);
              text[off] = tmp_ch; /* Restore the char */
              text += off;
              if (fnode->visible)
@@ -5084,6 +5134,190 @@ evas_object_textblock_text_markup_get(const Evas_Object *obj)
    o->markup_text = eina_strbuf_string_steal(txt);
    eina_strbuf_free(txt);
    return o->markup_text;
+}
+
+EAPI char *
+evas_textblock_text_markup_to_utf8(const Evas_Object *obj, const char *text)
+{
+   /* FIXME: Redundant and awful, should be merged with markup_prepend */
+   Eina_Strbuf *sbuf;
+   char *s, *p, *ret;
+   char *tag_start, *tag_end, *esc_start, *esc_end;
+
+   if (!text) return NULL;
+
+
+   tag_start = tag_end = esc_start = esc_end = NULL;
+   sbuf = eina_strbuf_new();
+   p = (char *)text;
+   s = p;
+   /* This loop goes through all of the mark up text until it finds format
+    * tags, escape sequences or the terminating NULL. When it finds either
+    * of those, it appends the text found up until that point to the textblock
+    * proccesses whatever found. It repeats itself until the termainating
+    * NULL is reached. */
+   for (;;)
+     {
+        /* If we got to the end of string or just finished/started tag
+         * or escape sequence handling. */
+        if ((*p == 0) ||
+              (tag_end) || (esc_end) ||
+              (tag_start) || (esc_start))
+          {
+             if (tag_end)
+               {
+                  /* If we reached to a tag ending, analyze the tag */
+                  char *ttag;
+                  size_t ttag_len;
+
+                  tag_start++; /* Skip the < */
+                  tag_end--; /* Skip the > */
+                  if ((tag_end > tag_start) && (*(tag_end - 1) == '/'))
+                    {
+                       tag_end --; /* Skip the terminating '/' */
+                       while (*(tag_end - 1) == ' ')
+                         tag_end--; /* skip trailing ' ' */
+                    }
+
+                  ttag_len = tag_end - tag_start;
+
+                  ttag = malloc(ttag_len + 1);
+                  if (ttag)
+                    {
+                       const char *match = NULL;
+                       size_t replace_len;
+                       memcpy(ttag, tag_start, ttag_len);
+                       ttag[ttag_len] = 0;
+
+
+                       if (obj)
+                         {
+                            match = _style_match_tag(
+                                  evas_object_textblock_style_get(obj),
+                                  ttag, ttag_len, &replace_len);
+                         }
+
+                       if (!match) match = ttag;
+
+                       if (_IS_PARAGRAPH_SEPARATOR_SIMPLE(match))
+                          eina_strbuf_append(sbuf, _PARAGRAPH_SEPARATOR_UTF8);
+                       else if (_IS_LINE_SEPARATOR(match))
+                          eina_strbuf_append(sbuf, _NEWLINE_UTF8);
+                       else if (_IS_TAB(match))
+                          eina_strbuf_append(sbuf, _TAB_UTF8);
+                       else if (!strncmp(match, "item", 4))
+                          eina_strbuf_append(sbuf, _REPLACEMENT_CHAR_UTF8);
+
+                       free(ttag);
+                    }
+                  tag_start = tag_end = NULL;
+               }
+             else if (esc_end)
+               {
+                  const char *escape;
+
+                  escape = _escaped_char_get(esc_start, esc_end + 1);
+                  eina_strbuf_append(sbuf, escape);
+                  esc_start = esc_end = NULL;
+               }
+             else if (*p == 0)
+               {
+                  eina_strbuf_append_length(sbuf, s, p - s);
+                  s = NULL;
+               }
+             if (*p == 0)
+                break;
+          }
+        if (*p == '<')
+          {
+             if (!esc_start)
+               {
+                  /* Append the text prior to this to the textblock and
+                   * mark the start of the tag */
+                  tag_start = p;
+                  tag_end = NULL;
+                  eina_strbuf_append_length(sbuf, s, p - s);
+                  s = NULL;
+               }
+          }
+        else if (*p == '>')
+          {
+             if (tag_start)
+               {
+                  tag_end = p + 1;
+                  s = p + 1;
+               }
+          }
+        else if (*p == '&')
+          {
+             if (!tag_start)
+               {
+                  /* Append the text prior to this to the textblock and mark
+                   * the start of the escape sequence */
+                  esc_start = p;
+                  esc_end = NULL;
+                  eina_strbuf_append_length(sbuf, s, p - s);
+                  s = NULL;
+               }
+          }
+        else if (*p == ';')
+          {
+             if (esc_start)
+               {
+                  esc_end = p;
+                  s = p + 1;
+               }
+          }
+        p++;
+     }
+
+   ret = eina_strbuf_string_steal(sbuf);
+   eina_strbuf_free(sbuf);
+   return ret;
+}
+
+EAPI char *
+evas_textblock_text_utf8_to_markup(const Evas_Object *obj, const char *text)
+{
+   Eina_Strbuf *sbuf;
+   char *str = NULL;
+   int ch, pos = 0, pos2 = 0;
+
+   (void) obj;
+
+   if (!text) return NULL;
+
+   sbuf = eina_strbuf_new();
+
+   for (;;)
+     {
+        pos = pos2;
+        pos2 = evas_string_char_next_get(text, pos2, &ch);
+        if ((ch <= 0) || (pos2 <= 0)) break;
+
+        if (ch == _NEWLINE)
+           eina_strbuf_append(sbuf, "<br/>");
+        else if (ch == _TAB)
+           eina_strbuf_append(sbuf, "<tab/>");
+        else if (ch == '<')
+           eina_strbuf_append(sbuf, "&lt;");
+        else if (ch == '>')
+           eina_strbuf_append(sbuf, "&gt;");
+        else if (ch == '&')
+           eina_strbuf_append(sbuf, "&amp;");
+        else if (ch == _PARAGRAPH_SEPARATOR)
+           eina_strbuf_append(sbuf, "<ps/>");
+        else if (ch == _REPLACEMENT_CHAR)
+           eina_strbuf_append(sbuf, "&#xfffc;");
+        else
+          {
+             eina_strbuf_append_length(sbuf, text + pos, pos2 - pos);
+          }
+     }
+   str = eina_strbuf_string_steal(sbuf);
+   eina_strbuf_free(sbuf);
+   return str;
+
 }
 
 /* cursors */
@@ -5453,15 +5687,13 @@ evas_textblock_node_format_remove_pair(Evas_Object *obj,
      {
         const char *fstr = fmt->orig_format;
 
-        if (fstr && (*fstr == '+'))
+        if (fmt->opener && !fmt->own_closer)
           {
              fstack = eina_list_prepend(fstack, fmt);
           }
-        else if (fstr && (*fstr == '-'))
+        else if (fstr && !fmt->opener)
           {
              size_t fstr_len;
-             /* Skip the '-' */
-             fstr++;
              fstr_len = strlen(fstr);
              /* Generic popper, just pop */
              if (((fstr[0] == ' ') && !fstr[1]) || !fstr[0])
@@ -5708,6 +5940,111 @@ evas_textblock_cursor_format_prev(Evas_Textblock_Cursor *cur)
    return EINA_FALSE;
 }
 
+#ifdef HAVE_LINEBREAK
+
+/* BREAK_AFTER: true if we can break after the current char.
+ * Both macros assume str[i] is not the terminating nul */
+#define BREAK_AFTER(i) \
+   (breaks[i] == WORDBREAK_BREAK)
+
+#else
+
+#define BREAK_AFTER(i) \
+   ((!str[i + 1]) || \
+    (_is_white(str[i]) && !_is_white(str[i + 1])) || \
+    (!_is_white(str[i]) && _is_white(str[i + 1])))
+
+#endif
+
+EAPI Eina_Bool
+evas_textblock_cursor_word_start(Evas_Textblock_Cursor *cur)
+{
+   const Eina_Unicode *text;
+   size_t i;
+#ifdef HAVE_LINEBREAK
+   char *breaks;
+#endif
+
+   if (!cur) return EINA_FALSE;
+   if (!cur->node) return EINA_FALSE;
+
+   text = eina_ustrbuf_string_get(cur->node->unicode);
+
+#ifdef HAVE_LINEBREAK
+     {
+        const char *lang = ""; /* FIXME: get lang */
+        size_t len = eina_ustrbuf_length_get(cur->node->unicode);
+        breaks = malloc(len);
+        set_wordbreaks_utf32((const utf32_t *) text, len, lang, breaks);
+     }
+#endif
+
+   i = cur->pos;
+
+   /* Skip the first one. This ensures we don't point to the nul, and also
+    * we just don't care about it anyway. */
+   if (i > 0) i--;
+
+   for ( ; i > 0 ; i--)
+     {
+        if (BREAK_AFTER(i))
+          {
+             /* Advance to the current char */
+             i++;
+             break;
+          }
+     }
+
+   cur->pos = i;
+
+#ifdef HAVE_LINEBREAK
+   free(breaks);
+#endif
+   return EINA_TRUE;
+}
+
+EAPI Eina_Bool
+evas_textblock_cursor_word_end(Evas_Textblock_Cursor *cur)
+{
+   const Eina_Unicode *text;
+   size_t i;
+#ifdef HAVE_LINEBREAK
+   char *breaks;
+#endif
+
+   if (!cur) return EINA_FALSE;
+   if (!cur->node) return EINA_FALSE;
+
+   text = eina_ustrbuf_string_get(cur->node->unicode);
+
+#ifdef HAVE_LINEBREAK
+     {
+        const char *lang = ""; /* FIXME: get lang */
+        size_t len = eina_ustrbuf_length_get(cur->node->unicode);
+        breaks = malloc(len);
+        set_wordbreaks_utf32((const utf32_t *) text, len, lang, breaks);
+     }
+#endif
+
+   i = cur->pos;
+
+   for ( ; text[i] ; i++)
+     {
+        if (BREAK_AFTER(i))
+          {
+             /* This is the one to break after. */
+             break;
+          }
+     }
+
+   cur->pos = i;
+
+#ifdef HAVE_LINEBREAK
+   free(breaks);
+#endif
+   return EINA_TRUE;;
+}
+
 EAPI Eina_Bool
 evas_textblock_cursor_char_next(Evas_Textblock_Cursor *cur)
 {
@@ -5887,10 +6224,9 @@ _evas_textblock_format_is_visible(Evas_Object_Textblock_Node_Format *fnode,
    fnode->anchor = ANCHOR_NONE;
    if (!s) return;
 
-   if (s[0] == '+' || s[0] == '-')
+   if (!fnode->own_closer)
      {
-        is_opener = (s[0] == '+');
-        s++;
+        is_opener = fnode->opener;
         fnode->format_change = EINA_TRUE;
      }
 
@@ -5902,6 +6238,8 @@ _evas_textblock_format_is_visible(Evas_Object_Textblock_Node_Format *fnode,
          * closing */
         if ((!strncmp(item, "\n", itlen) || !strncmp(item, "\\n", itlen)) ||
               (!strncmp(item, "\t", itlen) || !strncmp(item, "\\t", itlen)) ||
+              (!strncmp(item, "br", itlen) && (itlen >= 2)) ||
+              (!strncmp(item, "tab", itlen) && (itlen >= 3)) ||
               (!strncmp(item, "ps", itlen) && (itlen >= 2)) ||
               (!strncmp(item, "item", itlen) && (itlen >= 4) && is_opener))
           {
@@ -5986,19 +6324,17 @@ _evas_textblock_node_format_remove_matching(Evas_Object_Textblock *o,
           }
 
 
-        if (fstr && (*fstr == '+'))
+        if (fmt->opener && !fmt->own_closer)
           {
              formats = eina_list_prepend(formats, fmt);
           }
-        else if (fstr && (*fstr == '-'))
+        else if (fstr && !fmt->opener)
           {
              Evas_Object_Textblock_Node_Format *fnode;
              size_t fstr_len;
-             /* Skip the '-' */
-             fstr++;
              fstr_len = strlen(fstr);
-             /* Generic popper, just pop */
-             if (((fstr[0] == ' ') && !fstr[1]) || !fstr[0])
+             /* Generic popper, just pop (if there's anything to pop). */
+             if (formats && (((fstr[0] == ' ') && !fstr[1]) || !fstr[0]))
                {
                   fnode = eina_list_data_get(formats);
                   formats = eina_list_remove_list(formats, formats);
@@ -6855,6 +7191,7 @@ _evas_textblock_node_format_new(Evas_Object_Textblock *o, const char *_format)
 {
    Evas_Object_Textblock_Node_Format *n;
    const char *format = _format;
+   const char *pre_stripped_format = NULL;
 
    n = calloc(1, sizeof(Evas_Object_Textblock_Node_Format));
    /* Create orig_format and format */
@@ -6866,62 +7203,80 @@ _evas_textblock_node_format_new(Evas_Object_Textblock *o, const char *_format)
 
         format++; /* Advance after '<' */
         format_len = strlen(format);
-        if (format[format_len - 1] == '>')
-           format_len--; /* We don't care about '>' */
+        if ((format_len > 0) && format[format_len - 1] == '>')
+          {
+             format_len--; /* We don't care about '>' */
+             /* Check if it closes itself. Skip the </> case. */
+             if ((format_len > 1) && format[format_len - 1] == '/')
+               {
+                  format_len--; /* We don't care about '/' */
+                  n->own_closer = EINA_TRUE;
+               }
+          }
 
         match = _style_match_tag(o->style, format, format_len, &replace_len);
         if (match)
           {
-             if ((match[0] == '+') || (match[0] == '-'))
+             if (match[0] != '-')
                {
-                  char *norm_format;
-                  norm_format = malloc(format_len + 2 + 1);
-                  memcpy(norm_format, match, 2);
-                  memcpy(norm_format + 2, format, format_len);
-                  norm_format[format_len + 2] = '\0';
-                  n->orig_format =
-                     eina_stringshare_add_length(norm_format, format_len + 2);
-                  free(norm_format);
+                  n->opener = EINA_TRUE;
+                  if (match[0] != '+')
+                    {
+                       n->own_closer = EINA_TRUE;
+                    }
                }
-             else
-               {
-                  n->orig_format =
-                     eina_stringshare_add_length(format, format_len);
-               }
-             n->format = eina_stringshare_add(match);
+
+             pre_stripped_format = match;
           }
         else
           {
-             char *norm_format;
-
-             norm_format = malloc(format_len + 2 + 1);
-             if (norm_format)
+             if (format[0] == '/')
                {
-                  if (format[0] == '/')
-                    {
-                       memcpy(norm_format, "- ", 2);
-                       memcpy(norm_format + 2, format + 1, format_len - 1);
-                       norm_format[format_len + 2 - 1] = '\0';
-                    }
-                  else
-                    {
-                       memcpy(norm_format, "+ ", 2);
-                       memcpy(norm_format + 2, format, format_len);
-                       norm_format[format_len + 2] = '\0';
-                    }
-                  n->orig_format = eina_stringshare_add(norm_format);
-                  free(norm_format);
+                  format++;
+                  format_len--;
                }
-             n->format = eina_stringshare_ref(n->orig_format);
+             else
+               {
+                  n->opener = EINA_TRUE;
+               }
           }
+
+        n->orig_format = eina_stringshare_add_length(format, format_len);
+
+        if (!pre_stripped_format)
+           pre_stripped_format = n->orig_format;
      }
    /* Just use as is, it's a special format. */
    else
      {
-        n->orig_format = eina_stringshare_add(format);
-        n->format = eina_stringshare_ref(n->orig_format);
+        const char *tmp = format;
+        if (format[0] != '-')
+          {
+             n->opener = EINA_TRUE;
+             if (format[0] != '+')
+               {
+                  n->own_closer = EINA_TRUE;
+               }
+          }
+        if ((*tmp == '+') || (*tmp == '-'))
+          {
+             tmp++;
+             while (*tmp == ' ') tmp++;
+          }
+        n->orig_format = eina_stringshare_add(tmp);
+        pre_stripped_format = n->orig_format;
      }
 
+   /* Strip format */
+     {
+        const char *tmp = pre_stripped_format;
+        if ((*tmp == '+') || (*tmp == '-'))
+          {
+             tmp++;
+             while (*tmp == ' ') tmp++;
+          }
+        n->format = eina_stringshare_add(tmp);
+     }
    format = n->format;
 
    _evas_textblock_format_is_visible(n, format);
@@ -7051,11 +7406,11 @@ evas_textblock_cursor_format_append(Evas_Textblock_Cursor *cur, const char *form
         if (_IS_PARAGRAPH_SEPARATOR(o, format))
            insert_char = _PARAGRAPH_SEPARATOR;
         else if (_IS_LINE_SEPARATOR(format))
-           insert_char = '\n';
+           insert_char = _NEWLINE;
         else if (_IS_TAB(format))
-           insert_char = '\t';
+           insert_char = _TAB;
         else
-           insert_char = EVAS_TEXTBLOCK_REPLACEMENT_CHAR;
+           insert_char = _REPLACEMENT_CHAR;
 
         eina_ustrbuf_insert_char(cur->node->unicode, insert_char, cur->pos);
 
@@ -7142,7 +7497,7 @@ evas_textblock_cursor_char_delete(Evas_Textblock_Cursor *cur)
                   should_merge = EINA_TRUE;
                }
              /* If a singnular, mark as invisible, so we'll delete it. */
-             if (!format || ((*format != '+') && (*format != '-')))
+             if (!format || last_fmt->own_closer)
                {
                   last_fmt->visible = EINA_FALSE;
                }
@@ -7271,60 +7626,40 @@ evas_textblock_cursor_range_delete(Evas_Textblock_Cursor *cur1, Evas_Textblock_C
 EAPI char *
 evas_textblock_cursor_content_get(const Evas_Textblock_Cursor *cur)
 {
-   const Eina_Unicode *ustr;
-   Eina_Unicode buf[2];
-   char *s;
    if (!cur || !cur->node) return NULL;
    if (evas_textblock_cursor_format_is_visible_get(cur))
      {
-        size_t len;
-        const char *fstr;
+        Eina_Strbuf *buf;
+        Evas_Object_Textblock_Node_Format *fnode;
         char *ret;
-        int pop = 0;
-        fstr  = evas_textblock_node_format_text_get(
-              _evas_textblock_node_visible_at_pos_get(
-                 evas_textblock_cursor_format_get(cur)));
+        fnode = _evas_textblock_node_visible_at_pos_get(
+                 evas_textblock_cursor_format_get(cur));
 
-        if (!fstr)
-           return NULL;
-
-        if (*fstr == '-') pop = 1;
-        while ((*fstr == ' ') || (*fstr == '+') || (*fstr == '-')) fstr++;
-        len = strlen(fstr);
-
-          {
-             char *tmp;
-             if (pop)
-               {
-                  ret = tmp = malloc(len + 3 + 1); /* </> and the null */
-                  memcpy(tmp, "</", 2);
-                  tmp += 2;
-               }
-             else
-               {
-                  ret = tmp = malloc(len + 2 + 1); /* <> and the null */
-                  *tmp = '<';
-                  tmp++;
-               }
-             memcpy(tmp, fstr, len);
-             memcpy(tmp + len, ">", 2); /* Including the null */
-          }
+        buf = eina_strbuf_new();
+        _markup_get_format_append(buf, fnode);
+        ret = eina_strbuf_string_steal(buf);
+        eina_strbuf_free(buf);
 
         return ret;
      }
+   else
+     {
+        const Eina_Unicode *ustr;
+        Eina_Unicode buf[2];
+        char *s;
 
-   ustr = eina_ustrbuf_string_get(cur->node->unicode);
-   buf[0] = ustr[cur->pos];
-   buf[1] = 0;
-   s = eina_unicode_unicode_to_utf8(buf, NULL);
+        ustr = eina_ustrbuf_string_get(cur->node->unicode);
+        buf[0] = ustr[cur->pos];
+        buf[1] = 0;
+        s = eina_unicode_unicode_to_utf8(buf, NULL);
 
-   return s;
+        return s;
+     }
 }
 
 static char *
 _evas_textblock_cursor_range_text_markup_get(const Evas_Textblock_Cursor *cur1, const Evas_Textblock_Cursor *_cur2)
 {
-   Evas_Object_Textblock *o;
    Evas_Object_Textblock_Node_Text *tnode;
    Eina_Strbuf *buf;
    Evas_Textblock_Cursor *cur2;
@@ -7333,7 +7668,6 @@ _evas_textblock_cursor_range_text_markup_get(const Evas_Textblock_Cursor *cur1, 
    if (!cur1 || !cur1->node) return NULL;
    if (!_cur2 || !_cur2->node) return NULL;
    if (cur1->obj != _cur2->obj) return NULL;
-   o = (Evas_Object_Textblock *)(cur1->obj->object_data);
    if (evas_textblock_cursor_compare(cur1, _cur2) > 0)
      {
 	const Evas_Textblock_Cursor *tc;
@@ -7401,7 +7735,7 @@ _evas_textblock_cursor_range_text_markup_get(const Evas_Textblock_Cursor *cur1, 
              tmp_ch = text[off];
              text[off] = 0; /* Null terminate the part of the string */
              _markup_get_text_append(buf, text);
-             _markup_get_format_append(o, buf, fnode);
+             _markup_get_format_append(buf, fnode);
              text[off] = tmp_ch; /* Restore the char */
              text += off;
              if (fnode->visible)
@@ -7623,8 +7957,27 @@ evas_textblock_cursor_format_get(const Evas_Textblock_Cursor *cur)
 EAPI const char *
 evas_textblock_node_format_text_get(const Evas_Object_Textblock_Node_Format *fmt)
 {
+   static char *ret = NULL;
+   char *tmp;
+
    if (!fmt) return NULL;
-   return fmt->orig_format;
+
+   if (ret) free(ret);
+   ret = malloc(strlen(fmt->orig_format) + 2 + 1);
+   tmp = ret;
+
+   if (fmt->opener && !fmt->own_closer)
+     {
+        *(tmp++) = '+';
+        *(tmp++) = ' ';
+     }
+   else if (!fmt->opener)
+     {
+        *(tmp++) = '-';
+        *(tmp++) = ' ';
+     }
+   strcpy(tmp, fmt->orig_format);
+   return ret;
 }
 
 EAPI void
@@ -8788,6 +9141,7 @@ evas_object_textblock_init(Evas_Object *obj)
      {
         linebreak_init = EINA_TRUE;
         init_linebreak();
+        init_wordbreak();
      }
 #endif
 

@@ -503,7 +503,7 @@
 
         * JPEG encode and decode in eet now uses ISLOW (not IFAST) due to
         noticable quality losses in the chase for speed. It will use
-        IFAST for quality less than 60 when encoding    
+        IFAST for quality less than 60 when encoding
 
 2011-11-20  Carsten Haitzler (The Rasterman)
 
@@ -519,3 +519,107 @@
 2011-12-02 Carsten Haitzler (The Rasterman)
 
         1.1.0 release
+
+2011-12-07  Carsten Haitzler (The Rasterman)
+
+        * Fix build if gcc too old - if immintrin.h doesn't exist,
+        don't enable SSE3.
+
+2011-12-08  Tom Hacohen (TAsn)
+
+	* Textblock markup: Support self closing format tags, i.e <br/>.
+	You should use <br/> and not <br>. The latter still works but it's use
+	is discouraged.
+	* Textblock: Added evas_textblock_text_markup_to_utf8.
+	This lets you convert textblock markup to plain text.
+	This converts formats and everything correctly.
+
+2011-12-12  Carsten Haitzler (The Rasterman)
+
+        * Fix rounding error in map clip bounds calculation
+
+2011-12-12  Tom Hacohen (TAsn)
+
+	* Textblock: Added evas_textblock_cursor_word_start/end.
+	Those functions let you jump to the start/end of the word under the
+	cursor.
+
+2011-12-13  Carsten Haitzler (The Rasterman)
+
+        * Fix grab count negative values if you do weird combinations of
+        press and release with multiple fingers or multiple mouse
+        buttons.
+
+2011-12-14  Cedric BAIL
+
+	* Use Eina_File when loading bmp, ico, pmaps and wbmp files.
+	* Fix potential race condition in wbmp loader code.
+
+2011-12-14  Tom Hacohen (TAsn)
+
+	* Textblock: Made "br" and "tab" default tags for newline and tab.
+	* Textblock: Added "b" and "i" as default tags that can be overridden
+	by style, and added the infra to support this.
+	* Textblock: Added evas_textblock_text_utf8_to_markup
+
+2011-12-16  Carsten Haitzler (The Rasterman)
+
+        * Fix clip bug that shows up in buffer engine
+        * Fix SSE3 routines with buggy output - disable
+        * Add new api to set and get default event flags.
+
+2011-12-19  Carsten Haitzler (The Rasterman)
+
+        * Add new canvas events called just before and after evas rendering
+        starts and stops.
+
+2011-12-21  ChunEon Park (Hermet)
+
+	* Events: repeat events should not be affected by children.
+	Fixed to object passes events to the next object in the same layer
+	if the repeat_events is enabled.
+
+2011-12-23 Sanghee Park
+
+        * Extend pixman support to allow other operations to use
+          pixman when doing software rendering. On x86 this isn't useful
+          but on ARMv7 with NEON pixman happens to do better with image
+          blending and nearest scale blending.
+        * Add tiled rotator for 32bit display as an option.
+
+2011-12-26  Christopher Michael (devilhorns)
+
+        * Add functions to get/set if an object is a 'frame_object'
+
+2011-12-27  Carsten Haitzler (The Rasterman)
+
+        * Add feature to get number of pressed devices (help fix
+          ecore-evas bug).
+
+2011-12-28  Carsten Haitzler (The Rasterman)
+
+        * Add recursive name find function - evas_object_name_child_find()
+
+2012-01-01  Carsten Haitzler (The Rasterman)
+
+        * Improve CPU use on nvidia drivers when vsyncing. It was
+          actually glXWaitGL() spinning, not glXSwapBuffers(), so this
+          points to a bug in the nvidia drivers where the sleep logic
+          in glXSwapBuffers() hasn't been transferred to glXWaitGL().
+          Avoid use of glXWaitGL() to avoid the nvidia bug.
+
+2012-01-02  Cedric Bail
+
+	* Fix unitialized value when running generic loader without any
+	application found to open the file.
+	* Use Eina_File when openning XPM file.
+
+2012-01-03  Cedric Bail
+
+	* Use Eina_File for PSD file to.
+
+2012-01-06  Sung W. Park (sung_)
+
+        * Add EvasGL support to software backend using OSMesa.  Requires OSMesa
+          library.  Due to caveats in OSMesa, surface config stays with a 
+          context

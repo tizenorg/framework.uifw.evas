@@ -21,9 +21,7 @@ _evas_textblock_format_offset_get(const Evas_Object_Textblock_Node_Format *n);
 
 static const char *style_buf =
    "DEFAULT='font=Sans font_size=10 color=#000 text_class=entry'"
-   "br='\n'"
-   "ps='ps'"
-   "tab='\t'"
+   "newline='br'"
    "b='+ font=Sans:style=bold'";
 
 #define START_TB_TEST() \
@@ -61,7 +59,7 @@ while (0)
 START_TEST(evas_textblock_simple)
 {
    START_TB_TEST();
-   const char *buf = "Th<i>i</i>s is a <br> te<b>s</b>t.";
+   const char *buf = "Th<i>i</i>s is a <br/> te<b>s</b>t.";
    evas_object_textblock_text_markup_set(tb, buf);
    fail_if(strcmp(evas_object_textblock_text_markup_get(tb), buf));
    END_TB_TEST();
@@ -95,12 +93,12 @@ START_TEST(evas_textblock_cursor)
    Evas_Coord x, y, w, h;
    size_t i, len;
    Evas_Coord nw, nh;
-   const char *buf = "This is a<br> test.<ps>Lets see if this works.<ps>עוד פסקה.";
+   const char *buf = "This is a<br/> test.<ps/>Lets see if this works.<ps/>עוד פסקה.";
 
    /* Walk the textblock using cursor_char_next */
    evas_object_textblock_text_markup_set(tb, buf);
    fail_if(strcmp(evas_object_textblock_text_markup_get(tb), buf));
-   len = eina_unicode_utf8_get_len(buf) - 9; /* 9 because len(<br>) == 1 and len(<ps>) == 1 */
+   len = eina_unicode_utf8_get_len(buf) - 12; /* 12 because len(<br/>) == 1 and len(<ps/>) == 1 */
    for (i = 0 ; i < len ; i++)
      {
         _CHECK_CURSOR_COORDS();
@@ -284,7 +282,7 @@ START_TEST(evas_textblock_cursor)
    /* Paragraph text get */
    evas_textblock_cursor_paragraph_first(cur);
    fail_if(strcmp(evas_textblock_cursor_paragraph_text_get(cur),
-            "This is a<br> test."));
+            "This is a<br/> test."));
    evas_textblock_cursor_paragraph_next(cur);
    fail_if(strcmp(evas_textblock_cursor_paragraph_text_get(cur),
             "Lets see if this works."));
@@ -294,9 +292,9 @@ START_TEST(evas_textblock_cursor)
 
    /* Paragraph length get */
    evas_textblock_cursor_paragraph_first(cur);
-   /* -3 because len(<br>) == 1 */
+   /* -4 because len(<br/>) == 1 */
    fail_if(evas_textblock_cursor_paragraph_text_length_get(cur) !=
-            eina_unicode_utf8_get_len("This is a<br> test.") - 3);
+            eina_unicode_utf8_get_len("This is a<br/> test.") - 4);
    evas_textblock_cursor_paragraph_next(cur);
    fail_if(evas_textblock_cursor_paragraph_text_length_get(cur) !=
             eina_unicode_utf8_get_len("Lets see if this works."));
@@ -308,7 +306,7 @@ START_TEST(evas_textblock_cursor)
    evas_textblock_cursor_pos_set(cur, 0);
    fail_if(strcmp(evas_textblock_cursor_content_get(cur), "T"));
    evas_textblock_cursor_pos_set(cur, 9);
-   fail_if(strcmp(evas_textblock_cursor_content_get(cur), "<br>"));
+   fail_if(strcmp(evas_textblock_cursor_content_get(cur), "<br/>"));
    evas_textblock_cursor_pos_set(cur, 43);
    fail_if(strcmp(evas_textblock_cursor_content_get(cur), "ד"));
 
@@ -414,12 +412,12 @@ START_TEST(evas_textblock_cursor)
 
 #ifdef HAVE_FRIBIDI
    evas_object_textblock_text_markup_set(tb,
-         "testנסיוןtestנסיון<ps>"
-         "נסיוןtestנסיוןtest<ps>"
-         "testנסיוןtest<ps>"
-         "נסיוןtestנסיון<ps>"
-         "testנסיון<br>נסיון<ps>"
-         "נסיוןtest<br>test"
+         "testנסיוןtestנסיון<ps/>"
+         "נסיוןtestנסיוןtest<ps/>"
+         "testנסיוןtest<ps/>"
+         "נסיוןtestנסיון<ps/>"
+         "testנסיון<br/>נסיון<ps/>"
+         "נסיוןtest<br/>test"
          );
 
    for (i = 0 ; i < 8 ; i++)
@@ -566,6 +564,32 @@ START_TEST(evas_textblock_cursor)
         evas_textblock_cursor_paragraph_first(main_cur);
         evas_textblock_cursor_line_coord_set(main_cur, (2 * nh) - 1);
         fail_if(evas_textblock_cursor_compare(main_cur, cur));
+     }
+
+     {
+        const char *buf_wb = "a This is_a t:e.s't a";
+        evas_object_textblock_text_markup_set(tb, buf_wb);
+
+        /* Word start/end */
+        evas_textblock_cursor_pos_set(cur, 3);
+        evas_textblock_cursor_word_start(cur);
+        fail_if(2 != evas_textblock_cursor_pos_get(cur));
+        evas_textblock_cursor_word_end(cur);
+        fail_if(5 != evas_textblock_cursor_pos_get(cur));
+
+        evas_textblock_cursor_pos_set(cur, 13);
+        evas_textblock_cursor_word_end(cur);
+        fail_if(18 != evas_textblock_cursor_pos_get(cur));
+        evas_textblock_cursor_word_start(cur);
+        fail_if(12 != evas_textblock_cursor_pos_get(cur));
+        evas_textblock_cursor_word_start(cur);
+        fail_if(12 != evas_textblock_cursor_pos_get(cur));
+        evas_textblock_cursor_word_start(cur);
+        fail_if(12 != evas_textblock_cursor_pos_get(cur));
+        evas_textblock_cursor_word_end(cur);
+        fail_if(18 != evas_textblock_cursor_pos_get(cur));
+        evas_textblock_cursor_word_end(cur);
+        fail_if(18 != evas_textblock_cursor_pos_get(cur));
      }
 
    END_TB_TEST();
@@ -723,7 +747,7 @@ START_TEST(evas_textblock_format_removal)
 
    /* Range deletion across paragraphs */
    evas_object_textblock_text_markup_set(tb,
-         "Th<b>is a<a>te<ps>"
+         "Th<b>is a<a>te<ps/>"
          "s</a>st</b>.");
    evas_textblock_cursor_pos_set(cur, 6);
    evas_textblock_cursor_pos_set(main_cur, 10);
@@ -749,14 +773,14 @@ START_TEST(evas_textblock_format_removal)
    fail_if (fnode);
 
    /* Two formats across different paragraphs with notihng in between. */
-   evas_object_textblock_text_markup_set(tb, "<b><ps></b>");
+   evas_object_textblock_text_markup_set(tb, "<b><ps/></b>");
    evas_textblock_cursor_pos_set(cur, 0);
    evas_textblock_cursor_char_delete(cur);
    fnode = evas_textblock_node_format_first_get(tb);
    fail_if (fnode);
 
    /* Try with range */
-   evas_object_textblock_text_markup_set(tb, "<b><ps></b>");
+   evas_object_textblock_text_markup_set(tb, "<b><ps/></b>");
    evas_textblock_cursor_pos_set(cur, 0);
    evas_textblock_cursor_pos_set(main_cur, 1);
    evas_textblock_cursor_range_delete(cur, main_cur);
@@ -765,7 +789,7 @@ START_TEST(evas_textblock_format_removal)
 
    /* Verify fmt position and REP_CHAR positions are the same */
    evas_object_textblock_text_markup_set(tb,
-         "This is<ps>an <item absize=93x152 vsize=ascent></>a.");
+         "This is<ps/>an <item absize=93x152 vsize=ascent></>a.");
    evas_textblock_cursor_pos_set(cur, 7);
    evas_textblock_cursor_char_delete(cur);
    fnode = evas_textblock_node_format_first_get(tb);
@@ -1091,9 +1115,9 @@ START_TEST(evas_textblock_wrapping)
    evas_object_textblock_text_markup_set(tb, "a");
    evas_object_textblock_size_formatted_get(tb, &bw, &bh);
    evas_object_textblock_text_markup_set(tb,
-         "aaaa aaaa aaa aa aaa<ps>"
-         "aaaa aaa aaa aaa aaa<ps>"
-         "a aaaaa aaaaaaaaaaaaaa<br>aaaaa<ps>"
+         "aaaa aaaa aaa aa aaa<ps/>"
+         "aaaa aaa aaa aaa aaa<ps/>"
+         "a aaaaa aaaaaaaaaaaaaa<br/>aaaaa<ps/>"
          "aaaaaa"
          );
    evas_textblock_cursor_format_prepend(cur, "+ wrap=char");
@@ -1113,9 +1137,9 @@ START_TEST(evas_textblock_wrapping)
    evas_object_textblock_text_markup_set(tb, "aaaaaa");
    evas_object_textblock_size_formatted_get(tb, &bw, &bh);
    evas_object_textblock_text_markup_set(tb,
-         "aaaa aaaa aaa aa aaa<ps>"
-         "aaaa aaa aaa aaa aaa<ps>"
-         "a aaaaa aaaaaa<br>aaaaa<ps>"
+         "aaaa aaaa aaa aa aaa<ps/>"
+         "aaaa aaa aaa aaa aaa<ps/>"
+         "a aaaaa aaaaaa<br/>aaaaa<ps/>"
          "aaaaa"
          );
    evas_textblock_cursor_format_prepend(cur, "+ wrap=word");
@@ -1134,9 +1158,9 @@ START_TEST(evas_textblock_wrapping)
    evas_object_textblock_text_markup_set(tb, "a");
    evas_object_textblock_size_formatted_get(tb, &bw, &bh);
    evas_object_textblock_text_markup_set(tb,
-         "aaaa aaaa aaa aa aaa<ps>"
-         "aaaa aaa aaa aaa aaa<ps>"
-         "a aaaaa aaaaaa<br>aaaaa<ps>"
+         "aaaa aaaa aaa aa aaa<ps/>"
+         "aaaa aaa aaa aaa aaa<ps/>"
+         "a aaaaa aaaaaa<br/>aaaaa<ps/>"
          "aaaaa"
          );
    evas_textblock_cursor_format_prepend(cur, "+ wrap=mixed");
@@ -1156,26 +1180,26 @@ START_TEST(evas_textblock_wrapping)
    int wrap_items = sizeof(wrap_style) / sizeof(*wrap_style);
 
    evas_object_textblock_text_markup_set(tb,
-         "This is an entry widget in this window that<br>"
-         "uses markup <b>like this</> for styling and<br>"
-         "formatting <em>like this</>, as well as<br>"
-         "<a href=X><link>links in the text</></a>, so enter text<br>"
-         "in here to edit it. By the way, links are<br>"
-         "called <a href=anc-02>Anchors</a> so you will need<br>"
-         "to refer to them this way.<br>"
-         "<br>"
+         "This is an entry widget in this window that<br/>"
+         "uses markup <b>like this</> for styling and<br/>"
+         "formatting <em>like this</>, as well as<br/>"
+         "<a href=X><link>links in the text</></a>, so enter text<br/>"
+         "in here to edit it. By the way, links are<br/>"
+         "called <a href=anc-02>Anchors</a> so you will need<br/>"
+         "to refer to them this way.<br/>"
+         "<br/>"
 
          "Also you can stick in items with (relsize + ascent): "
          "<item relsize=16x16 vsize=ascent href=emoticon/evil-laugh></item>"
          " (full) "
          "<item relsize=16x16 vsize=full href=emoticon/guilty-smile></item>"
-         " (to the left)<br>"
+         " (to the left)<br/>"
 
          "Also (size + ascent): "
          "<item size=16x16 vsize=ascent href=emoticon/haha></item>"
          " (full) "
          "<item size=16x16 vsize=full href=emoticon/happy-panting></item>"
-         " (before this)<br>"
+         " (before this)<br/>"
 
          "And as well (absize + ascent): "
          "<item absize=64x64 vsize=ascent href=emoticon/knowing-grin></item>"
@@ -1223,7 +1247,7 @@ START_TEST(evas_textblock_various)
 {
    Evas_Coord w, h, bw, bh;
    START_TB_TEST();
-   const char *buf = "This<ps>textblock<ps>has<ps>a<ps>lot<ps>of<ps>lines<ps>.";
+   const char *buf = "This<ps/>textblock<ps/>has<ps/>a<ps/>lot<ps/>of<ps/>lines<ps/>.";
    evas_object_textblock_text_markup_set(tb, buf);
    evas_object_textblock_size_formatted_get(tb, &w, &h);
    /* Move outside of the screen so it'll have to search for the correct
@@ -1241,15 +1265,15 @@ START_TEST(evas_textblock_various)
    /* Items have correct text node information */
    evas_object_textblock_text_markup_set(tb, "");
    fail_if(!_evas_textblock_check_item_node_link(tb));
-   evas_object_textblock_text_markup_set(tb, "<ps>");
+   evas_object_textblock_text_markup_set(tb, "<ps/>");
    fail_if(!_evas_textblock_check_item_node_link(tb));
-   evas_object_textblock_text_markup_set(tb, "a<ps>");
+   evas_object_textblock_text_markup_set(tb, "a<ps/>");
    fail_if(!_evas_textblock_check_item_node_link(tb));
-   evas_object_textblock_text_markup_set(tb, "a<ps>a");
+   evas_object_textblock_text_markup_set(tb, "a<ps/>a");
    fail_if(!_evas_textblock_check_item_node_link(tb));
-   evas_object_textblock_text_markup_set(tb, "a<ps>a<ps>");
+   evas_object_textblock_text_markup_set(tb, "a<ps/>a<ps/>");
    fail_if(!_evas_textblock_check_item_node_link(tb));
-   evas_object_textblock_text_markup_set(tb, "a<ps>a<ps>a");
+   evas_object_textblock_text_markup_set(tb, "a<ps/>a<ps/>a");
    fail_if(!_evas_textblock_check_item_node_link(tb));
 
    END_TB_TEST();
@@ -1260,7 +1284,7 @@ END_TEST
 START_TEST(evas_textblock_geometries)
 {
    START_TB_TEST();
-   const char *buf = "This is a <br> test.";
+   const char *buf = "This is a <br/> test.";
    evas_object_textblock_text_markup_set(tb, buf);
 
    /* Single line range */
@@ -1327,7 +1351,7 @@ END_TEST
 START_TEST(evas_textblock_editing)
 {
    START_TB_TEST();
-   const char *buf = "First par.<ps>Second par.";
+   const char *buf = "First par.<ps/>Second par.";
    evas_object_textblock_text_markup_set(tb, buf);
    Evas_Textblock_Cursor *main_cur = evas_object_textblock_cursor_get(tb);
 
@@ -1346,7 +1370,7 @@ START_TEST(evas_textblock_editing)
    evas_textblock_cursor_paragraph_first(cur);
    evas_textblock_cursor_char_delete(cur);
    fail_if(strcmp(evas_object_textblock_text_markup_get(tb),
-            "irst par.<ps>Second par."));
+            "irst par.<ps/>Second par."));
 
    /* Delete some arbitrary char */
    evas_textblock_cursor_char_next(cur);
@@ -1354,14 +1378,14 @@ START_TEST(evas_textblock_editing)
    evas_textblock_cursor_char_next(cur);
    evas_textblock_cursor_char_delete(cur);
    fail_if(strcmp(evas_object_textblock_text_markup_get(tb),
-            "irs par.<ps>Second par."));
+            "irs par.<ps/>Second par."));
 
    /* Delete a range */
    evas_textblock_cursor_pos_set(main_cur, 1);
    evas_textblock_cursor_pos_set(cur, 6);
    evas_textblock_cursor_range_delete(cur, main_cur);
    fail_if(strcmp(evas_object_textblock_text_markup_get(tb),
-            "ir.<ps>Second par."));
+            "ir.<ps/>Second par."));
    evas_textblock_cursor_paragraph_char_first(main_cur);
    evas_textblock_cursor_paragraph_char_last(cur);
    evas_textblock_cursor_char_next(cur);
@@ -1376,7 +1400,7 @@ START_TEST(evas_textblock_editing)
    evas_textblock_cursor_paragraph_char_first(main_cur);
    evas_textblock_cursor_range_delete(cur, main_cur);
    fail_if(strcmp(evas_object_textblock_text_markup_get(tb),
-            "First par.<ps>"));
+            "First par.<ps/>"));
 
    /* Merging paragraphs */
    evas_object_textblock_text_markup_set(tb, buf);
@@ -1416,13 +1440,13 @@ END_TEST
 START_TEST(evas_textblock_text_getters)
 {
    START_TB_TEST();
-   const char *buf = "This is a <br> test.<ps>"
-      "טקסט בעברית<ps>and now in english.";
+   const char *buf = "This is a <br/> test.<ps/>"
+      "טקסט בעברית<ps/>and now in english.";
    evas_object_textblock_text_markup_set(tb, buf);
    evas_textblock_cursor_paragraph_first(cur);
 
    fail_if(strcmp(evas_textblock_cursor_paragraph_text_get(cur),
-            "This is a <br> test."));
+            "This is a <br/> test."));
 
    evas_textblock_cursor_paragraph_next(cur);
    fail_if(strcmp(evas_textblock_cursor_paragraph_text_get(cur),
@@ -1447,17 +1471,17 @@ START_TEST(evas_textblock_text_getters)
    evas_textblock_cursor_pos_set(main_cur, 5);
    evas_textblock_cursor_pos_set(cur, 14);
    fail_if(strcmp(evas_textblock_cursor_range_text_get(main_cur, cur,
-            EVAS_TEXTBLOCK_TEXT_MARKUP), "is a <br> te"));
+            EVAS_TEXTBLOCK_TEXT_MARKUP), "is a <br/> te"));
 
    evas_textblock_cursor_pos_set(main_cur, 14);
    evas_textblock_cursor_pos_set(cur, 20);
    fail_if(strcmp(evas_textblock_cursor_range_text_get(main_cur, cur,
-            EVAS_TEXTBLOCK_TEXT_MARKUP), "st.<ps>טק"));
+            EVAS_TEXTBLOCK_TEXT_MARKUP), "st.<ps/>טק"));
 
    evas_textblock_cursor_pos_set(main_cur, 14);
    evas_textblock_cursor_pos_set(cur, 32);
    fail_if(strcmp(evas_textblock_cursor_range_text_get(main_cur, cur,
-            EVAS_TEXTBLOCK_TEXT_MARKUP), "st.<ps>טקסט בעברית<ps>an"));
+            EVAS_TEXTBLOCK_TEXT_MARKUP), "st.<ps/>טקסט בעברית<ps/>an"));
 
    /* Backward range get */
    evas_textblock_cursor_pos_set(main_cur, 2);
@@ -1473,17 +1497,17 @@ START_TEST(evas_textblock_text_getters)
    evas_textblock_cursor_pos_set(main_cur, 5);
    evas_textblock_cursor_pos_set(cur, 14);
    fail_if(strcmp(evas_textblock_cursor_range_text_get(cur, main_cur,
-            EVAS_TEXTBLOCK_TEXT_MARKUP), "is a <br> te"));
+            EVAS_TEXTBLOCK_TEXT_MARKUP), "is a <br/> te"));
 
    evas_textblock_cursor_pos_set(main_cur, 14);
    evas_textblock_cursor_pos_set(cur, 20);
    fail_if(strcmp(evas_textblock_cursor_range_text_get(cur, main_cur,
-            EVAS_TEXTBLOCK_TEXT_MARKUP), "st.<ps>טק"));
+            EVAS_TEXTBLOCK_TEXT_MARKUP), "st.<ps/>טק"));
 
    evas_textblock_cursor_pos_set(main_cur, 14);
    evas_textblock_cursor_pos_set(cur, 32);
    fail_if(strcmp(evas_textblock_cursor_range_text_get(cur, main_cur,
-            EVAS_TEXTBLOCK_TEXT_MARKUP), "st.<ps>טקסט בעברית<ps>an"));
+            EVAS_TEXTBLOCK_TEXT_MARKUP), "st.<ps/>טקסט בעברית<ps/>an"));
 
    /* Uninit cursors and other weird cases */
    evas_object_textblock_clear(tb);
@@ -1491,6 +1515,97 @@ START_TEST(evas_textblock_text_getters)
    evas_textblock_cursor_text_prepend(main_cur, "aaa");
    fail_if(strcmp(evas_textblock_cursor_range_text_get(cur, main_cur,
             EVAS_TEXTBLOCK_TEXT_MARKUP), "aaa"));
+
+   /* Markup to plain and vice versa */
+     {
+        char *tmp, *tmp2;
+
+        /* Real textblock object */
+        tmp = evas_textblock_text_markup_to_utf8(tb, "<br/>aa<\n/>bb<\t/>");
+        fail_if(strcmp(tmp, "\naa\nbb\t"));
+        tmp2 = evas_textblock_text_utf8_to_markup(tb, tmp);
+        fail_if(strcmp(tmp2, "<br/>aa<br/>bb<tab/>"));
+        free(tmp2);
+        free(tmp);
+
+        tmp = evas_textblock_text_markup_to_utf8(tb, "a<item></item>");
+        fail_if(strcmp(tmp, "a\xEF\xBF\xBC"));
+        tmp2 = evas_textblock_text_utf8_to_markup(tb, tmp);
+        fail_if(strcmp(tmp2, "a&#xfffc;"));
+        free(tmp2);
+        free(tmp);
+
+        tmp = evas_textblock_text_markup_to_utf8(tb, "a&nbsp;");
+        fail_if(strcmp(tmp, "a\xC2\xA0"));
+        tmp2 = evas_textblock_text_utf8_to_markup(tb, tmp);
+        fail_if(strcmp(tmp2, "a\xC2\xA0"));
+        free(tmp2);
+        free(tmp);
+
+        tmp = evas_textblock_text_markup_to_utf8(tb, "a<b>b</b><more></>a");
+        fail_if(strcmp(tmp, "aba"));
+        tmp2 = evas_textblock_text_utf8_to_markup(tb, tmp);
+        fail_if(strcmp(tmp2, "aba"));
+        free(tmp2);
+        free(tmp);
+
+        tmp = evas_textblock_text_markup_to_utf8(tb, "a&amp;a");
+        fail_if(strcmp(tmp, "a&a"));
+        tmp2 = evas_textblock_text_utf8_to_markup(tb, tmp);
+        fail_if(strcmp(tmp2, "a&amp;a"));
+        free(tmp2);
+        free(tmp);
+
+        tmp = evas_textblock_text_markup_to_utf8(tb, "a<newline/>a");
+        fail_if(strcmp(tmp, "a\na"));
+        tmp2 = evas_textblock_text_utf8_to_markup(tb, tmp);
+        fail_if(strcmp(tmp2, "a<br/>a"));
+        free(tmp2);
+        free(tmp);
+
+        /* NULL textblock object */
+        tmp = evas_textblock_text_markup_to_utf8(NULL, "<br/>aa<\n/>bb<\t/>");
+        fail_if(strcmp(tmp, "\naa\nbb\t"));
+        tmp2 = evas_textblock_text_utf8_to_markup(NULL, tmp);
+        fail_if(strcmp(tmp2, "<br/>aa<br/>bb<tab/>"));
+        free(tmp2);
+        free(tmp);
+
+        tmp = evas_textblock_text_markup_to_utf8(NULL, "a<item></item>");
+        fail_if(strcmp(tmp, "a\xEF\xBF\xBC"));
+        tmp2 = evas_textblock_text_utf8_to_markup(NULL, tmp);
+        fail_if(strcmp(tmp2, "a&#xfffc;"));
+        free(tmp2);
+        free(tmp);
+
+        tmp = evas_textblock_text_markup_to_utf8(NULL, "a&nbsp;");
+        fail_if(strcmp(tmp, "a\xC2\xA0"));
+        tmp2 = evas_textblock_text_utf8_to_markup(NULL, tmp);
+        fail_if(strcmp(tmp2, "a\xC2\xA0"));
+        free(tmp2);
+        free(tmp);
+
+        tmp = evas_textblock_text_markup_to_utf8(NULL, "a<b>b</b><more></>a");
+        fail_if(strcmp(tmp, "aba"));
+        tmp2 = evas_textblock_text_utf8_to_markup(NULL, tmp);
+        fail_if(strcmp(tmp2, "aba"));
+        free(tmp2);
+        free(tmp);
+
+        tmp = evas_textblock_text_markup_to_utf8(tb, "a&amp;a");
+        fail_if(strcmp(tmp, "a&a"));
+        tmp2 = evas_textblock_text_utf8_to_markup(tb, tmp);
+        fail_if(strcmp(tmp2, "a&amp;a"));
+        free(tmp2);
+        free(tmp);
+
+        tmp = evas_textblock_text_markup_to_utf8(NULL, "a<newline/>a");
+        fail_if(strcmp(tmp, "aa"));
+        tmp2 = evas_textblock_text_utf8_to_markup(NULL, tmp);
+        fail_if(strcmp(tmp2, "aa"));
+        free(tmp2);
+        free(tmp);
+     }
 
    END_TB_TEST();
 }
@@ -1500,7 +1615,7 @@ END_TEST
 START_TEST(evas_textblock_formats)
 {
    START_TB_TEST();
-   const char *buf = "Th<b>i<font_size=15 wrap=none>s i</font_size=13>s</> a <br> te<ps>st<item></>.";
+   const char *buf = "Th<b>i<font_size=15 wrap=none>s i</font_size=13>s</> a <br/> te<ps/>st<item></>.";
    const Evas_Object_Textblock_Node_Format *fnode;
    evas_object_textblock_text_markup_set(tb, buf);
 
@@ -1652,25 +1767,25 @@ START_TEST(evas_textblock_formats)
     * verify them visually, well, we can some of them. Possibly in the
     * future we will */
    evas_object_textblock_text_markup_set(tb,
-         "<font_size=40>font_size=40</><ps>"
-         "<color=#F210B3FF>color=#F210B3FF</><ps>"
-         "<underline=single underline_color=#A2B3C4>underline=single underline_color=#A2B3C4</><ps>"
-         "<underline=double underline_color=#F00 underline2_color=#00F>underline=double underline_color=#F00 underline2_color=#00F</><ps>"
-         "<underline=dashed underline_dash_color=#0F0 underline_dash_width=2 underline_dash_gap=1>underline=dashed underline_dash_color=#0F0 underline_dash_width=2 underline_dash_gap=1</><ps>"
-         "<style=outline outline_color=#F0FA>style=outline outline_color=#F0FA</><ps>"
-         "<style=shadow shadow_color=#F0F>style=shadow shadow_color=#F0F</><ps>"
-         "<style=glow glow_color=#BBB>style=glow glow_color=#BBB</><ps>"
-         "<style=glow glow2_color=#0F0>style=glow glow2_color=#0F0</><ps>"
-         "<style=glow color=#fff glow2_color=#fe87 glow_color=#f214>style=glow color=#fff glow2_color=#fe87 glow_color=#f214</><ps>"
-         "<backing=on backing_color=#00F>backing=on backing_color=#00F</><ps>"
-         "<strikethrough=on strikethrough_color=#FF0>strikethrough=on strikethrough_color=#FF0</><ps>"
-         "<align=right>align=right</><ps>"
-         "<backing=on backing_color=#F008 valign=0.0>valign=0.0</><ps>"
-         "<backing=on backing_color=#0F08 tabstops=50>tabstops=<\\t></>50</><ps>"
-         "<backing=on backing_color=#00F8 linesize=40>linesize=40</><ps>"
-         "<backing=on backing_color=#F0F8 linerelsize=200%>linerelsize=200%</><ps>"
-         "<backing=on backing_color=#0FF8 linegap=20>linegap=20</><ps>"
-         "<backing=on backing_color=#FF08 linerelgap=100%>linerelgap=100%</><ps>");
+         "<font_size=40>font_size=40</><ps/>"
+         "<color=#F210B3FF>color=#F210B3FF</><ps/>"
+         "<underline=single underline_color=#A2B3C4>underline=single underline_color=#A2B3C4</><ps/>"
+         "<underline=double underline_color=#F00 underline2_color=#00F>underline=double underline_color=#F00 underline2_color=#00F</><ps/>"
+         "<underline=dashed underline_dash_color=#0F0 underline_dash_width=2 underline_dash_gap=1>underline=dashed underline_dash_color=#0F0 underline_dash_width=2 underline_dash_gap=1</><ps/>"
+         "<style=outline outline_color=#F0FA>style=outline outline_color=#F0FA</><ps/>"
+         "<style=shadow shadow_color=#F0F>style=shadow shadow_color=#F0F</><ps/>"
+         "<style=glow glow_color=#BBB>style=glow glow_color=#BBB</><ps/>"
+         "<style=glow glow2_color=#0F0>style=glow glow2_color=#0F0</><ps/>"
+         "<style=glow color=#fff glow2_color=#fe87 glow_color=#f214>style=glow color=#fff glow2_color=#fe87 glow_color=#f214</><ps/>"
+         "<backing=on backing_color=#00F>backing=on backing_color=#00F</><ps/>"
+         "<strikethrough=on strikethrough_color=#FF0>strikethrough=on strikethrough_color=#FF0</><ps/>"
+         "<align=right>align=right</><ps/>"
+         "<backing=on backing_color=#F008 valign=0.0>valign=0.0</><ps/>"
+         "<backing=on backing_color=#0F08 tabstops=50>tabstops=<\\t></>50</><ps/>"
+         "<backing=on backing_color=#00F8 linesize=40>linesize=40</><ps/>"
+         "<backing=on backing_color=#F0F8 linerelsize=200%>linerelsize=200%</><ps/>"
+         "<backing=on backing_color=#0FF8 linegap=20>linegap=20</><ps/>"
+         "<backing=on backing_color=#FF08 linerelgap=100%>linerelgap=100%</><ps/>");
 
    /* Force a relayout */
    evas_object_textblock_size_formatted_get(tb, NULL, NULL);
@@ -1714,22 +1829,22 @@ START_TEST(evas_textblock_formats)
      }
 
    /* Make sure we get all the types of visible formats correctly. */
-   evas_object_textblock_text_markup_set(tb, "<ps>a<br>a<tab>a<item></>");
+   evas_object_textblock_text_markup_set(tb, "<ps/>a<br/>a<tab/>a<item></>");
    fail_if(strcmp(evas_textblock_node_format_text_get(
                evas_textblock_cursor_format_get(cur)), "ps"));
-   fail_if(strcmp(evas_textblock_cursor_content_get(cur), "<ps>"));
+   fail_if(strcmp(evas_textblock_cursor_content_get(cur), "<ps/>"));
    fail_if(!evas_textblock_cursor_format_is_visible_get(cur));
    fail_if(!evas_textblock_cursor_char_next(cur));
    fail_if(!evas_textblock_cursor_char_next(cur));
    fail_if(strcmp(evas_textblock_node_format_text_get(
                evas_textblock_cursor_format_get(cur)), "br"));
-   fail_if(strcmp(evas_textblock_cursor_content_get(cur), "<br>"));
+   fail_if(strcmp(evas_textblock_cursor_content_get(cur), "<br/>"));
    fail_if(!evas_textblock_cursor_format_is_visible_get(cur));
    fail_if(!evas_textblock_cursor_char_next(cur));
    fail_if(!evas_textblock_cursor_char_next(cur));
    fail_if(strcmp(evas_textblock_node_format_text_get(
                evas_textblock_cursor_format_get(cur)), "tab"));
-   fail_if(strcmp(evas_textblock_cursor_content_get(cur), "<tab>"));
+   fail_if(strcmp(evas_textblock_cursor_content_get(cur), "<tab/>"));
    fail_if(!evas_textblock_cursor_format_is_visible_get(cur));
    fail_if(!evas_textblock_cursor_char_next(cur));
    fail_if(!evas_textblock_cursor_char_next(cur));
@@ -1749,7 +1864,7 @@ START_TEST(evas_textblock_style)
    Evas_Coord l, r, t, b;
    START_TB_TEST();
    Evas_Textblock_Style *newst;
-   const char *buf = "Test<ps>Test2<ps>נסיון";
+   const char *buf = "Test<ps/>Test2<ps/>נסיון";
    evas_object_textblock_text_markup_set(tb, buf);
    fail_if(strcmp(evas_object_textblock_text_markup_get(tb), buf));
 
@@ -1850,7 +1965,7 @@ START_TEST(evas_textblock_set_get)
    fail_if(strcmp(evas_object_textblock_bidi_delimiters_get(tb), ",|"));
 
    /* Hinting */
-   evas_object_textblock_text_markup_set(tb, "This is<ps>a test<br>bla");
+   evas_object_textblock_text_markup_set(tb, "This is<ps/>a test<br/>bla");
    /* Force relayout */
    evas_object_textblock_size_formatted_get(tb, NULL, NULL);
    evas_font_hinting_set(evas, EVAS_FONT_HINTING_NONE);
@@ -1923,7 +2038,7 @@ START_TEST(evas_textblock_size)
 {
    START_TB_TEST();
    Evas_Coord w, h, h2, nw, nh;
-   const char *buf = "This is a <br> test.<br>גם בעברית";
+   const char *buf = "This is a <br/> test.<br/>גם בעברית";
    /* When wrapping is off, native size should be the same as formatted
     * size */
 
@@ -1932,7 +2047,7 @@ START_TEST(evas_textblock_size)
    fail_if((w != nw) || (h != nh));
    fail_if(w != 0);
 
-   evas_object_textblock_text_markup_set(tb, "a<br>a");
+   evas_object_textblock_text_markup_set(tb, "a<br/>a");
    evas_object_textblock_size_formatted_get(tb, &w, &h2);
    evas_object_textblock_size_native_get(tb, &nw, &nh);
    fail_if((w != nw) || (h2 != nh));

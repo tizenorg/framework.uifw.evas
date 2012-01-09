@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 #include <math.h>
 
 #include "evas_common.h"
@@ -132,6 +136,14 @@ evas_common_polygon_draw(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Polygon_Po
    int                y0, y1, yi;
    int                ext_x, ext_y, ext_w, ext_h;
    int               *sorted_index;
+
+#ifdef HAVE_PIXMAN
+# ifdef PIXMAN_POLY
+   pixman_op_t op = PIXMAN_OP_SRC; // _EVAS_RENDER_COPY
+   if (dc->render_op == _EVAS_RENDER_BLEND)
+     op = PIXMAN_OP_OVER;
+# endif   
+#endif
 
    ext_x = 0;
    ext_y = 0;
@@ -279,10 +291,30 @@ evas_common_polygon_draw(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Polygon_Po
 	     if (((span->y) % dc->sli.h) == dc->sli.y)
 #endif
 	       {
-		  ptr = dst->image.data + (span->y * (dst->cache_entry.w)) + span->x;
-		  func(NULL, NULL, dc->col.col, ptr, span->w);
-	       }
-	  }
+#ifdef HAVE_PIXMAN
+# ifdef PIXMAN_POLY
+                  if ((dst->pixman.im) && (dc->col.pixman_color_image) &&
+                      (!dc->mask.mask))
+                    pixman_image_composite(op, dc->col.pixman_color_image,
+                                           NULL, dst->pixman.im,
+                                           span->x, span->y, 0, 0,
+                                           span->x, span->y, span->w, 1);
+                  else if ((dst->pixman.im) && (dc->col.pixman_color_image) &&
+                           (dc->mask.mask))
+                    pixman_image_composite(op, dc->col.pixman_color_image,
+                                           dc->mask.mask->pixman.im,
+                                           dst->pixman.im,
+                                           span->x, span->y, 0, 0,
+                                           span->x, span->y, span->w, 1);
+                  else
+# endif
+#endif
+                    {
+                       ptr = dst->image.data + (span->y * (dst->cache_entry.w)) + span->x;
+                       func(NULL, NULL, dc->col.col, ptr, span->w);
+                    }
+               }
+          }
 	while (spans)
 	  {
 	     span = (RGBA_Span *)spans;
