@@ -909,12 +909,7 @@ evas_event_feed_mouse_out(Evas *e, unsigned int timestamp, const void *data)
    ev.event_flags = e->default_event_flags;
 
    _evas_walk(e);
-<<<<<<< HEAD
-   /* if our mouse button is grabbed to any objects */
-   if ((0) && (e->pointer.mouse_grabbed != 0))
-=======
    /* if our mouse button is inside any objects */
->>>>>>> origin/upstream
      {
         /* go thru old list of in objects */
         Eina_List *l, *copy;
@@ -932,11 +927,7 @@ evas_event_feed_mouse_out(Evas *e, unsigned int timestamp, const void *data)
                   if (!obj->delete_me)
                     {
                        if (e->events_frozen <= 0)
-<<<<<<< HEAD
-                          evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_OUT, &ev, event_id);
-=======
                          evas_object_event_callback_call(obj, EVAS_CALLBACK_MOUSE_OUT, &ev, event_id);
->>>>>>> origin/upstream
                     }
                   obj->mouse_grabbed = 0;
                }
