@@ -1238,6 +1238,13 @@ START_TEST(evas_textblock_wrapping)
    evas_object_textblock_size_formatted_get(tb, &w, &h);
    fail_if((w > (nw / 2)) || (h != nh));
 
+   evas_object_textblock_text_markup_set(tb, "aaaaaaaaaaaaaaaaaa<br/>b");
+   evas_textblock_cursor_format_prepend(cur, "+ ellipsis=1.0 wrap=word");
+   evas_object_textblock_size_native_get(tb, &nw, &nh);
+   evas_object_resize(tb, nw / 2, nh * 2);
+   evas_object_textblock_size_formatted_get(tb, &w, &h);
+   fail_if(w > (nw / 2));
+
    END_TB_TEST();
 }
 END_TEST
@@ -1429,6 +1436,27 @@ START_TEST(evas_textblock_editing)
    evas_textblock_cursor_range_delete(cur, main_cur);
    evas_textblock_cursor_paragraph_first(cur);
    fail_if(evas_textblock_cursor_paragraph_next(cur));
+
+   /* Insert illegal characters inside the format. */
+     {
+        const char *content;
+        evas_object_textblock_text_markup_set(tb, "a\n");
+        evas_textblock_cursor_pos_set(cur, 1);
+        content = evas_textblock_cursor_content_get(cur);
+
+        evas_object_textblock_text_markup_set(tb, "a\t");
+        evas_textblock_cursor_pos_set(cur, 1);
+        content = evas_textblock_cursor_content_get(cur);
+
+        evas_object_textblock_text_markup_set(tb, "a\xEF\xBF\xBC");
+        evas_textblock_cursor_pos_set(cur, 1);
+        content = evas_textblock_cursor_content_get(cur);
+
+        evas_object_textblock_text_markup_set(tb, "a\xE2\x80\xA9");
+        evas_textblock_cursor_pos_set(cur, 1);
+        content = evas_textblock_cursor_content_get(cur);
+        (void) content;
+     }
 
    /* FIXME: Also add text appending/prepending */
 
@@ -2061,6 +2089,29 @@ START_TEST(evas_textblock_size)
    evas_object_textblock_size_native_get(tb, &nw, &nh);
    fail_if((w != nw) || (h != nh));
    fail_if(w <= 0);
+
+   /* This time with margins. */
+     {
+        Evas_Textblock_Style *newst;
+        Evas_Coord oldw, oldh, oldnw, oldnh;
+
+        evas_object_textblock_text_markup_set(tb, buf);
+        evas_object_textblock_size_formatted_get(tb, &oldw, &oldh);
+        evas_object_textblock_size_native_get(tb, &oldnw, &oldnh);
+
+
+        newst = evas_textblock_style_new();
+        fail_if(!newst);
+        evas_textblock_style_set(newst,
+              "DEFAULT='left_margin=4 right_margin=4'");
+        evas_object_textblock_style_user_set(tb, newst);
+
+        evas_object_textblock_size_formatted_get(tb, &w, &h);
+        evas_object_textblock_size_native_get(tb, &nw, &nh);
+
+        fail_if((w != oldw + 8) || (h != oldh) ||
+              (nw != oldnw + 8) || (nh != oldnh));
+     }
 
    /* FIXME: There is a lot more to be done. */
    END_TB_TEST();

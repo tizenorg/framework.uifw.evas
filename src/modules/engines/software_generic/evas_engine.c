@@ -265,9 +265,9 @@ static void       (*_sym_glVertexAttribPointer)                 (GLuint indx, GL
 static void       (*_sym_glViewport)                            (GLint x, GLint y, GLsizei width, GLsizei height) = NULL;
 
 // GLES Extensions...
-static void       (*_sym_glGetProgramBinary)                    (GLuint a, GLsizei b, GLsizei* c, GLenum* d, void* e) = NULL;
-static void       (*_sym_glProgramBinary)                       (GLuint a, GLenum b, const void* c, GLint d) = NULL;
-static void       (*_sym_glProgramParameteri)                   (GLuint a, GLuint b, GLint d) = NULL;
+/* static void       (*_sym_glGetProgramBinary)                    (GLuint a, GLsizei b, GLsizei* c, GLenum* d, void* e) = NULL; */
+/* static void       (*_sym_glProgramBinary)                       (GLuint a, GLenum b, const void* c, GLint d) = NULL; */
+/* static void       (*_sym_glProgramParameteri)                   (GLuint a, GLuint b, GLint d) = NULL; */
 #endif
 
 /*
@@ -591,11 +591,8 @@ eng_image_border_set(void *data __UNUSED__, void *image, int l __UNUSED__, int r
 }
 
 static void
-eng_image_border_get(void *data __UNUSED__, void *image, int *l __UNUSED__, int *r __UNUSED__, int *t __UNUSED__, int *b __UNUSED__)
+eng_image_border_get(void *data __UNUSED__, void *image __UNUSED__, int *l __UNUSED__, int *r __UNUSED__, int *t __UNUSED__, int *b __UNUSED__)
 {
-   RGBA_Image *im;
-
-   im = image;
 }
 
 static char *
@@ -704,18 +701,16 @@ eng_image_size_get(void *data __UNUSED__, void *image, int *w, int *h)
 static void *
 eng_image_size_set(void *data __UNUSED__, void *image, int w, int h)
 {
-   Image_Entry *im;
-
-   im = image;
-   return evas_cache_image_size_set(image, w, h);
+   Image_Entry *im = image;
+   if (!im) return NULL;
+   return evas_cache_image_size_set(im, w, h);
 }
 
 static void *
 eng_image_dirty_region(void *data __UNUSED__, void *image, int x, int y, int w, int h)
 {
    Image_Entry *im = image;
-
-   if (!image) return NULL;
+   if (!im) return NULL;
    return evas_cache_image_dirty(im, x, y, w, h);
 }
 
@@ -931,11 +926,10 @@ static void *
 eng_image_map_surface_new(void *data __UNUSED__, int w, int h, int alpha)
 {
    void *surface;
-   DATA32 *pixels;
    surface = evas_cache_image_copied_data(evas_common_image_cache_get(), 
                                           w, h, NULL, alpha, 
                                           EVAS_COLORSPACE_ARGB8888);
-   pixels = evas_cache_image_pixels(surface);
+   evas_cache_image_pixels(surface);
    return surface;
 }
 
@@ -1593,7 +1587,7 @@ eng_gl_make_current(void *data __UNUSED__, void *surface, void *context)
 
 // FIXME!!! Implement later
 static void *
-eng_gl_string_query(void *data, int name)
+eng_gl_string_query(void *data __UNUSED__, int name __UNUSED__)
 {
    return NULL;
 }
@@ -1784,6 +1778,7 @@ static Evas_Func func =
      NULL, // need software mesa for gl rendering <- gl_proc_address_get
      NULL, // need software mesa for gl rendering <- gl_native_surface_get
      NULL, // need software mesa for gl rendering <- gl_api_get
+     NULL, // need software mesa for gl rendering <- gl_img_obj_set
      eng_image_load_error_get,
      eng_font_run_font_end_get,
      eng_image_animated_get,
@@ -2469,13 +2464,7 @@ patch_gles_shader(const char *source, int length, int *patched_len)
 static void
 evgl_glShaderSource(GLuint shader, GLsizei count, const char** string, const GLint* length)
 {
-   char *newstr;
-   char *srcbk;
-   char *token = NULL;
-   char *saveptr;
-   int i = 0;
-   int len = 0;
-   int token_len = 0;
+   int i = 0, len = 0;
 
    char **s = malloc(count * sizeof(char*));
    GLint *l = malloc(count * sizeof(GLint));
@@ -2525,7 +2514,7 @@ evgl_glShaderSource(GLuint shader, GLsizei count, const char** string, const GLi
 
 
 static void
-evgl_glGetShaderPrecisionFormat(GLenum shadertype, GLenum precisiontype, GLint* range, GLint* precision)
+evgl_glGetShaderPrecisionFormat(GLenum shadertype __UNUSED__, GLenum precisiontype __UNUSED__, GLint* range, GLint* precision)
 {
    if (range)
      {
@@ -2537,7 +2526,6 @@ evgl_glGetShaderPrecisionFormat(GLenum shadertype, GLenum precisiontype, GLint* 
         precision[0] = 24; // floor(-log2((1.0/16777218.0)));
      }
    return;
-   shadertype = precisiontype = 0;
 }
 
 static void
@@ -2548,7 +2536,7 @@ evgl_glReleaseShaderCompiler(void)
 }
 
 static void
-evgl_glShaderBinary(GLsizei n, const GLuint* shaders, GLenum binaryformat, const void* binary, GLsizei length)
+evgl_glShaderBinary(GLsizei n __UNUSED__, const GLuint* shaders __UNUSED__, GLenum binaryformat __UNUSED__, const void* binary __UNUSED__, GLsizei length __UNUSED__)
 {
    // FIXME: need to dlsym/getprocaddress for this
    DBG("Not supported in Desktop GL");

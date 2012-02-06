@@ -663,7 +663,7 @@ AM_CONDITIONAL([EVAS_CSERVE], [test "x${want_evas_cserve}" = "xyes"])
 gl_flavor_gles="no"
 AC_MSG_CHECKING(whether to build GLES flavor of GL)
 AC_ARG_ENABLE(gl-flavor-gles,
-  AC_HELP_STRING([--enable-gl-flavor-gles], [enable gles falvor of gl instead of standard]),
+  AC_HELP_STRING([--enable-gl-flavor-gles], [enable gles flavor of gl instead of standard]),
   [
       if test "x$enableval" = "xyes" ; then
         AC_MSG_RESULT(yes)
@@ -926,13 +926,15 @@ have_static_evas_engine_gl_common="no"
 if test "x$have_evas_engine_gl_xlib" = "xyes" \
    || test "x$have_evas_engine_gl_xcb" = "xyes" \
    || test "x$have_evas_engine_gl_sdl" = "xyes" \
-   || test "x$have_evas_engine_gl_cocoa" = "xyes"; then
+   || test "x$have_evas_engine_gl_cocoa" = "xyes" \
+   || test "x$have_evas_engine_wayland_egl" = "xyes"; then
    have_evas_engine_gl_common="yes"
 fi
 if test "x$have_evas_engine_gl_xlib" = "xstatic" \
    || test "x$have_evas_engine_gl_xcb" = "xstatic" \
    || test "x$have_evas_engine_gl_sdl" = "xstatic" \
-   || test "x$have_evas_engine_gl_cocoa" = "xstatic"; then
+   || test "x$have_evas_engine_gl_cocoa" = "xstatic" \
+   || test "x$have_evas_engine_wayland_egl" = "xstatic"; then
    have_evas_engine_gl_common="yes"
    have_static_evas_engine_gl_common="yes"
 fi

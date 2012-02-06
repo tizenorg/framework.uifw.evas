@@ -19,11 +19,12 @@ evas_buffer_outbuf_buf_free(Outbuf *buf)
 Outbuf *
 evas_buffer_outbuf_buf_setup_fb(int w, int h, Outbuf_Depth depth, void *dest, int dest_row_bytes, int use_color_key, DATA32 color_key, int alpha_level,
 				void * (*new_update_region) (int x, int y, int w, int h, int *row_bytes),
-				void   (*free_update_region) (int x, int y, int w, int h, void *data)
+				void   (*free_update_region) (int x, int y, int w, int h, void *data),
+				void * (*switch_buffer) (void *data, void *dest_buffer),
+				void *switch_data
 				)
 {
    Outbuf *buf;
-   int bpp;
    
    buf = calloc(1, sizeof(Outbuf));
    if (!buf) return NULL;
@@ -38,14 +39,12 @@ evas_buffer_outbuf_buf_setup_fb(int w, int h, Outbuf_Depth depth, void *dest, in
    buf->alpha_level = alpha_level;
    buf->color_key = color_key;
    buf->use_color_key = use_color_key;
+   buf->first_frame = 1;
 
    buf->func.new_update_region = new_update_region;
    buf->func.free_update_region = free_update_region;
-
-   bpp = sizeof(DATA32);
-   if ((buf->depth == OUTBUF_DEPTH_RGB_24BPP_888_888) ||
-       (buf->depth == OUTBUF_DEPTH_BGR_24BPP_888_888))
-     bpp = 3;
+   buf->func.switch_buffer = switch_buffer;
+   buf->switch_data = switch_data;
 
    if ((buf->depth == OUTBUF_DEPTH_ARGB_32BPP_8888_8888) &&
        (buf->dest) && (buf->dest_row_bytes == (buf->w * sizeof(DATA32))))
@@ -99,6 +98,24 @@ void
 evas_buffer_outbuf_buf_free_region_for_update(Outbuf *buf, RGBA_Image *update)
 {
    if (update != buf->priv.back_buf) evas_cache_image_drop(&update->cache_entry);
+}
+
+void
+evas_buffer_outbuf_buf_switch_buffer(Outbuf *buf)
+{
+   if (buf->func.switch_buffer)
+     {
+        buf->dest = buf->func.switch_buffer(buf->switch_data, buf->dest);
+        if (buf->priv.back_buf)
+          {
+             evas_cache_image_drop(&buf->priv.back_buf->cache_entry);
+             buf->priv.back_buf = (RGBA_Image *) evas_cache_image_data(evas_common_image_cache_get(),
+                                                                       buf->w, buf->h,
+                                                                       buf->dest,
+                                                                       buf->depth == OUTBUF_DEPTH_ARGB_32BPP_8888_8888 ? 1 : 0,
+                                                                       EVAS_COLORSPACE_ARGB8888);
+          }
+     }
 }
 
 void

@@ -622,4 +622,52 @@
 
         * Add EvasGL support to software backend using OSMesa.  Requires OSMesa
           library.  Due to caveats in OSMesa, surface config stays with a 
-          context
+          context rather than with a surface.  So for now, the config of a 
+          surface remains with the first context that it binds to.  May need
+          to come up with a different solution in the near future.
+
+2012-01-12  Sung W. Park (sung_)
+
+	* Add new api evas_gl_config_new/free() to ensure backward compatibility.
+          Previously, the user simply declared a Evas_GL_Config object but this
+          can cause issues if new configs are added. Now we have evas allocate it
+          for you.
+
+2012-01-16  Raphael Kubo da Costa (rakuco)
+
+	* Add evas_object_smart_callback_del_full() to allow users to
+	unregister a specific smart event callback instead of all
+	callbacks matching a given type and function pointer.
+
+2012-01-17  Carsten Haitzler (The Rasterman)
+
+        * Add EVAS_OBJECT_POINTER_MODE_NOGRAB_NO_REPEAT_UPDOWN pointer mode
+        for some very specific behavior needed for accessibility.
+
+2012-01-19  Cedric Bail
+
+	* Add double buffer support to buffer engine.
+
+2012-01-20  Sung W. Park (sung_)
+
+	* Add Direct Rendering to Evas' window optimization for Evas_GL.  This 
+          optimization can be significant since it avoids and extra copy from
+          an offscreen buffer.  Normally, Evas_GL will render to a render
+          target using an FBO. This can be enabled by giving 
+          EVAS_GL_OPTIONS_DIRECT hint in the config options_bits. Direct 
+          rendering is actually done if the following conditions are met - 
+          1) All GL rendering is done in the pixel_getter callback 2) No 
+          rotation on the image object 3) Corresponding image 
+          object has alpha disabled.
+
+2012-01-23  Tom Hacohen (TAsn)
+
+	* Textblock: Added evas_object_textblock_style_user_set/get.
+	This is used to override the default style set for an evas object.
+	For example, this can be used to nicely change the font and size
+	in a text editor.
+
+2012-02-01  Cedric Bail
+
+	* Fix crash in Evas engine due to a direct free of an RGBA_Image
+	instead of properly droping it.

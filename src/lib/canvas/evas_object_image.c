@@ -2918,11 +2918,31 @@ evas_object_image_render(Evas_Object *obj, void *output, void *context, void *su
      {
 	Evas_Coord idw, idh, idx, idy;
 	int ix, iy, iw, ih;
+        int img_set = 0;
 
 	if (o->dirty_pixels)
 	  {
 	     if (o->func.get_pixels)
 	       {
+                  // Set img object for direct rendering optimization
+                  // Check for image w/h against image geometry w/h
+                  // Check for image color r,g,b,a = {255,255,255,255}
+                  // Check and make sure that there are no maps.
+                  if ( (obj->cur.geometry.w == o->cur.image.w) &&
+                       (obj->cur.geometry.h == o->cur.image.h) &&
+                       (obj->cur.color.r == 255) &&
+                       (obj->cur.color.g == 255) &&
+                       (obj->cur.color.b == 255) &&
+                       (obj->cur.color.a == 255) && 
+                       (!obj->cur.map) )
+                    {
+                       if (obj->layer->evas->engine.func->gl_img_obj_set)
+                         {
+                            obj->layer->evas->engine.func->gl_img_obj_set(output, obj, o->cur.has_alpha);
+                            img_set = 1;
+                         }
+                    }
+
 		  o->func.get_pixels(o->func.get_pixels_data, obj);
 		  if (o->engine_data != pixels)
 		    pixels = o->engine_data;
@@ -3162,7 +3182,17 @@ evas_object_image_render(Evas_Object *obj, void *output, void *context, void *su
                   idy = ydy;
                   if (dobreak_w) break;
                }
-	  }
+          }
+
+        // Unset img object 
+        if (img_set)
+          {
+             if (obj->layer->evas->engine.func->gl_img_obj_set)
+               {
+                  obj->layer->evas->engine.func->gl_img_obj_set(output, NULL, 0);
+                  img_set = 0;
+               }
+          }        
      }
 }
 
@@ -3863,9 +3893,7 @@ static void
 evas_object_image_filled_resize_listener(void *data __UNUSED__, Evas *e __UNUSED__, Evas_Object *obj, void *einfo __UNUSED__)
 {
    Evas_Coord w, h;
-   Evas_Object_Image *o;
 
-   o = obj->object_data;
    evas_object_geometry_get(obj, NULL, NULL, &w, &h);
    evas_object_image_fill_set(obj, 0, 0, w, h);
 }
