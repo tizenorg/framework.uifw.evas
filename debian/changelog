@@ -1,3 +1,13 @@
+evas (1.1.0+svn.66966slp2+build03) unstable; urgency=low
+
+  * Package Upload
+  * Applying direct rendering
+  * Applying fastpath
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.66966slp2+build03
+
+ -- Sanghee Park <sh15.park@samsung.com>  Thu, 09 Feb 2012 17:03:02 +0900
+
 evas (1.1.0+svn.66966slp2+build02) unstable; urgency=low
 
   * Package Upload
