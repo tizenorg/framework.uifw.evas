@@ -41,6 +41,17 @@ struct _Render_Engine
    int w, h;
    int vsync;
 
+   // Shader used for Evas_GL_Direct Optimization
+   GLuint   df_program;
+   GLuint   df_vtx_shader;
+   GLuint   df_fgmt_shader;
+   GLuint   df_col_attrib;
+   GLuint   df_pos_attrib;
+
+   GLfloat  df_clear_color[4];
+   GLfloat  df_depth_value;
+
+   int      df_initialized;
 };
 
 struct _Render_Engine_GL_Surface
@@ -51,6 +62,8 @@ struct _Render_Engine_GL_Surface
    int      depth_bits;
    int      stencil_bits;
 
+   int      direct_fb_opt;
+
    // Render target texture/buffers
    GLuint   rt_tex;
    GLint    rt_internal_fmt;
@@ -59,6 +72,12 @@ struct _Render_Engine_GL_Surface
    GLenum   rb_depth_fmt;
    GLuint   rb_stencil;
    GLenum   rb_stencil_fmt;
+
+#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+   EGLSurface  direct_sfc;
+#else
+   Window      direct_sfc;
+#endif
 
    Render_Engine_GL_Context   *current_ctx;
 };
@@ -73,6 +92,10 @@ struct _Render_Engine_GL_Context
 #endif
    GLuint      context_fbo;
    GLuint      current_fbo;
+
+
+   int         scissor_enabled;
+   int         scissor_upated;
 
    Render_Engine_GL_Surface   *current_sfc;
 };
@@ -99,8 +122,11 @@ struct _Extension_Entry
 
 static int initted = 0;
 static int gl_wins = 0;
-static Render_Engine_GL_Context *current_evgl_ctx;
-static Render_Engine *current_engine;
+static int gl_direct_override = 0;
+static int gl_direct_enabled = 0;
+static Render_Engine_GL_Context *current_evgl_ctx = NULL;
+static Render_Engine *current_engine = NULL;
+static Evas_Object *gl_direct_img_obj = NULL;
 
 static char _gl_ext_string[1024];
 static char _evasgl_ext_string[1024];
@@ -2500,13 +2526,22 @@ eng_image_draw(void *data, void *context, void *surface, void *image, int src_x,
 
    re = (Render_Engine *)data;
    if (!image) return;
-   eng_window_use(re->win);
-   evas_gl_common_context_target_surface_set(re->win->gl_context, surface);
-   re->win->gl_context->dc = context;
-   evas_gl_common_image_draw(re->win->gl_context, image,
-                             src_x, src_y, src_w, src_h,
-                             dst_x, dst_y, dst_w, dst_h,
-                             smooth);
+
+   if ((gl_direct_img_obj) && (gl_direct_enabled))
+     {
+        DBG("Rendering Directly to the window");
+        evas_object_image_pixels_dirty_set(gl_direct_img_obj, EINA_TRUE);
+     }
+   else
+     {
+        eng_window_use(re->win);
+        evas_gl_common_context_target_surface_set(re->win->gl_context, surface);
+        re->win->gl_context->dc = context;
+        evas_gl_common_image_draw(re->win->gl_context, image,
+                                  src_x, src_y, src_w, src_h,
+                                  dst_x, dst_y, dst_w, dst_h,
+                                  smooth);
+     }
 }
 
 static void
@@ -2689,7 +2724,7 @@ static int
 _set_internal_config(Render_Engine_GL_Surface *sfc, Evas_GL_Config *cfg)
 {
    // Also initialize pixel format here as well...
-   switch(cfg->color_format)
+   switch((int)cfg->color_format)
      {
       case EVAS_GL_RGB_888:
          sfc->rt_fmt          = GL_RGB;
@@ -2744,7 +2779,12 @@ _set_internal_config(Render_Engine_GL_Surface *sfc, Evas_GL_Config *cfg)
          return 0;
      }
 
-   // Do Packed Depth24_Stencil8 Later...
+   if (cfg->options_bits)
+     {
+        if (cfg->options_bits & EVAS_GL_OPTIONS_DIRECT)
+           sfc->direct_fb_opt       = 1;
+        // Add other options here...
+     }
 
    return 1;
 }
@@ -2849,12 +2889,27 @@ eng_gl_surface_create(void *data, void *config, int w, int h)
    sfc->rb_depth     = 0;
    sfc->rb_stencil   = 0;
 
+   /* Allow alpha for evas gl direct rendering */
+   // FIXME!!!: A little out of place for for now...
+   if (!gl_direct_override)
+      if (getenv("EVAS_GL_DIRECT_OVERRIDE")) gl_direct_override = 1;
+
    // Set the internal format based on the config
    if (!_set_internal_config(sfc, cfg))
      {
         ERR("Unsupported Format!");
         free(sfc);
         return NULL;
+     }
+
+   if (sfc->direct_fb_opt)
+     {
+        DBG("Enabling Direct rendering to the Evas' window.");
+#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+        sfc->direct_sfc = re->win->egl_surface[0];
+#else
+        sfc->direct_sfc = re->win->win;
+#endif
      }
 
    // Create internal resource context if it hasn't been created already
@@ -2933,6 +2988,17 @@ eng_gl_surface_destroy(void *data, void *surface)
         ERR("xxxMakeCurrent() failed!");
         return 0;
      }
+
+   // Reset the Framebuffer binding point
+   if ((current_evgl_ctx) && (current_evgl_ctx->current_fbo == current_evgl_ctx->context_fbo))
+     {
+        //glsym_glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        current_evgl_ctx->current_fbo = 0;
+        current_evgl_ctx->current_sfc = NULL;
+     }
+
+   // Clear direct rendering flag
+   gl_direct_enabled = 0;
 
    // Delete FBO/RBO and Texture here
    if (sfc->rt_tex)
@@ -3136,67 +3202,152 @@ eng_gl_make_current(void *data __UNUSED__, void *surface, void *context)
         return 1;
      }
 
-   // Do a make current only if it's not already current
+   // Check if direct rendering is possible:
+   //    It's possible when direct_fb_opt is on and either current image
+   //    object is valid or gl_direct_override is on.  Override allows
+   //    rendering outside of pixel getter but it doesn't guarantee
+   //    correct rendering.
+   if ((sfc->direct_fb_opt) && (gl_direct_img_obj || gl_direct_override))
+      gl_direct_enabled = 1;
+   else
+      gl_direct_enabled = 0;
+
+   if (gl_direct_enabled)
+     {
+        int curr_fbo = 0;
+
+        // Do a make current only if it's not already current
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-   if ((rsc = eina_tls_get(resource_key)) == EINA_FALSE) return 0;
-
-   if ((glsym_eglGetCurrentContext() != ctx->context) ||
-       (glsym_eglGetCurrentSurface(EGL_READ) != rsc->surface) ||
-       (glsym_eglGetCurrentSurface(EGL_DRAW) != rsc->surface) )
-     {
-        // Flush remainder of what's in Evas' pipeline
-        if (re->win) eng_window_use(NULL);
-
-        // Do a make current
-        ret = glsym_eglMakeCurrent(re->win->egl_disp, rsc->surface,
-                             rsc->surface, ctx->context);
-        if (!ret)
+        if ((glsym_eglGetCurrentContext() != ctx->context) || 
+            (glsym_eglGetCurrentSurface(EGL_READ) != sfc->direct_sfc) ||
+            (glsym_eglGetCurrentSurface(EGL_DRAW) != sfc->direct_sfc) ) 
           {
-             ERR("xxxMakeCurrent() failed!");
-             return 0;
+             DBG("Rendering Directly to the window\n");
+
+             // Flush remainder of what's in Evas' pipeline
+             if (re->win) eng_window_use(NULL);
+
+             // Do a make current
+             ret = glsym_eglMakeCurrent(re->win->egl_disp, sfc->direct_sfc,
+                                        sfc->direct_sfc, ctx->context);
+             if (!ret)
+               {
+                  ERR("xxxMakeCurrent() failed! code=%#x", glsym_eglGetError());
+                  //ERR("xxxMakeCurrent() failed!");
+                  return 0;
+               }
+
           }
-     }
 #else
-   if ((glsym_glXGetCurrentContext() != ctx->context) ||
-       (glsym_glXGetCurrentDrawable() != re->win->win) )
-     {
-        // Flush remainder of what's in Evas' pipeline
-        if (re->win) eng_window_use(NULL);
-
-        // Do a make current
-        ret = glsym_glXMakeCurrent(re->info->info.display, re->win->win, ctx->context);
-        if (!ret)
+        if ((glsym_glXGetCurrentContext() != ctx->context))
           {
-             ERR("xxxMakeCurrent() failed!");
-             return 0;
+             // Flush remainder of what's in Evas' pipeline
+             if (re->win) eng_window_use(NULL);
+
+             // Do a make current
+             ret = glsym_glXMakeCurrent(re->info->info.display, sfc->direct_sfc, ctx->context);
+             if (!ret)
+               {
+                  ERR("xxxMakeCurrent() failed!");
+                  return 0;
+               }
           }
+#endif
+        glsym_glGetIntegerv(GL_FRAMEBUFFER_BINDING, &curr_fbo);
+        if (ctx->context_fbo == curr_fbo)
+          {
+             ctx->current_fbo = 0;
+             glsym_glBindFramebuffer(GL_FRAMEBUFFER, 0);
+          }
+
      }
+   else
+     {
+        // Do a make current only if it's not already current
+#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+        if (eina_main_loop_is())
+          {
+             if ((glsym_eglGetCurrentContext() != ctx->context) ||
+                 (glsym_eglGetCurrentSurface(EGL_READ) != re->win->egl_surface[0]) ||
+                 (glsym_eglGetCurrentSurface(EGL_DRAW) != re->win->egl_surface[0]) )
+               {
+
+                  // Flush remainder of what's in Evas' pipeline
+                  if (re->win) eng_window_use(NULL);
+
+                  // Do a make current
+                  ret = glsym_eglMakeCurrent(re->win->egl_disp, re->win->egl_surface[0],
+                                             re->win->egl_surface[0], ctx->context);
+                  if (!ret)
+                    {
+                       ERR("xxxMakeCurrent() failed! code=%#x", glsym_eglGetError());
+                       return 0;
+                    }
+               }
+          }
+        else
+          {
+             if ((rsc = eina_tls_get(resource_key)) == EINA_FALSE) return 0;
+
+             if ((glsym_eglGetCurrentContext() != ctx->context) ||
+                 (glsym_eglGetCurrentSurface(EGL_READ) != rsc->surface) ||
+                 (glsym_eglGetCurrentSurface(EGL_DRAW) != rsc->surface) )
+               {
+                  // Flush remainder of what's in Evas' pipeline
+                  if (re->win) eng_window_use(NULL);
+
+                  // Do a make current
+                  ret = glsym_eglMakeCurrent(re->win->egl_disp, rsc->surface,
+                                             rsc->surface, ctx->context);
+                  if (!ret)
+                    {
+                       ERR("xxxMakeCurrent() failed!");
+                       return 0;
+                    }
+               }
+          }
+#else
+        if ((glsym_glXGetCurrentContext() != ctx->context) ||
+            (glsym_glXGetCurrentDrawable() != re->win->win) )
+          {
+             // Flush remainder of what's in Evas' pipeline
+             if (re->win) eng_window_use(NULL);
+
+             // Do a make current
+             ret = glsym_glXMakeCurrent(re->info->info.display, re->win->win, ctx->context);
+             if (!ret) 
+               {
+                  ERR("xxxMakeCurrent() failed!");
+                  return 0;
+               }
+          }
 #endif
 
-   // Create FBO if not already created
-   if (!ctx->initialized)
-     {
-        glsym_glGenFramebuffers(1, &ctx->context_fbo);
-        ctx->initialized = 1;
-     }
-
-   // Attach FBO if it hasn't been attached or if surface changed
-   if ((!sfc->fbo_attached) || (ctx->current_sfc != sfc))
-     {
-        if (!_attach_fbo_surface(re, sfc, ctx))
+        // Create FBO if not already created
+        if (!ctx->initialized)
           {
-             ERR("_attach_fbo_surface() failed.");
-             return 0;
+             glsym_glGenFramebuffers(1, &ctx->context_fbo);
+             ctx->initialized = 1;
           }
 
-        if (ctx->current_fbo)
-           // Bind to the previously bound buffer
-           glsym_glBindFramebuffer(GL_FRAMEBUFFER, ctx->current_fbo);
-        else
-           // Bind FBO
-           glsym_glBindFramebuffer(GL_FRAMEBUFFER, ctx->context_fbo);
+        // Attach FBO if it hasn't been attached or if surface changed
+        if ((!sfc->fbo_attached) || (ctx->current_sfc != sfc))
+          {
+             if (!_attach_fbo_surface(re, sfc, ctx))
+               {
+                  ERR("_attach_fbo_surface() failed.");
+                  return 0;
+               }
 
-        sfc->fbo_attached = 1;
+             if (ctx->current_fbo)
+                // Bind to the previously bound buffer
+                glsym_glBindFramebuffer(GL_FRAMEBUFFER, ctx->current_fbo);
+             else
+                // Bind FBO
+                glsym_glBindFramebuffer(GL_FRAMEBUFFER, ctx->context_fbo);
+
+             sfc->fbo_attached = 1;
+          }
      }
 
    // Set the current surface/context
@@ -3232,23 +3383,36 @@ eng_gl_proc_address_get(void *data __UNUSED__, const char *name)
 }
 
 static int
-eng_gl_native_surface_get(void *data, void *surface, void *native_surface)
+eng_gl_native_surface_get(void *data __UNUSED__, void *surface, void *native_surface)
 {
-   Render_Engine *re;
    Render_Engine_GL_Surface *sfc;
    Evas_Native_Surface *ns;
 
-   re  = (Render_Engine *)data;
    sfc = (Render_Engine_GL_Surface*)surface;
    ns  = (Evas_Native_Surface*)native_surface;
 
-   ns->type = EVAS_NATIVE_SURFACE_OPENGL;
-   ns->version = EVAS_NATIVE_SURFACE_VERSION;
-   ns->data.opengl.texture_id = sfc->rt_tex;
-   ns->data.opengl.x = 0;
-   ns->data.opengl.y = 0;
-   ns->data.opengl.w = sfc->w;
-   ns->data.opengl.h = sfc->h;
+   if (sfc->direct_fb_opt)
+     {
+        ns->type = EVAS_NATIVE_SURFACE_OPENGL;
+        ns->version = EVAS_NATIVE_SURFACE_VERSION;
+        ns->data.opengl.texture_id = sfc->rt_tex;
+        ns->data.opengl.framebuffer_id = 0;
+        ns->data.opengl.x = 0;
+        ns->data.opengl.y = 0;
+        ns->data.opengl.w = sfc->w;
+        ns->data.opengl.h = sfc->h;
+     }
+   else
+     {
+        ns->type = EVAS_NATIVE_SURFACE_OPENGL;
+        ns->version = EVAS_NATIVE_SURFACE_VERSION;
+        ns->data.opengl.texture_id = sfc->rt_tex;
+        ns->data.opengl.framebuffer_id = sfc->rt_tex;
+        ns->data.opengl.x = 0;
+        ns->data.opengl.y = 0;
+        ns->data.opengl.w = sfc->w;
+        ns->data.opengl.h = sfc->h;
+     }
 
    return 1;
 }
@@ -3268,22 +3432,27 @@ evgl_glBindFramebuffer(GLenum target, GLuint framebuffer)
 {
    Render_Engine_GL_Context *ctx = current_evgl_ctx;
 
+   if (!ctx)
+     {
+        ERR("Current context NULL.\n");
+        return;
+     }
+
    // Take care of BindFramebuffer 0 issue
    if (framebuffer==0)
      {
-        if (ctx)
-          {
-             glsym_glBindFramebuffer(target, ctx->context_fbo);
-             ctx->current_fbo = 0;
-          }
+        if (gl_direct_enabled)
+           glsym_glBindFramebuffer(target, 0);
+        else
+           glsym_glBindFramebuffer(target, ctx->context_fbo);
+        ctx->current_fbo = 0;
      }
    else
      {
         glsym_glBindFramebuffer(target, framebuffer);
 
         // Save this for restore when doing make current
-        if (ctx)
-           ctx->current_fbo = framebuffer;
+        ctx->current_fbo = framebuffer;
      }
 }
 
@@ -3294,6 +3463,225 @@ evgl_glBindRenderbuffer(GLenum target, GLuint renderbuffer)
    // On a second thought we don't need this
    glsym_glBindRenderbuffer(target, renderbuffer);
 }
+
+// Transform from Evas Coordinat to GL Coordinate
+// returns: oc[4] original image object dimension in gl coord
+// returns: nc[4] tranformed  (x, y, width, heigth) in gl coord
+static void
+compute_gl_coordinates(Evas_Object *obj, int rot, int clip,
+                       int x, int y, int width, int height,
+                       int imgc[4], int objc[4])
+{
+   if (rot == 0)
+     {
+        // oringinal image object coordinate in gl coordinate
+        imgc[0] = obj->cur.geometry.x;
+        imgc[1] = obj->layer->evas->output.h - obj->cur.geometry.y - obj->cur.geometry.h;
+        imgc[2] = imgc[0] + obj->cur.geometry.w;
+        imgc[3] = imgc[1] + obj->cur.geometry.h;
+
+        // transformed (x,y,width,height) in gl coordinate
+        objc[0] = imgc[0] + x;
+        objc[1] = imgc[1] + y;
+        objc[2] = objc[0] + width;
+        objc[3] = objc[1] + height;
+     }
+   else if (rot == 180)
+     {
+        // oringinal image object coordinate in gl coordinate
+        imgc[0] = obj->layer->evas->output.w - obj->cur.geometry.x - obj->cur.geometry.w;
+        imgc[1] = obj->cur.geometry.y;
+        imgc[2] = imgc[0] + obj->cur.geometry.w;
+        imgc[3] = imgc[1] + obj->cur.geometry.h;
+
+        // transformed (x,y,width,height) in gl coordinate
+        objc[0] = imgc[0] + obj->cur.geometry.w - x - width;
+        objc[1] = imgc[1] + obj->cur.geometry.h - y - height;
+        objc[2] = objc[0] + width;
+        objc[3] = objc[1] + height;
+
+     }
+   else if (rot == 90)
+     {
+        // oringinal image object coordinate in gl coordinate
+        imgc[0] = obj->cur.geometry.y;
+        imgc[1] = obj->cur.geometry.x;
+        imgc[2] = imgc[0] + obj->cur.geometry.h;
+        imgc[3] = imgc[1] + obj->cur.geometry.w;
+
+        // transformed (x,y,width,height) in gl coordinate
+        objc[0] = imgc[0] + obj->cur.geometry.h - y - height;
+        objc[1] = imgc[1] + x;
+        objc[2] = objc[0] + height;
+        objc[3] = objc[1] + width;
+     }
+   else if (rot == 270)
+     {
+        // oringinal image object coordinate in gl coordinate
+        imgc[0] = obj->layer->evas->output.h - obj->cur.geometry.y - obj->cur.geometry.h;
+        imgc[1] = obj->layer->evas->output.w - obj->cur.geometry.x - obj->cur.geometry.w;
+        imgc[2] = imgc[0] + obj->cur.geometry.h;
+        imgc[3] = imgc[1] + obj->cur.geometry.w;
+
+        // transformed (x,y,width,height) in gl coordinate
+        objc[0] = imgc[0] + y;
+        objc[1] = imgc[1] + obj->cur.geometry.w - x - width;
+        objc[2] = objc[0] + height;
+        objc[3] = objc[1] + width;
+     }
+   else
+     {
+        ERR("Invalid rotation angle %d.", rot);
+        return;
+     }
+
+   if (clip)
+     {
+        // Clip against original image object
+        if (objc[0] < imgc[0]) objc[0] = imgc[0];
+        if (objc[0] > imgc[2]) objc[0] = 0;
+
+        if (objc[1] < imgc[1]) objc[1] = imgc[1];
+        if (objc[1] > imgc[3]) objc[1] = 0;
+
+        if (objc[2] < imgc[0]) objc[0] = 0;
+        if (objc[2] > imgc[2]) objc[2] = imgc[2];
+
+        if (objc[3] < imgc[1]) objc[1] = 0;
+        if (objc[3] > imgc[3]) objc[3] = imgc[3];
+     }
+
+   imgc[2] = imgc[2]-imgc[0];     // width
+   imgc[3] = imgc[3]-imgc[1];     // height
+
+   objc[2] = objc[2]-objc[0];     // width
+   objc[3] = objc[3]-objc[1];     // height
+}
+
+static void
+evgl_glClear(GLbitfield mask)
+{
+   Render_Engine_GL_Context *ctx = current_evgl_ctx;
+   int rot = 0;
+   int oc[4], nc[4];
+
+   if ((gl_direct_img_obj) && (gl_direct_enabled) && (ctx) && (!ctx->current_fbo))
+     {
+        if ((current_engine) && (current_engine->win) && (current_engine->win->gl_context))
+           rot = current_engine->win->gl_context->rot;
+        else
+           ERR("Unable to retrieve rotation angle: %d", rot);
+
+        compute_gl_coordinates(gl_direct_img_obj, rot, 0, 0, 0, 0, 0, oc, nc);
+        glsym_glScissor(oc[0], oc[1], oc[2], oc[3]);
+        glsym_glClear(mask);
+     }
+   else
+      glsym_glClear(mask);
+}
+
+static void
+evgl_glClearColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha)
+{
+   current_engine->df_clear_color[0] = red;
+   current_engine->df_clear_color[1] = green;
+   current_engine->df_clear_color[2] = blue;
+   current_engine->df_clear_color[3] = alpha;
+
+   glsym_glClearColor(red, green, blue, alpha);
+
+}
+
+static void
+evgl_glEnable(GLenum cap)
+{
+   Render_Engine_GL_Context *ctx = current_evgl_ctx;
+
+   if (cap == GL_SCISSOR_TEST)
+      if (ctx) ctx->scissor_enabled = 1;
+   glsym_glEnable(cap);
+}
+
+static void
+evgl_glDisable(GLenum cap)
+{
+   Render_Engine_GL_Context *ctx = current_evgl_ctx;
+
+   if (cap == GL_SCISSOR_TEST)
+      if (ctx) ctx->scissor_enabled = 0;
+   glsym_glDisable(cap);
+}
+
+
+static void
+evgl_glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, void* pixels)
+{
+   Render_Engine_GL_Context *ctx = current_evgl_ctx;
+   int rot = 0;
+   int oc[4], nc[4];
+
+   if ((gl_direct_img_obj) && (gl_direct_enabled) && (ctx) && (!ctx->current_fbo))
+     {
+        if ((current_engine) && (current_engine->win) && (current_engine->win->gl_context))
+           rot = current_engine->win->gl_context->rot;
+        else
+           ERR("Unable to retrieve rotation angle: %d", rot);
+
+        compute_gl_coordinates(gl_direct_img_obj, rot, 1, x, y, width, height, oc, nc);
+        glsym_glReadPixels(nc[0], nc[1], nc[2], nc[3], format, type, pixels);
+     }
+   else
+      glsym_glReadPixels(x, y, width, height, format, type, pixels);
+}
+
+static void
+evgl_glScissor(GLint x, GLint y, GLsizei width, GLsizei height)
+{
+   Render_Engine_GL_Context *ctx = current_evgl_ctx;
+   int rot = 0;
+   int oc[4], nc[4];
+
+   if ((gl_direct_img_obj) && (gl_direct_enabled) && (ctx) && (!ctx->current_fbo))
+     {
+        if ((current_engine) && (current_engine->win) && (current_engine->win->gl_context))
+           rot = current_engine->win->gl_context->rot;
+        else
+           ERR("Unable to retrieve rotation angle: %d", rot);
+
+        compute_gl_coordinates(gl_direct_img_obj, rot, 1, x, y, width, height, oc, nc);
+        glsym_glScissor(nc[0], nc[1], nc[2], nc[3]);
+        ctx->scissor_upated = 1;
+     }
+   else
+      glsym_glScissor(x, y, width, height);
+}
+
+static void
+evgl_glViewport(GLint x, GLint y, GLsizei width, GLsizei height)
+{
+   Render_Engine_GL_Context *ctx = current_evgl_ctx;
+   int rot = 0;
+   int oc[4], nc[4];
+
+   if ((gl_direct_img_obj) && (gl_direct_enabled) && (ctx) && (!ctx->current_fbo))
+     {
+        if ((current_engine) && (current_engine->win) && (current_engine->win->gl_context))
+           rot = current_engine->win->gl_context->rot;
+        else
+           ERR("Unable to retrieve rotation angle: %d", rot);
+
+        compute_gl_coordinates(gl_direct_img_obj, rot, 0, x, y, width, height, oc, nc);
+        glsym_glEnable(GL_SCISSOR_TEST);
+        glsym_glScissor(oc[0], oc[1], oc[2], oc[3]);
+        glsym_glViewport(nc[0], nc[1], nc[2], nc[3]);
+     }
+   else
+      glsym_glViewport(x, y, width, height);
+
+}
+
+
+//----------------------------------------------//
 
 static void
 evgl_glClearDepthf(GLclampf depth)
@@ -3331,7 +3719,9 @@ evgl_glGetShaderPrecisionFormat(GLenum shadertype, GLenum precisiontype, GLint* 
         precision[0] = 24; // floor(-log2((1.0/16777218.0)));
      }
    return;
+   /*
    shadertype = precisiontype = 0;
+   */
 #endif
 }
 
@@ -3372,7 +3762,10 @@ evgl_evasglCreateImage(int target, void* buffer, int *attrib_list)
                                     attrib_list);
      }
    else
-      ERR("Invalid Engine... (Can't acccess EGL Display)\n");
+     {
+        ERR("Invalid Engine... (Can't acccess EGL Display)\n");
+        return NULL;
+     }
 }
 
 static void
@@ -3425,8 +3818,8 @@ eng_gl_api_get(void *data)
    ORD(glBufferData);
    ORD(glBufferSubData);
    ORD(glCheckFramebufferStatus);
-   ORD(glClear);
-   ORD(glClearColor);
+//   ORD(glClear);
+//   ORD(glClearColor);
 //   ORD(glClearDepthf);
    ORD(glClearStencil);
    ORD(glColorMask);
@@ -3448,11 +3841,11 @@ eng_gl_api_get(void *data)
    ORD(glDepthMask);
 //   ORD(glDepthRangef);
    ORD(glDetachShader);
-   ORD(glDisable);
+//   ORD(glDisable);
    ORD(glDisableVertexAttribArray);
    ORD(glDrawArrays);
    ORD(glDrawElements);
-   ORD(glEnable);
+//   ORD(glEnable);
    ORD(glEnableVertexAttribArray);
    ORD(glFinish);
    ORD(glFlush);
@@ -3506,7 +3899,7 @@ eng_gl_api_get(void *data)
 //   ORD(glReleaseShaderCompiler);
    ORD(glRenderbufferStorage);
    ORD(glSampleCoverage);
-   ORD(glScissor);
+//   ORD(glScissor);
 //   ORD(glShaderBinary);
    ORD(glShaderSource);
    ORD(glStencilFunc);
@@ -3551,7 +3944,7 @@ eng_gl_api_get(void *data)
    ORD(glVertexAttrib4f);
    ORD(glVertexAttrib4fv);
    ORD(glVertexAttribPointer);
-   ORD(glViewport);
+//   ORD(glViewport);
 #undef ORD
 
 #define ORD(f) EVAS_API_OVERRIDE(f, &gl_funcs, glsym_)
@@ -3611,6 +4004,14 @@ eng_gl_api_get(void *data)
    ORD(glBindFramebuffer);
    ORD(glBindRenderbuffer);
 
+   ORD(glClear);
+   ORD(glClearColor);
+   ORD(glEnable);
+   ORD(glDisable);
+   ORD(glReadPixels);
+   ORD(glScissor);
+   ORD(glViewport);
+
    // GLES2.0 API compat on top of desktop gl
    ORD(glClearDepthf);
    ORD(glDepthRangef);
@@ -3631,6 +4032,24 @@ eng_gl_api_get(void *data)
 #undef ORD
 
    return &gl_funcs;
+}
+
+static void
+eng_gl_img_obj_set(void *data, void *image, int has_alpha)
+{
+   Render_Engine *re = (Render_Engine *)data;
+
+   gl_direct_img_obj = NULL;
+
+   // Normally direct rendering isn't allowed if alpha is on and
+   // rotation is not 0.  BUT, if override is on, allow it.
+   if ((has_alpha) || (re->win->gl_context->rot!=0))
+     {
+        if (gl_direct_override)
+           gl_direct_img_obj = image;
+     }
+   else
+      gl_direct_img_obj = image;
 }
 
 static int
@@ -3771,6 +4190,9 @@ module_open(Evas_Module *em)
         EINA_LOG_ERR("Can not create a module log domain.");
         return 0;
      }
+   /* Allow alpha for evas gl direct rendering */
+   if (getenv("EVAS_GL_DIRECT_OVERRIDE")) gl_direct_override = 1;
+
    /* store it for later use */
    func = pfunc;
    /* now to override methods */
@@ -3855,6 +4277,7 @@ module_open(Evas_Module *em)
    ORD(gl_proc_address_get);
    ORD(gl_native_surface_get);
    ORD(gl_api_get);
+   ORD(gl_img_obj_set);
 
    ORD(image_load_error_get);
 
