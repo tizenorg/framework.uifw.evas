@@ -5492,8 +5492,7 @@ init_gl()
    Evas_GL_Opt_Flag api_opt = GL_NORMAL_PATH;
 
    fprintf(stderr, "Initializing OpenGL APIs...\n");
-// Fastpath is always enabled for test.
-#if 0
+
    fp_env = getenv("EVAS_GL_FASTPATH");
 
    if (fp_env) fastpath_opt = atoi(fp_env);
@@ -5514,10 +5513,7 @@ init_gl()
          api_opt = GL_NORMAL_PATH;
          break;
      }
-#else
-   api_opt = GL_FAST_PATH;
-   fprintf(stderr, "API OPT: Fastpath enabled...\n");
-#endif
+
    if (!gl_lib_init()) return 0;
 
    override_glue_apis(api_opt);
