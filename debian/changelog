@@ -1,3 +1,13 @@
+evas (1.1.0+svn.66966slp2+build04) unstable; urgency=low
+
+  * Package Upload
+  * Important Changes
+       [evas_textblock] fixed a bug about deleting REPLACEMENT_CHAR
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.66966slp2+build04
+
+ -- WooHyun Jung <wh0705.jung@samsung.com>  Fri, 10 Feb 2012 10:00:47 +0900
+
 evas (1.1.0+svn.66966slp2+build03) unstable; urgency=low
 
   * Package Upload
