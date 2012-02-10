@@ -663,6 +663,12 @@ init_context_states(EvasGlueContext ctx)
         ctx->vertex_array[i].normalized        = GL_FALSE;
         ctx->vertex_array[i].stride            = GL_FALSE;
         ctx->vertex_array[i].pointer           = NULL;
+
+        ctx->vertex_attrib[i].modified         = GL_FALSE;
+        ctx->vertex_attrib[i].value[0]         = 0;
+        ctx->vertex_attrib[i].value[1]         = 0;
+        ctx->vertex_attrib[i].value[2]         = 0;
+        ctx->vertex_attrib[i].value[3]         = 1;
      }
 
    ctx->gl_current_vertex_attrib[0]            = 0;
@@ -858,10 +864,16 @@ make_context_current(EvasGlueContext oldctx, EvasGlueContext newctx)
 
         for (i = 0; i < oldctx->num_tex_units; i++)
           {
-             STATE_COMPARE(tex_state[i].tex_id)
+             STATE_COMPARE(tex_2d_state[i])
                {
                   _sym_glActiveTexture(GL_TEXTURE0+i);
-                  _sym_glBindTexture(newctx->tex_state[i].tex_unit, newctx->tex_state[i].tex_id);
+                  _sym_glBindTexture(GL_TEXTURE_2D, newctx->tex_2d_state[i]);
+               }
+
+             STATE_COMPARE(tex_cube_map_state[i])
+               {
+                  _sym_glActiveTexture(GL_TEXTURE0+i);
+                  _sym_glBindTexture(GL_TEXTURE_CUBE_MAP, newctx->tex_cube_map_state[i]);
                }
           }
 
@@ -872,16 +884,6 @@ make_context_current(EvasGlueContext oldctx, EvasGlueContext newctx)
           {
              _sym_glHint(GL_GENERATE_MIPMAP_HINT, newctx->gl_generate_mipmap_hint);
           }
-        /*
-        STATE_COMPARE(gl_texture_binding_2d)
-          {
-             _sym_glBindTexture(GL_TEXTURE_2D, newctx->gl_texture_binding_2d);
-          }
-        STATE_COMPARE(gl_texture_binding_cube_map)
-          {
-             _sym_glBindTexture(GL_TEXTURE_CUBE_MAP, newctx->gl_texture_binding_cube_map);
-          }
-          */
      }
 
 
@@ -1031,15 +1033,15 @@ make_context_current(EvasGlueContext oldctx, EvasGlueContext newctx)
         for (i = 0; i < MAX_VERTEX_ATTRIBS; i++)
           {
              // If both untouched, don't bother
-             if ((oldctx->vertex_array[i].modified == GL_FALSE) &&
-                 (newctx->vertex_array[i].modified == GL_FALSE))
-                continue;
              _sym_glVertexAttribPointer(i,
                                         newctx->vertex_array[i].size,
                                         newctx->vertex_array[i].type,
                                         newctx->vertex_array[i].normalized,
                                         newctx->vertex_array[i].stride,
                                         newctx->vertex_array[i].pointer);
+
+             _sym_glVertexAttrib4fv(i, newctx->vertex_attrib[i].value);
+
 
              if (newctx->vertex_array[i].enabled == GL_TRUE)
                 _sym_glEnableVertexAttribArray(i);
@@ -3019,10 +3021,7 @@ fpgl_glBindBuffer(GLenum target, GLuint buffer)
 
              GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 
-             if (buffer == 0)
-                current_ctx->_bind_flag &= (~FLAG_BIT_0);
-             else
-                current_ctx->_bind_flag |= FLAG_BIT_0;
+             current_ctx->_bind_flag |= FLAG_BIT_0;
              current_ctx->gl_array_buffer_binding = buffer;
           }
      }
@@ -3033,10 +3032,7 @@ fpgl_glBindBuffer(GLenum target, GLuint buffer)
              _sym_glBindBuffer(target, buffer);
              GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 
-             if (buffer == 0)
-                current_ctx->_bind_flag &= (~FLAG_BIT_1);
-             else
-                current_ctx->_bind_flag |= FLAG_BIT_1;
+             current_ctx->_bind_flag |= FLAG_BIT_1;
              current_ctx->gl_element_array_buffer_binding = buffer;
           }
      }
@@ -3058,10 +3054,7 @@ fpgl_glBindFramebuffer(GLenum target, GLuint framebuffer)
              _sym_glBindFramebuffer(target, framebuffer);
              GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 
-             if (framebuffer == 0)
-                current_ctx->_bind_flag &= (~FLAG_BIT_2);
-             else
-                current_ctx->_bind_flag |= FLAG_BIT_2;
+             current_ctx->_bind_flag |= FLAG_BIT_2;
              current_ctx->gl_framebuffer_binding = framebuffer;
           }
      }
@@ -3084,10 +3077,7 @@ fpgl_glBindRenderbuffer(GLenum target, GLuint renderbuffer)
              _sym_glBindRenderbuffer(target, renderbuffer);
              GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 
-             if (renderbuffer == 0)
-                current_ctx->_bind_flag &= (~FLAG_BIT_3);
-             else
-                current_ctx->_bind_flag |= FLAG_BIT_3;
+             current_ctx->_bind_flag |= FLAG_BIT_3;
              current_ctx->gl_renderbuffer_binding = renderbuffer;
           }
      }
@@ -3106,42 +3096,34 @@ fpgl_glBindTexture(GLenum target, GLuint texture)
 
    if (target == GL_TEXTURE_2D)
      {
-        CURR_STATE_COMPARE(gl_texture_binding_2d, texture)
+        //CURR_STATE_COMPARE(gl_texture_binding_2d, texture)
           {
-             _sym_glEnable(GL_TEXTURE_2D);
              _sym_glBindTexture(target, texture);
 
              GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 
-             if (texture == 0)
-                current_ctx->_tex_flag1 &= (~FLAG_BIT_3);
-             else
-                current_ctx->_tex_flag1 |= FLAG_BIT_3;
+             current_ctx->_tex_flag1 |= FLAG_BIT_3;
              current_ctx->gl_texture_binding_2d = texture;
 
              tex_idx = current_ctx->gl_active_texture - GL_TEXTURE0;
-             current_ctx->tex_state[tex_idx].tex_unit = GL_TEXTURE_2D;
-             current_ctx->tex_state[tex_idx].tex_id = texture;
+
+             current_ctx->tex_2d_state[tex_idx] = texture;
           }
      }
    else if (target == GL_TEXTURE_CUBE_MAP)
      {
-        CURR_STATE_COMPARE(gl_texture_binding_cube_map, texture)
+        //CURR_STATE_COMPARE(gl_texture_binding_cube_map, texture)
           {
-             _sym_glEnable(GL_TEXTURE_CUBE_MAP);
              _sym_glBindTexture(target, texture);
 
              GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 
-             if (texture == 0)
-                current_ctx->_tex_flag1 &= (~FLAG_BIT_4);
-             else
-                current_ctx->_tex_flag1 |= FLAG_BIT_4;
+             current_ctx->_tex_flag1 |= FLAG_BIT_4;
              current_ctx->gl_texture_binding_cube_map = texture;
 
              tex_idx = current_ctx->gl_active_texture - GL_TEXTURE0;
-             current_ctx->tex_state[tex_idx].tex_unit = GL_TEXTURE_CUBE_MAP;
-             current_ctx->tex_state[tex_idx].tex_id = texture;
+
+             current_ctx->tex_cube_map_state[tex_idx] = texture;
           }
      }
 }
@@ -3449,6 +3431,9 @@ static void
 fpgl_glDisableVertexAttribArray(GLuint index)
 {
    _sym_glDisableVertexAttribArray(index);
+
+   current_ctx->_varray_flag |= FLAG_BIT_0;
+   current_ctx->vertex_array[index].enabled    = GL_FALSE;
 }
 
 static void

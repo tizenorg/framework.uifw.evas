@@ -1028,7 +1028,9 @@ struct _EvasGlueContext
    //------------------//
    unsigned char _tex_flag1;
    // Texture
-   GL_Texture_State  tex_state[MAX_TEXTURE_UNITS];
+   //GL_Texture_State  tex_state[MAX_TEXTURE_UNITS];
+   GLuint            tex_2d_state[MAX_TEXTURE_UNITS];
+   GLuint            tex_cube_map_state[MAX_TEXTURE_UNITS];
    GLenum            gl_active_texture;               // GL_TEXTURE0
    GLenum            gl_generate_mipmap_hint;         // GL_DONT_CARE
    GLuint            gl_texture_binding_2d;           // 0
