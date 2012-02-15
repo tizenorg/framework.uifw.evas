@@ -1,3 +1,33 @@
+evas (1.1.0+svn.66966slp2+build04) unstable; urgency=low
+
+  * Package Upload
+  * Important Changes
+       [evas_textblock] fixed a bug about deleting REPLACEMENT_CHAR
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.66966slp2+build04
+
+ -- WooHyun Jung <wh0705.jung@samsung.com>  Fri, 10 Feb 2012 10:00:47 +0900
+
+evas (1.1.0+svn.66966slp2+build03) unstable; urgency=low
+
+  * Package Upload
+  * Applying direct rendering
+  * Applying fastpath
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.66966slp2+build03
+
+ -- Sanghee Park <sh15.park@samsung.com>  Thu, 09 Feb 2012 17:03:02 +0900
+
+evas (1.1.0+svn.66966slp2+build02) unstable; urgency=low
+
+  * Package Upload
+  * Important Changes
+       [textblock] merge with 67696 for fixing BS when trying markup_to_utf8 with invalid escapes
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.66966slp2+build02
+
+ -- WooHyun Jung <wh0705.jung@samsung.com>  Mon, 06 Feb 2012 12:09:21 +0900
+
 evas (1.1.0+svn.66966slp2+build01) unstable; urgency=low
 
   * Package Upload

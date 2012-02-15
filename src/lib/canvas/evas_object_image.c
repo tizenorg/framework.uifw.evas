@@ -2933,7 +2933,7 @@ evas_object_image_render(Evas_Object *obj, void *output, void *context, void *su
                        (obj->cur.color.r == 255) &&
                        (obj->cur.color.g == 255) &&
                        (obj->cur.color.b == 255) &&
-                       (obj->cur.color.a == 255) && 
+                       (obj->cur.color.a == 255) &&
                        (!obj->cur.map) )
                     {
                        if (obj->layer->evas->engine.func->gl_img_obj_set)
@@ -3184,7 +3184,7 @@ evas_object_image_render(Evas_Object *obj, void *output, void *context, void *su
                }
           }
 
-        // Unset img object 
+        // Unset img object
         if (img_set)
           {
              if (obj->layer->evas->engine.func->gl_img_obj_set)
@@ -3192,7 +3192,7 @@ evas_object_image_render(Evas_Object *obj, void *output, void *context, void *su
                   obj->layer->evas->engine.func->gl_img_obj_set(output, NULL, 0);
                   img_set = 0;
                }
-          }        
+          }
      }
 }
 

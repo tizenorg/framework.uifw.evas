@@ -44,7 +44,7 @@ struct _Render_Engine
    // Shader used for Evas_GL_Direct Optimization
    GLuint   df_program;
    GLuint   df_vtx_shader;
-   GLuint   df_fgmt_shader;   
+   GLuint   df_fgmt_shader;
    GLuint   df_col_attrib;
    GLuint   df_pos_attrib;
 
@@ -136,51 +136,21 @@ static Eina_TLS   resource_key;
 static Eina_List *resource_list;
 LK(resource_lock);
 
-typedef void            (*_eng_fn) (void);
-typedef _eng_fn         (*glsym_func_eng_fn) ();
 typedef void            (*glsym_func_void) ();
 typedef void           *(*glsym_func_void_ptr) ();
 typedef int             (*glsym_func_int) ();
 typedef unsigned int    (*glsym_func_uint) ();
 typedef unsigned char   (*glsym_func_uchar) ();
-typedef unsigned char  *(*glsym_func_uchar_ptr) ();
-typedef const char     *(*glsym_func_const_char_ptr) ();
 
+/*
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
 
 #ifndef EGL_NATIVE_PIXMAP_KHR
 # define EGL_NATIVE_PIXMAP_KHR 0x30b0
 #endif
-_eng_fn  (*glsym_eglGetProcAddress)            (const char *a) = NULL;
-void     (*glsym_eglBindTexImage)              (EGLDisplay a, EGLSurface b, int c) = NULL;
-void     (*glsym_eglReleaseTexImage)           (EGLDisplay a, EGLSurface b, int c) = NULL;
-void    *(*glsym_eglCreateImage)               (EGLDisplay a, EGLContext b, EGLenum c, EGLClientBuffer d, const int *e) = NULL;
-void     (*glsym_eglDestroyImage)              (EGLDisplay a, void *b) = NULL;
-void     (*glsym_glEGLImageTargetTexture2DOES) (int a, void *b)  = NULL;
-void     (*glsym_glEGLImageTargetRenderbufferStorageOES) (int a, void *b)  = NULL;
-void          *(*glsym_eglMapImageSEC)         (void *a, void *b) = NULL;
-unsigned int   (*glsym_eglUnmapImageSEC)       (void *a, void *b) = NULL;
-const char    *(*glsym_eglQueryString)         (EGLDisplay a, int name) = NULL;
 
-unsigned int   (*glsym_eglLockSurface)          (EGLDisplay a, EGLSurface b, const int *attrib_list) = NULL;
-unsigned int   (*glsym_eglUnlockSurface)        (EGLDisplay a, EGLSurface b) = NULL;
-
-#else
-typedef XID     (*glsym_func_xid) ();
-
-_eng_fn  (*glsym_glXGetProcAddress)  (const char *a) = NULL;
-void     (*glsym_glXBindTexImage)    (Display *a, GLXDrawable b, int c, int *d) = NULL;
-void     (*glsym_glXReleaseTexImage) (Display *a, GLXDrawable b, int c) = NULL;
-int      (*glsym_glXGetVideoSync)    (unsigned int *a) = NULL;
-int      (*glsym_glXWaitVideoSync)   (int a, int b, unsigned int *c) = NULL;
-XID      (*glsym_glXCreatePixmap)    (Display *a, void *b, Pixmap c, const int *d) = NULL;
-void     (*glsym_glXDestroyPixmap)   (Display *a, XID b) = NULL;
-void     (*glsym_glXQueryDrawable)   (Display *a, XID b, int c, unsigned int *d) = NULL;
-int      (*glsym_glXSwapIntervalSGI) (int a) = NULL;
-void     (*glsym_glXSwapIntervalEXT) (Display *s, GLXDrawable b, int c) = NULL;
-
-const char *(*glsym_glXQueryExtensionsString) (Display *a, int screen) = NULL;
 #endif
+*/
 
 // GLES2 Extensions
 void 	(*glsym_glGetProgramBinaryOES) (GLuint program, GLsizei bufSize, GLsizei *length, GLenum *binaryFormat, void *binary) = NULL;
@@ -354,89 +324,11 @@ _sym_init(void)
    if ((!dst) && (glsym_eglGetProcAddress)) dst = (typ)glsym_eglGetProcAddress(sym); \
    if (!dst) dst = (typ)dlsym(RTLD_DEFAULT, sym)
 
-   FINDSYM(glsym_eglGetProcAddress, "eglGetProcAddress", glsym_func_eng_fn);
-   FINDSYM(glsym_eglGetProcAddress, "eglGetProcAddressEXT", glsym_func_eng_fn);
-   FINDSYM(glsym_eglGetProcAddress, "eglGetProcAddressARB", glsym_func_eng_fn);
-   FINDSYM(glsym_eglGetProcAddress, "eglGetProcAddressKHR", glsym_func_eng_fn);
-
-   FINDSYM(glsym_eglBindTexImage, "eglBindTexImage", glsym_func_void);
-   FINDSYM(glsym_eglBindTexImage, "eglBindTexImageEXT", glsym_func_void);
-   FINDSYM(glsym_eglBindTexImage, "eglBindTexImageARB", glsym_func_void);
-   FINDSYM(glsym_eglBindTexImage, "eglBindTexImageKHR", glsym_func_void);
-
-   FINDSYM(glsym_eglReleaseTexImage, "eglReleaseTexImage", glsym_func_void);
-   FINDSYM(glsym_eglReleaseTexImage, "eglReleaseTexImageEXT", glsym_func_void);
-   FINDSYM(glsym_eglReleaseTexImage, "eglReleaseTexImageARB", glsym_func_void);
-   FINDSYM(glsym_eglReleaseTexImage, "eglReleaseTexImageKHR", glsym_func_void);
-
-   FINDSYM(glsym_eglCreateImage, "eglCreateImage", glsym_func_void_ptr);
-   FINDSYM(glsym_eglCreateImage, "eglCreateImageEXT", glsym_func_void_ptr);
-   FINDSYM(glsym_eglCreateImage, "eglCreateImageARB", glsym_func_void_ptr);
-   FINDSYM(glsym_eglCreateImage, "eglCreateImageKHR", glsym_func_void_ptr);
-
-   FINDSYM(glsym_eglDestroyImage, "eglDestroyImage", glsym_func_void);
-   FINDSYM(glsym_eglDestroyImage, "eglDestroyImageEXT", glsym_func_void);
-   FINDSYM(glsym_eglDestroyImage, "eglDestroyImageARB", glsym_func_void);
-   FINDSYM(glsym_eglDestroyImage, "eglDestroyImageKHR", glsym_func_void);
-
-   FINDSYM(glsym_glEGLImageTargetTexture2DOES, "glEGLImageTargetTexture2DOES", glsym_func_void);
-
-   FINDSYM(glsym_glEGLImageTargetRenderbufferStorageOES, "glEGLImageTargetRenderbufferStorageOES", glsym_func_void);
-
-   FINDSYM(glsym_eglMapImageSEC, "eglMapImageSEC", glsym_func_void_ptr);
-   FINDSYM(glsym_eglUnmapImageSEC, "eglUnmapImageSEC", glsym_func_uint);
-
-   FINDSYM(glsym_eglQueryString, "eglQueryString", glsym_func_const_char_ptr);
-
-   FINDSYM(glsym_eglLockSurface, "eglLockSurface", glsym_func_uint);
-   FINDSYM(glsym_eglLockSurface, "eglLockSurfaceEXT", glsym_func_uint);
-   FINDSYM(glsym_eglLockSurface, "eglLockSurfaceARB", glsym_func_uint);
-   FINDSYM(glsym_eglLockSurface, "eglLockSurfaceKHR", glsym_func_uint);
-
-   FINDSYM(glsym_eglUnlockSurface, "eglUnlockSurface", glsym_func_uint);
-   FINDSYM(glsym_eglUnlockSurface, "eglUnlockSurfaceEXT", glsym_func_uint);
-   FINDSYM(glsym_eglUnlockSurface, "eglUnlockSurfaceARB", glsym_func_uint);
-   FINDSYM(glsym_eglUnlockSurface, "eglUnlockSurfaceKHR", glsym_func_uint);
-
 #else
 #define FINDSYM(dst, sym, typ) \
    if ((!dst) && (glsym_glXGetProcAddress)) dst = (typ)glsym_glXGetProcAddress(sym); \
    if (!dst) dst = (typ)dlsym(RTLD_DEFAULT, sym)
 
-   FINDSYM(glsym_glXGetProcAddress, "glXGetProcAddress", glsym_func_eng_fn);
-   FINDSYM(glsym_glXGetProcAddress, "glXGetProcAddressEXT", glsym_func_eng_fn);
-   FINDSYM(glsym_glXGetProcAddress, "glXGetProcAddressARB", glsym_func_eng_fn);
-
-   FINDSYM(glsym_glXBindTexImage, "glXBindTexImage", glsym_func_void);
-   FINDSYM(glsym_glXBindTexImage, "glXBindTexImageEXT", glsym_func_void);
-   FINDSYM(glsym_glXBindTexImage, "glXBindTexImageARB", glsym_func_void);
-
-   FINDSYM(glsym_glXReleaseTexImage, "glXReleaseTexImage", glsym_func_void);
-   FINDSYM(glsym_glXReleaseTexImage, "glXReleaseTexImageEXT", glsym_func_void);
-   FINDSYM(glsym_glXReleaseTexImage, "glXReleaseTexImageARB", glsym_func_void);
-
-   FINDSYM(glsym_glXGetVideoSync, "glXGetVideoSyncSGI", glsym_func_int);
-
-   FINDSYM(glsym_glXWaitVideoSync, "glXWaitVideoSyncSGI", glsym_func_int);
-
-   FINDSYM(glsym_glXCreatePixmap, "glXCreatePixmap", glsym_func_xid);
-   FINDSYM(glsym_glXCreatePixmap, "glXCreatePixmapEXT", glsym_func_xid);
-   FINDSYM(glsym_glXCreatePixmap, "glXCreatePixmapARB", glsym_func_xid);
-
-   FINDSYM(glsym_glXDestroyPixmap, "glXDestroyPixmap", glsym_func_void);
-   FINDSYM(glsym_glXDestroyPixmap, "glXDestroyPixmapEXT", glsym_func_void);
-   FINDSYM(glsym_glXDestroyPixmap, "glXDestroyPixmapARB", glsym_func_void);
-
-   FINDSYM(glsym_glXQueryDrawable, "glXQueryDrawable", glsym_func_void);
-   FINDSYM(glsym_glXQueryDrawable, "glXQueryDrawableEXT", glsym_func_void);
-   FINDSYM(glsym_glXQueryDrawable, "glXQueryDrawableARB", glsym_func_void);
-
-   FINDSYM(glsym_glXSwapIntervalSGI, "glXSwapIntervalMESA", glsym_func_int);
-   FINDSYM(glsym_glXSwapIntervalSGI, "glXSwapIntervalSGI", glsym_func_int);
-
-   FINDSYM(glsym_glXSwapIntervalEXT, "glXSwapIntervalEXT", glsym_func_void);
-
-   FINDSYM(glsym_glXQueryExtensionsString, "glXQueryExtensionsString", glsym_func_const_char_ptr);
 #endif
 
    //----------- GLES 2.0 Extensions ------------//
@@ -591,7 +483,7 @@ _extensions_init(Render_Engine *re)
    memset(_evasgl_ext_string, 0, 1024);
 
    // GLES 2.0 Extensions
-   glexts = (const char*)glGetString(GL_EXTENSIONS);
+   glexts = (const char*)glsym_glGetString(GL_EXTENSIONS);
 
    DBG("--------GLES 2.0 Extensions--------");
    for (i = 0; _gl_ext_entries[i].name != NULL; i++)
@@ -616,7 +508,7 @@ _extensions_init(Render_Engine *re)
 #else
    if (glsym_glXQueryExtensionsString)
      {
-        evasglexts = glXQueryExtensionsString(re->info->info.display, 
+        evasglexts = glsym_glXQueryExtensionsString(re->info->info.display,
                                               re->info->info.screen);
 #endif
 
@@ -751,7 +643,7 @@ _create_internal_glue_resources(void *data)
    context_attrs[2] = EGL_NONE;
 
    // Create resource surface for EGL
-   rsc->surface = eglCreateWindowSurface(re->win->egl_disp,
+   rsc->surface = glsym_eglCreateWindowSurface(re->win->egl_disp,
                                          re->win->egl_config,
                                          (EGLNativeWindowType)DefaultRootWindow(re->info->info.display),
                                          NULL);
@@ -763,7 +655,7 @@ _create_internal_glue_resources(void *data)
      }
 
    // Create a resource context for EGL
-   rsc->context = eglCreateContext(re->win->egl_disp,
+   rsc->context = glsym_eglCreateContext(re->win->egl_disp,
                                    re->win->egl_config,
                                    re->win->egl_context[0], // Evas' GL Context
                                    context_attrs);
@@ -789,10 +681,10 @@ _create_internal_glue_resources(void *data)
 
 #else
    // GLX
-   rsc->context = glXCreateContext(re->info->info.display,
-                                   re->win->visualinfo,
-                                   re->win->context,      // Evas' GL Context
-                                   1);
+   rsc->context = glsym_glXCreateContext(re->info->info.display,
+                                         re->win->visualinfo,
+                                         re->win->context,      // Evas' GL Context
+                                         1);
    if (!rsc->context)
      {
         ERR("Internal Resource Context Creations Failed.");
@@ -832,8 +724,8 @@ _destroy_internal_glue_resources(void *data)
    LKL(resource_lock);
    EINA_LIST_FOREACH(resource_list, l, rsc)
      {
-        if (rsc->surface) eglDestroySurface(re->win->egl_disp, rsc->surface);
-        if (rsc->context) eglDestroyContext(re->win->egl_disp, rsc->context);
+        if (rsc->surface) glsym_eglDestroySurface(re->win->egl_disp, rsc->surface);
+        if (rsc->context) glsym_eglDestroyContext(re->win->egl_disp, rsc->context);
         free(rsc);
      }
    eina_list_free(resource_list);
@@ -849,7 +741,7 @@ _destroy_internal_glue_resources(void *data)
      {
         if (rsc)
           {
-             glXDestroyContext(re->info->info.display, rsc->context);
+             glsym_glXDestroyContext(re->info->info.display, rsc->context);
              free(rsc);
           }
      }
@@ -878,7 +770,7 @@ eng_setup(Evas *e, void *in)
 #else
         int eb, evb;
 
-        if (!glXQueryExtension(info->info.display, &eb, &evb)) return 0;
+        if (!glsym_glXQueryExtension(info->info.display, &eb, &evb)) return 0;
 #endif
         re = calloc(1, sizeof(Render_Engine));
         if (!re) return 0;
@@ -1098,7 +990,7 @@ eng_output_free(void *data)
         // Destroy the resource surface
         // Only required for EGL case
         if (re->surface)
-           eglDestroySurface(re->win->egl_disp, re->surface);
+           glsym_eglDestroySurface(re->win->egl_disp, re->surface);
 #endif
 
         // Destroy the resource context
@@ -1308,7 +1200,7 @@ eng_output_redraws_next_update_push(void *data, void *surface __UNUSED__, int x 
         if (s) safe_native = atoi(s);
         else
           {
-             s = (const char *)glGetString(GL_RENDERER);
+             s = (const char *)glsym_glGetString(GL_RENDERER);
              if (s)
                {
                   if (strstr(s, "PowerVR SGX 540") ||
@@ -1326,19 +1218,19 @@ eng_output_redraws_next_update_push(void *data, void *surface __UNUSED__, int x 
    pt = t0;
 #endif
    // previous rendering should be done and swapped
-   if (!safe_native) eglWaitNative(EGL_CORE_NATIVE_ENGINE);
+   if (!safe_native) glsym_eglWaitNative(EGL_CORE_NATIVE_ENGINE);
 #ifdef FRAMECOUNT
    double t1 = get_time();
    tb = t1 - t0;
    printf("... %1.5f -> %1.5f | ", ta, tb);
 #endif
-//   if (eglGetError() != EGL_SUCCESS)
+//   if (glsym_eglGetError() != EGL_SUCCESS)
 //     {
-//        printf("Error:  eglWaitNative(EGL_CORE_NATIVE_ENGINE) fail.\n");
+//        printf("Error:  glsym_eglWaitNative(EGL_CORE_NATIVE_ENGINE) fail.\n");
 //     }
 #else
    // previous rendering should be done and swapped
-   if (!safe_native) glXWaitX();
+   if (!safe_native) glsym_glXWaitX();
 #endif
 //x//   printf("frame -> push\n");
 }
@@ -1361,16 +1253,16 @@ eng_output_flush(void *data)
 #endif
    if (!re->vsync)
      {
-        if (re->info->vsync) eglSwapInterval(re->win->egl_disp, 1);
-        else eglSwapInterval(re->win->egl_disp, 0);
+        if (re->info->vsync) glsym_eglSwapInterval(re->win->egl_disp, 1);
+        else glsym_eglSwapInterval(re->win->egl_disp, 0);
         re->vsync = 1;
      }
    if (re->info->callback.pre_swap)
      {
         re->info->callback.pre_swap(re->info->callback.data, re->evas);
      }
-   eglSwapBuffers(re->win->egl_disp, re->win->egl_surface[0]);
-   if (!safe_native) eglWaitGL();
+   glsym_eglSwapBuffers(re->win->egl_disp, re->win->egl_surface[0]);
+   if (!safe_native) glsym_eglWaitGL();
    if (re->info->callback.post_swap)
      {
         re->info->callback.post_swap(re->info->callback.data, re->evas);
@@ -1379,9 +1271,9 @@ eng_output_flush(void *data)
    double t1 = get_time();
    printf("%1.5f\n", t1 - t0);
 #endif
-//   if (eglGetError() != EGL_SUCCESS)
+//   if (glsym_eglGetError() != EGL_SUCCESS)
 //     {
-//        printf("Error:  eglSwapBuffers() fail.\n");
+//        printf("Error:  glsym_eglSwapBuffers() fail.\n");
 //     }
 #else
 #ifdef VSYNC_TO_SCREEN
@@ -1429,12 +1321,12 @@ eng_output_flush(void *data)
      {
 //        double t, t2 = 0.0;
 //        t = get_time();
-        glXSwapBuffers(re->win->disp, re->win->win);
+        glsym_glXSwapBuffers(re->win->disp, re->win->win);
 //        t = get_time() - t;
 //        if (!safe_native)
 //          {
 //             t2 = get_time();
-//             glXWaitGL();
+//             glsym_glXWaitGL();
 //             t2 = get_time() - t2;
 //          }
 //        printf("swap: %3.5f (%3.5fms), x wait gl: %3.5f (%3.5fms)\n", 
@@ -1443,6 +1335,7 @@ eng_output_flush(void *data)
    else
      {
 // FIXME: this doesn't work.. why oh why?
+        /*
         int sx, sy, sw, sh;
 
         sx = re->win->draw.x1;
@@ -1451,15 +1344,17 @@ eng_output_flush(void *data)
         sh = (re->win->draw.y2 - re->win->draw.y1) + 1;
         sy = re->win->h - sy - sh;
         
-        glBitmap(0, 0, 0, 0, sx, re->win->h - sy, NULL);
-        glEnable(GL_SCISSOR_TEST);
-        glScissor(sx, sy, sw, sh);
-        glDrawBuffer(GL_FRONT);
-        glCopyPixels(sx, sy, sw, sh, GL_COLOR);
-        glDrawBuffer(GL_BACK);
-        glDisable(GL_SCISSOR_TEST);
-        glBitmap(0, 0, 0, 0, 0, 0, NULL);
-        glFlush();
+        glsym_glBitmap(0, 0, 0, 0, sx, re->win->h - sy, NULL);
+        glsym_glEnable(GL_SCISSOR_TEST);
+        glsym_glScissor(sx, sy, sw, sh);
+        glsym_glDrawBuffer(GL_FRONT);
+        glsym_glCopyPixels(sx, sy, sw, sh, GL_COLOR);
+        glsym_glDrawBuffer(GL_BACK);
+        glsym_glDisable(GL_SCISSOR_TEST);
+        glsym_glBitmap(0, 0, 0, 0, 0, 0, NULL);
+        glsym_glFlush();
+        */
+        ERR("Need Fixing.  Temporarily Disabled.");
      }
    if (re->info->callback.post_swap)
      {
@@ -1778,11 +1673,11 @@ _native_bind_cb(void *data, void *image)
           if (glsym_glEGLImageTargetTexture2DOES)
             {
               glsym_glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, n->egl_surface);
-              if (eglGetError() != EGL_SUCCESS)
-                ERR("glEGLImageTargetTexture2DOES() failed.");
+              if (glsym_eglGetError() != EGL_SUCCESS)
+                ERR("glsym_glEGLImageTargetTexture2DOES() failed.");
             }
           else
-            ERR("Try glEGLImageTargetTexture2DOES on EGL with no support");
+            ERR("Try glsym_glEGLImageTargetTexture2DOES on EGL with no support");
         }
 #else
 # ifdef GLX_BIND_TO_TEXTURE_TARGETS_EXT
@@ -1795,13 +1690,13 @@ _native_bind_cb(void *data, void *image)
           GLERR(__FUNCTION__, __FILE__, __LINE__, "");
         }
       else
-        ERR("Try glXBindTexImage on GLX with no support");
+        ERR("Try glsym_glXBindTexImage on GLX with no support");
 # endif
 #endif
     }
   else if (n->ns.type == EVAS_NATIVE_SURFACE_OPENGL)
     {
-      glBindTexture(GL_TEXTURE_2D, n->ns.data.opengl.texture_id);
+      glsym_glBindTexture(GL_TEXTURE_2D, n->ns.data.opengl.texture_id);
       GLERR(__FUNCTION__, __FILE__, __LINE__, "");
     }
    return;
@@ -1829,13 +1724,13 @@ _native_unbind_cb(void *data, void *image)
           GLERR(__FUNCTION__, __FILE__, __LINE__, "");
         }
       else
-        ERR("Try glXReleaseTexImage on GLX with no support");
+        ERR("Try glsym_glXReleaseTexImage on GLX with no support");
 # endif
 #endif
     }
   else if (n->ns.type == EVAS_NATIVE_SURFACE_OPENGL)
     {
-      glBindTexture(GL_TEXTURE_2D, 0);
+      glsym_glBindTexture(GL_TEXTURE_2D, 0);
       GLERR(__FUNCTION__, __FILE__, __LINE__, "");
     }
    return;
@@ -1861,11 +1756,11 @@ _native_free_cb(void *data, void *image)
             {
               glsym_eglDestroyImage(re->win->egl_disp,
                                     n->egl_surface);
-              if (eglGetError() != EGL_SUCCESS)
-                ERR("eglDestroyImage() failed.");
+              if (glsym_eglGetError() != EGL_SUCCESS)
+                ERR("glsym_eglDestroyImage() failed.");
             }
           else
-            ERR("Try eglDestroyImage on EGL with no support");
+            ERR("Try glsym_eglDestroyImage on EGL with no support");
         }
 #else
 # ifdef GLX_BIND_TO_TEXTURE_TARGETS_EXT
@@ -1880,7 +1775,7 @@ _native_free_cb(void *data, void *image)
                   GLERR(__FUNCTION__, __FILE__, __LINE__, "");
                 }
               else
-                ERR("Try glXReleaseTexImage on GLX with no support");
+                ERR("Try glsym_glXReleaseTexImage on GLX with no support");
             }
           if (glsym_glXDestroyPixmap)
             {
@@ -1888,7 +1783,7 @@ _native_free_cb(void *data, void *image)
               GLERR(__FUNCTION__, __FILE__, __LINE__, "");
             }
           else
-            ERR("Try glXDestroyPixmap on GLX with no support");
+            ERR("Try glsym_glXDestroyPixmap on GLX with no support");
           n->glx_pixmap = 0;
         }
 # endif
@@ -2044,9 +1939,9 @@ eng_image_native_set(void *data, void *image, void *native)
               config_attrs[i++] = EGL_PIXMAP_BIT;
               config_attrs[i++] = EGL_NONE;
 
-              if (!eglChooseConfig(re->win->egl_disp, config_attrs,
+              if (!glsym_eglChooseConfig(re->win->egl_disp, config_attrs,
                                    &egl_config, 1, &num_config))
-                ERR("eglChooseConfig() failed for pixmap 0x%x, num_config = %i", (unsigned int)pm, num_config);
+                ERR("glsym_eglChooseConfig() failed for pixmap 0x%x, num_config = %i", (unsigned int)pm, num_config);
               memcpy(&(n->ns), ns, sizeof(Evas_Native_Surface));
               n->pixmap = pm;
               n->visual = vis;
@@ -2057,9 +1952,9 @@ eng_image_native_set(void *data, void *image, void *native)
                                                       (void *)pm,
                                                       NULL);
               else
-                ERR("Try eglCreateImage on EGL with no support");
+                ERR("Try glsym_eglCreateImage on EGL with no support");
               if (!n->egl_surface)
-                ERR("eglCreatePixmapSurface() for 0x%x failed", (unsigned int)pm);
+                ERR("glsym_eglCreatePixmapSurface() for 0x%x failed", (unsigned int)pm);
               im->native.yinvert     = 1;
               im->native.loose       = 0;
               im->native.data        = n;
@@ -2138,7 +2033,7 @@ eng_image_native_set(void *data, void *image, void *native)
                                                       n->pixmap,
                                                       pixmap_att);
               else
-                ERR("Try glXCreatePixmap on GLX with no support");
+                ERR("Try glsym_glXCreatePixmap on GLX with no support");
               if (n->glx_pixmap)
                 {
 //                  printf("%p: new native texture for %x | %4i x %4i @ %2i = %p\n",
@@ -2899,15 +2794,15 @@ _create_rt_buffers(Render_Engine *data __UNUSED__,
                    Render_Engine_GL_Surface *sfc)
 {
    // Render Target texture
-   glGenTextures(1, &sfc->rt_tex );
+   glsym_glGenTextures(1, &sfc->rt_tex );
 
    // Depth RenderBuffer - Create storage here...
    if (sfc->depth_bits != EVAS_GL_DEPTH_NONE)
-      glGenRenderbuffers(1, &sfc->rb_depth);
+      glsym_glGenRenderbuffers(1, &sfc->rb_depth);
 
    // Stencil RenderBuffer - Create Storage here...
    if (sfc->stencil_bits != EVAS_GL_STENCIL_NONE)
-      glGenRenderbuffers(1, &sfc->rb_stencil);
+      glsym_glGenRenderbuffers(1, &sfc->rb_stencil);
 
    return 1;
 }
@@ -2920,45 +2815,45 @@ _attach_fbo_surface(Render_Engine *data __UNUSED__,
    int fb_status;
 
    // Initialize Texture
-   glBindTexture(GL_TEXTURE_2D, sfc->rt_tex );
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, sfc->w, sfc->h, 0,
+   glsym_glBindTexture(GL_TEXTURE_2D, sfc->rt_tex );
+   glsym_glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+   glsym_glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+   glsym_glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+   glsym_glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+   glsym_glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, sfc->w, sfc->h, 0,
                 GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-   glBindTexture(GL_TEXTURE_2D, 0);
+   glsym_glBindTexture(GL_TEXTURE_2D, 0);
 
 
    // Attach texture to FBO
-   glBindFramebuffer(GL_FRAMEBUFFER, ctx->context_fbo);
-   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+   glsym_glBindFramebuffer(GL_FRAMEBUFFER, ctx->context_fbo);
+   glsym_glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                           GL_TEXTURE_2D, sfc->rt_tex, 0);
 
    // Depth RenderBuffer - Attach it to FBO
    if (sfc->depth_bits != EVAS_GL_DEPTH_NONE)
      {
-        glBindRenderbuffer(GL_RENDERBUFFER, sfc->rb_depth);
-        glRenderbufferStorage(GL_RENDERBUFFER, sfc->rb_depth_fmt,
+        glsym_glBindRenderbuffer(GL_RENDERBUFFER, sfc->rb_depth);
+        glsym_glRenderbufferStorage(GL_RENDERBUFFER, sfc->rb_depth_fmt,
                               sfc->w, sfc->h);
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+        glsym_glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
                                   GL_RENDERBUFFER, sfc->rb_depth);
-        glBindRenderbuffer(GL_RENDERBUFFER, 0);
+        glsym_glBindRenderbuffer(GL_RENDERBUFFER, 0);
      }
 
    // Stencil RenderBuffer - Attach it to FBO
    if (sfc->stencil_bits != EVAS_GL_STENCIL_NONE)
      {
-        glBindRenderbuffer(GL_RENDERBUFFER, sfc->rb_stencil);
-        glRenderbufferStorage(GL_RENDERBUFFER, sfc->rb_stencil_fmt,
+        glsym_glBindRenderbuffer(GL_RENDERBUFFER, sfc->rb_stencil);
+        glsym_glRenderbufferStorage(GL_RENDERBUFFER, sfc->rb_stencil_fmt,
                               sfc->w, sfc->h);
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
+        glsym_glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
                                   GL_RENDERBUFFER, sfc->rb_stencil);
-        glBindRenderbuffer(GL_RENDERBUFFER, 0);
+        glsym_glBindRenderbuffer(GL_RENDERBUFFER, 0);
      }
 
    // Check FBO for completeness
-   fb_status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+   fb_status = glsym_glCheckFramebufferStatus(GL_FRAMEBUFFER);
    if (fb_status != GL_FRAMEBUFFER_COMPLETE)
      {
         ERR("FBO not complete!");
@@ -3009,7 +2904,7 @@ eng_gl_surface_create(void *data, void *config, int w, int h)
 
    if (sfc->direct_fb_opt)
      {
-        DBG("Enabling Direct rendering to the Evas' window."); 
+        DBG("Enabling Direct rendering to the Evas' window.");
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
         sfc->direct_sfc = re->win->egl_surface[0];
 #else
@@ -3034,9 +2929,9 @@ eng_gl_surface_create(void *data, void *config, int w, int h)
    // make_current called, the user can't call native_surface_get() right
    // after the surface is created. hence this is done here using evas' context.
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-   ret = eglMakeCurrent(re->win->egl_disp, rsc->surface, rsc->surface, rsc->context);
+   ret = glsym_eglMakeCurrent(re->win->egl_disp, rsc->surface, rsc->surface, rsc->context);
 #else
-   ret = glXMakeCurrent(re->info->info.display, re->win->win, rsc->context);
+   ret = glsym_glXMakeCurrent(re->info->info.display, re->win->win, rsc->context);
 #endif
    if (!ret)
      {
@@ -3054,9 +2949,9 @@ eng_gl_surface_create(void *data, void *config, int w, int h)
      }
 
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-   ret = eglMakeCurrent(re->win->egl_disp, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+   ret = glsym_eglMakeCurrent(re->win->egl_disp, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 #else
-   ret = glXMakeCurrent(re->info->info.display, None, NULL);
+   ret = glsym_glXMakeCurrent(re->info->info.display, None, NULL);
 #endif
    if (!ret)
      {
@@ -3084,9 +2979,9 @@ eng_gl_surface_destroy(void *data, void *surface)
    if ((rsc = eina_tls_get(resource_key)) == EINA_FALSE) return 0;
 
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-   ret = eglMakeCurrent(re->win->egl_disp, rsc->surface, rsc->surface, rsc->context);
+   ret = glsym_eglMakeCurrent(re->win->egl_disp, rsc->surface, rsc->surface, rsc->context);
 #else
-   ret = glXMakeCurrent(re->info->info.display, re->win->win, rsc->context);
+   ret = glsym_glXMakeCurrent(re->info->info.display, re->win->win, rsc->context);
 #endif
    if (!ret)
      {
@@ -3097,30 +2992,32 @@ eng_gl_surface_destroy(void *data, void *surface)
    // Reset the Framebuffer binding point
    if ((current_evgl_ctx) && (current_evgl_ctx->current_fbo == current_evgl_ctx->context_fbo))
      {
-        //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        //glsym_glBindFramebuffer(GL_FRAMEBUFFER, 0);
         current_evgl_ctx->current_fbo = 0;
         current_evgl_ctx->current_sfc = NULL;
      }
-   
+
    // Clear direct rendering flag
    gl_direct_enabled = 0;
 
    // Delete FBO/RBO and Texture here
    if (sfc->rt_tex)
-      glDeleteTextures(1, &sfc->rt_tex);
+      glsym_glDeleteTextures(1, &sfc->rt_tex);
 
    if (sfc->rb_depth)
-      glDeleteRenderbuffers(1, &sfc->rb_depth);
+      glsym_glDeleteRenderbuffers(1, &sfc->rb_depth);
 
    if (sfc->rb_stencil)
-      glDeleteRenderbuffers(1, &sfc->rb_stencil);
+      glsym_glDeleteRenderbuffers(1, &sfc->rb_stencil);
+
+
 
 
 
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-   ret = eglMakeCurrent(re->win->egl_disp, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+   ret = glsym_eglMakeCurrent(re->win->egl_disp, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 #else
-   ret = glXMakeCurrent(re->info->info.display, None, NULL);
+   ret = glsym_glXMakeCurrent(re->info->info.display, None, NULL);
 #endif
    if (!ret)
      {
@@ -3162,44 +3059,44 @@ eng_gl_context_create(void *data, void *share_context)
 
    if (share_ctx)
      {
-        ctx->context = eglCreateContext(re->win->egl_disp,
-                                        re->win->egl_config,
-                                        share_ctx->context,      // Share Context
-                                        context_attrs);
+        ctx->context = glsym_eglCreateContext(re->win->egl_disp,
+                                              re->win->egl_config,
+                                              share_ctx->context,      // Share Context
+                                              context_attrs);
      }
    else
      {
-        ctx->context = eglCreateContext(re->win->egl_disp,
-                                        re->win->egl_config,
-                                        re->win->egl_context[0], // Evas' GL Context
-                                        context_attrs);
+        ctx->context = glsym_eglCreateContext(re->win->egl_disp,
+                                              re->win->egl_config,
+                                              re->win->egl_context[0], // Evas' GL Context
+                                              context_attrs);
      }
 
    if (!ctx->context)
      {
-        ERR("eglCreateContext() fail. code=%#x", eglGetError());
+        ERR("glsym_eglCreateContext() fail. code=%#x", glsym_eglGetError());
         return NULL;
      }
 #else
    // GLX
    if (share_context)
      {
-        ctx->context = glXCreateContext(re->info->info.display,
-                                        re->win->visualinfo,
-                                        share_ctx->context,    // Share Context
-                                        1);
+        ctx->context = glsym_glXCreateContext(re->info->info.display,
+                                              re->win->visualinfo,
+                                              share_ctx->context,    // Share Context
+                                              1);
      }
    else
      {
-        ctx->context = glXCreateContext(re->info->info.display,
-                                        re->win->visualinfo,
-                                        re->win->context,      // Evas' GL Context
-                                        1);
+        ctx->context = glsym_glXCreateContext(re->info->info.display,
+                                              re->win->visualinfo,
+                                              re->win->context,      // Evas' GL Context
+                                              1);
      }
 
    if (!ctx->context)
      {
-        ERR("glXCreateContext() fail.");
+        ERR("glsym_glXCreateContext() fail.");
         return NULL;
      }
 #endif
@@ -3228,11 +3125,11 @@ eng_gl_context_destroy(void *data, void *context)
 
    // Do a make current with the given context
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-   ret = eglMakeCurrent(re->win->egl_disp, rsc->surface,
-                        rsc->surface, ctx->context);
+   ret = glsym_eglMakeCurrent(re->win->egl_disp, rsc->surface,
+                              rsc->surface, ctx->context);
 #else
-   ret = glXMakeCurrent(re->info->info.display, re->win->win,
-                        ctx->context);
+   ret = glsym_glXMakeCurrent(re->info->info.display, re->win->win,
+                              ctx->context);
 #endif
    if (!ret)
      {
@@ -3242,22 +3139,22 @@ eng_gl_context_destroy(void *data, void *context)
 
    // Delete the FBO
    if (ctx->context_fbo)
-        glDeleteFramebuffers(1, &ctx->context_fbo);
+      glsym_glDeleteFramebuffers(1, &ctx->context_fbo);
 
    // Destroy the Context
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-   eglDestroyContext(re->win->egl_disp, ctx->context);
+   glsym_eglDestroyContext(re->win->egl_disp, ctx->context);
 
    ctx->context = EGL_NO_CONTEXT;
 
-   ret = eglMakeCurrent(re->win->egl_disp, EGL_NO_SURFACE,
-                        EGL_NO_SURFACE, EGL_NO_CONTEXT);
+   ret = glsym_eglMakeCurrent(re->win->egl_disp, EGL_NO_SURFACE,
+                              EGL_NO_SURFACE, EGL_NO_CONTEXT);
 #else
-   glXDestroyContext(re->info->info.display, ctx->context);
+   glsym_glXDestroyContext(re->info->info.display, ctx->context);
 
    ctx->context = 0;
 
-   ret = glXMakeCurrent(re->info->info.display, None, NULL);
+   ret = glsym_glXMakeCurrent(re->info->info.display, None, NULL);
 #endif
    if (!ret)
      {
@@ -3290,10 +3187,10 @@ eng_gl_make_current(void *data __UNUSED__, void *surface, void *context)
    if ((!sfc) || (!ctx))
      {
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-        ret = eglMakeCurrent(re->win->egl_disp, EGL_NO_SURFACE,
-                             EGL_NO_SURFACE, EGL_NO_CONTEXT);
+        ret = glsym_eglMakeCurrent(re->win->egl_disp, EGL_NO_SURFACE,
+                                   EGL_NO_SURFACE, EGL_NO_CONTEXT);
 #else
-        ret = glXMakeCurrent(re->info->info.display, None, NULL);
+        ret = glsym_glXMakeCurrent(re->info->info.display, None, NULL);
 #endif
         if (!ret)
           {
@@ -3308,9 +3205,9 @@ eng_gl_make_current(void *data __UNUSED__, void *surface, void *context)
      }
 
    // Check if direct rendering is possible:
-   //    It's possible when direct_fb_opt is on and either current image 
-   //    object is valid or gl_direct_override is on.  Override allows 
-   //    rendering outside of pixel getter but it doesn't guarantee 
+   //    It's possible when direct_fb_opt is on and either current image
+   //    object is valid or gl_direct_override is on.  Override allows
+   //    rendering outside of pixel getter but it doesn't guarantee
    //    correct rendering.
    if ((sfc->direct_fb_opt) && (gl_direct_img_obj || gl_direct_override))
       gl_direct_enabled = 1;
@@ -3319,82 +3216,107 @@ eng_gl_make_current(void *data __UNUSED__, void *surface, void *context)
 
    if (gl_direct_enabled)
      {
+        int curr_fbo = 0;
+
         // Do a make current only if it's not already current
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-        if ((eglGetCurrentContext() != ctx->context) || 
-            (eglGetCurrentSurface(EGL_READ) != sfc->direct_sfc) ||
-            (eglGetCurrentSurface(EGL_DRAW) != sfc->direct_sfc) ) 
+        if ((glsym_eglGetCurrentContext() != ctx->context) || 
+            (glsym_eglGetCurrentSurface(EGL_READ) != sfc->direct_sfc) ||
+            (glsym_eglGetCurrentSurface(EGL_DRAW) != sfc->direct_sfc) ) 
           {
-             int curr_fbo = 0;
              DBG("Rendering Directly to the window\n");
 
              // Flush remainder of what's in Evas' pipeline
              if (re->win) eng_window_use(NULL);
 
              // Do a make current
-             ret = eglMakeCurrent(re->win->egl_disp, sfc->direct_sfc,
-                                  sfc->direct_sfc, ctx->context);
+             ret = glsym_eglMakeCurrent(re->win->egl_disp, sfc->direct_sfc,
+                                        sfc->direct_sfc, ctx->context);
              if (!ret)
                {
-                  ERR("xxxMakeCurrent() failed! code=%#x", eglGetError());
+                  ERR("xxxMakeCurrent() failed! code=%#x", glsym_eglGetError());
                   //ERR("xxxMakeCurrent() failed!");
                   return 0;
                }
 
-             glGetIntegerv(GL_FRAMEBUFFER_BINDING, &curr_fbo);
-             if (ctx->context_fbo == curr_fbo)
-               {
-                  ctx->current_fbo = 0;
-                  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-               }
           }
 #else
-        if ((glXGetCurrentContext() != ctx->context))
+        if ((glsym_glXGetCurrentContext() != ctx->context))
           {
              // Flush remainder of what's in Evas' pipeline
              if (re->win) eng_window_use(NULL);
 
              // Do a make current
-             ret = glXMakeCurrent(re->info->info.display, sfc->direct_sfc, ctx->context);
-             if (!ret) 
+             ret = glsym_glXMakeCurrent(re->info->info.display, sfc->direct_sfc, ctx->context);
+             if (!ret)
                {
                   ERR("xxxMakeCurrent() failed!");
                   return 0;
                }
           }
 #endif
+        glsym_glGetIntegerv(GL_FRAMEBUFFER_BINDING, &curr_fbo);
+        if (ctx->context_fbo == curr_fbo)
+          {
+             ctx->current_fbo = 0;
+             glsym_glBindFramebuffer(GL_FRAMEBUFFER, 0);
+          }
+
      }
    else
      {
         // Do a make current only if it's not already current
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-        if ((rsc = eina_tls_get(resource_key)) == EINA_FALSE) return 0;
-
-        if ((eglGetCurrentContext() != ctx->context) || 
-            (eglGetCurrentSurface(EGL_READ) != rsc->surface) ||
-            (eglGetCurrentSurface(EGL_DRAW) != rsc->surface) ) 
+        if (eina_main_loop_is())
           {
-             // Flush remainder of what's in Evas' pipeline
-             if (re->win) eng_window_use(NULL);
-
-             // Do a make current
-             ret = eglMakeCurrent(re->win->egl_disp, rsc->surface,
-                                  rsc->surface, ctx->context);
-             if (!ret)
+             if ((glsym_eglGetCurrentContext() != ctx->context) ||
+                 (glsym_eglGetCurrentSurface(EGL_READ) != re->win->egl_surface[0]) ||
+                 (glsym_eglGetCurrentSurface(EGL_DRAW) != re->win->egl_surface[0]) )
                {
-                  ERR("xxxMakeCurrent() failed!");
-                  return 0;
+
+                  // Flush remainder of what's in Evas' pipeline
+                  if (re->win) eng_window_use(NULL);
+
+                  // Do a make current
+                  ret = glsym_eglMakeCurrent(re->win->egl_disp, re->win->egl_surface[0],
+                                             re->win->egl_surface[0], ctx->context);
+                  if (!ret)
+                    {
+                       ERR("xxxMakeCurrent() failed! code=%#x", glsym_eglGetError());
+                       return 0;
+                    }
+               }
+          }
+        else
+          {
+             if ((rsc = eina_tls_get(resource_key)) == EINA_FALSE) return 0;
+
+             if ((glsym_eglGetCurrentContext() != ctx->context) ||
+                 (glsym_eglGetCurrentSurface(EGL_READ) != rsc->surface) ||
+                 (glsym_eglGetCurrentSurface(EGL_DRAW) != rsc->surface) )
+               {
+                  // Flush remainder of what's in Evas' pipeline
+                  if (re->win) eng_window_use(NULL);
+
+                  // Do a make current
+                  ret = glsym_eglMakeCurrent(re->win->egl_disp, rsc->surface,
+                                             rsc->surface, ctx->context);
+                  if (!ret)
+                    {
+                       ERR("xxxMakeCurrent() failed!");
+                       return 0;
+                    }
                }
           }
 #else
-        if ((glXGetCurrentContext() != ctx->context) ||
-            (glXGetCurrentDrawable() != re->win->win) )
+        if ((glsym_glXGetCurrentContext() != ctx->context) ||
+            (glsym_glXGetCurrentDrawable() != re->win->win) )
           {
              // Flush remainder of what's in Evas' pipeline
              if (re->win) eng_window_use(NULL);
 
              // Do a make current
-             ret = glXMakeCurrent(re->info->info.display, re->win->win, ctx->context);
+             ret = glsym_glXMakeCurrent(re->info->info.display, re->win->win, ctx->context);
              if (!ret) 
                {
                   ERR("xxxMakeCurrent() failed!");
@@ -3406,7 +3328,7 @@ eng_gl_make_current(void *data __UNUSED__, void *surface, void *context)
         // Create FBO if not already created
         if (!ctx->initialized)
           {
-             glGenFramebuffers(1, &ctx->context_fbo);
+             glsym_glGenFramebuffers(1, &ctx->context_fbo);
              ctx->initialized = 1;
           }
 
@@ -3421,10 +3343,10 @@ eng_gl_make_current(void *data __UNUSED__, void *surface, void *context)
 
              if (ctx->current_fbo)
                 // Bind to the previously bound buffer
-                glBindFramebuffer(GL_FRAMEBUFFER, ctx->current_fbo);
+                glsym_glBindFramebuffer(GL_FRAMEBUFFER, ctx->current_fbo);
              else
                 // Bind FBO
-                glBindFramebuffer(GL_FRAMEBUFFER, ctx->context_fbo);
+                glsym_glBindFramebuffer(GL_FRAMEBUFFER, ctx->context_fbo);
 
              sfc->fbo_attached = 1;
           }
@@ -3463,13 +3385,11 @@ eng_gl_proc_address_get(void *data __UNUSED__, const char *name)
 }
 
 static int
-eng_gl_native_surface_get(void *data, void *surface, void *native_surface)
+eng_gl_native_surface_get(void *data __UNUSED__, void *surface, void *native_surface)
 {
-   Render_Engine *re;
    Render_Engine_GL_Surface *sfc;
    Evas_Native_Surface *ns;
 
-   re  = (Render_Engine *)data;
    sfc = (Render_Engine_GL_Surface*)surface;
    ns  = (Evas_Native_Surface*)native_surface;
 
@@ -3504,9 +3424,9 @@ static const GLubyte *
 evgl_glGetString(GLenum name)
 {
    if (name == GL_EXTENSIONS)
-      return (GLubyte *)_gl_ext_string; //glGetString(GL_EXTENSIONS); 
+      return (GLubyte *)_gl_ext_string; //glsym_glGetString(GL_EXTENSIONS);
    else
-      return glGetString(name);
+      return glsym_glGetString(name);
 }
 
 static void
@@ -3514,24 +3434,27 @@ evgl_glBindFramebuffer(GLenum target, GLuint framebuffer)
 {
    Render_Engine_GL_Context *ctx = current_evgl_ctx;
 
+   if (!ctx)
+     {
+        ERR("Current context NULL.\n");
+        return;
+     }
+
    // Take care of BindFramebuffer 0 issue
    if (framebuffer==0)
      {
         if (gl_direct_enabled)
-           glBindFramebuffer(target, 0);
-        else if (ctx)
-          {
-             glBindFramebuffer(target, ctx->context_fbo);
-             ctx->current_fbo = 0;
-          }
+           glsym_glBindFramebuffer(target, 0);
+        else
+           glsym_glBindFramebuffer(target, ctx->context_fbo);
+        ctx->current_fbo = 0;
      }
    else
      {
-        glBindFramebuffer(target, framebuffer);
+        glsym_glBindFramebuffer(target, framebuffer);
 
         // Save this for restore when doing make current
-        if (ctx)
-           ctx->current_fbo = framebuffer;
+        ctx->current_fbo = framebuffer;
      }
 }
 
@@ -3540,24 +3463,21 @@ evgl_glBindRenderbuffer(GLenum target, GLuint renderbuffer)
 {
    // Add logic to take care when renderbuffer=0
    // On a second thought we don't need this
-   glBindRenderbuffer(target, renderbuffer);
+   glsym_glBindRenderbuffer(target, renderbuffer);
 }
 
 // Transform from Evas Coordinat to GL Coordinate
 // returns: oc[4] original image object dimension in gl coord
 // returns: nc[4] tranformed  (x, y, width, heigth) in gl coord
 static void
-compute_gl_coordinates(Evas_Object *obj, int rot, int clip, 
-                       int x, int y, int width, int height, 
+compute_gl_coordinates(Evas_Object *obj, int rot, int clip,
+                       int x, int y, int width, int height,
                        int imgc[4], int objc[4])
 {
-   int nx1, ny1, nx2, ny2;
-   int ox1, oy1, ox2, oy2;
-
    if (rot == 0)
      {
         // oringinal image object coordinate in gl coordinate
-        imgc[0] = obj->cur.geometry.x; 
+        imgc[0] = obj->cur.geometry.x;
         imgc[1] = obj->layer->evas->output.h - obj->cur.geometry.y - obj->cur.geometry.h;
         imgc[2] = imgc[0] + obj->cur.geometry.w;
         imgc[3] = imgc[1] + obj->cur.geometry.h;
@@ -3655,11 +3575,11 @@ evgl_glClear(GLbitfield mask)
            ERR("Unable to retrieve rotation angle: %d", rot);
 
         compute_gl_coordinates(gl_direct_img_obj, rot, 0, 0, 0, 0, 0, oc, nc);
-        glScissor(oc[0], oc[1], oc[2], oc[3]);
-        glClear(mask);
+        glsym_glScissor(oc[0], oc[1], oc[2], oc[3]);
+        glsym_glClear(mask);
      }
    else
-      glClear(mask);
+      glsym_glClear(mask);
 }
 
 static void
@@ -3670,18 +3590,18 @@ evgl_glClearColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha)
    current_engine->df_clear_color[2] = blue;
    current_engine->df_clear_color[3] = alpha;
 
-   glClearColor(red, green, blue, alpha);
+   glsym_glClearColor(red, green, blue, alpha);
 
 }
 
-static void 
+static void
 evgl_glEnable(GLenum cap)
 {
    Render_Engine_GL_Context *ctx = current_evgl_ctx;
 
    if (cap == GL_SCISSOR_TEST)
       if (ctx) ctx->scissor_enabled = 1;
-   glEnable(cap);
+   glsym_glEnable(cap);
 }
 
 static void
@@ -3691,7 +3611,7 @@ evgl_glDisable(GLenum cap)
 
    if (cap == GL_SCISSOR_TEST)
       if (ctx) ctx->scissor_enabled = 0;
-   glDisable(cap);
+   glsym_glDisable(cap);
 }
 
 
@@ -3710,10 +3630,10 @@ evgl_glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
            ERR("Unable to retrieve rotation angle: %d", rot);
 
         compute_gl_coordinates(gl_direct_img_obj, rot, 1, x, y, width, height, oc, nc);
-        glReadPixels(nc[0], nc[1], nc[2], nc[3], format, type, pixels);
+        glsym_glReadPixels(nc[0], nc[1], nc[2], nc[3], format, type, pixels);
      }
    else
-      glReadPixels(x, y, width, height, format, type, pixels);
+      glsym_glReadPixels(x, y, width, height, format, type, pixels);
 }
 
 static void
@@ -3731,11 +3651,11 @@ evgl_glScissor(GLint x, GLint y, GLsizei width, GLsizei height)
            ERR("Unable to retrieve rotation angle: %d", rot);
 
         compute_gl_coordinates(gl_direct_img_obj, rot, 1, x, y, width, height, oc, nc);
-        glScissor(nc[0], nc[1], nc[2], nc[3]);
+        glsym_glScissor(nc[0], nc[1], nc[2], nc[3]);
         ctx->scissor_upated = 1;
      }
    else
-      glScissor(x, y, width, height);
+      glsym_glScissor(x, y, width, height);
 }
 
 static void
@@ -3753,12 +3673,12 @@ evgl_glViewport(GLint x, GLint y, GLsizei width, GLsizei height)
            ERR("Unable to retrieve rotation angle: %d", rot);
 
         compute_gl_coordinates(gl_direct_img_obj, rot, 0, x, y, width, height, oc, nc);
-        glEnable(GL_SCISSOR_TEST);
-        glScissor(oc[0], oc[1], oc[2], oc[3]);
-        glViewport(nc[0], nc[1], nc[2], nc[3]);
+        glsym_glEnable(GL_SCISSOR_TEST);
+        glsym_glScissor(oc[0], oc[1], oc[2], oc[3]);
+        glsym_glViewport(nc[0], nc[1], nc[2], nc[3]);
      }
    else
-      glViewport(x, y, width, height);
+      glsym_glViewport(x, y, width, height);
 
 }
 
@@ -3769,9 +3689,9 @@ static void
 evgl_glClearDepthf(GLclampf depth)
 {
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-   glClearDepthf(depth);
+   glsym_glClearDepthf(depth);
 #else
-   glClearDepth(depth);
+   glsym_glClearDepthf(depth);
 #endif
 }
 
@@ -3779,9 +3699,9 @@ static void
 evgl_glDepthRangef(GLclampf zNear, GLclampf zFar)
 {
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-   glDepthRangef(zNear, zFar);
+   glsym_glDepthRangef(zNear, zFar);
 #else
-   glDepthRange(zNear, zFar);
+   glsym_glDepthRangef(zNear, zFar);
 #endif
 }
 
@@ -3789,7 +3709,7 @@ static void
 evgl_glGetShaderPrecisionFormat(GLenum shadertype, GLenum precisiontype, GLint* range, GLint* precision)
 {
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-   glGetShaderPrecisionFormat(shadertype, precisiontype, range, precision);
+   glsym_glGetShaderPrecisionFormat(shadertype, precisiontype, range, precision);
 #else
    if (range)
      {
@@ -3801,7 +3721,9 @@ evgl_glGetShaderPrecisionFormat(GLenum shadertype, GLenum precisiontype, GLint* 
         precision[0] = 24; // floor(-log2((1.0/16777218.0)));
      }
    return;
+   /*
    shadertype = precisiontype = 0;
+   */
 #endif
 }
 
@@ -3809,7 +3731,7 @@ static void
 evgl_glReleaseShaderCompiler(void)
 {
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-   glReleaseShaderCompiler();
+   glsym_glReleaseShaderCompiler();
 #else
 #endif
 }
@@ -3818,7 +3740,7 @@ static void
 evgl_glShaderBinary(GLsizei n, const GLuint* shaders, GLenum binaryformat, const void* binary, GLsizei length)
 {
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-   glShaderBinary(n, shaders, binaryformat, binary, length);
+   glsym_glShaderBinary(n, shaders, binaryformat, binary, length);
 #else
 // FIXME: need to dlsym/getprocaddress for this
    return;
@@ -3883,7 +3805,7 @@ eng_gl_api_get(void *data)
 
    gl_funcs.version = EVAS_GL_API_VERSION;
 
-#define ORD(f) EVAS_API_OVERRIDE(f, &gl_funcs, )
+#define ORD(f) EVAS_API_OVERRIDE(f, &gl_funcs, glsym_)
    // GLES 2.0
    ORD(glActiveTexture);
    ORD(glAttachShader);
@@ -4122,14 +4044,14 @@ eng_gl_img_obj_set(void *data, void *image, int has_alpha)
    gl_direct_img_obj = NULL;
 
    // Normally direct rendering isn't allowed if alpha is on and
-   // rotation is not 0.  BUT, if override is on, allow it. 
-   if ((has_alpha) || (re->win->gl_context->rot!=0)) 
+   // rotation is not 0.  BUT, if override is on, allow it.
+   if ((has_alpha) || (re->win->gl_context->rot!=0))
      {
         if (gl_direct_override)
            gl_direct_img_obj = image;
      }
-   else 
-      gl_direct_img_obj = image;   
+   else
+      gl_direct_img_obj = image;
 }
 
 static int
