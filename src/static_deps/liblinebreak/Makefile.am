@@ -1,13 +1,15 @@
 MAINTAINERCLEANFILES = Makefile.in
 
 #noinst_PROGRAMS = filter_dup
-noinst_HEADERS = linebreak.h linebreakdef.h
+noinst_HEADERS = linebreak.h linebreakdef.h wordbreakdef.h  wordbreak.h
 noinst_LTLIBRARIES = liblinebreak.la
 
 liblinebreak_la_SOURCES = \
 	linebreak.c \
 	linebreakdata.c \
-	linebreakdef.c
+	linebreakdef.c \
+	wordbreak.c \
+	wordbreakdata.x
 
 EXTRA_DIST = \
 	LineBreak1.sed \

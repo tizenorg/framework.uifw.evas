@@ -2,11 +2,11 @@
 ##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
 m4_define([v_maj], [1])
 m4_define([v_min], [1])
-m4_define([v_mic], [0])
-m4_define([v_rev], m4_esyscmd([(svnversion "${SVN_REPO_PATH:-.}" | grep -v export || echo 0) | awk -F : '{printf("%s\n", $1);}' | tr -d ' :MSP\n']))
+m4_define([v_mic], [99])
+m4_define([v_rev], m4_esyscmd([(svnversion "${SVN_REPO_PATH:-.}" | grep -v '\(export\|Unversioned directory\)' || echo 0) | awk -F : '{printf("%s\n", $1);}' | tr -d ' :MSP\n']))
 m4_if(v_rev, [0], [m4_define([v_rev], m4_esyscmd([git log 2> /dev/null | (grep -m1 git-svn-id || echo 0) | sed -e 's/.*@\([0-9]*\).*/\1/' | tr -d '\n']))])
 ##--   When released, remove the dnl on the below line
-m4_undefine([v_rev])
+dnl m4_undefine([v_rev])
 ##--   When doing snapshots - change soname. remove dnl on below line
 dnl m4_define([relname], [ver-pre-svn-07])
 dnl m4_define([v_rel], [-release relname])
@@ -112,6 +112,8 @@ want_evas_engine_direct3d="no"
 want_evas_engine_fb="no"
 want_evas_engine_directfb="no"
 want_evas_engine_psl1ght="no"
+want_evas_engine_wayland_shm="no"
+want_evas_engine_wayland_egl="no"
 
 want_evas_image_loader_edb="yes"
 want_evas_image_loader_eet="yes"
@@ -158,6 +160,8 @@ case "$host_os" in
       want_evas_engine_software_xcb="no"
       want_evas_engine_gl_xcb="no"
       want_evas_engine_fb="auto"
+      want_evas_engine_wayland_shm="auto"
+      want_evas_engine_wayland_egl="auto"
 ### no - not ready/usable/complete
 #      want_evas_engine_software_8_x11="auto"
 #      want_evas_engine_software_16_x11="auto"
@@ -403,8 +407,8 @@ fi
 # Pixman
 have_pixman="no"
 AC_ARG_ENABLE([pixman],
-   AC_HELP_STRING([--disable-pixman],
-      [disable pixman for software rendering. @<:@default=enabled@:>@]),
+   AC_HELP_STRING([--enable-pixman],
+      [enable pixman for software rendering. @<:@default=enabled@:>@]),
    [
     if test "x${enableval}" = "xyes" ; then
        want_pixman="yes"
@@ -429,11 +433,73 @@ if test "x${want_pixman}" = "xyes" -o "x${want_pixman}" = "xauto" ; then
       ])
 fi
 
+have_pixman_font="no"
+AC_ARG_ENABLE(pixman-font,
+  AC_HELP_STRING([--enable-pixman-font], [Allow pixman to render fonts]),
+  [ 
+    have_pixman_font="yes"
+    AC_DEFINE(PIXMAN_FONT, 1, [Allow pixman to render fonts])
+  ]
+)
+
+have_pixman_rect="no"
+AC_ARG_ENABLE(pixman-rect,
+  AC_HELP_STRING([--enable-pixman-rect], [Allow pixman to render rects]),
+  [ 
+    have_pixman_rect="yes"
+    AC_DEFINE(PIXMAN_RECT, 1, [Allow pixman to render rects])
+  ]
+)
+
+have_pixman_line="no"
+AC_ARG_ENABLE(pixman-line,
+  AC_HELP_STRING([--enable-pixman-line], [Allow pixman to render lines]),
+  [ 
+    have_pixman_line="yes"
+    AC_DEFINE(PIXMAN_LINE, 1, [Allow pixman to render lines])
+  ]
+)
+
+have_pixman_poly="no"
+AC_ARG_ENABLE(pixman-poly,
+  AC_HELP_STRING([--enable-pixman-poly], [Allow pixman to render polys]),
+  [ 
+    have_pixman_poly="yes"
+    AC_DEFINE(PIXMAN_POLY, 1, [Allow pixman to render polys])
+  ]
+)
+
+have_pixman_image="no"
+AC_ARG_ENABLE(pixman-image,
+  AC_HELP_STRING([--enable-pixman-image], [Allow pixman to render images]),
+  [ 
+    have_pixman_image="yes"
+    AC_DEFINE(PIXMAN_IMAGE, 1, [Allow pixman to render images])
+  ]
+)
+
+have_pixman_image_scale_sample="no"
+AC_ARG_ENABLE(pixman-image-scale-sample,
+  AC_HELP_STRING([--enable-pixman-image-scale-sample], [Allow pixman to render sampled scaled images]),
+  [ 
+    have_pixman_image_scale_sample="yes"
+    AC_DEFINE(PIXMAN_IMAGE_SCALE_SAMPLE, 1, [Allow pixman to render image sampled scaling])
+  ]
+)
+
+have_tile_rotate="no"
+AC_ARG_ENABLE(tile-rotate,
+  AC_HELP_STRING([--enable-tile-rotate], [Enable tiled rotate algorithm]),
+  [ 
+    have_tile_rotate="yes"
+    AC_DEFINE(TILE_ROTATE, 1, [Enable tiled rotate algorithm])
+  ]
+)
+
 ### Checks for header files
 AC_HEADER_STDC
-AC_CHECK_HEADERS([unistd.h stdint.h sys/param.h netinet/in.h])
+AC_CHECK_HEADERS([unistd.h stdint.h sys/param.h netinet/in.h sys/mman.h])
 EFL_CHECK_PATH_MAX
-
 
 ### Checks for types
 AC_CHECK_TYPES([struct sigaction], [], [],
@@ -597,7 +663,7 @@ AM_CONDITIONAL([EVAS_CSERVE], [test "x${want_evas_cserve}" = "xyes"])
 gl_flavor_gles="no"
 AC_MSG_CHECKING(whether to build GLES flavor of GL)
 AC_ARG_ENABLE(gl-flavor-gles,
-  AC_HELP_STRING([--enable-gl-flavor-gles], [enable gles falvor of gl instead of standard]),
+  AC_HELP_STRING([--enable-gl-flavor-gles], [enable gles flavor of gl instead of standard]),
   [
       if test "x$enableval" = "xyes" ; then
         AC_MSG_RESULT(yes)
@@ -703,6 +769,10 @@ EVAS_CHECK_ENGINE([software-16-ddraw], [${want_evas_engine_software_16_ddraw}], 
 EVAS_CHECK_ENGINE([software-16-wince], [${want_evas_engine_software_16_wince}], [no], [Software Windows CE 16 bits])
 
 EVAS_CHECK_ENGINE([software-16-sdl], [${want_evas_engine_software_16_sdl}], [no], [Software SDL 16 bits])
+
+EVAS_CHECK_ENGINE([wayland-shm], [${want_evas_engine_wayland_shm}], [no], [Wayland Shm])
+
+EVAS_CHECK_ENGINE([wayland-egl], [${want_evas_engine_wayland_egl}], [no], [Wayland Egl])
 
 # SDL primitive
 sdl_primitive="no"
@@ -856,13 +926,15 @@ have_static_evas_engine_gl_common="no"
 if test "x$have_evas_engine_gl_xlib" = "xyes" \
    || test "x$have_evas_engine_gl_xcb" = "xyes" \
    || test "x$have_evas_engine_gl_sdl" = "xyes" \
-   || test "x$have_evas_engine_gl_cocoa" = "xyes"; then
+   || test "x$have_evas_engine_gl_cocoa" = "xyes" \
+   || test "x$have_evas_engine_wayland_egl" = "xyes"; then
    have_evas_engine_gl_common="yes"
 fi
 if test "x$have_evas_engine_gl_xlib" = "xstatic" \
    || test "x$have_evas_engine_gl_xcb" = "xstatic" \
    || test "x$have_evas_engine_gl_sdl" = "xstatic" \
-   || test "x$have_evas_engine_gl_cocoa" = "xstatic"; then
+   || test "x$have_evas_engine_gl_cocoa" = "xstatic" \
+   || test "x$have_evas_engine_wayland_egl" = "xstatic"; then
    have_evas_engine_gl_common="yes"
    have_static_evas_engine_gl_common="yes"
 fi
@@ -1272,9 +1344,16 @@ AC_ARG_ENABLE(cpu-sse3,
   AS_HELP_STRING([--enable-cpu-sse3], [enable sse3 code]),
   [
       if test "x$enableval" = "xyes" ; then
-        AC_MSG_RESULT(yes)
-        AC_DEFINE(BUILD_SSE3, 1, [Build SSE3 Code])
-        build_cpu_sse3="yes"
+        AC_CHECK_HEADER(immintrin.h,
+          [
+            AC_MSG_RESULT(yes)
+            AC_DEFINE(BUILD_SSE3, 1, [Build SSE3 Code])
+            build_cpu_sse3="yes"
+           ],
+          [
+            AC_MSG_RESULT(no)
+            build_cpu_sse3="no"
+          ])
       else
         AC_MSG_RESULT(no)
         build_cpu_sse3="no"
@@ -1283,7 +1362,16 @@ AC_ARG_ENABLE(cpu-sse3,
   [
     AC_MSG_RESULT($build_cpu_sse3)
     if test "x$build_cpu_sse3" = "xyes" ; then
-      AC_DEFINE(BUILD_SSE3, 1, [Build SSE3 Code])
+      AC_CHECK_HEADER(immintrin.h,
+        [
+          AC_MSG_RESULT(yes)
+          AC_DEFINE(BUILD_SSE3, 1, [Build SSE3 Code])
+          build_cpu_sse3="yes"
+         ],
+        [
+          AC_MSG_RESULT(no)
+          build_cpu_sse3="no"
+        ])
     fi
   ]
 )
@@ -1805,6 +1893,8 @@ evas-direct3d.pc
 evas-software-16-wince.pc
 evas-software-sdl.pc
 evas-psl1ght.pc
+evas-wayland-shm.pc
+evas-wayland-egl.pc
 evas.pc
 doc/evas.dox
 doc/Makefile
@@ -1849,6 +1939,8 @@ src/modules/engines/software_16/Makefile
 src/modules/engines/software_16_x11/Makefile
 src/modules/engines/software_16_ddraw/Makefile
 src/modules/engines/software_16_sdl/Makefile
+src/modules/engines/wayland_shm/Makefile
+src/modules/engines/wayland_egl/Makefile
 src/modules/loaders/Makefile
 src/modules/loaders/edb/Makefile
 src/modules/loaders/eet/Makefile
@@ -1945,6 +2037,8 @@ echo "  Software 16bit X11.........: $have_evas_engine_software_16_x11"
 echo "  Software 16bit Directdraw..: $have_evas_engine_software_16_ddraw"
 echo "  Software 16bit WinCE.......: $have_evas_engine_software_16_wince"
 echo "  Software 16bit SDL.........: $have_evas_engine_software_16_sdl (primitive: $sdl_primitive)"
+echo "  Wayland Shm................: $have_evas_engine_wayland_shm"
+echo "  Wayland Egl................: $have_evas_engine_wayland_egl"
 echo
 echo "Image Loaders:"
 echo "  BMP.....................: $have_evas_image_loader_bmp"
@@ -2001,6 +2095,16 @@ echo "  Async Image Preload.....: $build_async_preload"
 echo
 echo "  Word Cache..............: $want_word_cache"
 echo "  Metric Cache............: $want_metric_cache"
+echo
+echo "  Pixman..................: $have_pixman"
+echo "  Pixman Fonts............: $have_pixman_font"
+echo "  Pixman Rects............: $have_pixman_rect"
+echo "  Pixman Lines............: $have_pixman_line"
+echo "  Pixman Polygons.........: $have_pixman_poly"
+echo "  Pixman Images...........: $have_pixman_image"
+echo "  Pixman Image ScaleSample: $have_pixman_image_scale_sample"
+echo 
+echo "  Tiled 32BPP rotate......: $have_tile_rotate"
 echo
 echo "ARGB Software Engine Options:"
 echo "  Sampling Scaler.........: $scaler_sample"

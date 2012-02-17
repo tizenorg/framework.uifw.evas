@@ -301,12 +301,13 @@ struct _Evas
    struct {
       unsigned char  inside : 1;
       int            mouse_grabbed;
+      int            downs;
       DATA32         button;
       Evas_Coord     x, y;
+      int            nogrep;
       struct {
           Eina_List *in;
       } object;
-
    } pointer;
 
    struct  {
@@ -320,6 +321,12 @@ struct _Evas
       unsigned char  changed : 1;
    } output;
 
+   struct 
+     {
+        Evas_Coord x, y, w, h;
+        Eina_Bool changed : 1;
+     } framespace;
+
    Eina_List        *damages;
    Eina_List        *obscures;
 
@@ -331,6 +338,7 @@ struct _Evas
 
    int               walking_list;
    int               events_frozen;
+   Evas_Event_Flags  default_event_flags;
 
    struct {
       Evas_Module *module;
@@ -577,7 +585,7 @@ struct _Evas_Object
    unsigned char               recalculate_cycle;
    Eina_Clist                  calc_entry;
 
-   Evas_Object_Pointer_Mode    pointer_mode : 1;
+   Evas_Object_Pointer_Mode    pointer_mode : 2;
 
    Eina_Bool                   store : 1;
    Eina_Bool                   pass_events : 1;
@@ -608,6 +616,8 @@ struct _Evas_Object
    Eina_Bool                   changed_move_only : 1;
    Eina_Bool                   changed_nomove : 1;
    Eina_Bool                   del_ref : 1;
+
+   Eina_Bool                   is_frame : 1;
 };
 
 struct _Evas_Func_Node
@@ -772,6 +782,7 @@ struct _Evas_Func
    char *(*image_format_get)               (void *data, void *image);
    void (*image_colorspace_set)            (void *data, void *image, int cspace);
    int  (*image_colorspace_get)            (void *data, void *image);
+   Eina_Bool (*image_can_region_get)       (void *data, void *image);
    void (*image_mask_create)               (void *data, void *image);
    void *(*image_native_set)               (void *data, void *image, void *native);
    void *(*image_native_get)               (void *data, void *image);
@@ -839,6 +850,7 @@ struct _Evas_Func
    void *(*gl_proc_address_get)          (void *data, const char *name);
    int  (*gl_native_surface_get)         (void *data, void *surface, void *native_surface);
    void *(*gl_api_get)                   (void *data);
+   void (*gl_img_obj_set)                (void *data, void *image, int has_alpha);
 
    int  (*image_load_error_get)          (void *data, void *image);
    int  (*font_run_end_get)              (void *data, Evas_Font_Set *font, Evas_Font_Instance **script_fi, Evas_Font_Instance **cur_fi, Evas_Script_Type script, const Eina_Unicode *text, int run_len);
@@ -861,6 +873,7 @@ struct _Evas_Image_Load_Func
   Eina_Bool (*file_head) (Image_Entry *ie, const char *file, const char *key, int *error);
   Eina_Bool (*file_data) (Image_Entry *ie, const char *file, const char *key, int *error);
   double    (*frame_duration) (Image_Entry *ie, const char *file, const int start, const int frame_num);
+  Eina_Bool do_region;
 };
 
 struct _Evas_Image_Save_Func
@@ -904,7 +917,7 @@ void evas_object_clip_across_check(Evas_Object *obj);
 void evas_object_clip_across_clippees_check(Evas_Object *obj);
 void evas_object_mapped_clip_across_mark(Evas_Object *obj);
 void evas_event_callback_call(Evas *e, Evas_Callback_Type type, void *event_info);
-void evas_object_event_callback_call(Evas_Object *obj, Evas_Callback_Type type, void *event_info);
+void evas_object_event_callback_call(Evas_Object *obj, Evas_Callback_Type type, void *event_info, int event_id);
 Eina_List *evas_event_objects_event_list(Evas *e, Evas_Object *stop, int x, int y);
 int evas_mem_free(int mem_required);
 int evas_mem_degrade(int mem_required);

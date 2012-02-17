@@ -1,10 +1,88 @@
-evas (1.1.0+svn.65614slp2+build02) unstable; urgency=low
+evas (1.1.0+svn.67705slp2+build01) unstable; urgency=low
 
-  * Fixed to object passes events to the next object in the same layer if the repeat_events is eanbled.
-  * Git: slp-scm.sec.samsung.net:tizen/pkgs/e/evas
-  * Tag: evas_1.1.0+svn.65614slp2+build02
+  * Package Upload
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.67705slp2+build01
 
- -- ChunEon Park <chuneon.park@samsung.com>  Thu, 29 Dec 2011 15:10:37 +0900
+ -- Jaehwan Kim <jae.hwan.kim@samsung.com>  Wed, 15 Feb 2012 19:00:39 +0900
+
+evas (1.1.0+svn.66966slp2+build04) unstable; urgency=low
+
+  * Package Upload
+  * Important Changes
+       [evas_textblock] fixed a bug about deleting REPLACEMENT_CHAR
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.66966slp2+build04
+
+ -- WooHyun Jung <wh0705.jung@samsung.com>  Fri, 10 Feb 2012 10:00:47 +0900
+
+evas (1.1.0+svn.66966slp2+build03) unstable; urgency=low
+
+  * Package Upload
+  * Applying direct rendering
+  * Applying fastpath
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.66966slp2+build03
+
+ -- Sanghee Park <sh15.park@samsung.com>  Thu, 09 Feb 2012 17:03:02 +0900
+
+evas (1.1.0+svn.66966slp2+build02) unstable; urgency=low
+
+  * Package Upload
+  * Important Changes
+       [textblock] merge with 67696 for fixing BS when trying markup_to_utf8 with invalid escapes
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.66966slp2+build02
+
+ -- WooHyun Jung <wh0705.jung@samsung.com>  Mon, 06 Feb 2012 12:09:21 +0900
+
+evas (1.1.0+svn.66966slp2+build01) unstable; urgency=low
+
+  * Package Upload
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.66966slp2+build01
+
+ -- Jaehwan Kim <jae.hwan.kim@samsung.com>  Mon, 16 Jan 2012 18:29:22 +0900
+
+evas (1.1.0+svn.65865slp2+build05) unstable; urgency=low
+
+  * Package Upload
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.65865slp2+build05
+
+ -- Jiyoun Park <jy0703.park@samsung.com>  Thu, 12 Jan 2012 15:51:52 +0900
+
+evas (1.1.0+svn.65865slp2+build04) unstable; urgency=low
+
+  * Repackaging
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.65865slp2+build04
+
+ -- ChunEon Park <chuneon.park@samsung.com>  Fri, 30 Dec 2011 15:06:07 +0900
+
+evas (1.1.0+svn.65865slp2+build03) unstable; urgency=low
+
+  * Upstream merge r66111
+  * Git: slp-scm.sec.samsung.net:slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.65865slp2+build03
+
+ -- Tae-Hwan Kim <the81.kim@samsung.com>  Fri, 23 Dec 2011 18:09:02 +0900
+
+evas (1.1.0+svn.65865slp2+build02) unstable; urgency=low
+
+  * Package Upload
+  * Git: slp-scm.sec.samsung.net:slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.65865slp2+build02
+
+ -- ChunEon Park <chuneon.park@samsung.com>  Wed, 21 Dec 2011 19:37:00 +0900
+
+evas (1.1.0+svn.65865slp2+build01) unstable; urgency=low
+
+  * Package Upload for migration
+  * Git: slp-scm.sec.samsung.net:slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.65865slp2+build01
+
+ -- Jaehwan Kim <jae.hwan.kim@samsung.com>  Thu, 08 Dec 2011 13:46:34 +0900
 
 evas (1.1.0+svn.65614slp2+build01) unstable; urgency=low
 

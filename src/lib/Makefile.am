@@ -100,6 +100,11 @@ SUBDIRS += ../modules/engines/software_x11/
 EVAS_STATIC_MODULE += ../modules/engines/software_x11/libevas_engine_software_x11.la
 EVAS_STATIC_LIBADD += @evas_engine_software_xlib_libs@ @evas_engine_software_xcb_libs@
 endif
+if EVAS_STATIC_BUILD_WAYLAND_SHM
+SUBDIRS += ../modules/engines/wayland_shm/
+EVAS_STATIC_MODULE += ../modules/engines/wayland_shm/libevas_engine_wayland_shm.la
+EVAS_STATIC_LIBADD += @evas_engine_wayland_shm_libs@
+endif
 if EVAS_STATIC_BUILD_BMP
 SUBDIRS += ../modules/loaders/bmp
 EVAS_STATIC_MODULE += ../modules/loaders/bmp/libevas_loader_bmp.la
@@ -200,9 +205,7 @@ AM_CFLAGS = @WIN32_CFLAGS@
 
 lib_LTLIBRARIES = libevas.la
 
-### Evas_GL disabled for 1.1
 includes_HEADERS = Evas.h Evas_GL.h
-#includes_HEADERS = Evas.h
 includesdir = $(includedir)/evas-@VMAJ@
 
 libevas_la_SOURCES = main.c
