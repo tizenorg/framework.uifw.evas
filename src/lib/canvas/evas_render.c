@@ -1579,6 +1579,10 @@ evas_render_updates_internal(Evas *e,
                             else
                               e->engine.func->context_mask_unset(e->engine.data.output,
                                                                  e->engine.data.context);
+
+                            e->engine.func->context_clip_set(e->engine.data.output,
+                                                             e->engine.data.context,
+                                                             x, y, w, h);
 #if 1 /* FIXME: this can slow things down... figure out optimum... coverage */
                             for (j = offset; j < e->temporary_objects.count; ++j)
                               {
@@ -1589,9 +1593,6 @@ evas_render_updates_internal(Evas *e,
                                  _evas_render_cutout_add(e, obj2, off_x, off_y);
                               }
 #endif
-                            e->engine.func->context_clip_set(e->engine.data.output,
-                                                             e->engine.data.context,
-                                                             x, y, w, h);
                             clean_them |= evas_render_mapped(e, obj, e->engine.data.context,
                                                              surface, off_x, off_y, 0,
                                                              cx, cy, cw, ch
@@ -1599,6 +1600,7 @@ evas_render_updates_internal(Evas *e,
                                                              , 1
 #endif
                                                             );
+
                             e->engine.func->context_cutout_clear(e->engine.data.output,
                                                                  e->engine.data.context);
                          }
