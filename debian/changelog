@@ -1,3 +1,11 @@
+evas (1.1.0+svn.67705slp2+build02) unstable; urgency=low
+
+  * Package Upload
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.67705slp2+build02
+
+ -- Jiyoun Park <jy0703.park@samsung.com>  Fri, 24 Feb 2012 18:19:49 +0900
+
 evas (1.1.0+svn.67705slp2+build01) unstable; urgency=low
 
   * Package Upload
