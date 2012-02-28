@@ -1,3 +1,12 @@
+evas (1.1.0+svn.67705slp2+build05) unstable; urgency=low
+
+  * Package Upload
+  * Enabling pixman flag(Additional work to libevas-dev)
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.67705slp2+build05
+
+ -- Sanghee Park <sh15.park@samsung.com>  Tue, 28 Feb 2012 18:06:06 +0900
+
 evas (1.1.0+svn.67705slp2+build04) unstable; urgency=low
 
   * Package Upload
