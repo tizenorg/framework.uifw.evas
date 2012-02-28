@@ -41,10 +41,6 @@ DEB_CONFIGURE_EXTRA_FLAGS := --disable-image-loader-svg \
 	--disable-rpath $(arch_flags) \
 	--enable-gl-x11 \
 	--enable-gl-flavor-gles \
-	--enable-pixman \
-	--enable-pixman-image \
-	--enable-pixman-image-scale-sample \
-	--enable-tile-rotate \
 	--enable-gles-variety-sgx
 
 #build/libevas-doc::
