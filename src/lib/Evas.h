@@ -5,6 +5,7 @@
 @date 2000-2012
 
 Please see the @ref authors page for contact details.
+@link Evas.h Evas API @endlink
 
 @link Evas.h Evas API @endlink
 
@@ -2939,14 +2940,21 @@ EAPI const Eina_List  *evas_font_path_list               (const Evas *e) EINA_WA
 /**
  * @defgroup Evas_Object_Group_Basic Basic Object Manipulation
  *
- * Methods that are broadly used, like those that change the color,
- * clippers and geometry of an Evas object.
+ * Almost every evas object created will have some generic function used to
+ * manipulate it. That's because there are a number of basic actions to be done
+ * to objects that are irrespective of the object's type, things like:
+ * @li Showing/Hiding
+ * @li Setting(and getting) geometry
+ * @li Bring up or down a layer
+ * @li Color management
+ * @li Handling focus
+ * @li Clipping
+ * @li Reference counting
  *
- * An example on the most used functions in this group can be seen @ref
- * Example_Evas_Object_Manipulation "here".
- *
- * For function dealing with stacking, the examples are gathered  @ref
- * Example_Evas_Stacking "here".
+ * All of this issues are handled through the functions here grouped. Examples
+ * of these function can be seen in @ref Example_Evas_Object_Manipulation(which
+ * deals with the most common ones) and in @ref Example_Evas_Stacking(which
+ * deals with stacking functions).
  *
  * @ingroup Evas_Object_Group
  */
@@ -6124,13 +6132,99 @@ EAPI void             *evas_object_intercept_move_callback_del        (Evas_Obje
  *
  * @brief Function to create evas rectangle objects.
  *
- * This function may seem useless given there are no functions to manipulate
- * the created rectangle, however the rectangle is actually very useful and can
- * be manipulate using the generic @ref Evas_Object_Group
- * "evas object functions".
+ * There is only one function to deal with rectangle objects, this may make this
+ * function seem useless given there are no functions to manipulate the created
+ * rectangle, however the rectangle is actually very useful and should be
+ * manipulated using the generic @ref Evas_Object_Group "evas object functions".
  *
- * For an example of use of an evas_object_rectangle see @ref
- * Example_Evas_Object_Manipulation "here".
+ * The evas rectangle server a number of key functions when working on evas
+ * programs:
+ * @li Background
+ * @li Debugging
+ * @li Clipper
+ *
+ * @section Background
+ *
+ * One extremely common requirement of evas programs is to have a solid color
+ * background, this can be accomplished with the following very simple code:
+ * @code
+ * Evas_Object *bg = evas_object_rectangle_add(evas_canvas);
+ * //Here we set the rectangles red, green, blue and opacity levels
+ * evas_object_color_set(bg, 255, 255, 255, 255); // opaque white background
+ * evas_object_resize(bg, WIDTH, HEIGHT); // covers full canvas
+ * evas_object_show(bg);
+ * @endcode
+ *
+ * This however will have issues if the @c evas_canvas is resized, however most
+ * windows are created using ecore evas and that has a solution to using the
+ * rectangle as a background:
+ * @code
+ * Evas_Object *bg = evas_object_rectangle_add(ecore_evas_get(ee));
+ * //Here we set the rectangles red, green, blue and opacity levels
+ * evas_object_color_set(bg, 255, 255, 255, 255); // opaque white background
+ * evas_object_resize(bg, WIDTH, HEIGHT); // covers full canvas
+ * evas_object_show(bg);
+ * ecore_evas_object_associate(ee, bg, ECORE_EVAS_OBJECT_ASSOCIATE_BASE);
+ * @endcode
+ * So this gives us a white background to our window that will be resized
+ * together with it.
+ *
+ * @section Debugging
+ *
+ * Debugging is a major part of any programmers task and when debugging visual
+ * issues with evas programs the rectangle is an extremely useful tool. The
+ * rectangle's simplicity means that it's easier to pinpoint issues with it than
+ * with more complex objects. Therefore a common technique to use when writing
+ * an evas program and not getting the desired visual result is to replace the
+ * misbehaving object for a solid color rectangle and seeing how it interacts
+ * with the other elements, this often allows us to notice clipping, parenting
+ * or positioning issues. Once the issues have been identified and corrected the
+ * rectangle can be replaced for the original part and in all likelihood any
+ * remaining issues will be specific to that object's type.
+ *
+ * @section clipping Clipping
+ *
+ * Clipping serves two main functions:
+ * @li Limiting visibility(i.e. hiding portions of an object).
+ * @li Applying a layer of color to an object.
+ *
+ * @subsection hiding Limiting visibility
+ *
+ * It is often necessary to show only parts of an object, while it may be
+ * possible to create an object that corresponds only to the part that must be
+ * shown(and it isn't always possible) it's usually easier to use a a clipper. A
+ * clipper is a rectangle that defines what's visible and what is not. The way
+ * to do this is to create a solid white rectangle(which is the default, no need
+ * to call evas_object_color_set()) and give it a position and size of what
+ * should be visible. The following code exemplifies showing the center half of
+ * @c my_evas_object:
+ * @code
+ * Evas_Object *clipper = evas_object_rectangle_add(evas_canvas);
+ * evas_object_move(clipper, my_evas_object_x / 4, my_evas_object_y / 4);
+ * evas_object_resize(clipper, my_evas_object_width / 2, my_evas_object_height / 2);
+ * evas_object_clip_set(my_evas_object, clipper);
+ * evas_object_show(clipper);
+ * @endcode
+ *
+ * @subsection color Layer of color
+ *
+ * In the @ref clipping section we used a solid white clipper, which produced no
+ * change in the color of the clipped object, it just hid what was outside the
+ * clippers area. It is however sometimes desirable to change the of color an
+ * object, this can be accomplished using a clipper that has a non-white color.
+ * Clippers with color work by multiplying the colors of clipped object. The
+ * following code will show how to remove all the red from an object:
+ * @code
+ * Evas_Object *clipper = evas_object_rectangle_add(evas);
+ * evas_object_move(clipper, my_evas_object_x, my_evas_object_y);
+ * evas_object_resize(clipper, my_evas_object_width, my_evas_object_height);
+ * evas_object_color_set(clipper, 0, 255, 255, 255);
+ * evas_object_clip_set(obj, clipper);
+ * evas_object_show(clipper);
+ * @endcode
+ *
+ * For an example that more fully exercise the use of an evas object rectangle
+ * see @ref Example_Evas_Object_Manipulation.
  *
  * @ingroup Evas_Object_Specific
  */
@@ -8546,7 +8640,7 @@ EAPI void                         evas_textblock_node_format_remove_pair(Evas_Ob
  * @param n the format node to update according.
  * @deprecated duplicate of evas_textblock_cursor_at_format_set
  */
-EINA_DEPRECATED EAPI void                         evas_textblock_cursor_set_at_format(Evas_Textblock_Cursor *cur, const Evas_Object_Textblock_Node_Format *n) EINA_ARG_NONNULL(1, 2);
+EAPI void                         evas_textblock_cursor_set_at_format(Evas_Textblock_Cursor *cur, const Evas_Object_Textblock_Node_Format *n) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Return the format node at the position pointed by cur.
@@ -9370,7 +9464,7 @@ struct _Evas_Smart_Cb_Description
        return;								\
      if (!prefix##_parent_sc)						\
        prefix##_parent_sc = parent_func();				\
-     evas_smart_class_inherit(sc, (const Evas_Smart_Class *)prefix##_parent_sc); \
+     evas_smart_class_inherit(sc, prefix##_parent_sc);                  \
      prefix##_smart_set_user(api);					\
   }									\
   static Evas_Smart * prefix##_smart_class_new(void)			\
@@ -9579,7 +9673,7 @@ EAPI int                              evas_smart_usage_get(const Evas_Smart *s);
    * @return 1 on success, 0 on failure.
    * @ingroup Evas_Smart_Group
    */
-#define evas_smart_class_inherit(sc, parent_sc) evas_smart_class_inherit_full(sc, parent_sc, sizeof(*parent_sc))
+#define evas_smart_class_inherit(sc, parent_sc) evas_smart_class_inherit_full(sc, (Evas_Smart_Class *)parent_sc, sizeof(*parent_sc))
 
 /**
  * @}

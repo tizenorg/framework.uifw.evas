@@ -98,7 +98,6 @@ want_evas_engine_software_xlib="no"
 want_evas_engine_software_xcb="no"
 want_evas_engine_software_gdi="no"
 want_evas_engine_software_ddraw="no"
-want_evas_engine_software_sdl="no"
 want_evas_engine_software_8_x11="no"
 want_evas_engine_software_16_x11="no"
 want_evas_engine_software_16_ddraw="no"
@@ -243,6 +242,20 @@ case "$host_os" in
       requirement_evas="evil ${requirement_evas}"
    ;;
 esac
+
+### Checks for portability layer
+
+PKG_CHECK_MODULES([EXOTIC],
+   [exotic],
+   [enable_exotic="yes"],
+   [enable_exotic="no"])
+
+if test "x${enable_exotic}" = "xyes"; then
+    requirement_evas="exotic ${requirement_evas}"
+
+    AC_DEFINE([HAVE_EXOTIC], [1], [Define to 1 if you have Exotic.])
+fi
+AM_CONDITIONAL([EVAS_HAVE_EXOTIC], [test "x${enable_exotic}" = "xyes"])
 
 ## strong dependencies
 
@@ -517,20 +530,6 @@ EFL_ATTRIBUTE_UNUSED
 EFL_ATTRIBUTE_VECTOR
 EFL_ATTRIBUTE_ALWAYS_INLINE
 
-WIN32_CPPFLAGS=""
-case "$host_os" in
-   mingw32ce*)
-      WIN32_CPPFLAGS="-D_WIN32_WCE=0x0420"
-      ;;
-   mingw*)
-      WIN32_CPPFLAGS="-D_WIN32_WINNT=0x0500"
-      ;;
-esac
-AC_SUBST(WIN32_CPPFLAGS)
-
-WIN32_CFLAGS=""
-AC_SUBST(WIN32_CFLAGS)
-
 
 ### Checks for linker characteristics
 lt_enable_auto_import=""
@@ -747,8 +746,6 @@ EVAS_CHECK_ENGINE([software-gdi], [${want_evas_engine_software_gdi}], [no], [Sof
 EVAS_CHECK_ENGINE([software-ddraw], [${want_evas_engine_software_ddraw}], [no], [Software DirectDraw])
 
 EVAS_CHECK_ENGINE([direct3d], [${want_evas_engine_direct3d}], [no], [Direct3D])
-
-EVAS_CHECK_ENGINE([software-sdl], [${want_evas_engine_software_sdl}], [no], [Software SDL])
 
 EVAS_CHECK_ENGINE([psl1ght], [${want_evas_engine_psl1ght}], [no], [PSL1GHT])
 
@@ -1854,8 +1851,8 @@ AM_CONDITIONAL([BUILD_EXAMPLES], [test "x${build_examples}" = "xyes"])
 EFL_CHECK_TESTS([enable_tests="yes"], [enable_tests="no"])
 
 EFL_CHECK_COVERAGE([${enable_tests}], [enable_coverage="yes"], [enable_coverage="no"])
-EVAS_CFLAGS="${EVAS_CFLAGS} ${EFL_COVERAGE_CFLAGS}"
-EVAS_LIBS="${EVAS_LIBS} ${EFL_COVERAGE_LIBS}"
+EVAS_CFLAGS="${EVAS_CFLAGS} ${EFL_COVERAGE_CFLAGS} ${EXOTIC_CFLAGS}"
+EVAS_LIBS="${EVAS_LIBS} ${EFL_COVERAGE_LIBS} ${EXOTIC_LIBS}"
 if test "x$enable_coverage" = "xyes" ; then
    EVAS_CFLAGS="${EVAS_CFLAGS} ${EFL_DEBUG_CFLAGS}"
 fi
@@ -1932,7 +1929,6 @@ src/modules/engines/gl_x11/Makefile
 src/modules/engines/gl_sdl/Makefile
 src/modules/engines/gl_cocoa/Makefile
 src/modules/engines/psl1ght/Makefile
-src/modules/engines/software_sdl/Makefile
 src/modules/engines/software_8/Makefile
 src/modules/engines/software_8_x11/Makefile
 src/modules/engines/software_16/Makefile
@@ -2019,8 +2015,7 @@ fi
 echo "  Software GDI...............: $have_evas_engine_software_gdi"
 echo "  Software DirectDraw........: $have_evas_engine_software_ddraw"
 echo "  Direct3d...................: $have_evas_engine_direct3d"
-echo "  Software SDL...............: $have_evas_engine_software_sdl (primitive: $sdl_primitive)"
-echo $ECHO_N "  OpenGL SDL.................: $have_evas_engine_gl_sdl $ECHO_C"
+echo "  OpenGL SDL.................: $have_evas_engine_gl_sdl $ECHO_C"
 if test "x$have_evas_engine_gl_sdl" = "xyes"; then
   echo "(GLES: $gl_flavor_gles) (SGX: $gles_variety_sgx) (s3c6410: $gles_variety_s3c6410)"
 else

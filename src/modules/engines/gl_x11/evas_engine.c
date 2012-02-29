@@ -2435,11 +2435,15 @@ eng_image_data_put(void *data, void *image, DATA32 *image_data)
 
         if (im->tex->pt->dyn.data == image_data)
           {
-             im->tex->pt->dyn.checked_out--;
+             if (im->tex->pt->dyn.checked_out > 0)
+               {
+                 im->tex->pt->dyn.checked_out--;
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-             if (im->tex->pt->dyn.checked_out == 0)
-               glsym_eglUnmapImageSEC(re->win->egl_disp, im->tex->pt->dyn.img);
+                 if (im->tex->pt->dyn.checked_out == 0)
+                   glsym_eglUnmapImageSEC(re->win->egl_disp, im->tex->pt->dyn.img);
 #endif
+               }
+
              return image;
           }
 
@@ -3434,9 +3438,9 @@ evgl_glBindFramebuffer(GLenum target, GLuint framebuffer)
 {
    Render_Engine_GL_Context *ctx = current_evgl_ctx;
 
-   if (!ctx)
+   if (!ctx) 
      {
-        ERR("Current context NULL.\n");
+        ERR("No current context set.");
         return;
      }
 
