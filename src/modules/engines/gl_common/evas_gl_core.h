@@ -164,12 +164,12 @@ typedef signed long int  GLsizeiptr;   // Changed khronos_ssize_t
 
 /* EnableCap */
 #define GL_TEXTURE_2D                     0x0DE1
-#define GL_CULL_FACE                      0x0B44
-#define GL_BLEND                          0x0BE2
-#define GL_DITHER                         0x0BD0
+#define GL_CULL_FACE                      0x0B44         // 2884
+#define GL_BLEND                          0x0BE2         // 3042
+#define GL_DITHER                         0x0BD0         // 3024
 #define GL_STENCIL_TEST                   0x0B90
-#define GL_DEPTH_TEST                     0x0B71
-#define GL_SCISSOR_TEST                   0x0C11
+#define GL_DEPTH_TEST                     0x0B71         // 2929
+#define GL_SCISSOR_TEST                   0x0C11         // 3089
 #define GL_POLYGON_OFFSET_FILL            0x8037
 #define GL_SAMPLE_ALPHA_TO_COVERAGE       0x809E
 #define GL_SAMPLE_COVERAGE                0x80A0
@@ -946,6 +946,7 @@ typedef struct _GL_Vertex_Array_State
 {
    GLboolean   modified;
    GLboolean   enabled;
+   GLuint      buf_id;
    GLint       size;
    GLenum      type;
    GLboolean   normalized;
@@ -968,7 +969,7 @@ struct _EvasGlueContext
    int            magic;
 
    // First time flag
-   int            first_time;
+   int            initialized;
 
    // Default Framebuffer and RenderBuffers
    GLuint         fb_zero;
@@ -1023,7 +1024,8 @@ struct _EvasGlueContext
    GLclampf    gl_depth_clear_value;                  // 1
    GLenum      gl_depth_func;                         // GL_LESS
    GLboolean   gl_depth_writemask;                    // GL_TRUE
-   GLenum      gl_cull_face_mode;                     // GL_FALSE
+
+   GLenum      gl_cull_face_mode;                     // GL_BACK
 
    //------------------//
    unsigned char _tex_flag1;
@@ -1065,8 +1067,8 @@ struct _EvasGlueContext
    GLint       gl_stencil_back_ref;
    GLuint      gl_stencil_back_value_mask;            // 0xffffffff
    GLenum      gl_stencil_back_fail;                  // GL_KEEP
-   GLenum      gl_stencil_back_depth_fail;            // GL_KEEP
-   GLenum      gl_stencil_back_depth_pass;            // GL_KEEP
+   GLenum      gl_stencil_back_pass_depth_fail;       // GL_KEEP
+   GLenum      gl_stencil_back_pass_depth_pass;       // GL_KEEP
    GLuint      gl_stencil_back_writemask;             // 0xffffffff
 
    GLint       gl_stencil_clear_value;
@@ -1091,13 +1093,12 @@ struct _EvasGlueContext
 
    //------------------//
    // Vertex Attrib Array
-   unsigned char _varray_flag;
+   unsigned char _vattrib_flag;
    GL_Vertex_Array_State      vertex_array[MAX_VERTEX_ATTRIBS];
    GLint                      gl_current_vertex_attrib[4];
-
-   // Verte Attribs
-   unsigned char _vattrib_flag;
    GL_Vertex_Attrib           vertex_attrib[MAX_VERTEX_ATTRIBS];
+
+   int id;
 
 };
 
@@ -1214,21 +1215,26 @@ typedef enum _Evas_GL_Opt_Flag
 //#define GL_ERRORS 1
    /*
    { \
-      int __gl_err = _gl.GL(glGetError)(); \
+      int __gl_err = GL(glGetError)(); \
       if (__gl_err != GL_NO_ERROR) glerr(__gl_err, fl, fn, ln, op); \
    }
    */
 #ifdef GL_ERRORS
-# define GLERR(fn, fl, ln, op)
+# define GLERR(fn, fl, ln, op) \
+   { \
+      int __gl_err = GL(glGetError)(); \
+      if (__gl_err != GL_NO_ERROR) glerr(__gl_err, fl, fn, ln, op); \
+   }
 #else
 # define GLERR(fn, fl, ln, op)
 #endif
 
-//extern Evas_GL_API _gl;
-
-
 extern int  init_gl();
 extern void free_gl();
+extern void print_gl_states();
+
+#define PRINT_GL_STATES(fn, ln)  \
+   print_gl_states(fn, ln);
 
    /* version 1: */
 extern   void         (*GL(glActiveTexture)) (GLenum texture);
