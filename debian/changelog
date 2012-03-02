@@ -1,3 +1,12 @@
+evas (1.1.0+svn.67705slp2+build07) unstable; urgency=low
+
+  * Upload package
+  * Fastpath refactoring
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.67705slp2+build07
+
+ -- Seungsoo Woo <om101.woo@samsung.com>  Fri, 02 Mar 2012 18:46:30 +0900
+
 evas (1.1.0+svn.67705slp2+build06) unstable; urgency=low
 
   * Upload Package

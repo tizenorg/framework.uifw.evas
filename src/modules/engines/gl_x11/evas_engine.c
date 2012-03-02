@@ -122,6 +122,7 @@ struct _Extension_Entry
 
 static int initted = 0;
 static int gl_wins = 0;
+static int gl_fastpath = 0;
 static int gl_direct_override = 0;
 static int gl_direct_enabled = 0;
 static Render_Engine_GL_Context *current_evgl_ctx = NULL;
@@ -642,16 +643,26 @@ _create_internal_glue_resources(void *data)
    context_attrs[1] = 2;
    context_attrs[2] = EGL_NONE;
 
-   // Create resource surface for EGL
-   rsc->surface = glsym_eglCreateWindowSurface(re->win->egl_disp,
-                                         re->win->egl_config,
-                                         (EGLNativeWindowType)DefaultRootWindow(re->info->info.display),
-                                         NULL);
-   if (!rsc->surface)
+
+
+
+   if (eina_main_loop_is())
      {
-        ERR("Creating internal resource surface failed.");
-        free(rsc);
-        return NULL;
+        rsc->surface = re->win->egl_surface[0];
+     }
+   else
+     {
+        // Create resource surface for EGL
+        rsc->surface = glsym_eglCreateWindowSurface(re->win->egl_disp,
+                                                    re->win->egl_config,
+                                                    (EGLNativeWindowType)DefaultRootWindow(re->info->info.display),
+                                                    NULL);
+        if (!rsc->surface)
+          {
+             ERR("Creating internal resource surface failed.");
+             free(rsc);
+             return NULL;
+          }
      }
 
    // Create a resource context for EGL
@@ -724,8 +735,10 @@ _destroy_internal_glue_resources(void *data)
    LKL(resource_lock);
    EINA_LIST_FOREACH(resource_list, l, rsc)
      {
-        if (rsc->surface) glsym_eglDestroySurface(re->win->egl_disp, rsc->surface);
-        if (rsc->context) glsym_eglDestroyContext(re->win->egl_disp, rsc->context);
+        if ((rsc->surface) && (rsc->surface != re->win->egl_surface[0]))
+           glsym_eglDestroySurface(re->win->egl_disp, rsc->surface);
+        if (rsc->context)
+           glsym_eglDestroyContext(re->win->egl_disp, rsc->context);
         free(rsc);
      }
    eina_list_free(resource_list);
@@ -2786,7 +2799,12 @@ _set_internal_config(Render_Engine_GL_Surface *sfc, Evas_GL_Config *cfg)
    if (cfg->options_bits)
      {
         if (cfg->options_bits & EVAS_GL_OPTIONS_DIRECT)
-           sfc->direct_fb_opt       = 1;
+          {
+             sfc->direct_fb_opt       = 1;
+             fprintf(stderr, "########################################################\n");
+             fprintf(stderr, "######### [Evas] Direct option bit is enabled ##########\n");
+             fprintf(stderr, "########################################################\n");
+          }
         // Add other options here...
      }
 
@@ -3016,8 +3034,6 @@ eng_gl_surface_destroy(void *data, void *surface)
 
 
 
-
-
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
    ret = glsym_eglMakeCurrent(re->win->egl_disp, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 #else
@@ -3224,14 +3240,14 @@ eng_gl_make_current(void *data __UNUSED__, void *surface, void *context)
 
         // Do a make current only if it's not already current
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-        if ((glsym_eglGetCurrentContext() != ctx->context) || 
+        if ((glsym_eglGetCurrentContext() != ctx->context) ||
             (glsym_eglGetCurrentSurface(EGL_READ) != sfc->direct_sfc) ||
-            (glsym_eglGetCurrentSurface(EGL_DRAW) != sfc->direct_sfc) ) 
+            (glsym_eglGetCurrentSurface(EGL_DRAW) != sfc->direct_sfc) )
           {
              DBG("Rendering Directly to the window\n");
 
              // Flush remainder of what's in Evas' pipeline
-             if (re->win) eng_window_use(NULL);
+             eng_window_use(NULL);
 
              // Do a make current
              ret = glsym_eglMakeCurrent(re->win->egl_disp, sfc->direct_sfc,
@@ -3248,7 +3264,7 @@ eng_gl_make_current(void *data __UNUSED__, void *surface, void *context)
         if ((glsym_glXGetCurrentContext() != ctx->context))
           {
              // Flush remainder of what's in Evas' pipeline
-             if (re->win) eng_window_use(NULL);
+             eng_window_use(NULL);
 
              // Do a make current
              ret = glsym_glXMakeCurrent(re->info->info.display, sfc->direct_sfc, ctx->context);
@@ -3279,7 +3295,7 @@ eng_gl_make_current(void *data __UNUSED__, void *surface, void *context)
                {
 
                   // Flush remainder of what's in Evas' pipeline
-                  if (re->win) eng_window_use(NULL);
+                  eng_window_use(NULL);
 
                   // Do a make current
                   ret = glsym_eglMakeCurrent(re->win->egl_disp, re->win->egl_surface[0],
@@ -3289,6 +3305,8 @@ eng_gl_make_current(void *data __UNUSED__, void *surface, void *context)
                        ERR("xxxMakeCurrent() failed! code=%#x", glsym_eglGetError());
                        return 0;
                     }
+
+                  PRINT_GL_STATES(__FILE__, __LINE__);
                }
           }
         else
@@ -3300,7 +3318,7 @@ eng_gl_make_current(void *data __UNUSED__, void *surface, void *context)
                  (glsym_eglGetCurrentSurface(EGL_DRAW) != rsc->surface) )
                {
                   // Flush remainder of what's in Evas' pipeline
-                  if (re->win) eng_window_use(NULL);
+                  eng_window_use(NULL);
 
                   // Do a make current
                   ret = glsym_eglMakeCurrent(re->win->egl_disp, rsc->surface,
@@ -3317,7 +3335,7 @@ eng_gl_make_current(void *data __UNUSED__, void *surface, void *context)
             (glsym_glXGetCurrentDrawable() != re->win->win) )
           {
              // Flush remainder of what's in Evas' pipeline
-             if (re->win) eng_window_use(NULL);
+             eng_window_use(NULL);
 
              // Do a make current
              ret = glsym_glXMakeCurrent(re->info->info.display, re->win->win, ctx->context);
@@ -3448,10 +3466,15 @@ evgl_glBindFramebuffer(GLenum target, GLuint framebuffer)
    if (framebuffer==0)
      {
         if (gl_direct_enabled)
-           glsym_glBindFramebuffer(target, 0);
+          {
+             glsym_glBindFramebuffer(target, 0);
+             ctx->current_fbo = 0;
+          }
         else
-           glsym_glBindFramebuffer(target, ctx->context_fbo);
-        ctx->current_fbo = 0;
+          {
+             glsym_glBindFramebuffer(target, ctx->context_fbo);
+             ctx->current_fbo = 0;
+          }
      }
    else
      {
@@ -4058,6 +4081,31 @@ eng_gl_img_obj_set(void *data, void *image, int has_alpha)
       gl_direct_img_obj = image;
 }
 
+static void
+eng_gl_context_dirty(void *data)
+{
+   //eng_window_use(NULL);
+   int ret;
+
+   Render_Engine *re = (Render_Engine *)data;
+
+   if (gl_fastpath)
+     {
+#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+        ret = glsym_eglMakeCurrent(re->win->egl_disp, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+#else
+        ret = glsym_glXMakeCurrent(re->info->info.display, None, NULL);
+#endif
+
+        if (!ret)
+          {
+             ERR("xxxMakeCurrent() failed!");
+             return 0;
+          }
+     }
+
+}
+
 static int
 eng_image_load_error_get(void *data __UNUSED__, void *image)
 {
@@ -4178,6 +4226,9 @@ static int
 module_open(Evas_Module *em)
 {
    static Eina_Bool xrm_inited = EINA_FALSE;
+   char *fp_env;
+   int fastpath_opt;
+
    if (!xrm_inited)
      {
         xrm_inited = EINA_TRUE;
@@ -4196,8 +4247,22 @@ module_open(Evas_Module *em)
         EINA_LOG_ERR("Can not create a module log domain.");
         return 0;
      }
+
+   /* Check if fastpath is enabled */
+   fp_env = getenv("EVAS_GL_FASTPATH");
+   if (fp_env) fastpath_opt = atoi(fp_env);
+   else fastpath_opt = 0;
+
+   if ((fastpath_opt == 1) || (fastpath_opt == 3) || (fastpath_opt == 4)) gl_fastpath = 1;
+
    /* Allow alpha for evas gl direct rendering */
-   if (getenv("EVAS_GL_DIRECT_OVERRIDE")) gl_direct_override = 1;
+   if (getenv("EVAS_GL_DIRECT_OVERRIDE"))
+     {
+        gl_direct_override = 1;
+        fprintf(stderr, "########################################################\n");
+        fprintf(stderr, "######### [Evas] Direct overriding is enabled ##########\n");
+        fprintf(stderr, "########################################################\n");
+     }
 
    /* store it for later use */
    func = pfunc;
@@ -4297,6 +4362,7 @@ module_open(Evas_Module *em)
 
    ORD(image_max_size_get);
 
+   ORD(gl_context_dirty);
    /* now advertise out own api */
    em->functions = (void *)(&func);
    return 1;
@@ -4306,7 +4372,7 @@ static void
 module_close(Evas_Module *em __UNUSED__)
 {
     eina_log_domain_unregister(_evas_engine_GL_X11_log_dom);
-/*   
+/*
     if (xrdb_user.db)
       {
 	 XrmDestroyDatabase(xrdb_user.db);

@@ -1489,6 +1489,21 @@ EAPI void              evas_obscured_rectangle_add       (Evas *e, int x, int y,
 EAPI void              evas_obscured_clear               (Evas *e) EINA_ARG_NONNULL(1);
 
 /**
+ * Notifies Evas that the gl current context and surface has been set
+ * by another gl program outside of Evas.  This will invalidate the
+ * current context/surface within Evas and force Evas to set the
+ * context/surface again next time it draws something.
+ *
+ * @param e The given canvas pointer.
+ *
+ * @note This should be used when GL is rendered using anything other
+ * than Evas_GL.
+ *
+ * @ingroup Evas_Canvas
+ */
+EAPI void              evas_gl_context_dirty             (Evas *e) EINA_ARG_NONNULL(1);
+
+/**
  * Force immediate renderization of the given Evas canvas.
  *
  * @param e The given canvas pointer.
