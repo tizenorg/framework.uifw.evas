@@ -635,12 +635,12 @@ evas_image_load_file_data_jpeg_internal(Image_Entry *ie,
      }
    if ((!region) && ((w != ie_w) || (h != ie_h)))
      {
-	// race condition, the file could have change from when we call header
-	// this test will not solve the problem with region code.
-	jpeg_destroy_decompress(&cinfo);
+        // race condition, the file could have change from when we call header
+        // this test will not solve the problem with region code.
+        jpeg_destroy_decompress(&cinfo);
         _evas_jpeg_membuf_src_term(&cinfo);
-	*error = EVAS_LOAD_ERROR_GENERIC;
-	return EINA_FALSE;
+        *error = EVAS_LOAD_ERROR_GENERIC;
+        return EINA_FALSE;
      }
    if ((region) &&
        ((ie_w != ie->load_opts.region.w) || (ie_h != ie->load_opts.region.h)))

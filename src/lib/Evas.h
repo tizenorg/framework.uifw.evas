@@ -2383,6 +2383,13 @@ EAPI void              evas_post_event_callback_remove_full (Evas *e, Evas_Objec
  * programmer can then tell the canvas to ignore input events,
  * bringing it back to normal behavior when he/she wants.
  *
+ * Most of the time use of freezing events is done like this:
+ * @code
+ * evas_event_freeze(my_evas_canvas);
+ * function_that_does_work_wich_cant_be_interrupted_by_events();
+ * evas_event_thaw(my_evas_canvas);
+ * @endcode
+ *
  * Some of the funcions in this group are exemplified @ref
  * Example_Evas_Events "here".
  *
@@ -2509,6 +2516,11 @@ EAPI void              evas_event_thaw_eval              (Evas *e) EINA_ARG_NONN
  *
  * Functions to tell Evas that input events happened and should be
  * processed.
+ *
+ * @warning Most of the time these functions are @b not what you're looking for.
+ * These functions should only be used if you're not working with ecore evas(or
+ * another input handling system). If you're not using ecore evas please
+ * consider using it, in most situation it will make life a lot easier.
  *
  * As explained in @ref intro_not_evas, Evas does not know how to poll
  * for input events, so the developer should do it and then feed such
