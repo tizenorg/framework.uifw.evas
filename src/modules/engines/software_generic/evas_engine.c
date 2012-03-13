@@ -1787,8 +1787,7 @@ static Evas_Func func =
      eng_image_animated_loop_count_get,
      eng_image_animated_frame_duration_get,
      eng_image_animated_frame_set,
-     NULL,
-     NULL // Only used in GL engines <- gl_context_dirty
+     NULL
    /* FUTURE software generic calls go here */
 };
 

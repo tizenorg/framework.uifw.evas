@@ -4081,31 +4081,6 @@ eng_gl_img_obj_set(void *data, void *image, int has_alpha)
       gl_direct_img_obj = image;
 }
 
-static void
-eng_gl_context_dirty(void *data)
-{
-   //eng_window_use(NULL);
-   int ret;
-
-   Render_Engine *re = (Render_Engine *)data;
-
-   if (gl_fastpath)
-     {
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-        ret = glsym_eglMakeCurrent(re->win->egl_disp, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-#else
-        ret = glsym_glXMakeCurrent(re->info->info.display, None, NULL);
-#endif
-
-        if (!ret)
-          {
-             ERR("xxxMakeCurrent() failed!");
-             return 0;
-          }
-     }
-
-}
-
 static int
 eng_image_load_error_get(void *data __UNUSED__, void *image)
 {
@@ -4362,7 +4337,6 @@ module_open(Evas_Module *em)
 
    ORD(image_max_size_get);
 
-   ORD(gl_context_dirty);
    /* now advertise out own api */
    em->functions = (void *)(&func);
    return 1;

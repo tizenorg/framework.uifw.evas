@@ -865,8 +865,6 @@ struct _Evas_Func
 
    /* max size query */
    void (*image_max_size_get)            (void *data, int *maxw, int *maxh);
-
-   void (*gl_context_dirty)              (void *data);
 };
 
 struct _Evas_Image_Load_Func

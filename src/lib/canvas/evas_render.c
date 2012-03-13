@@ -88,17 +88,6 @@ evas_obscured_clear(Evas *e)
      }
 }
 
-EAPI void
-evas_gl_context_dirty(Evas *e)
-{
-   MAGIC_CHECK(e, Evas, MAGIC_EVAS);
-   return;
-   MAGIC_CHECK_END();
-
-   if (e->engine.func->gl_context_dirty)
-      e->engine.func->gl_context_dirty(e->engine.data.output);
-}
-
 static Eina_Bool
 _evas_render_has_map(Evas_Object *obj)
 {
