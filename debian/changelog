@@ -1,3 +1,12 @@
+evas (1.1.0+svn.69113slp2+build02) unstable; urgency=low
+
+  * Package Upload
+  * remove evas_gl_context_dirty api
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.69113slp2+build02
+
+ -- Sanghee Park <sh15.park@samsung.com>  Tue, 13 Mar 2012 13:06:47 +0900
+
 evas (1.1.0+svn.69113slp2+build01) unstable; urgency=low
 
   * Package Upload
