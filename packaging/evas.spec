@@ -1,11 +1,14 @@
+%define build_with_gles 0
+
+
 Name:       evas
 Summary:    Multi-platform Canvas Library
-Version:    1.0.999.svn60295
-Release:    1
+Version:    1.1.0+svn.67705slp2
+Release:    2.4
 Group:      TO_BE/FILLED_IN
 License:    BSD
 URL:        http://www.enlightenment.org/
-Source0:    http://download.enlightenment.org/releases/evas-%{version}.tar.bz2
+Source0:    http://download.enlightenment.org/releases/evas-%{version}.tar.gz
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 BuildRequires:  pkgconfig(eina)
@@ -23,9 +26,10 @@ BuildRequires:  pkgconfig(zlib)
 BuildRequires:  pkgconfig(harfbuzz)
 BuildRequires:  pkgconfig(sm)
 %ifarch %{arm}
-BuildRequires:  pkgconfig(gles20)
-BuildRequires:   opengl-es-devel
+#BuildRequires:  pkgconfig(gles20)
+#BuildRequires:   opengl-es-devel
 %endif
+BuildRequires:  pkgconfig(gl)
 BuildRequires:  libjpeg-devel
 BuildRequires:  giflib-devel
 
@@ -59,10 +63,8 @@ export CFLAGS+=" -fvisibility=hidden -ffast-math -fPIC"
 export LDFLAGS+=" -fvisibility=hidden -Wl,--hash-style=both -Wl,--as-needed"
 
 %autogen 
-%configure --disable-static \
-%ifarch %{arm}
+%configure  \
      	--enable-pthreads \
-	--enable-cpu-neon \
      	--enable-winkcodec=yes \
  	--disable-image-loader-svg \
         --enable-simple-x11 \
@@ -72,20 +74,24 @@ export LDFLAGS+=" -fvisibility=hidden -Wl,--hash-style=both -Wl,--as-needed"
         --enable-line-dither-mask \
         --disable-image-loader-edb \
         --disable-rpath $(arch_flags) \
-        --enable-gl-x11 \
         --enable-harfbuzz \
+	--enable-gl-xlib \
+%ifarch %{arm}
         --enable-gl-flavor-gles \
-        --enable-gles-variety-sgx
+        --enable-gles-variety-sgx \
+	--enable-cpu-neon \
+%endif
+%if 0%{?build_with_gles} 
+	--enable-gl-flavor-gles  \
+	--enable-gles-variety-sgx
 %else
-    	--enable-winkcodec=no \
-    	--enable-pthreads 
+        --enable-gl-x11  
 %endif
   
 
 make %{?jobs:-j%jobs}
 
 %install
-rm -rf %{buildroot}
 %make_install
 
 %post -p /sbin/ldconfig
@@ -93,7 +99,6 @@ rm -rf %{buildroot}
 %postun -p /sbin/ldconfig
 
 %files
-%defattr(-,root,root,-)
 %{_libdir}/libevas.so.*
 %{_libdir}/evas/modules/engines/*/*/module.so
 %{_libdir}/evas/modules/loaders/*/*/module.so
@@ -102,7 +107,6 @@ rm -rf %{buildroot}
 /usr/bin/evas_cserve_tool
 
 %files devel
-%defattr(-,root,root,-)
 %{_includedir}/evas-1/*.h
 %{_libdir}/libevas.so
 %{_libdir}/pkgconfig/*.pc
