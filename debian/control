@@ -29,6 +29,7 @@ Build-Depends: debhelper (>= 6),
  x11proto-xext-dev,
  zlib1g,
  libjpeg8-dev,
+ libtiff-dev,
  libfontconfig1-dev,
  libxpm-dev,
  doxygen,
@@ -75,7 +76,7 @@ Description: Evas API Documentation
 Package: libevas-dev
 Section: libdevel
 Architecture: any
-Depends: ${misc:Depends}, libevas (= ${binary:Version}), libjpeg8-dev, libx11-dev,
+Depends: ${misc:Depends}, libevas (= ${binary:Version}), libtiff-dev, libjpeg8-dev, libx11-dev,
  libfreetype6-dev, libfontconfig1-dev, libeet-dev, pkg-config, libeina-dev (>= 0.0.2.060+svn20100304), libxext-dev, libpng12-dev, libfribidi-dev, libharfbuzz-dev,
  libgif-dev
 Suggests: libevas-doc
