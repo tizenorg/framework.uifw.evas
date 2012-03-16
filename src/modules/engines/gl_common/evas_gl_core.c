@@ -2435,15 +2435,23 @@ fpgl_eglDestroyContext(EGLDisplay dpy, EGLContext ctx)
         if (ectx == current_ctx)
           {
              DBG("Destroying current context... %d\n", ctx_ref_count);
+             if ((real_current_ctx) && (real_current_ctx->destroyed))
+                free(real_current_ctx);
              real_current_ctx = current_ctx;
+             real_current_ctx->destroyed = 1;
              current_ctx = NULL;
           }
-
-        if (ectx)
-           free(ectx);
+        else
+          {
+             if (ectx)
+                free(ectx);
+          }
 
         if (!(--ctx_ref_count))
           {
+             if ((real_current_ctx) && (real_current_ctx->destroyed))
+                free(real_current_ctx);
+
              DBG("Destroying the global context...\n");
              _sym_eglMakeCurrent(dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
              _sym_eglDestroyContext(dpy, global_ctx);
@@ -2477,7 +2485,11 @@ fpgl_eglDestroySurface(EGLDisplay dpy, EGLSurface surface)
      }
 
    if (current_ctx)
-      real_current_ctx = current_ctx;
+     {
+        if ((real_current_ctx) && (real_current_ctx->destroyed))
+           free(real_current_ctx);
+        real_current_ctx = current_ctx;
+     }
 
    current_ctx = NULL;
    current_surf = EGL_NO_SURFACE;
@@ -2505,6 +2517,8 @@ fpgl_eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLContext
      {
         if (current_ctx)
           {
+             if ((real_current_ctx) && (real_current_ctx->destroyed))
+                free(real_current_ctx);
              real_current_ctx = current_ctx;
           }
 
@@ -2884,15 +2898,23 @@ fpgl_glXDestroyContext(Display* dpy, GLXContext ctx)
         if (ectx == current_ctx)
           {
              DBG("Destroying current context... %d\n", ctx_ref_count);
+             if ((real_current_ctx) && (real_current_ctx->destroyed))
+                free(real_current_ctx);
              real_current_ctx = current_ctx;
+             real_current_ctx->destroyed = 1;
              current_ctx = NULL;
           }
-
-        if (ectx)
-           free(ectx);
+        else
+          {
+             if (ectx)
+                free(ectx);
+          }
 
         if (!(--ctx_ref_count))
           {
+             if ((real_current_ctx) && (real_current_ctx->destroyed))
+                free(real_current_ctx);
+
              DBG("Destroying the global context...\n");
              _sym_glXDestroyContext(dpy, global_ctx);
              global_ctx = NULL;
@@ -2932,7 +2954,11 @@ fpgl_glXMakeCurrent(Display* dpy, GLXDrawable draw, GLXContext ctx)
    if ((draw == None) || (ctx == NULL))
      {
         if (current_ctx)
-           real_current_ctx = current_ctx;
+          {
+             if ((real_current_ctx) && (real_current_ctx->destroyed))
+                free(real_current_ctx);
+             real_current_ctx = current_ctx;
+          }
 
         /*
         if (!_sym_glXMakeCurrent(dpy, None, NULL))

@@ -970,6 +970,7 @@ struct _EvasGlueContext
 
    // First time flag
    int            initialized;
+   int            destroyed;
 
    // Default Framebuffer and RenderBuffers
    GLuint         fb_zero;
