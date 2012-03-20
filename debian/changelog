@@ -1,3 +1,12 @@
+evas (1.1.0+svn.69113slp2+build05) unstable; urgency=low
+
+  * Upload package
+  * Add gl module.so for i386
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.69113slp2+build05
+
+ -- Seungsoo Woo <om101.woo@samsung.com>  Tue, 20 Mar 2012 18:05:44 +0900
+
 evas (1.1.0+svn.69113slp2+build04) unstable; urgency=low
 
   * Package Upload
