@@ -612,6 +612,8 @@ pending_change(void *data, void *gdata __UNUSED__)
         obj->changed_move_only = 0;
         obj->changed_nomove = 0;
         obj->changed_move = 0;
+        obj->changed_map = 0;
+        obj->changed_pchange = 0;
      }
    return obj->changed ? EINA_TRUE : EINA_FALSE;
 }
@@ -984,6 +986,8 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
                        o2->changed_move_only = 0;
                        o2->changed_nomove = 0;
                        o2->changed_move = 0;
+                       o2->changed_map = 0;
+                       o2->changed_pchange = 0;
                        continue;
                     }
                   if (o2->changed)
@@ -994,6 +998,8 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
                        o2->changed_move_only = 0;
                        o2->changed_nomove = 0;
                        o2->changed_move = 0;
+                       o2->changed_map = 0;
+                       o2->changed_pchange = 0;
                        break;
                     }
                }
@@ -1002,16 +1008,21 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
              obj->changed_move_only = 0;
              obj->changed_nomove = 0;
              obj->changed_move = 0;
+             obj->changed_map = 0;
+             obj->changed_pchange = 0;
           }
         else
           {
              if (obj->changed)
                {
-                  changed = 1;
+                  if ((obj->changed_pchange) && (obj->changed_map))
+                    changed = 1;
                   obj->changed = 0;
                   obj->changed_move_only = 0;
                   obj->changed_nomove = 0;
                   obj->changed_move = 0;
+                  obj->changed_map = 0;
+                  obj->changed_pchange = 0;
                }
           }
 
@@ -1144,10 +1155,12 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
                                             e->engine.data.context,
                                             ecx, ecy, ecw, ech);
         if (obj->cur.cache.clip.visible)
-          obj->layer->evas->engine.func->image_map_draw
-             (e->engine.data.output, e->engine.data.context, surface,
-              obj->cur.map->surface, obj->cur.map->count, pts,
-              obj->cur.map->smooth, 0);
+          {
+             obj->layer->evas->engine.func->image_map_draw
+               (e->engine.data.output, e->engine.data.context, surface,
+                   obj->cur.map->surface, obj->cur.map->count, pts,
+                   obj->cur.map->smooth, 0);
+          }
         // FIXME: needs to cache these maps and
         // keep them only rendering updates
         //        obj->layer->evas->engine.func->image_map_surface_free
@@ -1641,6 +1654,8 @@ evas_render_updates_internal(Evas *e,
              obj->changed_move_only = 0;
              obj->changed_nomove = 0;
              obj->changed_move = 0;
+             obj->changed_map = 0;
+             obj->changed_pchange = 0;
           }
         else if ((obj->cur.map != obj->prev.map) ||
                  (obj->cur.usemap != obj->prev.usemap))
@@ -1652,6 +1667,8 @@ evas_render_updates_internal(Evas *e,
              obj->changed_move_only = 0;
              obj->changed_nomove = 0;
              obj->changed_move = 0;
+             obj->changed_map = 0;
+             obj->changed_pchange = 0;
           }
         /* moved to other pre-process phase 1
            if (obj->delete_me == 2)
@@ -1688,6 +1705,7 @@ evas_render_updates_internal(Evas *e,
    e->framespace.changed = 0;
    e->invalidate = 0;
 
+   // always clean... lots of mem waste!
    /* If their are some object to restack or some object to delete,
     * it's useless to keep the render object list around. */
    if (clean_them)
@@ -1697,6 +1715,17 @@ evas_render_updates_internal(Evas *e,
         eina_array_clean(&e->restack_objects);
         eina_array_clean(&e->delete_objects);
         eina_array_clean(&e->obscuring_objects);
+        eina_array_clean(&e->temporary_objects);
+        eina_array_clean(&e->clip_changes);
+/* we should flush here and have a mempool system for this        
+        eina_array_flush(&e->active_objects);
+        eina_array_flush(&e->render_objects);
+        eina_array_flush(&e->restack_objects);
+        eina_array_flush(&e->delete_objects);
+        eina_array_flush(&e->obscuring_objects);
+        eina_array_flush(&e->temporary_objects);
+        eina_array_flush(&e->clip_changes);
+ */
         e->invalidate = 1;
      }
 
@@ -1772,11 +1801,14 @@ evas_render_idle_flush(Evas *e)
        (e->engine.data.output))
      e->engine.func->output_idle_flush(e->engine.data.output);
 
-   eina_array_flush(&e->delete_objects);
    eina_array_flush(&e->active_objects);
-   eina_array_flush(&e->restack_objects);
    eina_array_flush(&e->render_objects);
+   eina_array_flush(&e->restack_objects);
+   eina_array_flush(&e->delete_objects);
+   eina_array_flush(&e->obscuring_objects);
+   eina_array_flush(&e->temporary_objects);
    eina_array_flush(&e->clip_changes);
+   eina_array_flush(&e->temporary_objects);
 
    e->invalidate = 1;
 }

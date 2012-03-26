@@ -1,12 +1,12 @@
 ##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
 ##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
 m4_define([v_maj], [1])
-m4_define([v_min], [1])
-m4_define([v_mic], [99])
+m4_define([v_min], [2])
+m4_define([v_mic], [0])
 m4_define([v_rev], m4_esyscmd([(svnversion "${SVN_REPO_PATH:-.}" | grep -v '\(export\|Unversioned directory\)' || echo 0) | awk -F : '{printf("%s\n", $1);}' | tr -d ' :MSP\n']))
 m4_if(v_rev, [0], [m4_define([v_rev], m4_esyscmd([git log 2> /dev/null | (grep -m1 git-svn-id || echo 0) | sed -e 's/.*@\([0-9]*\).*/\1/' | tr -d '\n']))])
 ##--   When released, remove the dnl on the below line
-dnl m4_undefine([v_rev])
+m4_undefine([v_rev])
 ##--   When doing snapshots - change soname. remove dnl on below line
 dnl m4_define([relname], [ver-pre-svn-07])
 dnl m4_define([v_rel], [-release relname])
@@ -31,7 +31,7 @@ AC_CACHE_CHECK([whether the Objective C compiler works],
                 AC_LANG_POP([Objective C])])], [rw_cv_prog_objc_works=no])
 ])
 
-AC_INIT([evas], [v_ver], [enlightenment-devel@lists.sourceforge.net])
+AC_INIT([evas], [v_ver]-alpha, [enlightenment-devel@lists.sourceforge.net])
 AC_PREREQ([2.52])
 AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_MACRO_DIR([m4])
@@ -260,7 +260,7 @@ AM_CONDITIONAL([EVAS_HAVE_EXOTIC], [test "x${enable_exotic}" = "xyes"])
 ## strong dependencies
 
 # Eina
-PKG_CHECK_MODULES([EINA], [eina >= 1.1.0])
+PKG_CHECK_MODULES([EINA], [eina >= 1.2.0])
 CPPFLAGS_SAVE="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS $EINA_CFLAGS"
 AC_CHECK_SIZEOF(Eina_Unicode,, [#include <Eina.h>])
@@ -269,7 +269,7 @@ CPPFLAGS="$CPPFLAGS_SAVE"
 # Freetype
 PKG_CHECK_MODULES([FREETYPE], [freetype2 >= 9.3.0])
 
-requirement_evas="freetype2 eina >= 1.1.0 ${requirement_evas}"
+requirement_evas="freetype2 eina >= 1.2.0 ${requirement_evas}"
 
 ## optional dependencies
 
@@ -587,31 +587,9 @@ if test "x$res" = "xyes"; then
   AC_DEFINE(HAVE_LROUND, 1, C99 lround function exists)
 fi
 
-SHM_OPEN_LINK=""
-AC_MSG_CHECKING([whether shm_open() is present])
-LIBS_save=${LIBS}
-LIBS="${LIBS} -lrt"
-AC_LINK_IFELSE(
-   [AC_LANG_PROGRAM(
-      [[
-#include <sys/stat.h>
-#include <sys/mman.h>
-#include <fcntl.h>
-      ]],
-      [[
-int fd;
-fd = shm_open("/", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-shm_unlink("/");
-      ]])],
-   [
-    have_shm_open="yes"
-    AC_DEFINE(HAVE_SHM_OPEN, 1, [Have shm_open() call])
-    SHM_OPEN_LINK="-lrt"
-   ],
-   [have_shm_open="no"])
-LIBS=${LIBS_save}
-AC_MSG_RESULT([${have_shm_open}])
-AC_SUBST(SHM_OPEN_LINK)
+if test "x${want_evas_image_loader_generic}" = "xyes" ; then
+   EFL_CHECK_SHM_OPEN
+fi
 
 # (shm_open (for cache server)
 AC_ARG_ENABLE([evas-cserve],
@@ -627,30 +605,19 @@ AC_ARG_ENABLE([evas-cserve],
 AC_MSG_CHECKING(whether to build shared cache server and support)
 AC_MSG_RESULT(${want_evas_cserve})
 
+shm_open_libs=""
 if test "x${want_evas_cserve}" = "xyes" ; then
-   AC_MSG_CHECKING([whether shm_open() is present])
-   LIBS_save=${LIBS}
-   LIBS="${LIBS} -lrt"
-   AC_LINK_IFELSE(
-      [AC_LANG_PROGRAM(
-         [[
-#include <sys/types.h>
-#include <sys/mman.h>
-#include <fcntl.h>
-         ]],
-         [[
-int fd;
-fd = shm_open("/", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-shm_unlink("/");
-         ]])],
-      [want_evas_cserve="yes"],
+   EFL_CHECK_SHM_OPEN(
+      [
+       want_evas_cserve="yes"
+       shm_open_libs=${EFL_SHM_OPEN_LIBS}
+      ],
       [want_evas_cserve="no"])
-   LIBS=${LIBS_save}
-   AC_MSG_RESULT([${want_evas_cserve}])
 fi
+AC_SUBST([shm_open_libs])
 
 if test "x${want_evas_cserve}" = "xyes" ; then
-  AC_DEFINE(EVAS_CSERVE, 1, [Shared caceh server.])
+  AC_DEFINE(EVAS_CSERVE, 1, [Shared cache server.])
 fi
 
 AM_CONDITIONAL([EVAS_CSERVE], [test "x${want_evas_cserve}" = "xyes"])
