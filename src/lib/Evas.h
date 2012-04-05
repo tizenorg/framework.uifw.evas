@@ -292,8 +292,8 @@ Recommended reading:
 @author Mathieu Taillefumier <mathieu.taillefumier@@free.fr>
 @author Iván Briano <ivan@@profusion.mobi>
 @author Gustavo Lima Chaves <glima@@profusion.mobi>
-@author Samsung Electronics <tbd>
-@author Samsung SAIT <tbd>
+@author Samsung Electronics
+@author Samsung SAIT
 @author Sung W. Park <sungwoo@@gmail.com>
 @author Jiyoun Park <jy0703.park@@samsung.com>
 @author Myoungwoon Roy Kim(roy_kim) <myoungwoon.kim@@samsung.com> <myoungwoon@@gmail.com>
@@ -432,7 +432,7 @@ typedef enum _Evas_Callback_Type
    /*
     * More Evas object event types - see evas_object_event_callback_add():
     */
-   EVAS_CALLBACK_IMAGE_UNLOADED, /**< Image data has been unloaded (by some mechanims in Evas that throw out original image data) */
+   EVAS_CALLBACK_IMAGE_UNLOADED, /**< Image data has been unloaded (by some mechanism in Evas that throw out original image data) */
 
    EVAS_CALLBACK_RENDER_PRE, /**< Called just before rendering starts on the canvas target @since 1.2 */
    EVAS_CALLBACK_RENDER_POST, /**< Called just after rendering stops on the canvas target @since 1.2 */
@@ -1497,7 +1497,7 @@ EAPI void              evas_obscured_clear               (Evas *e) EINA_ARG_NONN
  *        evas_render_updates_free().
  *
  * This function forces an immediate renderization update of the given
- * canvas @e.
+ * canvas @p e.
  *
  * @note This is a <b>very low level function</b>, which most of
  * Evas' users wouldn't care about. One would use it, for example, to
@@ -1788,7 +1788,7 @@ EAPI Evas_Engine_Info *evas_engine_info_get              (const Evas *e) EINA_WA
  *
  * @param   e    The pointer to the Evas Canvas
  * @param   info The pointer to the Engine Info to use
- * @return  1 if no error occurred, 0 otherwise
+ * @return  EINA_TRUE if no error occurred, EINA_FALSE otherwise
  * @ingroup Evas_Output_Method
  */
 EAPI Eina_Bool         evas_engine_info_set              (Evas *e, Evas_Engine_Info *info) EINA_ARG_NONNULL(1);
@@ -3252,7 +3252,7 @@ EAPI const char       *evas_object_name_get              (const Evas_Object *obj
  * @see evas_object_unref()
  * @see evas_object_del()
  *
- * @note This is a <b>very simple<b> reference counting mechanism! For
+ * @note This is a <b>very simple</b> reference counting mechanism! For
  * instance, Evas is not ready to check for pending references on a
  * canvas deletion, or things like that. This is useful on scenarios
  * where, inside a code block, callbacks exist which would possibly
@@ -3293,6 +3293,25 @@ EAPI void              evas_object_ref                   (Evas_Object *obj);
  * @since 1.1.0
  */
 EAPI void              evas_object_unref                 (Evas_Object *obj);
+
+/**
+ * Get the object reference count.
+ *
+ * @param obj The given Evas object to query
+ *
+ * This gets the reference count for an object (normally 0 until it is
+ * referenced). Values of 1 or greater mean that someone is holding a
+ * reference to this object that needs to be unreffed before it can be
+ * deleted.
+ *
+ * @see evas_object_ref()
+ * @see evas_object_unref()
+ * @see evas_object_del()
+ *
+ * @ingroup Evas_Object_Group_Basic
+ * @since 1.2.0
+ */
+EAPI int               evas_object_ref_get               (const Evas_Object *obj);
 
 
 /**
@@ -3468,7 +3487,7 @@ EAPI void              evas_object_hide                  (Evas_Object *obj) EINA
  * evas_object_show() and evas_object_hide().
  *
  * @note The value returned isn't, by any means, influenced by
- * clippers covering @obj, it being out of its canvas' viewport or
+ * clippers covering @p obj, it being out of its canvas' viewport or
  * stacked below other object.
  *
  * @see evas_object_show()
@@ -3721,9 +3740,9 @@ EAPI Evas_Object      *evas_object_below_get             (const Evas_Object *obj
  * @image rtf evas-callbacks.png
  * @image latex evas-callbacks.eps
  *
- * Thees events have their values in the #Evas_Callback_Type
- * enumeration, which has also ones happening on the canvas level (se
- * #Evas_Canvas_Events).
+ * These events have their values in the #Evas_Callback_Type
+ * enumeration, which has also ones happening on the canvas level (see
+ * #Evas_Canvas_Events ).
  *
  * Examples on this group of functions can be found @ref
  * Example_Evas_Stacking "here" and @ref Example_Evas_Events "here".
@@ -4074,7 +4093,7 @@ EAPI void              evas_object_repeat_events_set      (Evas_Object *obj, Ein
  * Determine whether an object is set to repeat events.
  *
  * @param obj the given Evas object pointer
- * @retrieve whether @p obj is set to repeat events (@c EINA_TRUE)
+ * @return whether @p obj is set to repeat events (@c EINA_TRUE)
  * or not (@c EINA_FALSE)
  *
  * @see evas_object_repeat_events_set() for an example
@@ -4126,7 +4145,7 @@ EAPI Eina_Bool         evas_object_propagate_events_get   (const Evas_Object *ob
  * Set whether an Evas object is to freeze (discard) events.
  *
  * @param obj the Evas object to operate on
- * @param pass whether @p obj is to freeze events (@c EINA_TRUE) or not
+ * @param freeze pass whether @p obj is to freeze events (@c EINA_TRUE) or not
  * (@c EINA_FALSE)
  *
  * If @p freeze is @c EINA_TRUE, it will make events on @p obj to be @b
@@ -5611,7 +5630,7 @@ EAPI Evas_Object_Pointer_Mode  evas_object_pointer_mode_get     (const Evas_Obje
  * Sets whether or not the given Evas object is to be drawn anti-aliased.
  *
  * @param   obj The given Evas object.
- * @param   anti_alias 1 if the object is to be anti_aliased, 0 otherwise.
+ * @param   antialias 1 if the object is to be anti_aliased, 0 otherwise.
  * @ingroup Evas_Object_Group_Extras
  */
 EAPI void                      evas_object_anti_alias_set       (Evas_Object *obj, Eina_Bool antialias) EINA_ARG_NONNULL(1);
@@ -5662,7 +5681,7 @@ EAPI double                    evas_object_scale_get            (const Evas_Obje
 /**
  * Sets the render_op to be used for rendering the Evas object.
  * @param   obj The given Evas object.
- * @param   render_op one of the Evas_Render_Op values.
+ * @param   op one of the Evas_Render_Op values.
  * @ingroup Evas_Object_Group_Extras
  */
 EAPI void                      evas_object_render_op_set        (Evas_Object *obj, Evas_Render_Op op) EINA_ARG_NONNULL(1);
@@ -5740,7 +5759,7 @@ EAPI Evas_Render_Op            evas_object_render_op_get        (const Evas_Obje
  * Get the "static clipper" hint flag for a given Evas object.
  *
  * @param obj The given object.
- * @returrn @c EINA_TRUE if it's set as a static clipper, @c
+ * @return @c EINA_TRUE if it's set as a static clipper, @c
  * EINA_FALSE otherwise
  *
  * @see evas_object_static_clip_set() for more details
@@ -5943,7 +5962,7 @@ EAPI Eina_List        *evas_objects_at_xy_get            (const Evas *e, Evas_Co
    EAPI Eina_List        *evas_objects_in_rectangle_get     (const Evas *e, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h, Eina_Bool include_pass_events_objects, Eina_Bool include_hidden_objects) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
- * Get the lowest (stacked) Evas object on the canvas @p
+ * Get the lowest (stacked) Evas object on the canvas @p e.
  *
  * @param e a valid canvas pointer
  * @return a pointer to the lowest object on it, if any, or @c NULL,
@@ -5964,7 +5983,7 @@ EAPI Eina_List        *evas_objects_at_xy_get            (const Evas *e, Evas_Co
 EAPI Evas_Object      *evas_object_bottom_get            (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
- * Get the highest (stacked) Evas object on the canvas @p
+ * Get the highest (stacked) Evas object on the canvas @p e.
  *
  * @param e a valid canvas pointer
  * @return a pointer to the highest object on it, if any, or @c NULL,
@@ -7777,7 +7796,7 @@ EAPI void              evas_object_text_font_source_set  (Evas_Object *obj, cons
  * object.
  *
  * @param obj The text object to set font for.
- * @param font The font file's path.
+ * @return The font file's path.
  *
  * @see evas_object_text_font_get() for more details
  */
@@ -7845,7 +7864,7 @@ EAPI const char       *evas_object_text_text_get         (const Evas_Object *obj
  *
  * BiDi delimiters are use for in-paragraph separation of bidi segments. This
  * is useful for example in recipients fields of e-mail clients where bidi
- * oddities can occur when mixing rtl and ltr.
+ * oddities can occur when mixing RTL and LTR.
  *
  * @param obj The given text object.
  * @param delim A null terminated string of delimiters, e.g ",|".
@@ -7858,7 +7877,7 @@ EAPI void              evas_object_text_bidi_delimiters_set(Evas_Object *obj, co
  *
  * BiDi delimiters are use for in-paragraph separation of bidi segments. This
  * is useful for example in recipients fields of e-mail clients where bidi
- * oddities can occur when mixing rtl and ltr.
+ * oddities can occur when mixing RTL and LTR.
  *
  * @param obj The given text object.
  * @return A null terminated string of delimiters, e.g ",|". If empty, returns NULL.
@@ -8194,7 +8213,7 @@ EAPI Evas_BiDi_Direction evas_object_text_direction_get  (const Evas_Object *obj
  * Visible: formats that a cursor can point to, i.e formats that
  * occupy space, for example: newlines, tabs, items and etc. Some visible items
  * are made of two parts, in this case, only the opening tag is visible.
- * A closing tag (i.e a </tag> tag) should NEVER be visible.
+ * A closing tag (i.e a \</tag\> tag) should NEVER be visible.
  * Invisible: formats that don't occupy space, for example: bold and underline.
  * Being able to access format nodes is very important for some uses. For
  * example, edje uses the "<a>" format to create links in the text (and pop
@@ -8335,7 +8354,7 @@ EAPI char                        *evas_textblock_text_markup_to_utf8(const Evas_
 /**
  * Return the markup version of the plain text.
  *
- * Replaces \n -> <br/> \t -> <tab/> and etc. Generally needed before you pass
+ * Replaces \\n -\> \<br/\> \\t -\> \<tab/\> and etc. Generally needed before you pass
  * plain text to be set in a textblock.
  *
  * @param obj the textblock object to work with (if NULL, it just does the
@@ -8470,7 +8489,7 @@ EAPI double                       evas_object_textblock_valign_get(const Evas_Ob
  *
  * BiDi delimiters are use for in-paragraph separation of bidi segments. This
  * is useful for example in recipients fields of e-mail clients where bidi
- * oddities can occur when mixing rtl and ltr.
+ * oddities can occur when mixing RTL and LTR.
  *
  * @param obj The given textblock object.
  * @param delim A null terminated string of delimiters, e.g ",|".
@@ -8483,7 +8502,7 @@ EAPI void                         evas_object_textblock_bidi_delimiters_set(Evas
  *
  * BiDi delimiters are use for in-paragraph separation of bidi segments. This
  * is useful for example in recipients fields of e-mail clients where bidi
- * oddities can occur when mixing rtl and ltr.
+ * oddities can occur when mixing RTL and LTR.
  *
  * @param obj The given textblock object.
  * @return A null terminated string of delimiters, e.g ",|". If empty, returns NULL.
@@ -8648,8 +8667,8 @@ EAPI const Evas_Object_Textblock_Node_Format *evas_textblock_node_format_next_ge
 EAPI const Evas_Object_Textblock_Node_Format *evas_textblock_node_format_prev_get(const Evas_Object_Textblock_Node_Format *n) EINA_ARG_NONNULL(1);
 
 /**
- * Remove a format node and it's match. i.e, removes a <tag> </tag> pair.
- * Assumes the node is the first part of <tag> i.e, this won't work if
+ * Remove a format node and it's match. i.e, removes a \<tag\> \</tag\> pair.
+ * Assumes the node is the first part of \<tag\> i.e, this won't work if
  * n is a closing tag.
  *
  * @param obj the Evas object of the textblock - not null.
@@ -8678,7 +8697,7 @@ EAPI const Evas_Object_Textblock_Node_Format *evas_textblock_cursor_format_get(c
 /**
  * Get the text format representation of the format node.
  *
- * @param fmt the format node.
+ * @param fnode the format node.
  * @return the textual format of the format node.
  */
 EAPI const char                  *evas_textblock_node_format_text_get(const Evas_Object_Textblock_Node_Format *fnode) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
@@ -8842,7 +8861,7 @@ EAPI void                         evas_textblock_cursor_copy(const Evas_Textbloc
  * the start of the text just added.
  *
  * @param cur the cursor to where to add text at.
- * @param _text the text to add.
+ * @param text the text to add.
  * @return Returns the len of the text added.
  * @see evas_textblock_cursor_text_prepend()
  */
@@ -8853,7 +8872,7 @@ EAPI int                          evas_textblock_cursor_text_append(Evas_Textblo
  * the start of the text just added.
  *
  * @param cur the cursor to where to add text at.
- * @param _text the text to add.
+ * @param text the text to add.
  * @return Returns the len of the text added.
  * @see evas_textblock_cursor_text_append()
  */
@@ -8922,7 +8941,7 @@ EAPI void                         evas_textblock_cursor_range_delete(Evas_Textbl
 
 
 /**
- * Return the text of the paragraph cur points to - returns the text in markup..
+ * Return the text of the paragraph cur points to - returns the text in markup.
  *
  * @param cur the cursor pointing to the paragraph.
  * @return the text on success, NULL otherwise.
@@ -9116,8 +9135,8 @@ EAPI void                         evas_object_textblock_clear(Evas_Object *obj) 
  *
  *
  * @param obj the Evas object.
- * @param w[out] the width of the object.
- * @param h[out] the height of the object
+ * @param w the width of the object.
+ * @param h the height of the object
  * @return Returns no value.
  * @see evas_object_textblock_size_native_get
  */
@@ -9138,8 +9157,8 @@ EAPI void                         evas_object_textblock_size_formatted_get(const
  * and a formatted size of 5x4.
  *
  * @param obj the Evas object of the textblock
- * @param w[out] the width returned
- * @param h[out] the height returned
+ * @param w the width returned
+ * @param h the height returned
  * @return Returns no value.
  */
 EAPI void                         evas_object_textblock_size_native_get(const Evas_Object *obj, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1);
@@ -9457,8 +9476,8 @@ struct _Evas_Smart_Cb_Description
  *    the user, after inheriting everything from the parent, which
  *    should <b>take care of setting the right member functions for
  *    the class</b>, both overrides and extensions, if any.
- *  - If this new class should be subclassable as well, a @b public @c
- *    _smart_set() function is desirable to fill in the class used as
+ *  - If this new class should be subclassable as well, a @b public
+ *    @c _smart_set() function is desirable to fill in the class used as
  *    parent by the children. It's up to the user to provide this
  *    interface, which will most likely call @<prefix@>_smart_set() to
  *    get the job done.
@@ -9517,7 +9536,7 @@ struct _Evas_Smart_Cb_Description
  * will need to check if the smart private data was already allocated
  * by some child object or not. This macro makes it easier to do it.
  *
- * @note This is an idiom used when one calls the parent's @c. add()
+ * @note This is an idiom used when one calls the parent's @c .add()
  * after the specialized code. Naturally, the parent's base smart data
  * has to be contemplated as the specialized one's first member, for
  * things to work.
@@ -10785,7 +10804,7 @@ EAPI void                       evas_object_box_layout_homogeneous_vertical     
  * \par Child element's properties:
  * @c padding_l and @c padding_r sum up to the required width of the
  * child element. The @c align_x property tells the relative position
- * of this overall child width in its allocated cell (@r 0.0 to
+ * of this overall child width in its allocated cell (@c 0.0 to
  * extreme left, @c 1.0 to extreme right). A value of @c -1.0 to
  * @c align_x makes the box try to resize this child element to the exact
  * width of its cell (respecting the minimum and maximum size hints on
@@ -11082,7 +11101,7 @@ EAPI Evas_Object_Box_Option    *evas_object_box_insert_before                   
  * @note This call will trigger the box's
  * _Evas_Object_Box_Api::insert_after smart function.
  */
-EAPI Evas_Object_Box_Option    *evas_object_box_insert_after                          (Evas_Object *o, Evas_Object *child, const Evas_Object *referente) EINA_ARG_NONNULL(1, 2, 3);
+EAPI Evas_Object_Box_Option    *evas_object_box_insert_after                          (Evas_Object *o, Evas_Object *child, const Evas_Object *reference) EINA_ARG_NONNULL(1, 2, 3);
 
 /**
  * Insert a new @a child object <b>at a given position</b>, in a given
@@ -11131,7 +11150,7 @@ EAPI Eina_Bool                  evas_object_box_remove                          
  * unparenting it again.
  *
  * @param o The box object to remove a child object from
- * @param in The numeric position (starting from @c 0) of the child
+ * @param pos The numeric position (starting from @c 0) of the child
  * object to be removed
  * @return @c EINA_TRUE, on success, @c EINA_FALSE otherwise
  *
@@ -11153,7 +11172,7 @@ EAPI Eina_Bool                  evas_object_box_remove_at                       
  * again.
  *
  * @param o The box object to remove a child object from
- * @param child The handle to the child object to be removed
+ * @param clear if true, it will delete just removed children.
  * @return @c EINA_TRUE, on success, @c EINA_FALSE otherwise
  *
  * This has the same effect of calling evas_object_box_remove() on
@@ -11207,8 +11226,8 @@ EAPI Eina_List                 *evas_object_box_children_get                    
  * which have @a id as identifier
  *
  * @param o The box to search child options from
- * @param id The numerical identifier of the option being searched, for
- * its name
+ * @param property The numerical identifier of the option being searched,
+ * for its name
  * @return The name of the given property or @c NULL, on errors.
  *
  * @note This call won't do anything for a canonical Evas box. Only
@@ -11246,7 +11265,7 @@ EAPI int                        evas_object_box_option_property_id_get          
  * @param o The box parenting the child element
  * @param opt The box option structure bound to the child box element
  * to set a property on
- * @param id The numerical ID of the given property
+ * @param property The numerical ID of the given property
  * @param ... (List of) actual value(s) to be set for this
  * property. It (they) @b must be of the same type the user has
  * defined for it (them).
@@ -11273,8 +11292,8 @@ EAPI Eina_Bool                  evas_object_box_option_property_set             
  * @param o The box parenting the child element
  * @param opt The box option structure bound to the child box element
  * to set a property on
- * @param id The numerical ID of the given property
- * @param va_list The variable argument list implementing the value to
+ * @param property The numerical ID of the given property
+ * @param args The variable argument list implementing the value to
  * be set for this property. It @b must be of the same type the user has
  * defined for it.
  * @return @c EINA_TRUE on success, @c EINA_FALSE on failure.
@@ -11292,7 +11311,7 @@ EAPI Eina_Bool                  evas_object_box_option_property_vset            
  * @param o The box parenting the child element
  * @param opt The box option structure bound to the child box element
  * to get a property from
- * @param id The numerical ID of the given property
+ * @param property The numerical ID of the given property
  * @param ... (List of) pointer(s) where to store the value(s) set for
  * this property. It (they) @b must point to variable(s) of the same
  * type the user has defined for it (them).
@@ -11319,8 +11338,8 @@ EAPI Eina_Bool                  evas_object_box_option_property_get             
  * @param o The box parenting the child element
  * @param opt The box option structure bound to the child box element
  * to get a property from
- * @param id The numerical ID of the given property
- * @param va_list The variable argument list with pointers to where to
+ * @param property The numerical ID of the given property
+ * @param args The variable argument list with pointers to where to
  * store the values of this property. They @b must point to variables
  * of the same type the user has defined for them.
  * @return @c EINA_TRUE on success, @c EINA_FALSE on failure.
@@ -11441,7 +11460,7 @@ EAPI void                                evas_object_table_align_get       (cons
  * from right to left instead of left to right. That is, 1,1 is top right, not
  * top left.
  *
- * @param obj The table object.
+ * @param o The table object.
  * @param mirrored the mirrored mode to set
  * @since 1.1.0
  */
@@ -11450,7 +11469,7 @@ EAPI void                                evas_object_table_mirrored_set    (Evas
 /**
  * Gets the mirrored mode of the table.
  *
- * @param obj The table object.
+ * @param o The table object.
  * @return EINA_TRUE if it's a mirrored table, EINA_FALSE otherwise.
  * @since 1.1.0
  * @see evas_object_table_mirrored_set()
@@ -11608,7 +11627,7 @@ EAPI void                                evas_object_grid_size_get        (const
  * from right to left instead of left to right. That is, 0,0 is top right, not
  * to left.
  *
- * @param obj The grid object.
+ * @param o The grid object.
  * @param mirrored the mirrored mode to set
  * @since 1.1.0
  */
@@ -11617,7 +11636,7 @@ EAPI void                                evas_object_grid_mirrored_set    (Evas_
 /**
  * Gets the mirrored mode of the grid.
  *
- * @param obj The grid object.
+ * @param o The grid object.
  * @return EINA_TRUE if it's a mirrored grid, EINA_FALSE otherwise.
  * @see evas_object_grid_mirrored_set()
  * @since 1.1.0
@@ -11880,7 +11899,7 @@ EAPI void              evas_cserve_disconnect                 (void);
  * used in conjunction with evas_object_image_load_error_get(), as in:
  *
  * Example code:
- * @dontinclude evas-load-error-str.c
+ * @dontinclude evas-images.c
  * @skip img1 =
  * @until ecore_main_loop_begin(
  *
@@ -12197,7 +12216,7 @@ EAPI void                 evas_key_modifier_add          (Evas *e, const char *k
 
 /**
  * Removes the @p keyname key from the current list of modifier keys
- * on canvas @e.
+ * on canvas @p e.
  *
  * @param e The pointer to the Evas canvas
  * @param keyname The name of the key to remove from the modifiers list.
@@ -12243,7 +12262,7 @@ EAPI void                 evas_key_lock_add              (Evas *e, const char *k
 
 /**
  * Removes the @p keyname key from the current list of lock keys on
- * canvas @e.
+ * canvas @p e.
  *
  * @param e The pointer to the Evas canvas
  * @param keyname The name of the key to remove from the locks list.
