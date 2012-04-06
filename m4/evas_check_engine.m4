@@ -141,8 +141,8 @@ if test "x${have_dep}" = "xyes" ; then
          x_libs="${x_libs:--L${x_libraries:-$x_dir/lib}} -lX11 -lXext -lXrender"
       fi
    evas_engine_[]$1[]_cflags="-I/usr/include ${x_cflags}"
-   evas_engine_[]$1[]_libs="${x_libs} $gl_pt_lib"
-   evas_engine_gl_common_libs="$gl_pt_lib"
+   evas_engine_[]$1[]_libs="${x_libs} -lGL $gl_pt_lib"
+   evas_engine_gl_common_libs="-lGL $gl_pt_lib"
    fi
 else
    if test "x$2" = "xyes" ; then
@@ -171,8 +171,8 @@ else
          PKG_CHECK_MODULES([GL_EET], [eet >= 1.6.0], [have_dep="yes"], [have_dep="no"])
          if test "x${have_dep}" = "xyes" ; then
             evas_engine_[]$1[]_cflags="${x_cflags}"
-            evas_engine_[]$1[]_libs="${x_libs} -lm $gl_pt_lib"
-            evas_engine_gl_common_libs="-lm $gl_pt_lib"
+            evas_engine_[]$1[]_libs="${x_libs} -lGLESv2 -lEGL -lm $gl_pt_lib"
+            evas_engine_gl_common_libs="-lGLESv2 -lm $gl_pt_lib"
             have_dep="yes"
             AC_DEFINE(GLES_VARIETY_SGX, 1, [Imagination SGX GLES2 support])
             gles_variety_sgx="yes"
@@ -315,8 +315,8 @@ if test "x${have_dep}" = "xyes" ; then
          x_libs="${x_libs:--L${x_libraries:-$x_dir/lib}} -lX11 -lXext -lXrender"
       fi
    evas_engine_[]$1[]_cflags="-I/usr/include ${XCB_GL_CFLAGS} ${x_cflags}"
-   evas_engine_[]$1[]_libs="${XCB_GL_LIBS} ${x_libs} $gl_pt_lib"
-   evas_engine_gl_common_libs="$gl_pt_lib"
+   evas_engine_[]$1[]_libs="${XCB_GL_LIBS} ${x_libs} -lGL $gl_pt_lib"
+   evas_engine_gl_common_libs="-lGL $gl_pt_lib"
    fi
 else
    if test "x$2" = "xyes" ; then
@@ -340,8 +340,8 @@ else
          PKG_CHECK_MODULES([GL_EET], [eet >= 1.6.0], [have_dep="yes"], [have_dep="no"])
          if test "x${have_dep}" = "xyes" ; then
             evas_engine_[]$1[]_cflags="${XCB_GL_CFLAGS} ${x_cflags}"
-            evas_engine_[]$1[]_libs="${XCB_GL_LIBS} ${x_libs} -lm $gl_pt_lib"
-            evas_engine_gl_common_libs="-lm $gl_pt_lib"
+            evas_engine_[]$1[]_libs="${XCB_GL_LIBS} ${x_libs} -lGLESv2 -lEGL -lm $gl_pt_lib"
+            evas_engine_gl_common_libs="-lGLESv2 -lm $gl_pt_lib"
             have_dep="yes"
             AC_DEFINE(GLES_VARIETY_SGX, 1, [Imagination SGX GLES2 support])
             gles_variety_sgx="yes"
