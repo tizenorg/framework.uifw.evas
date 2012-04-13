@@ -1,7 +1,7 @@
 #sbs-git:slp/pkgs/e/evas evas 1.1.0+svn.69113slp2+build01 828d8bb285397266eb8985fd081fa2692fa3a7d6
 Name:       evas
 Summary:    Multi-platform Canvas Library
-Version:    1.2.0+svn.69910slp2+build01
+Version:    1.2.0+svn.70130slp2+build01
 Release:    1
 Group:      System/Libraries
 License:    BSD
