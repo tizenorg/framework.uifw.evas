@@ -1,3 +1,11 @@
+evas (1.2.0+svn.70276slp2+build01) unstable; urgency=low
+
+  * Package Upload
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.2.0+svn.70276slp2+build01
+
+ -- Hyoyoung Chang <hyoyoung.chang@samsung.com>  Wed, 18 Apr 2012 18:06:17 +0900
+
 evas (1.2.0+svn.70130slp2+build04) unstable; urgency=low
 
   * Package Upload
