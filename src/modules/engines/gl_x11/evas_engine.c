@@ -1083,9 +1083,6 @@ eng_setup(Evas *e, void *in)
    _sym_init();
    _extensions_init(re);
 
-   // This is used in extensions.  Not pretty but can't get display otherwise.
-   current_engine = re;
-
    return 1;
 }
 
@@ -3305,6 +3302,8 @@ eng_gl_make_current(void *data __UNUSED__, void *surface, void *context)
    re  = (Render_Engine *)data;
    sfc = (Render_Engine_GL_Surface*)surface;
    ctx = (Render_Engine_GL_Context*)context;
+
+   current_engine = re;
 
    // Unset surface/context
    if ((!sfc) || (!ctx))
