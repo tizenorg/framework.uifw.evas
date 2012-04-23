@@ -205,8 +205,6 @@ evas_common_draw_context_set_mask(RGBA_Draw_Context *dc, RGBA_Image *mask, int x
 EAPI void
 evas_common_draw_context_unset_mask(RGBA_Draw_Context *dc)
 {
-   dc->mask.mask = NULL;
-
 #ifdef HAVE_PIXMAN
    RGBA_Image *mask;
    mask = (RGBA_Image *)dc->mask.mask;
@@ -217,6 +215,7 @@ evas_common_draw_context_unset_mask(RGBA_Draw_Context *dc)
         mask->pixman.im = NULL;
      }
 #endif
+   dc->mask.mask = NULL;
 }
 
 
