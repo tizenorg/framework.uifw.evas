@@ -25,12 +25,15 @@ BuildRequires:  pkgconfig(harfbuzz)
 BuildRequires:  pkgconfig(sm)
 BuildRequires:  libjpeg-devel
 BuildRequires:  giflib-devel
+BuildRequires:  pkgconfig(pixman-1)
 %ifarch %{arm}
 BuildRequires:  pkgconfig(gles11)
 BuildRequires:  pkgconfig(gles20)
 BuildRequires:  pkgconfig(libdri2)
 BuildRequires:  pkgconfig(xfixes)
 BuildRequires:  pkgconfig(libdrm_slp)
+%else
+BuildRequires:  simulator-opengl-devel
 %endif
 
 
@@ -75,6 +78,10 @@ export LDFLAGS+=" -fvisibility=hidden -Wl,--hash-style=both -Wl,--as-needed"
 	--enable-gl-x11 \
 	--enable-gl-flavor-gles \
 	--enable-gles-variety-sgx \
+	--enable-pixman \
+	--enable-pixman-image \
+	--enable-pixman-image-scale-sample \
+	--enable-tile-rotate \
 %ifarch %{arm}
      	--enable-pthreads \
 	--enable-cpu-neon \

@@ -40,6 +40,7 @@ Build-Depends: debhelper (>= 6),
  libfribidi-dev,
  libharfbuzz-dev,
  libgif-dev,
+ libpixman-1-dev,
  libsm-dev
 Standards-Version: 3.8.1
 Homepage: http://www.enlightenment.org
@@ -77,7 +78,7 @@ Package: libevas-dev
 Section: libdevel
 Architecture: any
 Depends: ${misc:Depends}, libevas (= ${binary:Version}), libtiff-dev, libjpeg8-dev, libx11-dev,
- libfreetype6-dev, libfontconfig1-dev, libeet-dev, pkg-config, libeina-dev (>= 0.0.2.060+svn20100304), libxext-dev, libpng12-dev, libfribidi-dev, libharfbuzz-dev,
+ libfreetype6-dev, libfontconfig1-dev, libeet-dev, pkg-config, libeina-dev (>= 0.0.2.060+svn20100304), libxext-dev, libpng12-dev, libfribidi-dev, libharfbuzz-dev, libpixman-1-dev,
  libgif-dev
 Suggests: libevas-doc
 Description: Enlightenment DR17 advanced canvas library development files
