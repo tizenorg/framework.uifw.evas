@@ -1000,7 +1000,7 @@ _evas_gl_common_shader_program_binary_save(Evas_GL_Program *p,
         return 0;
      }
 
-   if (eet_write(ef, pname, data, length, 0) < 0)
+   if (eet_write(ef, pname, data, length, 1) < 0)
      {
         if (data) free(data);
         return 0;
@@ -1205,8 +1205,10 @@ _evas_gl_common_shader_binary_save(Evas_GL_Shared *shared)
    unsigned int i;
 
    if (!_evas_gl_shader_dir_check(bin_dir_path, sizeof(bin_dir_path)))
-      res = _evas_gl_shader_file_mkpath(bin_dir_path);
-   if (!res) return 0; /* we can't make directory */
+     {
+        res = _evas_gl_shader_file_mkpath(bin_dir_path);
+        if (!res) return 0; /* we can't make directory */
+     }
 
    _evas_gl_shader_file_check(bin_dir_path, bin_file_path,
                               sizeof(bin_dir_path));
@@ -1259,6 +1261,8 @@ evas_gl_common_shader_program_init_done(void)
 {
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
    glReleaseShaderCompiler();
+#else
+   if (glsym_glReleaseShaderCompiler) glsym_glReleaseShaderCompiler();
 #endif
 }
 
