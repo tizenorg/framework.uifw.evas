@@ -1,12 +1,12 @@
 ##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
 ##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
 m4_define([v_maj], [1])
-m4_define([v_min], [1])
-m4_define([v_mic], [99])
+m4_define([v_min], [2])
+m4_define([v_mic], [0])
 m4_define([v_rev], m4_esyscmd([(svnversion "${SVN_REPO_PATH:-.}" | grep -v '\(export\|Unversioned directory\)' || echo 0) | awk -F : '{printf("%s\n", $1);}' | tr -d ' :MSP\n']))
 m4_if(v_rev, [0], [m4_define([v_rev], m4_esyscmd([git log 2> /dev/null | (grep -m1 git-svn-id || echo 0) | sed -e 's/.*@\([0-9]*\).*/\1/' | tr -d '\n']))])
 ##--   When released, remove the dnl on the below line
-dnl m4_undefine([v_rev])
+m4_undefine([v_rev])
 ##--   When doing snapshots - change soname. remove dnl on below line
 dnl m4_define([relname], [ver-pre-svn-07])
 dnl m4_define([v_rel], [-release relname])
@@ -31,7 +31,7 @@ AC_CACHE_CHECK([whether the Objective C compiler works],
                 AC_LANG_POP([Objective C])])], [rw_cv_prog_objc_works=no])
 ])
 
-AC_INIT([evas], [v_ver], [enlightenment-devel@lists.sourceforge.net])
+AC_INIT([evas], [v_ver]-alpha, [enlightenment-devel@lists.sourceforge.net])
 AC_PREREQ([2.52])
 AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_MACRO_DIR([m4])
@@ -98,7 +98,6 @@ want_evas_engine_software_xlib="no"
 want_evas_engine_software_xcb="no"
 want_evas_engine_software_gdi="no"
 want_evas_engine_software_ddraw="no"
-want_evas_engine_software_sdl="no"
 want_evas_engine_software_8_x11="no"
 want_evas_engine_software_16_x11="no"
 want_evas_engine_software_16_ddraw="no"
@@ -244,10 +243,24 @@ case "$host_os" in
    ;;
 esac
 
+### Checks for portability layer
+
+PKG_CHECK_MODULES([EXOTIC],
+   [exotic],
+   [enable_exotic="yes"],
+   [enable_exotic="no"])
+
+if test "x${enable_exotic}" = "xyes"; then
+    requirement_evas="exotic ${requirement_evas}"
+
+    AC_DEFINE([HAVE_EXOTIC], [1], [Define to 1 if you have Exotic.])
+fi
+AM_CONDITIONAL([EVAS_HAVE_EXOTIC], [test "x${enable_exotic}" = "xyes"])
+
 ## strong dependencies
 
 # Eina
-PKG_CHECK_MODULES([EINA], [eina >= 1.1.0])
+PKG_CHECK_MODULES([EINA], [eina >= 1.2.0])
 CPPFLAGS_SAVE="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS $EINA_CFLAGS"
 AC_CHECK_SIZEOF(Eina_Unicode,, [#include <Eina.h>])
@@ -256,7 +269,7 @@ CPPFLAGS="$CPPFLAGS_SAVE"
 # Freetype
 PKG_CHECK_MODULES([FREETYPE], [freetype2 >= 9.3.0])
 
-requirement_evas="freetype2 eina >= 1.1.0 ${requirement_evas}"
+requirement_evas="freetype2 eina >= 1.2.0 ${requirement_evas}"
 
 ## optional dependencies
 
@@ -517,20 +530,6 @@ EFL_ATTRIBUTE_UNUSED
 EFL_ATTRIBUTE_VECTOR
 EFL_ATTRIBUTE_ALWAYS_INLINE
 
-WIN32_CPPFLAGS=""
-case "$host_os" in
-   mingw32ce*)
-      WIN32_CPPFLAGS="-D_WIN32_WCE=0x0420"
-      ;;
-   mingw*)
-      WIN32_CPPFLAGS="-D_WIN32_WINNT=0x0500"
-      ;;
-esac
-AC_SUBST(WIN32_CPPFLAGS)
-
-WIN32_CFLAGS=""
-AC_SUBST(WIN32_CFLAGS)
-
 
 ### Checks for linker characteristics
 lt_enable_auto_import=""
@@ -588,31 +587,9 @@ if test "x$res" = "xyes"; then
   AC_DEFINE(HAVE_LROUND, 1, C99 lround function exists)
 fi
 
-SHM_OPEN_LINK=""
-AC_MSG_CHECKING([whether shm_open() is present])
-LIBS_save=${LIBS}
-LIBS="${LIBS} -lrt"
-AC_LINK_IFELSE(
-   [AC_LANG_PROGRAM(
-      [[
-#include <sys/stat.h>
-#include <sys/mman.h>
-#include <fcntl.h>
-      ]],
-      [[
-int fd;
-fd = shm_open("/", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-shm_unlink("/");
-      ]])],
-   [
-    have_shm_open="yes"
-    AC_DEFINE(HAVE_SHM_OPEN, 1, [Have shm_open() call])
-    SHM_OPEN_LINK="-lrt"
-   ],
-   [have_shm_open="no"])
-LIBS=${LIBS_save}
-AC_MSG_RESULT([${have_shm_open}])
-AC_SUBST(SHM_OPEN_LINK)
+if test "x${want_evas_image_loader_generic}" = "xyes" ; then
+   EFL_CHECK_SHM_OPEN
+fi
 
 # (shm_open (for cache server)
 AC_ARG_ENABLE([evas-cserve],
@@ -628,30 +605,19 @@ AC_ARG_ENABLE([evas-cserve],
 AC_MSG_CHECKING(whether to build shared cache server and support)
 AC_MSG_RESULT(${want_evas_cserve})
 
+shm_open_libs=""
 if test "x${want_evas_cserve}" = "xyes" ; then
-   AC_MSG_CHECKING([whether shm_open() is present])
-   LIBS_save=${LIBS}
-   LIBS="${LIBS} -lrt"
-   AC_LINK_IFELSE(
-      [AC_LANG_PROGRAM(
-         [[
-#include <sys/types.h>
-#include <sys/mman.h>
-#include <fcntl.h>
-         ]],
-         [[
-int fd;
-fd = shm_open("/", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-shm_unlink("/");
-         ]])],
-      [want_evas_cserve="yes"],
+   EFL_CHECK_SHM_OPEN(
+      [
+       want_evas_cserve="yes"
+       shm_open_libs=${EFL_SHM_OPEN_LIBS}
+      ],
       [want_evas_cserve="no"])
-   LIBS=${LIBS_save}
-   AC_MSG_RESULT([${want_evas_cserve}])
 fi
+AC_SUBST([shm_open_libs])
 
 if test "x${want_evas_cserve}" = "xyes" ; then
-  AC_DEFINE(EVAS_CSERVE, 1, [Shared caceh server.])
+  AC_DEFINE(EVAS_CSERVE, 1, [Shared cache server.])
 fi
 
 AM_CONDITIONAL([EVAS_CSERVE], [test "x${want_evas_cserve}" = "xyes"])
@@ -747,8 +713,6 @@ EVAS_CHECK_ENGINE([software-gdi], [${want_evas_engine_software_gdi}], [no], [Sof
 EVAS_CHECK_ENGINE([software-ddraw], [${want_evas_engine_software_ddraw}], [no], [Software DirectDraw])
 
 EVAS_CHECK_ENGINE([direct3d], [${want_evas_engine_direct3d}], [no], [Direct3D])
-
-EVAS_CHECK_ENGINE([software-sdl], [${want_evas_engine_software_sdl}], [no], [Software SDL])
 
 EVAS_CHECK_ENGINE([psl1ght], [${want_evas_engine_psl1ght}], [no], [PSL1GHT])
 
@@ -1854,8 +1818,8 @@ AM_CONDITIONAL([BUILD_EXAMPLES], [test "x${build_examples}" = "xyes"])
 EFL_CHECK_TESTS([enable_tests="yes"], [enable_tests="no"])
 
 EFL_CHECK_COVERAGE([${enable_tests}], [enable_coverage="yes"], [enable_coverage="no"])
-EVAS_CFLAGS="${EVAS_CFLAGS} ${EFL_COVERAGE_CFLAGS}"
-EVAS_LIBS="${EVAS_LIBS} ${EFL_COVERAGE_LIBS}"
+EVAS_CFLAGS="${EVAS_CFLAGS} ${EFL_COVERAGE_CFLAGS} ${EXOTIC_CFLAGS}"
+EVAS_LIBS="${EVAS_LIBS} ${EFL_COVERAGE_LIBS} ${EXOTIC_LIBS}"
 if test "x$enable_coverage" = "xyes" ; then
    EVAS_CFLAGS="${EVAS_CFLAGS} ${EFL_DEBUG_CFLAGS}"
 fi
@@ -1932,7 +1896,6 @@ src/modules/engines/gl_x11/Makefile
 src/modules/engines/gl_sdl/Makefile
 src/modules/engines/gl_cocoa/Makefile
 src/modules/engines/psl1ght/Makefile
-src/modules/engines/software_sdl/Makefile
 src/modules/engines/software_8/Makefile
 src/modules/engines/software_8_x11/Makefile
 src/modules/engines/software_16/Makefile
@@ -2019,8 +1982,7 @@ fi
 echo "  Software GDI...............: $have_evas_engine_software_gdi"
 echo "  Software DirectDraw........: $have_evas_engine_software_ddraw"
 echo "  Direct3d...................: $have_evas_engine_direct3d"
-echo "  Software SDL...............: $have_evas_engine_software_sdl (primitive: $sdl_primitive)"
-echo $ECHO_N "  OpenGL SDL.................: $have_evas_engine_gl_sdl $ECHO_C"
+echo "  OpenGL SDL.................: $have_evas_engine_gl_sdl $ECHO_C"
 if test "x$have_evas_engine_gl_sdl" = "xyes"; then
   echo "(GLES: $gl_flavor_gles) (SGX: $gles_variety_sgx) (s3c6410: $gles_variety_s3c6410)"
 else

@@ -662,12 +662,26 @@
 
 2012-01-23  Tom Hacohen (TAsn)
 
-	* Textblock: Added evas_object_textblock_style_user_set/get.
+	* Textblock: Added evas_object_textblock_style_user_push/pop.
 	This is used to override the default style set for an evas object.
 	For example, this can be used to nicely change the font and size
 	in a text editor.
 
-2012-02-01  Cedric Bail
+2012-02-23  Carsten Haitzler (The Rasterman)
 
-	* Fix crash in Evas engine due to a direct free of an RGBA_Image
-	instead of properly droping it.
+        * Fix rouding of update regions for image objects when scaled
+        (leaves trails without this).
+
+2012-02-23  Cedric Bail
+
+	* Remove Software SDL engine.
+
+2012-02-23  Carsten Haitzler (The Rasterman)
+
+        * Add evas_object_ref_get() to be able to tell if others ref
+        an object.
+
+2012-04-03  Gustavo Sverzut Barbieri (k-s)
+
+	* Box layouts: fix handling of weights that have decimal parts,
+	they were being handled as "int" where "double" was expected.

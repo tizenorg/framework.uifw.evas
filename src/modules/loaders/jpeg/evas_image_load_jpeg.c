@@ -508,11 +508,11 @@ evas_image_load_file_data_jpeg_internal(Image_Entry *ie,
    unsigned int x, y, l, i, scans;
    int region = 0;
    /* rotation setting */
-   unsigned int tmp;
+   unsigned int ie_w = 0, ie_h = 0;
    unsigned int load_region_x = 0, load_region_y = 0;
    unsigned int load_region_w = 0, load_region_h = 0;
-   int degree = 0;
-   Eina_Bool change_wh = EINA_FALSE;
+   volatile int degree = 0;
+   volatile Eina_Bool change_wh = EINA_FALSE;
    Eina_Bool line_done = EINA_FALSE;
 
    if (ie->flags.rotated)
@@ -582,9 +582,13 @@ evas_image_load_file_data_jpeg_internal(Image_Entry *ie,
 
    if (change_wh)
      {
-        tmp = ie->w;
-        ie->w = ie->h;
-        ie->h = tmp;
+        ie_w = ie->h;
+        ie_h = ie->w;
+     }
+   else
+     {
+        ie_w = ie->w;
+        ie_h = ie->h;
      }
 
    if ((ie->load_opts.region.w > 0) && (ie->load_opts.region.h > 0))
@@ -629,20 +633,31 @@ evas_image_load_file_data_jpeg_internal(Image_Entry *ie,
         cinfo.region_h = ie->load_opts.region.h;
 #endif
      }
-   if ((!region) && ((w != ie->w) || (h != ie->h)))
+   if ((!region) && ((w != ie_w) || (h != ie_h)))
      {
-	// race condition, the file could have change from when we call header
-	// this test will not solve the problem with region code.
-	jpeg_destroy_decompress(&cinfo);
+        // race condition, the file could have change from when we call header
+        // this test will not solve the problem with region code.
+        jpeg_destroy_decompress(&cinfo);
         _evas_jpeg_membuf_src_term(&cinfo);
-	*error = EVAS_LOAD_ERROR_GENERIC;
-	return EINA_FALSE;
+        *error = EVAS_LOAD_ERROR_GENERIC;
+        return EINA_FALSE;
      }
    if ((region) &&
-       ((ie->w != ie->load_opts.region.w) || (ie->h != ie->load_opts.region.h)))
+       ((ie_w != ie->load_opts.region.w) || (ie_h != ie->load_opts.region.h)))
      {
-        ie->w = ie->load_opts.region.w;
-        ie->h = ie->load_opts.region.h;
+        ie_w = ie->load_opts.region.w;
+        ie_h = ie->load_opts.region.h;
+        if (change_wh)
+          {
+             ie->w = ie_h;
+             ie->h = ie_w;
+          }
+        else
+          {
+             ie->w = ie_w;
+             ie->h = ie_h;
+          }
+
      }
 
    if (!(((cinfo.out_color_space == JCS_RGB) &&
@@ -971,31 +986,24 @@ done:
    if (ie->flags.rotated)
      {
         DATA32             *data1, *data2,  *to, *from;
-        int                 x, y, w, h,  hw;
+        int                 lx, ly, lw, lh,  hw;
 
-        if (change_wh)
-          {
-             tmp = ie->w;
-             ie->w = ie->h;
-             ie->h = tmp;
-          }
-
-        w = ie->w;
-        h = ie->h;
-        hw =w * h;
+        lw = ie->w;
+        lh = ie->h;
+        hw =lw * lh;
 
         data1 = evas_cache_image_pixels(ie);
 
         if (degree == 180)
           {
-             DATA32 tmp;
+             DATA32 tmpd;
 
-             data2 = data1 + (h * w) -1;
-             for (x = (w * h) / 2; --x >= 0;)
+             data2 = data1 + (lh * lw) -1;
+             for (lx = (lw * lh) / 2; --lx >= 0;)
                {
-                  tmp = *data1;
+                  tmpd = *data1;
                   *data1 = *data2;
-                  *data2 = tmp;
+                  *data2 = tmpd;
                   data1++;
                   data2--;
                }
@@ -1008,26 +1016,26 @@ done:
 
              if (degree == 90)
                {
-                  to = data1 + w - 1;
+                  to = data1 + lw - 1;
                   hw = -hw - 1;
                }
              else if (degree == 270)
                {
-                  to = data1 + hw - w;
-                  w = -w;
+                  to = data1 + hw - lw;
+                  lw = -lw;
                   hw = hw + 1;
                }
 
              if (to)
                {
                   from = data2;
-                  for (x = ie->w; --x >= 0;)
+                  for (lx = ie->w; --lx >= 0;)
                     {
-                       for (y =ie->h; --y >= 0;)
+                       for (ly =ie->h; --ly >= 0;)
                          {
                             *to = *from;
                             from++;
-                            to += w;
+                            to += lw;
                          }
                        to += hw;
                     }
@@ -1046,6 +1054,7 @@ done:
              ie->load_opts.region.h = load_region_h;
           }
      }
+
    if (line_done)
      {
         jpeg_destroy_decompress(&cinfo);

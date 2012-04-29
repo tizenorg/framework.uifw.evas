@@ -131,7 +131,7 @@ if test "x$gl_flavor_gles" = "xyes" ; then
 fi
 
 if test "x${have_dep}" = "xyes" ; then
-   PKG_CHECK_MODULES([GL_EET], [eet >= 1.5.0], [have_dep="yes"], [have_dep="no"])
+   PKG_CHECK_MODULES([GL_EET], [eet >= 1.6.0], [have_dep="yes"], [have_dep="no"])
    if test "x${have_dep}" = "xyes" ; then
       if test "x$2" = "xyes" ; then
          x_libs="${x_libs} -lX11 -lXext -lXrender"
@@ -168,7 +168,7 @@ else
    if test "x${have_egl}" = "xyes" ; then
       AC_CHECK_LIB(GLESv2, glTexImage2D, [have_glesv2="yes"], , -lEGL ${x_libs} -lm $gl_pt_lib)
       if test "x${have_glesv2}" = "xyes" ; then
-         PKG_CHECK_MODULES([GL_EET], [eet >= 1.5.0], [have_dep="yes"], [have_dep="no"])
+         PKG_CHECK_MODULES([GL_EET], [eet >= 1.6.0], [have_dep="yes"], [have_dep="no"])
          if test "x${have_dep}" = "xyes" ; then
             evas_engine_[]$1[]_cflags="${x_cflags}"
             evas_engine_[]$1[]_libs="${x_libs} -lm $gl_pt_lib"
@@ -305,7 +305,7 @@ if test "x$gl_flavor_gles" = "xyes" ; then
 fi
 
 if test "x${have_dep}" = "xyes" ; then
-   PKG_CHECK_MODULES([GL_EET], [eet >= 1.5.0], [have_dep="yes"], [have_dep="no"])
+   PKG_CHECK_MODULES([GL_EET], [eet >= 1.6.0], [have_dep="yes"], [have_dep="no"])
    if test "x${have_dep}" = "xyes" ; then
       if test "x$2" = "xyes" ; then
          x_libs="${x_libs} -lX11 -lXext -lXrender"
@@ -337,7 +337,7 @@ else
    if test "x${have_egl}" = "xyes" ; then
       AC_CHECK_LIB(GLESv2, glTexImage2D, [have_glesv2="yes"], , -lEGL ${x_libs} -lm $gl_pt_lib)
       if test "x${have_glesv2}" = "xyes" ; then
-         PKG_CHECK_MODULES([GL_EET], [eet >= 1.5.0], [have_dep="yes"], [have_dep="no"])
+         PKG_CHECK_MODULES([GL_EET], [eet >= 1.6.0], [have_dep="yes"], [have_dep="no"])
          if test "x${have_dep}" = "xyes" ; then
             evas_engine_[]$1[]_cflags="${XCB_GL_CFLAGS} ${x_cflags}"
             evas_engine_[]$1[]_libs="${XCB_GL_LIBS} ${x_libs} -lm $gl_pt_lib"
@@ -481,7 +481,7 @@ LIBS="$LIBS_save"
 AC_LANG_POP([Objective C])
 
 if test "x${have_dep}" = "xyes" ; then
-   PKG_CHECK_MODULES([GL_EET], [eet >= 1.5.0], [have_dep="yes"], [have_dep="no"])
+   PKG_CHECK_MODULES([GL_EET], [eet >= 1.6.0], [have_dep="yes"], [have_dep="no"])
 fi
 
 AC_SUBST([evas_engine_$1_cflags])
@@ -494,43 +494,6 @@ else
 fi
 
 ])
-
-
-dnl use: EVAS_CHECK_ENGINE_DEP_SOFTWARE_SDL(engine, simple, want_static[, ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
-
-AC_DEFUN([EVAS_CHECK_ENGINE_DEP_SOFTWARE_SDL],
-[
-
-requirement=""
-have_dep="no"
-evas_engine_[]$1[]_cflags=""
-evas_engine_[]$1[]_libs=""
-
-PKG_CHECK_MODULES([SDL],
-   [sdl >= 1.2.0],
-   [
-    have_dep="yes"
-    requirement="sdl"
-    evas_engine_[]$1[]_cflags="${SDL_CFLAGS}"
-    evas_engine_[]$1[]_libs="${SDL_LIBS}"
-   ]
-)
-
-AC_SUBST([evas_engine_$1_cflags])
-AC_SUBST([evas_engine_$1_libs])
-
-if test "x$3" = "xstatic" ; then
-   requirement_evas="${requirement} ${requirement_evas}"
-fi
-
-if test "x${have_dep}" = "xyes" ; then
-  m4_default([$4], [:])
-else
-  m4_default([$5], [:])
-fi
-
-])
-
 
 dnl use: EVAS_CHECK_ENGINE_DEP_SOFTWARE_16_SDL(engine, simple, want_static[, ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
 
@@ -915,7 +878,7 @@ PKG_CHECK_MODULES([WAYLAND_EGL],
 )
 
 if test "x${have_dep}" = "xyes" ; then
-   PKG_CHECK_MODULES([GL_EET], [eet >= 1.5.0], [have_dep="yes"], [have_dep="no"])
+   PKG_CHECK_MODULES([GL_EET], [eet >= 1.6.0], [have_dep="yes"], [have_dep="no"])
       AC_CHECK_LIB(GLESv2, glTexImage2D, [have_glesv2="yes"], , -lEGL -lm)
       if test "x${have_glesv2}" = "xyes" ; then
          evas_engine_[]$1[]_cflags="${WAYLAND_EGL_CFLAGS}"

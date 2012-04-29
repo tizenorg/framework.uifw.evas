@@ -56,7 +56,7 @@ Description: Enlightenment DR17 advanced canvas library
  Due to its simple API, evas can be developed with rapidly, and cleanly.
  .
  This package contains the core library and a set of image loaders and/or savers
- for various formats: eet, gif, jpeg, png, svg, tiff, bmp, wbmp and xpm
+ for various formats: eet, gif, jpeg, png, svg, bmp, wbmp and xpm
 
 Package: libevas-doc
 Architecture: any

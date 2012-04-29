@@ -5,27 +5,24 @@
 static void
 _evas_map_calc_geom_change(Evas_Object *obj)
 {
-   int is, was = 0, pass = 0;
+   int is, was = 0;
 
    evas_object_change(obj);
    evas_object_clip_dirty(obj);
    if (obj->layer->evas->events_frozen <= 0)
      {
         evas_object_recalc_clippees(obj);
-        if (!pass)
+        if (!obj->smart.smart)
           {
-             if (!obj->smart.smart)
-               {
-                  is = evas_object_is_in_output_rect(obj,
-                                                     obj->layer->evas->pointer.x,
-                                                     obj->layer->evas->pointer.y, 1, 1);
-                  if ((is ^ was) && obj->cur.visible)
-                    evas_event_feed_mouse_move(obj->layer->evas,
-                                               obj->layer->evas->pointer.x,
-                                               obj->layer->evas->pointer.y,
-                                               obj->layer->evas->last_timestamp,
-                                               NULL);
-               }
+             is = evas_object_is_in_output_rect(obj,
+                                                obj->layer->evas->pointer.x,
+                                                obj->layer->evas->pointer.y, 1, 1);
+             if ((is ^ was) && obj->cur.visible)
+               evas_event_feed_mouse_move(obj->layer->evas,
+                                          obj->layer->evas->pointer.x,
+                                          obj->layer->evas->pointer.y,
+                                          obj->layer->evas->last_timestamp,
+                                          NULL);
           }
      }
    evas_object_inform_call_move(obj);
@@ -376,9 +373,11 @@ evas_object_map_enable_set(Evas_Object *obj, Eina_Bool enabled)
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    return;
    MAGIC_CHECK_END();
+   Eina_Bool pchange = EINA_FALSE;
 
    enabled = !!enabled;
    if (obj->cur.usemap == enabled) return;
+   pchange = obj->changed;
    obj->cur.usemap = enabled;
    if (enabled)
      {
@@ -407,6 +406,8 @@ evas_object_map_enable_set(Evas_Object *obj, Eina_Bool enabled)
    /* This is a bit heavy handed, but it fixes the case of same geometry, but
     * changed colour or UV settings. */
    evas_object_change(obj);
+   if (!obj->changed_pchange) obj->changed_pchange = pchange;
+   obj->changed_map = EINA_TRUE;
 }
 
 EAPI Eina_Bool

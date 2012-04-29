@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <dlfcn.h>
 #include <string.h>
+#include <sys/time.h>
+#include <unistd.h>
+#include <sys/syscall.h>
 #include "evas_gl_core.h"
 
 
@@ -13,6 +16,90 @@
 #define FLAG_BIT_5      0x20
 #define FLAG_BIT_6      0x40
 #define FLAG_BIT_7      0x80
+
+//#define EVAS_GL_DEBUG 1
+//#define EVAS_GL_PROFILE_LOG
+
+#define EVAS_GL_DEBUG_ASSERT(x)  \
+   do { \
+        if (!(x)) { ERR("Assert(%s) failed..", #x); exit(0); } \
+   } while (0)
+
+#ifdef EVAS_GL_DEBUG
+   #define COMPARE_OPT_SKIP  (1) ||
+   #define THREAD_CHECK_DEBUG() thread_check()
+#else
+   #define COMPARE_OPT_SKIP
+   #define THREAD_CHECK_DEBUG()
+#endif
+
+
+typedef struct _Call_Log
+{
+   int count;
+   struct timeval start;
+   struct timeval end;
+   struct timeval total;
+} Call_Log;
+
+static Call_Log mc_log;
+static int frame_count = 0;
+
+
+#ifdef EVAS_GL_PROFILE_LOG
+#  define EVAS_GL_INIT_LOG(a) \
+   do { \
+        (a).count = 0; \
+        (a).total.tv_sec = 0; \
+        (a).total.tv_usec = 0; \
+   } while(0)
+
+#  define EVAS_GL_START_LOG(a) \
+   do { \
+        if (gettimeofday(&(a.start), NULL) != 0) \
+        fprintf(stderr, "Error Getting Time of Day \n"); \
+   } while(0)\
+
+
+#  define EVAS_GL_END_LOG(a) \
+   do { \
+        gettimeofday(&(a.end), NULL); \
+        a.count++; \
+        a.total.tv_sec = (a.end.tv_sec - a.start.tv_sec); \
+        a.total.tv_usec = (a.end.tv_usec - a.start.tv_usec); \
+        print_log("GLProfile", &a); \
+   } while(0)
+#else
+#  define EVAS_GL_INIT_LOG(a)
+
+#  define EVAS_GL_START_LOG(a)
+
+#  define EVAS_GL_END_LOG(a)
+#endif
+
+
+static void
+print_log(const char * name, Call_Log *log)
+{
+    static double total_time = 0;
+    static int total_count = 0;
+    double seconds = log->total.tv_sec + log->total.tv_usec / 1000000.0;
+    total_count++;
+    total_time += seconds;
+
+    //if (!(log->count % 100))
+    if (!(total_count % 100))
+      {
+         fprintf(stderr, "\t[%s] Count: %d in %6.3f seconds : %d total count %6.3f total second ---- FRAMECOUNT: %d\n",
+                 name, log->count, seconds, total_count, total_time, frame_count);
+      }
+
+    EVAS_GL_INIT_LOG(*log);
+}
+
+#define EVAS_GL_PRINT_LOG(a, b) print_log(#a, &b)
+
+
 
 //------------------------------------------------------//
 typedef _eng_fn                (*glsym_func_eng_fn) ();
@@ -55,6 +142,11 @@ static int                  global_ctx_initted = 0;
 static EvasGlueContext      current_ctx        = NULL;
 static EvasGlueContext      real_current_ctx   = NULL;
 static int                  ctx_ref_count      = 0;
+static int                  current_tid        = 0;
+
+
+static int                  log_opt            = 0;
+
 
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
 
@@ -530,9 +622,86 @@ static void       (*_sym_glProgramParameteri)                   (GLuint a, GLuin
 
 
 //------------------------------------------------------//
-// For internal fastpath
+// Inline function for debugging
+static inline void thread_check()
+{
+   if (current_tid == 0)
+      current_tid = syscall(__NR_gettid);
+   else
+      EVAS_GL_DEBUG_ASSERT(current_tid == syscall(__NR_gettid));
+}
+
+//-------------------------------//
+// Get Type
+// 0 = glGet
+// 1 = glGetVertexAttrib
+// 2 = glGetVertexAttribPointer
+//-------------------------------//
+/*
+static void
+get_state(int index, GLenum state, int get_type, int val_type, void *value)
+{
+   int i;
+
+   if (get_type == 0)
+     {
+        // Integer Type
+        if (val_type == 0)
+          {
+             GLint real_val[4] = {-1, -1, -1, -1};
+             GLint *curr_val = (GLint*)value;
+             _sym_glGetIntegerv(state, real_val);
+          }
+        // Boolean Type
+        else if (val_type == 1)
+          {
+             GLboolean real_val[4] = {3, 3, 3, 3};
+             GLboolean *curr_val = (GLboolean*)value;
+             _sym_glGetBooleanv(state, real_val);
+          }
+        // Float Type
+        else if (val_type == 2)
+          {
+             GLfloat real_val[4] = {-1, -1, -1, -1};
+             GLfloat *curr_val = (GLfloat*)value;
+             _sym_glGetFloatv(state, real_val);
+          }
+        else
+           fprintf(stderr, "Error Setting State: %d...\n", state);
+     }
+   else if (get_type == 1)
+     {
+        // GetVertexAttrib
+        if (val_type == 0)
+          {
+             GLint real_val[4] = {-1, -1, -1, -1};
+             GLint *curr_val = (GLint*)value;
+             _sym_glGetVertexAttribiv(index, state, real_val);
+          }
+        else if (val_type == 2)
+          {
+             GLfloat real_val[4] = {-1, -1, -1, -1};
+             GLfloat *curr_val = (GLfloat*)value;
+             _sym_glGetVertexAttribfv(index, state, real_val);
+          }
+     }
+   else if (get_type == 2)
+     {
+        GLint real_val[4] = {-1, -1, -1, -1};
+        GLint *curr_val = (GLint*)value;
+        _sym_glGetVertexAttribPointerv(index, state, real_val);
+
+     }
+}
+
+*/
+
+
+
+#if 0
+//------------------------------------------------------//
 static int
-init_context_states(EvasGlueContext ctx)
+init_states(EvasGlueContext ctx)
 {
    int i;
 
@@ -544,7 +713,125 @@ init_context_states(EvasGlueContext ctx)
 
    // Set Magic and other inits
    ctx->magic      = MAGIC_GLFAST;
-   ctx->first_time = 1;
+   //ctx->initialized = 1;
+
+#define GET_STATE(glstate, type, evglstate, num, all) \
+   print_state(#glstate, glstate, type, num, &(current_ctx->evglstate), all, 0, 0);
+
+
+   fprintf(stderr, "---------------Current Actual GL Context %p States----------------\n", current_ctx);
+   fprintf(stderr, "Print GL States Called from %s @ line %d\n", func_name, line_num);
+   fprintf(stderr, "---TID: %d\n\n", syscall(__NR_gettid));
+//-----------------------------------------------------------//
+
+
+   GET_STATE(GL_ARRAY_BUFFER_BINDING, 0);
+   GET_STATE(GL_ELEMENT_ARRAY_BUFFER_BINDING, 0);
+   GET_STATE(GL_FRAMEBUFFER_BINDING, 0);
+   GET_STATE(GL_RENDERBUFFER_BINDING, 0);
+
+   GET_STATE(GL_BLEND, 1);
+   GET_STATE(GL_CULL_FACE, 1);
+   GET_STATE(GL_DEPTH_TEST, 1);
+   GET_STATE(GL_DITHER, 1);
+
+   GET_STATE(GL_POLYGON_OFFSET_FILL, 1);
+   GET_STATE(GL_SAMPLE_ALPHA_TO_COVERAGE, 1);
+   GET_STATE(GL_SAMPLE_COVERAGE, 1);
+   GET_STATE(GL_SCISSOR_TEST, 1);
+   GET_STATE(GL_STENCIL_TEST, 1);
+
+   GET_STATE(GL_VIEWPORT, 0);
+   GET_STATE(GL_CURRENT_PROGRAM, 0);
+
+   GET_STATE(GL_COLOR_CLEAR_VALUE, 2);
+
+   GET_STATE(GL_COLOR_WRITEMASK, 1);
+
+   GET_STATE(GL_DEPTH_RANGE, 2);
+   GET_STATE(GL_DEPTH_CLEAR_VALUE, 2);
+   GET_STATE(GL_DEPTH_FUNC, 0);
+   GET_STATE(GL_DEPTH_WRITEMASK, 1);
+   GET_STATE(GL_CULL_FACE_MODE, 0);
+
+   int active_tex;
+   _sym_glGetIntegerv(GL_ACTIVE_TEXTURE, &active_tex);
+
+   for (i=0; i<MAX_TEXTURE_UNITS; ++i)
+     {
+        _sym_glActiveTexture(GL_TEXTURE0 + i);
+        GET_STATE(GL_TEXTURE_BINDING_2D, 0);
+     }
+   for (i=0; i<MAX_TEXTURE_UNITS; ++i)
+     {
+        _sym_glActiveTexture(GL_TEXTURE0 + i);
+        GET_STATE(GL_TEXTURE_BINDING_CUBE_MAP, 0);
+     }
+   _sym_glActiveTexture(active_tex);
+
+   GET_STATE(GL_ACTIVE_TEXTURE, 0);
+   GET_STATE(GL_GENERATE_MIPMAP_HINT, 0);
+   //GET_STATE(GL_TEXTURE_BINDING_, 0);
+   //GET_STATE(GL_TEXTURE_BINDING_CUBE_MAP, 0);
+
+   GET_STATE(GL_BLEND_COLOR, 2);
+   GET_STATE(GL_BLEND_SRC_RGB, 0);
+   GET_STATE(GL_BLEND_SRC_ALPHA, 0);
+   GET_STATE(GL_BLEND_DST_RGB, 0);
+   GET_STATE(GL_BLEND_DST_ALPHA, 0);
+   GET_STATE(GL_BLEND_EQUATION_RGB, 0);
+   GET_STATE(GL_BLEND_EQUATION_ALPHA, 0);
+
+   GET_STATE(GL_STENCIL_FUNC, 0);
+   GET_STATE(GL_STENCIL_REF, 0);
+   GET_STATE(GL_STENCIL_VALUE_MASK, 3);
+   GET_STATE(GL_STENCIL_FAIL, 0);
+   GET_STATE(GL_STENCIL_PASS_DEPTH_FAIL, 0);
+   GET_STATE(GL_STENCIL_PASS_DEPTH_PASS, 0);
+   GET_STATE(GL_STENCIL_WRITEMASK, 3);
+
+   GET_STATE(GL_STENCIL_BACK_FUNC, 0);
+   GET_STATE(GL_STENCIL_BACK_REF, 0);
+   GET_STATE(GL_STENCIL_BACK_VALUE_MASK, 3);
+   GET_STATE(GL_STENCIL_BACK_FAIL, 0);
+   GET_STATE(GL_STENCIL_BACK_PASS_DEPTH_FAIL, 0);
+   GET_STATE(GL_STENCIL_BACK_PASS_DEPTH_PASS, 0);
+   GET_STATE(GL_STENCIL_BACK_WRITEMASK, 3);
+
+   GET_STATE(GL_STENCIL_CLEAR_VALUE, 0);
+
+   GET_STATE(GL_FRONT_FACE, 0);
+   GET_STATE(GL_LINE_WIDTH, 2);
+   GET_STATE(GL_POLYGON_OFFSET_FACTOR, 2);
+   GET_STATE(GL_POLYGON_OFFSET_UNITS, 2);
+   GET_STATE(GL_SAMPLE_COVERAGE_VALUE, 2);
+   GET_STATE(GL_SAMPLE_COVERAGE_INVERT, 1);
+
+   GET_STATE(GL_SCISSOR_BOX, 0);
+   GET_STATE(GL_PACK_ALIGNMENT, 0);
+   GET_STATE(GL_UNPACK_ALIGNMENT, 0);
+
+   for (i=0; i<MAX_VERTEX_ATTRIBS; ++i)
+     {
+        //fprintf(stderr, "--Vertex Attrib Array Index: %d ----\n", i);
+        PRINT_VA_STATE(i, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, 0, vertex_array[i].buf_id, 1, print_all);
+        PRINT_VA_STATE(i, GL_VERTEX_ATTRIB_ARRAY_ENABLED, 0, vertex_array[i].enabled, 1, print_all);
+        PRINT_VA_STATE(i, GL_VERTEX_ATTRIB_ARRAY_SIZE, 0, vertex_array[i].size, 1, print_all);
+        PRINT_VA_STATE(i, GL_VERTEX_ATTRIB_ARRAY_TYPE, 0, vertex_array[i].type, 1, print_all);
+        PRINT_VA_STATE(i, GL_VERTEX_ATTRIB_ARRAY_NORMALIZED, 0, vertex_array[i].normalized, 1, print_all);
+        PRINT_VA_STATE(i, GL_VERTEX_ATTRIB_ARRAY_STRIDE, 0, vertex_array[i].stride, 1, print_all);
+        PRINT_VA_POINTER(i, GL_VERTEX_ATTRIB_ARRAY_POINTER, 0, vertex_array[i].pointer, print_all);
+     }
+
+   for (i=0; i<MAX_VERTEX_ATTRIBS; ++i)
+     {
+        PRINT_VA_STATE(i, GL_CURRENT_VERTEX_ATTRIB, 2, vertex_attrib[i].value[0], 4, print_all);
+     }
+
+   fprintf(stderr, "-----------------------------------------------------------\n\n", current_ctx);
+#undef GET_STATE
+#undef PRINT_VA_STATE
+#undef PRINT_VA_POINTER
 
    //-------------------//
    ctx->num_tex_units                          = MAX_TEXTURE_UNITS;
@@ -563,7 +850,6 @@ init_context_states(EvasGlueContext ctx)
    // glEnable()
    ctx->gl_blend                               = GL_FALSE;
    ctx->gl_cull_face                           = GL_FALSE;
-   ctx->gl_cull_face_mode                      = GL_FALSE;
    ctx->gl_depth_test                          = GL_FALSE;
    ctx->gl_dither                              = GL_TRUE;
    ctx->gl_polygon_offset_fill                 = GL_FALSE;
@@ -571,6 +857,8 @@ init_context_states(EvasGlueContext ctx)
    ctx->gl_sample_coverage                     = GL_FALSE;
    ctx->gl_scissor_test                        = GL_FALSE;
    ctx->gl_stencil_test                        = GL_FALSE;
+
+   ctx->gl_cull_face_mode                      = GL_BACK;
 
    // Viewport - Set it to 0
    ctx->gl_viewport[0]                         = 0;       // (0,0,w,h)
@@ -585,8 +873,8 @@ init_context_states(EvasGlueContext ctx)
    //   ctx->tex_state[MAX_TEXTURE_UNITS]
    ctx->gl_active_texture                      = GL_TEXTURE0;
    ctx->gl_generate_mipmap_hint                = GL_DONT_CARE;
-   ctx->gl_texture_binding_2d                  = 0;
-   ctx->gl_texture_binding_cube_map            = 0;
+   //ctx->gl_texture_binding_2d                  = 0;
+   //ctx->gl_texture_binding_cube_map            = 0;
 
 
    // Clear Color
@@ -629,8 +917,8 @@ init_context_states(EvasGlueContext ctx)
 
    ctx->gl_stencil_back_fail                   = GL_KEEP;
    ctx->gl_stencil_back_func                   = GL_ALWAYS;
-   ctx->gl_stencil_back_depth_fail             = GL_KEEP;
-   ctx->gl_stencil_back_depth_pass             = GL_KEEP;
+   ctx->gl_stencil_back_pass_depth_fail        = GL_KEEP;
+   ctx->gl_stencil_back_pass_depth_pass        = GL_KEEP;
    ctx->gl_stencil_back_ref                    = 0;
    ctx->gl_stencil_back_value_mask             = 0xffffffff;
    ctx->gl_stencil_back_writemask              = 0xffffffff;
@@ -658,7 +946,7 @@ init_context_states(EvasGlueContext ctx)
      {
         ctx->vertex_array[i].modified          = GL_FALSE;
         ctx->vertex_array[i].enabled           = GL_FALSE;
-        ctx->vertex_array[i].size              = 0;
+        ctx->vertex_array[i].size              = 4;
         ctx->vertex_array[i].type              = GL_FLOAT;
         ctx->vertex_array[i].normalized        = GL_FALSE;
         ctx->vertex_array[i].stride            = GL_FALSE;
@@ -679,6 +967,591 @@ init_context_states(EvasGlueContext ctx)
    return 1;
 }
 
+#endif
+
+
+
+
+
+
+// For internal fastpath
+static int
+init_context_states(EvasGlueContext ctx)
+{
+   int i;
+
+   if (!ctx)
+     {
+        ERR("Context NULL\n");
+        return 0;
+     }
+
+   // Set Magic and other inits
+   ctx->magic      = MAGIC_GLFAST;
+   //ctx->initialized = 0;
+
+   //-------------------//
+   ctx->num_tex_units                          = MAX_TEXTURE_UNITS;
+   ctx->num_vertex_attribs                     = MAX_VERTEX_ATTRIBS;
+
+   //----------------------------------------//
+   // GL States
+   // Bind Functions
+   // glBind {Buffer, Framebuffer, Renderbuffer, Texture}
+   ctx->gl_array_buffer_binding                = 0;
+   ctx->gl_element_array_buffer_binding        = 0;
+   ctx->gl_framebuffer_binding                 = 0;
+   ctx->gl_renderbuffer_binding                = 0;
+
+   // Enable States
+   // glEnable()
+   ctx->gl_blend                               = GL_FALSE;
+   ctx->gl_cull_face                           = GL_FALSE;
+   ctx->gl_depth_test                          = GL_FALSE;
+   ctx->gl_dither                              = GL_TRUE;
+   ctx->gl_polygon_offset_fill                 = GL_FALSE;
+   ctx->gl_sample_alpha_to_coverage            = GL_FALSE;
+   ctx->gl_sample_coverage                     = GL_FALSE;
+   ctx->gl_scissor_test                        = GL_FALSE;
+   ctx->gl_stencil_test                        = GL_FALSE;
+
+   ctx->gl_cull_face_mode                      = GL_BACK;
+
+   // Viewport - Set it to 0
+   ctx->gl_viewport[0]                         = 0;       // (0,0,w,h)
+   ctx->gl_viewport[1]                         = 0;       // (0,0,w,h)
+   ctx->gl_viewport[2]                         = 0;       // (0,0,w,h)
+   ctx->gl_viewport[3]                         = 0;       // (0,0,w,h)
+
+   // Program (Shaders)
+   ctx->gl_current_program                     = 0;
+
+   // Texture
+   //   ctx->tex_state[MAX_TEXTURE_UNITS]
+   ctx->gl_active_texture                      = GL_TEXTURE0;
+   ctx->gl_generate_mipmap_hint                = GL_DONT_CARE;
+   //ctx->gl_texture_binding_2d                  = 0;
+   //ctx->gl_texture_binding_cube_map            = 0;
+
+
+   // Clear Color
+   ctx->gl_color_clear_value[0]                = 0;
+   ctx->gl_color_clear_value[1]                = 0;
+   ctx->gl_color_clear_value[2]                = 0;
+   ctx->gl_color_clear_value[3]                = 0;
+   ctx->gl_color_writemask[0]                  = GL_TRUE;
+   ctx->gl_color_writemask[1]                  = GL_TRUE;
+   ctx->gl_color_writemask[2]                  = GL_TRUE;
+   ctx->gl_color_writemask[3]                  = GL_TRUE;
+
+   // Depth
+   ctx->gl_depth_range[0]                      = 0;
+   ctx->gl_depth_range[1]                      = 1;
+   ctx->gl_depth_clear_value                   = 1;
+   ctx->gl_depth_func                          = GL_LESS;
+   ctx->gl_depth_writemask                     = GL_TRUE;
+
+   // Blending
+   ctx->gl_blend_color[0]                      = 0;
+   ctx->gl_blend_color[1]                      = 0;
+   ctx->gl_blend_color[2]                      = 0;
+   ctx->gl_blend_color[3]                      = 0;
+   ctx->gl_blend_src_rgb                       = GL_ONE;
+   ctx->gl_blend_src_alpha                     = GL_ONE;
+   ctx->gl_blend_dst_rgb                       = GL_ZERO;
+   ctx->gl_blend_dst_alpha                     = GL_ZERO;
+   ctx->gl_blend_equation_rgb                  = GL_FUNC_ADD;
+   ctx->gl_blend_equation_alpha                = GL_FUNC_ADD;
+
+   // Stencil
+   ctx->gl_stencil_fail                        = GL_KEEP;
+   ctx->gl_stencil_func                        = GL_ALWAYS;
+   ctx->gl_stencil_pass_depth_fail             = GL_KEEP;
+   ctx->gl_stencil_pass_depth_pass             = GL_KEEP;
+   ctx->gl_stencil_ref                         = 0;
+   ctx->gl_stencil_value_mask                  = 0xffffffff;
+   ctx->gl_stencil_writemask                   = 0xffffffff;
+
+   ctx->gl_stencil_back_fail                   = GL_KEEP;
+   ctx->gl_stencil_back_func                   = GL_ALWAYS;
+   ctx->gl_stencil_back_pass_depth_fail        = GL_KEEP;
+   ctx->gl_stencil_back_pass_depth_pass        = GL_KEEP;
+   ctx->gl_stencil_back_ref                    = 0;
+   ctx->gl_stencil_back_value_mask             = 0xffffffff;
+   ctx->gl_stencil_back_writemask              = 0xffffffff;
+   ctx->gl_stencil_clear_value                 = 0;
+
+   // Misc.
+   ctx->gl_front_face                          = GL_CCW;
+   ctx->gl_line_width                          = 1;
+   ctx->gl_polygon_offset_factor               = 0;
+   ctx->gl_polygon_offset_units                = 0;
+
+   ctx->gl_sample_coverage_value               = 1.0;
+   ctx->gl_sample_coverage_invert              = GL_FALSE;
+   ctx->gl_scissor_box[0]                      = 0;
+   ctx->gl_scissor_box[1]                      = 0;
+   ctx->gl_scissor_box[2]                      = 0;      // Supposed to be w
+   ctx->gl_scissor_box[3]                      = 0;      // Supposed to be h
+
+   ctx->gl_pack_alignment                      = 4;
+   ctx->gl_unpack_alignment                    = 4;
+
+
+   // Vertex Attrib Array
+   for (i = 0; i < MAX_VERTEX_ATTRIBS; i++)
+     {
+        ctx->vertex_array[i].modified          = GL_FALSE;
+        ctx->vertex_array[i].enabled           = GL_FALSE;
+        ctx->vertex_array[i].size              = 4;
+        ctx->vertex_array[i].type              = GL_FLOAT;
+        ctx->vertex_array[i].normalized        = GL_FALSE;
+        ctx->vertex_array[i].stride            = GL_FALSE;
+        ctx->vertex_array[i].pointer           = NULL;
+
+        ctx->vertex_attrib[i].modified         = GL_FALSE;
+        ctx->vertex_attrib[i].value[0]         = 0;
+        ctx->vertex_attrib[i].value[1]         = 0;
+        ctx->vertex_attrib[i].value[2]         = 0;
+        ctx->vertex_attrib[i].value[3]         = 1;
+     }
+
+   ctx->gl_current_vertex_attrib[0]            = 0;
+   ctx->gl_current_vertex_attrib[1]            = 0;
+   ctx->gl_current_vertex_attrib[2]            = 0;
+   ctx->gl_current_vertex_attrib[3]            = 1;
+
+   return 1;
+}
+
+//-------------------------------//
+// Get Type
+// 0 = glGet
+// 1 = glGetVertexAttrib
+// 2 = glGetVertexAttribPointer
+//-------------------------------//
+
+typedef enum _State_Type
+{
+   STATE_INT,
+   STATE_HEX,
+   STATE_BOOLEAN,
+   STATE_FLOAT,
+   VA_STATE_INT,
+   VA_STATE_FLOAT,
+   VA_STATE_POINTER,
+} State_Type;
+
+static void
+print_state_bool(const char * name, int index, GLboolean *val1,
+                 GLboolean *val2, int num, State_Type state_type, int print_all)
+{
+   int i;
+
+   for (i=0; i<num; ++i)
+      if ( (print_all) || (val1[i] != val2[i]) )
+         switch (state_type)
+           {
+            case STATE_BOOLEAN:
+               fprintf(stderr, "\t %-25.25s    : %10d    %10d\n",
+                       name, val1[i], val2[i]);
+               break;
+            default:
+               fprintf(stderr, "\t Error: Invalid State Print Bool Type.\n");
+           }
+
+
+}
+
+static void
+print_state_int(const char * name, int index, GLint *val1,
+            GLint *val2, int num, State_Type state_type, int print_all)
+{
+   int i;
+
+   for (i=0; i<num; ++i)
+      if ( (print_all) || (val1[i] != val2[i]) )
+         switch (state_type)
+           {
+            case STATE_INT:
+               fprintf(stderr, "\t %-25.25s    : %10d    %10d\n",
+                       name, val1[i], val2[i]);
+               break;
+            case STATE_HEX:
+               fprintf(stderr, "\t %-25.25s    : %10x    %10x\n",
+                       name, val1[i], val2[i]);
+               break;
+            case VA_STATE_INT:
+               if (num > 1)
+                  fprintf(stderr, "\t %-25.25s[%-2.2d||%-1.1d]: %10d    %10d\n",
+                          name, index, i, val1[i], val2[i]);
+               else
+                  fprintf(stderr, "\t %-25.25s[%-2.2d]   : %10d    %10d\n",
+                          name, index, val1[i], val2[i]);
+               break;
+            case VA_STATE_POINTER:
+               fprintf(stderr, "\t %-25.25s[%-2.2d]   : %10d    %10d\n",
+                       name, index, val1[i], val2[i]);
+               break;
+            default:
+               fprintf(stderr, "\t Error: Invalid State Print Type.\n");
+           }
+}
+
+static void
+print_state_float(const char * name, int index, GLfloat *val1,
+                  GLfloat *val2, int num, State_Type state_type, int print_all)
+{
+   int i;
+
+   for (i=0; i<num; ++i)
+      if ( (print_all) || (val1[i] != val2[i]) )
+         switch (state_type)
+           {
+            case STATE_FLOAT:
+               fprintf(stderr, "\t %-25.25s    : %10.1f    %10.1f\n",
+                       name, val1[i], val2[i]);
+               break;
+            case VA_STATE_FLOAT:
+               if (num > 1)
+                  fprintf(stderr, "\t %-25.25s[%-2.2d||%-1.1d]: %10.1f    %10.1f\n",
+                          name, index, i, val1[i], val2[i]);
+               else
+                  fprintf(stderr, "\t %-25.25s[%-2.2d]   : %10.1f    %10.1f\n",
+                          name, index, val1[i], val2[i]);
+
+               break;
+            default:
+               fprintf(stderr, "\t Error: Invalid State Print Float Type.\n");
+           }
+}
+
+/*
+static void
+get_state(GLenum state, State_Type type, int index, void *value)
+{
+   switch (type)
+     {
+      case STATE_INT | STATE_HEX:
+        _sym_glGetIntegerv(state, (GLint*)value);
+        break;
+
+      case STATE_BOOLEAN:
+        _sym_glGetBooleanv(state, (GLboolean*)value);
+        break;
+
+      case STATE_FLOAT:
+        _sym_glGetFloatv(state, (GLfloat*)value);
+        break;
+
+      case VA_STATE_FLOAT:
+        _sym_glGetVertexAttribiv(index, state, (GLfloat*)value);
+        break;
+
+      case VA_STATE_POINTER:
+        _sym_glGetVertexAttribPointerv(index, state, (GLfloat*)value);
+        break;
+
+      case default:
+        fprintf(stderr, "\t Error: Invalid State Print Type.\n");
+     }
+}
+*/
+
+static void
+print_get_state(const char *state_name, GLenum state, State_Type type, int index, int num, void *value, int all)
+{
+   switch (type)
+     {
+      case STATE_INT:
+      case STATE_HEX:
+           {
+              GLint real_val[4] = {-1, -1, -1, -1};
+              GLint *curr_val = (GLint*)value;
+              _sym_glGetIntegerv(state, real_val);
+              print_state_int(state_name, index, real_val, curr_val, num, type, all);
+           }
+         break;
+
+      case STATE_BOOLEAN:
+           {
+              GLboolean real_val[4] = {3, 3, 3, 3};
+              GLboolean *curr_val = (GLboolean*)value;
+              _sym_glGetBooleanv(state, real_val);
+              print_state_bool(state_name, index, real_val, curr_val, num, type, all);
+           }
+         break;
+
+      case STATE_FLOAT:
+           {
+              GLfloat real_val[4] = {-1, -1, -1, -1};
+              GLfloat *curr_val = (GLfloat*)value;
+              _sym_glGetFloatv(state, real_val);
+              print_state_float(state_name, index, real_val, curr_val, num, type, all);
+           }
+         break;
+
+      case VA_STATE_INT:
+           {
+              GLint real_val[4] = {-1, -1, -1, -1};
+              GLint *curr_val = (GLint*)value;
+              _sym_glGetVertexAttribiv(index, state, real_val);
+              print_state_int(state_name, index, real_val, curr_val, num, type, all);
+           }
+         break;
+
+      case VA_STATE_FLOAT:
+           {
+              GLfloat real_val[4] = {-1, -1, -1, -1};
+              GLfloat *curr_val = (GLfloat*)value;
+              _sym_glGetVertexAttribfv(index, state, real_val);
+              print_state_float(state_name, index, real_val, curr_val, num, type, all);
+           }
+         break;
+
+      case VA_STATE_POINTER:
+           {
+              GLint real_val[4] = {-1, -1, -1, -1};
+              GLint *curr_val = (GLint*)value;
+              _sym_glGetVertexAttribPointerv(index, state, real_val);
+              print_state_int(state_name, index, (GLint*)real_val, (GLint*)curr_val, num, type, all);
+           }
+         break;
+
+      default:
+         fprintf(stderr, "\t Error: Invalid State Print Type.\n");
+     }
+}
+
+/*
+static void
+print_state(const char *state_name, GLenum state, State_Type print_type, int num, void *value, int all, int get_type, int index)
+{
+   int i;
+
+   if (get_type == 0)
+     {
+        GLint real_val[4] = {-1, -1, -1, -1};
+        GLint *curr_val = (GLint*)value;
+        _sym_glGetIntegerv(state, real_val);
+        print_state(state_name, index, real_val, curr_val, num, print_type, all);
+
+        // Boolean Type
+        else if (print_type == 1)
+          {
+             GLboolean real_val[4] = {3, 3, 3, 3};
+             GLboolean *curr_val = (GLboolean*)value;
+             _sym_glGetBooleanv(state, real_val);
+             for (i=0; i<num; ++i)
+                if ( (all) || (real_val[i] != curr_val[i]) )
+                   fprintf(stderr, "\t %-25.25s    : %10d    %10d\n",
+                           state_name, real_val[i], curr_val[i]);
+          }
+        // Float Type
+        else if (print_type == 2)
+          {
+             GLfloat real_val[4] = {-1, -1, -1, -1};
+             GLfloat *curr_val = (GLfloat*)value;
+             _sym_glGetFloatv(state, real_val);
+             for (i=0; i<num; ++i)
+                if ( (all) || (real_val[i] != curr_val[i]) )
+                   fprintf(stderr, "\t %-25.25s    : %10.1f    %10.1f\n",
+                           state_name, real_val[i], curr_val[i]);
+          }
+        else
+           fprintf(stderr, "Error Priting State: %s...\n", state_name);
+     }
+   else if (get_type == 1)
+     {
+        // GetVertexAttrib
+        if (print_type == 0)
+          {
+             GLint real_val[4] = {-1, -1, -1, -1};
+             GLint *curr_val = (GLint*)value;
+             _sym_glGetVertexAttribiv(index, state, real_val);
+
+             for (i=0; i<num; ++i)
+                if ( (all) || (real_val[i] != curr_val[i]) )
+                   if (num > 1)
+                      fprintf(stderr, "\t %-25.25s[%-2.2d||%-1.1d]: %10d    %10d\n",
+                              state_name, index, i, real_val[i], curr_val[i]);
+                   else
+                      fprintf(stderr, "\t %-25.25s[%-2.2d]   : %10d    %10d\n",
+                              state_name, index, real_val[i], curr_val[i]);
+          }
+        else if (print_type == 2)
+          {
+             GLfloat real_val[4] = {-1, -1, -1, -1};
+             GLfloat *curr_val = (GLfloat*)value;
+             _sym_glGetVertexAttribfv(index, state, real_val);
+             for (i=0; i<num; ++i)
+                if ( (all) || (real_val[i] != curr_val[i]) )
+                   if (num > 1)
+                      fprintf(stderr, "\t %-25.25s[%-2.2d||%-1.1d]: %10.1f    %10.1f\n",
+                              state_name, index, i, real_val[i], curr_val[i]);
+                   else
+                      fprintf(stderr, "\t %-25.25s[%-2.2d]   : %10.1f    %10.1f\n",
+                              state_name, index, real_val[i], curr_val[i]);
+          }
+     }
+   else if (get_type == 2)
+     {
+        GLint real_val[4] = {-1, -1, -1, -1};
+        GLint *curr_val = (GLint*)value;
+        _sym_glGetVertexAttribPointerv(index, state, real_val);
+
+        for (i=0; i<num; ++i)
+           if ( (all) || (real_val[i] != curr_val[i]) )
+              fprintf(stderr, "\t %-25.25s[%-2.2d]   : %10d    %10d\n",
+                      state_name, index, real_val[i], curr_val[i]);
+     }
+
+}
+*/
+
+
+void
+print_gl_states(const char* func_name, int line_num )
+{
+   int i;
+
+   if (!log_opt) return;
+
+   if (!current_ctx)
+     {
+        ERR("Error Printing. No Current Context:");
+        return;
+     }
+
+
+#define PRINT_STATE(glstate, type, evglstate, num, all) \
+   print_get_state(#glstate, glstate, type, 0, num, (void*)&(current_ctx->evglstate), all);
+
+#define PRINT_VA_STATE(index, glstate, type, evglstate, num, all) \
+   print_get_state(#glstate, glstate, type, index, num, (void*)&(current_ctx->evglstate), all);
+
+
+   fprintf(stderr, "---------------Current Actual GL Context %p States----------------\n", current_ctx);
+   fprintf(stderr, "Print GL States Called from %s @ line %d\n", func_name, line_num);
+   fprintf(stderr, "---TID: %d\n\n", syscall(__NR_gettid));
+//-----------------------------------------------------------//
+
+
+   int print_all = 0;
+
+   if (log_opt==2) print_all = 1;
+
+   PRINT_STATE(GL_ARRAY_BUFFER_BINDING, STATE_INT, gl_array_buffer_binding, 1, print_all);
+   PRINT_STATE(GL_ELEMENT_ARRAY_BUFFER_BINDING, STATE_INT, gl_element_array_buffer_binding, 1, print_all);
+   PRINT_STATE(GL_FRAMEBUFFER_BINDING, STATE_INT, gl_framebuffer_binding, 1, print_all);
+   PRINT_STATE(GL_RENDERBUFFER_BINDING, STATE_INT, gl_renderbuffer_binding, 1, print_all);
+
+   PRINT_STATE(GL_BLEND, STATE_BOOLEAN, gl_blend, 1, print_all);
+   PRINT_STATE(GL_CULL_FACE, STATE_BOOLEAN, gl_cull_face, 1, print_all);
+   PRINT_STATE(GL_DEPTH_TEST, STATE_BOOLEAN, gl_depth_test, 1, print_all);
+   PRINT_STATE(GL_DITHER, STATE_BOOLEAN, gl_dither, 1, print_all);
+
+   PRINT_STATE(GL_POLYGON_OFFSET_FILL, STATE_BOOLEAN, gl_polygon_offset_fill, 1, print_all);
+   PRINT_STATE(GL_SAMPLE_ALPHA_TO_COVERAGE, STATE_BOOLEAN, gl_sample_alpha_to_coverage, 1, print_all);
+   PRINT_STATE(GL_SAMPLE_COVERAGE, STATE_BOOLEAN, gl_sample_coverage, 1, print_all);
+   PRINT_STATE(GL_SCISSOR_TEST, STATE_BOOLEAN, gl_scissor_test, 1, print_all);
+   PRINT_STATE(GL_STENCIL_TEST, STATE_BOOLEAN, gl_stencil_test, 1, print_all);
+
+   PRINT_STATE(GL_VIEWPORT, STATE_INT, gl_viewport[0], 4, print_all);
+   PRINT_STATE(GL_CURRENT_PROGRAM, STATE_INT, gl_current_program, 1, print_all);
+
+   PRINT_STATE(GL_COLOR_CLEAR_VALUE, STATE_FLOAT, gl_color_clear_value[0], 4, print_all);
+
+   PRINT_STATE(GL_COLOR_WRITEMASK, STATE_BOOLEAN, gl_color_writemask[0], 4, print_all);
+
+   PRINT_STATE(GL_DEPTH_RANGE, STATE_FLOAT, gl_depth_range[0], 2, print_all);
+   PRINT_STATE(GL_DEPTH_CLEAR_VALUE, STATE_FLOAT, gl_depth_clear_value, 1, print_all);
+   PRINT_STATE(GL_DEPTH_FUNC, STATE_INT, gl_depth_func, 1, print_all);
+   PRINT_STATE(GL_DEPTH_WRITEMASK, STATE_BOOLEAN, gl_depth_writemask, 1, print_all);
+   PRINT_STATE(GL_CULL_FACE_MODE, STATE_INT, gl_cull_face_mode, 1, print_all);
+
+   int active_tex;
+   _sym_glGetIntegerv(GL_ACTIVE_TEXTURE, &active_tex);
+
+   for (i=0; i<MAX_TEXTURE_UNITS; ++i)
+     {
+        _sym_glActiveTexture(GL_TEXTURE0 + i);
+        PRINT_STATE(GL_TEXTURE_BINDING_2D, STATE_INT, tex_2d_state[i], 1, print_all);
+     }
+   for (i=0; i<MAX_TEXTURE_UNITS; ++i)
+     {
+        _sym_glActiveTexture(GL_TEXTURE0 + i);
+        PRINT_STATE(GL_TEXTURE_BINDING_CUBE_MAP, STATE_INT, tex_cube_map_state[i], 1, print_all);
+     }
+   _sym_glActiveTexture(active_tex);
+
+   PRINT_STATE(GL_ACTIVE_TEXTURE, STATE_INT, gl_active_texture, 1, print_all);
+   PRINT_STATE(GL_GENERATE_MIPMAP_HINT, STATE_INT, gl_generate_mipmap_hint, 1, print_all);
+   //PRINT_STATE(GL_TEXTURE_BINDING_, 0, gl_texture_binding_2D, 1);
+   //PRINT_STATE(GL_TEXTURE_BINDING_CUBE_MAP, 0, gl_texture_binding_cube_map, 1);
+
+   PRINT_STATE(GL_BLEND_COLOR, STATE_FLOAT, gl_blend_color[0], 4, print_all);
+   PRINT_STATE(GL_BLEND_SRC_RGB, STATE_INT, gl_blend_src_rgb, 1, print_all);
+   PRINT_STATE(GL_BLEND_SRC_ALPHA, STATE_INT, gl_blend_src_alpha, 1, print_all);
+   PRINT_STATE(GL_BLEND_DST_RGB, STATE_INT, gl_blend_dst_rgb, 1, print_all);
+   PRINT_STATE(GL_BLEND_DST_ALPHA, STATE_INT, gl_blend_dst_alpha, 1, print_all);
+   PRINT_STATE(GL_BLEND_EQUATION_RGB, STATE_INT, gl_blend_equation_rgb, 1, print_all);
+   PRINT_STATE(GL_BLEND_EQUATION_ALPHA, STATE_INT, gl_blend_equation_alpha, 1, print_all);
+
+   PRINT_STATE(GL_STENCIL_FUNC, STATE_INT, gl_stencil_func, 1, print_all);
+   PRINT_STATE(GL_STENCIL_REF, STATE_INT, gl_stencil_ref, 1, print_all);
+   PRINT_STATE(GL_STENCIL_VALUE_MASK, STATE_HEX, gl_stencil_value_mask, 1, print_all);
+   PRINT_STATE(GL_STENCIL_FAIL, STATE_INT, gl_stencil_fail, 1, print_all);
+   PRINT_STATE(GL_STENCIL_PASS_DEPTH_FAIL, STATE_INT, gl_stencil_pass_depth_fail, 1, print_all);
+   PRINT_STATE(GL_STENCIL_PASS_DEPTH_PASS, STATE_INT, gl_stencil_pass_depth_pass, 1, print_all);
+   PRINT_STATE(GL_STENCIL_WRITEMASK, STATE_HEX, gl_stencil_writemask, 1, print_all);
+
+   PRINT_STATE(GL_STENCIL_BACK_FUNC, STATE_INT, gl_stencil_back_func, 1, print_all);
+   PRINT_STATE(GL_STENCIL_BACK_REF, STATE_INT, gl_stencil_back_ref, 1, print_all);
+   PRINT_STATE(GL_STENCIL_BACK_VALUE_MASK, STATE_HEX, gl_stencil_back_value_mask, 1, print_all);
+   PRINT_STATE(GL_STENCIL_BACK_FAIL, STATE_INT, gl_stencil_back_fail, 1, print_all);
+   PRINT_STATE(GL_STENCIL_BACK_PASS_DEPTH_FAIL, STATE_INT, gl_stencil_back_pass_depth_fail, 1, print_all);
+   PRINT_STATE(GL_STENCIL_BACK_PASS_DEPTH_PASS, STATE_INT, gl_stencil_back_pass_depth_pass, 1, print_all);
+   PRINT_STATE(GL_STENCIL_BACK_WRITEMASK, STATE_HEX, gl_stencil_back_writemask, 1, print_all);
+
+   PRINT_STATE(GL_STENCIL_CLEAR_VALUE, STATE_INT, gl_stencil_clear_value, 1, print_all);
+
+   PRINT_STATE(GL_FRONT_FACE, STATE_INT, gl_front_face, 1, print_all);
+   PRINT_STATE(GL_LINE_WIDTH, STATE_FLOAT, gl_line_width, 1, print_all);
+   PRINT_STATE(GL_POLYGON_OFFSET_FACTOR, STATE_FLOAT, gl_polygon_offset_factor, 1, print_all);
+   PRINT_STATE(GL_POLYGON_OFFSET_UNITS, STATE_FLOAT, gl_polygon_offset_units, 1, print_all);
+   PRINT_STATE(GL_SAMPLE_COVERAGE_VALUE, STATE_FLOAT, gl_sample_coverage_value, 1, print_all);
+   PRINT_STATE(GL_SAMPLE_COVERAGE_INVERT, STATE_BOOLEAN, gl_sample_coverage_invert, 1, print_all);
+
+   PRINT_STATE(GL_SCISSOR_BOX, STATE_INT, gl_scissor_box[0], 4, print_all);
+   PRINT_STATE(GL_PACK_ALIGNMENT, STATE_INT, gl_pack_alignment, 1, print_all);
+   PRINT_STATE(GL_UNPACK_ALIGNMENT, STATE_INT, gl_unpack_alignment, 1, print_all);
+
+   for (i=0; i<MAX_VERTEX_ATTRIBS; ++i)
+     {
+        PRINT_VA_STATE(i, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, VA_STATE_INT, vertex_array[i].buf_id, 1, print_all);
+        PRINT_VA_STATE(i, GL_VERTEX_ATTRIB_ARRAY_ENABLED, VA_STATE_INT, vertex_array[i].enabled, 1, print_all);
+        PRINT_VA_STATE(i, GL_VERTEX_ATTRIB_ARRAY_SIZE, VA_STATE_INT, vertex_array[i].size, 1, print_all);
+        PRINT_VA_STATE(i, GL_VERTEX_ATTRIB_ARRAY_TYPE, VA_STATE_INT, vertex_array[i].type, 1, print_all);
+        PRINT_VA_STATE(i, GL_VERTEX_ATTRIB_ARRAY_NORMALIZED, VA_STATE_INT, vertex_array[i].normalized, 1, print_all);
+        PRINT_VA_STATE(i, GL_VERTEX_ATTRIB_ARRAY_STRIDE, VA_STATE_INT, vertex_array[i].stride, 1, print_all);
+        PRINT_VA_STATE(i, GL_VERTEX_ATTRIB_ARRAY_POINTER, VA_STATE_POINTER, vertex_array[i].pointer, 1, print_all);
+     }
+
+   for (i=0; i<MAX_VERTEX_ATTRIBS; ++i)
+     {
+        PRINT_VA_STATE(i, GL_CURRENT_VERTEX_ATTRIB, VA_STATE_FLOAT, vertex_attrib[i].value[0], 4, print_all);
+     }
+
+   fprintf(stderr, "-----------------------------------------------------------\n\n", current_ctx);
+#undef PRINT_STATE
+   /*
+#undef PRINT_VA_STATE
+#undef PRINT_VA_POINTER
+*/
+}
+
+
 static void
 make_context_current(EvasGlueContext oldctx, EvasGlueContext newctx)
 {
@@ -688,17 +1561,24 @@ make_context_current(EvasGlueContext oldctx, EvasGlueContext newctx)
    // Return if they're the same
    if (oldctx==newctx) return;
 
-#define STATE_COMPARE(state) \
-   if ((oldctx->state) != (newctx->state))
-#define STATES_COMPARE(state_ptr, bytes) \
-   if ((memcmp((oldctx->state_ptr), (newctx->state_ptr), (bytes))) != 0)
+#ifdef EVAS_GL_DEBUG
+   #define STATE_COMPARE(state) \
+      if (1)
+   #define STATES_COMPARE(state_ptr, bytes) \
+      if (1)
+#else
+   #define STATE_COMPARE(state) \
+      if ((oldctx->state) != (newctx->state))
+   #define STATES_COMPARE(state_ptr, bytes) \
+      if ((memcmp((oldctx->state_ptr), (newctx->state_ptr), (bytes))) != 0)
+#endif
 
    _sym_glFlush();
 
    //------------------//
    // _bind_flag
    flag = oldctx->_bind_flag | newctx->_bind_flag;
-   if (flag)
+   if (COMPARE_OPT_SKIP flag)
      {
         STATE_COMPARE(gl_array_buffer_binding)
           {
@@ -722,7 +1602,7 @@ make_context_current(EvasGlueContext oldctx, EvasGlueContext newctx)
    // Enable States
    // _enable_flag1
    flag = oldctx->_enable_flag1 | newctx->_enable_flag1;
-   if (flag)
+   if (COMPARE_OPT_SKIP flag)
      {
         STATE_COMPARE(gl_blend)
           {
@@ -756,7 +1636,7 @@ make_context_current(EvasGlueContext oldctx, EvasGlueContext newctx)
 
    // _enable_flag2
    flag = oldctx->_enable_flag2 | newctx->_enable_flag2;
-   if (flag)
+   if (COMPARE_OPT_SKIP flag)
      {
         STATE_COMPARE(gl_polygon_offset_fill)
           {
@@ -798,7 +1678,7 @@ make_context_current(EvasGlueContext oldctx, EvasGlueContext newctx)
    //------------------//
    // _clear_flag1
    flag = oldctx->_clear_flag1 | newctx->_clear_flag1;
-   if (flag)
+   if (COMPARE_OPT_SKIP flag)
      {
         // Viewport.
         STATES_COMPARE(gl_viewport, 4*sizeof(GLint))
@@ -824,7 +1704,7 @@ make_context_current(EvasGlueContext oldctx, EvasGlueContext newctx)
 
    // _clear_flag2
    flag = oldctx->_clear_flag2 | newctx->_clear_flag2;
-   if (flag)
+   if (COMPARE_OPT_SKIP flag)
      {
         STATES_COMPARE(gl_color_writemask, 4*sizeof(GLboolean))
           {
@@ -852,14 +1732,14 @@ make_context_current(EvasGlueContext oldctx, EvasGlueContext newctx)
           }
         STATE_COMPARE(gl_cull_face_mode)
           {
-             _sym_glCullFace(oldctx->gl_cull_face_mode);
+             _sym_glCullFace(newctx->gl_cull_face_mode);
           }
 
      }
    //------------------//
    // Texture here...
    flag = oldctx->_tex_flag1 | newctx->_tex_flag1;
-   if (flag)
+   if (COMPARE_OPT_SKIP flag)
      {
 
         for (i = 0; i < oldctx->num_tex_units; i++)
@@ -889,7 +1769,7 @@ make_context_current(EvasGlueContext oldctx, EvasGlueContext newctx)
 
    //------------------//
    flag = oldctx->_blend_flag | newctx->_blend_flag;
-   if (flag)
+   if (COMPARE_OPT_SKIP flag)
      {
         STATES_COMPARE(gl_blend_color, 4*sizeof(GLclampf))
           {
@@ -898,7 +1778,8 @@ make_context_current(EvasGlueContext oldctx, EvasGlueContext newctx)
                                newctx->gl_blend_color[2],
                                newctx->gl_blend_color[3]);
           }
-        if ((oldctx->gl_blend_src_rgb != newctx->gl_blend_src_rgb) ||
+        if ( COMPARE_OPT_SKIP
+            (oldctx->gl_blend_src_rgb != newctx->gl_blend_src_rgb) ||
             (oldctx->gl_blend_dst_rgb != newctx->gl_blend_dst_rgb) ||
             (oldctx->gl_blend_src_alpha != newctx->gl_blend_src_alpha) ||
             (oldctx->gl_blend_dst_alpha != newctx->gl_blend_dst_alpha))
@@ -908,7 +1789,8 @@ make_context_current(EvasGlueContext oldctx, EvasGlueContext newctx)
                                       newctx->gl_blend_src_alpha,
                                       newctx->gl_blend_dst_alpha);
           }
-        if ((oldctx->gl_blend_equation_rgb != newctx->gl_blend_equation_rgb) ||
+        if ( COMPARE_OPT_SKIP
+            (oldctx->gl_blend_equation_rgb != newctx->gl_blend_equation_rgb) ||
             (oldctx->gl_blend_equation_alpha != newctx->gl_blend_equation_alpha))
           {
              _sym_glBlendEquationSeparate(newctx->gl_blend_equation_rgb, newctx->gl_blend_equation_alpha);
@@ -919,9 +1801,10 @@ make_context_current(EvasGlueContext oldctx, EvasGlueContext newctx)
    //------------------//
    // _stencil_flag1
    flag = oldctx->_stencil_flag1 | newctx->_stencil_flag1;
-   if (flag)
+   if (COMPARE_OPT_SKIP flag)
      {
-        if ((oldctx->gl_stencil_func != newctx->gl_stencil_func) ||
+        if ( COMPARE_OPT_SKIP
+            (oldctx->gl_stencil_func != newctx->gl_stencil_func) ||
             (oldctx->gl_stencil_ref  != newctx->gl_stencil_ref)  ||
             (oldctx->gl_stencil_value_mask != newctx->gl_stencil_value_mask))
           {
@@ -930,7 +1813,8 @@ make_context_current(EvasGlueContext oldctx, EvasGlueContext newctx)
                                         newctx->gl_stencil_ref,
                                         newctx->gl_stencil_value_mask);
           }
-        if ((oldctx->gl_stencil_fail != newctx->gl_stencil_fail) ||
+        if ( COMPARE_OPT_SKIP
+            (oldctx->gl_stencil_fail != newctx->gl_stencil_fail) ||
             (oldctx->gl_stencil_pass_depth_fail != newctx->gl_stencil_pass_depth_fail) ||
             (oldctx->gl_stencil_pass_depth_pass != newctx->gl_stencil_pass_depth_pass))
           {
@@ -948,25 +1832,27 @@ make_context_current(EvasGlueContext oldctx, EvasGlueContext newctx)
 
    // _stencil_flag1
    flag = oldctx->_stencil_flag2 | newctx->_stencil_flag2;
-   if (flag)
+   if (COMPARE_OPT_SKIP flag)
      {
-        if ((oldctx->gl_stencil_back_func != newctx->gl_stencil_back_func) ||
+        if ( COMPARE_OPT_SKIP
+            (oldctx->gl_stencil_back_func != newctx->gl_stencil_back_func) ||
             (oldctx->gl_stencil_back_ref  != newctx->gl_stencil_back_ref)  ||
-            (oldctx->gl_stencil_back_depth_pass != newctx->gl_stencil_back_depth_pass))
+            (oldctx->gl_stencil_back_value_mask != newctx->gl_stencil_back_value_mask))
           {
              _sym_glStencilFuncSeparate(GL_BACK,
                                         newctx->gl_stencil_back_func,
                                         newctx->gl_stencil_back_ref,
                                         newctx->gl_stencil_back_value_mask);
           }
-        if ((oldctx->gl_stencil_back_fail != newctx->gl_stencil_back_fail) ||
-            (oldctx->gl_stencil_back_depth_fail != newctx->gl_stencil_back_depth_fail) ||
-            (oldctx->gl_stencil_back_depth_pass != newctx->gl_stencil_back_depth_pass))
+        if ( COMPARE_OPT_SKIP
+            (oldctx->gl_stencil_back_fail != newctx->gl_stencil_back_fail) ||
+            (oldctx->gl_stencil_back_pass_depth_fail != newctx->gl_stencil_back_pass_depth_fail) ||
+            (oldctx->gl_stencil_back_pass_depth_pass != newctx->gl_stencil_back_pass_depth_pass))
           {
              _sym_glStencilOpSeparate(GL_BACK,
                                       newctx->gl_stencil_back_fail,
-                                      newctx->gl_stencil_back_depth_fail,
-                                      newctx->gl_stencil_back_depth_pass);
+                                      newctx->gl_stencil_back_pass_depth_fail,
+                                      newctx->gl_stencil_back_pass_depth_pass);
           }
         STATE_COMPARE(gl_stencil_back_writemask)
           {
@@ -981,7 +1867,7 @@ make_context_current(EvasGlueContext oldctx, EvasGlueContext newctx)
    //------------------//
    // _misc_flag1
    flag = oldctx->_misc_flag1 | newctx->_misc_flag1;
-   if (flag)
+   if (COMPARE_OPT_SKIP flag)
      {
         STATE_COMPARE(gl_front_face)
           {
@@ -991,13 +1877,15 @@ make_context_current(EvasGlueContext oldctx, EvasGlueContext newctx)
           {
              _sym_glLineWidth(newctx->gl_line_width);
           }
-        if ((oldctx->gl_polygon_offset_factor != newctx->gl_polygon_offset_factor) ||
+        if ( COMPARE_OPT_SKIP
+            (oldctx->gl_polygon_offset_factor != newctx->gl_polygon_offset_factor) ||
             (oldctx->gl_polygon_offset_units  != newctx->gl_polygon_offset_units))
           {
              _sym_glPolygonOffset(newctx->gl_polygon_offset_factor,
                                   newctx->gl_polygon_offset_units);
           }
-        if ((oldctx->gl_sample_coverage_value  != newctx->gl_sample_coverage_value) ||
+        if ( COMPARE_OPT_SKIP
+            (oldctx->gl_sample_coverage_value  != newctx->gl_sample_coverage_value) ||
             (oldctx->gl_sample_coverage_invert != newctx->gl_sample_coverage_invert))
           {
              _sym_glSampleCoverage(newctx->gl_sample_coverage_value,
@@ -1007,7 +1895,7 @@ make_context_current(EvasGlueContext oldctx, EvasGlueContext newctx)
 
    // _misc_flag2
    flag = oldctx->_misc_flag2 | newctx->_misc_flag2;
-   if (flag)
+   if (COMPARE_OPT_SKIP flag)
      {
         STATES_COMPARE(gl_scissor_box, 4*sizeof(GLint))
           {
@@ -1027,12 +1915,18 @@ make_context_current(EvasGlueContext oldctx, EvasGlueContext newctx)
      }
 
    // _varray_flag
-   flag = oldctx->_varray_flag | newctx->_varray_flag;
-   if (flag)
+   flag = oldctx->_vattrib_flag | newctx->_vattrib_flag;
+   if (COMPARE_OPT_SKIP flag)
      {
-        for (i = 0; i < MAX_VERTEX_ATTRIBS; i++)
+        for (i = 0; i < oldctx->num_vertex_attribs; i++)
           {
-             // If both untouched, don't bother
+             if ( COMPARE_OPT_SKIP
+                 newctx->vertex_array[i].buf_id != oldctx->vertex_array[i].buf_id)
+               {
+                  _sym_glBindBuffer(GL_ARRAY_BUFFER, newctx->vertex_array[i].buf_id);
+               }
+             else _sym_glBindBuffer(GL_ARRAY_BUFFER, 0);
+
              _sym_glVertexAttribPointer(i,
                                         newctx->vertex_array[i].size,
                                         newctx->vertex_array[i].type,
@@ -1040,14 +1934,30 @@ make_context_current(EvasGlueContext oldctx, EvasGlueContext newctx)
                                         newctx->vertex_array[i].stride,
                                         newctx->vertex_array[i].pointer);
 
-             _sym_glVertexAttrib4fv(i, newctx->vertex_attrib[i].value);
-
+             STATES_COMPARE(vertex_attrib[i].value, 4*sizeof(GLfloat))
+               {
+                _sym_glVertexAttrib4fv(i, newctx->vertex_attrib[i].value);
+               }
 
              if (newctx->vertex_array[i].enabled == GL_TRUE)
-                _sym_glEnableVertexAttribArray(i);
+               {
+                  _sym_glEnableVertexAttribArray(i);
+               }
              else
-                _sym_glDisableVertexAttribArray(i);
+               {
+                  _sym_glDisableVertexAttribArray(i);
+               }
           }
+
+        STATE_COMPARE(gl_array_buffer_binding)
+          {
+             _sym_glBindBuffer(GL_ARRAY_BUFFER, newctx->gl_array_buffer_binding);
+          }
+        STATE_COMPARE(gl_element_array_buffer_binding)
+          {
+             _sym_glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, newctx->gl_element_array_buffer_binding);
+          }
+
      }
 #undef STATE_COMPARE
 #undef STATES_COMPARE
@@ -1078,91 +1988,181 @@ evgl_eglGetError(void)
 static EGLDisplay
 evgl_eglGetDisplay(EGLNativeDisplayType display_id)
 {
-   return _sym_eglGetDisplay(display_id);
+   EVAS_GL_START_LOG(mc_log);
+
+   EGLDisplay result;
+   result = _sym_eglGetDisplay(display_id);
+
+   EVAS_GL_END_LOG(mc_log);
+
+   return result;
 }
 
 static EGLBoolean
 evgl_eglInitialize(EGLDisplay dpy, EGLint* major, EGLint* minor)
 {
-   return _sym_eglInitialize(dpy, major, minor);
+   EVAS_GL_START_LOG(mc_log);
+
+   EGLBoolean result;
+   result = _sym_eglInitialize(dpy, major, minor);
+
+   return result;
 }
 
 static EGLBoolean
 evgl_eglTerminate(EGLDisplay dpy)
 {
-   return _sym_eglTerminate(dpy);
+   EVAS_GL_START_LOG(mc_log);
+
+   EGLBoolean result;
+   result = _sym_eglTerminate(dpy);
+
+   EVAS_GL_END_LOG(mc_log);
+
+   return result;
 }
 
 static EGLBoolean
 evgl_eglChooseConfig(EGLDisplay dpy, const EGLint* attrib_list, EGLConfig* configs, EGLint config_size, EGLint* num_config)
 {
-   return _sym_eglChooseConfig(dpy, attrib_list, configs, config_size, num_config);
+   EVAS_GL_START_LOG(mc_log);
+
+   EGLBoolean result;
+
+   result = _sym_eglChooseConfig(dpy, attrib_list, configs, config_size, num_config);
+
+   EVAS_GL_END_LOG(mc_log);
+
+   return result;
 }
 
 static EGLSurface
 evgl_eglCreateWindowSurface(EGLDisplay dpy, EGLConfig config, EGLNativeWindowType win, const EGLint* attrib_list)
 {
-   return _sym_eglCreateWindowSurface(dpy, config, win, attrib_list);
+   EVAS_GL_START_LOG(mc_log);
+
+   EGLSurface result;
+   result = _sym_eglCreateWindowSurface(dpy, config, win, attrib_list);
+
+   EVAS_GL_END_LOG(mc_log);
+   return result;
 }
 
 static EGLSurface
 evgl_eglCreatePixmapSurface(EGLDisplay dpy, EGLConfig config, EGLNativePixmapType pixmap, const EGLint* attrib_list)
 {
-   return _sym_eglCreatePixmapSurface(dpy, config, pixmap, attrib_list);
+   EVAS_GL_START_LOG(mc_log);
+   EGLSurface result;
+   result = _sym_eglCreatePixmapSurface(dpy, config, pixmap, attrib_list);
+
+   EVAS_GL_END_LOG(mc_log);
+   return result;
 }
 
 static EGLBoolean
 evgl_eglDestroySurface(EGLDisplay dpy, EGLSurface surface)
 {
-   return _sym_eglDestroySurface(dpy, surface);
+   EVAS_GL_START_LOG(mc_log);
+
+   EGLBoolean result;
+   result = _sym_eglDestroySurface(dpy, surface);
+
+   EVAS_GL_END_LOG(mc_log);
+   return result;
 }
 
 static EGLBoolean
 evgl_eglBindAPI(EGLenum api)
 {
-   return _sym_eglBindAPI(api);
+   EVAS_GL_START_LOG(mc_log);
+
+   EGLBoolean result;
+   result = _sym_eglBindAPI(api);
+
+   EVAS_GL_END_LOG(mc_log);
+   return result;
 }
 
 static EGLBoolean
 evgl_eglWaitClient(void)
 {
-   return _sym_eglWaitClient();
+   EVAS_GL_START_LOG(mc_log);
+
+   EGLBoolean result;
+   result = _sym_eglWaitClient();
+
+   EVAS_GL_END_LOG(mc_log);
+   return result;
 }
 
 static EGLBoolean
 evgl_eglSurfaceAttrib(EGLDisplay dpy, EGLSurface surface, EGLint attribute, EGLint value)
 {
-   return _sym_eglSurfaceAttrib(dpy, surface, attribute, value);
+   EVAS_GL_START_LOG(mc_log);
+
+   EGLBoolean result;
+   result = _sym_eglSurfaceAttrib(dpy, surface, attribute, value);
+
+   EVAS_GL_END_LOG(mc_log);
+   return result;
 }
 
 static void
 evgl_eglBindTexImage(EGLDisplay dpy, EGLSurface surface, EGLint buffer)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_eglBindTexImage(dpy, surface, buffer);
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static EGLBoolean
 evgl_eglReleaseTexImage(EGLDisplay dpy, EGLSurface surface, EGLint buffer)
 {
-   return _sym_eglReleaseTexImage(dpy, surface, buffer);
+   EVAS_GL_START_LOG(mc_log);
+
+   EGLBoolean result;
+   result = _sym_eglReleaseTexImage(dpy, surface, buffer);
+
+   EVAS_GL_END_LOG(mc_log);
+   return result;
 }
 
 static EGLBoolean
 evgl_eglSwapInterval(EGLDisplay dpy, EGLint interval)
 {
-   return _sym_eglSwapInterval(dpy, interval);
+   EVAS_GL_START_LOG(mc_log);
+
+   EGLBoolean result;
+   result = _sym_eglSwapInterval(dpy, interval);
+
+   EVAS_GL_END_LOG(mc_log);
+   return result;
 }
 
 static EGLContext
 evgl_eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLContext share_context, const EGLint* attrib_list)
 {
-   return _sym_eglCreateContext(dpy, config, share_context, attrib_list);
+   EVAS_GL_START_LOG(mc_log);
+
+   EGLBoolean result;
+   result = _sym_eglCreateContext(dpy, config, share_context, attrib_list);
+
+   EVAS_GL_END_LOG(mc_log);
+   return result;
 }
 
 static EGLBoolean
 evgl_eglDestroyContext(EGLDisplay dpy, EGLContext ctx)
 {
-   return _sym_eglDestroyContext(dpy, ctx);
+   EVAS_GL_START_LOG(mc_log);
+
+   EGLBoolean result;
+   result = _sym_eglDestroyContext(dpy, ctx);
+
+   EVAS_GL_END_LOG(mc_log);
+   return result;
 }
 
 static EGLBoolean
@@ -1174,101 +2174,195 @@ evgl_eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLContext
         current_egl_context = ctx;
         current_surf = draw;
         return EGL_TRUE;
-     }
+
+   EVAS_GL_END_LOG(mc_log);
+   return result;
+}
    else return EGL_FALSE;
    */
-   return _sym_eglMakeCurrent(dpy, draw, read, ctx);
+
+   EVAS_GL_START_LOG(mc_log);
+
+   EGLBoolean result;
+   result = _sym_eglMakeCurrent(dpy, draw, read, ctx);
+
+   EVAS_GL_END_LOG(mc_log);
+
+   return result;
 }
 
 static EGLContext
 evgl_eglGetCurrentContext(void)
 {
+   EVAS_GL_START_LOG(mc_log);
    //return current_egl_context;
-   return _sym_eglGetCurrentContext();
+   EGLContext result;
+   result = _sym_eglGetCurrentContext();
+
+   EVAS_GL_END_LOG(mc_log);
+   return result;
 }
 
 static EGLSurface
 evgl_eglGetCurrentSurface(EGLint readdraw)
 {
-   return _sym_eglGetCurrentSurface(readdraw);
+   EVAS_GL_START_LOG(mc_log);
+   EGLSurface result;
+   result = _sym_eglGetCurrentSurface(readdraw);
+
+   EVAS_GL_END_LOG(mc_log);
+   return result;
 }
 
 static EGLDisplay
 evgl_eglGetCurrentDisplay(void)
 {
-   return _sym_eglGetCurrentDisplay();
+   EVAS_GL_START_LOG(mc_log);
+
+   EGLDisplay result;
+   result = _sym_eglGetCurrentDisplay();
+
+   EVAS_GL_END_LOG(mc_log);
+   return result;
 }
 
 static EGLBoolean
 evgl_eglWaitGL(void)
 {
-   return _sym_eglWaitGL();
+   EVAS_GL_START_LOG(mc_log);
+
+   EGLBoolean result;
+   result = _sym_eglWaitGL();
+
+   EVAS_GL_END_LOG(mc_log);
+   return result;
 }
 
 static EGLBoolean
 evgl_eglWaitNative(EGLint engine)
 {
-   return _sym_eglWaitNative(engine);
+   EVAS_GL_START_LOG(mc_log);
+
+   EGLBoolean result;
+   result = _sym_eglWaitNative(engine);
+
+   EVAS_GL_END_LOG(mc_log);
+   return result;
 }
 
 static EGLBoolean
 evgl_eglSwapBuffers(EGLDisplay dpy, EGLSurface surface)
 {
-   return _sym_eglSwapBuffers(dpy, surface);
+   EVAS_GL_START_LOG(mc_log);
+
+   frame_count++;
+   EGLBoolean result;
+   result = _sym_eglSwapBuffers(dpy, surface);
+
+   EVAS_GL_END_LOG(mc_log);
+   return result;
 }
 
 static EGLBoolean
 evgl_eglCopyBuffers(EGLDisplay dpy, EGLSurface surface, EGLNativePixmapType target)
 {
-   return _sym_eglCopyBuffers(dpy, surface, target);
+   EVAS_GL_START_LOG(mc_log);
+
+   EGLBoolean result;
+   result = _sym_eglCopyBuffers(dpy, surface, target);
+
+   EVAS_GL_END_LOG(mc_log);
+   return result;
 }
 
 static char const *
 evgl_eglQueryString(EGLDisplay dpy, EGLint name)
 {
-   return _sym_eglQueryString(dpy, name);
+   EVAS_GL_START_LOG(mc_log);
+
+   char const * result;
+   result = _sym_eglQueryString(dpy, name);
+
+   EVAS_GL_END_LOG(mc_log);
+   return result;
 }
 
 static void
 evgl_eglCreateImage (void *a, void *b, GLenum c, void *d, const int *e)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_eglCreateImage(a, b, c, d, e);
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static unsigned int
 evgl_eglDestroyImage (void *a, void *b)
 {
-   return _sym_eglDestroyImage(a, b);
+   EVAS_GL_START_LOG(mc_log);
+
+   unsigned int result;
+   result = _sym_eglDestroyImage(a, b);
+
+   EVAS_GL_END_LOG(mc_log);
+   return result;
 }
 
 static void
 evgl_glEGLImageTargetTexture2DOES (int a, void *b)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glEGLImageTargetTexture2DOES(a, b);
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glEGLImageTargetRenderbufferStorageOES (int a, void *b)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glEGLImageTargetRenderbufferStorageOES(a, b);
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void *
 evgl_eglMapImageSEC (void *a, void *b)
 {
-   _sym_eglMapImageSEC(a, b);
+   EVAS_GL_START_LOG(mc_log);
+
+   void * result;
+   result = _sym_eglMapImageSEC(a, b);
+
+   EVAS_GL_END_LOG(mc_log);
+   return result;
 }
 
 static unsigned int
 evgl_eglUnmapImageSEC (void *a, void *b)
 {
-   return _sym_eglUnmapImageSEC(a, b);
+   EVAS_GL_START_LOG(mc_log);
+
+   unsigned int result;
+   result = _sym_eglUnmapImageSEC(a, b);
+
+   EVAS_GL_END_LOG(mc_log);
+   return result;
 }
 
 static unsigned int
 evgl_eglGetImageAttribSEC (void *a, void *b, int c, int *d)
 {
-   return _sym_eglGetImageAttribSEC(a, b, c, d);
+   EVAS_GL_START_LOG(mc_log);
+
+   unsigned int result;
+   result = _sym_eglGetImageAttribSEC(a, b, c, d);
+
+   EVAS_GL_END_LOG(mc_log);
+   return result;
 }
 //----------------------------------------------------------------//
 //                   Fastpath EGL Functions                       //
@@ -1277,6 +2371,9 @@ evgl_eglGetImageAttribSEC (void *a, void *b, int c, int *d)
 static EGLContext
 fpgl_eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLContext share_context, const EGLint* attrib_list)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
    EvasGlueContext ctx;
 
    // Create a global context if it hasn't been created
@@ -1291,8 +2388,8 @@ fpgl_eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLContext share_context
              ERR("Failed creating a glX global context for FastPath.\n");
              return 0;
           }
+        //fprintf(stderr, "---TID: %d\n", syscall(__NR_gettid));
      }
-
 
    // Allocate a new context
    ctx = calloc(1, sizeof(struct _EvasGlueContext));
@@ -1302,6 +2399,9 @@ fpgl_eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLContext share_context
         return NULL;
      }
 
+   ctx->initialized = 0;
+   ctx->magic      = MAGIC_GLFAST;
+   /*
    // Initialize context states
    if (!init_context_states(ctx))
      {
@@ -1309,6 +2409,7 @@ fpgl_eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLContext share_context
         free(ctx);
         return NULL;
      }
+     */
 
    ctx_ref_count++;
 
@@ -1318,6 +2419,9 @@ fpgl_eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLContext share_context
 static EGLBoolean
 fpgl_eglDestroyContext(EGLDisplay dpy, EGLContext ctx)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
    EvasGlueContext ectx = (EvasGlueContext)ctx;
 
    if (ctx!=NULL)
@@ -1331,15 +2435,23 @@ fpgl_eglDestroyContext(EGLDisplay dpy, EGLContext ctx)
         if (ectx == current_ctx)
           {
              DBG("Destroying current context... %d\n", ctx_ref_count);
+             if ((real_current_ctx) && (real_current_ctx->destroyed))
+                free(real_current_ctx);
              real_current_ctx = current_ctx;
+             real_current_ctx->destroyed = 1;
              current_ctx = NULL;
           }
-
-        if (ectx)
-           free(ectx);
+        else
+          {
+             if (ectx)
+                free(ectx);
+          }
 
         if (!(--ctx_ref_count))
           {
+             if ((real_current_ctx) && (real_current_ctx->destroyed))
+                free(real_current_ctx);
+
              DBG("Destroying the global context...\n");
              _sym_eglMakeCurrent(dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
              _sym_eglDestroyContext(dpy, global_ctx);
@@ -1356,11 +2468,15 @@ fpgl_eglDestroyContext(EGLDisplay dpy, EGLContext ctx)
         return EGL_FALSE;
      }
 
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static EGLBoolean
 fpgl_eglDestroySurface(EGLDisplay dpy, EGLSurface surface)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
    // Do a Make Current NULL  (This is to unreference the currently bound surface)
    if (!_sym_eglMakeCurrent(dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT))
      {
@@ -1369,38 +2485,46 @@ fpgl_eglDestroySurface(EGLDisplay dpy, EGLSurface surface)
      }
 
    if (current_ctx)
-      real_current_ctx = current_ctx;
+     {
+        if ((real_current_ctx) && (real_current_ctx->destroyed))
+           free(real_current_ctx);
+        real_current_ctx = current_ctx;
+     }
 
    current_ctx = NULL;
    current_surf = EGL_NO_SURFACE;
 
-   return _sym_eglDestroySurface(dpy, surface);
+   EGLBoolean result;
+   result = _sym_eglDestroySurface(dpy, surface);
+
+   EVAS_GL_END_LOG(mc_log);
+   return result;
 }
 
 
 static EGLBoolean
 fpgl_eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLContext ctx)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
    EvasGlueContext ectx = (EvasGlueContext)ctx;
+
+   current_surf = _sym_eglGetCurrentSurface(EGL_DRAW);
 
    // Check if the values are null
    if ((draw == EGL_NO_SURFACE) || (ctx == NULL))
      {
         if (current_ctx)
           {
+             if ((real_current_ctx) && (real_current_ctx->destroyed))
+                free(real_current_ctx);
              real_current_ctx = current_ctx;
           }
 
-        /*
-        if (!_sym_eglMakeCurrent(dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT))
-          {
-             ERR("Error making context current with the drawable.\n");
-             return EGL_FALSE;
-          }
-          */
-
         current_ctx = NULL;
         current_surf = EGL_NO_SURFACE;
+        EVAS_GL_END_LOG(mc_log);
 
         return EGL_TRUE;
      }
@@ -1409,6 +2533,7 @@ fpgl_eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLContext
    if (ectx->magic != MAGIC_GLFAST)
      {
         ERR("Magic Check Failed!!!\n");
+        EVAS_GL_END_LOG(mc_log);
         return EGL_FALSE;
      }
 
@@ -1419,6 +2544,7 @@ fpgl_eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLContext
         if (!_sym_eglMakeCurrent(dpy, draw, read, global_ctx))
           {
              ERR("Error making context current with the drawable.\n");
+             EVAS_GL_END_LOG(mc_log);
              return False;
           }
 
@@ -1438,14 +2564,21 @@ fpgl_eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLContext
         if (!_sym_eglMakeCurrent(dpy, draw, read, global_ctx))
           {
              ERR("Error making context current with the drawable.\n");
+             EVAS_GL_END_LOG(mc_log);
              return False;
           }
         current_surf = draw;
      }
 
    // If it's first time...
-   if (ectx->first_time == 1)
+   if (ectx->initialized == 0)
      {
+        if (!init_context_states(ectx))
+          {
+             ERR("Error intialing intial context\n");
+             return False;
+          }
+
         // FIXME!!!:
         // Actually, i need to query the drawable size...
         // Do some initializations that required make_current
@@ -1455,12 +2588,13 @@ fpgl_eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLContext
         _sym_glGetIntegerv(GL_SCISSOR_BOX, ectx->gl_scissor_box);
         DBG("----Num Tex Units: %d, Num Vertex Attribs: %d \n", ectx->num_tex_units, ectx->num_vertex_attribs);
 
-        ectx->first_time = 0;
+        ectx->initialized = 1;
      }
 
    // if context is same, return
    if ( (current_ctx == ectx) && (current_surf == draw) )
      {
+        EVAS_GL_END_LOG(mc_log);
         return EGL_TRUE;
      }
 
@@ -1469,35 +2603,63 @@ fpgl_eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLContext
    current_ctx = ectx;
    current_surf = draw;
 
+   EVAS_GL_END_LOG(mc_log);
+
    return EGL_TRUE;
 }
 
 static EGLContext
 fpgl_eglGetCurrentContext(void)
 {
-   return (EGLContext)current_ctx;
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+   EGLContext result;
+   result = (EGLContext)current_ctx;
+
+   EVAS_GL_END_LOG(mc_log);
+
+   return result;
    //return _sym_eglGetCurrentContext();
 }
 
 static EGLSurface
 fpgl_eglGetCurrentSurface(EGLint readdraw)
 {
-   return current_surf;
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+   EGLSurface result;
+   result = (EGLSurface)current_surf;
+
+   EVAS_GL_END_LOG(mc_log);
+
+   return result;
    //return _sym_eglGetCurrentSurface(readdraw);
 }
 
 // FIXME!!!!
 static void
-fvgl_glEGLImageTargetTexture2DOES (int a, void *b)
+fpgl_glEGLImageTargetTexture2DOES (int a, void *b)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glEGLImageTargetTexture2DOES(a, b);
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 // FIXME!!!!
 static void
-fvgl_glEGLImageTargetRenderbufferStorageOES (int a, void *b)
+fpgl_glEGLImageTargetRenderbufferStorageOES (int a, void *b)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glEGLImageTargetRenderbufferStorageOES(a, b);
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 
@@ -1679,6 +2841,8 @@ evgl_glXSwapIntervalEXT(Display* dpy, GLXDrawable draw, int interval)
 static GLXContext
 fpgl_glXCreateContext(Display* dpy, XVisualInfo* vis, GLXContext shareList, Bool direct)
 {
+   THREAD_CHECK_DEBUG();
+
    EvasGlueContext ctx;
 
    // Create a global context if it hasn't been created
@@ -1719,6 +2883,8 @@ fpgl_glXCreateContext(Display* dpy, XVisualInfo* vis, GLXContext shareList, Bool
 static void
 fpgl_glXDestroyContext(Display* dpy, GLXContext ctx)
 {
+   THREAD_CHECK_DEBUG();
+
    EvasGlueContext ectx = (EvasGlueContext)ctx;
 
    if (ctx!=NULL)
@@ -1732,15 +2898,23 @@ fpgl_glXDestroyContext(Display* dpy, GLXContext ctx)
         if (ectx == current_ctx)
           {
              DBG("Destroying current context... %d\n", ctx_ref_count);
+             if ((real_current_ctx) && (real_current_ctx->destroyed))
+                free(real_current_ctx);
              real_current_ctx = current_ctx;
+             real_current_ctx->destroyed = 1;
              current_ctx = NULL;
           }
-
-        if (ectx)
-           free(ectx);
+        else
+          {
+             if (ectx)
+                free(ectx);
+          }
 
         if (!(--ctx_ref_count))
           {
+             if ((real_current_ctx) && (real_current_ctx->destroyed))
+                free(real_current_ctx);
+
              DBG("Destroying the global context...\n");
              _sym_glXDestroyContext(dpy, global_ctx);
              global_ctx = NULL;
@@ -1754,12 +2928,16 @@ fpgl_glXDestroyContext(Display* dpy, GLXContext ctx)
 static GLXContext
 fpgl_glXGetCurrentContext(void)
 {
+   THREAD_CHECK_DEBUG();
+
    return (GLXContext)current_ctx;
 }
 
 static GLXDrawable
 fpgl_glXGetCurrentDrawable(void)
 {
+   THREAD_CHECK_DEBUG();
+
    //return _sym_glXGetCurrentDrawable();
    return (GLXDrawable)current_surf;
 }
@@ -1768,13 +2946,19 @@ fpgl_glXGetCurrentDrawable(void)
 static Bool
 fpgl_glXMakeCurrent(Display* dpy, GLXDrawable draw, GLXContext ctx)
 {
+   THREAD_CHECK_DEBUG();
+
    EvasGlueContext ectx = (EvasGlueContext)ctx;
 
    // Check if the values are null
    if ((draw == None) || (ctx == NULL))
      {
         if (current_ctx)
-           real_current_ctx = current_ctx;
+          {
+             if ((real_current_ctx) && (real_current_ctx->destroyed))
+                free(real_current_ctx);
+             real_current_ctx = current_ctx;
+          }
 
         /*
         if (!_sym_glXMakeCurrent(dpy, None, NULL))
@@ -1830,7 +3014,7 @@ fpgl_glXMakeCurrent(Display* dpy, GLXDrawable draw, GLXContext ctx)
      }
 
    // If it's first time...
-   if (ectx->first_time == 1)
+   if (ectx->initialized == 1)
      {
         // FIXME!!!:
         // Actually, i need to query the drawable size...
@@ -1841,7 +3025,7 @@ fpgl_glXMakeCurrent(Display* dpy, GLXDrawable draw, GLXContext ctx)
         _sym_glGetIntegerv(GL_SCISSOR_BOX, ectx->gl_scissor_box);
         DBG("----Num Tex Units: %d, Num Vertex Attribs: %d \n", ectx->num_tex_units, ectx->num_vertex_attribs);
 
-        ectx->first_time = 0;
+        ectx->initialized = 0;
      }
 
    // if context is same, return
@@ -1861,6 +3045,8 @@ fpgl_glXMakeCurrent(Display* dpy, GLXDrawable draw, GLXContext ctx)
 static Bool
 fpgl_glXMakeContextCurrent(Display* dpy, GLXDrawable draw, GLXDrawable read, GLXContext ctx)
 {
+   THREAD_CHECK_DEBUG();
+
    ERR("NOT IMPLEMENTED YET!!! GLX Function Wrapped. Not fastpathed yet...\n");
    return _sym_glXMakeContextCurrent(dpy, draw, read, ctx);
 }
@@ -1879,109 +3065,169 @@ fpgl_glXMakeContextCurrent(Display* dpy, GLXDrawable draw, GLXDrawable read, GLX
 static void
 evgl_glActiveTexture(GLenum texture)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glActiveTexture(texture);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glAttachShader(GLuint program, GLuint shader)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glAttachShader(program, shader);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glBindAttribLocation(GLuint program, GLuint index, const char* name)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glBindAttribLocation(program, index, name);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glBindBuffer(GLenum target, GLuint buffer)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glBindBuffer(target, buffer);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glBindFramebuffer(GLenum target, GLuint framebuffer)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glBindFramebuffer(target, framebuffer);
 
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glBindRenderbuffer(GLenum target, GLuint renderbuffer)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glBindRenderbuffer(target, renderbuffer);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glBindTexture(GLenum target, GLuint texture)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glBindTexture(target, texture);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glBlendColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glBlendColor(red, green, blue, alpha);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glBlendEquation(GLenum mode)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glBlendEquation(mode);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glBlendEquationSeparate(modeRGB, modeAlpha);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glBlendFunc(GLenum sfactor, GLenum dfactor)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glBlendFunc(sfactor, dfactor);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glBlendFuncSeparate(srcRGB, dstRGB, srcAlpha, dstAlpha);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glBufferData(GLenum target, GLsizeiptr size, const void* data, GLenum usage)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glBufferData(target, size, data, usage);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void* data)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glBufferSubData(target, offset, size, data);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static GLenum
 evgl_glCheckFramebufferStatus(GLenum target)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    GLenum result;
 
    result = _sym_glCheckFramebufferStatus(target);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 
    return result;
 }
@@ -1989,80 +3235,124 @@ evgl_glCheckFramebufferStatus(GLenum target)
 static void
 evgl_glClear(GLbitfield mask)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glClear(mask);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glClearColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glClearColor(red, green, blue, alpha);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glClearDepthf(GLclampf depth)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glClearDepthf(depth);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glClearStencil(GLint s)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glClearStencil(s);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glColorMask(red, green, blue, alpha);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glCompileShader(GLuint shader)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glCompileShader(shader);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glCompressedTexImage2D(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void* data)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glCompressedTexImage2D(target, level, internalformat, width, height, border, imageSize, data);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glCompressedTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const void* data)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glCompressedTexSubImage2D(target, level, xoffset, yoffset, width, height, format, imageSize, data);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glCopyTexImage2D(GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glCopyTexImage2D(target, level, internalformat, x, y, width, height, border);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glCopyTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glCopyTexSubImage2D(target, level, xoffset, yoffset, x, y, width, height);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static GLuint
 evgl_glCreateProgram(void)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    GLuint program;
 
    program = _sym_glCreateProgram();
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 
    return program;
 }
@@ -2070,10 +3360,14 @@ evgl_glCreateProgram(void)
 static GLuint
 evgl_glCreateShader(GLenum type)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    GLuint shader;
 
    shader = _sym_glCreateShader(type);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 
    return shader;
 }
@@ -2081,259 +3375,392 @@ evgl_glCreateShader(GLenum type)
 static void
 evgl_glCullFace(GLenum mode)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glCullFace(mode);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glDeleteBuffers(GLsizei n, const GLuint* buffers)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glDeleteBuffers(n, buffers);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glDeleteFramebuffers(GLsizei n, const GLuint* framebuffers)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glDeleteFramebuffers(n, framebuffers);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glDeleteProgram(GLuint program)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glDeleteProgram(program);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glDeleteRenderbuffers(GLsizei n, const GLuint* renderbuffers)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glDeleteRenderbuffers(n, renderbuffers);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glDeleteShader(GLuint shader)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glDeleteShader(shader);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glDeleteTextures(GLsizei n, const GLuint* textures)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glDeleteTextures(n, textures);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glDepthFunc(GLenum func)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glDepthFunc(func);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glDepthMask(GLboolean flag)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glDepthMask(flag);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glDepthRangef(GLclampf zNear, GLclampf zFar)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glDepthRangef(zNear, zFar);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glDetachShader(GLuint program, GLuint shader)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glDetachShader(program, shader);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glDisable(GLenum cap)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glDisable(cap);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glDisableVertexAttribArray(GLuint index)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glDisableVertexAttribArray(index);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glDrawArrays(GLenum mode, GLint first, GLsizei count)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glDrawArrays(mode, first, count);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glDrawElements(GLenum mode, GLsizei count, GLenum type, const void* indices)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glDrawElements(mode, count, type, indices);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glEnable(GLenum cap)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glEnable(cap);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glEnableVertexAttribArray(GLuint index)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glEnableVertexAttribArray(index);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glFinish(void)
 {
+   //EVAS_GL_START_LOG(mc_log);
+
    _sym_glFinish();
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   //EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glFlush(void)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glFlush();
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glFramebufferRenderbuffer(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glFramebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glFramebufferTexture2D(target, attachment, textarget, texture, level);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glFrontFace(GLenum mode)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glFrontFace(mode);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glGetVertexAttribfv(GLuint index, GLenum pname, GLfloat* params)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glGetVertexAttribfv(index, pname, params);
 
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glGetVertexAttribiv(GLuint index, GLenum pname, GLint* params)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glGetVertexAttribiv(index, pname, params);
 
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glGetVertexAttribPointerv(GLuint index, GLenum pname, void** pointer)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glGetVertexAttribPointerv(index, pname, pointer);
 
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 
 }
 
 static void
 evgl_glHint(GLenum target, GLenum mode)
 {
-   _sym_glHint(target, mode);
+   EVAS_GL_START_LOG(mc_log);
 
+   _sym_glHint(target, mode);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 
-   if (target == GL_GENERATE_MIPMAP_HINT)
-     {
-        current_ctx->_tex_flag1 |= FLAG_BIT_2;
-        current_ctx->gl_generate_mipmap_hint = mode;
-     }
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glGenBuffers(GLsizei n, GLuint* buffers)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glGenBuffers(n, buffers);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glGenerateMipmap(GLenum target)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glGenerateMipmap(target);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glGenFramebuffers(GLsizei n, GLuint* framebuffers)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glGenFramebuffers(n, framebuffers);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glGenRenderbuffers(GLsizei n, GLuint* renderbuffers)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glGenRenderbuffers(n, renderbuffers);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glGenTextures(GLsizei n, GLuint* textures)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glGenTextures(n, textures);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glGetActiveAttrib(GLuint program, GLuint index, GLsizei bufsize, GLsizei* length, GLint* size, GLenum* type, char* name)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glGetActiveAttrib(program, index, bufsize, length, size, type, name);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glGetActiveUniform(GLuint program, GLuint index, GLsizei bufsize, GLsizei* length, GLint* size, GLenum* type, char* name)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glGetActiveUniform(program, index, bufsize, length, size, type, name);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glGetAttachedShaders(GLuint program, GLsizei maxcount, GLsizei* count, GLuint* shaders)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glGetAttachedShaders(program, maxcount, count, shaders);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static int
 evgl_glGetAttribLocation(GLuint program, const char* name)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    int location;
 
    location = _sym_glGetAttribLocation(program, name);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 
    return location;
 }
@@ -2341,85 +3768,131 @@ evgl_glGetAttribLocation(GLuint program, const char* name)
 static void
 evgl_glGetBooleanv(GLenum pname, GLboolean* params)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glGetBooleanv(pname, params);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glGetBufferParameteriv(GLenum target, GLenum pname, GLint* params)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glGetBufferParameteriv(target, pname, params);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static GLenum
 evgl_glGetError(void)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    return _sym_glGetError();
 }
 
 static void
 evgl_glGetFloatv(GLenum pname, GLfloat* params)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glGetFloatv(pname, params);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glGetFramebufferAttachmentParameteriv(GLenum target, GLenum attachment, GLenum pname, GLint* params)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glGetFramebufferAttachmentParameteriv(target, attachment, pname, params);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glGetIntegerv(GLenum pname, GLint* params)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glGetIntegerv(pname, params);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glGetProgramiv(GLuint program, GLenum pname, GLint* params)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glGetProgramiv(program, pname, params);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glGetProgramInfoLog(GLuint program, GLsizei bufsize, GLsizei* length, char* infolog)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glGetProgramInfoLog(program, bufsize, length, infolog);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glGetRenderbufferParameteriv(GLenum target, GLenum pname, GLint* params)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glGetRenderbufferParameteriv(target, pname, params);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glGetShaderiv(GLuint shader, GLenum pname, GLint* params)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glGetShaderiv(shader, pname, params);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glGetShaderInfoLog(GLuint shader, GLsizei bufsize, GLsizei* length, char* infolog)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glGetShaderInfoLog(shader, bufsize, length, infolog);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glGetShaderPrecisionFormat(GLenum shadertype, GLenum precisiontype, GLint* range, GLint* precision)
 {
+   EVAS_GL_START_LOG(mc_log);
+
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
    _sym_glGetShaderPrecisionFormat(shadertype, precisiontype, range, precision);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 #else
    if (range)
      {
@@ -2439,17 +3912,25 @@ evgl_glGetShaderPrecisionFormat(GLenum shadertype, GLenum precisiontype, GLint* 
 static void
 evgl_glGetShaderSource(GLuint shader, GLsizei bufsize, GLsizei* length, char* source)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glGetShaderSource(shader, bufsize, length, source);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static const GLubyte *
 evgl_glGetString(GLenum name)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    const GLubyte *str;
 
    str =_sym_glGetString(name);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 
    return str;
 }
@@ -2457,37 +3938,58 @@ evgl_glGetString(GLenum name)
 static void
 evgl_glGetTexParameterfv(GLenum target, GLenum pname, GLfloat* params)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glGetTexParameterfv(target, pname, params);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glGetTexParameteriv(GLenum target, GLenum pname, GLint* params)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glGetTexParameteriv(target, pname, params);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glGetUniformfv(GLuint program, GLint location, GLfloat* params)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glGetUniformfv(program, location, params);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glGetUniformiv(GLuint program, GLint location, GLint* params)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glGetUniformiv(program, location, params);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
+
 static int
 evgl_glGetUniformLocation(GLuint program, const char* name)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    int location;
 
    location = _sym_glGetUniformLocation(program, name);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 
    return location;
 }
@@ -2495,10 +3997,14 @@ evgl_glGetUniformLocation(GLuint program, const char* name)
 static GLboolean
 evgl_glIsBuffer(GLuint buffer)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    GLboolean result;
 
    result =  _sym_glIsBuffer(buffer);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 
    return result;
 }
@@ -2506,10 +4012,14 @@ evgl_glIsBuffer(GLuint buffer)
 static GLboolean
 evgl_glIsEnabled(GLenum cap)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    GLboolean result;
 
    result =  _sym_glIsEnabled(cap);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 
    return result;
 }
@@ -2517,10 +4027,14 @@ evgl_glIsEnabled(GLenum cap)
 static GLboolean
 evgl_glIsFramebuffer(GLuint framebuffer)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    GLboolean result;
 
    result = _sym_glIsFramebuffer(framebuffer);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 
    return result;
 }
@@ -2528,10 +4042,14 @@ evgl_glIsFramebuffer(GLuint framebuffer)
 static GLboolean
 evgl_glIsProgram(GLuint program)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    GLboolean result;
 
    result =  _sym_glIsProgram(program);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 
    return result;
 }
@@ -2539,10 +4057,14 @@ evgl_glIsProgram(GLuint program)
 static GLboolean
 evgl_glIsRenderbuffer(GLuint renderbuffer)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    GLboolean result;
 
    result =  _sym_glIsRenderbuffer(renderbuffer);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 
    return result;
 }
@@ -2550,10 +4072,14 @@ evgl_glIsRenderbuffer(GLuint renderbuffer)
 static GLboolean
 evgl_glIsShader(GLuint shader)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    GLboolean result;
 
    result =  _sym_glIsShader(shader);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 
    return result;
 }
@@ -2561,10 +4087,14 @@ evgl_glIsShader(GLuint shader)
 static GLboolean
 evgl_glIsTexture(GLuint texture)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    GLboolean result;
 
    result = _sym_glIsTexture(texture);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 
    return result;
 }
@@ -2572,44 +4102,68 @@ evgl_glIsTexture(GLuint texture)
 static void
 evgl_glLineWidth(GLfloat width)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glLineWidth(width);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glLinkProgram(GLuint program)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glLinkProgram(program);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glPixelStorei(GLenum pname, GLint param)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glPixelStorei(pname, param);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glPolygonOffset(GLfloat factor, GLfloat units)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glPolygonOffset(factor, units);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, void* pixels)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glReadPixels(x, y, width, height, format, type, pixels);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glReleaseShaderCompiler(void)
 {
+   EVAS_GL_START_LOG(mc_log);
+
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
    _sym_glReleaseShaderCompiler();
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 #else
    //FIXME!!! need something here?
 
@@ -2619,30 +4173,46 @@ evgl_glReleaseShaderCompiler(void)
 static void
 evgl_glRenderbufferStorage(GLenum target, GLenum internalformat, GLsizei width, GLsizei height)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glRenderbufferStorage(target, internalformat, width, height);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glSampleCoverage(GLclampf value, GLboolean invert)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glSampleCoverage(value, invert);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glScissor(GLint x, GLint y, GLsizei width, GLsizei height)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glScissor(x, y, width, height);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glShaderBinary(GLsizei n, const GLuint* shaders, GLenum binaryformat, const void* binary, GLsizei length)
 {
+   EVAS_GL_START_LOG(mc_log);
+
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
    _sym_glShaderBinary(n, shaders, binaryformat, binary, length);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 #else
 // FIXME: need to dlsym/getprocaddress for this
    return;
@@ -2656,309 +4226,485 @@ evgl_glShaderBinary(GLsizei n, const GLuint* shaders, GLenum binaryformat, const
 static void
 evgl_glShaderSource(GLuint shader, GLsizei count, const char** string, const GLint* length)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glShaderSource(shader, count, string, length);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glStencilFunc(GLenum func, GLint ref, GLuint mask)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glStencilFunc(func, ref, mask);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glStencilFuncSeparate(GLenum face, GLenum func, GLint ref, GLuint mask)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glStencilFuncSeparate(face, func, ref, mask);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glStencilMask(GLuint mask)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glStencilMask(mask);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glStencilMaskSeparate(GLenum face, GLuint mask)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glStencilMaskSeparate(face, mask);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glStencilOp(GLenum fail, GLenum zfail, GLenum zpass)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glStencilOp(fail, zfail, zpass);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glStencilOpSeparate(GLenum face, GLenum fail, GLenum zfail, GLenum zpass)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glStencilOpSeparate(face, fail, zfail, zpass);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const void* pixels)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glTexImage2D(target, level, internalformat, width, height, border, format, type, pixels);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glTexParameterf(GLenum target, GLenum pname, GLfloat param)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glTexParameterf(target, pname, param);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glTexParameterfv(GLenum target, GLenum pname, const GLfloat* params)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glTexParameterfv(target, pname, params);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glTexParameteri(GLenum target, GLenum pname, GLint param)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glTexParameteri(target, pname, param);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glTexParameteriv(GLenum target, GLenum pname, const GLint* params)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glTexParameteriv(target, pname, params);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const void* pixels)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glUniform1f(GLint location, GLfloat x)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glUniform1f(location, x);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glUniform1fv(GLint location, GLsizei count, const GLfloat* v)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glUniform1fv(location, count, v);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glUniform1i(GLint location, GLint x)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glUniform1i(location, x);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glUniform1iv(GLint location, GLsizei count, const GLint* v)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glUniform1iv(location, count, v);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glUniform2f(GLint location, GLfloat x, GLfloat y)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glUniform2f(location, x, y);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glUniform2fv(GLint location, GLsizei count, const GLfloat* v)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glUniform2fv(location, count, v);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glUniform2i(GLint location, GLint x, GLint y)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glUniform2i(location, x, y);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glUniform2iv(GLint location, GLsizei count, const GLint* v)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glUniform2iv(location, count, v);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glUniform3f(GLint location, GLfloat x, GLfloat y, GLfloat z)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glUniform3f(location, x, y, z);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glUniform3fv(GLint location, GLsizei count, const GLfloat* v)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glUniform3fv(location, count, v);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glUniform3i(GLint location, GLint x, GLint y, GLint z)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glUniform3i(location, x, y, z);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glUniform3iv(GLint location, GLsizei count, const GLint* v)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glUniform3iv(location, count, v);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glUniform4f(GLint location, GLfloat x, GLfloat y, GLfloat z, GLfloat w)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glUniform4f(location, x, y, z, w);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glUniform4fv(GLint location, GLsizei count, const GLfloat* v)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glUniform4fv(location, count, v);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glUniform4i(GLint location, GLint x, GLint y, GLint z, GLint w)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glUniform4i(location, x, y, z, w);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glUniform4iv(GLint location, GLsizei count, const GLint* v)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glUniform4iv(location, count, v);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glUniformMatrix2fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat* value)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glUniformMatrix2fv(location, count, transpose, value);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat* value)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glUniformMatrix3fv(location, count, transpose, value);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat* value)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glUniformMatrix4fv(location, count, transpose, value);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glUseProgram(GLuint program)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glUseProgram(program);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glValidateProgram(GLuint program)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glValidateProgram(program);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glVertexAttrib1f(GLuint indx, GLfloat x)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glVertexAttrib1f(indx, x);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glVertexAttrib1fv(GLuint indx, const GLfloat* values)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glVertexAttrib1fv(indx, values);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glVertexAttrib2f(GLuint indx, GLfloat x, GLfloat y)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glVertexAttrib2f(indx, x, y);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glVertexAttrib2fv(GLuint indx, const GLfloat* values)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glVertexAttrib2fv(indx, values);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glVertexAttrib3f(GLuint indx, GLfloat x, GLfloat y, GLfloat z)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glVertexAttrib3f(indx, x, y, z);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glVertexAttrib3fv(GLuint indx, const GLfloat* values)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glVertexAttrib3fv(indx, values);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glVertexAttrib4f(GLuint indx, GLfloat x, GLfloat y, GLfloat z, GLfloat w)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glVertexAttrib4f(indx, x, y, z, w);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glVertexAttrib4fv(GLuint indx, const GLfloat* values)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glVertexAttrib4fv(indx, values);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glVertexAttribPointer(GLuint indx, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void* ptr)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glVertexAttribPointer(indx, size, type, normalized, stride, ptr);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glViewport(GLint x, GLint y, GLsizei width, GLsizei height)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glViewport(x, y, width, height);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 
@@ -2966,23 +4712,35 @@ evgl_glViewport(GLint x, GLint y, GLsizei width, GLsizei height)
 static void
 evgl_glGetProgramBinary(GLuint program, GLsizei bufsize, GLsizei* length, GLenum* binaryFormat, void* binary)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glGetProgramBinary(program, bufsize, length, binaryFormat, binary);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 evgl_glProgramBinary(GLuint program, GLenum binaryFormat, const void* binary, GLint length)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glProgramBinary(program, binaryFormat, binary, length);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 
 static void
 evgl_glProgramParameteri(GLuint program, GLuint pname, GLint value)
 {
+   EVAS_GL_START_LOG(mc_log);
+
    _sym_glProgramParameteri(program, pname, value);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 //----------------------------------------------------------------//
@@ -2992,13 +4750,22 @@ evgl_glProgramParameteri(GLuint program, GLuint pname, GLint value)
 //                                                                //
 //----------------------------------------------------------------//
 
-#define CURR_STATE_COMPARE(curr_state, state ) \
-   if ((current_ctx->curr_state) != (state))
+#ifdef EVAS_GL_DEBUG
+   #define CURR_STATE_COMPARE(curr_state, state ) \
+      if (1)
+#else
+   #define CURR_STATE_COMPARE(curr_state, state ) \
+      if ((current_ctx->curr_state) != (state))
+#endif
 
 
 static void
 fpgl_glActiveTexture(GLenum texture)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
    CURR_STATE_COMPARE(gl_active_texture, texture)
      {
         _sym_glActiveTexture(texture);
@@ -3008,11 +4775,17 @@ fpgl_glActiveTexture(GLenum texture)
         current_ctx->_tex_flag1 |= FLAG_BIT_1;
         current_ctx->gl_active_texture = texture;
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glBindBuffer(GLenum target, GLuint buffer)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
    if (target == GL_ARRAY_BUFFER)
      {
         CURR_STATE_COMPARE(gl_array_buffer_binding, buffer)
@@ -3021,6 +4794,11 @@ fpgl_glBindBuffer(GLenum target, GLuint buffer)
 
              GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 
+             /*
+                if (buffer == 0)
+                current_ctx->_bind_flag &= (~FLAG_BIT_0);
+                else
+              */
              current_ctx->_bind_flag |= FLAG_BIT_0;
              current_ctx->gl_array_buffer_binding = buffer;
           }
@@ -3032,6 +4810,11 @@ fpgl_glBindBuffer(GLenum target, GLuint buffer)
              _sym_glBindBuffer(target, buffer);
              GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 
+             /*
+                if (buffer == 0)
+                current_ctx->_bind_flag &= (~FLAG_BIT_1);
+                else
+              */
              current_ctx->_bind_flag |= FLAG_BIT_1;
              current_ctx->gl_element_array_buffer_binding = buffer;
           }
@@ -3042,11 +4825,17 @@ fpgl_glBindBuffer(GLenum target, GLuint buffer)
         _sym_glBindBuffer(target, buffer);
         GLERR(__FUNCTION__, __FILE__, __LINE__, "");
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glBindFramebuffer(GLenum target, GLuint framebuffer)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
    if (target == GL_FRAMEBUFFER)
      {
         CURR_STATE_COMPARE(gl_framebuffer_binding, framebuffer)
@@ -3054,6 +4843,11 @@ fpgl_glBindFramebuffer(GLenum target, GLuint framebuffer)
              _sym_glBindFramebuffer(target, framebuffer);
              GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 
+             /*
+                if (framebuffer == 0)
+                current_ctx->_bind_flag &= (~FLAG_BIT_2);
+                else
+              */
              current_ctx->_bind_flag |= FLAG_BIT_2;
              current_ctx->gl_framebuffer_binding = framebuffer;
           }
@@ -3065,11 +4859,17 @@ fpgl_glBindFramebuffer(GLenum target, GLuint framebuffer)
         GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glBindRenderbuffer(GLenum target, GLuint renderbuffer)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
    if (target == GL_RENDERBUFFER)
      {
         CURR_STATE_COMPARE(gl_renderbuffer_binding, renderbuffer)
@@ -3077,7 +4877,10 @@ fpgl_glBindRenderbuffer(GLenum target, GLuint renderbuffer)
              _sym_glBindRenderbuffer(target, renderbuffer);
              GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 
-             current_ctx->_bind_flag |= FLAG_BIT_3;
+             if (renderbuffer == 0)
+                current_ctx->_bind_flag &= (~FLAG_BIT_3);
+             else
+                current_ctx->_bind_flag |= FLAG_BIT_3;
              current_ctx->gl_renderbuffer_binding = renderbuffer;
           }
      }
@@ -3087,51 +4890,76 @@ fpgl_glBindRenderbuffer(GLenum target, GLuint renderbuffer)
         _sym_glBindRenderbuffer(target, renderbuffer);
         GLERR(__FUNCTION__, __FILE__, __LINE__, "");
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glBindTexture(GLenum target, GLuint texture)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
    int tex_idx;
+
+   tex_idx = current_ctx->gl_active_texture - GL_TEXTURE0;
+
+   EVAS_GL_DEBUG_ASSERT(tex_idx < MAX_TEXTURE_UNITS);
 
    if (target == GL_TEXTURE_2D)
      {
-        //CURR_STATE_COMPARE(gl_texture_binding_2d, texture)
+        CURR_STATE_COMPARE(tex_2d_state[tex_idx], texture)
           {
              _sym_glBindTexture(target, texture);
 
              GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 
+             /*
+                if (texture == 0)
+                current_ctx->_tex_flag1 &= (~FLAG_BIT_3);
+                else
+              */
              current_ctx->_tex_flag1 |= FLAG_BIT_3;
-             current_ctx->gl_texture_binding_2d = texture;
-
-             tex_idx = current_ctx->gl_active_texture - GL_TEXTURE0;
 
              current_ctx->tex_2d_state[tex_idx] = texture;
           }
      }
    else if (target == GL_TEXTURE_CUBE_MAP)
      {
-        //CURR_STATE_COMPARE(gl_texture_binding_cube_map, texture)
+        CURR_STATE_COMPARE(tex_cube_map_state[tex_idx], texture)
           {
              _sym_glBindTexture(target, texture);
 
              GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 
+             /*
+                if (texture == 0)
+                current_ctx->_tex_flag1 &= (~FLAG_BIT_4);
+                else
+              */
              current_ctx->_tex_flag1 |= FLAG_BIT_4;
+
              current_ctx->gl_texture_binding_cube_map = texture;
 
-             tex_idx = current_ctx->gl_active_texture - GL_TEXTURE0;
-
              current_ctx->tex_cube_map_state[tex_idx] = texture;
+             //current_ctx->tex_state[tex_idx].tex_unit = GL_TEXTURE_CUBE_MAP;
+             //current_ctx->tex_state[tex_idx].tex_id = texture;
           }
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glBlendColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha)
 {
-   if ((current_ctx->gl_blend_color[0] != red) ||
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
+   if ( COMPARE_OPT_SKIP
+       (current_ctx->gl_blend_color[0] != red) ||
        (current_ctx->gl_blend_color[1] != green) ||
        (current_ctx->gl_blend_color[2] != blue) ||
        (current_ctx->gl_blend_color[3] != alpha))
@@ -3146,12 +4974,18 @@ fpgl_glBlendColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha)
         current_ctx->gl_blend_color[2] = blue;
         current_ctx->gl_blend_color[3] = alpha;
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 //!!! Optimze?
 static void
 fpgl_glBlendEquation(GLenum mode)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
    _sym_glBlendEquation(mode);
 
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
@@ -3159,12 +4993,19 @@ fpgl_glBlendEquation(GLenum mode)
    current_ctx->_blend_flag |= (FLAG_BIT_5 | FLAG_BIT_6);
    _sym_glGetIntegerv(GL_BLEND_EQUATION_RGB,   (GLint*)&(current_ctx->gl_blend_equation_rgb));
    _sym_glGetIntegerv(GL_BLEND_EQUATION_ALPHA, (GLint*)&(current_ctx->gl_blend_equation_alpha));
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha)
 {
-   if ((current_ctx->gl_blend_equation_rgb != modeRGB) ||
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
+   if ( COMPARE_OPT_SKIP
+       (current_ctx->gl_blend_equation_rgb != modeRGB) ||
        (current_ctx->gl_blend_equation_alpha != modeAlpha))
      {
         _sym_glBlendEquationSeparate(modeRGB, modeAlpha);
@@ -3175,12 +5016,18 @@ fpgl_glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha)
         current_ctx->gl_blend_equation_rgb    = modeRGB;
         current_ctx->gl_blend_equation_alpha  = modeAlpha;
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 //!!! Optimze?
 static void
 fpgl_glBlendFunc(GLenum sfactor, GLenum dfactor)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
    _sym_glBlendFunc(sfactor, dfactor);
 
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
@@ -3190,12 +5037,19 @@ fpgl_glBlendFunc(GLenum sfactor, GLenum dfactor)
    _sym_glGetIntegerv(GL_BLEND_SRC_ALPHA, (GLint*)&(current_ctx->gl_blend_src_alpha));
    _sym_glGetIntegerv(GL_BLEND_DST_RGB,   (GLint*)&(current_ctx->gl_blend_dst_rgb));
    _sym_glGetIntegerv(GL_BLEND_DST_ALPHA, (GLint*)&(current_ctx->gl_blend_dst_alpha));
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha)
 {
-   if ((current_ctx->gl_blend_src_rgb != srcRGB) ||
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
+   if ( COMPARE_OPT_SKIP
+       (current_ctx->gl_blend_src_rgb != srcRGB) ||
        (current_ctx->gl_blend_dst_rgb != dstRGB) ||
        (current_ctx->gl_blend_src_alpha != srcAlpha) ||
        (current_ctx->gl_blend_dst_alpha != dstAlpha))
@@ -3210,12 +5064,19 @@ fpgl_glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
         current_ctx->gl_blend_src_alpha = srcAlpha;
         current_ctx->gl_blend_dst_alpha = dstAlpha;
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glClearColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha)
 {
-   if ((current_ctx->gl_color_clear_value[0] != red) ||
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
+   if ( COMPARE_OPT_SKIP
+       (current_ctx->gl_color_clear_value[0] != red) ||
        (current_ctx->gl_color_clear_value[1] != green) ||
        (current_ctx->gl_color_clear_value[2] != blue) ||
        (current_ctx->gl_color_clear_value[3] != alpha))
@@ -3230,11 +5091,17 @@ fpgl_glClearColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha)
         current_ctx->gl_color_clear_value[2] = blue;
         current_ctx->gl_color_clear_value[3] = alpha;
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glClearDepthf(GLclampf depth)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
    CURR_STATE_COMPARE(gl_depth_clear_value, depth)
      {
         _sym_glClearDepthf(depth);
@@ -3244,11 +5111,17 @@ fpgl_glClearDepthf(GLclampf depth)
         current_ctx->_clear_flag2 |= FLAG_BIT_2;
         current_ctx->gl_depth_clear_value = depth;
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glClearStencil(GLint s)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
    CURR_STATE_COMPARE(gl_stencil_clear_value, s)
      {
         _sym_glClearStencil(s);
@@ -3258,12 +5131,19 @@ fpgl_glClearStencil(GLint s)
         current_ctx->_stencil_flag2 |= FLAG_BIT_7;
         current_ctx->gl_stencil_clear_value = s;
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha)
 {
-   if ((current_ctx->gl_color_writemask[0] != red) ||
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
+   if ( COMPARE_OPT_SKIP
+       (current_ctx->gl_color_writemask[0] != red) ||
        (current_ctx->gl_color_writemask[1] != green) ||
        (current_ctx->gl_color_writemask[2] != blue) ||
        (current_ctx->gl_color_writemask[3] != alpha))
@@ -3278,11 +5158,17 @@ fpgl_glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha
         current_ctx->gl_color_writemask[2] = blue;
         current_ctx->gl_color_writemask[3] = alpha;
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glCullFace(GLenum mode)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
    CURR_STATE_COMPARE(gl_cull_face_mode, mode)
      {
         _sym_glCullFace(mode);
@@ -3292,11 +5178,17 @@ fpgl_glCullFace(GLenum mode)
         current_ctx->_clear_flag2 |= FLAG_BIT_5;
         current_ctx->gl_cull_face_mode = mode;
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glDepthFunc(GLenum func)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
    CURR_STATE_COMPARE(gl_depth_func, func)
      {
         _sym_glDepthFunc(func);
@@ -3306,11 +5198,17 @@ fpgl_glDepthFunc(GLenum func)
         current_ctx->_clear_flag2 |= FLAG_BIT_3;
         current_ctx->gl_depth_func = func;
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glDepthMask(GLboolean flag)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
    CURR_STATE_COMPARE(gl_depth_writemask, flag)
      {
         _sym_glDepthMask(flag);
@@ -3320,11 +5218,17 @@ fpgl_glDepthMask(GLboolean flag)
         current_ctx->_clear_flag2 |= FLAG_BIT_4;
         current_ctx->gl_depth_writemask = flag;
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glDepthRangef(GLclampf zNear, GLclampf zFar)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
    if ((current_ctx->gl_depth_range[0] != zNear) ||
        (current_ctx->gl_depth_range[1] != zFar))
      {
@@ -3336,11 +5240,17 @@ fpgl_glDepthRangef(GLclampf zNear, GLclampf zFar)
         current_ctx->gl_depth_range[0] = zNear;
         current_ctx->gl_depth_range[1] = zFar;
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glDisable(GLenum cap)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
    switch(cap)
      {
       case GL_BLEND:
@@ -3425,32 +5335,60 @@ fpgl_glDisable(GLenum cap)
            }
          break;
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glDisableVertexAttribArray(GLuint index)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
+
    _sym_glDisableVertexAttribArray(index);
 
-   current_ctx->_varray_flag |= FLAG_BIT_0;
+   EVAS_GL_DEBUG_ASSERT(index < MAX_VERTEX_ATTRIBS);
+
+   current_ctx->_vattrib_flag |= FLAG_BIT_1;
    current_ctx->vertex_array[index].enabled    = GL_FALSE;
+   //current_ctx->vertex_array[index].modified   = GL_FALSE;
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glDrawArrays(GLenum mode, GLint first, GLsizei count)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
    _sym_glDrawArrays(mode, first, count);
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glDrawElements(GLenum mode, GLsizei count, GLenum type, const void* indices)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
    _sym_glDrawElements(mode, count, type, indices);
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glEnable(GLenum cap)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
    switch(cap)
      {
       case GL_BLEND:
@@ -3490,7 +5428,6 @@ fpgl_glEnable(GLenum cap)
            {
               _sym_glEnable(cap);
               GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-
 
               current_ctx->_enable_flag1 |= FLAG_BIT_3;
               current_ctx->gl_dither = GL_TRUE;
@@ -3551,26 +5488,42 @@ fpgl_glEnable(GLenum cap)
               current_ctx->gl_stencil_test = GL_TRUE;
            }
          break;
+      default:
+         DBG("Unsupported GL Enable Cap: %d", cap);
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 // Optimze?
 static void
 fpgl_glEnableVertexAttribArray(GLuint index)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
    _sym_glEnableVertexAttribArray(index);
 
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 
-   current_ctx->_varray_flag |= FLAG_BIT_0;
-   current_ctx->vertex_array[index].enabled    = GL_TRUE;
-   current_ctx->vertex_array[index].modified   = GL_TRUE;
+   EVAS_GL_DEBUG_ASSERT(index < MAX_VERTEX_ATTRIBS);
 
+   current_ctx->_vattrib_flag |= FLAG_BIT_1;
+   current_ctx->vertex_array[index].enabled    = GL_TRUE;
+   //current_ctx->vertex_array[index].modified   = GL_FALSE;
+
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glFrontFace(GLenum mode)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
    CURR_STATE_COMPARE(gl_front_face, mode)
      {
         _sym_glFrontFace(mode);
@@ -3580,37 +5533,60 @@ fpgl_glFrontFace(GLenum mode)
         current_ctx->_misc_flag1 |= FLAG_BIT_0;
         current_ctx->gl_front_face = mode;
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glGetVertexAttribfv(GLuint index, GLenum pname, GLfloat* params)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
    _sym_glGetVertexAttribfv(index, pname, params);
 
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glGetVertexAttribiv(GLuint index, GLenum pname, GLint* params)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
    _sym_glGetVertexAttribiv(index, pname, params);
 
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glGetVertexAttribPointerv(GLuint index, GLenum pname, void** pointer)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
    _sym_glGetVertexAttribPointerv(index, pname, pointer);
 
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 
+   EVAS_GL_END_LOG(mc_log);
 }
 
 // Fix Maybe?
 static void
 fpgl_glHint(GLenum target, GLenum mode)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
    if (target == GL_GENERATE_MIPMAP_HINT)
      {
         CURR_STATE_COMPARE(gl_generate_mipmap_hint, mode)
@@ -3629,11 +5605,17 @@ fpgl_glHint(GLenum target, GLenum mode)
         _sym_glHint(target, mode);
         GLERR(__FUNCTION__, __FILE__, __LINE__, "");
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glLineWidth(GLfloat width)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
    CURR_STATE_COMPARE(gl_line_width, width)
      {
         _sym_glLineWidth(width);
@@ -3643,11 +5625,17 @@ fpgl_glLineWidth(GLfloat width)
         current_ctx->_misc_flag1 |= FLAG_BIT_1;
         current_ctx->gl_line_width = width;
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glPixelStorei(GLenum pname, GLint param)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
    if (pname == GL_PACK_ALIGNMENT)
      {
         CURR_STATE_COMPARE(gl_pack_alignment, param)
@@ -3678,12 +5666,19 @@ fpgl_glPixelStorei(GLenum pname, GLint param)
         _sym_glPixelStorei(pname, param);
         GLERR(__FUNCTION__, __FILE__, __LINE__, "");
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glPolygonOffset(GLfloat factor, GLfloat units)
 {
-   if ((current_ctx->gl_polygon_offset_factor != factor) ||
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
+   if ( COMPARE_OPT_SKIP
+       (current_ctx->gl_polygon_offset_factor != factor) ||
        (current_ctx->gl_polygon_offset_units != units))
      {
         _sym_glPolygonOffset(factor, units);
@@ -3694,12 +5689,19 @@ fpgl_glPolygonOffset(GLfloat factor, GLfloat units)
         current_ctx->gl_polygon_offset_factor = factor;
         current_ctx->gl_polygon_offset_units  = units;
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glSampleCoverage(GLclampf value, GLboolean invert)
 {
-   if ((current_ctx->gl_sample_coverage_value != value) ||
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
+   if ( COMPARE_OPT_SKIP
+       (current_ctx->gl_sample_coverage_value != value) ||
        (current_ctx->gl_sample_coverage_invert != invert))
      {
         _sym_glSampleCoverage(value, invert);
@@ -3710,12 +5712,19 @@ fpgl_glSampleCoverage(GLclampf value, GLboolean invert)
         current_ctx->gl_sample_coverage_value  = value;
         current_ctx->gl_sample_coverage_invert = invert;
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glScissor(GLint x, GLint y, GLsizei width, GLsizei height)
 {
-   if ((current_ctx->gl_scissor_box[0] != x) ||
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
+   if ( COMPARE_OPT_SKIP
+       (current_ctx->gl_scissor_box[0] != x) ||
        (current_ctx->gl_scissor_box[1] != y) ||
        (current_ctx->gl_scissor_box[2] != width) ||
        (current_ctx->gl_scissor_box[3] != height))
@@ -3730,12 +5739,19 @@ fpgl_glScissor(GLint x, GLint y, GLsizei width, GLsizei height)
         current_ctx->gl_scissor_box[2] = width;
         current_ctx->gl_scissor_box[3] = height;
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glStencilFunc(GLenum func, GLint ref, GLuint mask)
 {
-   if ((current_ctx->gl_stencil_func != func) ||
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
+   if ( COMPARE_OPT_SKIP
+       (current_ctx->gl_stencil_func != func) ||
        (current_ctx->gl_stencil_ref != ref) ||
        (current_ctx->gl_stencil_value_mask != mask) ||
        (current_ctx->gl_stencil_back_func != func) ||
@@ -3756,14 +5772,21 @@ fpgl_glStencilFunc(GLenum func, GLint ref, GLuint mask)
         current_ctx->gl_stencil_back_ref         = ref;
         current_ctx->gl_stencil_back_value_mask  = mask;
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glStencilFuncSeparate(GLenum face, GLenum func, GLint ref, GLuint mask)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
    if ((face == GL_FRONT) || (face == GL_FRONT_AND_BACK))
      {
-        if ((current_ctx->gl_stencil_func != func) ||
+        if ( COMPARE_OPT_SKIP
+            (current_ctx->gl_stencil_func != func) ||
             (current_ctx->gl_stencil_ref != ref) ||
             (current_ctx->gl_stencil_value_mask != mask))
           {
@@ -3778,9 +5801,11 @@ fpgl_glStencilFuncSeparate(GLenum face, GLenum func, GLint ref, GLuint mask)
              current_ctx->gl_stencil_value_mask       = mask;
           }
      }
-   else if ((face == GL_BACK) || (face == GL_FRONT_AND_BACK))
+
+   if ((face == GL_BACK) || (face == GL_FRONT_AND_BACK))
      {
-        if ((current_ctx->gl_stencil_back_func != func) ||
+        if ( COMPARE_OPT_SKIP
+            (current_ctx->gl_stencil_back_func != func) ||
             (current_ctx->gl_stencil_back_ref != ref) ||
             (current_ctx->gl_stencil_back_value_mask != mask))
           {
@@ -3795,19 +5820,19 @@ fpgl_glStencilFuncSeparate(GLenum face, GLenum func, GLint ref, GLuint mask)
              current_ctx->gl_stencil_back_value_mask  = mask;
           }
      }
-   else
-     {
-        // Have GL pick up the error
-        _sym_glStencilFuncSeparate(face, func, ref, mask);
 
-        GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-     }
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glStencilMask(GLuint mask)
 {
-   if ((current_ctx->gl_stencil_writemask != mask) ||
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
+   if ( COMPARE_OPT_SKIP
+       (current_ctx->gl_stencil_writemask != mask) ||
        (current_ctx->gl_stencil_back_writemask != mask))
      {
         _sym_glStencilMask(mask);
@@ -3820,14 +5845,21 @@ fpgl_glStencilMask(GLuint mask)
         current_ctx->gl_stencil_writemask        = mask;
         current_ctx->gl_stencil_back_writemask   = mask;
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glStencilMaskSeparate(GLenum face, GLuint mask)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
    if ((face == GL_FRONT) || (face == GL_FRONT_AND_BACK))
      {
-        if (current_ctx->gl_stencil_writemask != mask)
+        if ( COMPARE_OPT_SKIP
+           current_ctx->gl_stencil_writemask != mask)
           {
              _sym_glStencilMaskSeparate(face, mask);
 
@@ -3837,9 +5869,11 @@ fpgl_glStencilMaskSeparate(GLenum face, GLuint mask)
              current_ctx->gl_stencil_writemask = mask;
           }
      }
-   else if ((face == GL_BACK) || (face == GL_FRONT_AND_BACK))
+
+   if ((face == GL_BACK) || (face == GL_FRONT_AND_BACK))
      {
-        if (current_ctx->gl_stencil_back_writemask != mask)
+        if ( COMPARE_OPT_SKIP
+            current_ctx->gl_stencil_back_writemask != mask)
           {
              _sym_glStencilMaskSeparate(face, mask);
 
@@ -3849,23 +5883,24 @@ fpgl_glStencilMaskSeparate(GLenum face, GLuint mask)
              current_ctx->gl_stencil_back_writemask   = mask;
           }
      }
-   else
-     {
-        // Have GL pick up the error
-        _sym_glStencilMaskSeparate(face, mask);
-        GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-     }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glStencilOp(GLenum fail, GLenum zfail, GLenum zpass)
 {
-   if ((current_ctx->gl_stencil_fail != fail) ||
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
+   if ( COMPARE_OPT_SKIP
+       (current_ctx->gl_stencil_fail != fail) ||
        (current_ctx->gl_stencil_pass_depth_fail != zfail) ||
        (current_ctx->gl_stencil_pass_depth_pass != zpass) ||
        (current_ctx->gl_stencil_back_fail != fail) ||
-       (current_ctx->gl_stencil_back_depth_fail != zfail) ||
-       (current_ctx->gl_stencil_back_depth_pass != zpass))
+       (current_ctx->gl_stencil_back_pass_depth_fail != zfail) ||
+       (current_ctx->gl_stencil_back_pass_depth_pass != zpass))
      {
         _sym_glStencilOp(fail, zfail, zpass);
 
@@ -3878,18 +5913,25 @@ fpgl_glStencilOp(GLenum fail, GLenum zfail, GLenum zpass)
 
         current_ctx->_stencil_flag2 |= (FLAG_BIT_3 | FLAG_BIT_4 | FLAG_BIT_5);
         current_ctx->gl_stencil_back_fail         = fail;
-        current_ctx->gl_stencil_back_depth_fail   = zfail;
-        current_ctx->gl_stencil_back_depth_pass   = zpass;
+        current_ctx->gl_stencil_back_pass_depth_fail   = zfail;
+        current_ctx->gl_stencil_back_pass_depth_pass   = zpass;
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glStencilOpSeparate(GLenum face, GLenum fail, GLenum zfail, GLenum zpass)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
 
    if ((face == GL_FRONT) || (face == GL_FRONT_AND_BACK))
      {
-        if ((current_ctx->gl_stencil_fail != fail) ||
+        if ( COMPARE_OPT_SKIP
+            (current_ctx->gl_stencil_fail != fail) ||
             (current_ctx->gl_stencil_pass_depth_fail != zfail) ||
             (current_ctx->gl_stencil_pass_depth_pass != zpass))
           {
@@ -3902,19 +5944,21 @@ fpgl_glStencilOpSeparate(GLenum face, GLenum fail, GLenum zfail, GLenum zpass)
              current_ctx->gl_stencil_pass_depth_pass   = zpass;
           }
      }
-   else if ((face == GL_BACK) || (face == GL_FRONT_AND_BACK))
+
+   if ((face == GL_BACK) || (face == GL_FRONT_AND_BACK))
      {
-        if ((current_ctx->gl_stencil_back_fail != fail) ||
-            (current_ctx->gl_stencil_back_depth_fail != zfail) ||
-            (current_ctx->gl_stencil_back_depth_pass != zpass))
+        if ( COMPARE_OPT_SKIP
+            (current_ctx->gl_stencil_back_fail != fail) ||
+            (current_ctx->gl_stencil_back_pass_depth_fail != zfail) ||
+            (current_ctx->gl_stencil_back_pass_depth_pass != zpass))
           {
              _sym_glStencilOpSeparate(face, fail, zfail, zpass);
              GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 
              current_ctx->_stencil_flag2 |= (FLAG_BIT_3 | FLAG_BIT_4 | FLAG_BIT_5);
              current_ctx->gl_stencil_back_fail         = fail;
-             current_ctx->gl_stencil_back_depth_fail   = zfail;
-             current_ctx->gl_stencil_back_depth_pass   = zpass;
+             current_ctx->gl_stencil_back_pass_depth_fail   = zfail;
+             current_ctx->gl_stencil_back_pass_depth_pass   = zpass;
           }
      }
    else
@@ -3923,11 +5967,17 @@ fpgl_glStencilOpSeparate(GLenum face, GLenum fail, GLenum zfail, GLenum zpass)
         _sym_glStencilOpSeparate(face, fail, zfail, zpass);
         GLERR(__FUNCTION__, __FILE__, __LINE__, "");
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glUseProgram(GLuint program)
 {
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
    CURR_STATE_COMPARE(gl_current_program, program)
      {
         _sym_glUseProgram(program);
@@ -3937,159 +5987,238 @@ fpgl_glUseProgram(GLuint program)
         current_ctx->_clear_flag1 |= FLAG_BIT_1;
         current_ctx->gl_current_program = program;
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 // Optmize?
 static void
-fpgl_glVertexAttrib1f(GLuint indx, GLfloat x)
+fpgl_glVertexAttrib1f(GLuint index, GLfloat x)
 {
-   _sym_glVertexAttrib1f(indx, x);
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
+   _sym_glVertexAttrib1f(index, x);
 
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_DEBUG_ASSERT(index < MAX_VERTEX_ATTRIBS);
 
    current_ctx->_vattrib_flag |= FLAG_BIT_0;
-   current_ctx->vertex_attrib[indx].modified = GL_TRUE;
-   current_ctx->vertex_attrib[indx].value[0] = x;
-   current_ctx->vertex_attrib[indx].value[1] = 0;
-   current_ctx->vertex_attrib[indx].value[2] = 0;
-   current_ctx->vertex_attrib[indx].value[3] = 1;
+   current_ctx->vertex_attrib[index].modified = GL_TRUE;
+   current_ctx->vertex_attrib[index].value[0] = x;
+   current_ctx->vertex_attrib[index].value[1] = 0;
+   current_ctx->vertex_attrib[index].value[2] = 0;
+   current_ctx->vertex_attrib[index].value[3] = 1;
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 // Optmize?
 static void
-fpgl_glVertexAttrib1fv(GLuint indx, const GLfloat* values)
+fpgl_glVertexAttrib1fv(GLuint index, const GLfloat* values)
 {
-   _sym_glVertexAttrib1fv(indx, values);
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
+   _sym_glVertexAttrib1fv(index, values);
 
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_DEBUG_ASSERT(index < MAX_VERTEX_ATTRIBS);
 
    current_ctx->_vattrib_flag |= FLAG_BIT_0;
-   current_ctx->vertex_attrib[indx].modified = GL_TRUE;
-   current_ctx->vertex_attrib[indx].value[0] = values[0];
-   current_ctx->vertex_attrib[indx].value[1] = 0;
-   current_ctx->vertex_attrib[indx].value[2] = 0;
-   current_ctx->vertex_attrib[indx].value[3] = 1;
+   current_ctx->vertex_attrib[index].modified = GL_TRUE;
+   current_ctx->vertex_attrib[index].value[0] = values[0];
+   current_ctx->vertex_attrib[index].value[1] = 0;
+   current_ctx->vertex_attrib[index].value[2] = 0;
+   current_ctx->vertex_attrib[index].value[3] = 1;
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 // Optmize?
 static void
-fpgl_glVertexAttrib2f(GLuint indx, GLfloat x, GLfloat y)
+fpgl_glVertexAttrib2f(GLuint index, GLfloat x, GLfloat y)
 {
-   _sym_glVertexAttrib2f(indx, x, y);
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
+   _sym_glVertexAttrib2f(index, x, y);
 
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_DEBUG_ASSERT(index < MAX_VERTEX_ATTRIBS);
 
    current_ctx->_vattrib_flag |= FLAG_BIT_0;
-   current_ctx->vertex_attrib[indx].modified = GL_TRUE;
-   current_ctx->vertex_attrib[indx].value[0] = x;
-   current_ctx->vertex_attrib[indx].value[1] = y;
-   current_ctx->vertex_attrib[indx].value[2] = 0;
-   current_ctx->vertex_attrib[indx].value[3] = 1;
+   current_ctx->vertex_attrib[index].modified = GL_TRUE;
+   current_ctx->vertex_attrib[index].value[0] = x;
+   current_ctx->vertex_attrib[index].value[1] = y;
+   current_ctx->vertex_attrib[index].value[2] = 0;
+   current_ctx->vertex_attrib[index].value[3] = 1;
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 // Optmize?
 static void
-fpgl_glVertexAttrib2fv(GLuint indx, const GLfloat* values)
+fpgl_glVertexAttrib2fv(GLuint index, const GLfloat* values)
 {
-   _sym_glVertexAttrib2fv(indx, values);
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
+   _sym_glVertexAttrib2fv(index, values);
 
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_DEBUG_ASSERT(index < MAX_VERTEX_ATTRIBS);
 
    current_ctx->_vattrib_flag |= FLAG_BIT_0;
-   current_ctx->vertex_attrib[indx].modified = GL_TRUE;
-   current_ctx->vertex_attrib[indx].value[0] = values[0];
-   current_ctx->vertex_attrib[indx].value[1] = values[1];
-   current_ctx->vertex_attrib[indx].value[2] = 0;
-   current_ctx->vertex_attrib[indx].value[3] = 1;
+   current_ctx->vertex_attrib[index].modified = GL_TRUE;
+   current_ctx->vertex_attrib[index].value[0] = values[0];
+   current_ctx->vertex_attrib[index].value[1] = values[1];
+   current_ctx->vertex_attrib[index].value[2] = 0;
+   current_ctx->vertex_attrib[index].value[3] = 1;
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 // Optmize?
 static void
-fpgl_glVertexAttrib3f(GLuint indx, GLfloat x, GLfloat y, GLfloat z)
+fpgl_glVertexAttrib3f(GLuint index, GLfloat x, GLfloat y, GLfloat z)
 {
-   _sym_glVertexAttrib3f(indx, x, y, z);
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
+   _sym_glVertexAttrib3f(index, x, y, z);
 
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_DEBUG_ASSERT(index < MAX_VERTEX_ATTRIBS);
 
    current_ctx->_vattrib_flag |= FLAG_BIT_0;
-   current_ctx->vertex_attrib[indx].modified = GL_TRUE;
-   current_ctx->vertex_attrib[indx].value[0] = x;
-   current_ctx->vertex_attrib[indx].value[1] = y;
-   current_ctx->vertex_attrib[indx].value[2] = z;
-   current_ctx->vertex_attrib[indx].value[3] = 1;
+   current_ctx->vertex_attrib[index].modified = GL_TRUE;
+   current_ctx->vertex_attrib[index].value[0] = x;
+   current_ctx->vertex_attrib[index].value[1] = y;
+   current_ctx->vertex_attrib[index].value[2] = z;
+   current_ctx->vertex_attrib[index].value[3] = 1;
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 // Optmize?
 static void
-fpgl_glVertexAttrib3fv(GLuint indx, const GLfloat* values)
+fpgl_glVertexAttrib3fv(GLuint index, const GLfloat* values)
 {
-   _sym_glVertexAttrib3fv(indx, values);
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
+   _sym_glVertexAttrib3fv(index, values);
 
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_DEBUG_ASSERT(index < MAX_VERTEX_ATTRIBS);
 
    current_ctx->_vattrib_flag |= FLAG_BIT_0;
-   current_ctx->vertex_attrib[indx].modified = GL_TRUE;
-   current_ctx->vertex_attrib[indx].value[0] = values[0];
-   current_ctx->vertex_attrib[indx].value[1] = values[1];
-   current_ctx->vertex_attrib[indx].value[2] = values[2];
-   current_ctx->vertex_attrib[indx].value[3] = 1;
+   current_ctx->vertex_attrib[index].modified = GL_TRUE;
+   current_ctx->vertex_attrib[index].value[0] = values[0];
+   current_ctx->vertex_attrib[index].value[1] = values[1];
+   current_ctx->vertex_attrib[index].value[2] = values[2];
+   current_ctx->vertex_attrib[index].value[3] = 1;
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 // Optmize?
 static void
-fpgl_glVertexAttrib4f(GLuint indx, GLfloat x, GLfloat y, GLfloat z, GLfloat w)
+fpgl_glVertexAttrib4f(GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w)
 {
-   _sym_glVertexAttrib4f(indx, x, y, z, w);
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
+   _sym_glVertexAttrib4f(index, x, y, z, w);
 
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_DEBUG_ASSERT(index < MAX_VERTEX_ATTRIBS);
 
    current_ctx->_vattrib_flag |= FLAG_BIT_0;
-   current_ctx->vertex_attrib[indx].modified = GL_TRUE;
-   current_ctx->vertex_attrib[indx].value[0] = x;
-   current_ctx->vertex_attrib[indx].value[1] = y;
-   current_ctx->vertex_attrib[indx].value[2] = z;
-   current_ctx->vertex_attrib[indx].value[3] = w;
+   current_ctx->vertex_attrib[index].modified = GL_TRUE;
+   current_ctx->vertex_attrib[index].value[0] = x;
+   current_ctx->vertex_attrib[index].value[1] = y;
+   current_ctx->vertex_attrib[index].value[2] = z;
+   current_ctx->vertex_attrib[index].value[3] = w;
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 // Optmize?
 static void
-fpgl_glVertexAttrib4fv(GLuint indx, const GLfloat* values)
+fpgl_glVertexAttrib4fv(GLuint index, const GLfloat* values)
 {
-   _sym_glVertexAttrib4fv(indx, values);
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
+   _sym_glVertexAttrib4fv(index, values);
 
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+
+   EVAS_GL_DEBUG_ASSERT(index < MAX_VERTEX_ATTRIBS);
 
    current_ctx->_vattrib_flag |= FLAG_BIT_0;
-   current_ctx->vertex_attrib[indx].modified = GL_TRUE;
-   current_ctx->vertex_attrib[indx].value[0] = values[0];
-   current_ctx->vertex_attrib[indx].value[1] = values[1];
-   current_ctx->vertex_attrib[indx].value[2] = values[2];
-   current_ctx->vertex_attrib[indx].value[3] = values[3];
+   current_ctx->vertex_attrib[index].modified = GL_TRUE;
+   current_ctx->vertex_attrib[index].value[0] = values[0];
+   current_ctx->vertex_attrib[index].value[1] = values[1];
+   current_ctx->vertex_attrib[index].value[2] = values[2];
+   current_ctx->vertex_attrib[index].value[3] = values[3];
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 
 // Optmize?
 static void
-fpgl_glVertexAttribPointer(GLuint indx, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void* ptr)
+fpgl_glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void* ptr)
 {
-   _sym_glVertexAttribPointer(indx, size, type, normalized, stride, ptr);
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
+   _sym_glVertexAttribPointer(index, size, type, normalized, stride, ptr);
 
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 
-   current_ctx->_varray_flag |= FLAG_BIT_0;
+   EVAS_GL_DEBUG_ASSERT(index < MAX_VERTEX_ATTRIBS);
 
-   current_ctx->vertex_array[indx].modified   = GL_TRUE;
-   current_ctx->vertex_array[indx].size       = size;
-   current_ctx->vertex_array[indx].type       = type;
-   current_ctx->vertex_array[indx].normalized = normalized;
-   current_ctx->vertex_array[indx].stride     = stride;
-   current_ctx->vertex_array[indx].pointer    = ptr;
+   current_ctx->_vattrib_flag |= FLAG_BIT_1;
+   current_ctx->vertex_array[index].modified   = GL_TRUE;
+   current_ctx->vertex_array[index].buf_id     = current_ctx->gl_array_buffer_binding;
+   current_ctx->vertex_array[index].size       = size;
+   current_ctx->vertex_array[index].type       = type;
+   current_ctx->vertex_array[index].normalized = normalized;
+   current_ctx->vertex_array[index].stride     = stride;
+   current_ctx->vertex_array[index].pointer    = ptr;
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 static void
 fpgl_glViewport(GLint x, GLint y, GLsizei width, GLsizei height)
 {
-   if ((current_ctx->gl_viewport[0] != x) ||
+   THREAD_CHECK_DEBUG();
+   EVAS_GL_START_LOG(mc_log);
+
+
+   if ( COMPARE_OPT_SKIP
+       (current_ctx->gl_viewport[0] != x) ||
        (current_ctx->gl_viewport[1] != y) ||
        (current_ctx->gl_viewport[2] != width) ||
        (current_ctx->gl_viewport[3] != height))
@@ -4104,6 +6233,8 @@ fpgl_glViewport(GLint x, GLint y, GLsizei width, GLsizei height)
         current_ctx->gl_viewport[2] = width;
         current_ctx->gl_viewport[3] = height;
      }
+
+   EVAS_GL_END_LOG(mc_log);
 }
 
 
@@ -4286,7 +6417,12 @@ gl_sym_init(void)
    if ((!dst) && (_sym_eglGetProcAddress)) dst = (typeof(dst))_sym_eglGetProcAddress(sym); \
    if (!dst) dst = (typeof(dst))dlsym(gl_lib_handle, sym); \
    if (!dst) DBG("Error loading %s\n", sym);
-#  define FALLBAK(dst, typ) if (!dst) dst = (typeof(dst))sym_missing;
+#  define FALLBAK(dst, typ) \
+   if (!dst) \
+     { \
+        DBG("Symbol not found so falling back."); \
+        dst = (typeof(dst))sym_missing; \
+     }
 
    FINDSYM(_sym_glGetProgramBinary, "glGetProgramBinary", glsym_func_void);
    FINDSYM(_sym_glGetProgramBinary, "glGetProgramBinaryEXT", glsym_func_void);
@@ -4315,8 +6451,13 @@ gl_sym_init(void)
    if ((!dst) && (_sym_glXGetProcAddress)) dst = (typeof(dst))_sym_glXGetProcAddress(sym); \
    if (!dst) dst = (typeof(dst))dlsym(gl_lib_handle, sym); \
    if (!dst) DBG("Error loading %s\n", sym);
-#  define FALLBAK(dst, typ) if (!dst) dst = (typeof(dst))sym_missing;
-
+#  define FALLBAK(dst, typ) \
+   if (!dst) \
+     { \
+        ERR("Symbol not found so falling back."); \
+        dst = (typeof(dst))sym_missing; \
+        exit(1); \
+     }
 
    //----------//
    FINDSYM(_sym_glGetProgramBinary, "glGetProgramBinary", glsym_func_void);
@@ -5484,6 +7625,7 @@ override_gl_apis(Evas_GL_Opt_Flag opt)
      }
 }
 
+
 int
 init_gl()
 {
@@ -5503,10 +7645,29 @@ init_gl()
       case 1:
          api_opt = GL_FAST_PATH;
          fprintf(stderr, "API OPT: %d Fastpath enabled...\n", fastpath_opt);
+         fprintf(stderr, "#######################################################\n");
+         fprintf(stderr, "########### [Evas] Fast Path is enabled ###############\n");
+         fprintf(stderr, "#######################################################\n");
          break;
       case 2:
          api_opt = GL_WRAPPED_PATH;
          fprintf(stderr, "API OPT: %d Wrapped API path enabled...\n", fastpath_opt);
+         break;
+      case 3:
+         api_opt = GL_FAST_PATH;
+         log_opt = 1;
+         fprintf(stderr, "API OPT: %d Fastpath enabled...\n", fastpath_opt);
+         fprintf(stderr, "#######################################################\n");
+         fprintf(stderr, "########### [Evas] Fast Path is enabled ###############\n");
+         fprintf(stderr, "#######################################################\n");
+         break;
+      case 4:
+         api_opt = GL_FAST_PATH;
+         log_opt = 2;
+         fprintf(stderr, "API OPT: %d Fastpath enabled...\n", fastpath_opt);
+         fprintf(stderr, "#######################################################\n");
+         fprintf(stderr, "########### [Evas] Fast Path is enabled ###############\n");
+         fprintf(stderr, "#######################################################\n");
          break;
       default:
          fprintf(stderr, "API OPT: %d Default API path enabled...\n", fastpath_opt);
@@ -5518,6 +7679,8 @@ init_gl()
 
    override_glue_apis(api_opt);
    override_gl_apis(api_opt);
+
+   EVAS_GL_INIT_LOG(mc_log);
 
    return 1;
 }

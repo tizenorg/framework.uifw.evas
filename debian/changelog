@@ -1,3 +1,136 @@
+evas (1.1.0+svn.69627slp2+build01) unstable; urgency=low
+
+  * Package Upload
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.69627slp2+build01
+
+ -- Jeonghyun Yun <jh0506.yun@samsung.com>  Wed, 28 Mar 2012 14:28:23 +0900
+
+evas (1.1.0+svn.69113slp2+build05) unstable; urgency=low
+
+  * Upload package
+  * Add gl module.so for i386
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.69113slp2+build05
+
+ -- Seungsoo Woo <om101.woo@samsung.com>  Tue, 20 Mar 2012 18:05:44 +0900
+
+evas (1.1.0+svn.69113slp2+build04) unstable; urgency=low
+
+  * Package Upload
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.69113slp2+build04
+
+ -- Jeonghyun Yun <jh0506.yun@samsung.com>  Sun, 18 Mar 2012 14:02:02 +0900
+
+evas (1.1.0+svn.69113slp2+build03) unstable; urgency=low
+
+  * Package Upload
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.69113slp2+build03
+
+ -- Jiyoun Park <jy0703.park@samsung.com>  Fri, 16 Mar 2012 17:23:56 +0900
+
+evas (1.1.0+svn.69113slp2+build02) unstable; urgency=low
+
+  * Package Upload
+  * remove evas_gl_context_dirty api
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.69113slp2+build02
+
+ -- Sanghee Park <sh15.park@samsung.com>  Tue, 13 Mar 2012 13:06:47 +0900
+
+evas (1.1.0+svn.69113slp2+build01) unstable; urgency=low
+
+  * Package Upload
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.69113slp2+build01
+
+ -- Jeonghyun Yun <jh0506.yun@samsung.com>  Sat, 10 Mar 2012 13:51:22 +0900
+
+evas (1.1.0+svn.68831slp2+build02) unstable; urgency=low
+
+  * 69113
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.68831slp2+build02
+
+ -- Jeonghyun Yun <jh0506.yun@samsung.com>  Sat, 10 Mar 2012 13:20:26 +0900
+
+evas (1.1.0+svn.68831slp2+build01) unstable; urgency=low
+
+  * Package Upload
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.68831slp2+build01
+
+ -- Jeonghyun Yun <jh0506.yun@samsung.com>  Wed, 07 Mar 2012 16:43:55 +0900
+
+evas (1.1.0+svn.68518slp2+build02) unstable; urgency=low
+
+  * Package Upload
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.68518slp2+build02
+
+ -- Jiyoun Park <jy0703.park@samsung.com>  Tue, 06 Mar 2012 21:26:18 +0900
+
+evas (1.1.0+svn.68518slp2+build01) unstable; urgency=low
+
+  * Package upload
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.68518slp2+build01
+
+ -- Jeonghyun Yun <jh0506.yun@samsung.com>  Fri, 02 Mar 2012 06:31:25 -0500
+
+evas (1.1.0+svn.67705slp2+build07) unstable; urgency=low
+
+  * Upload package
+  * Fastpath refactoring
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.67705slp2+build07
+
+ -- Seungsoo Woo <om101.woo@samsung.com>  Fri, 02 Mar 2012 18:46:30 +0900
+
+evas (1.1.0+svn.67705slp2+build06) unstable; urgency=low
+
+  * Upload Package
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.67705slp2+build06
+
+ -- Jaehwan Kim <jae.hwan.kim@samsung.com>  Tue, 28 Feb 2012 19:53:24 +0900
+
+evas (1.1.0+svn.67705slp2+build05) unstable; urgency=low
+
+  * Package Upload
+  * Enabling pixman flag(Additional work to libevas-dev)
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.67705slp2+build05
+
+ -- Sanghee Park <sh15.park@samsung.com>  Tue, 28 Feb 2012 18:06:06 +0900
+
+evas (1.1.0+svn.67705slp2+build04) unstable; urgency=low
+
+  * Package Upload
+  * Enabling pixman flag
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.67705slp2+build04
+
+ -- Sanghee Park <sh15.park@samsung.com>  Tue, 28 Feb 2012 15:18:38 +0900
+
+evas (1.1.0+svn.67705slp2+build03) unstable; urgency=low
+
+  * Upload Package
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.67705slp2+build03
+
+ -- Jiyoun Park <jy0703.park@samsung.com>  Fri, 24 Feb 2012 18:40:14 +0900
+
+evas (1.1.0+svn.67705slp2+build02) unstable; urgency=low
+
+  * Package Upload
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.1.0+svn.67705slp2+build02
+
+ -- Jiyoun Park <jy0703.park@samsung.com>  Fri, 24 Feb 2012 18:19:49 +0900
+
 evas (1.1.0+svn.67705slp2+build01) unstable; urgency=low
 
   * Package Upload

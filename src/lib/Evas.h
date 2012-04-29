@@ -5,6 +5,7 @@
 @date 2000-2012
 
 Please see the @ref authors page for contact details.
+@link Evas.h Evas API @endlink
 
 @link Evas.h Evas API @endlink
 
@@ -291,8 +292,8 @@ Recommended reading:
 @author Mathieu Taillefumier <mathieu.taillefumier@@free.fr>
 @author Iván Briano <ivan@@profusion.mobi>
 @author Gustavo Lima Chaves <glima@@profusion.mobi>
-@author Samsung Electronics <tbd>
-@author Samsung SAIT <tbd>
+@author Samsung Electronics
+@author Samsung SAIT
 @author Sung W. Park <sungwoo@@gmail.com>
 @author Jiyoun Park <jy0703.park@@samsung.com>
 @author Myoungwoon Roy Kim(roy_kim) <myoungwoon.kim@@samsung.com> <myoungwoon@@gmail.com>
@@ -431,7 +432,7 @@ typedef enum _Evas_Callback_Type
    /*
     * More Evas object event types - see evas_object_event_callback_add():
     */
-   EVAS_CALLBACK_IMAGE_UNLOADED, /**< Image data has been unloaded (by some mechanims in Evas that throw out original image data) */
+   EVAS_CALLBACK_IMAGE_UNLOADED, /**< Image data has been unloaded (by some mechanism in Evas that throw out original image data) */
 
    EVAS_CALLBACK_RENDER_PRE, /**< Called just before rendering starts on the canvas target @since 1.2 */
    EVAS_CALLBACK_RENDER_POST, /**< Called just after rendering stops on the canvas target @since 1.2 */
@@ -489,7 +490,7 @@ typedef enum _Evas_Event_Flags
 {
    EVAS_EVENT_FLAG_NONE = 0, /**< No fancy flags set */
    EVAS_EVENT_FLAG_ON_HOLD = (1 << 0), /**< This event is being delivered but should be put "on hold" until the on hold flag is unset. the event should be used for informational purposes and maybe some indications visually, but not actually perform anything */
-   EVAS_EVENT_FLAG_ON_SCROLL = (1 << 1) /**< This event flag indicates the event occurs while scrolling; for exameple, DOWN event occurs during scrolling; the event should be used for informational purposes and maybe some indications visually, but not actually perform anything */
+   EVAS_EVENT_FLAG_ON_SCROLL = (1 << 1) /**< This event flag indicates the event occurs while scrolling; for example, DOWN event occurs during scrolling; the event should be used for informational purposes and maybe some indications visually, but not actually perform anything */
 } Evas_Event_Flags; /**< Flags for Events */
 
 /**
@@ -501,7 +502,7 @@ typedef enum _Evas_Touch_Point_State
    EVAS_TOUCH_POINT_UP, /**< Touch point is released */
    EVAS_TOUCH_POINT_MOVE, /**< Touch point is moved */
    EVAS_TOUCH_POINT_STILL, /**< Touch point is not moved after pressed */
-   EVAS_TOUCH_POINT_CANCEL /**< Touch point is calcelled */
+   EVAS_TOUCH_POINT_CANCEL /**< Touch point is cancelled */
 } Evas_Touch_Point_State;
 
 /**
@@ -527,7 +528,7 @@ typedef enum _Evas_Colorspace
    EVAS_COLORSPACE_YCBCR422P709_PL,/**< YCbCr 4:2:2 Planar, ITU.BT-709 specifications. The data pointed to is just an array of row pointer, pointing to the Y rows, then the Cb, then Cr rows */
    EVAS_COLORSPACE_RGB565_A5P, /**< 16bit rgb565 + Alpha plane at end - 5 bits of the 8 being used per alpha byte */
    EVAS_COLORSPACE_GRY8, /**< 8bit grayscale */
-   EVAS_COLORSPACE_YCBCR422601_PL, /**<  YCbCr 4:2:2, ITU.BT-601 specifications. The data poitned to is just an array of row pointer, pointing to line of Y,Cb,Y,Cr bytes */
+   EVAS_COLORSPACE_YCBCR422601_PL, /**<  YCbCr 4:2:2, ITU.BT-601 specifications. The data pointed to is just an array of row pointer, pointing to line of Y,Cb,Y,Cr bytes */
    EVAS_COLORSPACE_YCBCR420NV12601_PL, /**< YCbCr 4:2:0, ITU.BT-601 specification. The data pointed to is just an array of row pointer, pointing to the Y rows, then the Cb,Cr rows. */
    EVAS_COLORSPACE_YCBCR420TM12601_PL, /**< YCbCr 4:2:0, ITU.BT-601 specification. The data pointed to is just an array of tiled row pointer, pointing to the Y rows, then the Cb,Cr rows. */
 } Evas_Colorspace; /**< Colorspaces for pixel data supported by Evas */
@@ -536,7 +537,7 @@ typedef enum _Evas_Colorspace
  * How to pack items into cells in a table.
  * @ingroup Evas_Object_Table
  *
- * @see evas_object_table_homogeneous_set() for an explanation of the funcion of
+ * @see evas_object_table_homogeneous_set() for an explanation of the function of
  * each one.
  */
 typedef enum _Evas_Object_Table_Homogeneous_Mode
@@ -693,7 +694,7 @@ typedef enum _Evas_Load_Error
    EVAS_LOAD_ERROR_NONE = 0, /**< No error on load */
    EVAS_LOAD_ERROR_GENERIC = 1, /**< A non-specific error occurred */
    EVAS_LOAD_ERROR_DOES_NOT_EXIST = 2, /**< File (or file path) does not exist */
-   EVAS_LOAD_ERROR_PERMISSION_DENIED = 3, /**< Permission deinied to an existing file (or path) */
+   EVAS_LOAD_ERROR_PERMISSION_DENIED = 3, /**< Permission denied to an existing file (or path) */
    EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED = 4, /**< Allocation of resources failure prevented load */
    EVAS_LOAD_ERROR_CORRUPT_FILE = 5, /**< File corrupt (but was detected as a known format) */
    EVAS_LOAD_ERROR_UNKNOWN_FORMAT = 6 /**< File is not a known format */
@@ -721,7 +722,7 @@ typedef enum _Evas_Pixel_Import_Pixel_Format
 {
    EVAS_PIXEL_FORMAT_NONE = 0, /**< No pixel format */
    EVAS_PIXEL_FORMAT_ARGB32 = 1, /**< ARGB 32bit pixel format with A in the high byte per 32bit pixel word */
-   EVAS_PIXEL_FORMAT_YUV420P_601 = 2 /**< YUV 420 Planar format with CCIR 601 color encoding wuth contiguous planes in the order Y, U and V */
+   EVAS_PIXEL_FORMAT_YUV420P_601 = 2 /**< YUV 420 Planar format with CCIR 601 color encoding with contiguous planes in the order Y, U and V */
 } Evas_Pixel_Import_Pixel_Format; /**< Pixel format for import call. See evas_object_image_pixels_import() */
 
 struct _Evas_Pixel_Import_Source
@@ -809,10 +810,10 @@ typedef enum _Evas_Render_Op
    EVAS_RENDER_BLEND_REL = 1, /**< d = d*(1 - sa) + s*da */
    EVAS_RENDER_COPY = 2, /**< d = s */
    EVAS_RENDER_COPY_REL = 3, /**< d = s*da */
-   EVAS_RENDER_ADD = 4, /**< d = d + s */
+   EVAS_RENDER_ADD = 4, /* d = d + s */
    EVAS_RENDER_ADD_REL = 5, /**< d = d + s*da */
    EVAS_RENDER_SUB = 6, /**< d = d - s */
-   EVAS_RENDER_SUB_REL = 7, /**< d = d - s*da */
+   EVAS_RENDER_SUB_REL = 7, /* d = d - s*da */
    EVAS_RENDER_TINT = 8, /**< d = d*s + d*(1 - sa) + s*(1 - da) */
    EVAS_RENDER_TINT_REL = 9, /**< d = d*(1 - sa + s) */
    EVAS_RENDER_MASK = 10, /**< d = d*sa */
@@ -1280,7 +1281,7 @@ EAPI Eina_Bool         evas_async_events_put             (const void *target, Ev
  * directly, too, and not yet with its @b objects. They are the
  * functions you need to use at a minimum to get a working canvas.
  *
- * Some of the funcions in this group are exemplified @ref
+ * Some of the functions in this group are exemplified @ref
  * Example_Evas_Events "here".
  */
 
@@ -1422,13 +1423,13 @@ EAPI void              evas_damage_rectangle_add         (Evas *e, int x, int y,
  * was just after this function took place.
  *
  * We call it "obscured region" because the most common use case for
- * this rendering (partial) freeze is something else (most problaby
+ * this rendering (partial) freeze is something else (most probably
  * other canvas) being on top of the specified rectangular region,
  * thus shading it completely from the user's final scene in a
  * display. To avoid unnecessary processing, one should indicate to the
  * obscured canvas not to bother about the non-important area.
  *
- * The majority of users won't have to worry about this funcion, as
+ * The majority of users won't have to worry about this function, as
  * they'll be using just one canvas in their applications, with
  * nothing inset or on top of it in any form.
  *
@@ -1496,7 +1497,7 @@ EAPI void              evas_obscured_clear               (Evas *e) EINA_ARG_NONN
  *        evas_render_updates_free().
  *
  * This function forces an immediate renderization update of the given
- * canvas @e.
+ * canvas @p e.
  *
  * @note This is a <b>very low level function</b>, which most of
  * Evas' users wouldn't care about. One would use it, for example, to
@@ -1787,7 +1788,7 @@ EAPI Evas_Engine_Info *evas_engine_info_get              (const Evas *e) EINA_WA
  *
  * @param   e    The pointer to the Evas Canvas
  * @param   info The pointer to the Engine Info to use
- * @return  1 if no error occurred, 0 otherwise
+ * @return  EINA_TRUE if no error occurred, EINA_FALSE otherwise
  * @ingroup Evas_Output_Method
  */
 EAPI Eina_Bool         evas_engine_info_set              (Evas *e, Evas_Engine_Info *info) EINA_ARG_NONNULL(1);
@@ -2077,7 +2078,7 @@ EAPI void              evas_pointer_canvas_xy_get        (const Evas *e, Evas_Co
  * Returns a bitmask with the mouse buttons currently pressed, set to 1
  *
  * @param e The pointer to the Evas Canvas
- * @return A bitmask of the currently depressed buttons on the cavas
+ * @return A bitmask of the currently depressed buttons on the canvas
  * @ingroup Evas_Pointer_Group
  *
  * Calling this function will return a 32-bit integer with the
@@ -2150,7 +2151,7 @@ EAPI Eina_Bool         evas_pointer_inside_get           (const Evas *e) EINA_WA
  * its internal states changing (an object got focused, the rendering
  * is updated, etc).
  *
- * Some of the funcions in this group are exemplified @ref
+ * Some of the functions in this group are exemplified @ref
  * Example_Evas_Events "here".
  *
  * @ingroup Evas_Canvas
@@ -2308,14 +2309,14 @@ EAPI void             *evas_event_callback_del_full         (Evas *e, Evas_Callb
  * @param data The data pointer to be passed to the callback
  *
  * Evas has a stack of callbacks that get called after all the callbacks for
- * an event have triggered (all the objects it triggers on and al the callbacks
+ * an event have triggered (all the objects it triggers on and all the callbacks
  * in each object triggered). When all these have been called, the stack is
  * unwond from most recently to least recently pushed item and removed from the
  * stack calling the callback set for it.
  *
  * This is intended for doing reverse logic-like processing, example - when a
  * child object that happens to get the event later is meant to be able to
- * "steal" functions from a parent and thus on unwind of this stack hav its
+ * "steal" functions from a parent and thus on unwind of this stack have its
  * function called first, thus being able to set flags, or return 0 from the
  * post-callback that stops all other post-callbacks in the current stack from
  * being called (thus basically allowing a child to take control, if the event
@@ -2359,7 +2360,7 @@ EAPI void              evas_post_event_callback_remove_full (Evas *e, Evas_Objec
  * an Evas canvas.
  *
  * There might be scenarios during a graphical user interface
- * program's use when the developer whishes the users wouldn't be able
+ * program's use when the developer wishes the users wouldn't be able
  * to deliver input events to this application. It may, for example,
  * be the time for it to populate a view or to change some
  * layout. Assuming proper behavior with user interaction during this
@@ -2367,7 +2368,14 @@ EAPI void              evas_post_event_callback_remove_full (Evas *e, Evas_Objec
  * programmer can then tell the canvas to ignore input events,
  * bringing it back to normal behavior when he/she wants.
  *
- * Some of the funcions in this group are exemplified @ref
+ * Most of the time use of freezing events is done like this:
+ * @code
+ * evas_event_freeze(my_evas_canvas);
+ * function_that_does_work_which_cant_be_interrupted_by_events();
+ * evas_event_thaw(my_evas_canvas);
+ * @endcode
+ *
+ * Some of the functions in this group are exemplified @ref
  * Example_Evas_Events "here".
  *
  * @ingroup Evas_Canvas_Events
@@ -2416,7 +2424,7 @@ EAPI Evas_Event_Flags  evas_event_default_flags_get      (const Evas *e) EINA_AR
  * of this kind during the freeze will get @b discarded. Every freeze
  * call must be matched by a thaw call in order to completely thaw out
  * a canvas (i.e. these calls may be nested). The most common use is
- * when you don't want the user to interect with your user interface
+ * when you don't want the user to interact with your user interface
  * when you're populating a view or changing the layout.
  *
  * Example:
@@ -2494,13 +2502,18 @@ EAPI void              evas_event_thaw_eval              (Evas *e) EINA_ARG_NONN
  * Functions to tell Evas that input events happened and should be
  * processed.
  *
+ * @warning Most of the time these functions are @b not what you're looking for.
+ * These functions should only be used if you're not working with ecore evas(or
+ * another input handling system). If you're not using ecore evas please
+ * consider using it, in most situation it will make life a lot easier.
+ *
  * As explained in @ref intro_not_evas, Evas does not know how to poll
  * for input events, so the developer should do it and then feed such
  * events to the canvas to be processed. This is only required if
  * operating Evas directly. Modules such as Ecore_Evas do that for
  * you.
  *
- * Some of the funcions in this group are exemplified @ref
+ * Some of the functions in this group are exemplified @ref
  * Example_Evas_Events "here".
  *
  * @ingroup Evas_Canvas_Events
@@ -2928,7 +2941,7 @@ EAPI const Eina_List  *evas_font_path_list               (const Evas *e) EINA_WA
  *   - textblock and
  *   - image.
  *
- * These functions apply to @b any Evas object, whichever type thay
+ * These functions apply to @b any Evas object, whichever type that
  * may have.
  *
  * @note The built-in types which are most used are rectangles, text
@@ -2939,14 +2952,21 @@ EAPI const Eina_List  *evas_font_path_list               (const Evas *e) EINA_WA
 /**
  * @defgroup Evas_Object_Group_Basic Basic Object Manipulation
  *
- * Methods that are broadly used, like those that change the color,
- * clippers and geometry of an Evas object.
+ * Almost every evas object created will have some generic function used to
+ * manipulate it. That's because there are a number of basic actions to be done
+ * to objects that are irrespective of the object's type, things like:
+ * @li Showing/Hiding
+ * @li Setting(and getting) geometry
+ * @li Bring up or down a layer
+ * @li Color management
+ * @li Handling focus
+ * @li Clipping
+ * @li Reference counting
  *
- * An example on the most used functions in this group can be seen @ref
- * Example_Evas_Object_Manipulation "here".
- *
- * For function dealing with stacking, the examples are gathered  @ref
- * Example_Evas_Stacking "here".
+ * All of this issues are handled through the functions here grouped. Examples
+ * of these function can be seen in @ref Example_Evas_Object_Manipulation(which
+ * deals with the most common ones) and in @ref Example_Evas_Stacking(which
+ * deals with stacking functions).
  *
  * @ingroup Evas_Object_Group
  */
@@ -3232,7 +3252,7 @@ EAPI const char       *evas_object_name_get              (const Evas_Object *obj
  * @see evas_object_unref()
  * @see evas_object_del()
  *
- * @note This is a <b>very simple<b> reference counting mechanism! For
+ * @note This is a <b>very simple</b> reference counting mechanism! For
  * instance, Evas is not ready to check for pending references on a
  * canvas deletion, or things like that. This is useful on scenarios
  * where, inside a code block, callbacks exist which would possibly
@@ -3273,6 +3293,25 @@ EAPI void              evas_object_ref                   (Evas_Object *obj);
  * @since 1.1.0
  */
 EAPI void              evas_object_unref                 (Evas_Object *obj);
+
+/**
+ * Get the object reference count.
+ *
+ * @param obj The given Evas object to query
+ *
+ * This gets the reference count for an object (normally 0 until it is
+ * referenced). Values of 1 or greater mean that someone is holding a
+ * reference to this object that needs to be unreffed before it can be
+ * deleted.
+ *
+ * @see evas_object_ref()
+ * @see evas_object_unref()
+ * @see evas_object_del()
+ *
+ * @ingroup Evas_Object_Group_Basic
+ * @since 1.2.0
+ */
+EAPI int               evas_object_ref_get               (const Evas_Object *obj);
 
 
 /**
@@ -3444,11 +3483,11 @@ EAPI void              evas_object_hide                  (Evas_Object *obj) EINA
  * @return @c EINA_TRUE if the object is visible, @c EINA_FALSE
  * otherwise.
  *
- * This retrieves an object's visibily as the one enforced by
+ * This retrieves an object's visibility as the one enforced by
  * evas_object_show() and evas_object_hide().
  *
  * @note The value returned isn't, by any means, influenced by
- * clippers covering @obj, it being out of its canvas' viewport or
+ * clippers covering @p obj, it being out of its canvas' viewport or
  * stacked below other object.
  *
  * @see evas_object_show()
@@ -3492,7 +3531,7 @@ EAPI void              evas_object_color_set             (Evas_Object *obj, int 
  * Retrieves the “main” color's RGB component (and alpha channel)
  * values, <b>which range from 0 to 255</b>. For the alpha channel,
  * which defines the object's transparency level, 0 means totally
- * trasparent, while 255 means opaque. These color values are
+ * transparent, while 255 means opaque. These color values are
  * premultiplied by the alpha value.
  *
  * Usually you’ll use this attribute for text and rectangle objects,
@@ -3701,9 +3740,9 @@ EAPI Evas_Object      *evas_object_below_get             (const Evas_Object *obj
  * @image rtf evas-callbacks.png
  * @image latex evas-callbacks.eps
  *
- * Thees events have their values in the #Evas_Callback_Type
- * enumeration, which has also ones happening on the canvas level (se
- * #Evas_Canvas_Events).
+ * These events have their values in the #Evas_Callback_Type
+ * enumeration, which has also ones happening on the canvas level (see
+ * #Evas_Canvas_Events ).
  *
  * Examples on this group of functions can be found @ref
  * Example_Evas_Stacking "here" and @ref Example_Evas_Events "here".
@@ -4054,7 +4093,7 @@ EAPI void              evas_object_repeat_events_set      (Evas_Object *obj, Ein
  * Determine whether an object is set to repeat events.
  *
  * @param obj the given Evas object pointer
- * @retrieve whether @p obj is set to repeat events (@c EINA_TRUE)
+ * @return whether @p obj is set to repeat events (@c EINA_TRUE)
  * or not (@c EINA_FALSE)
  *
  * @see evas_object_repeat_events_set() for an example
@@ -4106,7 +4145,7 @@ EAPI Eina_Bool         evas_object_propagate_events_get   (const Evas_Object *ob
  * Set whether an Evas object is to freeze (discard) events.
  *
  * @param obj the Evas object to operate on
- * @param pass whether @p obj is to freeze events (@c EINA_TRUE) or not
+ * @param freeze pass whether @p obj is to freeze events (@c EINA_TRUE) or not
  * (@c EINA_FALSE)
  *
  * If @p freeze is @c EINA_TRUE, it will make events on @p obj to be @b
@@ -4406,7 +4445,7 @@ EAPI Eina_Bool         evas_object_freeze_events_get(const Evas_Object *obj) EIN
  * @image rtf map-uv-mapping-1.png
  * @image latex map-uv-mapping-1.eps
  *
- * Images need some special handlign when mapped. Evas can easily take care
+ * Images need some special handling when mapped. Evas can easily take care
  * of objects and do almost anything with them, but it's completely oblivious
  * to the content of images, so each point in the map needs to be told to what
  * pixel in the source image it belongs. Failing to do may sometimes result
@@ -4572,7 +4611,7 @@ EAPI void              evas_object_map_set               (Evas_Object *obj, cons
  * Get current object transformation map.
  *
  * This returns the current internal map set on the indicated object. It is
- * intended for read-only acces and is only valid as long as the object is
+ * intended for read-only access and is only valid as long as the object is
  * not deleted or the map on the object is not changed. If you wish to modify
  * the map and set it back do the following:
  *
@@ -4678,7 +4717,7 @@ EAPI void              evas_map_util_points_color_set                (Evas_Map *
  *
  * This rotates the indicated map's coordinates around the center coordinate
  * given by @p cx and @p cy as the rotation center. The points will have their
- * X and Y coordinates rotated clockwise by @p degrees degress (360.0 is a
+ * X and Y coordinates rotated clockwise by @p degrees degrees (360.0 is a
  * full rotation). Negative values for degrees will rotate counter-clockwise
  * by that amount. All coordinates are canvas global coordinates.
  *
@@ -4698,7 +4737,7 @@ EAPI void              evas_map_util_rotate                          (Evas_Map *
  * Like evas_map_util_rotate(), this zooms the points of the map from a center
  * point. That center is defined by @p cx and @p cy. The @p zoomx and @p zoomy
  * parameters specify how much to zoom in the X and Y direction respectively.
- * A value of 1.0 means "don't zoom". 2.0 means "dobule the size". 0.5 is
+ * A value of 1.0 means "don't zoom". 2.0 means "double the size". 0.5 is
  * "half the size" etc. All coordinates are canvas global coordinates.
  *
  * @param m map to change.
@@ -4723,9 +4762,9 @@ EAPI void              evas_map_util_zoom                            (Evas_Map *
  * evas_map_util_rotate() you provide a center point to rotate around (in 3D).
  *
  * @param m map to change.
- * @param dx amount of degrees from 0.0 to 360.0 to rotate arount X axis.
- * @param dy amount of degrees from 0.0 to 360.0 to rotate arount Y axis.
- * @param dz amount of degrees from 0.0 to 360.0 to rotate arount Z axis.
+ * @param dx amount of degrees from 0.0 to 360.0 to rotate around X axis.
+ * @param dy amount of degrees from 0.0 to 360.0 to rotate around Y axis.
+ * @param dz amount of degrees from 0.0 to 360.0 to rotate around Z axis.
  * @param cx rotation's center horizontal position.
  * @param cy rotation's center vertical position.
  * @param cz rotation's center vertical position.
@@ -4794,8 +4833,8 @@ EAPI void              evas_map_util_3d_lighting                     (Evas_Map *
  * This applies a given perspective (3D) to the map coordinates. X, Y and Z
  * values are used. The px and py points specify the "infinite distance" point
  * in the 3D conversion (where all lines converge to like when artists draw
- * 3D by hand). The @p z0 value specifis the z value at which there is a 1:1
- * mapping between spatial coorinates and screen coordinates. Any points
+ * 3D by hand). The @p z0 value specifies the z value at which there is a 1:1
+ * mapping between spatial coordinates and screen coordinates. Any points
  * on this z value will not have their X and Y values modified in the transform.
  * Those further away (Z value higher) will shrink into the distance, and
  * those less than this value will expand and become bigger. The @p foc value
@@ -4805,8 +4844,8 @@ EAPI void              evas_map_util_3d_lighting                     (Evas_Map *
  * control and @p foc must be greater than 0.
  *
  * @param m map to change.
- * @param px The pespective distance X coordinate
- * @param py The pespective distance Y coordinate
+ * @param px The perspective distance X coordinate
+ * @param py The perspective distance Y coordinate
  * @param z0 The "0" z plane value
  * @param foc The focal distance
  */
@@ -4885,7 +4924,7 @@ EAPI void              evas_map_alpha_set                (Evas_Map *m, Eina_Bool
 /**
  * get the alpha flag for map rendering
  *
- * This gets the alph flag for map rendering.
+ * This gets the alpha flag for map rendering.
  *
  * @param m map to get the alpha from. Must not be NULL.
  */
@@ -4926,17 +4965,17 @@ EAPI int               evas_map_count_get               (const Evas_Map *m) EINA
  *
  * This sets the fixed point's coordinate in the map. Note that points
  * describe the outline of a quadrangle and are ordered either clockwise
- * or anit-clock-wise. It is suggested to keep your quadrangles concave and
+ * or anti-clock-wise. It is suggested to keep your quadrangles concave and
  * non-complex, though these polygon modes may work, they may not render
  * a desired set of output. The quadrangle will use points 0 and 1 , 1 and 2,
- * 2 and 3, and 3 and 0 to describe the edges of the quandrangle.
+ * 2 and 3, and 3 and 0 to describe the edges of the quadrangle.
  *
  * The X and Y and Z coordinates are in canvas units. Z is optional and may
  * or may not be honored in drawing. Z is a hint and does not affect the
  * X and Y rendered coordinates. It may be used for calculating fills with
  * perspective correct rendering.
  *
- * Remember all coordinates are canvas global ones like with move and reize
+ * Remember all coordinates are canvas global ones like with move and resize
  * in evas.
  *
  * @param m map to change point. Must not be @c NULL.
@@ -5466,7 +5505,7 @@ EAPI void              evas_object_size_hint_padding_set (Evas_Object *obj, Evas
  *
  * @param obj The object to attach the data pointer to
  * @param key The string key for the data to access it
- * @param data The ponter to the data to be attached
+ * @param data The pointer to the data to be attached
  *
  * This attaches the pointer @p data to the object @p obj, given the
  * access string @p key. This pointer will stay "hooked" to the object
@@ -5591,7 +5630,7 @@ EAPI Evas_Object_Pointer_Mode  evas_object_pointer_mode_get     (const Evas_Obje
  * Sets whether or not the given Evas object is to be drawn anti-aliased.
  *
  * @param   obj The given Evas object.
- * @param   anti_alias 1 if the object is to be anti_aliased, 0 otherwise.
+ * @param   antialias 1 if the object is to be anti_aliased, 0 otherwise.
  * @ingroup Evas_Object_Group_Extras
  */
 EAPI void                      evas_object_anti_alias_set       (Evas_Object *obj, Eina_Bool antialias) EINA_ARG_NONNULL(1);
@@ -5642,7 +5681,7 @@ EAPI double                    evas_object_scale_get            (const Evas_Obje
 /**
  * Sets the render_op to be used for rendering the Evas object.
  * @param   obj The given Evas object.
- * @param   render_op one of the Evas_Render_Op values.
+ * @param   op one of the Evas_Render_Op values.
  * @ingroup Evas_Object_Group_Extras
  */
 EAPI void                      evas_object_render_op_set        (Evas_Object *obj, Evas_Render_Op op) EINA_ARG_NONNULL(1);
@@ -5720,7 +5759,7 @@ EAPI Evas_Render_Op            evas_object_render_op_get        (const Evas_Obje
  * Get the "static clipper" hint flag for a given Evas object.
  *
  * @param obj The given object.
- * @returrn @c EINA_TRUE if it's set as a static clipper, @c
+ * @return @c EINA_TRUE if it's set as a static clipper, @c
  * EINA_FALSE otherwise
  *
  * @see evas_object_static_clip_set() for more details
@@ -5923,7 +5962,7 @@ EAPI Eina_List        *evas_objects_at_xy_get            (const Evas *e, Evas_Co
    EAPI Eina_List        *evas_objects_in_rectangle_get     (const Evas *e, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h, Eina_Bool include_pass_events_objects, Eina_Bool include_hidden_objects) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
- * Get the lowest (stacked) Evas object on the canvas @p
+ * Get the lowest (stacked) Evas object on the canvas @p e.
  *
  * @param e a valid canvas pointer
  * @return a pointer to the lowest object on it, if any, or @c NULL,
@@ -5944,7 +5983,7 @@ EAPI Eina_List        *evas_objects_at_xy_get            (const Evas *e, Evas_Co
 EAPI Evas_Object      *evas_object_bottom_get            (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
- * Get the highest (stacked) Evas object on the canvas @p
+ * Get the highest (stacked) Evas object on the canvas @p e.
  *
  * @param e a valid canvas pointer
  * @return a pointer to the highest object on it, if any, or @c NULL,
@@ -6124,13 +6163,99 @@ EAPI void             *evas_object_intercept_move_callback_del        (Evas_Obje
  *
  * @brief Function to create evas rectangle objects.
  *
- * This function may seem useless given there are no functions to manipulate
- * the created rectangle, however the rectangle is actually very useful and can
- * be manipulate using the generic @ref Evas_Object_Group
- * "evas object functions".
+ * There is only one function to deal with rectangle objects, this may make this
+ * function seem useless given there are no functions to manipulate the created
+ * rectangle, however the rectangle is actually very useful and should be
+ * manipulated using the generic @ref Evas_Object_Group "evas object functions".
  *
- * For an example of use of an evas_object_rectangle see @ref
- * Example_Evas_Object_Manipulation "here".
+ * The evas rectangle server a number of key functions when working on evas
+ * programs:
+ * @li Background
+ * @li Debugging
+ * @li Clipper
+ *
+ * @section Background
+ *
+ * One extremely common requirement of evas programs is to have a solid color
+ * background, this can be accomplished with the following very simple code:
+ * @code
+ * Evas_Object *bg = evas_object_rectangle_add(evas_canvas);
+ * //Here we set the rectangles red, green, blue and opacity levels
+ * evas_object_color_set(bg, 255, 255, 255, 255); // opaque white background
+ * evas_object_resize(bg, WIDTH, HEIGHT); // covers full canvas
+ * evas_object_show(bg);
+ * @endcode
+ *
+ * This however will have issues if the @c evas_canvas is resized, however most
+ * windows are created using ecore evas and that has a solution to using the
+ * rectangle as a background:
+ * @code
+ * Evas_Object *bg = evas_object_rectangle_add(ecore_evas_get(ee));
+ * //Here we set the rectangles red, green, blue and opacity levels
+ * evas_object_color_set(bg, 255, 255, 255, 255); // opaque white background
+ * evas_object_resize(bg, WIDTH, HEIGHT); // covers full canvas
+ * evas_object_show(bg);
+ * ecore_evas_object_associate(ee, bg, ECORE_EVAS_OBJECT_ASSOCIATE_BASE);
+ * @endcode
+ * So this gives us a white background to our window that will be resized
+ * together with it.
+ *
+ * @section Debugging
+ *
+ * Debugging is a major part of any programmers task and when debugging visual
+ * issues with evas programs the rectangle is an extremely useful tool. The
+ * rectangle's simplicity means that it's easier to pinpoint issues with it than
+ * with more complex objects. Therefore a common technique to use when writing
+ * an evas program and not getting the desired visual result is to replace the
+ * misbehaving object for a solid color rectangle and seeing how it interacts
+ * with the other elements, this often allows us to notice clipping, parenting
+ * or positioning issues. Once the issues have been identified and corrected the
+ * rectangle can be replaced for the original part and in all likelihood any
+ * remaining issues will be specific to that object's type.
+ *
+ * @section clipping Clipping
+ *
+ * Clipping serves two main functions:
+ * @li Limiting visibility(i.e. hiding portions of an object).
+ * @li Applying a layer of color to an object.
+ *
+ * @subsection hiding Limiting visibility
+ *
+ * It is often necessary to show only parts of an object, while it may be
+ * possible to create an object that corresponds only to the part that must be
+ * shown(and it isn't always possible) it's usually easier to use a a clipper. A
+ * clipper is a rectangle that defines what's visible and what is not. The way
+ * to do this is to create a solid white rectangle(which is the default, no need
+ * to call evas_object_color_set()) and give it a position and size of what
+ * should be visible. The following code exemplifies showing the center half of
+ * @c my_evas_object:
+ * @code
+ * Evas_Object *clipper = evas_object_rectangle_add(evas_canvas);
+ * evas_object_move(clipper, my_evas_object_x / 4, my_evas_object_y / 4);
+ * evas_object_resize(clipper, my_evas_object_width / 2, my_evas_object_height / 2);
+ * evas_object_clip_set(my_evas_object, clipper);
+ * evas_object_show(clipper);
+ * @endcode
+ *
+ * @subsection color Layer of color
+ *
+ * In the @ref clipping section we used a solid white clipper, which produced no
+ * change in the color of the clipped object, it just hid what was outside the
+ * clippers area. It is however sometimes desirable to change the of color an
+ * object, this can be accomplished using a clipper that has a non-white color.
+ * Clippers with color work by multiplying the colors of clipped object. The
+ * following code will show how to remove all the red from an object:
+ * @code
+ * Evas_Object *clipper = evas_object_rectangle_add(evas);
+ * evas_object_move(clipper, my_evas_object_x, my_evas_object_y);
+ * evas_object_resize(clipper, my_evas_object_width, my_evas_object_height);
+ * evas_object_color_set(clipper, 0, 255, 255, 255);
+ * evas_object_clip_set(obj, clipper);
+ * evas_object_show(clipper);
+ * @endcode
+ *
+ * For an example that more fully exercise the use of an evas object rectangle
+ * see @ref Example_Evas_Object_Manipulation.
  *
  * @ingroup Evas_Object_Specific
  */
@@ -6172,7 +6297,7 @@ EAPI Evas_Object      *evas_object_rectangle_add         (Evas *e) EINA_WARN_UNU
  * object's area</b> with that given pixel data. One could use just a
  * sub-region of the original image or even have it tiled repeatedly
  * on the image object. For the common case of having the whole source
- * image to be displayed on the image object, streched to the
+ * image to be displayed on the image object, stretched to the
  * destination's size, there's also a function helper, to be used
  * instead of evas_object_image_fill_set():
  * @code
@@ -6208,7 +6333,7 @@ EAPI Evas_Object      *evas_object_rectangle_add         (Evas *e) EINA_WARN_UNU
  * at a given image, at full size, and will desire that the navigation
  * to the adjacent images on his/her album be fluid and fast. Thus,
  * while displaying a given image, the program can be on the
- * background loading the next and previous imagens already, so that
+ * background loading the next and previous images already, so that
  * displaying them on the sequence is just a matter of repainting the
  * screen (and not decoding image data).
  *
@@ -6247,7 +6372,7 @@ EAPI Evas_Object      *evas_object_rectangle_add         (Evas *e) EINA_WARN_UNU
  * are also some tips on how to boost the performance of your
  * application. If the animation involves resizing of an image (thus,
  * re-scaling), you'd better turn off smooth scaling on it @b during
- * the animation, turning it back on afterwrads, for less
+ * the animation, turning it back on afterwards, for less
  * computations. Also, in this case you'd better flag the image object
  * in question not to cache scaled versions of it:
  * @code
@@ -6290,7 +6415,7 @@ EAPI Evas_Object      *evas_object_rectangle_add         (Evas *e) EINA_WARN_UNU
  * your own data as an image's pixel data, fetch an image's pixel data
  * for saving/altering, convert images between different color spaces
  * and even advanced operations like setting a native surface as image
- * objecs' data.
+ * objects' data.
  *
  * @section Evas_Object_Image_Color_Spaces Color spaces
  *
@@ -6679,7 +6804,7 @@ EAPI double                   evas_object_image_border_scale_get       (const Ev
  *
  * See the following image to better understand the effects of this
  * call. On this diagram, both image object and original image source
- * have @c a x @c a dimentions and the image itself is a circle, with
+ * have @c a x @c a dimensions and the image itself is a circle, with
  * empty space around it:
  *
  * @image html image-fill.png
@@ -6689,7 +6814,7 @@ EAPI double                   evas_object_image_border_scale_get       (const Ev
  * @warning The default values for the fill parameters are @p x = 0,
  * @p y = 0, @p w = 0 and @p h = 0. Thus, if you're not using the
  * evas_object_image_filled_add() helper and want your image
- * displayed, you'll have to set valid values with this fuction on
+ * displayed, you'll have to set valid values with this function on
  * your object.
  *
  * @note evas_object_image_filled_set() is a helper function which
@@ -6823,7 +6948,7 @@ EAPI void                     evas_object_image_data_set               (Evas_Obj
  * This is best suited for when you want to modify an existing image,
  * without changing its dimensions.
  *
- * @note The contents' formart returned by it depend on the color
+ * @note The contents' format returned by it depend on the color
  * space of the given image object.
  *
  * @note You may want to use evas_object_image_data_update_add() to
@@ -7022,7 +7147,7 @@ EAPI Eina_Bool                evas_object_image_save                   (const Ev
 EAPI Eina_Bool                evas_object_image_pixels_import          (Evas_Object *obj, Evas_Pixel_Import_Source *pixels) EINA_ARG_NONNULL(1, 2);
 
 /**
- * Set the callback function to get pixels from a canva's image.
+ * Set the callback function to get pixels from a canvas' image.
  *
  * @param obj The given canvas pointer.
  * @param func The callback function.
@@ -7403,7 +7528,7 @@ EAPI Eina_Bool evas_object_image_extension_can_load_get(const char *file);
  * Check if a file extension may be supported by @ref Evas_Object_Image.
  *
  * @param file The file to check, it should be an Eina_Stringshare.
- * @return EINA_TRUE if we may be able to opeen it, EINA_FALSE if it's unlikely.
+ * @return EINA_TRUE if we may be able to open it, EINA_FALSE if it's unlikely.
  * @since 1.1.0
  *
  * This functions is threadsafe.
@@ -7607,7 +7732,7 @@ EAPI void evas_object_image_animated_frame_set(Evas_Object *obj, int frame_num);
 /**
  * Text style type creation macro. This one will impose shadow
  * directions on the style type variable -- use the @c
- * EVAS_TEXT_STYLE_SHADOW_DIRECTION_* values on 's', incremmentally.
+ * EVAS_TEXT_STYLE_SHADOW_DIRECTION_* values on 's', incrementally.
  */
 #define EVAS_TEXT_STYLE_SHADOW_DIRECTION_SET(x, s) \
    do { x = ((x) & ~EVAS_TEXT_STYLE_MASK_SHADOW_DIRECTION) | (s); } while (0)
@@ -7671,7 +7796,7 @@ EAPI void              evas_object_text_font_source_set  (Evas_Object *obj, cons
  * object.
  *
  * @param obj The text object to set font for.
- * @param font The font file's path.
+ * @return The font file's path.
  *
  * @see evas_object_text_font_get() for more details
  */
@@ -7686,7 +7811,7 @@ EAPI const char       *evas_object_text_font_source_get  (const Evas_Object *obj
  *
  * This function allows the font name and size of a text object to be
  * set. The @p font string has to follow fontconfig's convention on
- * naming fonts, as it's the underlying lybrary used to query system
+ * naming fonts, as it's the underlying library used to query system
  * fonts by Evas (see the @c fc-list command's output, on your system,
  * to get an idea).
  *
@@ -7739,7 +7864,7 @@ EAPI const char       *evas_object_text_text_get         (const Evas_Object *obj
  *
  * BiDi delimiters are use for in-paragraph separation of bidi segments. This
  * is useful for example in recipients fields of e-mail clients where bidi
- * oddities can occur when mixing rtl and ltr.
+ * oddities can occur when mixing RTL and LTR.
  *
  * @param obj The given text object.
  * @param delim A null terminated string of delimiters, e.g ",|".
@@ -7752,7 +7877,7 @@ EAPI void              evas_object_text_bidi_delimiters_set(Evas_Object *obj, co
  *
  * BiDi delimiters are use for in-paragraph separation of bidi segments. This
  * is useful for example in recipients fields of e-mail clients where bidi
- * oddities can occur when mixing rtl and ltr.
+ * oddities can occur when mixing RTL and LTR.
  *
  * @param obj The given text object.
  * @return A null terminated string of delimiters, e.g ",|". If empty, returns NULL.
@@ -8088,7 +8213,7 @@ EAPI Evas_BiDi_Direction evas_object_text_direction_get  (const Evas_Object *obj
  * Visible: formats that a cursor can point to, i.e formats that
  * occupy space, for example: newlines, tabs, items and etc. Some visible items
  * are made of two parts, in this case, only the opening tag is visible.
- * A closing tag (i.e a </tag> tag) should NEVER be visible.
+ * A closing tag (i.e a \</tag\> tag) should NEVER be visible.
  * Invisible: formats that don't occupy space, for example: bold and underline.
  * Being able to access format nodes is very important for some uses. For
  * example, edje uses the "<a>" format to create links in the text (and pop
@@ -8229,7 +8354,7 @@ EAPI char                        *evas_textblock_text_markup_to_utf8(const Evas_
 /**
  * Return the markup version of the plain text.
  *
- * Replaces \n -> <br/> \t -> <tab/> and etc. Generally needed before you pass
+ * Replaces \\n -\> \<br/\> \\t -\> \<tab/\> and etc. Generally needed before you pass
  * plain text to be set in a textblock.
  *
  * @param obj the textblock object to work with (if NULL, it just does the
@@ -8286,7 +8411,9 @@ EAPI void                         evas_object_textblock_style_set(Evas_Object *o
 EAPI const Evas_Textblock_Style  *evas_object_textblock_style_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
- * Set the objects user style to ts.
+ * Push ts to the top of the user style stack.
+ *
+ * FIXME: API is solid but currently only supports 1 style in the stack.
  *
  * The user style overrides the corresponding elements of the regular style.
  * This is the proper way to do theme overrides in code.
@@ -8296,16 +8423,26 @@ EAPI const Evas_Textblock_Style  *evas_object_textblock_style_get(const Evas_Obj
  * @see evas_object_textblock_style_set
  * @since 1.2.0
  */
-EAPI void                         evas_object_textblock_style_user_set(Evas_Object *obj, Evas_Textblock_Style *ts) EINA_ARG_NONNULL(1);
+EAPI void                         evas_object_textblock_style_user_push(Evas_Object *obj, Evas_Textblock_Style *ts) EINA_ARG_NONNULL(1);
 
 /**
- * Return the user style of an object.
+ * Del the from the top of the user style stack.
+ *
+ * @param obj  the object to get the style from.
+ * @see evas_object_textblock_style_get
+ * @since 1.2.0
+ */
+EAPI void                        evas_object_textblock_style_user_pop(Evas_Object *obj) EINA_ARG_NONNULL(1);
+
+/**
+ * Get (don't remove) the style at the top of the user style stack.
+ *
  * @param obj  the object to get the style from.
  * @return the style of the object.
  * @see evas_object_textblock_style_get
  * @since 1.2.0
  */
-EAPI const Evas_Textblock_Style  *evas_object_textblock_style_user_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI const Evas_Textblock_Style  *evas_object_textblock_style_user_peek(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * @brief Set the "replacement character" to use for the given textblock object.
@@ -8342,7 +8479,7 @@ EAPI void                         evas_object_textblock_valign_set(Evas_Object *
  * @brief Gets the vertical alignment of a textblock
  *
  * @param obj The given textblock object.
- * @return The elignment set for the object
+ * @return The alignment set for the object
  * @since 1.1.0
  */
 EAPI double                       evas_object_textblock_valign_get(const Evas_Object *obj);
@@ -8352,7 +8489,7 @@ EAPI double                       evas_object_textblock_valign_get(const Evas_Ob
  *
  * BiDi delimiters are use for in-paragraph separation of bidi segments. This
  * is useful for example in recipients fields of e-mail clients where bidi
- * oddities can occur when mixing rtl and ltr.
+ * oddities can occur when mixing RTL and LTR.
  *
  * @param obj The given textblock object.
  * @param delim A null terminated string of delimiters, e.g ",|".
@@ -8365,7 +8502,7 @@ EAPI void                         evas_object_textblock_bidi_delimiters_set(Evas
  *
  * BiDi delimiters are use for in-paragraph separation of bidi segments. This
  * is useful for example in recipients fields of e-mail clients where bidi
- * oddities can occur when mixing rtl and ltr.
+ * oddities can occur when mixing RTL and LTR.
  *
  * @param obj The given textblock object.
  * @return A null terminated string of delimiters, e.g ",|". If empty, returns NULL.
@@ -8530,8 +8667,8 @@ EAPI const Evas_Object_Textblock_Node_Format *evas_textblock_node_format_next_ge
 EAPI const Evas_Object_Textblock_Node_Format *evas_textblock_node_format_prev_get(const Evas_Object_Textblock_Node_Format *n) EINA_ARG_NONNULL(1);
 
 /**
- * Remove a format node and it's match. i.e, removes a <tag> </tag> pair.
- * Assumes the node is the first part of <tag> i.e, this won't work if
+ * Remove a format node and it's match. i.e, removes a \<tag\> \</tag\> pair.
+ * Assumes the node is the first part of \<tag\> i.e, this won't work if
  * n is a closing tag.
  *
  * @param obj the Evas object of the textblock - not null.
@@ -8546,7 +8683,7 @@ EAPI void                         evas_textblock_node_format_remove_pair(Evas_Ob
  * @param n the format node to update according.
  * @deprecated duplicate of evas_textblock_cursor_at_format_set
  */
-EINA_DEPRECATED EAPI void                         evas_textblock_cursor_set_at_format(Evas_Textblock_Cursor *cur, const Evas_Object_Textblock_Node_Format *n) EINA_ARG_NONNULL(1, 2);
+EAPI void                         evas_textblock_cursor_set_at_format(Evas_Textblock_Cursor *cur, const Evas_Object_Textblock_Node_Format *n) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Return the format node at the position pointed by cur.
@@ -8560,7 +8697,7 @@ EAPI const Evas_Object_Textblock_Node_Format *evas_textblock_cursor_format_get(c
 /**
  * Get the text format representation of the format node.
  *
- * @param fmt the format node.
+ * @param fnode the format node.
  * @return the textual format of the format node.
  */
 EAPI const char                  *evas_textblock_node_format_text_get(const Evas_Object_Textblock_Node_Format *fnode) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
@@ -8724,7 +8861,7 @@ EAPI void                         evas_textblock_cursor_copy(const Evas_Textbloc
  * the start of the text just added.
  *
  * @param cur the cursor to where to add text at.
- * @param _text the text to add.
+ * @param text the text to add.
  * @return Returns the len of the text added.
  * @see evas_textblock_cursor_text_prepend()
  */
@@ -8735,7 +8872,7 @@ EAPI int                          evas_textblock_cursor_text_append(Evas_Textblo
  * the start of the text just added.
  *
  * @param cur the cursor to where to add text at.
- * @param _text the text to add.
+ * @param text the text to add.
  * @return Returns the len of the text added.
  * @see evas_textblock_cursor_text_append()
  */
@@ -8804,7 +8941,7 @@ EAPI void                         evas_textblock_cursor_range_delete(Evas_Textbl
 
 
 /**
- * Return the text of the paragraph cur points to - returns the text in markup..
+ * Return the text of the paragraph cur points to - returns the text in markup.
  *
  * @param cur the cursor pointing to the paragraph.
  * @return the text on success, NULL otherwise.
@@ -8869,7 +9006,7 @@ EAPI char                        *evas_textblock_cursor_content_get(const Evas_T
  * get, except for the case of the last char of a line which depends on the
  * paragraph direction.
  *
- * in '|' cursor mode (i.e a line between two chars) it is very varyable.
+ * in '|' cursor mode (i.e a line between two chars) it is very variable.
  * For example consider the following visual string:
  * "abcCBA" (ABC are rtl chars), a cursor pointing on A should actually draw
  * a '|' between the c and the C.
@@ -8998,8 +9135,8 @@ EAPI void                         evas_object_textblock_clear(Evas_Object *obj) 
  *
  *
  * @param obj the Evas object.
- * @param w[out] the width of the object.
- * @param h[out] the height of the object
+ * @param w the width of the object.
+ * @param h the height of the object
  * @return Returns no value.
  * @see evas_object_textblock_size_native_get
  */
@@ -9020,8 +9157,8 @@ EAPI void                         evas_object_textblock_size_formatted_get(const
  * and a formatted size of 5x4.
  *
  * @param obj the Evas object of the textblock
- * @param w[out] the width returned
- * @param h[out] the height returned
+ * @param w the width returned
+ * @param h the height returned
  * @return Returns no value.
  */
 EAPI void                         evas_object_textblock_size_native_get(const Evas_Object *obj, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1);
@@ -9339,8 +9476,8 @@ struct _Evas_Smart_Cb_Description
  *    the user, after inheriting everything from the parent, which
  *    should <b>take care of setting the right member functions for
  *    the class</b>, both overrides and extensions, if any.
- *  - If this new class should be subclassable as well, a @b public @c
- *    _smart_set() function is desirable to fill in the class used as
+ *  - If this new class should be subclassable as well, a @b public
+ *    @c _smart_set() function is desirable to fill in the class used as
  *    parent by the children. It's up to the user to provide this
  *    interface, which will most likely call @<prefix@>_smart_set() to
  *    get the job done.
@@ -9370,7 +9507,7 @@ struct _Evas_Smart_Cb_Description
        return;								\
      if (!prefix##_parent_sc)						\
        prefix##_parent_sc = parent_func();				\
-     evas_smart_class_inherit(sc, (const Evas_Smart_Class *)prefix##_parent_sc); \
+     evas_smart_class_inherit(sc, prefix##_parent_sc);                  \
      prefix##_smart_set_user(api);					\
   }									\
   static Evas_Smart * prefix##_smart_class_new(void)			\
@@ -9399,7 +9536,7 @@ struct _Evas_Smart_Cb_Description
  * will need to check if the smart private data was already allocated
  * by some child object or not. This macro makes it easier to do it.
  *
- * @note This is an idiom used when one calls the parent's @c. add()
+ * @note This is an idiom used when one calls the parent's @c .add()
  * after the specialized code. Naturally, the parent's base smart data
  * has to be contemplated as the specialized one's first member, for
  * things to work.
@@ -9579,7 +9716,7 @@ EAPI int                              evas_smart_usage_get(const Evas_Smart *s);
    * @return 1 on success, 0 on failure.
    * @ingroup Evas_Smart_Group
    */
-#define evas_smart_class_inherit(sc, parent_sc) evas_smart_class_inherit_full(sc, parent_sc, sizeof(*parent_sc))
+#define evas_smart_class_inherit(sc, parent_sc) evas_smart_class_inherit_full(sc, (Evas_Smart_Class *)parent_sc, sizeof(*parent_sc))
 
 /**
  * @}
@@ -9598,13 +9735,13 @@ EAPI int                              evas_smart_usage_get(const Evas_Smart *s);
  * used on the icon object.
  *
  * Besides that, generally smart objects implement a <b>specific
- * API</b>, so that users interect with its own custom features. The
+ * API</b>, so that users interact with its own custom features. The
  * API takes form of explicit exported functions one may call and
  * <b>smart callbacks</b>.
  *
  * @section Evas_Smart_Object_Group_Callbacks Smart events and callbacks
  *
- * Smart objects can elect events (smart events, from now on) ocurring
+ * Smart objects can elect events (smart events, from now on) occurring
  * inside of them to be reported back to their users via callback
  * functions (smart callbacks). This way, you can extend Evas' own
  * object events. They are defined by an <b>event string</b>, which
@@ -9612,7 +9749,7 @@ EAPI int                              evas_smart_usage_get(const Evas_Smart *s);
  * definition for the callback functions: #Evas_Smart_Cb.
  *
  * When defining an #Evas_Smart_Class, smart object implementors are
- * strongly encorauged to properly set the Evas_Smart_Class::callbacks
+ * strongly encouraged to properly set the Evas_Smart_Class::callbacks
  * callbacks description array, so that the users of the smart object
  * can have introspection on its events API <b>at run time</b>.
  *
@@ -9912,7 +10049,7 @@ EAPI void             *evas_object_smart_callback_del_full(Evas_Object *obj, con
  * object should include a list of possible events and what type of @p
  * event_info to expect for each of them. Also, when defining an
  * #Evas_Smart_Class, smart object implementors are strongly
- * encorauged to properly set the Evas_Smart_Class::callbacks
+ * encouraged to properly set the Evas_Smart_Class::callbacks
  * callbacks description array, so that the users of the smart object
  * can have introspection on its events API <b>at run time</b>.
  *
@@ -9971,7 +10108,7 @@ EAPI Eina_Bool         evas_object_smart_callbacks_descriptions_set(Evas_Object 
  * @param instance_count Returns how many instance callbacks
  *        descriptions are known.
  *
- * This call searchs for registered callback descriptions for both
+ * This call searches for registered callback descriptions for both
  * instance and class of the given smart object. These arrays will be
  * sorted by Evas_Smart_Cb_Description::name and also @c NULL
  * terminated, so both @a class_count and @a instance_count can be
@@ -10074,7 +10211,7 @@ EAPI void              evas_object_smart_need_recalculate_set(Evas_Object *obj, 
 EAPI Eina_Bool         evas_object_smart_need_recalculate_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
- * Call the @b calculate() smart function immediataly on a given smart
+ * Call the @b calculate() smart function immediately on a given smart
  * object.
  *
  * @param obj the smart object's handle
@@ -10113,7 +10250,7 @@ EAPI void              evas_smart_objects_calculate      (Evas *e);
  * that this function returns the value of. It starts at the value of 0 and
  * will increase (and eventually wrap around to negative values and so on) by
  * 1 every time objects are calculated. You can use this counter to ensure
- * you dont re-do calculations withint the same calculation generation/run
+ * you don't re-do calculations withint the same calculation generation/run
  * if the calculations maybe cause self-feeding effects.
  * 
  * @ingroup Evas_Smart_Object_Group
@@ -10370,7 +10507,7 @@ EAPI const Evas_Smart_Class *evas_object_smart_clipped_class_get     (void) EINA
       Evas_Object_Box_Option *(*prepend)          (Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object *child); /**< Smart function to prepend child elements in boxes */
       Evas_Object_Box_Option *(*insert_before)    (Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object *child, const Evas_Object *reference); /**< Smart function to insert a child element before another in boxes */
       Evas_Object_Box_Option *(*insert_after)     (Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object *child, const Evas_Object *reference); /**< Smart function to insert a child element after another in boxes */
-      Evas_Object_Box_Option *(*insert_at)        (Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object *child, unsigned int pos); /**< Smart function to insert a child element at a given positon on boxes */
+      Evas_Object_Box_Option *(*insert_at)        (Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object *child, unsigned int pos); /**< Smart function to insert a child element at a given position on boxes */
       Evas_Object            *(*remove)           (Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object *child); /**< Smart function to remove a child element from boxes */
       Evas_Object            *(*remove_at)        (Evas_Object *o, Evas_Object_Box_Data *priv, unsigned int pos); /**< Smart function to remove a child element from boxes, by its position */
       Eina_Bool               (*property_set)     (Evas_Object *o, Evas_Object_Box_Option *opt, int property, va_list args); /**< Smart function to set a custom property on a box child */
@@ -10494,7 +10631,7 @@ EAPI const Evas_Smart_Class *evas_object_smart_clipped_class_get     (void) EINA
  * with the default values. May be used to extend that API.
  *
  * @param api The box API struct to set back, most probably with
- * overriden fields (on class extensions scenarios)
+ * overridden fields (on class extensions scenarios)
  */
 EAPI void                       evas_object_box_smart_set                             (Evas_Object_Box_Api *api) EINA_ARG_NONNULL(1);
 
@@ -10667,7 +10804,7 @@ EAPI void                       evas_object_box_layout_homogeneous_vertical     
  * \par Child element's properties:
  * @c padding_l and @c padding_r sum up to the required width of the
  * child element. The @c align_x property tells the relative position
- * of this overall child width in its allocated cell (@r 0.0 to
+ * of this overall child width in its allocated cell (@c 0.0 to
  * extreme left, @c 1.0 to extreme right). A value of @c -1.0 to
  * @c align_x makes the box try to resize this child element to the exact
  * width of its cell (respecting the minimum and maximum size hints on
@@ -10719,7 +10856,7 @@ EAPI void                       evas_object_box_layout_homogeneous_horizontal   
  * of this overall child width in its allocated cell (@c 0.0 to
  * extreme left, @c 1.0 to extreme right). A value of @c -1.0 to
  * @c align_x makes the box try to resize this child element to the exact
- * width of its cell (respecting the minimun and maximum size hints on
+ * width of its cell (respecting the minimum and maximum size hints on
  * the child's width and accounting for its horizontal padding
  * hints). The child's @c padding_t, @c padding_b and @c align_y
  * properties apply for padding/alignment relative to the overall
@@ -10964,7 +11101,7 @@ EAPI Evas_Object_Box_Option    *evas_object_box_insert_before                   
  * @note This call will trigger the box's
  * _Evas_Object_Box_Api::insert_after smart function.
  */
-EAPI Evas_Object_Box_Option    *evas_object_box_insert_after                          (Evas_Object *o, Evas_Object *child, const Evas_Object *referente) EINA_ARG_NONNULL(1, 2, 3);
+EAPI Evas_Object_Box_Option    *evas_object_box_insert_after                          (Evas_Object *o, Evas_Object *child, const Evas_Object *reference) EINA_ARG_NONNULL(1, 2, 3);
 
 /**
  * Insert a new @a child object <b>at a given position</b>, in a given
@@ -11000,7 +11137,7 @@ EAPI Evas_Object_Box_Option    *evas_object_box_insert_at                       
  * On removal, you'll get an unparented object again, just as it was
  * before you inserted it in the box. The
  * _Evas_Object_Box_Api::option_free box smart callback will be called
- * automatilly for you and, also, the @c "child,removed" smart event
+ * automatically for you and, also, the @c "child,removed" smart event
  * will take place.
  *
  * @note This call will trigger the box's _Evas_Object_Box_Api::remove
@@ -11013,13 +11150,13 @@ EAPI Eina_Bool                  evas_object_box_remove                          
  * unparenting it again.
  *
  * @param o The box object to remove a child object from
- * @param in The numeric position (starting from @c 0) of the child
+ * @param pos The numeric position (starting from @c 0) of the child
  * object to be removed
  * @return @c EINA_TRUE, on success, @c EINA_FALSE otherwise
  *
  * On removal, you'll get an unparented object again, just as it was
  * before you inserted it in the box. The @c option_free() box smart
- * callback will be called automatilly for you and, also, the
+ * callback will be called automatically for you and, also, the
  * @c "child,removed" smart event will take place.
  *
  * @note This function will fail if the given position is invalid,
@@ -11035,7 +11172,7 @@ EAPI Eina_Bool                  evas_object_box_remove_at                       
  * again.
  *
  * @param o The box object to remove a child object from
- * @param child The handle to the child object to be removed
+ * @param clear if true, it will delete just removed children.
  * @return @c EINA_TRUE, on success, @c EINA_FALSE otherwise
  *
  * This has the same effect of calling evas_object_box_remove() on
@@ -11089,8 +11226,8 @@ EAPI Eina_List                 *evas_object_box_children_get                    
  * which have @a id as identifier
  *
  * @param o The box to search child options from
- * @param id The numerical identifier of the option being searched, for
- * its name
+ * @param property The numerical identifier of the option being searched,
+ * for its name
  * @return The name of the given property or @c NULL, on errors.
  *
  * @note This call won't do anything for a canonical Evas box. Only
@@ -11128,7 +11265,7 @@ EAPI int                        evas_object_box_option_property_id_get          
  * @param o The box parenting the child element
  * @param opt The box option structure bound to the child box element
  * to set a property on
- * @param id The numerical ID of the given property
+ * @param property The numerical ID of the given property
  * @param ... (List of) actual value(s) to be set for this
  * property. It (they) @b must be of the same type the user has
  * defined for it (them).
@@ -11155,8 +11292,8 @@ EAPI Eina_Bool                  evas_object_box_option_property_set             
  * @param o The box parenting the child element
  * @param opt The box option structure bound to the child box element
  * to set a property on
- * @param id The numerical ID of the given property
- * @param va_list The variable argument list implementing the value to
+ * @param property The numerical ID of the given property
+ * @param args The variable argument list implementing the value to
  * be set for this property. It @b must be of the same type the user has
  * defined for it.
  * @return @c EINA_TRUE on success, @c EINA_FALSE on failure.
@@ -11174,7 +11311,7 @@ EAPI Eina_Bool                  evas_object_box_option_property_vset            
  * @param o The box parenting the child element
  * @param opt The box option structure bound to the child box element
  * to get a property from
- * @param id The numerical ID of the given property
+ * @param property The numerical ID of the given property
  * @param ... (List of) pointer(s) where to store the value(s) set for
  * this property. It (they) @b must point to variable(s) of the same
  * type the user has defined for it (them).
@@ -11201,8 +11338,8 @@ EAPI Eina_Bool                  evas_object_box_option_property_get             
  * @param o The box parenting the child element
  * @param opt The box option structure bound to the child box element
  * to get a property from
- * @param id The numerical ID of the given property
- * @param va_list The variable argument list with pointers to where to
+ * @param property The numerical ID of the given property
+ * @param args The variable argument list with pointers to where to
  * store the values of this property. They @b must point to variables
  * of the same type the user has defined for them.
  * @return @c EINA_TRUE on success, @c EINA_FALSE on failure.
@@ -11323,7 +11460,7 @@ EAPI void                                evas_object_table_align_get       (cons
  * from right to left instead of left to right. That is, 1,1 is top right, not
  * top left.
  *
- * @param obj The table object.
+ * @param o The table object.
  * @param mirrored the mirrored mode to set
  * @since 1.1.0
  */
@@ -11332,7 +11469,7 @@ EAPI void                                evas_object_table_mirrored_set    (Evas
 /**
  * Gets the mirrored mode of the table.
  *
- * @param obj The table object.
+ * @param o The table object.
  * @return EINA_TRUE if it's a mirrored table, EINA_FALSE otherwise.
  * @since 1.1.0
  * @see evas_object_table_mirrored_set()
@@ -11490,7 +11627,7 @@ EAPI void                                evas_object_grid_size_get        (const
  * from right to left instead of left to right. That is, 0,0 is top right, not
  * to left.
  *
- * @param obj The grid object.
+ * @param o The grid object.
  * @param mirrored the mirrored mode to set
  * @since 1.1.0
  */
@@ -11499,7 +11636,7 @@ EAPI void                                evas_object_grid_mirrored_set    (Evas_
 /**
  * Gets the mirrored mode of the grid.
  *
- * @param obj The grid object.
+ * @param o The grid object.
  * @return EINA_TRUE if it's a mirrored grid, EINA_FALSE otherwise.
  * @see evas_object_grid_mirrored_set()
  * @since 1.1.0
@@ -11611,8 +11748,8 @@ EAPI Eina_List                          *evas_object_grid_children_get    (const
      {
         int    saved_memory; /**< current amount of saved memory, in bytes */
         int    wasted_memory; /**< current amount of wasted memory, in bytes */
-        int    saved_memory_peak; /**< peak ammount of saved memory, in bytes */
-        int    wasted_memory_peak; /**< peak ammount of wasted memory, in bytes */
+        int    saved_memory_peak; /**< peak amount of saved memory, in bytes */
+        int    wasted_memory_peak; /**< peak amount of wasted memory, in bytes */
         double saved_time_image_header_load; /**< time, in seconds, saved in header loads by sharing cached loads instead */
         double saved_time_image_data_load; /**< time, in seconds, saved in data loads by sharing cached loads instead */
      };
@@ -11762,7 +11899,7 @@ EAPI void              evas_cserve_disconnect                 (void);
  * used in conjunction with evas_object_image_load_error_get(), as in:
  *
  * Example code:
- * @dontinclude evas-load-error-str.c
+ * @dontinclude evas-images.c
  * @skip img1 =
  * @until ecore_main_loop_begin(
  *
@@ -11825,7 +11962,7 @@ EAPI void              evas_color_rgb_to_hsv             (int r, int g, int b, f
  * @param g The Green component of the color.
  * @param b The Blue component of the color.
  *
- * This function pre-multiplies a given rbg triplet by an alpha
+ * This function pre-multiplies a given rgb triplet by an alpha
  * factor. Alpha factor is used to define transparency.
  *
  * @ingroup Evas_Utils
@@ -12079,7 +12216,7 @@ EAPI void                 evas_key_modifier_add          (Evas *e, const char *k
 
 /**
  * Removes the @p keyname key from the current list of modifier keys
- * on canvas @e.
+ * on canvas @p e.
  *
  * @param e The pointer to the Evas canvas
  * @param keyname The name of the key to remove from the modifiers list.
@@ -12125,7 +12262,7 @@ EAPI void                 evas_key_lock_add              (Evas *e, const char *k
 
 /**
  * Removes the @p keyname key from the current list of lock keys on
- * canvas @e.
+ * canvas @p e.
  *
  * @param e The pointer to the Evas canvas
  * @param keyname The name of the key to remove from the locks list.
@@ -12255,7 +12392,7 @@ EAPI Evas_Modifier_Mask   evas_key_modifier_mask_get     (const Evas *e, const c
  * modifiers that must and mustn't, respectively, be pressed along
  * with @p keyname key in order to trigger this new key
  * grab. Modifiers can be things such as Shift and Ctrl as well as
- * user defigned types via evas_key_modifier_add(). Retrieve them with
+ * user defined types via evas_key_modifier_add(). Retrieve them with
  * evas_key_modifier_mask_get() or use @c 0 for empty masks.
  *
  * @p exclusive will make the given object the only one permitted to
