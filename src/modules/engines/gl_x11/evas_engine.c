@@ -41,17 +41,26 @@ struct _Render_Engine
    int w, h;
    int vsync;
 
-   // Shader used for Evas_GL_Direct Optimization
-   GLuint   df_program;
-   GLuint   df_vtx_shader;
-   GLuint   df_fgmt_shader;
-   GLuint   df_col_attrib;
-   GLuint   df_pos_attrib;
+   // GL Surface Capability
+   struct {
+        int rgb_fmt;
+        int rgba_fmt;
 
-   GLfloat  df_clear_color[4];
-   GLfloat  df_depth_value;
+        int depth_8;
+        int depth_16;
+        int depth_24;
+        int depth_32;
 
-   int      df_initialized;
+        int stencil_1;
+        int stencil_2;
+        int stencil_4;
+        int stencil_8;
+        int stencil_16;
+
+        int depth_24_stencil_8;
+   } gl_cap;
+
+   int gl_cap_initted;
 };
 
 struct _Render_Engine_GL_Surface
@@ -64,7 +73,7 @@ struct _Render_Engine_GL_Surface
 
    int      direct_fb_opt;
 
-   // Render target texture/buffers
+   // Render target Texture/Buffers
    GLuint   rt_tex;
    GLint    rt_internal_fmt;
    GLenum   rt_fmt;
@@ -72,6 +81,8 @@ struct _Render_Engine_GL_Surface
    GLenum   rb_depth_fmt;
    GLuint   rb_stencil;
    GLenum   rb_stencil_fmt;
+   GLuint   rb_depth_stencil;
+   GLenum   rb_depth_stencil_fmt;
 
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
    EGLSurface  direct_sfc;
@@ -93,9 +104,9 @@ struct _Render_Engine_GL_Context
    GLuint      context_fbo;
    GLuint      current_fbo;
 
-
    int         scissor_enabled;
    int         scissor_upated;
+   GLfloat     df_clear_color[4];
 
    Render_Engine_GL_Surface   *current_sfc;
 };
@@ -122,7 +133,6 @@ struct _Extension_Entry
 
 static int initted = 0;
 static int gl_wins = 0;
-static int gl_fastpath = 0;
 static int gl_direct_override = 0;
 static int gl_direct_enabled = 0;
 static Render_Engine_GL_Context *current_evgl_ctx = NULL;
@@ -344,7 +354,7 @@ static Extension_Entry _evasgl_ext_entries[] = {
 };
 
 static void
-_sym_init(void)
+_gl_ext_sym_init(void)
 {
    static int done = 0;
 
@@ -583,7 +593,7 @@ _sym_init(void)
 }
 
 static void
-_extensions_init(Render_Engine *re)
+_gl_ext_init(Render_Engine *re)
 {
    int i;
    const char *glexts, *evasglexts;
@@ -611,25 +621,30 @@ _extensions_init(Render_Engine *re)
 
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
    // EGL Extensions
-   evasglexts = eglQueryString(re->win->egl_disp, EGL_EXTENSIONS);
+   if (glsym_eglQueryString)
+     {
+        evasglexts = glsym_eglQueryString(re->win->egl_disp, EGL_EXTENSIONS);
 #else
-   evasglexts = glXQueryExtensionsString(re->info->info.display,
-                                         re->info->info.screen);
+   if (glsym_glXQueryExtensionsString)
+     {
+        evasglexts = glXQueryExtensionsString(re->info->info.display, 
+                                              re->info->info.screen);
 #endif
 
-   DBG("--------EvasGL Extensions----------");
-   for (i = 0; _evasgl_ext_entries[i].name != NULL; i++)
-     {
-        if ( (strstr(evasglexts, _evasgl_ext_entries[i].name) != NULL) ||
-             (strstr(evasglexts, _evasgl_ext_entries[i].real_name) != NULL) )
+        DBG("--------EvasGL Supported Extensions----------");
+        for (i = 0; _evasgl_ext_entries[i].name != NULL; i++)
           {
-             _evasgl_ext_entries[i].supported = 1;
-             strcat(_evasgl_ext_string, _evasgl_ext_entries[i].name);
-             strcat(_evasgl_ext_string, " ");
-             DBG("\t%s", _evasgl_ext_entries[i].name);
+             if ( (strstr(evasglexts, _evasgl_ext_entries[i].name) != NULL) ||
+                  (strstr(evasglexts, _evasgl_ext_entries[i].real_name) != NULL) )
+               {
+                  _evasgl_ext_entries[i].supported = 1;
+                  strcat(_evasgl_ext_string, _evasgl_ext_entries[i].name);
+                  strcat(_evasgl_ext_string, " ");
+                  DBG("\t%s", _evasgl_ext_entries[i].name);
+               }
           }
+        DBG(" ");
      }
-   DBG(" ");
 }
 
 int _evas_engine_GL_X11_log_dom = -1;
@@ -745,9 +760,6 @@ _create_internal_glue_resources(void *data)
    context_attrs[0] = EGL_CONTEXT_CLIENT_VERSION;
    context_attrs[1] = 2;
    context_attrs[2] = EGL_NONE;
-
-
-
 
    if (eina_main_loop_is())
      {
@@ -1080,8 +1092,8 @@ eng_setup(Evas *e, void *in)
    eng_window_use(re->win);
 
    re->vsync = 0;
-   _sym_init();
-   _extensions_init(re);
+   _gl_ext_sym_init();
+   _gl_ext_init(re);
 
    return 1;
 }
@@ -2146,7 +2158,7 @@ eng_image_native_set(void *data, void *image, void *native)
                                                       n->pixmap,
                                                       pixmap_att);
               else
-                ERR("Try eatePixmap on GLX with no support");
+                ERR("Try glXCreatePixmap on GLX with no support");
               if (n->glx_pixmap)
                 {
 //                  printf("%p: new native texture for %x | %4i x %4i @ %2i = %p\n",
@@ -2837,22 +2849,163 @@ eng_canvas_alpha_get(void *data, void *info __UNUSED__)
    return re->win->alpha;
 }
 
+
+// Unfortunately, there is no query function to figure out which surface formats work.
+// So, this is one way to test for surface config capability.
 static int
-_set_internal_config(Render_Engine_GL_Surface *sfc, Evas_GL_Config *cfg)
+_check_gl_surface_format(GLint int_fmt, GLenum fmt, GLenum attachment, GLenum attach_fmt)
 {
-   // Also initialize pixel format here as well...
+   GLuint fbo, tex, rb;
+   int w, h, fb_status;
+
+   // Width/Heith for test purposes
+   w = h = 2;
+
+   // Gen FBO
+   glGenFramebuffers(1, &fbo);
+   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+   // Render Target Texture
+   if (int_fmt)
+     {
+        glGenTextures(1, &tex);
+        glBindTexture(GL_TEXTURE_2D, tex );
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexImage2D(GL_TEXTURE_2D, 0, int_fmt, w, h, 0, fmt, GL_UNSIGNED_BYTE, NULL);
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
+     }
+
+   // Render Target Attachment (Stencil or Depth)
+   if (attachment)
+     {
+        glGenRenderbuffers(1, &rb);
+        glBindRenderbuffer(GL_RENDERBUFFER, rb);
+        glRenderbufferStorage(GL_RENDERBUFFER, attach_fmt, w, h);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER, rb);
+        glBindRenderbuffer(GL_RENDERBUFFER, 0);
+     }
+
+   // Check FBO for completeness
+   fb_status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+
+
+   // Delete Created Resources
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+   glDeleteFramebuffers(1, &fbo);
+   if (tex) glDeleteTextures(1, &tex);
+   if (rb) glDeleteBuffers(1, &rb);
+
+   if (fb_status != GL_FRAMEBUFFER_COMPLETE)
+      return 0;
+   else
+     {
+        if (attachment)
+           return attach_fmt;
+        else
+           return 1;
+     }
+}
+
+static void
+_print_gl_surface_cap(Render_Engine *re, int error)
+{
+#define PRINT_LOG(...) \
+   if (error) \
+      ERR(__VA_ARGS__); \
+   else \
+      DBG(__VA_ARGS__);
+
+   PRINT_LOG("---------------------------------------------------");
+   PRINT_LOG("           EvasGL Supported Surface Format         ");
+   PRINT_LOG(" [RGB  Fromat]            : %x", re->gl_cap.rgb_fmt);
+   PRINT_LOG(" [RGBA Fromat]            : %x", re->gl_cap.rgba_fmt);
+   PRINT_LOG(" [Depth  8 Bits]          : %x", re->gl_cap.depth_8);
+   PRINT_LOG(" [Depth 16 Bits]          : %x", re->gl_cap.depth_16);
+   PRINT_LOG(" [Depth 24 Bits]          : %x", re->gl_cap.depth_24);
+   PRINT_LOG(" [Depth 32 Bits]          : %x", re->gl_cap.depth_32);
+   PRINT_LOG(" [Stencil  1 Bits]        : %x", re->gl_cap.stencil_1);
+   PRINT_LOG(" [Stencil  2 Bits]        : %x", re->gl_cap.stencil_2);
+   PRINT_LOG(" [Stencil  4 Bits]        : %x", re->gl_cap.stencil_4);
+   PRINT_LOG(" [Stencil  8 Bits]        : %x", re->gl_cap.stencil_8);
+   PRINT_LOG(" [Stencil 16 Bits]        : %x", re->gl_cap.stencil_16);
+   PRINT_LOG(" [Depth 24 Stencil 8 Bits]: %x", re->gl_cap.depth_24_stencil_8);
+   PRINT_LOG("---------------------------------------------------");
+#undef PRINT_LOG
+}
+
+static void
+_set_gl_surface_cap(Render_Engine *re)
+{
+   GLuint fbo, tex, depth, stencil;
+   int w, h;
+   int ret;
+
+   if (!re) return;
+   if (re->gl_cap_initted) return;
+
+   // Width/Heith for test purposes
+   w = h = 2;
+
+   re->gl_cap.rgb_fmt  = _check_gl_surface_format(GL_RGB, GL_RGB, 0, 0);
+   re->gl_cap.rgba_fmt = _check_gl_surface_format(GL_RGBA, GL_RGBA, 0, 0);
+
+   re->gl_cap.depth_8   = _check_gl_surface_format(0, 0, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT);
+   re->gl_cap.depth_16  = _check_gl_surface_format(0, 0, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT16);
+
+#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+   re->gl_cap.depth_24  = _check_gl_surface_format(0, 0, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24_OES);
+   re->gl_cap.depth_32  = _check_gl_surface_format(0, 0, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT32_OES);
+
+   re->gl_cap.stencil_1 = _check_gl_surface_format(0, 0, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX1_OES);
+   re->gl_cap.stencil_4 = _check_gl_surface_format(0, 0, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX4_OES);
+   re->gl_cap.stencil_8 = _check_gl_surface_format(0, 0, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX8);
+
+   re->gl_cap.depth_24_stencil_8  = _check_gl_surface_format(0, 0, GL_DEPTH_STENCIL_OES, GL_DEPTH24_STENCIL8_OES);
+#else
+   re->gl_cap.depth_24  = _check_gl_surface_format(0, 0, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24);
+   re->gl_cap.depth_32  = _check_gl_surface_format(0, 0, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT32);
+
+   re->gl_cap.stencil_1 = _check_gl_surface_format(0, 0, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX1);
+   re->gl_cap.stencil_4 = _check_gl_surface_format(0, 0, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX4);
+   re->gl_cap.stencil_8 = _check_gl_surface_format(0, 0, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX8);
+
+   re->gl_cap.depth_24_stencil_8  = _check_gl_surface_format(0, 0, GL_DEPTH_STENCIL_ATTACHMENT, GL_DEPTH24_STENCIL8);
+#endif
+
+   _print_gl_surface_cap(re, 0);
+
+   re->gl_cap_initted = 1;
+}
+
+static int
+_set_internal_config(Render_Engine *re, Render_Engine_GL_Surface *sfc, Evas_GL_Config *cfg)
+{
+   // Check if color formats are supported
    switch((int)cfg->color_format)
      {
       case EVAS_GL_RGB_888:
-         sfc->rt_fmt          = GL_RGB;
-         sfc->rt_internal_fmt = GL_RGB;
-         break;
+         if (re->gl_cap.rgb_fmt)
+           {
+              sfc->rt_fmt          = GL_RGB;
+              sfc->rt_internal_fmt = GL_RGB;
+              break;
+           }
       case EVAS_GL_RGBA_8888:
-         sfc->rt_fmt          = GL_RGBA;
-         sfc->rt_internal_fmt = GL_RGBA;
-         break;
+         if (re->gl_cap.rgba_fmt)
+           {
+              sfc->rt_fmt          = GL_RGBA;
+              sfc->rt_internal_fmt = GL_RGBA;
+              cfg->color_format    = EVAS_GL_RGBA_8888;
+              break;
+           }
       default:
-         ERR("Invalid Color Format!");
+         ERR("Color Format Not Supported!");
+         _print_gl_surface_cap(re, 1);
          return 0;
      }
 
@@ -2861,18 +3014,36 @@ _set_internal_config(Render_Engine_GL_Surface *sfc, Evas_GL_Config *cfg)
       case EVAS_GL_DEPTH_NONE:
          break;
       case EVAS_GL_DEPTH_BIT_8:
+         if (re->gl_cap.depth_8)
+           {
+              sfc->rb_depth_fmt = re->gl_cap.depth_8;
+              cfg->depth_bits   = EVAS_GL_DEPTH_BIT_8;
+              break;
+           }
       case EVAS_GL_DEPTH_BIT_16:
+         if (re->gl_cap.depth_16)
+           {
+              sfc->rb_depth_fmt = re->gl_cap.depth_16;
+              cfg->depth_bits   = EVAS_GL_DEPTH_BIT_16;
+              break;
+           }
       case EVAS_GL_DEPTH_BIT_24:
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-         // 24 bit doesn't work... just cover it with 16 for now..
-         sfc->rb_depth_fmt = GL_DEPTH_COMPONENT16;
-#else
-         sfc->rb_depth_fmt = GL_DEPTH_COMPONENT;
-#endif
-         break;
+         if (re->gl_cap.depth_24)
+           {
+              sfc->rb_depth_fmt = re->gl_cap.depth_24;
+              cfg->depth_bits   = EVAS_GL_DEPTH_BIT_24;
+              break;
+           }
       case EVAS_GL_DEPTH_BIT_32:
+         if (re->gl_cap.depth_32)
+           {
+              sfc->rb_depth_fmt = re->gl_cap.depth_32;
+              cfg->depth_bits   = EVAS_GL_DEPTH_BIT_32;
+              break;
+           }
       default:
          ERR("Unsupported Depth Bits Format!");
+         _print_gl_surface_cap(re, 1);
          return 0;
      }
 
@@ -2881,18 +3052,50 @@ _set_internal_config(Render_Engine_GL_Surface *sfc, Evas_GL_Config *cfg)
       case EVAS_GL_STENCIL_NONE:
          break;
       case EVAS_GL_STENCIL_BIT_1:
+         if (re->gl_cap.stencil_1)
+           {
+              sfc->rb_stencil_fmt = re->gl_cap.stencil_1;
+              cfg->stencil_bits   = EVAS_GL_STENCIL_BIT_1;
+              break;
+           }
       case EVAS_GL_STENCIL_BIT_2:
+         if (re->gl_cap.stencil_2)
+           {
+              sfc->rb_stencil_fmt = re->gl_cap.stencil_2;
+              cfg->stencil_bits   = EVAS_GL_STENCIL_BIT_2;
+              break;
+           }
       case EVAS_GL_STENCIL_BIT_4:
+         if (re->gl_cap.stencil_4)
+           {
+              sfc->rb_stencil_fmt = re->gl_cap.stencil_4;
+              cfg->stencil_bits   = EVAS_GL_STENCIL_BIT_4;
+              break;
+           }
       case EVAS_GL_STENCIL_BIT_8:
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-         sfc->rb_stencil_fmt = GL_STENCIL_INDEX8;
-#else
-         sfc->rb_stencil_fmt = GL_STENCIL_INDEX;
-#endif
-         break;
+         if ((sfc->rb_depth_fmt == re->gl_cap.depth_24) && (re->gl_cap.depth_24_stencil_8))
+           {
+              sfc->rb_depth_stencil_fmt = re->gl_cap.depth_24_stencil_8;
+              sfc->rb_stencil_fmt = re->gl_cap.stencil_8;
+              cfg->stencil_bits = EVAS_GL_STENCIL_BIT_8;
+              break;
+           }
+         else if (re->gl_cap.stencil_8)
+           {
+              sfc->rb_stencil_fmt = re->gl_cap.stencil_8;
+              cfg->stencil_bits   = EVAS_GL_STENCIL_BIT_8;
+              break;
+           }
       case EVAS_GL_STENCIL_BIT_16:
+         if (re->gl_cap.stencil_16)
+           {
+              sfc->rb_stencil_fmt = re->gl_cap.stencil_16;
+              cfg->stencil_bits   = EVAS_GL_STENCIL_BIT_16;
+              break;
+           }
       default:
          ERR("Unsupported Stencil Bits Format!");
+         _print_gl_surface_cap(re, 1);
          return 0;
      }
 
@@ -2911,22 +3114,30 @@ _set_internal_config(Render_Engine_GL_Surface *sfc, Evas_GL_Config *cfg)
    return 1;
 }
 
-static int
+static void
 _create_rt_buffers(Render_Engine *data __UNUSED__,
                    Render_Engine_GL_Surface *sfc)
 {
    // Render Target texture
-   glGenTextures(1, &sfc->rt_tex );
+   if (sfc->rt_fmt)
+     {
+        glGenTextures(1, &sfc->rt_tex);
+     }
+
+   // First check if packed buffer is to be used.
+   if (sfc->rb_depth_stencil_fmt)
+     {
+        glGenRenderbuffers(1, &sfc->rb_depth_stencil);
+        return;
+     }
 
    // Depth RenderBuffer - Create storage here...
-   if (sfc->depth_bits != EVAS_GL_DEPTH_NONE)
+   if (sfc->rb_depth_fmt)
       glGenRenderbuffers(1, &sfc->rb_depth);
 
    // Stencil RenderBuffer - Create Storage here...
-   if (sfc->stencil_bits != EVAS_GL_STENCIL_NONE)
+   if (sfc->rb_stencil_fmt)
       glGenRenderbuffers(1, &sfc->rb_stencil);
-
-   return 1;
 }
 
 static int
@@ -2936,24 +3147,41 @@ _attach_fbo_surface(Render_Engine *data __UNUSED__,
 {
    int fb_status;
 
-   // Initialize Texture
-   glBindTexture(GL_TEXTURE_2D, sfc->rt_tex );
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, sfc->w, sfc->h, 0,
-                GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-   glBindTexture(GL_TEXTURE_2D, 0);
-
-
-   // Attach texture to FBO
    glBindFramebuffer(GL_FRAMEBUFFER, ctx->context_fbo);
-   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                          GL_TEXTURE_2D, sfc->rt_tex, 0);
+
+   // Render Target Texture
+   if (sfc->rt_tex)
+     {
+        glBindTexture(GL_TEXTURE_2D, sfc->rt_tex );
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, sfc->w, sfc->h, 0,
+                     GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        // Attach texture to FBO
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                               GL_TEXTURE_2D, sfc->rt_tex, 0);
+     }
+
+#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+#else
+   // Depth Stencil RenderBuffer - Attach it to FBO
+   if (sfc->rb_depth_stencil)
+     {
+        glBindRenderbuffer(GL_RENDERBUFFER, sfc->rb_depth_stencil);
+        glRenderbufferStorage(GL_RENDERBUFFER, sfc->rb_depth_stencil_fmt,
+                              sfc->w, sfc->h);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+                                  GL_RENDERBUFFER, sfc->rb_depth_stencil);
+        glBindRenderbuffer(GL_RENDERBUFFER, 0);
+     }
+#endif
 
    // Depth RenderBuffer - Attach it to FBO
-   if (sfc->depth_bits != EVAS_GL_DEPTH_NONE)
+   if (sfc->rb_depth)
      {
         glBindRenderbuffer(GL_RENDERBUFFER, sfc->rb_depth);
         glRenderbufferStorage(GL_RENDERBUFFER, sfc->rb_depth_fmt,
@@ -2964,7 +3192,7 @@ _attach_fbo_surface(Render_Engine *data __UNUSED__,
      }
 
    // Stencil RenderBuffer - Attach it to FBO
-   if (sfc->stencil_bits != EVAS_GL_STENCIL_NONE)
+   if (sfc->rb_stencil)
      {
         glBindRenderbuffer(GL_RENDERBUFFER, sfc->rb_stencil);
         glRenderbufferStorage(GL_RENDERBUFFER, sfc->rb_stencil_fmt,
@@ -2993,38 +3221,32 @@ eng_gl_surface_create(void *data, void *config, int w, int h)
    Render_Engine_GL_Surface *sfc;
    Render_Engine_GL_Resource *rsc;
    Evas_GL_Config *cfg;
-   int ret;
-
-   sfc = calloc(1, sizeof(Render_Engine_GL_Surface));
-   if (!sfc) return NULL;
+   void *ret = NULL;
+   int res;
 
    re  = (Render_Engine *)data;
    cfg = (Evas_GL_Config *)config;
 
-   sfc->initialized  = 0;
-   sfc->fbo_attached = 0;
+   // Allocate surface and fill in values
+   sfc = calloc(1, sizeof(Render_Engine_GL_Surface));
+   if (!sfc)
+     {
+        ERR("Surface allocation failed.");
+        goto finish;
+     }
+
    sfc->w            = w;
    sfc->h            = h;
    sfc->depth_bits   = cfg->depth_bits;
    sfc->stencil_bits = cfg->stencil_bits;
-   sfc->rt_tex       = 0;
-   sfc->rb_depth     = 0;
-   sfc->rb_stencil   = 0;
 
-   /* Allow alpha for evas gl direct rendering */
-   // FIXME!!!: A little out of place for for now...
+   // Allow alpha for evas gl direct rendering override
+   // FIXME!!!: A little out of place but for now...
    if (!gl_direct_override)
       if (getenv("EVAS_GL_DIRECT_OVERRIDE")) gl_direct_override = 1;
 
    // Set the internal format based on the config
-   if (!_set_internal_config(sfc, cfg))
-     {
-        ERR("Unsupported Format!");
-        free(sfc);
-        return NULL;
-     }
-
-   if (sfc->direct_fb_opt)
+   if (cfg->options_bits & EVAS_GL_OPTIONS_DIRECT)
      {
         DBG("Enabling Direct rendering to the Evas' window.");
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
@@ -3040,49 +3262,55 @@ eng_gl_surface_create(void *data, void *config, int w, int h)
         if ((rsc = _create_internal_glue_resources(re)) == NULL)
           {
              ERR("Error creating internal resources.");
-             free(sfc);
-             return NULL;
+             goto finish;
           }
      }
 
-   // I'm using evas's original context to create the render target texture
-   // This is to prevent awkwardness in using native_surface_get() function
-   // If the rt texture creation is deferred till the context is created and
-   // make_current called, the user can't call native_surface_get() right
-   // after the surface is created. hence this is done here using evas' context.
+   // Use resource surface/context to create surface resrouces
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-   ret = eglMakeCurrent(re->win->egl_disp, rsc->surface, rsc->surface, rsc->context);
+   res = eglMakeCurrent(re->win->egl_disp, rsc->surface, rsc->surface, rsc->context);
 #else
-   ret = glXMakeCurrent(re->info->info.display, re->win->win, rsc->context);
+   res = glXMakeCurrent(re->info->info.display, re->win->win, rsc->context);
 #endif
-   if (!ret)
+   if (!res)
      {
-        ERR("xxxMakeCurrent() failed!");
-        free(sfc);
-        return NULL;
+        ERR("xxxMakeCurrent() finish!");
+        goto finish;
+     }
+
+   // Set the engine surface capability first if it hasn't been set
+   if (!re->gl_cap_initted) _set_gl_surface_cap(re);
+
+   // Set the internal config value
+   if (!_set_internal_config(re, sfc, cfg))
+     {
+        ERR("Unsupported Format!");
+        goto finish;
      }
 
    // Create Render texture
-   if (!_create_rt_buffers(re, sfc))
-     {
-        ERR("_create_rt_buffers() failed.");
-        free(sfc);
-        return NULL;
-     }
+   _create_rt_buffers(re, sfc);
 
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-   ret = eglMakeCurrent(re->win->egl_disp, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+   res = eglMakeCurrent(re->win->egl_disp, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 #else
-   ret = glXMakeCurrent(re->info->info.display, None, NULL);
+   res = glXMakeCurrent(re->info->info.display, None, NULL);
 #endif
-   if (!ret)
+   if (!res)
      {
-        ERR("xxxMakeCurrent() failed!");
-        free(sfc);
-        return NULL;
+        ERR("xxxMakeCurrent() finish!");
+        goto finish;
      }
 
-   return sfc;
+   ret = sfc;
+
+finish:
+
+   if (!ret)
+     {
+        if (!sfc) free(sfc);
+     }
+   return ret;
 }
 
 static int
@@ -3132,6 +3360,8 @@ eng_gl_surface_destroy(void *data, void *surface)
    if (sfc->rb_stencil)
       glDeleteRenderbuffers(1, &sfc->rb_stencil);
 
+   if (sfc->rb_depth_stencil)
+      glDeleteRenderbuffers(1, &sfc->rb_depth_stencil);
 
 
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
@@ -3353,14 +3583,13 @@ eng_gl_make_current(void *data __UNUSED__, void *surface, void *context)
 
              // Do a make current
              ret = eglMakeCurrent(re->win->egl_disp, sfc->direct_sfc,
-                                        sfc->direct_sfc, ctx->context);
+                                  sfc->direct_sfc, ctx->context);
              if (!ret)
                {
                   ERR("xxxMakeCurrent() failed! code=%#x", eglGetError());
                   //ERR("xxxMakeCurrent() failed!");
                   return 0;
                }
-
           }
 #else
         if ((glXGetCurrentContext() != ctx->context))
@@ -3439,7 +3668,7 @@ eng_gl_make_current(void *data __UNUSED__, void *surface, void *context)
 
              // Do a make current
              ret = glXMakeCurrent(re->info->info.display, re->win->win, ctx->context);
-             if (!ret) 
+             if (!ret)
                {
                   ERR("xxxMakeCurrent() failed!");
                   return 0;
@@ -3478,6 +3707,7 @@ eng_gl_make_current(void *data __UNUSED__, void *surface, void *context)
    ctx->current_sfc = sfc;
    sfc->current_ctx = ctx;
    current_evgl_ctx = ctx;
+   current_engine = re;
 
    return 1;
 }
@@ -3556,7 +3786,7 @@ evgl_glBindFramebuffer(GLenum target, GLuint framebuffer)
 {
    Render_Engine_GL_Context *ctx = current_evgl_ctx;
 
-   if (!ctx) 
+   if (!ctx)
      {
         ERR("No current context set.");
         return;
@@ -3566,15 +3796,10 @@ evgl_glBindFramebuffer(GLenum target, GLuint framebuffer)
    if (framebuffer==0)
      {
         if (gl_direct_enabled)
-          {
-             glBindFramebuffer(target, 0);
-             ctx->current_fbo = 0;
-          }
+           glBindFramebuffer(target, 0);
         else
-          {
-             glBindFramebuffer(target, ctx->context_fbo);
-             ctx->current_fbo = 0;
-          }
+           glBindFramebuffer(target, ctx->context_fbo);
+        ctx->current_fbo = 0;
      }
    else
      {
@@ -3712,10 +3937,12 @@ evgl_glClear(GLbitfield mask)
 static void
 evgl_glClearColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha)
 {
-   current_engine->df_clear_color[0] = red;
-   current_engine->df_clear_color[1] = green;
-   current_engine->df_clear_color[2] = blue;
-   current_engine->df_clear_color[3] = alpha;
+   Render_Engine_GL_Context *ctx = current_evgl_ctx;
+
+   current_evgl_ctx->df_clear_color[0] = red;
+   current_evgl_ctx->df_clear_color[1] = green;
+   current_evgl_ctx->df_clear_color[2] = blue;
+   current_evgl_ctx->df_clear_color[3] = alpha;
 
    glClearColor(red, green, blue, alpha);
 
@@ -3818,7 +4045,7 @@ evgl_glClearDepthf(GLclampf depth)
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
    glClearDepthf(depth);
 #else
-   glClearDepthf(depth);
+   glClearDepth(depth);
 #endif
 }
 
@@ -3828,7 +4055,7 @@ evgl_glDepthRangef(GLclampf zNear, GLclampf zFar)
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
    glDepthRangef(zNear, zFar);
 #else
-   glDepthRangef(zNear, zFar);
+   glDepthRange(zNear, zFar);
 #endif
 }
 
@@ -3848,9 +4075,6 @@ evgl_glGetShaderPrecisionFormat(GLenum shadertype, GLenum precisiontype, GLint* 
         precision[0] = 24; // floor(-log2((1.0/16777218.0)));
      }
    return;
-   /*
-   shadertype = precisiontype = 0;
-   */
 #endif
 }
 
@@ -4301,9 +4525,6 @@ static int
 module_open(Evas_Module *em)
 {
    static Eina_Bool xrm_inited = EINA_FALSE;
-   char *fp_env;
-   int fastpath_opt;
-
    if (!xrm_inited)
      {
         xrm_inited = EINA_TRUE;
@@ -4323,12 +4544,6 @@ module_open(Evas_Module *em)
         return 0;
      }
 
-   /* Check if fastpath is enabled */
-   fp_env = getenv("EVAS_GL_FASTPATH");
-   if (fp_env) fastpath_opt = atoi(fp_env);
-   else fastpath_opt = 0;
-
-   if ((fastpath_opt == 1) || (fastpath_opt == 3) || (fastpath_opt == 4)) gl_fastpath = 1;
 
    /* Allow alpha for evas gl direct rendering */
    if (getenv("EVAS_GL_DIRECT_OVERRIDE"))
