@@ -186,18 +186,9 @@ evas_common_draw_context_set_mask(RGBA_Draw_Context *dc, RGBA_Image *mask, int x
    if (mask->pixman.im)
      pixman_image_unref(mask->pixman.im);
    
-   if (mask->cache_entry.flags.alpha)
-     {
-        mask->pixman.im = pixman_image_create_bits(PIXMAN_a8r8g8b8, w, h, 
-                                                   (uint32_t *)mask->mask.mask,
-                                                   w * 4);
-     }
-   else
-     {
-        mask->pixman.im = pixman_image_create_bits(PIXMAN_x8r8g8b8, w, h, 
-                                                   (uint32_t *)mask->mask.mask,
-                                                   w * 4);
-     }
+   mask->pixman.im = pixman_image_create_bits(PIXMAN_a8r8g8b8, w, h,
+                                             (uint32_t *)mask->mask.mask,
+                                              w * 4);
 #endif
 
 }

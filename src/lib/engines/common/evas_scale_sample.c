@@ -282,9 +282,9 @@ scale_rgba_in_to_out_clip_sample_internal(RGBA_Image *src, RGBA_Image *dst,
             ((dc->render_op == _EVAS_RENDER_COPY) ||
                 (dc->render_op == _EVAS_RENDER_BLEND)))
           {
-             pixman_op_t op = PIXMAN_OP_SRC; // _EVAS_RENDER_COPY
-             if (dc->render_op == _EVAS_RENDER_BLEND)
-               op = PIXMAN_OP_OVER;
+             pixman_op_t op = PIXMAN_OP_OVER; // _EVAS_RENDER_BLEND
+             if ((dc->render_op == _EVAS_RENDER_COPY) || (!src->cache_entry.flags.alpha))
+               op = PIXMAN_OP_SRC;
              
              pixman_image_composite(op,
                                     src->pixman.im, NULL,
@@ -301,9 +301,9 @@ scale_rgba_in_to_out_clip_sample_internal(RGBA_Image *src, RGBA_Image *dst,
                      (dc->render_op == _EVAS_RENDER_BLEND)))
           {
              // In case of pixel and color operation.
-             pixman_op_t op = PIXMAN_OP_SRC; // _EVAS_RENDER_COPY
-             if (dc->render_op == _EVAS_RENDER_BLEND)
-               op = PIXMAN_OP_OVER;
+             pixman_op_t op = PIXMAN_OP_OVER; // _EVAS_RENDER_BLEND
+             if ((dc->render_op == _EVAS_RENDER_COPY) || (!src->cache_entry.flags.alpha))
+               op = PIXMAN_OP_SRC;
              
              pixman_image_composite(op,
                                     src->pixman.im, dc->mask.mask->pixman.im,
