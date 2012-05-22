@@ -43,26 +43,21 @@ struct _Render_Engine
 
    // GL Surface Capability
    struct {
-        int max_rb_size;
-        int msaa_support;
-        int msaa_samples[4];
+        int rgb_fmt;
+        int rgba_fmt;
 
-        //---------//
-        int rgb_888[4];
-        int rgba_8888[4];
+        int depth_8;
+        int depth_16;
+        int depth_24;
+        int depth_32;
 
-        int depth_8[4];
-        int depth_16[4];
-        int depth_24[4];
-        int depth_32[4];
+        int stencil_1;
+        int stencil_2;
+        int stencil_4;
+        int stencil_8;
+        int stencil_16;
 
-        int stencil_1[4];
-        int stencil_2[4];
-        int stencil_4[4];
-        int stencil_8[4];
-        int stencil_16[4];
-
-        int depth_24_stencil_8[4];
+        int depth_24_stencil_8;
    } gl_cap;
 
    int gl_cap_initted;
@@ -70,30 +65,24 @@ struct _Render_Engine
 
 struct _Render_Engine_GL_Surface
 {
-   int         initialized;
-   int         fbo_attached;
-   int         w, h;
+   int      initialized;
+   int      fbo_attached;
+   int      w, h;
+   int      depth_bits;
+   int      stencil_bits;
 
-   // Surface Config
-   int         depth_bits;
-   int         stencil_bits;
-   int         direct_fb_opt;
-   int         multiample_bits;
+   int      direct_fb_opt;
 
    // Render target Texture/Buffers
-   GLint       rt_msaa_samples;
-
-   GLuint      rt_tex;
-   GLuint      rb_depth;
-   GLuint      rb_stencil;
-   GLuint      rb_depth_stencil;
-
-   GLenum      rt_fmt;
-   GLint       rt_internal_fmt;
-
-   GLenum      rb_depth_fmt;
-   GLenum      rb_stencil_fmt;
-   GLenum      rb_depth_stencil_fmt;
+   GLuint   rt_tex;
+   GLint    rt_internal_fmt;
+   GLenum   rt_fmt;
+   GLuint   rb_depth;
+   GLenum   rb_depth_fmt;
+   GLuint   rb_stencil;
+   GLenum   rb_stencil_fmt;
+   GLuint   rb_depth_stencil;
+   GLenum   rb_depth_stencil_fmt;
 
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
    EGLSurface  direct_sfc;
@@ -124,7 +113,7 @@ struct _Render_Engine_GL_Context
 // Resources used per thread
 struct _Render_Engine_GL_Resource
 {
-   // Resource context/surface per Thread in TLS for evasgl use
+   // Resource context/surface per Thread in TLS for evasgl use 
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
    EGLContext context;
    EGLSurface surface;
@@ -152,7 +141,7 @@ static Evas_Object *gl_direct_img_obj = NULL;
 static char _gl_ext_string[1024];
 static char _evasgl_ext_string[1024];
 
-// Resource context/surface per Thread in TLS for evasgl use
+// Resource context/surface per Thread in TLS for evasgl use 
 static Eina_TLS   resource_key;
 static Eina_List *resource_list;
 LK(resource_lock);
@@ -236,8 +225,6 @@ unsigned char 	(*glsym_glTestFenceNV) (GLuint fence) = NULL;
 void 	(*glsym_glGetFenceivNV) (GLuint fence, GLenum pname, GLint* params) = NULL;
 void 	(*glsym_glFinishFenceNV) (GLuint fence) = NULL;
 void 	(*glsym_glSetFenceNV) (GLuint, GLenum) = NULL;
-void    (*glsym_glRenderbufferStorageMultisampleIMG) (GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height) = NULL;
-void    (*glsym_glFramebufferTexture2DMultisampleIMG) (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLsizei samples) = NULL;
 void 	(*glsym_glGetDriverControlsQCOM) (GLint* num, GLsizei size, GLuint* driverControls) = NULL;
 void 	(*glsym_glGetDriverControlStringQCOM) (GLuint driverControl, GLsizei bufSize, GLsizei* length, char* driverControlString) = NULL;
 void 	(*glsym_glEnableDriverControlQCOM) (GLuint driverControl) = NULL;
@@ -270,7 +257,6 @@ static Extension_Entry _gl_ext_entries[] = {
        { "GL_QCOM_driver_control", "QCOM_driver_control", 0 },
        { "GL_QCOM_extended_get", "QCOM_extended_get", 0 },
        { "GL_QCOM_extended_get2", "QCOM_extended_get2", 0 },
-       { "GL_IMG_multlisampled_render_to_texture", "multisampled_render_to_texture", 0 },
 
        //--- Define Extensions ---//
        { "GL_OES_compressed_ETC1_RGB8_texture", "compressed_ETC1_RGB8_texture", 0 },
@@ -315,7 +301,6 @@ static Extension_Entry _gl_ext_entries[] = {
        { "GL_QCOM_driver_control", "QCOM_driver_control", 0 },
        { "GL_QCOM_extended_get", "QCOM_extended_get", 0 },
        { "GL_QCOM_extended_get2", "QCOM_extended_get2", 0 },
-       { "GL_IMG_multlisampled_render_to_texture", "multisampled_render_to_texture", 0 },
 
        //--- Define Extensions ---//
        { "GL_OES_compressed_ETC1_RGB8_texture", "compressed_ETC1_RGB8_texture", 0 },
@@ -467,7 +452,6 @@ _gl_ext_sym_init(void)
    //----------- GLES 2.0 Extensions ------------//
    // If the symbol's not found, they get set to NULL
    // If one of the functions in the extension exists, the extension in supported
-
    /* GL_OES_get_program_binary */
    FINDSYM(glsym_glGetProgramBinaryOES, "glGetProgramBinary", glsym_func_void);
    FINDSYM(glsym_glGetProgramBinaryOES, "glGetProgramBinaryEXT", glsym_func_void);
@@ -478,6 +462,10 @@ _gl_ext_sym_init(void)
    FINDSYM(glsym_glProgramBinaryOES, "glProgramBinaryEXT", glsym_func_void);
    FINDSYM(glsym_glProgramBinaryOES, "glProgramBinaryARB", glsym_func_void);
    FINDSYM(glsym_glProgramBinaryOES, "glProgramBinaryOES", glsym_func_void);
+
+   // Check the first function to see if the extension is supported...
+   if (glsym_glGetProgramBinaryOES) _gl_ext_entries[0].supported = 1;
+
 
    /* GL_OES_mapbuffer */
    FINDSYM(glsym_glMapBufferOES, "glMapBuffer", glsym_func_void_ptr);
@@ -494,6 +482,8 @@ _gl_ext_sym_init(void)
    FINDSYM(glsym_glGetBufferPointervOES, "glGetBufferPointervEXT", glsym_func_void);
    FINDSYM(glsym_glGetBufferPointervOES, "glGetBufferPointervARB", glsym_func_void);
    FINDSYM(glsym_glGetBufferPointervOES, "glGetBufferPointervOES", glsym_func_void);
+
+   if (glsym_glMapBufferOES) _gl_ext_entries[1].supported = 1;
 
    /* GL_OES_texture_3D */
    FINDSYM(glsym_glTexImage3DOES, "glTexImage3D", glsym_func_void);
@@ -526,6 +516,8 @@ _gl_ext_sym_init(void)
    FINDSYM(glsym_glFramebufferTexture3DOES, "glFramebufferTexture3DEXT", glsym_func_void);
    FINDSYM(glsym_glFramebufferTexture3DOES, "glFramebufferTexture3DOES", glsym_func_void);
 
+   if (glsym_glTexSubImage3DOES) _gl_ext_entries[2].supported = 1;
+
    /* AMD_performance_monitor */
    FINDSYM(glsym_glGetPerfMonitorGroupsAMD, "glGetPerfMonitorGroupsAMD", glsym_func_void);
    FINDSYM(glsym_glGetPerfMonitorCountersAMD, "glGetPerfMonitorCountersAMD", glsym_func_void);
@@ -539,10 +531,14 @@ _gl_ext_sym_init(void)
    FINDSYM(glsym_glEndPerfMonitorAMD, "glEndPerfMonitorAMD", glsym_func_void);
    FINDSYM(glsym_glGetPerfMonitorCounterDataAMD, "glGetPerfMonitorCounterDataAMD", glsym_func_void);
 
+   if (glsym_glGetPerfMonitorGroupsAMD) _gl_ext_entries[3].supported = 1;
+
    /* GL_EXT_discard_framebuffer */
    FINDSYM(glsym_glDiscardFramebufferEXT, "glDiscardFramebuffer", glsym_func_void);
    FINDSYM(glsym_glDiscardFramebufferEXT, "glDiscardFramebufferARB", glsym_func_void);
    FINDSYM(glsym_glDiscardFramebufferEXT, "glDiscardFramebufferEXT", glsym_func_void);
+
+   if (glsym_glDiscardFramebufferEXT) _gl_ext_entries[4].supported = 1;
 
    /* GL_EXT_multi_draw_arrays */
    FINDSYM(glsym_glMultiDrawArraysEXT, "glMultiDrawArrays", glsym_func_void);
@@ -553,6 +549,8 @@ _gl_ext_sym_init(void)
    FINDSYM(glsym_glMultiDrawElementsEXT, "glMultiDrawElementsARB", glsym_func_void);
    FINDSYM(glsym_glMultiDrawElementsEXT, "glMultiDrawElementsEXT", glsym_func_void);
 
+   if (glsym_glMultiDrawArraysEXT) _gl_ext_entries[5].supported = 1;
+
    /* GL_NV_fence */
    FINDSYM(glsym_glDeleteFencesNV, "glDeleteFencesNV", glsym_func_void);
    FINDSYM(glsym_glGenFencesNV, "glGenFencesNV", glsym_func_void);
@@ -562,11 +560,15 @@ _gl_ext_sym_init(void)
    FINDSYM(glsym_glFinishFenceNV, "glFinishFenceNV", glsym_func_void);
    FINDSYM(glsym_glSetFenceNV, "glSetFenceNV", glsym_func_void);
 
+   if (glsym_glDeleteFencesNV) _gl_ext_entries[6].supported = 1;
+
    /* GL_QCOM_driver_control */
    FINDSYM(glsym_glGetDriverControlsQCOM, "glGetDriverControlsQCOM", glsym_func_void);
    FINDSYM(glsym_glGetDriverControlStringQCOM, "glGetDriverControlStringQCOM", glsym_func_void);
    FINDSYM(glsym_glEnableDriverControlQCOM, "glEnableDriverControlQCOM", glsym_func_void);
    FINDSYM(glsym_glDisableDriverControlQCOM, "glDisableDriverControlQCOM", glsym_func_void);
+
+   if (glsym_glGetDriverControlsQCOM) _gl_ext_entries[7].supported = 1;
 
    /* GL_QCOM_extended_get */
    FINDSYM(glsym_glExtGetTexturesQCOM, "glExtGetTexturesQCOM", glsym_func_void);
@@ -578,18 +580,15 @@ _gl_ext_sym_init(void)
    FINDSYM(glsym_glExtGetTexSubImageQCOM, "glExtGetTexSubImageQCOM", glsym_func_void);
    FINDSYM(glsym_glExtGetBufferPointervQCOM, "glExtGetBufferPointervQCOM", glsym_func_void);
 
+   if (glsym_glExtGetTexturesQCOM) _gl_ext_entries[8].supported = 1;
+
    /* GL_QCOM_extended_get2 */
    FINDSYM(glsym_glExtGetShadersQCOM, "glExtGetShadersQCOM", glsym_func_void);
    FINDSYM(glsym_glExtGetProgramsQCOM, "glExtGetProgramsQCOM", glsym_func_void);
    FINDSYM(glsym_glExtIsProgramBinaryQCOM, "glExtIsProgramBinaryQCOM", glsym_func_uchar);
    FINDSYM(glsym_glExtGetProgramBinarySourceQCOM, "glExtGetProgramBinarySourceQCOM", glsym_func_void);
 
-   /* GL_IMG_multisampled_render_to_texture */
-   FINDSYM(glsym_glRenderbufferStorageMultisampleIMG, "glRenderbufferStorageMultisampleIMG", glsym_func_void);
-   FINDSYM(glsym_glRenderbufferStorageMultisampleIMG, "glRenderbufferStorageMultisampleEXT", glsym_func_void);
-   FINDSYM(glsym_glFramebufferTexture2DMultisampleIMG, "glFramebufferTexture2DMultisampleIMG", glsym_func_void);
-   FINDSYM(glsym_glFramebufferTexture2DMultisampleIMG, "glFramebufferTexture2DMultisampleEXT", glsym_func_void);
-
+   if (glsym_glExtGetShadersQCOM) _gl_ext_entries[9].supported = 1;
 }
 
 static void
@@ -627,7 +626,7 @@ _gl_ext_init(Render_Engine *re)
 #else
    if (glsym_glXQueryExtensionsString)
      {
-        evasglexts = glXQueryExtensionsString(re->info->info.display,
+        evasglexts = glXQueryExtensionsString(re->info->info.display, 
                                               re->info->info.screen);
 #endif
 
@@ -2853,7 +2852,7 @@ eng_canvas_alpha_get(void *data, void *info __UNUSED__)
 // Unfortunately, there is no query function to figure out which surface formats work.
 // So, this is one way to test for surface config capability.
 static int
-_check_gl_surface_format(GLint int_fmt, GLenum fmt, GLenum attachment, GLenum attach_fmt, int mult_samples)
+_check_gl_surface_format(GLint int_fmt, GLenum fmt, GLenum attachment, GLenum attach_fmt)
 {
    GLuint fbo, tex, rb;
    int w, h, fb_status;
@@ -2877,10 +2876,7 @@ _check_gl_surface_format(GLint int_fmt, GLenum fmt, GLenum attachment, GLenum at
         glTexImage2D(GL_TEXTURE_2D, 0, int_fmt, w, h, 0, fmt, GL_UNSIGNED_BYTE, NULL);
         glBindTexture(GL_TEXTURE_2D, 0);
 
-        if (mult_samples)
-           glsym_glFramebufferTexture2DMultisampleIMG(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0, mult_samples);
-        else
-           glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
      }
 
    // Render Target Attachment (Stencil or Depth)
@@ -2888,10 +2884,7 @@ _check_gl_surface_format(GLint int_fmt, GLenum fmt, GLenum attachment, GLenum at
      {
         glGenRenderbuffers(1, &rb);
         glBindRenderbuffer(GL_RENDERBUFFER, rb);
-        if (mult_samples)
-           glsym_glRenderbufferStorageMultisampleIMG(GL_RENDERBUFFER, mult_samples, attach_fmt, w, h);
-        else
-           glRenderbufferStorage(GL_RENDERBUFFER, attach_fmt, w, h);
+        glRenderbufferStorage(GL_RENDERBUFFER, attach_fmt, w, h);
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER, rb);
         glBindRenderbuffer(GL_RENDERBUFFER, 0);
      }
@@ -2910,7 +2903,7 @@ _check_gl_surface_format(GLint int_fmt, GLenum fmt, GLenum attachment, GLenum at
       return 0;
    else
      {
-        if ((attachment) && (!mult_samples))
+        if (attachment)
            return attach_fmt;
         else
            return 1;
@@ -2926,29 +2919,21 @@ _print_gl_surface_cap(Render_Engine *re, int error)
    else \
       DBG(__VA_ARGS__);
 
-   PRINT_LOG("----------------------------------------------------");
-   PRINT_LOG("           EvasGL Supported Surface Format          ");
-   PRINT_LOG("                                                    ");
-   PRINT_LOG(" [Max Renderbuffer Size]  : %d", re->gl_cap.max_rb_size);
-   PRINT_LOG(" [Multisample Support  ]  : %d", re->gl_cap.msaa_support);
-   PRINT_LOG("          [Low  Samples]  : %d", re->gl_cap.msaa_samples[1]);
-   PRINT_LOG("          [Med  Samples]  : %d", re->gl_cap.msaa_samples[2]);
-   PRINT_LOG("          [High Samples]  : %d", re->gl_cap.msaa_samples[3]);
-   PRINT_LOG("                                  [--Multisamples--]   ");
-   PRINT_LOG("                           [Norm] [Low] [Med] [High]");
-   PRINT_LOG(" [RGB  Format]            : %4x    %d     %d     %d", re->gl_cap.rgb_888[0], re->gl_cap.rgb_888[1], re->gl_cap.rgb_888[2], re->gl_cap.rgb_888[3]);
-   PRINT_LOG(" [RGBA Format]            : %4x    %d     %d     %d", re->gl_cap.rgba_8888[0], re->gl_cap.rgba_8888[1], re->gl_cap.rgba_8888[2], re->gl_cap.rgba_8888[3]);
-   PRINT_LOG(" [Depth  8 Bits]          : %4x    %d     %d     %d", re->gl_cap.depth_8[0], re->gl_cap.depth_8[1], re->gl_cap.depth_8[2], re->gl_cap.depth_8[3]);
-   PRINT_LOG(" [Depth 16 Bits]          : %4x    %d     %d     %d", re->gl_cap.depth_16[0], re->gl_cap.depth_16[1], re->gl_cap.depth_16[2], re->gl_cap.depth_16[3]);
-   PRINT_LOG(" [Depth 24 Bits]          : %4x    %d     %d     %d", re->gl_cap.depth_24[0], re->gl_cap.depth_24[1], re->gl_cap.depth_24[2], re->gl_cap.depth_24[3]);
-   PRINT_LOG(" [Depth 32 Bits]          : %4x    %d     %d     %d", re->gl_cap.depth_32[0], re->gl_cap.depth_32[1], re->gl_cap.depth_32[2], re->gl_cap.depth_32[3]);
-   PRINT_LOG(" [Stencil  1 Bits]        : %4x    %d     %d     %d", re->gl_cap.stencil_1[0], re->gl_cap.stencil_1[1], re->gl_cap.stencil_1[2], re->gl_cap.stencil_1[3]);
-   PRINT_LOG(" [Stencil  2 Bits]        : %4x    %d     %d     %d", re->gl_cap.stencil_2[0], re->gl_cap.stencil_2[1], re->gl_cap.stencil_2[2], re->gl_cap.stencil_2[3]);
-   PRINT_LOG(" [Stencil  4 Bits]        : %4x    %d     %d     %d", re->gl_cap.stencil_4[0], re->gl_cap.stencil_4[1], re->gl_cap.stencil_4[2], re->gl_cap.stencil_4[3]);
-   PRINT_LOG(" [Stencil  8 Bits]        : %4x    %d     %d     %d", re->gl_cap.stencil_8[0], re->gl_cap.stencil_8[1], re->gl_cap.stencil_8[2], re->gl_cap.stencil_8[3]);
-   PRINT_LOG(" [Stencil 16 Bits]        : %4x    %d     %d     %d", re->gl_cap.stencil_16[0], re->gl_cap.stencil_16[1], re->gl_cap.stencil_16[2], re->gl_cap.stencil_16[3]);
-   PRINT_LOG(" [Depth 24 Stencil 8 Bits]: %4x    %d     %d     %d", re->gl_cap.depth_24_stencil_8[0], re->gl_cap.depth_24_stencil_8[1], re->gl_cap.depth_24_stencil_8[2], re->gl_cap.depth_24_stencil_8[3]);
-   PRINT_LOG("----------------------------------------------------");
+   PRINT_LOG("---------------------------------------------------");
+   PRINT_LOG("           EvasGL Supported Surface Format         ");
+   PRINT_LOG(" [RGB  Fromat]            : %x", re->gl_cap.rgb_fmt);
+   PRINT_LOG(" [RGBA Fromat]            : %x", re->gl_cap.rgba_fmt);
+   PRINT_LOG(" [Depth  8 Bits]          : %x", re->gl_cap.depth_8);
+   PRINT_LOG(" [Depth 16 Bits]          : %x", re->gl_cap.depth_16);
+   PRINT_LOG(" [Depth 24 Bits]          : %x", re->gl_cap.depth_24);
+   PRINT_LOG(" [Depth 32 Bits]          : %x", re->gl_cap.depth_32);
+   PRINT_LOG(" [Stencil  1 Bits]        : %x", re->gl_cap.stencil_1);
+   PRINT_LOG(" [Stencil  2 Bits]        : %x", re->gl_cap.stencil_2);
+   PRINT_LOG(" [Stencil  4 Bits]        : %x", re->gl_cap.stencil_4);
+   PRINT_LOG(" [Stencil  8 Bits]        : %x", re->gl_cap.stencil_8);
+   PRINT_LOG(" [Stencil 16 Bits]        : %x", re->gl_cap.stencil_16);
+   PRINT_LOG(" [Depth 24 Stencil 8 Bits]: %x", re->gl_cap.depth_24_stencil_8);
+   PRINT_LOG("---------------------------------------------------");
 #undef PRINT_LOG
 }
 
@@ -2956,9 +2941,8 @@ static void
 _set_gl_surface_cap(Render_Engine *re)
 {
    GLuint fbo, tex, depth, stencil;
-   int w, h, max_samples;
-
-   int i, ret, count;
+   int w, h;
+   int ret;
 
    if (!re) return;
    if (re->gl_cap_initted) return;
@@ -2966,70 +2950,30 @@ _set_gl_surface_cap(Render_Engine *re)
    // Width/Heith for test purposes
    w = h = 2;
 
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-   glGetIntegerv(GL_MAX_SAMPLES_IMG, &max_samples);
+   re->gl_cap.rgb_fmt  = _check_gl_surface_format(GL_RGB, GL_RGB, 0, 0);
+   re->gl_cap.rgba_fmt = _check_gl_surface_format(GL_RGBA, GL_RGBA, 0, 0);
 
-   // Check if msaa_support is supported
-   if (max_samples &&
-       (glsym_glFramebufferTexture2DMultisampleIMG) &&
-       (glsym_glRenderbufferStorageMultisampleIMG))
-     {
-        re->gl_cap.msaa_support = 1;
-
-        re->gl_cap.msaa_samples[3] = max_samples;
-        re->gl_cap.msaa_samples[2] = max_samples/2;
-        re->gl_cap.msaa_samples[1] = max_samples/4;
-        re->gl_cap.msaa_samples[0] = 0;
-
-        if (!re->gl_cap.msaa_samples[2]) re->gl_cap.msaa_samples[3];
-        if (!re->gl_cap.msaa_samples[1]) re->gl_cap.msaa_samples[2];
-     }
-   else
-     {
-        re->gl_cap.msaa_support = 0;
-     }
-
-#endif
-   glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE, &re->gl_cap.max_rb_size);
-
+   re->gl_cap.depth_8   = _check_gl_surface_format(0, 0, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT);
+   re->gl_cap.depth_16  = _check_gl_surface_format(0, 0, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT16);
 
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-   count = (re->gl_cap.msaa_support) ? 4 : 1;
+   re->gl_cap.depth_24  = _check_gl_surface_format(0, 0, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24_OES);
+   re->gl_cap.depth_32  = _check_gl_surface_format(0, 0, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT32_OES);
 
-   for (i = 0; i < count; i++)
-     {
-        re->gl_cap.rgb_888[i]   = _check_gl_surface_format(GL_RGB, GL_RGB, 0, 0, re->gl_cap.msaa_samples[i]);
-        re->gl_cap.rgba_8888[i] = _check_gl_surface_format(GL_RGBA, GL_RGBA, 0, 0, re->gl_cap.msaa_samples[i]);
+   re->gl_cap.stencil_1 = _check_gl_surface_format(0, 0, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX1_OES);
+   re->gl_cap.stencil_4 = _check_gl_surface_format(0, 0, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX4_OES);
+   re->gl_cap.stencil_8 = _check_gl_surface_format(0, 0, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX8);
 
-        re->gl_cap.depth_8[i]   = _check_gl_surface_format(0, 0, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT, re->gl_cap.msaa_samples[i]);
-        re->gl_cap.depth_16[i]  = _check_gl_surface_format(0, 0, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT16, re->gl_cap.msaa_samples[i]);
-        re->gl_cap.depth_24[i]  = _check_gl_surface_format(0, 0, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24_OES, re->gl_cap.msaa_samples[i]);
-        re->gl_cap.depth_32[i]  = _check_gl_surface_format(0, 0, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT32_OES, re->gl_cap.msaa_samples[i]);
+   re->gl_cap.depth_24_stencil_8  = _check_gl_surface_format(0, 0, GL_DEPTH_STENCIL_OES, GL_DEPTH24_STENCIL8_OES);
+#else
+   re->gl_cap.depth_24  = _check_gl_surface_format(0, 0, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24);
+   re->gl_cap.depth_32  = _check_gl_surface_format(0, 0, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT32);
 
-        re->gl_cap.stencil_1[i] = _check_gl_surface_format(0, 0, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX1_OES, re->gl_cap.msaa_samples[i]);
-        re->gl_cap.stencil_4[i] = _check_gl_surface_format(0, 0, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX4_OES, re->gl_cap.msaa_samples[i]);
-        re->gl_cap.stencil_8[i] = _check_gl_surface_format(0, 0, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX8, re->gl_cap.msaa_samples[i]);
-     }
+   re->gl_cap.stencil_1 = _check_gl_surface_format(0, 0, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX1);
+   re->gl_cap.stencil_4 = _check_gl_surface_format(0, 0, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX4);
+   re->gl_cap.stencil_8 = _check_gl_surface_format(0, 0, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX8);
 
-  #else
-   count = (re->gl_cap.msaa_support) ? 4 : 1;
-
-   for (i = 0; i < count; i++)
-     {
-        re->gl_cap.rgb_888[i]   = _check_gl_surface_format(GL_RGB, GL_RGB, 0, 0, re->gl_cap.msaa_samples[i]);
-        re->gl_cap.rgba_8888[i] = _check_gl_surface_format(GL_RGBA, GL_RGBA, 0, 0, re->gl_cap.msaa_samples[i]);
-
-        re->gl_cap.depth_8[i]   = _check_gl_surface_format(0, 0, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT, re->gl_cap.msaa_samples[i]);
-        re->gl_cap.depth_16[i]  = _check_gl_surface_format(0, 0, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT16, re->gl_cap.msaa_samples[i]);
-        re->gl_cap.depth_24[i]  = _check_gl_surface_format(0, 0, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24, re->gl_cap.msaa_samples[i]);
-        re->gl_cap.depth_32[i]  = _check_gl_surface_format(0, 0, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT32, re->gl_cap.msaa_samples[i]);
-
-        re->gl_cap.stencil_1[i] = _check_gl_surface_format(0, 0, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX1, re->gl_cap.msaa_samples[i]);
-        re->gl_cap.stencil_4[i] = _check_gl_surface_format(0, 0, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX4, re->gl_cap.msaa_samples[i]);
-        re->gl_cap.stencil_8[i] = _check_gl_surface_format(0, 0, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX8, re->gl_cap.msaa_samples[i]);
-
-        re->gl_cap.depth_24_stencil_8[i]  = _check_gl_surface_format(0, 0, GL_DEPTH_STENCIL_ATTACHMENT, GL_DEPTH24_STENCIL8, re->gl_cap.msaa_samples[i]);
-     }
+   re->gl_cap.depth_24_stencil_8  = _check_gl_surface_format(0, 0, GL_DEPTH_STENCIL_ATTACHMENT, GL_DEPTH24_STENCIL8);
 #endif
 
    _print_gl_surface_cap(re, 0);
@@ -3044,14 +2988,14 @@ _set_internal_config(Render_Engine *re, Render_Engine_GL_Surface *sfc, Evas_GL_C
    switch((int)cfg->color_format)
      {
       case EVAS_GL_RGB_888:
-         if (re->gl_cap.rgb_888[0])
+         if (re->gl_cap.rgb_fmt)
            {
               sfc->rt_fmt          = GL_RGB;
               sfc->rt_internal_fmt = GL_RGB;
               break;
            }
       case EVAS_GL_RGBA_8888:
-         if (re->gl_cap.rgba_8888[0])
+         if (re->gl_cap.rgba_fmt)
            {
               sfc->rt_fmt          = GL_RGBA;
               sfc->rt_internal_fmt = GL_RGBA;
@@ -3064,35 +3008,35 @@ _set_internal_config(Render_Engine *re, Render_Engine_GL_Surface *sfc, Evas_GL_C
          return 0;
      }
 
-   switch((int)cfg->depth_bits)
+   switch(cfg->depth_bits)
      {
       case EVAS_GL_DEPTH_NONE:
          break;
       case EVAS_GL_DEPTH_BIT_8:
-         if (re->gl_cap.depth_8[0])
+         if (re->gl_cap.depth_8)
            {
-              sfc->rb_depth_fmt = re->gl_cap.depth_8[0];
+              sfc->rb_depth_fmt = re->gl_cap.depth_8;
               cfg->depth_bits   = EVAS_GL_DEPTH_BIT_8;
               break;
            }
       case EVAS_GL_DEPTH_BIT_16:
-         if (re->gl_cap.depth_16[0])
+         if (re->gl_cap.depth_16)
            {
-              sfc->rb_depth_fmt = re->gl_cap.depth_16[0];
+              sfc->rb_depth_fmt = re->gl_cap.depth_16;
               cfg->depth_bits   = EVAS_GL_DEPTH_BIT_16;
               break;
            }
       case EVAS_GL_DEPTH_BIT_24:
-         if (re->gl_cap.depth_24[0])
+         if (re->gl_cap.depth_24)
            {
-              sfc->rb_depth_fmt = re->gl_cap.depth_24[0];
+              sfc->rb_depth_fmt = re->gl_cap.depth_24;
               cfg->depth_bits   = EVAS_GL_DEPTH_BIT_24;
               break;
            }
       case EVAS_GL_DEPTH_BIT_32:
-         if (re->gl_cap.depth_32[0])
+         if (re->gl_cap.depth_32)
            {
-              sfc->rb_depth_fmt = re->gl_cap.depth_32[0];
+              sfc->rb_depth_fmt = re->gl_cap.depth_32;
               cfg->depth_bits   = EVAS_GL_DEPTH_BIT_32;
               break;
            }
@@ -3102,49 +3046,49 @@ _set_internal_config(Render_Engine *re, Render_Engine_GL_Surface *sfc, Evas_GL_C
          return 0;
      }
 
-   switch((int)cfg->stencil_bits)
+   switch(cfg->stencil_bits)
      {
       case EVAS_GL_STENCIL_NONE:
          break;
       case EVAS_GL_STENCIL_BIT_1:
-         if (re->gl_cap.stencil_1[0])
+         if (re->gl_cap.stencil_1)
            {
-              sfc->rb_stencil_fmt = re->gl_cap.stencil_1[0];
+              sfc->rb_stencil_fmt = re->gl_cap.stencil_1;
               cfg->stencil_bits   = EVAS_GL_STENCIL_BIT_1;
               break;
            }
       case EVAS_GL_STENCIL_BIT_2:
-         if (re->gl_cap.stencil_2[0])
+         if (re->gl_cap.stencil_2)
            {
-              sfc->rb_stencil_fmt = re->gl_cap.stencil_2[0];
+              sfc->rb_stencil_fmt = re->gl_cap.stencil_2;
               cfg->stencil_bits   = EVAS_GL_STENCIL_BIT_2;
               break;
            }
       case EVAS_GL_STENCIL_BIT_4:
-         if (re->gl_cap.stencil_4[0])
+         if (re->gl_cap.stencil_4)
            {
-              sfc->rb_stencil_fmt = re->gl_cap.stencil_4[0];
+              sfc->rb_stencil_fmt = re->gl_cap.stencil_4;
               cfg->stencil_bits   = EVAS_GL_STENCIL_BIT_4;
               break;
            }
       case EVAS_GL_STENCIL_BIT_8:
-         if ((sfc->rb_depth_fmt == re->gl_cap.depth_24[0]) && (re->gl_cap.depth_24_stencil_8[0]))
+         if ((sfc->rb_depth_fmt == re->gl_cap.depth_24) && (re->gl_cap.depth_24_stencil_8))
            {
-              sfc->rb_depth_stencil_fmt = re->gl_cap.depth_24_stencil_8[0];
-              sfc->rb_stencil_fmt = re->gl_cap.stencil_8[0];
+              sfc->rb_depth_stencil_fmt = re->gl_cap.depth_24_stencil_8;
+              sfc->rb_stencil_fmt = re->gl_cap.stencil_8;
               cfg->stencil_bits = EVAS_GL_STENCIL_BIT_8;
               break;
            }
-         else if (re->gl_cap.stencil_8[0])
+         else if (re->gl_cap.stencil_8)
            {
-              sfc->rb_stencil_fmt = re->gl_cap.stencil_8[0];
+              sfc->rb_stencil_fmt = re->gl_cap.stencil_8;
               cfg->stencil_bits   = EVAS_GL_STENCIL_BIT_8;
               break;
            }
       case EVAS_GL_STENCIL_BIT_16:
-         if (re->gl_cap.stencil_16[0])
+         if (re->gl_cap.stencil_16)
            {
-              sfc->rb_stencil_fmt = re->gl_cap.stencil_16[0];
+              sfc->rb_stencil_fmt = re->gl_cap.stencil_16;
               cfg->stencil_bits   = EVAS_GL_STENCIL_BIT_16;
               break;
            }
@@ -3164,22 +3108,6 @@ _set_internal_config(Render_Engine *re, Render_Engine_GL_Surface *sfc, Evas_GL_C
              fprintf(stderr, "########################################################\n");
           }
         // Add other options here...
-     }
-
-   // Multisample bit
-   if (re->gl_cap.msaa_support)
-     {
-        if ( ((int)(cfg->multisample_bits) > (int)EVAS_GL_MULTISAMPLE_HIGH) ||
-             ((int)(cfg->multisample_bits) < 0) )
-          {
-             ERR("Unsupported Multisample Bits Format!");
-             _print_gl_surface_cap(re, 1);
-             return 0;
-          }
-        else
-          {
-             sfc->rt_msaa_samples = re->gl_cap.msaa_samples[(int)cfg->multisample_bits];
-          }
      }
 
    return 1;
@@ -3232,10 +3160,8 @@ _attach_fbo_surface(Render_Engine *data __UNUSED__,
                      GL_RGBA, GL_UNSIGNED_BYTE, NULL);
         glBindTexture(GL_TEXTURE_2D, 0);
 
-        if (sfc->rt_msaa_samples)
-           glsym_glFramebufferTexture2DMultisampleIMG(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, sfc->rt_tex, 0, sfc->rt_msaa_samples);
-        else
-           glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+        // Attach texture to FBO
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                GL_TEXTURE_2D, sfc->rt_tex, 0);
      }
 
@@ -3257,15 +3183,8 @@ _attach_fbo_surface(Render_Engine *data __UNUSED__,
    if (sfc->rb_depth)
      {
         glBindRenderbuffer(GL_RENDERBUFFER, sfc->rb_depth);
-
-        if (sfc->rt_msaa_samples)
-           glsym_glRenderbufferStorageMultisampleIMG(GL_RENDERBUFFER,
-                                                     sfc->rt_msaa_samples,
-                                                     sfc->rb_depth_fmt,
-                                                     sfc->w, sfc->h);
-        else
-           glRenderbufferStorage(GL_RENDERBUFFER, sfc->rb_depth_fmt,
-                                 sfc->w, sfc->h);
+        glRenderbufferStorage(GL_RENDERBUFFER, sfc->rb_depth_fmt,
+                              sfc->w, sfc->h);
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
                                   GL_RENDERBUFFER, sfc->rb_depth);
         glBindRenderbuffer(GL_RENDERBUFFER, 0);
@@ -3275,15 +3194,8 @@ _attach_fbo_surface(Render_Engine *data __UNUSED__,
    if (sfc->rb_stencil)
      {
         glBindRenderbuffer(GL_RENDERBUFFER, sfc->rb_stencil);
-
-        if (sfc->rt_msaa_samples)
-           glsym_glRenderbufferStorageMultisampleIMG(GL_RENDERBUFFER,
-                                                     sfc->rt_msaa_samples,
-                                                     sfc->rb_stencil_fmt,
-                                                     sfc->w, sfc->h);
-        else
-           glRenderbufferStorage(GL_RENDERBUFFER, sfc->rb_stencil_fmt,
-                                 sfc->w, sfc->h);
+        glRenderbufferStorage(GL_RENDERBUFFER, sfc->rb_stencil_fmt,
+                              sfc->w, sfc->h);
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
                                   GL_RENDERBUFFER, sfc->rb_stencil);
         glBindRenderbuffer(GL_RENDERBUFFER, 0);
@@ -3367,13 +3279,6 @@ eng_gl_surface_create(void *data, void *config, int w, int h)
 
    // Set the engine surface capability first if it hasn't been set
    if (!re->gl_cap_initted) _set_gl_surface_cap(re);
-
-   // Check the size of the surface
-   if ( (w > re->gl_cap.max_rb_size) || (h > re->gl_cap.max_rb_size) )
-     {
-        ERR("Surface size greater than the supported size. Max Surface Size: %d", re->gl_cap.max_rb_size);
-        goto finish;
-     }
 
    // Set the internal config value
    if (!_set_internal_config(re, sfc, cfg))
