@@ -1719,7 +1719,6 @@ evas_render_idle_flush(Evas *e)
    eina_array_flush(&e->obscuring_objects);
    eina_array_flush(&e->temporary_objects);
    eina_array_flush(&e->clip_changes);
-   eina_array_flush(&e->temporary_objects);
 
    e->invalidate = EINA_TRUE;
 }
