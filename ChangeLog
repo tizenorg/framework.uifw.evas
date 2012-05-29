@@ -704,3 +704,64 @@
 
         * Fix shader binary saving to save with dir existing already.
 
+2012-04-26  Carsten Haitzler (The Rasterman)
+
+        1.2.0 release
+
+2012-04-26  Cedric Bail
+
+	* Lock less font rendering.
+	* Removing EVAS_FRAME_QUEUING, EVAS_SLI, METRIC_CACHE and WORD_CACHE.
+
+2012-04-29  Tom Hacohen (TAsn)
+
+	* Textblock: Fixed a couple of bugs with range delete.
+
+2012-04-30  Jérôme Pinot
+
+	* Add missing files in the tarballs.
+
+2012-05-01  Cedric Bail
+
+	* Compute limited bounding box for Smart object.
+	* Use bounding box to reduce the number of object explored during event propagation.
+
+2012-05-03  Iván Briano (Sachiel)
+
+	* Add CServe2 and image cache2 that makes use of it. Several changes
+	in the buffer and software engines to use the right cache if CServe2
+	is requested for the application.
+
+2012-05-14  Carsten Haitzler (The Rasterman)
+
+        * Fix pixman rendering support if you set alpha flag AFTER
+        setting image size for custom image data.
+
+2012-05-14  Sanghee Park
+
+	* Add Multisample Anti-Anliased surface format for Evas GL.
+        The formats are divided into High, Med, Low, None, where High represent
+        max number of samples.  Currently, this feature is only supported in GLES2
+        environment with GL_IMG_multisampled_render_to_texture extension supported.
+
+2012-05-16  Vincent Torri
+
+	* Use Esvg for svg rendering. If not found, librsvg is still used.
+
+2012-05-18  Cedric Bail
+
+	* Remove librsvg svg loader as it is a massive source of crash in e17. If
+	you still want to use it, use the evas_generic_loader librsvg binary.
+
+2012-05-18  ChunEon Park (Hermet)
+
+	* Update mapped objects rendering when their color is changed
+
+2012-05-24  Carsten Haitzler (The Rasterman)
+
+        * Fix evas_object_image_memfile_set() on non-linux systems.
+
+2012-05-29  ChunEon Park (Hermet)
+
+	* Fixed to clean up when map actually changed. Now rendering updates will be
+     correct after evas_map acutally disabled for the smart object.
