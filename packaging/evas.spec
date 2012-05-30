@@ -7,6 +7,7 @@ Group:      System/Libraries
 License:    BSD
 URL:        http://www.enlightenment.org/
 Source0:    %{name}-%{version}.tar.gz
+Source1001: packaging/evas.manifest 
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 BuildRequires:  pkgconfig(eina)
@@ -60,6 +61,7 @@ Enlightenment DR17 advanced canvas library (devel)
 %setup -q
 
 %build
+cp %{SOURCE1001} .
 export CFLAGS+=" -fvisibility=hidden -ffast-math -fPIC"
 export LDFLAGS+=" -fvisibility=hidden -Wl,--hash-style=both -Wl,--as-needed"
 
@@ -100,6 +102,7 @@ rm -rf %{buildroot}
 
 
 %files
+%manifest evas.manifest
 %defattr(-,root,root,-)
 %{_libdir}/libevas.so.*
 %{_libdir}/evas/modules/engines/*/*/module.so
@@ -110,6 +113,7 @@ rm -rf %{buildroot}
 
 
 %files devel
+%manifest evas.manifest
 %defattr(-,root,root,-)
 %{_includedir}/evas-1/*.h
 %{_libdir}/libevas.so
