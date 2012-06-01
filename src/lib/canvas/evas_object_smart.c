@@ -907,22 +907,6 @@ static void
 evas_object_smart_render_pre(Evas_Object *obj)
 {
    if (obj->pre_render_done) return;
-   if (!obj->child_has_map)
-     {
-#if 0
-        Evas_Object_Smart *o;
-
-        o = (Evas_Object_Smart *)(obj->object_data);
-        if (o->member_count > 1 &&
-            obj->cur.bounding_box.w == obj->prev.bounding_box.w &&
-            obj->cur.bounding_box.h == obj->prev.bounding_box.h &&
-            (obj->cur.bounding_box.x != obj->prev.bounding_box.x ||
-             obj->cur.bounding_box.y != obj->prev.bounding_box.y))
-          {
-             fprintf(stderr, "Wouhou, I can detect moving smart object (%s, %p < %p)\n", evas_object_type_get(obj), obj, obj->smart.parent);
-          }
-#endif
-     }
    if (obj->changed_map)
      evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes, obj);
 
