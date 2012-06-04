@@ -626,7 +626,7 @@ _gl_ext_init(Render_Engine *re)
 #else
    if (glsym_glXQueryExtensionsString)
      {
-        evasglexts = glXQueryExtensionsString(re->info->info.display, 
+        evasglexts = glXQueryExtensionsString(re->info->info.display,
                                               re->info->info.screen);
 #endif
 
@@ -2953,27 +2953,27 @@ _set_gl_surface_cap(Render_Engine *re)
    re->gl_cap.rgb_fmt  = _check_gl_surface_format(GL_RGB, GL_RGB, 0, 0);
    re->gl_cap.rgba_fmt = _check_gl_surface_format(GL_RGBA, GL_RGBA, 0, 0);
 
-   re->gl_cap.depth_8   = _check_gl_surface_format(0, 0, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT);
-   re->gl_cap.depth_16  = _check_gl_surface_format(0, 0, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT16);
+   re->gl_cap.depth_8   = _check_gl_surface_format(GL_RGBA, GL_RGBA, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT);
+   re->gl_cap.depth_16  = _check_gl_surface_format(GL_RGBA, GL_RGBA, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT16);
 
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-   re->gl_cap.depth_24  = _check_gl_surface_format(0, 0, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24_OES);
-   re->gl_cap.depth_32  = _check_gl_surface_format(0, 0, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT32_OES);
+   re->gl_cap.depth_24  = _check_gl_surface_format(GL_RGBA, GL_RGBA, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24_OES);
+   re->gl_cap.depth_32  = _check_gl_surface_format(GL_RGBA, GL_RGBA, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT32_OES);
 
-   re->gl_cap.stencil_1 = _check_gl_surface_format(0, 0, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX1_OES);
-   re->gl_cap.stencil_4 = _check_gl_surface_format(0, 0, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX4_OES);
-   re->gl_cap.stencil_8 = _check_gl_surface_format(0, 0, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX8);
+   re->gl_cap.stencil_1 = _check_gl_surface_format(GL_RGBA, GL_RGBA, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX1_OES);
+   re->gl_cap.stencil_4 = _check_gl_surface_format(GL_RGBA, GL_RGBA, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX4_OES);
+   re->gl_cap.stencil_8 = _check_gl_surface_format(GL_RGBA, GL_RGBA, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX8);
 
-   re->gl_cap.depth_24_stencil_8  = _check_gl_surface_format(0, 0, GL_DEPTH_STENCIL_OES, GL_DEPTH24_STENCIL8_OES);
+   re->gl_cap.depth_24_stencil_8  = _check_gl_surface_format(GL_RGBA, GL_RGBA, GL_DEPTH_STENCIL_OES, GL_DEPTH24_STENCIL8_OES);
 #else
-   re->gl_cap.depth_24  = _check_gl_surface_format(0, 0, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24);
-   re->gl_cap.depth_32  = _check_gl_surface_format(0, 0, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT32);
+   re->gl_cap.depth_24  = _check_gl_surface_format(GL_RGBA, GL_RGBA, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24);
+   re->gl_cap.depth_32  = _check_gl_surface_format(GL_RGBA, GL_RGBA, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT32);
 
-   re->gl_cap.stencil_1 = _check_gl_surface_format(0, 0, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX1);
-   re->gl_cap.stencil_4 = _check_gl_surface_format(0, 0, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX4);
-   re->gl_cap.stencil_8 = _check_gl_surface_format(0, 0, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX8);
+   re->gl_cap.stencil_1 = _check_gl_surface_format(GL_RGBA, GL_RGBA, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX1);
+   re->gl_cap.stencil_4 = _check_gl_surface_format(GL_RGBA, GL_RGBA, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX4);
+   re->gl_cap.stencil_8 = _check_gl_surface_format(GL_RGBA, GL_RGBA, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX8);
 
-   re->gl_cap.depth_24_stencil_8  = _check_gl_surface_format(0, 0, GL_DEPTH_STENCIL_ATTACHMENT, GL_DEPTH24_STENCIL8);
+   re->gl_cap.depth_24_stencil_8  = _check_gl_surface_format(GL_RGBA, GL_RGBA, GL_DEPTH_STENCIL_ATTACHMENT, GL_DEPTH24_STENCIL8);
 #endif
 
    _print_gl_surface_cap(re, 0);
@@ -3003,7 +3003,7 @@ _set_internal_config(Render_Engine *re, Render_Engine_GL_Surface *sfc, Evas_GL_C
               break;
            }
       default:
-         ERR("Color Format Not Supported!");
+         ERR("Color Format Not Supported: %d", cfg->color_format);
          _print_gl_surface_cap(re, 1);
          return 0;
      }
@@ -3033,6 +3033,13 @@ _set_internal_config(Render_Engine *re, Render_Engine_GL_Surface *sfc, Evas_GL_C
               cfg->depth_bits   = EVAS_GL_DEPTH_BIT_24;
               break;
            }
+         else if (re->gl_cap.depth_24_stencil_8)
+           {
+              sfc->rb_depth_stencil_fmt = re->gl_cap.depth_24_stencil_8;
+              sfc->rb_depth_fmt         = re->gl_cap.depth_24_stencil_8;
+              cfg->depth_bits           = EVAS_GL_DEPTH_BIT_24;
+              break;
+           }
       case EVAS_GL_DEPTH_BIT_32:
          if (re->gl_cap.depth_32)
            {
@@ -3041,7 +3048,7 @@ _set_internal_config(Render_Engine *re, Render_Engine_GL_Surface *sfc, Evas_GL_C
               break;
            }
       default:
-         ERR("Unsupported Depth Bits Format!");
+         ERR("Unsupported Depth Bits Format: %d", cfg->depth_bits);
          _print_gl_surface_cap(re, 1);
          return 0;
      }
@@ -3072,11 +3079,12 @@ _set_internal_config(Render_Engine *re, Render_Engine_GL_Surface *sfc, Evas_GL_C
               break;
            }
       case EVAS_GL_STENCIL_BIT_8:
-         if ((sfc->rb_depth_fmt == re->gl_cap.depth_24) && (re->gl_cap.depth_24_stencil_8))
+         if ((sfc->rb_depth_fmt == re->gl_cap.depth_24_stencil_8) ||
+             (!(re->gl_cap.stencil_8) && (re->gl_cap.depth_24_stencil_8)))
            {
               sfc->rb_depth_stencil_fmt = re->gl_cap.depth_24_stencil_8;
-              sfc->rb_stencil_fmt = re->gl_cap.stencil_8;
-              cfg->stencil_bits = EVAS_GL_STENCIL_BIT_8;
+              sfc->rb_stencil_fmt       = re->gl_cap.depth_24_stencil_8;
+              cfg->stencil_bits         = EVAS_GL_STENCIL_BIT_8;
               break;
            }
          else if (re->gl_cap.stencil_8)
@@ -3093,7 +3101,7 @@ _set_internal_config(Render_Engine *re, Render_Engine_GL_Surface *sfc, Evas_GL_C
               break;
            }
       default:
-         ERR("Unsupported Stencil Bits Format!");
+         ERR("Unsupported Stencil Bits Format: %d", cfg->stencil_bits);
          _print_gl_surface_cap(re, 1);
          return 0;
      }
