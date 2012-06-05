@@ -233,8 +233,8 @@ unsigned char 	(*glsym_glTestFenceNV) (GLuint fence) = NULL;
 void 	(*glsym_glGetFenceivNV) (GLuint fence, GLenum pname, GLint* params) = NULL;
 void 	(*glsym_glFinishFenceNV) (GLuint fence) = NULL;
 void 	(*glsym_glSetFenceNV) (GLuint, GLenum) = NULL;
-void    (*glsym_glRenderbufferStorageMultisampleIMG) (GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height) = NULL;
-void    (*glsym_glFramebufferTexture2DMultisampleIMG) (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLsizei samples) = NULL;
+void    (*glsym_glRenderbufferStorageMultisample) (GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height) = NULL;
+void    (*glsym_glFramebufferTexture2DMultisample) (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLsizei samples) = NULL;
 void 	(*glsym_glGetDriverControlsQCOM) (GLint* num, GLsizei size, GLuint* driverControls) = NULL;
 void 	(*glsym_glGetDriverControlStringQCOM) (GLuint driverControl, GLsizei bufSize, GLsizei* length, char* driverControlString) = NULL;
 void 	(*glsym_glEnableDriverControlQCOM) (GLuint driverControl) = NULL;
@@ -603,10 +603,10 @@ _gl_ext_sym_init(void)
    if (glsym_glExtGetShadersQCOM) _gl_ext_entries[9].supported = 1;
 
    /* GL_IMG_multisampled_render_to_texture */
-   FINDSYM(glsym_glRenderbufferStorageMultisampleIMG, "glRenderbufferStorageMultisampleIMG", glsym_func_void);
-   FINDSYM(glsym_glRenderbufferStorageMultisampleIMG, "glRenderbufferStorageMultisampleEXT", glsym_func_void);
-   FINDSYM(glsym_glFramebufferTexture2DMultisampleIMG, "glFramebufferTexture2DMultisampleIMG", glsym_func_void);
-   FINDSYM(glsym_glFramebufferTexture2DMultisampleIMG, "glFramebufferTexture2DMultisampleEXT", glsym_func_void);
+   FINDSYM(glsym_glRenderbufferStorageMultisample, "glRenderbufferStorageMultisampleIMG", glsym_func_void);
+   FINDSYM(glsym_glRenderbufferStorageMultisample, "glRenderbufferStorageMultisampleEXT", glsym_func_void);
+   FINDSYM(glsym_glFramebufferTexture2DMultisample, "glFramebufferTexture2DMultisampleIMG", glsym_func_void);
+   FINDSYM(glsym_glFramebufferTexture2DMultisample, "glFramebufferTexture2DMultisampleEXT", glsym_func_void);
 
 }
 
@@ -2896,7 +2896,7 @@ _check_gl_surface_format(GLint int_fmt, GLenum fmt, GLenum attachment, GLenum at
         glBindTexture(GL_TEXTURE_2D, 0);
 
         if (mult_samples)
-           glsym_glFramebufferTexture2DMultisampleIMG(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0, mult_samples);
+           glsym_glFramebufferTexture2DMultisample(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0, mult_samples);
         else
            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
      }
@@ -2918,10 +2918,10 @@ _check_gl_surface_format(GLint int_fmt, GLenum fmt, GLenum attachment, GLenum at
                           0, GL_DEPTH_STENCIL_OES, GL_UNSIGNED_INT_24_8_OES, NULL);
              if (mult_samples)
                {
-                  glsym_glFramebufferTexture2DMultisampleIMG(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                                                             GL_TEXTURE_2D, ds_tex, 0, mult_samples);
-                  glsym_glFramebufferTexture2DMultisampleIMG(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
-                                                             GL_TEXTURE_2D, ds_tex, 0, mult_samples);
+                  glsym_glFramebufferTexture2DMultisample(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                                                          GL_TEXTURE_2D, ds_tex, 0, mult_samples);
+                  glsym_glFramebufferTexture2DMultisample(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
+                                                          GL_TEXTURE_2D, ds_tex, 0, mult_samples);
                }
              else
                {
@@ -2938,7 +2938,7 @@ _check_gl_surface_format(GLint int_fmt, GLenum fmt, GLenum attachment, GLenum at
              glGenRenderbuffers(1, &rb);
              glBindRenderbuffer(GL_RENDERBUFFER, rb);
              if (mult_samples)
-                glsym_glRenderbufferStorageMultisampleIMG(GL_RENDERBUFFER, mult_samples, attach_fmt, w, h);
+                glsym_glRenderbufferStorageMultisample(GL_RENDERBUFFER, mult_samples, attach_fmt, w, h);
              else
                 glRenderbufferStorage(GL_RENDERBUFFER, attach_fmt, w, h);
              glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER, rb);
@@ -3023,8 +3023,8 @@ _set_gl_surface_cap(Render_Engine *re)
 
    // Check if msaa_support is supported
    if (max_samples &&
-       (glsym_glFramebufferTexture2DMultisampleIMG) &&
-       (glsym_glRenderbufferStorageMultisampleIMG))
+       (glsym_glFramebufferTexture2DMultisample) &&
+       (glsym_glRenderbufferStorageMultisample))
      {
         re->gl_cap.msaa_support = 1;
 
@@ -3299,7 +3299,7 @@ _attach_fbo_surface(Render_Engine *data __UNUSED__,
 
         // Attach texture to FBO
         if (sfc->rt_msaa_samples)
-           glsym_glFramebufferTexture2DMultisampleIMG(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, sfc->rt_tex, 0, sfc->rt_msaa_samples);
+           glsym_glFramebufferTexture2DMultisample(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, sfc->rt_tex, 0, sfc->rt_msaa_samples);
         else
            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                   GL_TEXTURE_2D, sfc->rt_tex, 0);
@@ -3341,10 +3341,10 @@ _attach_fbo_surface(Render_Engine *data __UNUSED__,
         glBindRenderbuffer(GL_RENDERBUFFER, sfc->rb_depth);
 
         if (sfc->rt_msaa_samples)
-           glsym_glRenderbufferStorageMultisampleIMG(GL_RENDERBUFFER,
-                                                     sfc->rt_msaa_samples,
-                                                     sfc->rb_depth_fmt,
-                                                     sfc->w, sfc->h);
+           glsym_glRenderbufferStorageMultisample(GL_RENDERBUFFER,
+                                                  sfc->rt_msaa_samples,
+                                                  sfc->rb_depth_fmt,
+                                                  sfc->w, sfc->h);
         else
            glRenderbufferStorage(GL_RENDERBUFFER, sfc->rb_depth_fmt,
                                  sfc->w, sfc->h);
@@ -3359,10 +3359,10 @@ _attach_fbo_surface(Render_Engine *data __UNUSED__,
         glBindRenderbuffer(GL_RENDERBUFFER, sfc->rb_stencil);
 
         if (sfc->rt_msaa_samples)
-           glsym_glRenderbufferStorageMultisampleIMG(GL_RENDERBUFFER,
-                                                     sfc->rt_msaa_samples,
-                                                     sfc->rb_stencil_fmt,
-                                                     sfc->w, sfc->h);
+           glsym_glRenderbufferStorageMultisample(GL_RENDERBUFFER,
+                                                  sfc->rt_msaa_samples,
+                                                  sfc->rb_stencil_fmt,
+                                                  sfc->w, sfc->h);
         else
            glRenderbufferStorage(GL_RENDERBUFFER, sfc->rb_stencil_fmt,
                                  sfc->w, sfc->h);
