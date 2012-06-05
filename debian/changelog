@@ -1,3 +1,11 @@
+evas (1.2.0+svn.70433slp2+build08) unstable; urgency=low
+
+  * Msaa api function pointer symbol modification
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.2.0+svn.70433slp2+build08
+
+ -- Sanghee Park <sh15.park@samsung.com>  Tue, 05 Jun 2012 19:44:34 +0900
+
 evas (1.2.0+svn.70433slp2+build07) unstable; urgency=low
 
   * Enable msaa feature(fix build bug on i386)
