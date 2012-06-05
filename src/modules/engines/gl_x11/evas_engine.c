@@ -3134,7 +3134,11 @@ _create_rt_buffers(Render_Engine *data __UNUSED__,
    // First check if packed buffer is to be used.
    if (sfc->rb_depth_stencil_fmt)
      {
+#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+        glGenTextures(1, &sfc->rb_depth_stencil);
+#else
         glGenRenderbuffers(1, &sfc->rb_depth_stencil);
+#endif
         return;
      }
 
@@ -3173,19 +3177,35 @@ _attach_fbo_surface(Render_Engine *data __UNUSED__,
                                GL_TEXTURE_2D, sfc->rt_tex, 0);
      }
 
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-#else
+
+
+
    // Depth Stencil RenderBuffer - Attach it to FBO
    if (sfc->rb_depth_stencil)
      {
+#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+        glBindTexture(GL_TEXTURE_2D, sfc->rb_depth_stencil);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_STENCIL_OES, sfc->w, sfc->h,
+                     0, GL_DEPTH_STENCIL_OES, GL_UNSIGNED_INT_24_8_OES, NULL);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                               GL_TEXTURE_2D, sfc->rb_depth_stencil, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
+                               GL_TEXTURE_2D, sfc->rb_depth_stencil, 0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+#else
         glBindRenderbuffer(GL_RENDERBUFFER, sfc->rb_depth_stencil);
         glRenderbufferStorage(GL_RENDERBUFFER, sfc->rb_depth_stencil_fmt,
                               sfc->w, sfc->h);
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
                                   GL_RENDERBUFFER, sfc->rb_depth_stencil);
         glBindRenderbuffer(GL_RENDERBUFFER, 0);
-     }
 #endif
+     }
 
    // Depth RenderBuffer - Attach it to FBO
    if (sfc->rb_depth)
@@ -3368,7 +3388,13 @@ eng_gl_surface_destroy(void *data, void *surface)
       glDeleteRenderbuffers(1, &sfc->rb_stencil);
 
    if (sfc->rb_depth_stencil)
-      glDeleteRenderbuffers(1, &sfc->rb_depth_stencil);
+     {
+#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+        glDeleteTextures(1, &sfc->rb_depth_stencil);
+#else
+        glDeleteRenderbuffers(1, &sfc->rb_depth_stencil);
+#endif
+     }
 
 
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
