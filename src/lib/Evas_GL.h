@@ -49,12 +49,21 @@ typedef enum _Evas_GL_Options_Bits
    EVAS_GL_OPTIONS_DIRECT  = (1<<0)
 } Evas_GL_Options_Bits;
 
+typedef enum _Evas_GL_Multisample_Bits
+{
+   EVAS_GL_MULTISAMPLE_NONE = 0,
+   EVAS_GL_MULTISAMPLE_LOW  = 1,
+   EVAS_GL_MULTISAMPLE_MED  = 2,
+   EVAS_GL_MULTISAMPLE_HIGH = 3
+} Evas_GL_Multisample_Bits;
+
 struct _Evas_GL_Config
 {
    Evas_GL_Color_Format     color_format;
    Evas_GL_Depth_Bits       depth_bits;
    Evas_GL_Stencil_Bits     stencil_bits;
    Evas_GL_Options_Bits     options_bits;
+   Evas_GL_Multisample_Bits   multisample_bits;
 };
 
 #define EVAS_GL_EXTENSIONS       1
