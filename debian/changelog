@@ -1,3 +1,11 @@
+evas (1.2.0+svn.70433slp2+build07) unstable; urgency=low
+
+  * Enable msaa feature(fix build bug on i386)
+  * Git: slp/pkgs/e/evas
+  * Tag: evas_1.2.0+svn.70433slp2+build07
+
+ -- Sanghee Park <sh15.park@samsung.com>  Tue, 05 Jun 2012 16:05:38 +0900
+
 evas (1.2.0+svn.70433slp2+build06) unstable; urgency=low
 
   * Package Upload
