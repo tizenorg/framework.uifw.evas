@@ -2873,7 +2873,7 @@ eng_canvas_alpha_get(void *data, void *info __UNUSED__)
 static int
 _check_gl_surface_format(GLint int_fmt, GLenum fmt, GLenum attachment, GLenum attach_fmt, int mult_samples)
 {
-   GLuint fbo, tex, rb;
+   GLuint fbo, tex, rb, ds_tex;
    int w, h, fb_status;
 
    // Width/Heith for test purposes
@@ -2898,20 +2898,53 @@ _check_gl_surface_format(GLint int_fmt, GLenum fmt, GLenum attachment, GLenum at
         if (mult_samples)
            glsym_glFramebufferTexture2DMultisampleIMG(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0, mult_samples);
         else
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
+           glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
      }
 
    // Render Target Attachment (Stencil or Depth)
    if (attachment)
      {
-        glGenRenderbuffers(1, &rb);
-        glBindRenderbuffer(GL_RENDERBUFFER, rb);
-        if (mult_samples)
-           glsym_glRenderbufferStorageMultisampleIMG(GL_RENDERBUFFER, mult_samples, attach_fmt, w, h);
+#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+        // This is a little hacky but this is how we'll have to do for now.
+        if (attach_fmt == GL_DEPTH_STENCIL_OES)
+          {
+             glGenTextures(1, &ds_tex);
+             glBindTexture(GL_TEXTURE_2D, ds_tex);
+             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+             glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_STENCIL_OES, w, h,
+                          0, GL_DEPTH_STENCIL_OES, GL_UNSIGNED_INT_24_8_OES, NULL);
+             if (mult_samples)
+               {
+                  glsym_glFramebufferTexture2DMultisampleIMG(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                                                             GL_TEXTURE_2D, ds_tex, 0, mult_samples);
+                  glsym_glFramebufferTexture2DMultisampleIMG(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
+                                                             GL_TEXTURE_2D, ds_tex, 0, mult_samples);
+               }
+             else
+               {
+                  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                                         GL_TEXTURE_2D, ds_tex, 0);
+                  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
+                                         GL_TEXTURE_2D, ds_tex, 0);
+               }
+             glBindTexture(GL_TEXTURE_2D, 0);
+          }
         else
-        glRenderbufferStorage(GL_RENDERBUFFER, attach_fmt, w, h);
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER, rb);
-        glBindRenderbuffer(GL_RENDERBUFFER, 0);
+#endif
+          {
+             glGenRenderbuffers(1, &rb);
+             glBindRenderbuffer(GL_RENDERBUFFER, rb);
+             if (mult_samples)
+                glsym_glRenderbufferStorageMultisampleIMG(GL_RENDERBUFFER, mult_samples, attach_fmt, w, h);
+             else
+                glRenderbufferStorage(GL_RENDERBUFFER, attach_fmt, w, h);
+             glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER, rb);
+             glBindRenderbuffer(GL_RENDERBUFFER, 0);
+          }
+
      }
 
    // Check FBO for completeness
@@ -2922,6 +2955,7 @@ _check_gl_surface_format(GLint int_fmt, GLenum fmt, GLenum attachment, GLenum at
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
    glDeleteFramebuffers(1, &fbo);
    if (tex) glDeleteTextures(1, &tex);
+   if (ds_tex) glDeleteTextures(1, &ds_tex);
    if (rb) glDeleteRenderbuffers(1, &rb);
 
    if (fb_status != GL_FRAMEBUFFER_COMPLETE)
@@ -3026,6 +3060,8 @@ _set_gl_surface_cap(Render_Engine *re)
         re->gl_cap.stencil_1[i] = _check_gl_surface_format(GL_RGBA, GL_RGBA, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX1_OES, re->gl_cap.msaa_samples[i]);
         re->gl_cap.stencil_4[i] = _check_gl_surface_format(GL_RGBA, GL_RGBA, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX4_OES, re->gl_cap.msaa_samples[i]);
         re->gl_cap.stencil_8[i] = _check_gl_surface_format(GL_RGBA, GL_RGBA, GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX8, re->gl_cap.msaa_samples[i]);
+
+        re->gl_cap.depth_24_stencil_8[i]  = _check_gl_surface_format(GL_RGBA, GL_RGBA, GL_DEPTH_STENCIL_OES, GL_DEPTH_STENCIL_OES, re->gl_cap.msaa_samples[i]);
      }
 
   #else
