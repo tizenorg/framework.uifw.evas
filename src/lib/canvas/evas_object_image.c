@@ -177,6 +177,7 @@ evas_object_image_add(Evas *e)
    MAGIC_CHECK(e, Evas, MAGIC_EVAS);
    return NULL;
    MAGIC_CHECK_END();
+   EINA_SAFETY_ON_NULL_RETURN_VAL(e->engine.func, NULL);
    obj = evas_object_new(e);
    evas_object_image_init(obj);
    evas_object_inject(obj, e);
@@ -221,7 +222,7 @@ _create_tmpf(Evas_Object *obj, void *data, int size, char *format __UNUSED__)
 {
 #ifdef HAVE_SYS_MMAN_H
    Evas_Object_Image *o;
-   char buf[4096];
+   char buf[PATH_MAX];
    void *dst;
    int fd = -1;
    
@@ -233,18 +234,31 @@ _create_tmpf(Evas_Object *obj, void *data, int size, char *format __UNUSED__)
 #endif   
    if (fd < 0)
      {
-        snprintf(buf, sizeof(buf), "/tmp/.evas-tmpf-%i-%p-%i-XXXXXX", 
-                 (int)getpid(), data, (int)size);
+        const char *tmpdir = getenv("TMPDIR");
+        
+        if (!tmpdir)
+          {
+             tmpdir = getenv("TMP");
+             if (!tmpdir)
+               {
+                  tmpdir = getenv("TEMP");
+                  if (!tmpdir) tmpdir = "/tmp";
+               }
+          }
+        snprintf(buf, sizeof(buf), "%s/.evas-tmpf-%i-%p-%i-XXXXXX", 
+                 tmpdir, (int)getpid(), data, (int)size);
         fd = mkstemp(buf);
+        if (fd < 0) return;
      }
-   if (fd < 0) return;
    if (ftruncate(fd, size) < 0)
      {
         unlink(buf);
         close(fd);
         return;
      }
+#ifdef __linux__
    unlink(buf);
+#endif
    
    eina_mmap_safety_enabled_set(EINA_TRUE);
    
@@ -895,10 +909,6 @@ evas_object_image_data_set(Evas_Object *obj, void *data)
    return;
    MAGIC_CHECK_END();
    _evas_object_image_cleanup(obj, o);
-#ifdef EVAS_FRAME_QUEUING
-   if (o->engine_data)
-     evas_common_pipe_op_image_flush(o->engine_data);
-#endif
    p_data = o->engine_data;
    if (data)
      {
@@ -975,9 +985,6 @@ evas_object_image_data_get(const Evas_Object *obj, Eina_Bool for_writing)
    return NULL;
    MAGIC_CHECK_END();
    if (!o->engine_data) return NULL;
-#ifdef EVAS_FRAME_QUEUING
-   evas_common_pipe_op_image_flush(o->engine_data);
-#endif
 
    data = NULL;
    if (obj->layer->evas->engine.func->image_scale_hint_set)
@@ -1160,9 +1167,6 @@ evas_object_image_alpha_set(Evas_Object *obj, Eina_Bool has_alpha)
      {
         int stride = 0;
 
-#ifdef EVAS_FRAME_QUEUING
-        evas_common_pipe_op_image_flush(o->engine_data);
-#endif
         o->engine_data = obj->layer->evas->engine.func->image_alpha_set(obj->layer->evas->engine.data.output,
 								     o->engine_data,
 								     o->cur.has_alpha);
@@ -1686,13 +1690,6 @@ evas_object_image_colorspace_set(Evas_Object *obj, Evas_Colorspace cspace)
    MAGIC_CHECK_END();
 
    _evas_object_image_cleanup(obj, o);
-#ifdef EVAS_FRAME_QUEUING
-   if ((Evas_Colorspace)o->cur.cspace != cspace)
-     {
-        if (o->engine_data)
-          evas_common_pipe_op_image_flush(o->engine_data);
-     }
-#endif
 
    o->cur.cspace = cspace;
    if (o->engine_data)
@@ -1833,10 +1830,6 @@ evas_object_image_scale_hint_set(Evas_Object *obj, Evas_Image_Scale_Hint hint)
    return;
    MAGIC_CHECK_END();
    if (o->scale_hint == hint) return;
-#ifdef EVAS_FRAME_QUEUING
-   if (o->engine_data)
-      evas_common_pipe_op_image_flush(o->engine_data);
-#endif
    o->scale_hint = hint;
    if (o->engine_data)
      {
@@ -1884,10 +1877,6 @@ evas_object_image_content_hint_set(Evas_Object *obj, Evas_Image_Content_Hint hin
    return;
    MAGIC_CHECK_END();
    if (o->content_hint == hint) return;
-#ifdef EVAS_FRAME_QUEUING
-   if (o->engine_data)
-      evas_common_pipe_op_image_flush(o->engine_data);
-#endif
    o->content_hint = hint;
    if (o->engine_data)
      {
@@ -2700,7 +2689,7 @@ evas_object_image_new(void)
    Evas_Object_Image *o;
 
    /* alloc obj private data */
-   EVAS_MEMPOOL_INIT(_mp_obj, "evas_object_image", Evas_Object_Image, 256, NULL);
+   EVAS_MEMPOOL_INIT(_mp_obj, "evas_object_image", Evas_Object_Image, 16, NULL);
    o = EVAS_MEMPOOL_ALLOC(_mp_obj, Evas_Object_Image);
    if (!o) return NULL;
    EVAS_MEMPOOL_PREP(_mp_obj, o, Evas_Object_Image);
@@ -2954,38 +2943,10 @@ evas_object_image_render(Evas_Object *obj, void *output, void *context, void *su
 	  }
         if ((obj->cur.map) && (obj->cur.map->count > 3) && (obj->cur.usemap))
           {
-	     const Evas_Map_Point *p, *p_end;
-             RGBA_Map_Point pts[obj->cur.map->count], *pt;
+             RGBA_Map_Point *pts;
 
-	     p = obj->cur.map->points;
-	     p_end = p + obj->cur.map->count;
-	     pt = pts;
-             
-             pts[0].px = obj->cur.map->persp.px << FP;
-             pts[0].py = obj->cur.map->persp.py << FP;
-             pts[0].foc = obj->cur.map->persp.foc << FP;
-             pts[0].z0 = obj->cur.map->persp.z0 << FP;
-             // draw geom +x +y
-             for (; p < p_end; p++, pt++)
-               {
-                  pt->x = (lround(p->x) + x) * FP1;
-                  pt->y = (lround(p->y) + y) * FP1;
-                  pt->z = (lround(p->z)    ) * FP1;
-                  pt->fx = p->px;
-                  pt->fy = p->py;
-                  pt->fz = p->z;
-                  pt->u = ((lround(p->u) * imagew) / uvw) * FP1;
-                  pt->v = ((lround(p->v) * imageh) / uvh) * FP1;
-                  if      (pt->u < 0) pt->u = 0;
-                  else if (pt->u > (imagew * FP1)) pt->u = (imagew * FP1);
-                  if      (pt->v < 0) pt->v = 0;
-                  else if (pt->v > (imageh * FP1)) pt->v = (imageh * FP1);
-                  pt->col = ARGB_JOIN(p->a, p->r, p->g, p->b);
-              }
-	     if (obj->cur.map->count & 0x1)
-	       {
-		  pts[obj->cur.map->count] = pts[obj->cur.map->count -1];
-	       }
+             evas_object_map_update(obj, x, y, imagew, imageh, uvw, uvh);
+             pts = obj->spans->pts;
 
              obj->layer->evas->engine.func->image_map_draw
                (output, context, surface, pixels, obj->cur.map->count,

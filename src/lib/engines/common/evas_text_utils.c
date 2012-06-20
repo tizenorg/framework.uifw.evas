@@ -5,6 +5,8 @@
 #include "language/evas_language_utils.h"
 #include "evas_font_ot.h"
 
+#define PROPS_CHANGE(Props) Props->changed = EINA_TRUE;
+
 void
 evas_common_text_props_bidi_set(Evas_Text_Props *props,
       Evas_BiDi_Paragraph_Props *bidi_par_props, size_t start)
@@ -19,12 +21,14 @@ evas_common_text_props_bidi_set(Evas_Text_Props *props,
    (void) bidi_par_props;
    props->bidi.dir = EVAS_BIDI_DIRECTION_LTR;
 #endif
+   PROPS_CHANGE(props);
 }
 
 void
 evas_common_text_props_script_set(Evas_Text_Props *props, Evas_Script_Type scr)
 {
    props->script = scr;
+   PROPS_CHANGE(props);
 }
 
 void
@@ -54,6 +58,12 @@ evas_common_text_props_content_unref(Evas_Text_Props *props)
 
    if (--(props->info->refcount) == 0)
      {
+        if (props->bin)
+          {
+             eina_binbuf_free(props->bin);
+             props->bin = NULL;
+          }
+
         if (props->info->glyph)
           free(props->info->glyph);
 #ifdef OT_SUPPORT
@@ -249,6 +259,8 @@ evas_common_text_props_split(Evas_Text_Props *base,
      }
    ext->text_len = base->text_len - (ext->text_offset - base->text_offset);
    base->text_len = (ext->text_offset - base->text_offset);
+   PROPS_CHANGE(base);
+   PROPS_CHANGE(ext);
 }
 
 /* Won't work in the middle of ligatures */
@@ -268,45 +280,19 @@ evas_common_text_props_merge(Evas_Text_Props *item1,
 
    item1->len += item2->len;
    item1->text_len += item2->text_len;
+   PROPS_CHANGE(item1);
 }
 
-EAPI Eina_Bool
-evas_common_text_props_content_create(void *_fi, const Eina_Unicode *text,
-      Evas_Text_Props *text_props, const Evas_BiDi_Paragraph_Props *par_props,
-      size_t par_pos, int len)
-{
-   RGBA_Font_Int *fi = (RGBA_Font_Int *) _fi;
-
-   if (text_props->info)
-     {
-        evas_common_text_props_content_unref(text_props);
-     }
-   if (len == 0)
-     {
-        text_props->info = NULL;
-        text_props->start = text_props->len = text_props->text_offset = 0;
-     }
-   text_props->info = calloc(1, sizeof(Evas_Text_Props_Info));
-
-   text_props->font_instance = fi;
-
-   evas_common_font_int_reload(fi);
-   if (fi->src->current_size != fi->size)
-     {
-        FTLOCK();
-        FT_Activate_Size(fi->ft.size);
-        FTUNLOCK();
-        fi->src->current_size = fi->size;
-     }
-
 #ifdef OT_SUPPORT
+static inline void
+_content_create_ot(RGBA_Font_Int *fi, const Eina_Unicode *text,
+      Evas_Text_Props *text_props, int len, Evas_Text_Props_Mode mode)
+{
    size_t char_index;
    Evas_Font_Glyph_Info *gl_itr;
    Evas_Coord pen_x = 0, adjust_x = 0;
-   (void) par_props;
-   (void) par_pos;
 
-   evas_common_font_ot_populate_text_props(text, text_props, len);
+   evas_common_font_ot_populate_text_props(text, text_props, len, mode);
 
    gl_itr = text_props->info->glyph;
    for (char_index = 0 ; char_index < text_props->len ; char_index++)
@@ -330,8 +316,8 @@ evas_common_text_props_content_create(void *_fi, const Eina_Unicode *text,
           }
         LKU(fi->ft_mutex);
 
-        gl_itr->x_bear = fg->glyph_out->left;
-        gl_itr->width = fg->glyph_out->bitmap.width;
+        gl_itr->x_bear = fg->x_bear;
+        gl_itr->width = fg->width;
         /* text_props->info->glyph[char_index].advance =
          * text_props->info->glyph[char_index].index =
          * already done by the ot function */
@@ -364,7 +350,14 @@ evas_common_text_props_content_create(void *_fi, const Eina_Unicode *text,
         fi = text_props->font_instance;
         gl_itr++;
      }
-#else
+}
+#endif
+
+static inline void
+_content_create_regular(RGBA_Font_Int *fi, const Eina_Unicode *text,
+      Evas_Text_Props *text_props, const Evas_BiDi_Paragraph_Props *par_props,
+      size_t par_pos, int len, Evas_Text_Props_Mode mode)
+{
    /* We are walking the string in visual ordering */
    Evas_Font_Glyph_Info *gl_itr;
    Eina_Bool use_kerning;
@@ -374,12 +367,16 @@ evas_common_text_props_content_create(void *_fi, const Eina_Unicode *text,
    int adv_d, i;
 #if !defined(OT_SUPPORT) && defined(BIDI_SUPPORT)
    Eina_Unicode *base_str = NULL;
-   if (text_props->bidi.dir == EVAS_BIDI_DIRECTION_RTL)
+   if (mode == EVAS_TEXT_PROPS_MODE_SHAPE)
      {
-        text = base_str = eina_unicode_strndup(text, len);
-        evas_bidi_shape_string(base_str, par_props, par_pos, len);
+        if (text_props->bidi.dir == EVAS_BIDI_DIRECTION_RTL)
+          {
+             text = base_str = eina_unicode_strndup(text, len);
+             evas_bidi_shape_string(base_str, par_props, par_pos, len);
+          }
      }
 #else
+   (void) mode;
    (void) par_props;
    (void) par_pos;
 #endif
@@ -419,13 +416,8 @@ evas_common_text_props_content_create(void *_fi, const Eina_Unicode *text,
              idx = evas_common_get_char_index(fi, REPLACEMENT_CHAR);
           }
 
-        LKL(fi->ft_mutex);
         fg = evas_common_font_int_cache_glyph_get(fi, idx);
-        if (!fg)
-          {
-             LKU(fi->ft_mutex);
-             continue;
-          }
+        if (!fg) continue;
         kern = 0;
 
         if ((use_kerning) && (prev_index) && (idx) &&
@@ -440,12 +432,11 @@ evas_common_text_props_content_create(void *_fi, const Eina_Unicode *text,
           }
 
         pface = fi->src->ft.face;
-        LKU(fi->ft_mutex);
 
         gl_itr->index = idx;
-        gl_itr->x_bear = fg->glyph_out->left;
+        gl_itr->x_bear = fg->x_bear;
         adv = fg->glyph->advance.x >> 10;
-        gl_itr->width = fg->glyph_out->bitmap.width;
+        gl_itr->width = fg->width;
 
         if (EVAS_FONT_CHARACTER_IS_INVISIBLE(_gl))
           {
@@ -465,8 +456,50 @@ evas_common_text_props_content_create(void *_fi, const Eina_Unicode *text,
    if (base_str)
       free(base_str);
 # endif
+}
+
+EAPI Eina_Bool
+evas_common_text_props_content_create(void *_fi, const Eina_Unicode *text,
+      Evas_Text_Props *text_props, const Evas_BiDi_Paragraph_Props *par_props,
+      size_t par_pos, int len, Evas_Text_Props_Mode mode)
+{
+   RGBA_Font_Int *fi = (RGBA_Font_Int *) _fi;
+
+   if (text_props->info)
+     {
+        evas_common_text_props_content_unref(text_props);
+     }
+   if (len == 0)
+     {
+        text_props->info = NULL;
+        text_props->start = text_props->len = text_props->text_offset = 0;
+     }
+   text_props->info = calloc(1, sizeof(Evas_Text_Props_Info));
+
+   text_props->font_instance = fi;
+
+   evas_common_font_int_reload(fi);
+   if (fi->src->current_size != fi->size)
+     {
+        evas_common_font_source_reload(fi->src);
+        FTLOCK();
+        FT_Activate_Size(fi->ft.size);
+        FTUNLOCK();
+        fi->src->current_size = fi->size;
+     }
+
+   text_props->changed = EINA_TRUE;
+
+#ifdef OT_SUPPORT
+   (void) par_props;
+   (void) par_pos;
+   _content_create_ot(fi, text, text_props, len, mode);
+#else
+   _content_create_regular(fi, text, text_props, par_props, par_pos, len, mode);
 #endif
+
    text_props->text_len = len;
    text_props->info->refcount = 1;
    return EINA_TRUE;
 }
+

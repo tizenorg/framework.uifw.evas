@@ -17,7 +17,7 @@ evas_object_new(Evas *e __UNUSED__)
 {
    Evas_Object *obj;
 
-   EVAS_MEMPOOL_INIT(_mp_obj, "evas_object", Evas_Object, 512, NULL);
+   EVAS_MEMPOOL_INIT(_mp_obj, "evas_object", Evas_Object, 32, NULL);
    obj = EVAS_MEMPOOL_ALLOC(_mp_obj, Evas_Object);
    if (!obj) return NULL;
    EVAS_MEMPOOL_PREP(_mp_obj, obj, Evas_Object);
@@ -407,9 +407,6 @@ evas_object_del(Evas_Object *obj)
         obj->del_ref = EINA_TRUE;
         return;
      }
-#ifdef EVAS_FRAME_QUEUING
-   evas_common_frameq_flush();
-#endif
 
    evas_object_hide(obj);
    if (obj->focused)
@@ -441,14 +438,132 @@ evas_object_del(Evas_Object *obj)
    while (obj->proxy.proxies)
      evas_object_image_source_unset(obj->proxy.proxies->data);
    if (obj->cur.clipper) evas_object_clip_unset(obj);
-   if (obj->smart.smart) evas_object_smart_del(obj);
    evas_object_map_set(obj, NULL);
+   if (obj->smart.smart) evas_object_smart_del(obj);
    _evas_object_event_new();
    evas_object_event_callback_call(obj, EVAS_CALLBACK_FREE, NULL, _evas_event_counter);
    _evas_post_event_callback_call(obj->layer->evas);
    evas_object_smart_cleanup(obj);
    obj->delete_me = 1;
    evas_object_change(obj);
+}
+
+void
+evas_object_update_bounding_box(Evas_Object *obj)
+{
+   Eina_Bool propagate = EINA_FALSE;
+   Eina_Bool computeminmax = EINA_FALSE;
+   Evas_Coord x, y, w, h;
+   Evas_Coord px, py, pw, ph;
+   Eina_Bool noclip;
+
+   if (!obj->smart.parent) return ;
+   if (obj->child_has_map) return ; /* Disable bounding box computation for this object and its parent */
+   /* We could also remove object that are not visible from the bounding box, use the clipping information
+      to reduce the bounding of the object they are clipping, but for the moment this will do it's jobs */
+   noclip = !(obj->clip.clipees || obj->is_static_clip);
+
+   if (obj->smart.smart)
+     {
+        x = obj->cur.bounding_box.x;
+        y = obj->cur.bounding_box.y;
+        w = obj->cur.bounding_box.w;
+        h = obj->cur.bounding_box.h;
+        px = obj->prev.bounding_box.x;
+        py = obj->prev.bounding_box.y;
+        pw = obj->prev.bounding_box.w;
+        ph = obj->prev.bounding_box.h;
+     }
+   else
+     {
+        x = obj->cur.geometry.x;
+        y = obj->cur.geometry.y;
+        w = obj->cur.geometry.w;
+        h = obj->cur.geometry.h;
+        px = obj->prev.geometry.x;
+        py = obj->prev.geometry.y;
+        pw = obj->prev.geometry.w;
+        ph = obj->prev.geometry.h;
+     }
+
+   /* We are not yet trying to find the smallest bounding box, but we want to find a good approximation quickly.
+    * That's why we initialiaze min and max search to geometry of the parent object.
+    */
+
+   if (obj->smart.parent->cur.valid_bounding_box)
+     {
+        /* Update left limit */
+        if (noclip && x < obj->smart.parent->cur.bounding_box.x)
+          {
+             obj->smart.parent->cur.bounding_box.w += obj->smart.parent->cur.bounding_box.x - x;
+             obj->smart.parent->cur.bounding_box.x = x;
+             propagate = EINA_TRUE;
+          }
+        else if ((px == obj->smart.parent->prev.bounding_box.x && x > obj->smart.parent->cur.bounding_box.x)
+                 || (!noclip && x == obj->smart.parent->cur.bounding_box.x))
+          {
+             computeminmax = EINA_TRUE;
+          }
+
+        /* Update top limit */
+        if (noclip && y < obj->smart.parent->cur.bounding_box.y)
+          {
+             obj->smart.parent->cur.bounding_box.h += obj->smart.parent->cur.bounding_box.x - x;
+             obj->smart.parent->cur.bounding_box.y = y;
+             propagate = EINA_TRUE;
+          }
+        else if ((py == obj->smart.parent->prev.bounding_box.y && y  > obj->smart.parent->cur.bounding_box.y)
+                 || (!noclip && y == obj->smart.parent->cur.bounding_box.y))
+          {
+             computeminmax = EINA_TRUE;
+          }
+
+        /* Update right limit */
+        if (noclip && x + w > obj->smart.parent->cur.bounding_box.x + obj->smart.parent->cur.bounding_box.w)
+          {
+             obj->smart.parent->cur.bounding_box.w = x + w - obj->smart.parent->cur.bounding_box.x;
+             propagate = EINA_TRUE;
+          }
+        else if ((px + pw == obj->smart.parent->prev.bounding_box.x + obj->smart.parent->prev.bounding_box.w &&
+                  x + w < obj->smart.parent->cur.bounding_box.x + obj->smart.parent->cur.bounding_box.w)
+                 || (!noclip && x + w == obj->smart.parent->cur.bounding_box.x + obj->smart.parent->cur.bounding_box.w))
+          {
+             computeminmax = EINA_TRUE;
+          }
+
+        /* Update bottom limit */
+        if (noclip && y + h > obj->smart.parent->cur.bounding_box.y + obj->smart.parent->cur.bounding_box.h)
+          {
+             obj->smart.parent->cur.bounding_box.h = y + h - obj->smart.parent->cur.bounding_box.y;
+             propagate = EINA_TRUE;
+          }
+        else if ((py + ph == obj->smart.parent->prev.bounding_box.y + obj->smart.parent->prev.bounding_box.h &&
+                  y + h < obj->smart.parent->cur.bounding_box.y + obj->smart.parent->cur.bounding_box.h) ||
+                 (!noclip && y + h == obj->smart.parent->cur.bounding_box.y + obj->smart.parent->cur.bounding_box.h))
+          {
+             computeminmax = EINA_TRUE;
+          }
+
+	if (computeminmax)
+          {
+             evas_object_smart_need_bounding_box_update(obj->smart.parent);
+          }
+     }
+   else
+     {
+        if (noclip)
+          {
+             obj->smart.parent->cur.bounding_box.x = x;
+             obj->smart.parent->cur.bounding_box.y = y;
+             obj->smart.parent->cur.bounding_box.w = w;
+             obj->smart.parent->cur.bounding_box.h = h;
+             obj->smart.parent->cur.valid_bounding_box = EINA_TRUE;
+             propagate = EINA_TRUE;
+          }
+     }
+
+   if (propagate)
+     evas_object_update_bounding_box(obj->smart.parent);
 }
 
 EAPI void
@@ -506,6 +621,8 @@ evas_object_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
 
    obj->cur.geometry.x = nx;
    obj->cur.geometry.y = ny;
+
+   evas_object_update_bounding_box(obj);
 
 ////   obj->cur.cache.geometry.validity = 0;
    obj->changed_move = EINA_TRUE;
@@ -592,6 +709,8 @@ evas_object_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
    obj->cur.geometry.w = nw;
    obj->cur.geometry.h = nh;
 
+   evas_object_update_bounding_box(obj);
+
 ////   obj->cur.cache.geometry.validity = 0;
    evas_object_change(obj);
    evas_object_clip_dirty(obj);
@@ -646,7 +765,7 @@ _evas_object_size_hint_alloc(Evas_Object *obj)
 {
    if (obj->size_hints) return;
 
-   EVAS_MEMPOOL_INIT(_mp_sh, "evas_size_hints", Evas_Size_Hints, 512, );
+   EVAS_MEMPOOL_INIT(_mp_sh, "evas_size_hints", Evas_Size_Hints, 32, );
    obj->size_hints = EVAS_MEMPOOL_ALLOC(_mp_sh, Evas_Size_Hints);
    if (!obj->size_hints) return;
    EVAS_MEMPOOL_PREP(_mp_sh, obj->size_hints, Evas_Size_Hints);

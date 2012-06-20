@@ -2,11 +2,11 @@
 ##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
 m4_define([v_maj], [1])
 m4_define([v_min], [2])
-m4_define([v_mic], [0])
+m4_define([v_mic], [99])
 m4_define([v_rev], m4_esyscmd([(svnversion "${SVN_REPO_PATH:-.}" | grep -v '\(export\|Unversioned directory\)' || echo 0) | awk -F : '{printf("%s\n", $1);}' | tr -d ' :MSP\n']))
 m4_if(v_rev, [0], [m4_define([v_rev], m4_esyscmd([git log 2> /dev/null | (grep -m1 git-svn-id || echo 0) | sed -e 's/.*@\([0-9]*\).*/\1/' | tr -d '\n']))])
 ##--   When released, remove the dnl on the below line
-m4_undefine([v_rev])
+dnl m4_undefine([v_rev])
 ##--   When doing snapshots - change soname. remove dnl on below line
 dnl m4_define([relname], [ver-pre-svn-07])
 dnl m4_define([v_rel], [-release relname])
@@ -31,7 +31,7 @@ AC_CACHE_CHECK([whether the Objective C compiler works],
                 AC_LANG_POP([Objective C])])], [rw_cv_prog_objc_works=no])
 ])
 
-AC_INIT([evas], [v_ver]-beta, [enlightenment-devel@lists.sourceforge.net])
+AC_INIT([evas], [v_ver], [enlightenment-devel@lists.sourceforge.net])
 AC_PREREQ([2.52])
 AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_MACRO_DIR([m4])
@@ -92,6 +92,7 @@ want_fribidi="auto"
 want_harfbuzz="auto"
 want_pixman="no"
 want_evas_cserve="yes"
+want_evas_cserve2="yes"
 
 want_evas_engine_buffer="yes"
 want_evas_engine_software_xlib="no"
@@ -605,14 +606,45 @@ AC_ARG_ENABLE([evas-cserve],
 AC_MSG_CHECKING(whether to build shared cache server and support)
 AC_MSG_RESULT(${want_evas_cserve})
 
+# (shm_open (for cache server)
+AC_ARG_ENABLE([evas-cserve2],
+   AC_HELP_STRING([--disable-evas-cserve2],
+      [disable shared cache server 2 support. @<:@default=enabled@:>@]),
+   [
+    if test "x${enableval}" = "xyes" ; then
+       want_evas_cserve2="yes"
+    else
+       want_evas_cserve2="no"
+    fi
+   ])
+AC_MSG_CHECKING(whether to build shared cache server 2 and support)
+AC_MSG_RESULT(${want_evas_cserve2})
+
+# cserve2 only works on Linux so far.
+if test "x${want_evas_cserve2}" = "xyes" ; then
+   AC_CHECK_HEADERS(
+      [sys/epoll.h sys/inotify.h sys/signalfd.h],
+      [],
+      [
+       want_evas_cserve2="no"
+      ]
+   )
+fi
+
+if test "x${want_evas_cserve2}" = "xyes"; then
+   want_evas_cserve="no"
+fi
+
 shm_open_libs=""
-if test "x${want_evas_cserve}" = "xyes" ; then
+if test "x${want_evas_cserve}" = "xyes" -o "x${want_evas_cserve2}" = "xyes" ; then
    EFL_CHECK_SHM_OPEN(
       [
-       want_evas_cserve="yes"
        shm_open_libs=${EFL_SHM_OPEN_LIBS}
       ],
-      [want_evas_cserve="no"])
+      [
+       want_evas_cserve="no"
+       want_evas_cserve2="no"
+      ])
 fi
 AC_SUBST([shm_open_libs])
 
@@ -621,6 +653,12 @@ if test "x${want_evas_cserve}" = "xyes" ; then
 fi
 
 AM_CONDITIONAL([EVAS_CSERVE], [test "x${want_evas_cserve}" = "xyes"])
+
+if test "x${want_evas_cserve2}" = "xyes" ; then
+  AC_DEFINE(EVAS_CSERVE2, 1, [Shared cache server.])
+fi
+
+AM_CONDITIONAL([EVAS_CSERVE2], [test "x${want_evas_cserve2}" = "xyes"])
 
 
 
@@ -1865,11 +1903,25 @@ doc/Makefile
 doc/Doxyfile
 src/Makefile
 src/bin/Makefile
+src/bin/loaders/Makefile
+src/bin/loaders/jpeg/Makefile
+src/bin/loaders/png/Makefile
+src/bin/loaders/eet/Makefile
+src/bin/loaders/tiff/Makefile
+src/bin/loaders/xpm/Makefile
+src/bin/loaders/bmp/Makefile
+src/bin/loaders/ico/Makefile
+src/bin/loaders/tga/Makefile
+src/bin/loaders/pmaps/Makefile
+src/bin/loaders/wbmp/Makefile
+src/bin/loaders/psd/Makefile
 src/lib/Makefile
 src/lib/canvas/Makefile
 src/lib/file/Makefile
 src/lib/cache/Makefile
+src/lib/cache2/Makefile
 src/lib/cserve/Makefile
+src/lib/cserve2/Makefile
 src/lib/engines/Makefile
 src/lib/engines/common/Makefile
 src/lib/engines/common/evas_op_add/Makefile
@@ -2044,6 +2096,7 @@ echo
 echo "Features:"
 echo "  MAGIC_DEBUG.............: $want_evas_magic_debug"
 echo "  Cache Server............: $want_evas_cserve"
+echo "  Cache Server 2..........: $want_evas_cserve2"
 echo
 dnl
 dnl ... DISABLED! some testing has shown that this seems to have some
