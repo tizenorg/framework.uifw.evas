@@ -2877,6 +2877,9 @@ _check_gl_surface_format(GLint int_fmt, GLenum fmt, GLenum attachment, GLenum at
    GLuint fbo, tex, rb, ds_tex;
    int w, h, fb_status;
 
+   // Initialize Variables
+   tex = rb = ds_tex = 0;
+
    // Width/Heith for test purposes
    w = h = 2;
 
