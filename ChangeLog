@@ -822,3 +822,18 @@
 
         * Fix GL engine bitmap font handling
 
+2012-06-19  Vincent Torri
+
+	* Remove uselesss software DirectDraw 16 bits engine
+
+2012-06-27  Sung W. Park (sung_)
+
+	* Added (w, h) <= 0 check in EvasGL surface that was never handled before.
+        * Handled evas_gl_make_current to return error when either surface 
+        or context is NULL.  Before, when that was the case, it just did 
+        make_current(NULL, NULL) internally. 
+
+2012-04-28  Carsten Haitzler (The Rasterman)
+
+        * Fix font instance refcounting for textprops that hang around.
+
