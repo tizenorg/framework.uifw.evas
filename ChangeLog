@@ -837,3 +837,6 @@
 
         * Fix font instance refcounting for textprops that hang around.
 
+2012-07-19  Jiyoun Park(jypark)
+
+           * Fix jpeg save bug related with error handler
