@@ -1046,10 +1046,6 @@ evas_object_map_update(Evas_Object *obj,
             obj->spans->uv.w != uvw || obj->spans->uv.h != uvh)
           obj->changed_map = EINA_TRUE;
      }
-   else
-     {
-        obj->changed_map = EINA_TRUE;
-     }
 
    if (!obj->changed_map) return ;
 
@@ -1063,8 +1059,8 @@ evas_object_map_update(Evas_Object *obj,
         obj->spans = NULL;
      }
 
-//   if (!(_evas_render_has_map(obj)  && (obj->cur.map->count > 3)))
-//     return ;
+   if (!((obj->cur.map) && (obj->cur.map->count > 3) && (obj->cur.usemap)))
+     return ;
 
    if (!obj->spans)
      obj->spans = calloc(1, sizeof (RGBA_Map) +
