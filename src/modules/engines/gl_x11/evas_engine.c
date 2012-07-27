@@ -121,7 +121,7 @@ struct _Render_Engine_GL_Context
 // Resources used per thread
 struct _Render_Engine_GL_Resource
 {
-   // Resource context/surface per Thread in TLS for evasgl use 
+   // Resource context/surface per Thread in TLS for evasgl use
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
    EGLContext context;
    EGLSurface surface;
@@ -150,7 +150,7 @@ static int  _ext_initted = 0;
 static char *_gl_ext_string = NULL;
 static char *_evasgl_ext_string = NULL;
 
-// Resource context/surface per Thread in TLS for evasgl use 
+// Resource context/surface per Thread in TLS for evasgl use
 static Eina_TLS   resource_key;
 static Eina_List *resource_list;
 LK(resource_lock);
@@ -2887,8 +2887,9 @@ eng_font_draw(void *data, void *context, void *surface, Evas_Font_Set *font, int
 
         if (!im)
           im = (RGBA_Image *)evas_cache_image_empty(evas_common_image_cache_get());
-        im->cache_entry.w = re->win->w;
-        im->cache_entry.h = re->win->h;
+        im->cache_entry.w = re->win->gl_context->shared->w;
+        im->cache_entry.h = re->win->gl_context->shared->h;
+
         evas_common_draw_context_font_ext_set(context,
                                               re->win->gl_context,
                                               evas_gl_font_texture_new,
@@ -3061,8 +3062,8 @@ _print_gl_surface_cap(Render_Engine *re, int error)
    else \
       DBG(__VA_ARGS__);
 
-   PRINT_LOG("---------------------------------------------------");
-   PRINT_LOG("           EvasGL Supported Surface Format         ");
+   PRINT_LOG("----------------------------------------------------");
+   PRINT_LOG("           EvasGL Supported Surface Format          ");
    PRINT_LOG("                                                    ");
    PRINT_LOG(" [Max Renderbuffer Size]  : %d", re->gl_cap.max_rb_size);
    PRINT_LOG(" [Multisample Support  ]  : %d", re->gl_cap.msaa_support);
@@ -3091,7 +3092,7 @@ static void
 _set_gl_surface_cap(Render_Engine *re)
 {
    GLuint fbo, tex, depth, stencil;
-   int w, h, max_samples;
+   int w, h;
 
    int i, count;
 
@@ -3102,6 +3103,8 @@ _set_gl_surface_cap(Render_Engine *re)
    w = h = 2;
 
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+   int max_samples = 0;
+
    glGetIntegerv(GL_MAX_SAMPLES_IMG, &max_samples);
 
    // Check if msaa_support is supported
@@ -3147,7 +3150,7 @@ _set_gl_surface_cap(Render_Engine *re)
         re->gl_cap.depth_24_stencil_8[i]  = _check_gl_surface_format(GL_RGBA, GL_RGBA, GL_DEPTH_STENCIL_OES, GL_DEPTH_STENCIL_OES, re->gl_cap.msaa_samples[i]);
      }
 
-  #else
+#else
    count = (re->gl_cap.msaa_support) ? 4 : 1;
 
    for (i = 0; i < count; i++)
@@ -3367,9 +3370,9 @@ _attach_fbo_surface(Render_Engine *data __UNUSED__,
 
         // Attach texture to FBO
         if (sfc->rt_msaa_samples)
-           glsym_glFramebufferTexture2DMultisample(GL_FRAMEBUFFER, 
-                                                   GL_COLOR_ATTACHMENT0, 
-                                                   GL_TEXTURE_2D, sfc->rt_tex, 
+           glsym_glFramebufferTexture2DMultisample(GL_FRAMEBUFFER,
+                                                   GL_COLOR_ATTACHMENT0,
+                                                   GL_TEXTURE_2D, sfc->rt_tex,
                                                    0, sfc->rt_msaa_samples);
         else
            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
@@ -3390,25 +3393,25 @@ _attach_fbo_surface(Render_Engine *data __UNUSED__,
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_STENCIL_OES, sfc->w, sfc->h,
                      0, GL_DEPTH_STENCIL_OES, GL_UNSIGNED_INT_24_8_OES, NULL);
-        if (sfc->rt_msaa_samples)
+       if (sfc->rt_msaa_samples)
           {
-             glsym_glFramebufferTexture2DMultisample(GL_FRAMEBUFFER, 
+             glsym_glFramebufferTexture2DMultisample(GL_FRAMEBUFFER,
                                                      GL_DEPTH_ATTACHMENT,
-                                                     GL_TEXTURE_2D, 
-                                                     sfc->rb_depth_stencil, 
+                                                     GL_TEXTURE_2D,
+                                                     sfc->rb_depth_stencil,
                                                      0, sfc->rt_msaa_samples);
-             glsym_glFramebufferTexture2DMultisample(GL_FRAMEBUFFER, 
+             glsym_glFramebufferTexture2DMultisample(GL_FRAMEBUFFER,
                                                      GL_STENCIL_ATTACHMENT,
-                                                     GL_TEXTURE_2D, 
-                                                     sfc->rb_depth_stencil, 
+                                                     GL_TEXTURE_2D,
+                                                     sfc->rb_depth_stencil,
                                                      0, sfc->rt_msaa_samples);
           }
         else
           {
-             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                                    GL_TEXTURE_2D, sfc->rb_depth_stencil, 0);
-             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
-                                    GL_TEXTURE_2D, sfc->rb_depth_stencil, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                               GL_TEXTURE_2D, sfc->rb_depth_stencil, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
+                               GL_TEXTURE_2D, sfc->rb_depth_stencil, 0);
           }
         glBindTexture(GL_TEXTURE_2D, curr_tex);
 
