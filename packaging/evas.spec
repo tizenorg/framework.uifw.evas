@@ -1,32 +1,41 @@
 #sbs-git:slp/pkgs/e/evas evas 1.1.0+svn.69113slp2+build01 828d8bb285397266eb8985fd081fa2692fa3a7d6
 Name:       evas
 Summary:    Multi-platform Canvas Library
-Version:    1.2.0+svn.70433slp2+build06
-Release:    2
+Version:    1.2.0+svn.70433slp2+build09
+Release:    1
 Group:      System/Libraries
 License:    BSD
 URL:        http://www.enlightenment.org/
 Source0:    %{name}-%{version}.tar.gz
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
-BuildRequires:  eina-devel
-BuildRequires:  eet-devel
-BuildRequires:  libx11-devel
-BuildRequires:  libxi-devel
-BuildRequires:  libxrender-devel
-BuildRequires:  fontconfig-devel
-BuildRequires:  freetype-devel
-BuildRequires:  fribidi-devel
-BuildRequires:  libxext-devel
-BuildRequires:  libpng-devel
-BuildRequires:  libxpm-devel
-BuildRequires:  zlib-devel
-BuildRequires:  harfbuzz-devel
-BuildRequires:  libsm-devel
+BuildRequires:  pkgconfig(eina)
+BuildRequires:  pkgconfig(eet)
+BuildRequires:  pkgconfig(x11)
+BuildRequires:  pkgconfig(xi)
+BuildRequires:  pkgconfig(xrender)
+BuildRequires:  pkgconfig(fontconfig)
+BuildRequires:  pkgconfig(freetype2)
+BuildRequires:  pkgconfig(fribidi)
+BuildRequires:  pkgconfig(xext)
+BuildRequires:  pkgconfig(libpng)
+BuildRequires:  pkgconfig(xpm)
+BuildRequires:  pkgconfig(zlib)
+BuildRequires:  pkgconfig(harfbuzz)
+BuildRequires:  pkgconfig(sm)
 BuildRequires:  libjpeg-devel
 BuildRequires:  giflib-devel
-BuildRequires:  pixman-devel
-BuildRequires:  opengl-es-devel
+BuildRequires:  pkgconfig(pixman-1)
+%ifarch %{arm}
+BuildRequires:  pkgconfig(gles11)
+BuildRequires:  pkgconfig(gles20)
+BuildRequires:  pkgconfig(libdri2)
+BuildRequires:  pkgconfig(xfixes)
+BuildRequires:  pkgconfig(libdrm_slp)
+%else
+BuildRequires:  simulator-opengl-devel
+%endif
+
 
 %description
 Enlightenment DR17 advanced canvas library Evas is an advanced canvas library, providing six engines for rendering: X11,
