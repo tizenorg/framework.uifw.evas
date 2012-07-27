@@ -769,3 +769,10 @@
 2012-05-30  ChunEon Park (Hermet)
 
 	* Fixed to clean up when map actually changed. Now rendering updates will be
+
+2012-06-27  Sung W. Park (sung_)
+
+	* Added (w, h) <= 0 check in EvasGL surface that was never handled before.
+        * Handled evas_gl_make_current to return error when either surface 
+        or context is NULL.  Before, when that was the case, it just did 
+        make_current(NULL, NULL) internally. 
