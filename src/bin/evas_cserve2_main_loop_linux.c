@@ -26,7 +26,6 @@ struct _Watch_Data
    Fd_Flags flags;
    Fd_Watch_Cb callback;
    const void *user_data;
-   Eina_Bool deleted : 1;
 };
 
 typedef struct _Watch_Data Watch_Data;
@@ -48,7 +47,6 @@ static int socket_fd = -1;
 static int inotify_fd = -1;
 static struct sockaddr_un socket_local;
 static Eina_Hash *watch_list;
-static Eina_List *deleted_watch_list;
 static Eina_Hash *inotify_path_hash;
 static Eina_Hash *inotify_id_hash;
 static Eina_Bool running;
@@ -356,9 +354,7 @@ _inotifyfd_finish(void)
 static void
 _watch_data_free_cb(void *data)
 {
-   Watch_Data *wd = data;
-   wd->deleted = EINA_TRUE;
-   deleted_watch_list = eina_list_append(deleted_watch_list, wd);
+   free(data);
 }
 
 Eina_Bool
@@ -448,8 +444,6 @@ error_socket:
 void
 cserve2_main_loop_finish(void)
 {
-   Watch_Data *wd;
-
    _socketfd_finish();
 
    _signalfd_finish();
@@ -457,8 +451,6 @@ cserve2_main_loop_finish(void)
    _inotifyfd_finish();
 
    eina_hash_free(watch_list);
-   EINA_LIST_FREE(deleted_watch_list, wd)
-     free(wd);
 
    close(epoll_fd);
 }
@@ -734,7 +726,6 @@ cserve2_main_loop_run(void)
      {
         struct epoll_event events[MAX_EPOLL_EVENTS];
         int n, nfds;
-        Watch_Data *data;
 
         if (terminate)
           break;
@@ -757,13 +748,10 @@ cserve2_main_loop_run(void)
 
         for (n = 0; n < nfds; n++)
           {
-             data = events[n].data.ptr;
+             Watch_Data *data = events[n].data.ptr;
              Fd_Flags flags = 0;
 
              if (!data)
-               continue;
-
-             if (data->deleted)
                continue;
 
              if (!data->callback)
@@ -777,9 +765,6 @@ cserve2_main_loop_run(void)
                flags |= FD_ERROR;
              data->callback(data->fd, flags, (void *)data->user_data);
           }
-
-        EINA_LIST_FREE(deleted_watch_list, data)
-          free(data);
 
         _update_timeout();
      }

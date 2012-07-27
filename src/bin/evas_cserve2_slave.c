@@ -187,8 +187,8 @@ error_send(int fd, Error_Type err)
    return response_send(fd, ERROR, &err, sizeof(Error_Type));
 }
 
-static void *
-_cserve2_shm_map(const char *name, size_t length, off_t offset)
+void *
+cserve2_shm_map(const char *name, size_t length, off_t offset)
 {
    void *map;
    int fd;
@@ -204,8 +204,8 @@ _cserve2_shm_map(const char *name, size_t length, off_t offset)
    return map;
 }
 
-static void
-_cserve2_shm_unmap(void *map, size_t length)
+void
+cserve2_shm_unmap(void *map, size_t length)
 {
    munmap(map, length);
 }
@@ -316,8 +316,8 @@ image_load(const char *file, const char *key, const char *shmfile, Slave_Msg_Ima
    Evas_Loader_Module_Api *api;
    int err;
    Error_Type ret = CSERVE2_NONE;
-   char *map = _cserve2_shm_map(shmfile, params->shm.mmap_size,
-                                params->shm.mmap_offset);
+   char *map = cserve2_shm_map(shmfile, params->shm.mmap_size,
+                               params->shm.mmap_offset);
    if (map == MAP_FAILED)
      return CSERVE2_RESOURCE_ALLOCATION_FAILED;
 
@@ -352,7 +352,7 @@ image_load(const char *file, const char *key, const char *shmfile, Slave_Msg_Ima
    result->alpha_sparse = ilp.alpha_sparse;
 
 done:
-   _cserve2_shm_unmap(map, params->shm.mmap_size);
+   cserve2_shm_unmap(map, params->shm.mmap_size);
 
    return ret;
 }

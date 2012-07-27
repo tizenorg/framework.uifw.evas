@@ -11,6 +11,7 @@
 
 #include "evas_cserve2.h"
 
+static const char *SOCK_PATH = "/tmp/cserve2.socket";
 static unsigned int _rid_count = 0;
 
 static struct sockaddr_un socket_local;
