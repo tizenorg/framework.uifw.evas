@@ -19,9 +19,6 @@
 //#define SURFDBG 1
 
 static Evas_Cache_Image * eci = NULL;
-#ifdef EVAS_CSERVE2
-static Evas_Cache2      * eci2 = NULL;
-#endif
 static int                reference = 0;
 
 /* static RGBA_Image *evas_rgba_line_buffer = NULL; */
@@ -81,38 +78,11 @@ static const Evas_Cache_Image_Func      _evas_common_image_func =
   NULL
 };
 
-#ifdef EVAS_CSERVE2
-static const Evas_Cache2_Image_Func      _evas_common_image_func2 =
-{
-  // _evas_common_rgba_image_new,
-  // _evas_common_rgba_image_delete,
-  _evas_common_rgba_image_surface_alloc,
-  _evas_common_rgba_image_surface_delete,
-  _evas_common_rgba_image_surface_pixels,
-  // evas_common_load_rgba_image_module_from_file,
-  // _evas_common_rgba_image_unload,
-  NULL, // _evas_common_rgba_image_dirty_region,
-  NULL, // _evas_common_rgba_image_dirty,
-  evas_common_rgba_image_size_set,
-  evas_common_rgba_image_from_copied_data,
-  evas_common_rgba_image_from_data,
-  NULL, // evas_common_rgba_image_colorspace_set,
-  // evas_common_load_rgba_image_data_from_file,
-  _evas_common_rgba_image_ram_usage,
-/*   _evas_common_rgba_image_debug */
-  NULL
-};
-#endif
-
 EAPI void
 evas_common_image_init(void)
 {
    if (!eci)
      eci = evas_cache_image_init(&_evas_common_image_func);
-#ifdef EVAS_CSERVE2
-   if (!eci2)
-     eci2 = evas_cache2_init(&_evas_common_image_func2);
-#endif
    reference++;
 ////   ERR("REF++=%i", reference);
 
@@ -145,10 +115,6 @@ evas_common_image_shutdown(void)
 // ENABLE IT AGAIN, hope it is fixed. Gustavo @ January 22nd, 2009.
        evas_cache_image_shutdown(eci);
        eci = NULL;
-#ifdef EVAS_CSERVE2
-       evas_cache2_shutdown(eci2);
-       eci2 = NULL;
-#endif
      }
 
 #ifdef BUILD_LOADER_EET
@@ -173,6 +139,12 @@ _evas_common_rgba_image_new(void)
    if (!im) return NULL;
    im->flags = RGBA_IMAGE_NOTHING;
    im->ref = 1;
+#ifdef EVAS_FRAME_QUEUING
+   LKI(im->cache_entry.ref_fq_add);
+   LKI(im->cache_entry.ref_fq_del);
+   eina_condition_new(&(im->cache_entry.cond_fq_del),
+		      &(im->cache_entry.ref_fq_del));
+#endif
 
    evas_common_rgba_image_scalecache_init(&im->cache_entry);
 
@@ -186,6 +158,11 @@ _evas_common_rgba_image_delete(Image_Entry *ie)
 
 #ifdef BUILD_PIPE_RENDER
    evas_common_pipe_free(im);
+# ifdef EVAS_FRAME_QUEUING
+   LKD(im->cache_entry.ref_fq_add);
+   LKD(im->cache_entry.ref_fq_del);
+   eina_condition_free(&(im->cache_entry.cond_fq_del));
+# endif
 #endif
    evas_common_rgba_image_scalecache_shutdown(&im->cache_entry);
    if (ie->info.module) evas_module_unref((Evas_Module *)ie->info.module);
@@ -198,12 +175,6 @@ _evas_common_rgba_image_delete(Image_Entry *ie)
 //   memset(im, 0x99, sizeof(im));
 #ifdef EVAS_CSERVE
    if (ie->data1) evas_cserve_image_free(ie);
-#endif
-#ifdef EVAS_CSERVE2
-   if (ie->data1)
-       ERR("Shouldn't reach this point since we are using cache2: '%s' '%s'",
-           ie->file, ie->key);
-   // if (ie->data1) evas_cserve2_image_free(ie);
 #endif
 /*
  * FIXME: This doesn't seem to be needed... But I'm not sure why.
@@ -306,22 +277,6 @@ evas_common_rgba_image_unload(Image_Entry *ie)
      }
 #endif
 
-#ifdef EVAS_CSERVE2
-   if (ie->data1)
-     {
-        ERR("Shouldn't reach this point since we are using cache2.");
-//         evas_cserve2_image_unload(ie);
-//         im->image.data = NULL;
-//         ie->allocated.w = 0;
-//         ie->allocated.h = 0;
-//         ie->flags.loaded = 0;
-#ifdef BUILD_ASYNC_PRELOAD
-        ie->flags.preload_done = 0;
-#endif
-        return;
-     }
-#endif
-
    if (im->image.data && !im->image.no_free)
      {
         free(im->image.data);
@@ -372,9 +327,6 @@ _evas_common_rgba_image_surface_alloc(Image_Entry *ie, unsigned int w, unsigned 
    size_t        siz = 0;
 
 #ifdef EVAS_CSERVE
-   if (ie->data1) return 0;
-#endif
-#ifdef EVAS_CSERVE2
    if (ie->data1) return 0;
 #endif
    if (im->image.no_free) return 0;
@@ -454,11 +406,6 @@ _evas_common_rgba_image_surface_delete(Image_Entry *ie)
    else if (ie->data1)
      evas_cserve_image_free(ie);
 #endif
-// #ifdef EVAS_CSERVE2
-//    else if (ie->data1)
-//      ERR("Shouldn't reach this point since we are using cache2.");
-//      // evas_cserve2_image_free(ie);
-// #endif
 
    im->image.data = NULL;
    ie->allocated.w = 0;
@@ -489,10 +436,6 @@ _evas_common_rgba_image_dirty_region(Image_Entry* ie, unsigned int x __UNUSED__,
 #ifdef EVAS_CSERVE
    if (ie->data1) evas_cserve_image_free(ie);
 #endif
-#ifdef EVAS_CSERVE2
-   // if (ie->data1) evas_cserve2_image_free(ie);
-   if (ie->data1) ERR("Shouldn't reach this point since we are using cache2.");
-#endif
    im->flags |= RGBA_IMAGE_IS_DIRTY;
    evas_common_rgba_image_scalecache_dirty(&im->cache_entry);
 }
@@ -513,19 +456,11 @@ _evas_common_rgba_image_dirty(Image_Entry *ie_dst, const Image_Entry *ie_src)
 #ifdef EVAS_CSERVE
         if (ie_src->data1) evas_cserve_image_free((Image_Entry*) ie_src);
 #endif
-#ifdef EVAS_CSERVE2
-        // if (ie_src->data1) evas_cserve2_image_free((Image_Entry*) ie_src);
-        if (ie_src->data1) ERR("Shouldn't reach this point since we are using cache2.");
-#endif
         return 1;
      }
 
 #ifdef EVAS_CSERVE
    if (ie_src->data1) evas_cserve_image_free((Image_Entry*) ie_src);
-#endif
-#ifdef EVAS_CSERVE2
-        // if (ie_src->data1) evas_cserve2_image_free((Image_Entry*) ie_src);
-        if (ie_src->data1) ERR("Shouldn't reach this point since we are using cache2.");
 #endif
    evas_common_image_colorspace_normalize(src);
    evas_common_image_colorspace_normalize(dst);
@@ -547,9 +482,7 @@ _evas_common_rgba_image_ram_usage(Image_Entry *ie)
 
    if (im->image.data)
      {
-#if defined(EVAS_CSERVE)
-        if ((!im->image.no_free) || (ie->data1))
-#elif defined(EVAS_CSERVE2)
+#ifdef EVAS_CSERVE
         if ((!im->image.no_free) || (ie->data1))
 #else
         if ((!im->image.no_free))
@@ -702,10 +635,6 @@ evas_common_image_colorspace_normalize(RGBA_Image *im)
 #ifdef EVAS_CSERVE
              if (((Image_Entry *)im)->data1) evas_cserve_image_free(&im->cache_entry);
 #endif
-#ifdef EVAS_CSERVE2
-             // if (((Image_Entry *)im)->data1) evas_cserve2_image_free(&im->cache_entry);
-             if (((Image_Entry *)im)->data1) ERR("Shouldn't reach this point since we are using cache2.");
-#endif
 	     if (!im->image.no_free)
                {
                   free(im->image.data);
@@ -761,16 +690,6 @@ evas_common_image_colorspace_dirty(RGBA_Image *im)
 {
    im->cs.dirty = 1;
    evas_common_rgba_image_scalecache_dirty(&im->cache_entry);
-#ifdef HAVE_PIXMAN
-# ifdef PIXMAN_IMAGE   
-   if (im->pixman.im)
-     {
-        pixman_image_unref(im->pixman.im);
-        im->pixman.im = NULL;
-     }
-   _evas_common_rgba_image_post_surface((Image_Entry *)im);
-# endif   
-#endif
 }
 
 EAPI void
@@ -778,10 +697,6 @@ evas_common_image_set_cache(unsigned int size)
 {
    if (eci)
      evas_cache_image_set(eci, size);
-#ifdef EVAS_CSERVE2
-   if (eci2)
-     evas_cache2_limit_set(eci2, size);
-#endif
 }
 
 EAPI int
@@ -812,14 +727,6 @@ evas_common_image_cache_get(void)
 {
    return eci;
 }
-
-#ifdef EVAS_CSERVE2
-EAPI Evas_Cache2*
-evas_common_image_cache2_get(void)
-{
-   return eci2;
-}
-#endif
 
 EAPI RGBA_Image *
 evas_common_image_line_buffer_obtain(int len)

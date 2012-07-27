@@ -10,8 +10,8 @@ AM_CPPFLAGS = \
 @FREETYPE_CFLAGS@ \
 @PIXMAN_CFLAGS@ \
 @EINA_CFLAGS@ \
-@FRIBIDI_CFLAGS@ \
-@evas_engine_software_8_x11_cflags@
+@evas_engine_software_8_x11_cflags@ \
+-I/usr/include/pixman-1
 
 if BUILD_ENGINE_SOFTWARE_8_X11
 

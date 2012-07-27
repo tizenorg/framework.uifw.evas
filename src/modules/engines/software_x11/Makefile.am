@@ -11,12 +11,10 @@ AM_CPPFLAGS = \
 -I. \
 -I$(top_srcdir)/src/lib \
 -I$(top_srcdir)/src/lib/include \
--I$(top_srcdir)/src/lib/cserve2 \
 -I$(top_srcdir)/src/modules/engines \
 @FREETYPE_CFLAGS@ \
 @PIXMAN_CFLAGS@ \
 @EINA_CFLAGS@ \
-@FRIBIDI_CFLAGS@ \
 @evas_engine_software_xlib_cflags@
 
 SOFTWARE_X11_SOURCES += \

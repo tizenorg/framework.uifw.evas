@@ -10,7 +10,6 @@ AM_CPPFLAGS = \
 @PIXMAN_CFLAGS@ \
 @EINA_CFLAGS@ \
 @GL_EET_CFLAGS@ \
-@FRIBIDI_CFLAGS@ \
 @evas_engine_gl_sdl_cflags@
 
 if BUILD_ENGINE_GL_SDL

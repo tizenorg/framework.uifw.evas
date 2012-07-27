@@ -1,11 +1,3 @@
-#ifdef HAVE_CONFIG_H
-# include <config.h>
-#endif
-
-#ifdef EVAS_CSERVE2
-#include "evas_cs2_private.h"
-#endif
-
 #include "evas_common.h"
 #include "evas_engine.h"
 
@@ -19,11 +11,6 @@ evas_buffer_outbuf_buf_free(Outbuf *buf)
 {
    if (buf->priv.back_buf)
      {
-#ifdef EVAS_CSERVE2
-        if (evas_cserve2_use_get())
-          evas_cache2_image_close(&buf->priv.back_buf->cache_entry);
-        else
-#endif
         evas_cache_image_drop(&buf->priv.back_buf->cache_entry);
      }
    free(buf);
@@ -63,14 +50,6 @@ evas_buffer_outbuf_buf_setup_fb(int w, int h, Outbuf_Depth depth, void *dest, in
        (buf->dest) && (buf->dest_row_bytes == (buf->w * sizeof(DATA32))))
      {
 	memset(buf->dest, 0, h * buf->dest_row_bytes);
-#ifdef EVAS_CSERVE2
-        if (evas_cserve2_use_get())
-          buf->priv.back_buf = (RGBA_Image *) evas_cache2_image_data(evas_common_image_cache2_get(),
-                                                                     w, h,
-                                                                     buf->dest,
-                                                                     1, EVAS_COLORSPACE_ARGB8888);
-        else
-#endif
 	buf->priv.back_buf = (RGBA_Image *) evas_cache_image_data(evas_common_image_cache_get(),
                                                                   w, h,
                                                                   buf->dest,
@@ -79,14 +58,6 @@ evas_buffer_outbuf_buf_setup_fb(int w, int h, Outbuf_Depth depth, void *dest, in
    else if ((buf->depth == OUTBUF_DEPTH_RGB_32BPP_888_8888) &&
        (buf->dest) && (buf->dest_row_bytes == (buf->w * sizeof(DATA32))))
      {
-#ifdef EVAS_CSERVE2
-        if (evas_cserve2_use_get())
-          buf->priv.back_buf = (RGBA_Image *) evas_cache2_image_data(evas_common_image_cache2_get(),
-                                                                     w, h,
-                                                                     buf->dest,
-                                                                     0, EVAS_COLORSPACE_ARGB8888);
-        else
-#endif
         buf->priv.back_buf = (RGBA_Image *) evas_cache_image_data(evas_common_image_cache_get(),
                                                                   w, h,
                                                                   buf->dest,
@@ -109,11 +80,6 @@ evas_buffer_outbuf_buf_new_region_for_update(Outbuf *buf, int x, int y, int w, i
    else
      {
 	*cx = 0; *cy = 0; *cw = w; *ch = h;
-#ifdef EVAS_CSERVE2
-        if (evas_cserve2_use_get())
-          im = (RGBA_Image *)evas_cache2_image_empty(evas_common_image_cache2_get());
-        else
-#endif
 	im = (RGBA_Image *) evas_cache_image_empty(evas_common_image_cache_get());
         if (im)
           {
@@ -121,11 +87,6 @@ evas_buffer_outbuf_buf_new_region_for_update(Outbuf *buf, int x, int y, int w, i
 		 ((buf->depth == OUTBUF_DEPTH_BGRA_32BPP_8888_8888)))
 	       {
 		  im->cache_entry.flags.alpha = 1;
-#ifdef EVAS_CSERVE2
-                  if (evas_cserve2_use_get())
-                    evas_cache2_image_size_set(&im->cache_entry, w, h);
-                  else
-#endif
                   im = (RGBA_Image *) evas_cache_image_size_set(&im->cache_entry, w, h);
                }
           }
@@ -136,15 +97,7 @@ evas_buffer_outbuf_buf_new_region_for_update(Outbuf *buf, int x, int y, int w, i
 void
 evas_buffer_outbuf_buf_free_region_for_update(Outbuf *buf, RGBA_Image *update)
 {
-   if (update != buf->priv.back_buf)
-     {
-#ifdef EVAS_CSERVE2
-        if (evas_cserve2_use_get())
-          evas_cache2_image_close(&update->cache_entry);
-        else
-#endif
-          evas_cache_image_drop(&update->cache_entry);
-     }
+   if (update != buf->priv.back_buf) evas_cache_image_drop(&update->cache_entry);
 }
 
 void
@@ -155,26 +108,12 @@ evas_buffer_outbuf_buf_switch_buffer(Outbuf *buf)
         buf->dest = buf->func.switch_buffer(buf->switch_data, buf->dest);
         if (buf->priv.back_buf)
           {
-#ifdef EVAS_CSERVE2
-             if (evas_cserve2_use_get())
-               {
-                  evas_cache2_image_close(&buf->priv.back_buf->cache_entry);
-                  buf->priv.back_buf = (RGBA_Image *) evas_cache2_image_data(evas_common_image_cache2_get(),
-                                                                            buf->w, buf->h,
-                                                                            buf->dest,
-                                                                            buf->depth == OUTBUF_DEPTH_ARGB_32BPP_8888_8888 ? 1 : 0,
-                                                                            EVAS_COLORSPACE_ARGB8888);
-               }
-             else
-#endif
-               {
-                  evas_cache_image_drop(&buf->priv.back_buf->cache_entry);
-                  buf->priv.back_buf = (RGBA_Image *) evas_cache_image_data(evas_common_image_cache_get(),
-                                                                            buf->w, buf->h,
-                                                                            buf->dest,
-                                                                            buf->depth == OUTBUF_DEPTH_ARGB_32BPP_8888_8888 ? 1 : 0,
-                                                                            EVAS_COLORSPACE_ARGB8888);
-               }
+             evas_cache_image_drop(&buf->priv.back_buf->cache_entry);
+             buf->priv.back_buf = (RGBA_Image *) evas_cache_image_data(evas_common_image_cache_get(),
+                                                                       buf->w, buf->h,
+                                                                       buf->dest,
+                                                                       buf->depth == OUTBUF_DEPTH_ARGB_32BPP_8888_8888 ? 1 : 0,
+                                                                       EVAS_COLORSPACE_ARGB8888);
           }
      }
 }

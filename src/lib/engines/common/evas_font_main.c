@@ -3,8 +3,6 @@
 
 #include "evas_font_private.h"
 
-#include <assert.h>
-
 #include FT_OUTLINE_H
 
 FT_Library      evas_ft_lib = 0;
@@ -45,16 +43,19 @@ evas_common_font_shutdown(void)
    initialised--;
    if (initialised != 0) return;
 
+   LKD(lock_font_draw);
+   LKD(lock_bidi);
+   LKD(lock_ot);
+
    evas_common_font_load_shutdown();
    evas_common_font_cache_set(0);
    evas_common_font_flush();
 
    FT_Done_FreeType(evas_ft_lib);
+#ifdef EVAS_FRAME_QUEUING
+   evas_common_font_draw_finish();
+#endif
    evas_ft_lib = 0;
-
-   LKD(lock_font_draw);
-   LKD(lock_bidi);
-   LKD(lock_ot);
 }
 
 EAPI void
@@ -158,12 +159,7 @@ evas_common_font_max_ascent_get(RGBA_Font *fn)
         FTUNLOCK();
         fi->src->current_size = fi->size;
      }
-   if ((fi->src->ft.face->bbox.yMax == 0) &&
-       (fi->src->ft.face->bbox.yMin == 0) &&
-       (fi->src->ft.face->units_per_EM == 0))
-     val = (int)fi->src->ft.face->size->metrics.ascender / 64;
-   else
-     val = (int)fi->src->ft.face->bbox.yMax;
+   val = (int)fi->src->ft.face->bbox.yMax;
    if (fi->src->ft.face->units_per_EM == 0)
      return val;
    dv = (fi->src->ft.orig_upem * 2048) / fi->src->ft.face->units_per_EM;
@@ -188,12 +184,7 @@ evas_common_font_max_descent_get(RGBA_Font *fn)
         FTUNLOCK();
         fi->src->current_size = fi->size;
      }
-   if ((fi->src->ft.face->bbox.yMax == 0) &&
-       (fi->src->ft.face->bbox.yMin == 0) &&
-       (fi->src->ft.face->units_per_EM == 0))
-     val = -(int)fi->src->ft.face->size->metrics.descender / 64;
-   else
-     val = -(int)fi->src->ft.face->bbox.yMin;
+   val = -(int)fi->src->ft.face->bbox.yMin;
    if (fi->src->ft.face->units_per_EM == 0)
      return val;
    dv = (fi->src->ft.orig_upem * 2048) / fi->src->ft.face->units_per_EM;
@@ -349,11 +340,12 @@ EAPI RGBA_Font_Glyph *
 evas_common_font_int_cache_glyph_get(RGBA_Font_Int *fi, FT_UInt idx)
 {
    RGBA_Font_Glyph *fg;
+   FT_UInt hindex;
    FT_Error error;
+   int size;
    const FT_Int32 hintflags[3] =
      { FT_LOAD_NO_HINTING, FT_LOAD_FORCE_AUTOHINT, FT_LOAD_NO_AUTOHINT };
-   static FT_Matrix transform = {0x10000, _EVAS_FONT_SLANT_TAN * 0x10000,
-        0x00000, 0x10000};
+   static FT_Matrix transform = {0x10000, 0x05000, 0x0000, 0x10000}; // about 12 degree.
 
    evas_common_font_int_promote(fi);
    if (fi->fash)
@@ -362,6 +354,8 @@ evas_common_font_int_cache_glyph_get(RGBA_Font_Int *fi, FT_UInt idx)
         if (fg == (void *)(-1)) return NULL;
         else if (fg) return fg;
      }
+
+   hindex = idx + (fi->hinting * 500000000);
 
 //   fg = eina_hash_find(fi->glyphs, &hindex);
 //   if (fg) return fg;
@@ -402,30 +396,6 @@ evas_common_font_int_cache_glyph_get(RGBA_Font_Int *fi, FT_UInt idx)
         return NULL;
      }
 
-     {
-        FT_BBox outbox;
-        FT_Glyph_Get_CBox(fg->glyph, FT_GLYPH_BBOX_UNSCALED,
-              &outbox);
-        fg->width = EVAS_FONT_ROUND_26_6_TO_INT(outbox.xMax - outbox.xMin);
-        fg->x_bear = EVAS_FONT_ROUND_26_6_TO_INT(outbox.xMin);
-     }
-
-   fg->index = idx;
-   fg->fi = fi;
-
-   if (!fi->fash) fi->fash = _fash_gl_new();
-   if (fi->fash) _fash_gl_add(fi->fash, idx, fg);
-
-//   eina_hash_direct_add(fi->glyphs, &fg->index, fg);
-   return fg;
-}
-
-EAPI Eina_Bool
-evas_common_font_int_cache_glyph_render(RGBA_Font_Glyph *fg)
-{
-   int size;
-   FT_Error error;
-   RGBA_Font_Int *fi = fg->fi;
    FTLOCK();
    error = FT_Glyph_To_Bitmap(&(fg->glyph), FT_RENDER_MODE_NORMAL, 0, 1);
    if (error)
@@ -434,12 +404,17 @@ evas_common_font_int_cache_glyph_render(RGBA_Font_Glyph *fg)
         FTUNLOCK();
         free(fg);
         if (!fi->fash) fi->fash = _fash_gl_new();
-        if (fi->fash) _fash_gl_add(fi->fash, fg->index, (void *)(-1));
-        return EINA_FALSE;
+        if (fi->fash) _fash_gl_add(fi->fash, idx, (void *)(-1));
+        return NULL;
      }
    FTUNLOCK();
 
    fg->glyph_out = (FT_BitmapGlyph)fg->glyph;
+   fg->index = hindex;
+   fg->fi = fi;
+
+   if (!fi->fash) fi->fash = _fash_gl_new();
+   if (fi->fash) _fash_gl_add(fi->fash, idx, fg);
    /* This '+ 200' is just an estimation of how much memory freetype will use
     * on it's size. This value is not really used anywhere in code - it's
     * only for statistics. */
@@ -448,7 +423,8 @@ evas_common_font_int_cache_glyph_render(RGBA_Font_Glyph *fg)
    fi->usage += size;
    if (fi->inuse) evas_common_font_int_use_increase(size);
 
-   return EINA_TRUE;
+//   eina_hash_direct_add(fi->glyphs, &fg->index, fg);
+   return fg;
 }
 
 typedef struct _Font_Char_Index Font_Char_Index;

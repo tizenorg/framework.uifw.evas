@@ -5,12 +5,10 @@ AM_CPPFLAGS = \
 -I. \
 -I$(top_srcdir)/src/lib \
 -I$(top_srcdir)/src/lib/include \
--I$(top_srcdir)/src/lib/cserve2 \
 -I$(top_srcdir)/src/modules/engines \
 @EINA_CFLAGS@ \
 @FREETYPE_CFLAGS@ \
-@PIXMAN_CFLAGS@ \
-@FRIBIDI_CFLAGS@
+@PIXMAN_CFLAGS@
 
 if BUILD_ENGINE_BUFFER
 

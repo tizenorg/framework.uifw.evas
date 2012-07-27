@@ -1,28 +1,3 @@
-Evas 1.3.0
-
-Changes since Evas 1.2.0:
--------------------------
-
-Additions:
-
-   * Textgrid object.
-
-Improvements:
-   * Lock less font rendering.
-   * Reduce cost of propagating event by limiting the object we explore by using a bouncing box.
-   * Don't wake up prepare thread if there is nothing to prepare.
-   * Limit the updated region to fit in CPU cache for Pipe rendering.
-   * Cache convertion from Evas_Map to RGBA_Map.
-   * evas_object_smart_members_get() now returns NULL on non-smart objects
-
-Fixes:
-   * Add missing files in the tarball.
-   * Add svg rendering with Esvg
-
-Removal:
-   * Remove EVAS_FRAME_QUEUING, EVAS_SLI, METRIC_CACHE and WORD_CACHE.
-   * Remove librsvg svg loader (If you want to use it, use the evas_generic_loader variant).
-
 Evas 1.2.0
 
 Changes since Evas 1.1.0:
@@ -47,7 +22,6 @@ Additions:
    * EVAS_GL_OPTIONS_DIRECT.
    * evas_object_textblock_style_user_pop/push.
    * evas_object_ref_get
-   * Evas_GL_Multisample_Bits MSAA surface config option for supported devices.
 
 Fixes:
 

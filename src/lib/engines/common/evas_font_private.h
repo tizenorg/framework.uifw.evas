@@ -6,18 +6,20 @@
 extern LK(lock_font_draw); // for freetype2 API calls
 extern LK(lock_bidi); // for fribidi API calls
 extern LK(lock_ot); // for harfbuzz calls
-#  define FTLOCK()   LKL(lock_font_draw)
+#endif
+
+# if defined(EVAS_FRAME_QUEUING) || defined(BUILD_PIPE_RENDER)
+#  define FTLOCK() LKL(lock_font_draw)
 #  define FTUNLOCK() LKU(lock_font_draw)
 
-#  define BIDILOCK()   LKL(lock_bidi)
+#  define BIDILOCK() LKL(lock_bidi)
 #  define BIDIUNLOCK() LKU(lock_bidi)
 
-/* Macros for text walking */
-#  define OTLOCK()   LKL(lock_ot)
+#  define OTLOCK() LKL(lock_ot)
 #  define OTUNLOCK() LKU(lock_ot)
-#else
-#  define FTLOCK()
-#  define FTUNLOCK()
+# else
+#  define FTLOCK(x)
+#  define FTUNLOCK(x)
 
 #  define BIDILOCK()
 #  define BIDIUNLOCK()
@@ -25,7 +27,7 @@ extern LK(lock_ot); // for harfbuzz calls
 /* Macros for text walking */
 #  define OTLOCK()
 #  define OTUNLOCK()
-#endif
+# endif
 
 void evas_common_font_source_unload(RGBA_Font_Source *fs);
 void evas_common_font_source_reload(RGBA_Font_Source *fs);

@@ -238,7 +238,7 @@ static Evas_Coord
 _evas_object_text_horiz_advance_get(const Evas_Object *obj,
       const Evas_Object_Text *o)
 {
-   Evas_Object_Text_Item *it, *last_it = NULL;
+   Evas_Object_Text_Item *it;
    Evas_Coord adv;
    (void) obj;
 
@@ -246,11 +246,7 @@ _evas_object_text_horiz_advance_get(const Evas_Object *obj,
    EINA_INLIST_FOREACH(EINA_INLIST_GET(o->items), it)
      {
         adv += it->adv;
-        last_it = it;
      }
-
-   if (last_it && (last_it->w > last_it->adv))
-      adv += last_it->w - last_it->adv;
    return adv;
 }
 
@@ -356,6 +352,11 @@ evas_object_text_font_set(Evas_Object *obj, const char *font, Evas_Font_Size siz
                                               obj->layer->evas->pointer.y, 1, 1);
      }
 
+#ifdef EVAS_FRAME_QUEUING
+   if (o->font)
+      evas_common_pipe_op_text_flush((RGBA_Font *) o->font);
+#endif
+
    /* DO IT */
    if (o->font)
      {
@@ -450,7 +451,7 @@ _evas_object_text_item_new(Evas_Object *obj, Evas_Object_Text *o,
      {
         ENFN->font_text_props_info_create(ENDT,
               fi, str + pos, &it->text_props,
-              o->bidi_par_props, it->text_pos, len, EVAS_TEXT_PROPS_MODE_SHAPE);
+              o->bidi_par_props, it->text_pos, len);
 
         ENFN->font_string_size_get(ENDT,
               o->font,
@@ -1387,7 +1388,7 @@ evas_object_text_new(void)
    Evas_Object_Text *o;
 
    /* alloc obj private data */
-   EVAS_MEMPOOL_INIT(_mp_obj, "evas_object_text", Evas_Object_Text, 8, NULL);
+   EVAS_MEMPOOL_INIT(_mp_obj, "evas_object_text", Evas_Object_Text, 128, NULL);
    o = EVAS_MEMPOOL_ALLOC(_mp_obj, Evas_Object_Text);
    if (!o) return NULL;
    EVAS_MEMPOOL_PREP(_mp_obj, o, Evas_Object_Text);
@@ -1507,7 +1508,7 @@ evas_object_text_render(Evas_Object *obj, void *output, void *context, void *sur
 		     obj->cur.geometry.x + x + sl + ox + it->x, \
 		     obj->cur.geometry.y + y + st + oy + \
 		     (int) \
-		     (((o->max_ascent * obj->cur.geometry.h) / obj->cur.geometry.h)), \
+		     (((o->max_ascent * obj->cur.geometry.h) / obj->cur.geometry.h) - 0.5), \
 		     obj->cur.geometry.w, \
 		     obj->cur.geometry.h, \
 		     obj->cur.geometry.w, \
@@ -1872,6 +1873,9 @@ _evas_object_text_rehint(Evas_Object *obj)
 
    o = (Evas_Object_Text *)(obj->object_data);
    if (!o->font) return;
+#ifdef EVAS_FRAME_QUEUING
+   evas_common_pipe_op_text_flush((RGBA_Font *) o->font);
+#endif
    evas_font_load_hinting_set(obj->layer->evas, o->font,
 			      obj->layer->evas->hinting);
    was = evas_object_is_in_output_rect(obj,

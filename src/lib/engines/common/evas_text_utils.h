@@ -5,12 +5,6 @@ typedef struct _Evas_Text_Props Evas_Text_Props;
 typedef struct _Evas_Text_Props_Info Evas_Text_Props_Info;
 typedef struct _Evas_Font_Glyph_Info Evas_Font_Glyph_Info;
 
-typedef enum
-{
-   EVAS_TEXT_PROPS_MODE_NONE = 0,
-   EVAS_TEXT_PROPS_MODE_SHAPE
-} Evas_Text_Props_Mode;
-
 # include "evas_font_ot.h"
 # include "language/evas_bidi_utils.h"
 # include "language/evas_language_utils.h"
@@ -30,12 +24,6 @@ struct _Evas_Text_Props
    Evas_Script_Type script;
    Evas_Text_Props_Info *info;
    void *font_instance;
-
-   Eina_Binbuf *bin;
-
-   int generation;
-   Eina_Bool changed : 1;
-   Eina_Bool prepare : 1;
 };
 
 struct _Evas_Text_Props_Info
@@ -60,6 +48,7 @@ struct _Evas_Font_Glyph_Info
    Evas_Coord pen_after;
 };
 
+
 void
 evas_common_text_props_bidi_set(Evas_Text_Props *props,
       Evas_BiDi_Paragraph_Props *bidi_par_props, size_t start);
@@ -70,7 +59,7 @@ evas_common_text_props_script_set(Evas_Text_Props *props, Evas_Script_Type scr);
 EAPI Eina_Bool
 evas_common_text_props_content_create(void *_fi, const Eina_Unicode *text,
       Evas_Text_Props *text_props, const Evas_BiDi_Paragraph_Props *par_props,
-      size_t par_pos, int len, Evas_Text_Props_Mode mode);
+      size_t par_pos, int len);
 
 void
 evas_common_text_props_content_copy_and_ref(Evas_Text_Props *dst,

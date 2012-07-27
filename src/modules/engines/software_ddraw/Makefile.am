@@ -9,7 +9,6 @@ AM_CPPFLAGS = \
 @EINA_CFLAGS@ \
 @FREETYPE_CFLAGS@ \
 @PIXMAN_CFLAGS@ \
-@FRIBIDI_CFLAGS@ \
 @evas_engine_software_ddraw_cflags@
 
 if BUILD_ENGINE_SOFTWARE_DDRAW

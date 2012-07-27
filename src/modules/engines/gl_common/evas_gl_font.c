@@ -23,8 +23,7 @@ evas_gl_font_texture_new(void *context, RGBA_Font_Glyph *fg)
    nw = ((w + 3) / 4) * 4;
    ndata = alloca(nw *h);
    if (!ndata) return NULL;
-   if ((fg->glyph_out->bitmap.num_grays == 256) &&
-       (fg->glyph_out->bitmap.pixel_mode == FT_PIXEL_MODE_GRAY))
+   if (fg->glyph_out->bitmap.num_grays == 256)
      {
 	int x, y;
 	DATA8 *p1, *p2;
@@ -41,7 +40,7 @@ evas_gl_font_texture_new(void *context, RGBA_Font_Glyph *fg)
 	       }
 	  }
      }
-   else
+   else if (fg->glyph_out->bitmap.num_grays == 0)
      {
 	DATA8 *tmpbuf = NULL, *dp, *tp, bits;
 	int bi, bj, end;

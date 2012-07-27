@@ -2,8 +2,7 @@
 #define _EVAS_FONT_H
 #include "evas_text_utils.h"
 
-/* The tangent of the slant angle we do on runtime. */
-#define _EVAS_FONT_SLANT_TAN 0.221694663
+
 /* main */
 
 EAPI void              evas_common_font_init                 (void);
@@ -18,13 +17,11 @@ EAPI int               evas_common_font_get_line_advance     (RGBA_Font *fn);
 
 /* draw */
 
-EAPI void              evas_common_font_draw                 (RGBA_Image *dst, RGBA_Draw_Context *dc, int x, int y, const Evas_Text_Props *intl_props);
+EAPI void              evas_common_font_draw                 (RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Font *fn, int x, int y, const Evas_Text_Props *intl_props);
 EAPI int               evas_common_font_glyph_search         (RGBA_Font *fn, RGBA_Font_Int **fi_ret, Eina_Unicode gl);
 EAPI RGBA_Font_Glyph  *evas_common_font_int_cache_glyph_get  (RGBA_Font_Int *fi, FT_UInt index);
-EAPI Eina_Bool         evas_common_font_int_cache_glyph_render(RGBA_Font_Glyph *fg);
 EAPI FT_UInt           evas_common_get_char_index            (RGBA_Font_Int* fi, Eina_Unicode gl);
 EAPI void              evas_common_font_draw_init            (void);
-EAPI void	       evas_common_font_draw_prepare         (Evas_Text_Props *text_props);
 
 /* load */
 EAPI void              evas_common_font_dpi_set              (int dpi);
@@ -68,6 +65,10 @@ EAPI int               evas_common_font_query_pen_coords     (RGBA_Font *fn, con
 EAPI int               evas_common_font_query_char_at_coords (RGBA_Font *fn, const Evas_Text_Props *intl_props, int x, int y, int *cx, int *cy, int *cw, int *ch);
 EAPI int               evas_common_font_query_last_up_to_pos (RGBA_Font *fn, const Evas_Text_Props *intl_props, int x, int y);
 EAPI int               evas_common_font_query_run_font_end_get(RGBA_Font *fn, RGBA_Font_Int **script_fi, RGBA_Font_Int **cur_fi, Evas_Script_Type script, const Eina_Unicode *text, int run_len);
+
+#ifdef EVAS_FRAME_QUEUING
+EAPI void evas_common_font_draw_finish(void);
+#endif
 
 void evas_common_font_load_init(void);
 void evas_common_font_load_shutdown(void);

@@ -621,8 +621,8 @@
 2012-01-06  Sung W. Park (sung_)
 
         * Add EvasGL support to software backend using OSMesa.  Requires OSMesa
-          library.  Due to caveats in OSMesa, surface config stays with a
-          context rather than with a surface.  So for now, the config of a
+          library.  Due to caveats in OSMesa, surface config stays with a 
+          context rather than with a surface.  So for now, the config of a 
           surface remains with the first context that it binds to.  May need
           to come up with a different solution in the near future.
 
@@ -650,14 +650,14 @@
 
 2012-01-20  Sung W. Park (sung_)
 
-	* Add Direct Rendering to Evas' window optimization for Evas_GL.  This
+	* Add Direct Rendering to Evas' window optimization for Evas_GL.  This 
           optimization can be significant since it avoids and extra copy from
           an offscreen buffer.  Normally, Evas_GL will render to a render
-          target using an FBO. This can be enabled by giving
-          EVAS_GL_OPTIONS_DIRECT hint in the config options_bits. Direct
-          rendering is actually done if the following conditions are met -
-          1) All GL rendering is done in the pixel_getter callback 2) No
-          rotation on the image object 3) Corresponding image
+          target using an FBO. This can be enabled by giving 
+          EVAS_GL_OPTIONS_DIRECT hint in the config options_bits. Direct 
+          rendering is actually done if the following conditions are met - 
+          1) All GL rendering is done in the pixel_getter callback 2) No 
+          rotation on the image object 3) Corresponding image 
           object has alpha disabled.
 
 2012-01-23  Tom Hacohen (TAsn)
@@ -769,55 +769,3 @@
 2012-05-30  ChunEon Park (Hermet)
 
 	* Fixed to clean up when map actually changed. Now rendering updates will be
-	correct after evas_map acutally disabled/enabled for the smart object.
-
-2012-05-30  Cedric Bail
-
-	* Don't wake up prepare thread if there is nothing to prepare.
-
-2012-05-30  Daniel Zaoui
-
-	* Fix evas_free callback deletion to not sometimes abort evas freeing
-        in some situations, thus leaking.
-
-2012-06-10  Carsten Haitzler (The Rasterman)
-
-        * Fix evas font handling so bitmap fonts work again like they
-        once did. This ifxes max height, and max ascent/descent
-        calculation for 0 em fonts with 0 bbox size (bitmap case), and
-        fixes 1 rounding error in text objects that placed ascent in the wrong
-        place by 1 pixel for even ascents.
-
-2012-06-10  Cedric Bail
-
-	* Limit the updated region to fit in CPU cache for Pipe rendering.
-
-2012-06-12  ChunEon Park (Hermet)
-
- 	* Fixed simple line drawing on s/w backened. Unmatched loop scope caused the
-  	destination buffer pointer march in place.
-
-2012-06-12  ChunEon Park (Hermet)
-
- 	* Removed empty evas_object_map_source_set/get APIs. Will Not be implemented.
-
-2012-06-13  Mike Blumenkrantz
-
-        * Fix crash in evas_object_image_add() when called prior to setting an engine
-          for the given canvas.
-
-2012-06-14  Cedric Bail
-
-	* Cache convertion from Evas_Map to RGBA_Map.
-
-2012-06-15  Vincent Torri
-
-	* Add Textgrid object.
-
-2012-06-15  Mike Blumenkrantz
-
-        * evas_object_smart_members_get() now returns NULL on non-smart objects
-
-2012-04-26  Carsten Haitzler (The Rasterman)
-
-        * Fix GL engine bitmap font handling

@@ -203,6 +203,10 @@ extern EAPI int _evas_log_dom_global;
 # define THI(x) int x
 # define TH_MAX 8
 
+// even though in theory having every Nth rendered line done by a different
+// thread might even out load across threads - it actually slows things down.
+//#define EVAS_SLI 1
+
 #else
 # define TH(x)
 # define THI(x)
@@ -395,7 +399,6 @@ typedef struct _RGBA_Image_Span       RGBA_Image_Span;
 typedef struct _RGBA_Draw_Context     RGBA_Draw_Context;
 typedef struct _RGBA_Polygon_Point    RGBA_Polygon_Point;
 typedef struct _RGBA_Map_Point        RGBA_Map_Point;
-typedef struct _RGBA_Map              RGBA_Map;
 typedef struct _RGBA_Font             RGBA_Font;
 typedef struct _RGBA_Font_Int         RGBA_Font_Int;
 typedef struct _RGBA_Font_Source      RGBA_Font_Source;
@@ -436,9 +439,6 @@ typedef void (*Gfx_Func_Copy)    (DATA32 *src, DATA32 *dst, int len);
 typedef void (*Gfx_Func_Convert) (DATA32 *src, DATA8 *dst, int src_jump, int dst_jump, int w, int h, int dith_x, int dith_y, DATA8 *pal);
 
 #include "../cache/evas_cache.h"
-#ifdef EVAS_CSERVE2
-#include "../cache2/evas_cache2.h"
-#endif
 
 /*****************************************************************************/
 
@@ -573,9 +573,6 @@ struct _Image_Entry
    EINA_INLIST;
 
    Evas_Cache_Image      *cache;
-#ifdef EVAS_CSERVE2
-   Evas_Cache2           *cache2;
-#endif
 
    const char            *cache_key;
 
@@ -588,9 +585,18 @@ struct _Image_Entry
    Image_Timestamp        tstamp;
 
    int                    references;
+#ifdef EVAS_FRAME_QUEUING
+   LK(lock_references);   // needed for accessing references
+#endif
 
 #ifdef BUILD_PIPE_RENDER
    RGBA_Pipe           *pipe;
+#ifdef EVAS_FRAME_QUEUING
+   LK(ref_fq_add);
+   LK(ref_fq_del);
+   Eina_Condition cond_fq_del;
+   int ref_fq[2];		// ref_fq[0] is for addition, ref_fq[1] is for deletion
+#endif
 #endif
 
    unsigned char          scale;
@@ -621,9 +627,6 @@ struct _Image_Entry
    Image_Entry_Flags      flags;
    Evas_Image_Scale_Hint  scale_hint;
    void                  *data1, *data2;
-#ifdef EVAS_CSERVE2
-   unsigned int           open_rid, load_rid, preload_rid;
-#endif
    int                    server_id;
    int                    connect_num;
    int                    channel;
@@ -727,7 +730,7 @@ struct _RGBA_Draw_Context
 struct _RGBA_Pipe_Op
 {
    RGBA_Draw_Context         context;
-   void                    (*op_func) (RGBA_Image *dst, const RGBA_Pipe_Op *op, const RGBA_Pipe_Thread_Info *info);
+   void                    (*op_func) (RGBA_Image *dst, RGBA_Pipe_Op *op, RGBA_Pipe_Thread_Info *info);
    void                    (*free_func) (RGBA_Pipe_Op *op);
 
    union {
@@ -741,8 +744,9 @@ struct _RGBA_Pipe_Op
 	 RGBA_Polygon_Point *points;
       } poly;
       struct {
+	 RGBA_Font          *font;
 	 int                 x, y;
-         Evas_Text_Props    *intl_props;
+         Evas_Text_Props     intl_props;
       } text;
       struct {
 	 RGBA_Image         *src;
@@ -771,7 +775,6 @@ struct _RGBA_Pipe
 
 struct _RGBA_Pipe_Thread_Info
 {
-   EINA_INLIST;
    RGBA_Image *im;
    int         x, y, w, h;
 };
@@ -853,20 +856,6 @@ struct _RGBA_Map_Point
    FPc px, py, z0, foc;
 };
 
-struct _RGBA_Map
-{
-   void *engine_data;
-
-   struct {
-      int w, h;
-   } image, uv;
-
-   int x, y;
-   int count;
-
-   RGBA_Map_Point pts[1];
-};
-
 #if 0 // filtering disabled
 struct _Filtered_Image
 {
@@ -927,6 +916,12 @@ struct _RGBA_Font
    Fash_Int        *fash;
    Font_Hint_Flags  hinting;
    int              references;
+#ifdef EVAS_FRAME_QUEUING
+   int              ref_fq[2]; //ref_fq[0] is for addition, ref_fq[1] is for deletion
+   Eina_Condition   cond_fq_del;
+   LK(ref_fq_add);
+   LK(ref_fq_del);
+#endif
    LK(lock);
    unsigned char    sizeok : 1;
 };
@@ -955,11 +950,6 @@ struct _RGBA_Font_Int
    Font_Rend_Flags  wanted_rend; /* The wanted rendering style */
    Font_Rend_Flags  runtime_rend; /* The rendering we need to do on runtime
                                      in order to comply with the wanted_rend. */
-
-   Eina_List       *task;
-
-   int              generation;
-
    unsigned char    sizeok : 1;
    unsigned char    inuse : 1;
 };
@@ -981,8 +971,6 @@ struct _RGBA_Font_Source
 struct _RGBA_Font_Glyph
 {
    FT_UInt         index;
-   Evas_Coord      width;
-   Evas_Coord      x_bear;
    FT_Glyph        glyph;
    FT_BitmapGlyph  glyph_out;
    /* this is a problem - only 1 engine at a time can extend such a font... grrr */

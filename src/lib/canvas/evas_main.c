@@ -1,9 +1,6 @@
 #include "evas_common.h"
 #include "evas_private.h"
 #include "evas_cs.h"
-#ifdef EVAS_CSERVE2
-#include "evas_cs2_private.h"
-#endif
 
 #ifdef LKDEBUG
 EAPI Eina_Bool lockdebug = EINA_FALSE;
@@ -50,11 +47,11 @@ evas_init(void)
 #ifdef EVAS_CSERVE
    if (getenv("EVAS_CSERVE")) evas_cserve_init();
 #endif
-#ifdef EVAS_CSERVE2
-   if (getenv("EVAS_CSERVE2")) evas_cserve2_init();
-#endif
 #ifdef BUILD_ASYNC_PRELOAD
    _evas_preload_thread_init();
+#endif
+#ifdef EVAS_FRAME_QUEUING
+   evas_common_frameq_init();
 #endif
 
    return _evas_init_count;
@@ -77,14 +74,16 @@ evas_init(void)
 EAPI int
 evas_shutdown(void)
 {
-   if (_evas_init_count <= 0)
-     {
-        EINA_LOG_ERR("Init count not greater than 0 in shutdown.");
-        return 0;
-     }
    if (--_evas_init_count != 0)
      return _evas_init_count;
 
+#ifdef EVAS_FRAME_QUEUING
+   if (evas_common_frameq_enabled())
+     {
+        evas_common_frameq_finish();
+        evas_common_frameq_destroy();
+     }
+#endif
 #ifdef BUILD_ASYNC_EVENTS
    _evas_preload_thread_shutdown();
 #endif
@@ -159,10 +158,28 @@ evas_free(Evas *e)
    return;
    MAGIC_CHECK_END();
 
-   if (e->walking_list > 0) return;
-   evas_render_idle_flush(e);
+#ifdef EVAS_FRAME_QUEUING
+   evas_common_frameq_flush();
+#endif
 
-   _evas_post_event_callback_free(e);
+   if (e->walking_list == 0) evas_render_idle_flush(e);
+   
+   if (e->walking_list > 0) return;
+
+   if (e->callbacks)
+     {
+	if (e->callbacks->deletions_waiting) return;
+
+	e->callbacks->deletions_waiting = 0;
+	evas_event_callback_list_post_free(&e->callbacks->callbacks);
+	if (!e->callbacks->callbacks)
+	  {
+	     free(e->callbacks);
+	     e->callbacks = NULL;
+	  }
+
+	_evas_post_event_callback_free(e);
+     }
    
    del = 1;
    e->walking_list++;
@@ -326,6 +343,10 @@ evas_output_size_set(Evas *e, int w, int h)
    if ((w == e->output.w) && (h == e->output.h)) return;
    if (w < 1) w = 1;
    if (h < 1) h = 1;
+
+#ifdef EVAS_FRAME_QUEUING
+   evas_common_frameq_flush();
+#endif
 
    e->output.w = w;
    e->output.h = h;
