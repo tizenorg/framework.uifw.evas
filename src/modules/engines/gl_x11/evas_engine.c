@@ -621,14 +621,14 @@ _gl_ext_init(Render_Engine *re)
    glexts = (const char*)glGetString(GL_EXTENSIONS);
 
    ext_len = strlen(glexts);
-   if (!ext_len) 
+   if (!ext_len)
      {
         DBG("GL Get Extension string NULL: No extensions supported");
         return;
      }
 
    _gl_ext_string = calloc(1, sizeof(char) * ext_len * 2);
-   if (!_gl_ext_string) 
+   if (!_gl_ext_string)
      {
         ERR("Error allocating _gl_ext_string.");
         return;
@@ -662,14 +662,14 @@ _gl_ext_init(Render_Engine *re)
 #endif
         ext_len = strlen(evasglexts);
 
-        if (!ext_len) 
+        if (!ext_len)
           {
              DBG("GL Get Extension string NULL: No extensions supported");
              return;
           }
 
         _evasgl_ext_string = calloc(1, sizeof(char) * ext_len * 2);
-        if (!_evasgl_ext_string) 
+        if (!_evasgl_ext_string)
           {
              ERR("Error allocating _evasgl_ext_string.");
              return;
@@ -889,6 +889,15 @@ _destroy_internal_glue_resources(void *data)
    Render_Engine_GL_Resource *rsc;
 
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+   // Create internal resource context if it hasn't been created already
+   if ((rsc = eina_tls_get(resource_key)) == NULL)
+     {
+        ERR("Error retrieving the TLS resources.");
+        return 0;
+     }
+
+   if (eina_main_loop_is()) rsc->surface = re->win->egl_surface[0];
+
    // EGL
    // Delete the Resources
    LKL(resource_lock);
@@ -927,9 +936,9 @@ _destroy_internal_glue_resources(void *data)
    // Free the extension strings
    if (_ext_initted)
      {
-        if (_gl_ext_string) 
+        if (_gl_ext_string)
            free(_gl_ext_string);
-        if (_evasgl_ext_string) 
+        if (_evasgl_ext_string)
            free(_evasgl_ext_string);
 
         _gl_ext_string = NULL;
@@ -941,6 +950,45 @@ _destroy_internal_glue_resources(void *data)
 }
 
 
+static int
+_internal_resources_make_current(void *data)
+{
+   Render_Engine *re = (Render_Engine *)data;
+   Render_Engine_GL_Resource *rsc;
+   int ret = 0;
+
+   // Create internal resource context if it hasn't been created already
+   if ((rsc = eina_tls_get(resource_key)) == NULL)
+     {
+        if ((rsc = _create_internal_glue_resources(re)) == NULL)
+          {
+             ERR("Error creating internal resources.");
+             return 0;
+          }
+     }
+
+   // Use resource surface/context to create surface resrouces
+#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+   // Update the evas' window surface
+   if (eina_main_loop_is()) rsc->surface = re->win->egl_surface[0];
+
+   ret = eglMakeCurrent(re->win->egl_disp, rsc->surface, rsc->surface, rsc->context);
+
+   if (!ret)
+     {
+        ERR("eglMakeCurrent() failed. Error Code: %#x", eglGetError());
+        return 0;
+     }
+#else
+   ret = glXMakeCurrent(re->info->info.display, re->win->win, rsc->context);
+   if (!ret)
+     {
+        ERR("glXMakeCurrent()!");
+        return 0;
+     }
+#endif
+   return 1;
+}
 
 static int
 eng_setup(Evas *e, void *in)
@@ -1296,9 +1344,9 @@ eng_output_redraws_next_update_get(void *data, int *x, int *y, int *w, int *h, i
    rects = evas_common_tilebuf_get_render_rects(re->tb);
    if (rects)
      {
-/*        
+/*
         Tilebuf_Rect *r;
-        
+
         printf("REAAAAACCTS\n");
         EINA_INLIST_FOREACH(EINA_INLIST_GET(rects), r)
           {
@@ -1327,7 +1375,7 @@ eng_output_redraws_next_update_get(void *data, int *x, int *y, int *w, int *h, i
         return re->win->gl_context->def_surface;
      }
    return NULL;
-/*   
+/*
    if (!re->win->draw.redraw) return NULL;
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
    // dont need to for egl - eng_window_use() can check for other ctxt's
@@ -1504,7 +1552,7 @@ eng_output_flush(void *data)
    if (1)
 #else
    if ((re->win->draw.x1 == 0) && (re->win->draw.y1 == 0) && (re->win->draw.x2 == (re->win->w - 1)) && (re->win->draw.y2 == (re->win->h - 1)))
-#endif     
+#endif
      {
 //        double t, t2 = 0.0;
 //        t = get_time();
@@ -1516,7 +1564,7 @@ eng_output_flush(void *data)
 //             glXWaitGL();
 //             t2 = get_time() - t2;
 //          }
-//        printf("swap: %3.5f (%3.5fms), x wait gl: %3.5f (%3.5fms)\n", 
+//        printf("swap: %3.5f (%3.5fms), x wait gl: %3.5f (%3.5fms)\n",
 //               t, t * 1000.0, t2, t2 * 1000.0);
      }
    else
@@ -1530,7 +1578,7 @@ eng_output_flush(void *data)
         sw = (re->win->draw.x2 - re->win->draw.x1) + 1;
         sh = (re->win->draw.y2 - re->win->draw.y1) + 1;
         sy = re->win->h - sy - sh;
-        
+
         glBitmap(0, 0, 0, 0, sx, re->win->h - sy, NULL);
         glEnable(GL_SCISSOR_TEST);
         glScissor(sx, sy, sw, sh);
@@ -3026,7 +3074,7 @@ _print_gl_surface_info(Render_Engine_GL_Surface *sfc, int error)
    else \
       DBG(__VA_ARGS__);
 
-   PRINT_LOG("----------Surface Info------------"); 
+   PRINT_LOG("----------Surface Info------------");
    PRINT_LOG("     [Surface] %x", (unsigned int)sfc);
    PRINT_LOG("         Width:  %d", sfc->w);
    PRINT_LOG("         Height: %d", sfc->h);
@@ -3048,7 +3096,7 @@ _print_gl_surface_info(Render_Engine_GL_Surface *sfc, int error)
    PRINT_LOG("            RenderBuffer Stencil Format      : %x", sfc->rb_stencil_fmt);
    PRINT_LOG("            RenderBuffer Depth Stencil       : %x", sfc->rb_depth_stencil);
    PRINT_LOG("            RenderBuffer Depth Stencil Format: %x", sfc->rb_depth_stencil_fmt);
-   PRINT_LOG("--------------------------------------"); 
+   PRINT_LOG("--------------------------------------");
 
 #undef PRINT_LOG
 }
@@ -3537,7 +3585,7 @@ _create_rt_buffers(Render_Engine *data __UNUSED__,
         ERR("_attach_fbo_surface() failed.");
         return 0;
      }
-   else 
+   else
       return 1;
 }
 
@@ -3584,25 +3632,10 @@ eng_gl_surface_create(void *data, void *config, int w, int h)
 #endif
      }
 
-   // Create internal resource context if it hasn't been created already
-   if ((rsc = eina_tls_get(resource_key)) == NULL)
+   // Use resource surface/context to do a make current
+   if (!_internal_resources_make_current(re))
      {
-        if ((rsc = _create_internal_glue_resources(re)) == NULL)
-          {
-             ERR("Error creating internal resources.");
-             goto finish;
-          }
-     }
-
-   // Use resource surface/context to create surface resrouces
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-   res = eglMakeCurrent(re->win->egl_disp, rsc->surface, rsc->surface, rsc->context);
-#else
-   res = glXMakeCurrent(re->info->info.display, re->win->win, rsc->context);
-#endif
-   if (!res)
-     {
-        ERR("xxxMakeCurrent() finish!");
+        ERR("Error doing a make current with the internal resources.");
         goto finish;
      }
 
@@ -3664,16 +3697,10 @@ eng_gl_surface_destroy(void *data, void *surface)
 
    if (!sfc) return 0;
 
-   if ((rsc = eina_tls_get(resource_key)) == EINA_FALSE) return 0;
-
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-   ret = eglMakeCurrent(re->win->egl_disp, rsc->surface, rsc->surface, rsc->context);
-#else
-   ret = glXMakeCurrent(re->info->info.display, re->win->win, rsc->context);
-#endif
-   if (!ret)
+   // Use resource surface/context to create surface resrouces
+   if (!_internal_resources_make_current(re))
      {
-        ERR("xxxMakeCurrent() failed!");
+        ERR("Error doing a make current with the internal resources.");
         return 0;
      }
 
@@ -3815,19 +3842,10 @@ eng_gl_context_destroy(void *data, void *context)
 
    if (!ctx) return 0;
 
-   if ((rsc = eina_tls_get(resource_key)) == EINA_FALSE) return 0;
-
-   // Do a make current with the given context
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-   ret = eglMakeCurrent(re->win->egl_disp, rsc->surface,
-                        rsc->surface, ctx->context);
-#else
-   ret = glXMakeCurrent(re->info->info.display, re->win->win,
-                        ctx->context);
-#endif
-   if (!ret)
+   // Use resource surface/context to create surface resrouces
+   if (!_internal_resources_make_current(re))
      {
-        ERR("xxxMakeCurrent() failed!");
+        ERR("Error doing a make current with the internal resources.");
         return 0;
      }
 
@@ -3906,7 +3924,14 @@ eng_gl_make_current(void *data __UNUSED__, void *surface, void *context)
    //    rendering outside of pixel getter but it doesn't guarantee
    //    correct rendering.
    if ((sfc->direct_fb_opt) && (gl_direct_img_obj || gl_direct_override))
-      gl_direct_enabled = 1;
+     {
+#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+        sfc->direct_sfc = re->win->egl_surface[0];
+#else
+        sfc->direct_sfc = re->win->win;
+#endif
+        gl_direct_enabled = 1;
+     }
    else
       gl_direct_enabled = 0;
 
