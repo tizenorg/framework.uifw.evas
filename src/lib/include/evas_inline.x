@@ -1,6 +1,14 @@
 #ifndef EVAS_INLINE_H
 #define EVAS_INLINE_H
 
+static inline Eina_Bool
+_evas_render_has_map(Evas_Object *obj)
+{
+   return ((!((obj->func->can_map) && (obj->func->can_map(obj)))) &&
+           ((obj->cur.map) && (obj->cur.usemap)));
+   //   return ((obj->cur.map) && (obj->cur.usemap));
+}
+
 static inline void
 _evas_object_event_new(void)
 {
@@ -161,6 +169,10 @@ evas_object_is_active(Evas_Object *obj)
                return 1;
           }
      }
+   /* FIXME: forcing object with proxies to stay active,
+      need to be smarter and only do that when really needed. */
+   if (obj->proxy.proxies && obj->changed)
+     return 1;
    return 0;
 }
 

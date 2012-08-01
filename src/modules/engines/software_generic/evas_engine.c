@@ -1,5 +1,8 @@
 #include "evas_common.h" /* Also includes international specific stuff */
 #include "evas_private.h"
+#ifdef EVAS_CSERVE2
+#include "evas_cs2_private.h"
+#endif
 
 #ifdef HAVE_DLSYM
 # include <dlfcn.h>      /* dlopen,dlclose,etc */
@@ -438,11 +441,7 @@ static void
 eng_rectangle_draw(void *data __UNUSED__, void *context, void *surface, int x, int y, int w, int h)
 {
 #ifdef BUILD_PIPE_RENDER
-   if ((cpunum > 1)
-#ifdef EVAS_FRAME_QUEUING
-        && evas_common_frameq_enabled()
-#endif
-        )
+   if ((cpunum > 1))
      evas_common_pipe_rectangle_draw(surface, context, x, y, w, h);
    else
 #endif
@@ -456,11 +455,7 @@ static void
 eng_line_draw(void *data __UNUSED__, void *context, void *surface, int x1, int y1, int x2, int y2)
 {
 #ifdef BUILD_PIPE_RENDER
-   if ((cpunum > 1)
- #ifdef EVAS_FRAME_QUEUING
-        && evas_common_frameq_enabled()
-#endif
-        )
+   if ((cpunum > 1))
     evas_common_pipe_line_draw(surface, context, x1, y1, x2, y2);
    else
 #endif   
@@ -486,11 +481,7 @@ static void
 eng_polygon_draw(void *data __UNUSED__, void *context, void *surface, void *polygon, int x, int y)
 {
 #ifdef BUILD_PIPE_RENDER
-   if ((cpunum > 1)
-#ifdef EVAS_FRAME_QUEUING
-        && evas_common_frameq_enabled()
-#endif
-        )
+   if ((cpunum > 1))
      evas_common_pipe_poly_draw(surface, context, polygon, x, y);
    else
 #endif
@@ -532,6 +523,10 @@ eng_image_can_region_get(void *data __UNUSED__, void *image)
 {
    Image_Entry *im;
    if (!image) return EINA_FALSE;
+#ifdef EVAS_CSERVE2
+   if (evas_cserve2_use_get())
+     return EINA_FALSE;
+#endif
    im = image;
    return ((Evas_Image_Load_Func*) im->info.loader)->do_region;
 }
@@ -575,9 +570,8 @@ eng_image_alpha_set(void *data __UNUSED__, void *image, int has_alpha)
 	return im;
      }
    im = (RGBA_Image *) evas_cache_image_alone(&im->cache_entry);
-   evas_common_image_colorspace_dirty(im);
-
    im->cache_entry.flags.alpha = has_alpha ? 1 : 0;
+   evas_common_image_colorspace_dirty(im);
    return im;
 }
 
@@ -667,24 +661,58 @@ static void *
 eng_image_load(void *data __UNUSED__, const char *file, const char *key, int *error, Evas_Image_Load_Opts *lo)
 {
    *error = EVAS_LOAD_ERROR_NONE;
+#ifdef EVAS_CSERVE2
+   if (evas_cserve2_use_get())
+     {
+        Image_Entry *ie;
+        ie = evas_cache2_image_open(evas_common_image_cache2_get(),
+                                    file, key, lo, error);
+        if (ie)
+          evas_cache2_image_open_wait(ie);
+
+        return ie;
+     }
+#endif
    return evas_common_load_image_from_file(file, key, lo, error);
 }
 
 static void *
 eng_image_new_from_data(void *data __UNUSED__, int w, int h, DATA32 *image_data, int alpha, int cspace)
 {
+#ifdef EVAS_CSERVE2
+   if (evas_cserve2_use_get())
+     {
+        Evas_Cache2 *cache = evas_common_image_cache2_get();
+        return evas_cache2_image_data(cache, w, h, image_data, alpha, cspace);
+     }
+#endif
    return evas_cache_image_data(evas_common_image_cache_get(), w, h, image_data, alpha, cspace);
 }
 
 static void *
 eng_image_new_from_copied_data(void *data __UNUSED__, int w, int h, DATA32 *image_data, int alpha, int cspace)
 {
+#ifdef EVAS_CSERVE2
+   if (evas_cserve2_use_get())
+     {
+        Evas_Cache2 *cache = evas_common_image_cache2_get();
+        return evas_cache2_image_copied_data(cache, w, h, image_data, alpha,
+                                             cspace);
+     }
+#endif
    return evas_cache_image_copied_data(evas_common_image_cache_get(), w, h, image_data, alpha, cspace);
 }
 
 static void
 eng_image_free(void *data __UNUSED__, void *image)
 {
+#ifdef EVAS_CSERVE2
+   if (evas_cserve2_use_get())
+     {
+        evas_cache2_image_close(image);
+        return;
+     }
+#endif
    evas_cache_image_drop(image);
 }
 
@@ -703,6 +731,10 @@ eng_image_size_set(void *data __UNUSED__, void *image, int w, int h)
 {
    Image_Entry *im = image;
    if (!im) return NULL;
+#ifdef EVAS_CSERVE2
+   if (evas_cserve2_use_get())
+     return evas_cache2_image_size_set(im, w, h);
+#endif
    return evas_cache_image_size_set(im, w, h);
 }
 
@@ -711,6 +743,10 @@ eng_image_dirty_region(void *data __UNUSED__, void *image, int x, int y, int w, 
 {
    Image_Entry *im = image;
    if (!im) return NULL;
+#ifdef EVAS_CSERVE2
+   if (evas_cserve2_use_get())
+     return evas_cache2_image_dirty(im, x, y, w, h);
+#endif
    return evas_cache_image_dirty(im, x, y, w, h);
 }
 
@@ -718,7 +754,7 @@ static void *
 eng_image_data_get(void *data __UNUSED__, void *image, int to_write, DATA32 **image_data, int *err)
 {
    RGBA_Image *im;
-   int error;
+   int error = EVAS_LOAD_ERROR_NONE;
 
    if (!image)
      {
@@ -726,6 +762,21 @@ eng_image_data_get(void *data __UNUSED__, void *image, int to_write, DATA32 **im
 	return NULL;
      }
    im = image;
+
+#ifdef EVAS_CSERVE2
+   if (evas_cserve2_use_get())
+     {
+        error = evas_cache2_image_load_data(&im->cache_entry);
+        if (err) *err = error;
+
+        if (to_write)
+          im = (RGBA_Image *)evas_cache2_image_writable(&im->cache_entry);
+
+        *image_data = im->image.data;
+        return im;
+     }
+#endif
+
    error = evas_cache_image_load_data(&im->cache_entry);
    switch (im->cache_entry.space)
      {
@@ -768,6 +819,14 @@ eng_image_data_put(void *data, void *image, DATA32 *image_data)
 	     im2 = eng_image_new_from_data(data, w, h, image_data,
 					   eng_image_alpha_get(data, image),
 					   eng_image_colorspace_get(data, image));
+#ifdef EVAS_CSERVE2
+             if (evas_cserve2_use_get())
+               {
+                  evas_cache2_image_close(&im->cache_entry);
+                  im = im2;
+                  break;
+               }
+#endif
              evas_cache_image_drop(&im->cache_entry);
 	     im = im2;
 	  }
@@ -798,8 +857,15 @@ static void
 eng_image_data_preload_request(void *data __UNUSED__, void *image, const void *target)
 {
    RGBA_Image *im = image;
-
    if (!im) return ;
+
+#ifdef EVAS_CSERVE2
+   if (evas_cserve2_use_get())
+     {
+        evas_cache2_image_preload_data(&im->cache_entry, target);
+        return;
+     }
+#endif
    evas_cache_image_preload_data(&im->cache_entry, target);
 }
 
@@ -807,6 +873,10 @@ static void
 eng_image_data_preload_cancel(void *data __UNUSED__, void *image, const void *target)
 {
    RGBA_Image *im = image;
+#ifdef EVAS_CSERVE2
+   if (evas_cserve2_use_get())
+     return;
+#endif
 
    if (!im) return ;
    evas_cache_image_preload_cancel(&im->cache_entry, target);
@@ -820,12 +890,12 @@ eng_image_draw(void *data __UNUSED__, void *context, void *surface, void *image,
    if (!image) return;
    im = image;
 #ifdef BUILD_PIPE_RENDER
-   if ((cpunum > 1)
-#ifdef EVAS_FRAME_QUEUING
-        && evas_common_frameq_enabled()
-#endif
-        )
+   if ((cpunum > 1))
      {
+#ifdef EVAS_CSERVE2
+        if (evas_cserve2_use_get())
+          evas_cache2_image_load_data(&im->cache_entry);
+#endif
         evas_common_rgba_image_scalecache_prepare((Image_Entry *)(im), 
                                                   surface, context, smooth,
                                                   src_x, src_y, src_w, src_h,
@@ -838,9 +908,20 @@ eng_image_draw(void *data __UNUSED__, void *context, void *surface, void *image,
    else
 #endif
      {
-//        if (im->cache_entry.space == EVAS_COLORSPACE_ARGB8888)
-//          evas_cache_image_load_data(&im->cache_entry);
-//        evas_common_image_colorspace_normalize(im);
+#if 0
+#ifdef EVAS_CSERVE2
+        if (evas_cserve2_use_get())
+          {
+             evas_cache2_image_load_data(&im->cache_entry);
+             goto image_loaded;
+          }
+#endif
+        if (im->cache_entry.space == EVAS_COLORSPACE_ARGB8888)
+          evas_cache_image_load_data(&im->cache_entry);
+        evas_common_image_colorspace_normalize(im);
+
+image_loaded:
+#endif
         evas_common_rgba_image_scalecache_prepare(&im->cache_entry, surface, context, smooth,
                                                   src_x, src_y, src_w, src_h,
                                                   dst_x, dst_y, dst_w, dst_h);
@@ -862,70 +943,91 @@ eng_image_draw(void *data __UNUSED__, void *context, void *surface, void *image,
 }
 
 static void
-eng_image_map_draw(void *data __UNUSED__, void *context, void *surface, void *image, int npoints, RGBA_Map_Point *p, int smooth, int level)
+evas_software_image_map_draw(void *data, void *context, RGBA_Image *surface, RGBA_Image *im, RGBA_Map *m, int smooth, int level, int offset)
 {
-   RGBA_Image *im;
+   if (m->count - offset < 3) return;
 
-   if (!image) return;
-   if (npoints < 3) return;
-   im = image;
-
-   if ((p[0].x == p[3].x) &&
-       (p[1].x == p[2].x) &&
-       (p[0].y == p[1].y) &&
-       (p[3].y == p[2].y) &&
-       (p[0].x <= p[1].x) &&
-       (p[0].y <= p[2].y) &&
-       (p[0].u == 0) &&
-       (p[0].v == 0) &&
-       (p[1].u == (int)(im->cache_entry.w << FP)) &&
-       (p[1].v == 0) &&
-       (p[2].u == (int)(im->cache_entry.w << FP)) &&
-       (p[2].v == (int)(im->cache_entry.h << FP)) &&
-       (p[3].u == 0) &&
-       (p[3].v == (int)(im->cache_entry.h << FP)) &&
-       (p[0].col == 0xffffffff) &&
-       (p[1].col == 0xffffffff) &&
-       (p[2].col == 0xffffffff) &&
-       (p[3].col == 0xffffffff))
+   if ((m->pts[0 + offset].x == m->pts[3 + offset].x) &&
+       (m->pts[1 + offset].x == m->pts[2 + offset].x) &&
+       (m->pts[0 + offset].y == m->pts[1 + offset].y) &&
+       (m->pts[3 + offset].y == m->pts[2 + offset].y) &&
+       (m->pts[0 + offset].x <= m->pts[1 + offset].x) &&
+       (m->pts[0 + offset].y <= m->pts[2 + offset].y) &&
+       (m->pts[0 + offset].u == 0) &&
+       (m->pts[0 + offset].v == 0) &&
+       (m->pts[1 + offset].u == (int)(im->cache_entry.w << FP)) &&
+       (m->pts[1 + offset].v == 0) &&
+       (m->pts[2 + offset].u == (int)(im->cache_entry.w << FP)) &&
+       (m->pts[2 + offset].v == (int)(im->cache_entry.h << FP)) &&
+       (m->pts[3 + offset].u == 0) &&
+       (m->pts[3 + offset].v == (int)(im->cache_entry.h << FP)) &&
+       (m->pts[0 + offset].col == 0xffffffff) &&
+       (m->pts[1 + offset].col == 0xffffffff) &&
+       (m->pts[2 + offset].col == 0xffffffff) &&
+       (m->pts[3 + offset].col == 0xffffffff))
      {
         int dx, dy, dw, dh;
 
-        dx = p[0].x >> FP;
-        dy = p[0].y >> FP;
-        dw = (p[2].x >> FP) - dx;
-        dh = (p[2].y >> FP) - dy;
+        dx = m->pts[0 + offset].x >> FP;
+        dy = m->pts[0 + offset].y >> FP;
+        dw = (m->pts[2 + offset].x >> FP) - dx;
+        dh = (m->pts[2 + offset].y >> FP) - dy;
         eng_image_draw
-          (data, context, surface, image,
+          (data, context, surface, im,
            0, 0, im->cache_entry.w, im->cache_entry.h,
            dx, dy, dw, dh, smooth);
      }
    else
      {
 #ifdef BUILD_PIPE_RENDER
-        if ((cpunum > 1)
-# ifdef EVAS_FRAME_QUEUING
-       && evas_common_frameq_enabled()
-# endif
-        )
-          evas_common_pipe_map_draw(im, surface, context, npoints, p, smooth, level);
+        if ((cpunum > 1))
+	  {
+             evas_common_pipe_map_draw(im, surface, context, m, smooth, level);
+             return ;
+          }
         else
 #endif
-          evas_common_map_rgba(im, surface, context, npoints, p, smooth, level);
+          {
+             evas_common_map_rgba(im, surface, context, m->count - offset, &m->pts[offset], smooth, level);
+          }
      }
    evas_common_cpu_end_opt();
 
-   if (npoints > 4)
+   if (m->count > 4)
      {
-        eng_image_map_draw(data, context, surface, image, npoints - 2, p + 2,
-                           smooth, level);
+        evas_software_image_map_draw(data, context, surface, im, m, smooth, level, offset + 2);
      }
+}
+
+static void
+eng_image_map_draw(void *data, void *context, void *surface, void *image, RGBA_Map *m, int smooth, int level)
+{
+   if (!image) return;
+   if (m->count < 3) return;
+
+   evas_software_image_map_draw(data, context, surface, image, m, smooth, level, 0);
+}
+
+static void
+eng_image_map_clean(void *data __UNUSED__, RGBA_Map *m)
+{
+   evas_common_map_rgba_clean(m);
 }
 
 static void *
 eng_image_map_surface_new(void *data __UNUSED__, int w, int h, int alpha)
 {
    void *surface;
+#ifdef EVAS_CSERVE2
+   if (evas_cserve2_use_get())
+     {
+        surface = evas_cache2_image_copied_data(evas_common_image_cache2_get(),
+                                                w, h, NULL, alpha,
+                                                EVAS_COLORSPACE_ARGB8888);
+        evas_cache2_image_pixels(surface);
+        return surface;
+     }
+#endif
    surface = evas_cache_image_copied_data(evas_common_image_cache_get(), 
                                           w, h, NULL, alpha, 
                                           EVAS_COLORSPACE_ARGB8888);
@@ -936,6 +1038,13 @@ eng_image_map_surface_new(void *data __UNUSED__, int w, int h, int alpha)
 static void
 eng_image_map_surface_free(void *data __UNUSED__, void *surface)
 {
+#ifdef EVAS_CSERVE2
+   if (evas_cserve2_use_get())
+     {
+        evas_cache2_image_unload_data(surface);
+        return;
+     }
+#endif
    evas_cache_image_drop(surface);
 }
 
@@ -1058,10 +1167,10 @@ eng_font_load(void *data __UNUSED__, const char *name, int size,
 }
 
 static Evas_Font_Set *
-eng_font_memory_load(void *data __UNUSED__, char *name, int size, const void *fdata, int fdata_size, Font_Rend_Flags wanted_rend)
+eng_font_memory_load(void *data __UNUSED__, const char *source, const char *name, int size, const void *fdata, int fdata_size, Font_Rend_Flags wanted_rend)
 {
-   return (Evas_Font_Set *) evas_common_font_memory_load(name, size, fdata,
-         fdata_size, wanted_rend);
+   return (Evas_Font_Set *) evas_common_font_memory_load(source, name, size,
+         fdata, fdata_size, wanted_rend);
 }
 
 static Evas_Font_Set *
@@ -1072,10 +1181,10 @@ eng_font_add(void *data __UNUSED__, Evas_Font_Set *font, const char *name, int s
 }
 
 static Evas_Font_Set *
-eng_font_memory_add(void *data __UNUSED__, Evas_Font_Set *font, char *name, int size, const void *fdata, int fdata_size, Font_Rend_Flags wanted_rend)
+eng_font_memory_add(void *data __UNUSED__, Evas_Font_Set *font, const char *source, const char *name, int size, const void *fdata, int fdata_size, Font_Rend_Flags wanted_rend)
 {
    return (Evas_Font_Set *) evas_common_font_memory_add((RGBA_Font *) font,
-         name, size, fdata, fdata_size, wanted_rend);
+         source, name, size, fdata, fdata_size, wanted_rend);
 }
 
 static void
@@ -1151,10 +1260,10 @@ eng_font_pen_coords_get(void *data __UNUSED__, Evas_Font_Set *font, const Evas_T
 }
 
 static Eina_Bool
-eng_font_text_props_info_create(void *data __UNUSED__, Evas_Font_Instance *fi, const Eina_Unicode *text, Evas_Text_Props *text_props, const Evas_BiDi_Paragraph_Props *par_props, size_t par_pos, size_t len)
+eng_font_text_props_info_create(void *data __UNUSED__, Evas_Font_Instance *fi, const Eina_Unicode *text, Evas_Text_Props *text_props, const Evas_BiDi_Paragraph_Props *par_props, size_t par_pos, size_t len, Evas_Text_Props_Mode mode)
 {
    return evas_common_text_props_content_create((RGBA_Font_Int *) fi, text,
-         text_props, par_props, par_pos, len);
+         text_props, par_props, par_pos, len, mode);
 }
 
 static int
@@ -1184,21 +1293,16 @@ eng_font_run_font_end_get(void *data __UNUSED__, Evas_Font_Set *font, Evas_Font_
 }
 
 static void
-eng_font_draw(void *data __UNUSED__, void *context, void *surface, Evas_Font_Set *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const Evas_Text_Props *text_props)
+eng_font_draw(void *data __UNUSED__, void *context, void *surface, Evas_Font_Set *font __UNUSED__, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, Evas_Text_Props *text_props)
 {
 #ifdef BUILD_PIPE_RENDER
-   if ((cpunum > 1)
-#ifdef EVAS_FRAME_QUEUING
-        && evas_common_frameq_enabled()
-#endif
-        )
-     evas_common_pipe_text_draw(surface, context, (RGBA_Font *) font, x, y,
-           text_props);
+   if ((cpunum > 1))
+     evas_common_pipe_text_draw(surface, context, x, y, text_props);
    else
 #endif   
      {
-	evas_common_font_draw(surface, context, (RGBA_Font *) font, x, y,
-              text_props);
+        evas_common_font_draw_prepare(text_props);
+	evas_common_font_draw(surface, context, x, y, text_props);
 	evas_common_cpu_end_opt();
      }
 }
@@ -1758,6 +1862,7 @@ static Evas_Func func =
      eng_image_map_draw,
      eng_image_map_surface_new,
      eng_image_map_surface_free,
+     eng_image_map_clean,
      NULL, // eng_image_content_hint_set - software doesn't use it
      NULL, // eng_image_content_hint_get - software doesn't use it
      eng_font_pen_coords_get,
@@ -2788,6 +2893,7 @@ module_open(Evas_Module *em)
      }
 
    init_gl();
+   evas_common_pipe_init();
 
    em->functions = (void *)(&func);
    cpunum = eina_cpu_count();

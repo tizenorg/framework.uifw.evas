@@ -404,10 +404,10 @@ typedef void (*_cb_for_each_cutout_t)(IDirectFBSurface *surface, RGBA_Draw_Conte
 static void
 _dfb_surface_for_each_cutout(IDirectFBSurface *surface, RGBA_Draw_Context *dc, _cb_for_each_cutout_t cb, void *data)
 {
-   Cutout_Rects *rects;
+   static Cutout_Rects *rects = NULL;
    int i;
 
-   rects = evas_common_draw_context_apply_cutouts(dc);
+   rects = evas_common_draw_context_apply_cutouts(dc, rects);
    if (!rects)
      {
 	DFBRegion cr;
@@ -435,7 +435,6 @@ _dfb_surface_for_each_cutout(IDirectFBSurface *surface, RGBA_Draw_Context *dc, _
 	surface->SetClip(surface, &cr);
 	cb(surface, dc, &cr, data);
      }
-   evas_common_draw_context_apply_clear_cutouts(rects);
 }
 
 static void
@@ -1037,7 +1036,7 @@ evas_engine_dfb_output_idle_flush(void *data)
  * memory.
  */
 static void
-evas_engine_dfb_font_draw(void *data, void *context, void *surface, void *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const Evas_Text_Props *intl_props)
+evas_engine_dfb_font_draw(void *data, void *context, void *surface, void *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, Evas_Text_Props *intl_props)
 {
    DirectFB_Engine_Image_Entry *eim = surface;
    IDirectFBSurface *screen;
@@ -1049,7 +1048,8 @@ evas_engine_dfb_font_draw(void *data, void *context, void *surface, void *font, 
    if (!_dfb_lock_and_sync_image(screen, im, DSLF_READ | DSLF_WRITE))
      return;
 
-   evas_common_font_draw(im, context, font, x, y, intl_props);
+   evas_common_font_draw_prepare(intl_props);
+   evas_common_font_draw(im, context, x, y, intl_props);
    evas_common_cpu_end_opt();
 
    im->image.data = NULL;
@@ -1554,7 +1554,7 @@ evas_engine_dfb_image_draw(void *data, void *context, void *surface, void *image
 #endif
 
 static void
-evas_engine_dfb_image_map_draw(void *data __UNUSED__, void *context, void *surface, void *image, int npoints, RGBA_Map_Point *p, int smooth, int level)
+evas_engine_dfb_image_map_draw(void *data __UNUSED__, void *context, void *surface, void *image, RGBA_Map *m, int smooth, int level)
 {
    Render_Engine *re = (Render_Engine*) data;
    DirectFB_Engine_Image_Entry *deie = image;
@@ -1573,7 +1573,7 @@ evas_engine_dfb_image_map_draw(void *data __UNUSED__, void *context, void *surfa
    if (!_dfb_lock_and_sync_image(deie->surface, src, DSLF_READ))
      goto error_src;
 
-   evas_common_map_rgba(src, dst, context, 4, p, smooth, level);
+   evas_common_map_rgba(src, dst, context, 4, &m->pts[0], smooth, level);
    evas_common_cpu_end_opt();
 
    screen->Unlock(screen);

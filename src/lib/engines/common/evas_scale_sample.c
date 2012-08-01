@@ -1,10 +1,27 @@
 #include "evas_common.h"
 #include "evas_blend_private.h"
 
-void scale_rgba_in_to_out_clip_sample_internal(RGBA_Image *src, RGBA_Image *dst, RGBA_Draw_Context *dc, int src_region_x, int src_region_y, int src_region_w, int src_region_h, int dst_region_x, int dst_region_y, int dst_region_w, int dst_region_h);
+static void scale_rgba_in_to_out_clip_sample_internal(RGBA_Image *src, RGBA_Image *dst, RGBA_Draw_Context *dc, int src_region_x, int src_region_y, int src_region_w, int src_region_h, int dst_region_x, int dst_region_y, int dst_region_w, int dst_region_h);
 
 #ifndef BUILD_SCALE_SMOOTH
 #ifdef BUILD_SCALE_SAMPLE
+EAPI void
+evas_common_scale_rgba_in_to_out_clip_smooth_do(const Cutout_Rects *reuse,
+                                                const Eina_Rectangle *clip,
+                                                RGBA_Image *src, RGBA_Image *dst,
+                                                RGBA_Draw_Context *dc,
+                                                int src_region_x, int src_region_y,
+                                                int src_region_w, int src_region_h,
+                                                int dst_region_x, int dst_region_y,
+                                                int dst_region_w, int dst_region_h)
+{
+   evas_common_scale_rgba_in_to_out_clip_sample_do(reuse, clip, src, dst, dc,
+				    src_region_x, src_region_y,
+				    src_region_w, src_region_h,
+				    dst_region_x, dst_region_y,
+				    dst_region_w, dst_region_h);
+}
+
 EAPI void
 evas_common_scale_rgba_in_to_out_clip_smooth(RGBA_Image *src, RGBA_Image *dst,
 				 RGBA_Draw_Context *dc,
@@ -31,7 +48,7 @@ evas_common_scale_rgba_in_to_out_clip_sample(RGBA_Image *src, RGBA_Image *dst,
 				 int dst_region_x, int dst_region_y,
 				 int dst_region_w, int dst_region_h)
 {
-   Cutout_Rects *rects;
+   static Cutout_Rects *rects = NULL;
    Cutout_Rect  *r;
    int          c, cx, cy, cw, ch;
    int          i;
@@ -60,7 +77,7 @@ evas_common_scale_rgba_in_to_out_clip_sample(RGBA_Image *src, RGBA_Image *dst,
 	dc->clip.use = c; dc->clip.x = cx; dc->clip.y = cy; dc->clip.w = cw; dc->clip.h = ch;
 	return;
      }
-   rects = evas_common_draw_context_apply_cutouts(dc);
+   rects = evas_common_draw_context_apply_cutouts(dc, rects);
    for (i = 0; i < rects->active; ++i)
      {
 	r = rects->rects + i;
@@ -72,12 +89,51 @@ evas_common_scale_rgba_in_to_out_clip_sample(RGBA_Image *src, RGBA_Image *dst,
 						  dst_region_w, dst_region_h);
 
      }
-   evas_common_draw_context_apply_clear_cutouts(rects);
    /* restore clip info */
    dc->clip.use = c; dc->clip.x = cx; dc->clip.y = cy; dc->clip.w = cw; dc->clip.h = ch;
 }
 
-void
+EAPI void
+evas_common_scale_rgba_in_to_out_clip_sample_do(const Cutout_Rects *reuse,
+                                                const Eina_Rectangle *clip,
+                                                RGBA_Image *src, RGBA_Image *dst,
+                                                RGBA_Draw_Context *dc,
+                                                int src_region_x, int src_region_y,
+                                                int src_region_w, int src_region_h,
+                                                int dst_region_x, int dst_region_y,
+                                                int dst_region_w, int dst_region_h)
+{
+   Eina_Rectangle area;
+   Cutout_Rect *r;
+   int i;
+
+   if (!reuse)
+     {
+        evas_common_draw_context_clip_clip(dc, clip->x, clip->y, clip->w, clip->h);
+        scale_rgba_in_to_out_clip_sample_internal(src, dst, dc,
+                                                  src_region_x, src_region_y,
+                                                  src_region_w, src_region_h,
+                                                  dst_region_x, dst_region_y,
+                                                  dst_region_w, dst_region_h);
+        return;
+     }
+
+   for (i = 0; i < reuse->active; ++i)
+     {
+        r = reuse->rects + i;
+
+        EINA_RECTANGLE_SET(&area, r->x, r->y, r->w, r->h);
+        if (!eina_rectangle_intersection(&area, clip)) continue ;
+        evas_common_draw_context_set_clip(dc, area.x, area.y, area.w, area.h);
+        scale_rgba_in_to_out_clip_sample_internal(src, dst, dc,
+                                                  src_region_x, src_region_y,
+                                                  src_region_w, src_region_h,
+                                                  dst_region_x, dst_region_y,
+                                                  dst_region_w, dst_region_h);
+     }
+}
+
+static void
 scale_rgba_in_to_out_clip_sample_internal(RGBA_Image *src, RGBA_Image *dst,
 					  RGBA_Draw_Context *dc,
 					  int src_region_x, int src_region_y,
@@ -327,16 +383,12 @@ scale_rgba_in_to_out_clip_sample_internal(RGBA_Image *src, RGBA_Image *dst,
                }
              for (y = 0; y < dst_clip_h; y++)
                {
-                  /* * blend here [clip_w *] ptr -> dst_ptr * */
-#ifdef EVAS_SLI
-                  if (((y + dst_clip_y) % dc->sli.h) == dc->sli.y)
-#endif
-                    {
-                       func(ptr, mask, dc->mul.col, dst_ptr, dst_clip_w);
-                    }
-                  ptr += src_w;
-                  dst_ptr += dst_w;
-                  if (mask) mask += maskobj->cache_entry.w;
+		 /* * blend here [clip_w *] ptr -> dst_ptr * */
+		 func(ptr, mask, dc->mul.col, dst_ptr, dst_clip_w);
+
+		 ptr += src_w;
+		 dst_ptr += dst_w;
+		 if (mask) mask += maskobj->cache_entry.w;
                }
 	  }
      }
@@ -357,19 +409,16 @@ scale_rgba_in_to_out_clip_sample_internal(RGBA_Image *src, RGBA_Image *dst,
 	  {
 	     for (y = 0; y < dst_clip_h; y++)
 	       {
-# ifdef EVAS_SLI
-                  if (((y + dst_clip_y) % dc->sli.h) == dc->sli.y)
-# endif
-                    {
-                       dst_ptr = dptr;
-                       for (x = 0; x < dst_clip_w; x++)
-                         {
-                            ptr = row_ptr[y] + lin_ptr[x];
-                            *dst_ptr = *ptr;
-                            dst_ptr++;
-                         }
-                    }
-                  dptr += dst_w;
+
+		 dst_ptr = dptr;
+		 for (x = 0; x < dst_clip_w; x++)
+		   {
+		     ptr = row_ptr[y] + lin_ptr[x];
+		     *dst_ptr = *ptr;
+		     dst_ptr++;
+		   }
+
+		 dptr += dst_w;
                }
 	  }
 	else
@@ -379,21 +428,17 @@ scale_rgba_in_to_out_clip_sample_internal(RGBA_Image *src, RGBA_Image *dst,
              buf = alloca(dst_clip_w * sizeof(DATA32));
              for (y = 0; y < dst_clip_h; y++)
                {
-#ifdef EVAS_SLI
-                  if (((y + dst_clip_y) % dc->sli.h) == dc->sli.y)
-#endif
-                    {
-                       dst_ptr = buf;
-                       for (x = 0; x < dst_clip_w; x++)
-                         {
-                            ptr = row_ptr[y] + lin_ptr[x];
-                            *dst_ptr = *ptr;
-                            dst_ptr++;
-                         }
-                       /* * blend here [clip_w *] buf -> dptr * */
-                       func(buf, NULL, dc->mul.col, dptr, dst_clip_w);
-                    }
-                  dptr += dst_w;
+		 dst_ptr = buf;
+		 for (x = 0; x < dst_clip_w; x++)
+		   {
+		     ptr = row_ptr[y] + lin_ptr[x];
+		     *dst_ptr = *ptr;
+		     dst_ptr++;
+		   }
+		 /* * blend here [clip_w *] buf -> dptr * */
+		 func(buf, NULL, dc->mul.col, dptr, dst_clip_w);
+
+		 dptr += dst_w;
                }
 	  }
      }
@@ -409,6 +454,23 @@ evas_common_scale_rgba_in_to_out_clip_sample(RGBA_Image *src, RGBA_Image *dst,
 				 int dst_region_w, int dst_region_h)
 {
    evas_common_scale_rgba_in_to_out_clip_smooth(src, dst, dc,
+				    src_region_x, src_region_y,
+				    src_region_w, src_region_h,
+				    dst_region_x, dst_region_y,
+				    dst_region_w, dst_region_h);
+}
+
+EAPI void
+evas_common_scale_rgba_in_to_out_clip_sample_do(const Cutout_Rects *reuse,
+                                                const Eina_Rectangle *clip,
+                                                RGBA_Image *src, RGBA_Image *dst,
+                                                RGBA_Draw_Context *dc,
+                                                int src_region_x, int src_region_y,
+                                                int src_region_w, int src_region_h,
+                                                int dst_region_x, int dst_region_y,
+                                                int dst_region_w, int dst_region_h)
+{
+   evas_common_scale_rgba_in_to_out_clip_smooth_do(reuse, clip, src, dst, dc,
 				    src_region_x, src_region_y,
 				    src_region_w, src_region_h,
 				    dst_region_x, dst_region_y,

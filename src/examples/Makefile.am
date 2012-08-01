@@ -67,6 +67,10 @@ examples_PROGRAMS += evas_images2
 evas_images2_SOURCES = evas-images2.c
 evas_images2_LDADD = $(top_builddir)/src/lib/libevas.la @ECORE_EVAS_LIBS@
 
+examples_PROGRAMS += evas_images3
+evas_images3_SOURCES = evas-images3.c
+evas_images3_LDADD = $(top_builddir)/src/lib/libevas.la @ECORE_EVAS_LIBS@
+
 examples_PROGRAMS += evas_text
 evas_text_SOURCES = evas-text.c
 evas_text_LDADD = $(top_builddir)/src/lib/libevas.la @ECORE_EVAS_LIBS@
@@ -74,6 +78,10 @@ evas_text_LDADD = $(top_builddir)/src/lib/libevas.la @ECORE_EVAS_LIBS@
 examples_PROGRAMS += evas_smart_object
 evas_smart_object_SOURCES = evas-smart-object.c
 evas_smart_object_LDADD = $(top_builddir)/src/lib/libevas.la @ECORE_EVAS_LIBS@
+
+examples_PROGRAMS += evas_smart_interface
+evas_smart_interface_SOURCES = evas-smart-interface.c
+evas_smart_interface_LDADD = $(top_builddir)/src/lib/libevas.la @ECORE_EVAS_LIBS@
 
 examples_PROGRAMS += evas_box
 evas_box_SOURCES = evas-box.c
@@ -116,6 +124,7 @@ files_DATA += \
 	$(srcdir)/evas-init-shutdown.c \
 	$(srcdir)/evas-images.c \
 	$(srcdir)/evas-images2.c \
+	$(srcdir)/evas-images3.c \
 	$(srcdir)/evas-object-manipulation.c \
 	$(srcdir)/evas-events.c \
 	$(srcdir)/evas-aspect-hints.c \
@@ -124,6 +133,7 @@ files_DATA += \
 	$(srcdir)/evas-map-utils.c \
 	$(srcdir)/evas-text.c \
 	$(srcdir)/evas-smart-object.c \
+	$(srcdir)/evas-smart-interface.c \
 	$(srcdir)/evas-box.c
 endif
 
@@ -132,6 +142,7 @@ EXTRA_DIST = $(EDCS) \
 	$(srcdir)/evas-init-shutdown.c \
 	$(srcdir)/evas-images.c \
 	$(srcdir)/evas-images2.c \
+	$(srcdir)/evas-images3.c \
 	$(srcdir)/evas-object-manipulation.c \
 	$(srcdir)/evas-events.c \
 	$(srcdir)/evas-aspect-hints.c \
@@ -140,7 +151,9 @@ EXTRA_DIST = $(EDCS) \
 	$(srcdir)/evas-map-utils.c \
 	$(srcdir)/evas-text.c \
 	$(srcdir)/evas-smart-object.c \
+	$(srcdir)/evas-smart-interface.c \
 	$(srcdir)/evas-box.c \
+	$(srcdir)/evas-table.c \
 	$(srcdir)/enlightenment.png \
 	$(srcdir)/red.png \
 	$(srcdir)/im1.png \

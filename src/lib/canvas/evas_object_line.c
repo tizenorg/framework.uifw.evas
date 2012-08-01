@@ -12,17 +12,16 @@ struct _Evas_Object_Line
    DATA32            magic;
    struct {
       struct {
-         int         x1, y1, x2, y2;
+         Evas_Coord    x1, y1, x2, y2;
          struct {
             Evas_Coord w, h;
          } object;
       } cache;
-      Evas_Coord         x1, y1, x2, y2;
+      Evas_Coord     x1, y1, x2, y2;
    } cur, prev;
 
    void             *engine_data;
-
-   char              changed : 1;
+   Eina_Bool         changed : 1;
 };
 
 /* private methods for line objects */
@@ -47,26 +46,26 @@ static const Evas_Object_Func object_func =
 {
    /* methods (compulsory) */
    evas_object_line_free,
-     evas_object_line_render,
-     evas_object_line_render_pre,
-     evas_object_line_render_post,
-     evas_object_line_id_get,
-     evas_object_line_visual_id_get,
-     evas_object_line_engine_data_get,
+   evas_object_line_render,
+   evas_object_line_render_pre,
+   evas_object_line_render_post,
+   evas_object_line_id_get,
+   evas_object_line_visual_id_get,
+   evas_object_line_engine_data_get,
    /* these are optional. NULL = nothing */
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     evas_object_line_is_opaque,
-     evas_object_line_was_opaque,
-     evas_object_line_is_inside,
-     evas_object_line_was_inside,
-     evas_object_line_coords_recalc,
-     NULL,
-     NULL,
-     NULL,
-     NULL
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   evas_object_line_is_opaque,
+   evas_object_line_was_opaque,
+   evas_object_line_is_inside,
+   evas_object_line_was_inside,
+   evas_object_line_coords_recalc,
+   NULL,
+   NULL,
+   NULL,
+   NULL
 };
 
 /* the actual api call to add a rect */
@@ -142,7 +141,7 @@ evas_object_line_xy_set(Evas_Object *obj, Evas_Coord x1, Evas_Coord y1, Evas_Coo
    o->cur.y1 = y1 - min_y;
    o->cur.x2 = x2 - min_x;
    o->cur.y2 = y2 - min_y;
-   o->changed = 1;
+   o->changed = EINA_TRUE;
    evas_object_change(obj);
    evas_object_coords_recalc(obj);
    evas_object_clip_dirty(obj);
@@ -208,7 +207,7 @@ evas_object_line_init(Evas_Object *obj)
    obj->cur.geometry.w = 0;
    obj->cur.geometry.h = 0;
    obj->cur.layer = 0;
-   obj->cur.anti_alias = 1;
+   obj->cur.anti_alias = EINA_TRUE;
    obj->cur.render_op = EVAS_RENDER_BLEND;
    /* set up object-specific settings */
    obj->prev = obj->cur;
@@ -223,7 +222,7 @@ evas_object_line_new(void)
    Evas_Object_Line *o;
 
    /* alloc obj private data */
-   EVAS_MEMPOOL_INIT(_mp_obj, "evas_object_line", Evas_Object_Line, 16, NULL);
+   EVAS_MEMPOOL_INIT(_mp_obj, "evas_object_line", Evas_Object_Line, 4, NULL);
    o = EVAS_MEMPOOL_ALLOC(_mp_obj, Evas_Object_Line);
    if (!o) return NULL;
    EVAS_MEMPOOL_PREP(_mp_obj, o, Evas_Object_Line);
@@ -259,24 +258,24 @@ evas_object_line_render(Evas_Object *obj, void *output, void *context, void *sur
    /* render object to surface with context, and offxet by x,y */
    o = (Evas_Object_Line *)(obj->object_data);
    obj->layer->evas->engine.func->context_color_set(output,
-						    context,
-						    obj->cur.cache.clip.r,
-						    obj->cur.cache.clip.g,
-						    obj->cur.cache.clip.b,
-						    obj->cur.cache.clip.a);
+                                                    context,
+                                                    obj->cur.cache.clip.r,
+                                                    obj->cur.cache.clip.g,
+                                                    obj->cur.cache.clip.b,
+                                                    obj->cur.cache.clip.a);
    obj->layer->evas->engine.func->context_multiplier_unset(output,
-							   context);
+                                                           context);
    obj->layer->evas->engine.func->context_anti_alias_set(output, context,
-							 obj->cur.anti_alias);
+                                                         obj->cur.anti_alias);
    obj->layer->evas->engine.func->context_render_op_set(output, context,
-							obj->cur.render_op);
+                                                        obj->cur.render_op);
    obj->layer->evas->engine.func->line_draw(output,
-					    context,
-					    surface,
-					    o->cur.cache.x1 + x,
-					    o->cur.cache.y1 + y,
-					    o->cur.cache.x2 + x,
-					    o->cur.cache.y2 + y);
+                                            context,
+                                            surface,
+                                            o->cur.cache.x1 + x,
+                                            o->cur.cache.y1 + y,
+                                            o->cur.cache.x2 + x,
+                                            o->cur.cache.y2 + y);
 }
 
 static void
@@ -284,10 +283,11 @@ evas_object_line_render_pre(Evas_Object *obj)
 {
    Evas_Object_Line *o;
    int is_v, was_v;
+   Eina_Bool changed_color = EINA_FALSE;
 
    /* dont pre-render the obj twice! */
    if (obj->pre_render_done) return;
-   obj->pre_render_done = 1;
+   obj->pre_render_done = EINA_TRUE;
    /* pre-render phase. this does anything an object needs to do just before */
    /* rendering. this could mean loading the image data, retrieving it from */
    /* elsewhere, decoding video etc. */
@@ -297,9 +297,9 @@ evas_object_line_render_pre(Evas_Object *obj)
    /* if someone is clipping this obj - go calculate the clipper */
    if (obj->cur.clipper)
      {
-	if (obj->cur.cache.clip.dirty)
-	  evas_object_clip_recalc(obj->cur.clipper);
-	obj->cur.clipper->func->render_pre(obj->cur.clipper);
+        if (obj->cur.cache.clip.dirty)
+          evas_object_clip_recalc(obj->cur.clipper);
+        obj->cur.clipper->func->render_pre(obj->cur.clipper);
      }
    /* now figure what changed and add draw rects */
    /* if it just became visible or invisible */
@@ -307,8 +307,9 @@ evas_object_line_render_pre(Evas_Object *obj)
    was_v = evas_object_was_visible(obj);
    if (is_v != was_v)
      {
-	evas_object_render_pre_visible_change(&obj->layer->evas->clip_changes, obj, is_v, was_v);
-	goto done;
+        evas_object_render_pre_visible_change(&obj->layer->evas->clip_changes,
+                                              obj, is_v, was_v);
+        goto done;
      }
    if (obj->changed_map)
      {
@@ -320,33 +321,28 @@ evas_object_line_render_pre(Evas_Object *obj)
    if (!is_v) goto done;
    /* clipper changed this is in addition to anything else for obj */
    evas_object_render_pre_clipper_change(&obj->layer->evas->clip_changes, obj);
-   /* if we restacked (layer or just within a layer) */
-   if (obj->restack)
-     {
-	evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes, obj);
-	goto done;
-     }
-   /* if it changed anti_alias */
-   if (obj->cur.anti_alias != obj->prev.anti_alias)
-     {
-	evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes, obj);
-	goto done;
-     }
-   /* if it changed render op */
-   if (obj->cur.render_op != obj->prev.render_op)
-     {
-	evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes, obj);
-	goto done;
-     }
-   /* if it changed color */
+
    if ((obj->cur.color.r != obj->prev.color.r) ||
        (obj->cur.color.g != obj->prev.color.g) ||
        (obj->cur.color.b != obj->prev.color.b) ||
        (obj->cur.color.a != obj->prev.color.a))
+     changed_color = EINA_TRUE;
+
+   /* if we restacked (layer or just within a layer) */
+   /* or if it changed anti_alias */
+   /* or if ii changed render op */
+   /* or if it changed color */
+   if ((obj->restack) ||
+       (obj->cur.anti_alias != obj->prev.anti_alias) ||
+       (obj->cur.render_op != obj->prev.render_op) ||
+       (changed_color)
+      )
      {
-	evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes, obj);
-	goto done;
+        evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes,
+                                            obj);
+        goto done;
      }
+
    /* if it changed geometry - and obviously not visibility or color */
    /* calculate differences since we have a constant color fill */
    /* we really only need to update the differences */
@@ -355,17 +351,20 @@ evas_object_line_render_pre(Evas_Object *obj)
        (obj->cur.geometry.w != obj->prev.geometry.w) ||
        (obj->cur.geometry.h != obj->prev.geometry.h) ||
        ((o->changed) &&
-	((o->cur.x1 != o->prev.x1) ||
-	 (o->cur.y1 != o->prev.y1) ||
-	 (o->cur.x2 != o->prev.x2) ||
-	 (o->cur.y2 != o->prev.y2)))
-       )
+        ((o->cur.x1 != o->prev.x1) ||
+         (o->cur.y1 != o->prev.y1) ||
+         (o->cur.x2 != o->prev.x2) ||
+         (o->cur.y2 != o->prev.y2)))
+      )
      {
-	evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes, obj);
-	goto done;
+        evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes,
+                                            obj);
+        goto done;
      }
-   done:
-   evas_object_render_pre_effect_updates(&obj->layer->evas->clip_changes, obj, is_v, was_v);
+
+done:
+   evas_object_render_pre_effect_updates(&obj->layer->evas->clip_changes, obj,
+                                         is_v, was_v);
 }
 
 static void
@@ -380,9 +379,9 @@ evas_object_line_render_post(Evas_Object *obj)
    /* remove those pesky changes */
    evas_object_clip_changes_clean(obj);
    /* move cur to prev safely for object data */
-   obj->prev = obj->cur;
+   evas_object_cur_prev(obj);
    o->prev = o->cur;
-   o->changed = 0;
+   o->changed = EINA_FALSE;
 }
 
 static unsigned int evas_object_line_id_get(Evas_Object *obj)

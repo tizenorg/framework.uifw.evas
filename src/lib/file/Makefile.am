@@ -11,12 +11,15 @@ AM_CPPFLAGS = \
 @FREETYPE_CFLAGS@ \
 @EINA_CFLAGS@ \
 @EVIL_CFLAGS@ \
+@FRIBIDI_CFLAGS@ \
 @PIXMAN_CFLAGS@
 
 noinst_LTLIBRARIES      = libevas_file.la
 libevas_file_la_SOURCES  = \
 evas_path.c \
-evas_module.c
+evas_module.c \
+evas_module.h \
+evas_path.h
+
 libevas_file_la_LIBADD = @EINA_LIBS@ @EVIL_LIBS@
 
-EXTRA_DIST = evas_module.h evas_path.h

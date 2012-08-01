@@ -3,7 +3,14 @@
 
 #include "evas_font_private.h"
 
+#ifdef EVAS_CSERVE2
+# include "../../cserve2/evas_cs2_private.h"
+#endif
+
+#include <assert.h>
+
 #include FT_OUTLINE_H
+#include FT_SYNTHESIS_H
 
 FT_Library      evas_ft_lib = 0;
 static int      initialised = 0;
@@ -43,19 +50,16 @@ evas_common_font_shutdown(void)
    initialised--;
    if (initialised != 0) return;
 
-   LKD(lock_font_draw);
-   LKD(lock_bidi);
-   LKD(lock_ot);
-
    evas_common_font_load_shutdown();
    evas_common_font_cache_set(0);
    evas_common_font_flush();
 
    FT_Done_FreeType(evas_ft_lib);
-#ifdef EVAS_FRAME_QUEUING
-   evas_common_font_draw_finish();
-#endif
    evas_ft_lib = 0;
+
+   LKD(lock_font_draw);
+   LKD(lock_bidi);
+   LKD(lock_ot);
 }
 
 EAPI void
@@ -159,7 +163,12 @@ evas_common_font_max_ascent_get(RGBA_Font *fn)
         FTUNLOCK();
         fi->src->current_size = fi->size;
      }
-   val = (int)fi->src->ft.face->bbox.yMax;
+   if ((fi->src->ft.face->bbox.yMax == 0) &&
+       (fi->src->ft.face->bbox.yMin == 0) &&
+       (fi->src->ft.face->units_per_EM == 0))
+     val = (int)fi->src->ft.face->size->metrics.ascender / 64;
+   else
+     val = (int)fi->src->ft.face->bbox.yMax;
    if (fi->src->ft.face->units_per_EM == 0)
      return val;
    dv = (fi->src->ft.orig_upem * 2048) / fi->src->ft.face->units_per_EM;
@@ -184,7 +193,12 @@ evas_common_font_max_descent_get(RGBA_Font *fn)
         FTUNLOCK();
         fi->src->current_size = fi->size;
      }
-   val = -(int)fi->src->ft.face->bbox.yMin;
+   if ((fi->src->ft.face->bbox.yMax == 0) &&
+       (fi->src->ft.face->bbox.yMin == 0) &&
+       (fi->src->ft.face->units_per_EM == 0))
+     val = -(int)fi->src->ft.face->size->metrics.descender / 64;
+   else
+     val = -(int)fi->src->ft.face->bbox.yMin;
    if (fi->src->ft.face->units_per_EM == 0)
      return val;
    dv = (fi->src->ft.orig_upem * 2048) / fi->src->ft.face->units_per_EM;
@@ -209,7 +223,11 @@ evas_common_font_get_line_advance(RGBA_Font *fn)
         fi->src->current_size = fi->size;
      }
    val = (int)fi->src->ft.face->size->metrics.height;
-   if (fi->src->ft.face->units_per_EM == 0)
+   if ((fi->src->ft.face->bbox.yMax == 0) &&
+       (fi->src->ft.face->bbox.yMin == 0) &&
+       (fi->src->ft.face->units_per_EM == 0))
+     return val >> 6;
+   else if (fi->src->ft.face->units_per_EM == 0)
      return val;
    return val >> 6;
 //   dv = (fi->src->ft.orig_upem * 2048) / fi->src->ft.face->units_per_EM;
@@ -279,11 +297,33 @@ _fash_int_add(Fash_Int *fash, int item, RGBA_Font_Int *fint, int idx)
 }
 
 static void
+_fash_glyph_free(Fash_Glyph_Map *fmap)
+{
+   int i;
+
+   for (i = 0; i <= 0xff; i++)
+     {
+        RGBA_Font_Glyph *fg = fmap->item[i];
+        if ((fg) && (fg != (void *)(-1)))
+          {
+             FT_Done_Glyph(fg->glyph);
+             /* extension calls */
+             if (fg->ext_dat_free) fg->ext_dat_free(fg->ext_dat);
+             if (fg->glyph_out_free) fg->glyph_out_free(fg->glyph_out);
+             free(fg);
+             fmap->item[i] = NULL;
+          }
+     }
+  free(fmap);
+}
+
+static void
 _fash_gl2_free(Fash_Glyph_Map2 *fash)
 {
    int i;
 
-   for (i = 0; i < 256; i++) if (fash->bucket[i]) free(fash->bucket[i]);
+   // 24bits for unicode - v6 up to E01EF (chrs) & 10FFFD for private use (plane 16)
+   for (i = 0; i < 256; i++) if (fash->bucket[i]) _fash_glyph_free(fash->bucket[i]);
    free(fash);
 }
 
@@ -292,6 +332,7 @@ _fash_gl_free(Fash_Glyph *fash)
 {
    int i;
 
+    // 24bits for unicode - v6 up to E01EF (chrs) & 10FFFD for private use (plane 16)
    for (i = 0; i < 256; i++) if (fash->bucket[i]) _fash_gl2_free(fash->bucket[i]);
    free(fash);
 }
@@ -340,23 +381,27 @@ EAPI RGBA_Font_Glyph *
 evas_common_font_int_cache_glyph_get(RGBA_Font_Int *fi, FT_UInt idx)
 {
    RGBA_Font_Glyph *fg;
-   FT_UInt hindex;
    FT_Error error;
-   int size;
    const FT_Int32 hintflags[3] =
      { FT_LOAD_NO_HINTING, FT_LOAD_FORCE_AUTOHINT, FT_LOAD_NO_AUTOHINT };
-   static FT_Matrix transform = {0x10000, 0x05000, 0x0000, 0x10000}; // about 12 degree.
+   static FT_Matrix transform = {0x10000, _EVAS_FONT_SLANT_TAN * 0x10000,
+        0x00000, 0x10000};
 
    evas_common_font_int_promote(fi);
    if (fi->fash)
      {
         fg = _fash_gl_find(fi->fash, idx);
         if (fg == (void *)(-1)) return NULL;
-        else if (fg) return fg;
+        else if (fg)
+          {
+#ifdef EVAS_CSERVE2
+             if (fi->cs2_handler)
+               evas_cserve2_font_glyph_used(fi->cs2_handler, idx,
+                                            fi->hinting);
+#endif
+             return fg;
+          }
      }
-
-   hindex = idx + (fi->hinting * 500000000);
-
 //   fg = eina_hash_find(fi->glyphs, &hindex);
 //   if (fg) return fg;
 
@@ -378,8 +423,7 @@ evas_common_font_int_cache_glyph_get(RGBA_Font_Int *fi, FT_UInt idx)
       FT_Outline_Transform(&fi->src->ft.face->glyph->outline, &transform);
    /* Embolden the outline of Glyph according to rundtime_rend. */
    if (fi->runtime_rend & FONT_REND_WEIGHT)
-      FT_Outline_Embolden(&fi->src->ft.face->glyph->outline,
-            (fi->src->ft.face->size->metrics.x_ppem * 5 * 64) / 100);
+      FT_GlyphSlot_Embolden(fi->src->ft.face->glyph);
 
    fg = malloc(sizeof(struct _RGBA_Font_Glyph));
    if (!fg) return NULL;
@@ -396,6 +440,52 @@ evas_common_font_int_cache_glyph_get(RGBA_Font_Int *fi, FT_UInt idx)
         return NULL;
      }
 
+     {
+        FT_BBox outbox;
+        FT_Glyph_Get_CBox(fg->glyph,
+              ((fi->hinting == 0) ? FT_GLYPH_BBOX_UNSCALED :
+               FT_GLYPH_BBOX_GRIDFIT),
+              &outbox);
+        fg->width = EVAS_FONT_ROUND_26_6_TO_INT(outbox.xMax - outbox.xMin);
+        fg->x_bear = EVAS_FONT_ROUND_26_6_TO_INT(outbox.xMin);
+        fg->y_bear = EVAS_FONT_ROUND_26_6_TO_INT(outbox.yMax);
+     }
+
+   fg->index = idx;
+   fg->fi = fi;
+
+   if (!fi->fash) fi->fash = _fash_gl_new();
+   if (fi->fash) _fash_gl_add(fi->fash, idx, fg);
+
+#ifdef EVAS_CSERVE2
+   if (fi->cs2_handler)
+     evas_cserve2_font_glyph_request(fi->cs2_handler, idx, fi->hinting);
+#endif
+
+//   eina_hash_direct_add(fi->glyphs, &fg->index, fg);
+   return fg;
+}
+
+EAPI Eina_Bool
+evas_common_font_int_cache_glyph_render(RGBA_Font_Glyph *fg)
+{
+   int size;
+   FT_Error error;
+   RGBA_Font_Int *fi = fg->fi;
+   FT_BitmapGlyph fbg;
+
+#ifdef EVAS_CSERVE2
+   if (fi->cs2_handler)
+     {
+        fg->glyph_out = evas_cserve2_font_glyph_bitmap_get(fi->cs2_handler,
+                                                           fg->index,
+                                                           fg->fi->hinting);
+        if (fg->glyph_out)
+          return EINA_TRUE;
+     }
+#endif
+
+   /* no cserve2 case */
    FTLOCK();
    error = FT_Glyph_To_Bitmap(&(fg->glyph), FT_RENDER_MODE_NORMAL, 0, 1);
    if (error)
@@ -404,17 +494,22 @@ evas_common_font_int_cache_glyph_get(RGBA_Font_Int *fi, FT_UInt idx)
         FTUNLOCK();
         free(fg);
         if (!fi->fash) fi->fash = _fash_gl_new();
-        if (fi->fash) _fash_gl_add(fi->fash, idx, (void *)(-1));
-        return NULL;
+        if (fi->fash) _fash_gl_add(fi->fash, fg->index, (void *)(-1));
+        return EINA_FALSE;
      }
    FTUNLOCK();
 
-   fg->glyph_out = (FT_BitmapGlyph)fg->glyph;
-   fg->index = hindex;
-   fg->fi = fi;
+   fbg = (FT_BitmapGlyph)fg->glyph;
 
-   if (!fi->fash) fi->fash = _fash_gl_new();
-   if (fi->fash) _fash_gl_add(fi->fash, idx, fg);
+   fg->glyph_out = malloc(sizeof(RGBA_Font_Glyph_Out));
+   fg->glyph_out->bitmap.rows = fbg->bitmap.rows;
+   fg->glyph_out->bitmap.width = fbg->bitmap.width;
+   fg->glyph_out->bitmap.pitch = fbg->bitmap.pitch;
+   fg->glyph_out->bitmap.buffer = fbg->bitmap.buffer;
+   fg->glyph_out->bitmap.num_grays = fbg->bitmap.num_grays;
+   fg->glyph_out->bitmap.pixel_mode = fbg->bitmap.pixel_mode;
+
+   fg->glyph_out_free = free;
    /* This '+ 200' is just an estimation of how much memory freetype will use
     * on it's size. This value is not really used anywhere in code - it's
     * only for statistics. */
@@ -423,8 +518,7 @@ evas_common_font_int_cache_glyph_get(RGBA_Font_Int *fi, FT_UInt idx)
    fi->usage += size;
    if (fi->inuse) evas_common_font_int_use_increase(size);
 
-//   eina_hash_direct_add(fi->glyphs, &fg->index, fg);
-   return fg;
+   return EINA_TRUE;
 }
 
 typedef struct _Font_Char_Index Font_Char_Index;
@@ -437,6 +531,40 @@ struct _Font_Char_Index
 EAPI FT_UInt
 evas_common_get_char_index(RGBA_Font_Int* fi, Eina_Unicode gl)
 {
+   static const unsigned short mapfix[] =
+     {
+        0x00b0, 0x7,
+        0x00b1, 0x8,
+        0x00b7, 0x1f,
+        0x03c0, 0x1c,
+        0x20a4, 0xa3,
+        0x2260, 0x1d,
+        0x2264, 0x1a,
+        0x2265, 0x1b,
+        0x23ba, 0x10,
+        0x23bb, 0x11,
+        0x23bc, 0x13,
+        0x23bd, 0x14,
+        0x2409, 0x3,
+        0x240a, 0x6,
+        0x240b, 0xa,
+        0x240c, 0x4,
+        0x240d, 0x5,
+        0x2424, 0x9,
+        0x2500, 0x12,
+        0x2502, 0x19,
+        0x250c, 0xd,
+        0x2510, 0xc,
+        0x2514, 0xe,
+        0x2518, 0xb,
+        0x251c, 0x15,
+        0x2524, 0x16,
+        0x252c, 0x18,
+        0x2534, 0x17,
+        0x253c, 0xf,
+        0x2592, 0x2,
+        0x25c6, 0x1,
+     };
    Font_Char_Index result;
    //FT_UInt ret;
 
@@ -457,9 +585,14 @@ evas_common_get_char_index(RGBA_Font_Int* fi, Eina_Unicode gl)
 //     }
 
    evas_common_font_int_reload(fi);
-   FTLOCK();
+   /*
+    * There is no point in locking FreeType at this point as all caller
+    * are running in the main loop at a time where there is zero chance
+    * that something else try to use it.
+    */
+   /* FTLOCK(); */
    result.index = FT_Get_Char_Index(fi->src->ft.face, gl);
-   FTUNLOCK();
+   /* FTUNLOCK(); */
    result.gl = gl;
 
 //   eina_hash_direct_add(fi->indexes, &result->gl, result);
@@ -468,6 +601,50 @@ evas_common_get_char_index(RGBA_Font_Int* fi, Eina_Unicode gl)
 #ifdef HAVE_PTHREAD
 //   pthread_mutex_unlock(&fi->ft_mutex);
 #endif
+   // this is a workaround freetype bugs where for a bitmap old style font
+   // even if it has unicode information and mappings, they are not used
+   // to find terminal line/drawing chars, so do this by hand with a table
+   if ((result.index <= 0) && (fi->src->ft.face->num_fixed_sizes == 1) &&
+      (fi->src->ft.face->num_glyphs < 512))
+     {
+        int i, min = 0, max;
+
+        // binary search through sorted table of codepoints to new
+        // codepoints with a guess that bitmap font is playing the old
+        // game of putting line drawing chars in specific ranges
+        max = sizeof(mapfix) / (sizeof(mapfix[0]) * 2);
+        i = (min + max) / 2;                                          
+        for (;;)
+          {
+             unsigned short v;
+             
+             v = mapfix[i << 1];
+             if (gl == v)
+               {
+                  gl = mapfix[(i << 1) + 1];
+                  FTLOCK();
+                  result.index = FT_Get_Char_Index(fi->src->ft.face, gl);
+                  FTUNLOCK();
+                  break;
+               }
+             // failure to find at all
+             if ((max - min) <= 2) break;
+             // if glyph above out position...
+             if (gl > v)
+               {
+                  min = i;
+                  if ((max - min) == 1) i = max;
+                  else i = (min + max) / 2;
+               }
+             // if glyph below out position
+             else if (gl < v)
+               {
+                  max = i;
+                  if ((max - min) == 1) i = min;
+                  else i = (min + max) / 2;
+               }
+          }
+     }
    return result.index;
 }
 

@@ -587,6 +587,7 @@ _destroy_internal_glue_resources(void *data)
         free(rsc);
      }
    eina_list_free(resource_list);
+   resource_list = NULL;
    LKU(resource_lock);
 
    // Destroy TLS
@@ -600,6 +601,7 @@ eng_setup(Evas *e, void *in)
 {
    Render_Engine *re;
    Evas_Engine_Info_Wayland_Egl *info;
+   Evas_GL_Wl_Window *new_win = NULL;
 
    info = (Evas_Engine_Info_Wayland_Egl *)in;
    if (!e->engine.data.output)
@@ -667,40 +669,47 @@ eng_setup(Evas *e, void *in)
                   /* if we already have a window surface, check for NULL input surface.
                    * this will mean we are hiding the window and should destroy 
                    * things properly */
-                  if ((re->win->surface) && (re->info->info.surface = NULL))
+                  if ((re->win->surface) && (re->info->info.surface == NULL))
                     {
                        if (re->win)
                          {
                             eng_window_free(re->win);
                             gl_wins--;
+                            re->win = NULL;
                          }
-                       free(re);
-                       e->engine.data.output = NULL;
-                       return 0;
+                       return 1;
                     }
 
-                  if (re->win)
-                    {
-                       re->win->gl_context->references++;
-                       eng_window_free(re->win);
-                       inc = 1;
-                       gl_wins--;
-                    }
-                  re->w = e->output.w;
-                  re->h = e->output.h;
-                  re->win = eng_window_new(re->info->info.display,
+                  new_win = eng_window_new(re->info->info.display,
                                            re->info->info.surface,
                                            re->info->info.screen,
                                            re->info->info.depth,
-                                           re->w, re->h,
+                                           e->output.w, e->output.h,
                                            re->info->indirect,
                                            re->info->info.destination_alpha,
                                            re->info->info.rotation);
-                  eng_window_use(re->win);
-                  if (re->win) gl_wins++;
-                  if ((re->win) && (inc))
-                     re->win->gl_context->references--;
-               }
+
+                  if (new_win) 
+                    {
+                       // free old win
+                       if (re->win)
+                         {
+                            re->win->gl_context->references++;
+                            eng_window_free(re->win);
+                            inc = 1;
+                            gl_wins--;
+                         }
+
+                       re->win = new_win;
+                       re->w = e->output.w;
+                       re->h = e->output.h;
+
+                       eng_window_use(re->win);
+                       if (re->win) gl_wins++;
+                       if ((re->win) && (inc))
+                         re->win->gl_context->references--;
+                    }
+							 }
              else if ((re->win->w != e->output.w) ||
                       (re->win->h != e->output.h))
                {
@@ -837,6 +846,8 @@ eng_output_redraws_rect_add(void *data, int x, int y, int w, int h)
    Render_Engine *re;
 
    re = (Render_Engine *)data;
+   if ((!re) || (!re->win)) return;
+
    eng_window_use(re->win);
    evas_gl_common_context_resize(re->win->gl_context, re->win->w, re->win->h, re->win->rot);
    evas_common_tilebuf_add_redraw(re->tb, x, y, w, h);
@@ -1463,7 +1474,6 @@ eng_image_free(void *data, void *image)
    re = (Render_Engine *)data;
    if (!image) return;
    eng_window_use(re->win);
-   evas_gl_common_image_free(image);
 }
 
 static void
@@ -1788,7 +1798,7 @@ eng_image_scale_hint_get(void *data __UNUSED__, void *image)
 }
 
 static void
-eng_image_map_draw(void *data, void *context, void *surface, void *image, int npoints, RGBA_Map_Point *p, int smooth, int level)
+eng_image_map_draw(void *data, void *context, void *surface, void *image, RGBA_Map *m, int smooth, int level)
 {
    Evas_GL_Image *gim = image;
    Render_Engine *re;
@@ -1798,43 +1808,43 @@ eng_image_map_draw(void *data, void *context, void *surface, void *image, int np
    eng_window_use(re->win);
    evas_gl_common_context_target_surface_set(re->win->gl_context, surface);
    re->win->gl_context->dc = context;
-   if (npoints != 4)
+   if (m->count != 4)
      {
         // FIXME: nash - you didn't fix this
         abort();
      }
-   if ((p[0].x == p[3].x) &&
-       (p[1].x == p[2].x) &&
-       (p[0].y == p[1].y) &&
-       (p[3].y == p[2].y) &&
-       (p[0].x <= p[1].x) &&
-       (p[0].y <= p[2].y) &&
-       (p[0].u == 0) &&
-       (p[0].v == 0) &&
-       (p[1].u == (gim->w << FP)) &&
-       (p[1].v == 0) &&
-       (p[2].u == (gim->w << FP)) &&
-       (p[2].v == (gim->h << FP)) &&
-       (p[3].u == 0) &&
-       (p[3].v == (gim->h << FP)) &&
-       (p[0].col == 0xffffffff) &&
-       (p[1].col == 0xffffffff) &&
-       (p[2].col == 0xffffffff) &&
-       (p[3].col == 0xffffffff))
+   if ((m->pts[0].x == m->pts[3].x) &&
+       (m->pts[1].x == m->pts[2].x) &&
+       (m->pts[0].y == m->pts[1].y) &&
+       (m->pts[3].y == m->pts[2].y) &&
+       (m->pts[0].x <= m->pts[1].x) &&
+       (m->pts[0].y <= m->pts[2].y) &&
+       (m->pts[0].u == 0) &&
+       (m->pts[0].v == 0) &&
+       (m->pts[1].u == (gim->w << FP)) &&
+       (m->pts[1].v == 0) &&
+       (m->pts[2].u == (gim->w << FP)) &&
+       (m->pts[2].v == (gim->h << FP)) &&
+       (m->pts[3].u == 0) &&
+       (m->pts[3].v == (gim->h << FP)) &&
+       (m->pts[0].col == 0xffffffff) &&
+       (m->pts[1].col == 0xffffffff) &&
+       (m->pts[2].col == 0xffffffff) &&
+       (m->pts[3].col == 0xffffffff))
      {
         int dx, dy, dw, dh;
 
-        dx = p[0].x >> FP;
-        dy = p[0].y >> FP;
-        dw = (p[2].x >> FP) - dx;
-        dh = (p[2].y >> FP) - dy;
+        dx = m->pts[0].x >> FP;
+        dy = m->pts[0].y >> FP;
+        dw = (m->pts[2].x >> FP) - dx;
+        dh = (m->pts[2].y >> FP) - dy;
         eng_image_draw(data, context, surface, image,
                        0, 0, gim->w, gim->h, dx, dy, dw, dh, smooth);
      }
    else
      {
-        evas_gl_common_image_map_draw(re->win->gl_context, image, npoints, p,
-                                      smooth, level);
+        evas_gl_common_image_map_draw(re->win->gl_context, image, m->count, 
+                                      &m->pts[0], smooth, level);
      }
 }
 
@@ -1878,7 +1888,9 @@ eng_image_cache_flush(void *data)
    tmp_size = evas_common_image_get_cache();
    evas_common_image_set_cache(0);
    evas_common_rgba_image_scalecache_flush();
-   evas_gl_common_image_cache_flush(re->win->gl_context);
+
+   if ((re) && (re->win) && (re->win->gl_context))
+     evas_gl_common_image_cache_flush(re->win->gl_context);
    evas_common_image_set_cache(tmp_size);
 }
 
@@ -1911,7 +1923,7 @@ eng_image_stride_get(void *data __UNUSED__, void *image, int *stride)
 }
 
 static void
-eng_font_draw(void *data, void *context, void *surface, Evas_Font_Set *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const Evas_Text_Props *intl_props)
+eng_font_draw(void *data, void *context, void *surface, Evas_Font_Set *font __UNUSED__, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, Evas_Text_Props *intl_props)
 {
    Render_Engine *re;
 
@@ -1932,8 +1944,8 @@ eng_font_draw(void *data, void *context, void *surface, Evas_Font_Set *font, int
                                               evas_gl_font_texture_new,
                                               evas_gl_font_texture_free,
                                               evas_gl_font_texture_draw);
-        evas_common_font_draw(im, context, (RGBA_Font *) font, x, y,
-                              intl_props);
+	evas_common_font_draw_prepare(intl_props);
+        evas_common_font_draw(im, context, x, y, intl_props);
         evas_common_draw_context_font_ext_set(context, NULL, NULL, NULL, NULL);
      }
 }
@@ -1942,6 +1954,8 @@ static Eina_Bool
 eng_canvas_alpha_get(void *data, void *info __UNUSED__)
 {
    Render_Engine *re = (Render_Engine *)data;
+
+   if ((!re) || (!re->win)) return EINA_FALSE;
    return re->win->alpha;
 }
 
@@ -2275,7 +2289,7 @@ eng_gl_context_destroy(void *data, void *context)
 
    // 2. Delete the FBO
    if (ctx->context_fbo)
-        glDeleteFramebuffers(1, &ctx->context_fbo);
+     glDeleteFramebuffers(1, &ctx->context_fbo);
 
    // 3. Destroy the Context
    eglDestroyContext(re->win->egl_disp, ctx->context);
@@ -2901,7 +2915,7 @@ module_open(Evas_Module *em)
    if (_evas_engine_wl_egl_log_dom < 0)
      {
         _evas_engine_wl_egl_log_dom = 
-          eina_log_domain_register("evas-gl_x11", EVAS_DEFAULT_LOG_COLOR);
+          eina_log_domain_register("evas-wayland_egl", EVAS_DEFAULT_LOG_COLOR);
      }
 
    if (_evas_engine_wl_egl_log_dom < 0)
@@ -3023,10 +3037,10 @@ static Evas_Module_Api evas_modapi =
    EVAS_MODULE_API_VERSION, "wayland_egl", "none", {module_open, module_close}
 };
 
-EVAS_MODULE_DEFINE(EVAS_MODULE_TYPE_ENGINE, engine, gl_x11);
+EVAS_MODULE_DEFINE(EVAS_MODULE_TYPE_ENGINE, engine, wayland_egl);
 
-#ifndef EVAS_STATIC_BUILD_GL_XLIB
-EVAS_EINA_MODULE_DEFINE(engine, gl_x11);
+#ifndef EVAS_STATIC_BUILD_WAYLAND_EGL
+EVAS_EINA_MODULE_DEFINE(engine, wayland_egl);
 #endif
 
 /* vim:set ts=8 sw=3 sts=3 expandtab cino=>5n-2f0^-2{2(0W1st0 :*/

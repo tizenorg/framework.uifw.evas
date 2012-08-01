@@ -203,10 +203,6 @@ extern EAPI int _evas_log_dom_global;
 # define THI(x) int x
 # define TH_MAX 8
 
-// even though in theory having every Nth rendered line done by a different
-// thread might even out load across threads - it actually slows things down.
-//#define EVAS_SLI 1
-
 #else
 # define TH(x)
 # define THI(x)
@@ -399,10 +395,12 @@ typedef struct _RGBA_Image_Span       RGBA_Image_Span;
 typedef struct _RGBA_Draw_Context     RGBA_Draw_Context;
 typedef struct _RGBA_Polygon_Point    RGBA_Polygon_Point;
 typedef struct _RGBA_Map_Point        RGBA_Map_Point;
+typedef struct _RGBA_Map              RGBA_Map;
 typedef struct _RGBA_Font             RGBA_Font;
 typedef struct _RGBA_Font_Int         RGBA_Font_Int;
 typedef struct _RGBA_Font_Source      RGBA_Font_Source;
 typedef struct _RGBA_Font_Glyph       RGBA_Font_Glyph;
+typedef struct _RGBA_Font_Glyph_Out   RGBA_Font_Glyph_Out;
 typedef struct _RGBA_Gfx_Compositor   RGBA_Gfx_Compositor;
 
 typedef struct _Cutout_Rect           Cutout_Rect;
@@ -439,6 +437,9 @@ typedef void (*Gfx_Func_Copy)    (DATA32 *src, DATA32 *dst, int len);
 typedef void (*Gfx_Func_Convert) (DATA32 *src, DATA8 *dst, int src_jump, int dst_jump, int w, int h, int dith_x, int dith_y, DATA8 *pal);
 
 #include "../cache/evas_cache.h"
+#ifdef EVAS_CSERVE2
+#include "../cache2/evas_cache2.h"
+#endif
 
 /*****************************************************************************/
 
@@ -573,6 +574,9 @@ struct _Image_Entry
    EINA_INLIST;
 
    Evas_Cache_Image      *cache;
+#ifdef EVAS_CSERVE2
+   Evas_Cache2           *cache2;
+#endif
 
    const char            *cache_key;
 
@@ -585,18 +589,9 @@ struct _Image_Entry
    Image_Timestamp        tstamp;
 
    int                    references;
-#ifdef EVAS_FRAME_QUEUING
-   LK(lock_references);   // needed for accessing references
-#endif
 
 #ifdef BUILD_PIPE_RENDER
    RGBA_Pipe           *pipe;
-#ifdef EVAS_FRAME_QUEUING
-   LK(ref_fq_add);
-   LK(ref_fq_del);
-   Eina_Condition cond_fq_del;
-   int ref_fq[2];		// ref_fq[0] is for addition, ref_fq[1] is for deletion
-#endif
 #endif
 
    unsigned char          scale;
@@ -627,6 +622,9 @@ struct _Image_Entry
    Image_Entry_Flags      flags;
    Evas_Image_Scale_Hint  scale_hint;
    void                  *data1, *data2;
+#ifdef EVAS_CSERVE2
+   unsigned int           open_rid, load_rid, preload_rid;
+#endif
    int                    server_id;
    int                    connect_num;
    int                    channel;
@@ -730,8 +728,10 @@ struct _RGBA_Draw_Context
 struct _RGBA_Pipe_Op
 {
    RGBA_Draw_Context         context;
-   void                    (*op_func) (RGBA_Image *dst, RGBA_Pipe_Op *op, RGBA_Pipe_Thread_Info *info);
+   Eina_Bool               (*prepare_func) (void *data, RGBA_Image *dst, RGBA_Pipe_Op *op);
+   void                    (*op_func) (RGBA_Image *dst, const RGBA_Pipe_Op *op, const RGBA_Pipe_Thread_Info *info);
    void                    (*free_func) (RGBA_Pipe_Op *op);
+   Cutout_Rects             *rects;
 
    union {
       struct {
@@ -741,12 +741,13 @@ struct _RGBA_Pipe_Op
 	 int                 x0, y0, x1, y1;
       } line;
       struct {
+         int                 x, y;
 	 RGBA_Polygon_Point *points;
       } poly;
       struct {
-	 RGBA_Font          *font;
 	 int                 x, y;
-         Evas_Text_Props     intl_props;
+         Evas_Text_Props    *intl_props;
+         RGBA_Gfx_Func       func;
       } text;
       struct {
 	 RGBA_Image         *src;
@@ -756,12 +757,14 @@ struct _RGBA_Pipe_Op
       } image;
       struct {
 	 RGBA_Image         *src;
-	 RGBA_Map_Point     *p;
+	 RGBA_Map	    *m;
 	 int                 npoints;
 	 int                 smooth;
 	 int                 level;
       } map;
    } op;
+
+   Eina_Bool                 render : 1;
 };
 
 #define PIPE_LEN 256
@@ -775,8 +778,8 @@ struct _RGBA_Pipe
 
 struct _RGBA_Pipe_Thread_Info
 {
-   RGBA_Image *im;
-   int         x, y, w, h;
+   EINA_INLIST;
+   Eina_Rectangle area;
 };
 #endif
 
@@ -856,6 +859,20 @@ struct _RGBA_Map_Point
    FPc px, py, z0, foc;
 };
 
+struct _RGBA_Map
+{
+   void *engine_data;
+
+   struct {
+      int w, h;
+   } image, uv;
+
+   int x, y;
+   int count;
+
+   RGBA_Map_Point pts[1];
+};
+
 #if 0 // filtering disabled
 struct _Filtered_Image
 {
@@ -916,12 +933,6 @@ struct _RGBA_Font
    Fash_Int        *fash;
    Font_Hint_Flags  hinting;
    int              references;
-#ifdef EVAS_FRAME_QUEUING
-   int              ref_fq[2]; //ref_fq[0] is for addition, ref_fq[1] is for deletion
-   Eina_Condition   cond_fq_del;
-   LK(ref_fq_add);
-   LK(ref_fq_del);
-#endif
    LK(lock);
    unsigned char    sizeok : 1;
 };
@@ -950,6 +961,14 @@ struct _RGBA_Font_Int
    Font_Rend_Flags  wanted_rend; /* The wanted rendering style */
    Font_Rend_Flags  runtime_rend; /* The rendering we need to do on runtime
                                      in order to comply with the wanted_rend. */
+
+   Eina_List       *task;
+#ifdef EVAS_CSERVE2
+   void            *cs2_handler;
+#endif
+
+   int              generation;
+
    unsigned char    sizeok : 1;
    unsigned char    inuse : 1;
 };
@@ -968,11 +987,32 @@ struct _RGBA_Font_Source
    } ft;
 };
 
+/*
+ * laziness wins for now. The parts used from the freetpye struct are
+ * kept intact to avoid changing the code using it until we know exactly
+ * what needs to be changed
+ */
+struct _RGBA_Font_Glyph_Out
+{
+   struct {
+      int rows;
+      int width;
+      int pitch;
+      unsigned char *buffer;
+      short num_grays;
+      char pixel_mode;
+   } bitmap;
+};
+
 struct _RGBA_Font_Glyph
 {
    FT_UInt         index;
+   Evas_Coord      width;
+   Evas_Coord      x_bear;
+   Evas_Coord      y_bear;
    FT_Glyph        glyph;
-   FT_BitmapGlyph  glyph_out;
+   RGBA_Font_Glyph_Out *glyph_out;
+   void            (*glyph_out_free)(void *);
    /* this is a problem - only 1 engine at a time can extend such a font... grrr */
    void           *ext_dat;
    void           (*ext_dat_free) (void *ext_dat);
@@ -1241,9 +1281,7 @@ Tilebuf_Rect *evas_common_regionbuf_rects_get (Regionbuf *rb);
 #include "../engines/common/evas_map_image.h"
 
 /****/
-#ifdef BUILD_PIPE_RENDER
-# include "../engines/common/evas_pipe.h"
-#endif
+#include "../engines/common/evas_pipe.h"
 
 void              evas_font_dir_cache_free(void);
 

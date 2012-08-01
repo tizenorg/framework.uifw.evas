@@ -23,7 +23,8 @@ evas_gl_font_texture_new(void *context, RGBA_Font_Glyph *fg)
    nw = ((w + 3) / 4) * 4;
    ndata = alloca(nw *h);
    if (!ndata) return NULL;
-   if (fg->glyph_out->bitmap.num_grays == 256)
+   if ((fg->glyph_out->bitmap.num_grays == 256) &&
+       (fg->glyph_out->bitmap.pixel_mode == FT_PIXEL_MODE_GRAY))
      {
 	int x, y;
 	DATA8 *p1, *p2;
@@ -40,7 +41,7 @@ evas_gl_font_texture_new(void *context, RGBA_Font_Glyph *fg)
 	       }
 	  }
      }
-   else if (fg->glyph_out->bitmap.num_grays == 0)
+   else
      {
 	DATA8 *tmpbuf = NULL, *dp, *tp, bits;
 	int bi, bj, end;
@@ -102,7 +103,7 @@ evas_gl_font_texture_draw(void *context, void *surface __UNUSED__, void *draw_co
    Evas_Engine_GL_Context *gc = context;
    RGBA_Draw_Context *dc = draw_context;
    Evas_GL_Texture *tex;
-   Cutout_Rects *rects;
+   static Cutout_Rects *rects = NULL;
    Cutout_Rect  *rct;
    int r, g, b, a;
    double ssx, ssy, ssw, ssh;
@@ -170,7 +171,7 @@ evas_gl_font_texture_draw(void *context, void *surface __UNUSED__, void *draw_co
         gc->dc->clip.use = c; gc->dc->clip.x = cx; gc->dc->clip.y = cy; gc->dc->clip.w = cw; gc->dc->clip.h = ch;
         return;
      }
-   rects = evas_common_draw_context_apply_cutouts(dc);
+   rects = evas_common_draw_context_apply_cutouts(dc, rects);
    for (i = 0; i < rects->active; ++i)
      {
         int nx, ny, nw, nh;
@@ -197,7 +198,6 @@ evas_gl_font_texture_draw(void *context, void *surface __UNUSED__, void *draw_co
                                          nx, ny, nw, nh,
                                          r, g, b, a);
      }
-   evas_common_draw_context_apply_clear_cutouts(rects);
    /* restore clip info */
    gc->dc->clip.use = c; gc->dc->clip.x = cx; gc->dc->clip.y = cy; gc->dc->clip.w = cw; gc->dc->clip.h = ch;
 }

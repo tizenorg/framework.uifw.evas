@@ -6,6 +6,7 @@ MAINTAINERCLEANFILES = Makefile.in
 AM_CPPFLAGS	     = -I. \
 		       -I$(top_srcdir)/src/lib \
 		       -I$(top_srcdir)/src/lib/cserve \
+		       -I$(top_srcdir)/src/lib/cserve2 \
 		       -I$(top_srcdir)/src/lib/include \
 		       -DPACKAGE_BIN_DIR=\"$(bindir)\" \
 		       -DPACKAGE_LIB_DIR=\"$(libdir)\" \
@@ -110,9 +111,6 @@ evas_font_ot.h \
 evas_map_image_internal.c \
 evas_map_image_core.c \
 evas_map_image_loop.c
-
-libevas_engine_common_la_DEPENDENCIES = \
-$(top_builddir)/config.h
 
 libevas_engine_common_la_LIBADD = \
 evas_op_blend/libevas_engine_common_op_blend_master_sse3.la

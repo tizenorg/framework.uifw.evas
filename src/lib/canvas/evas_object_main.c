@@ -17,7 +17,7 @@ evas_object_new(Evas *e __UNUSED__)
 {
    Evas_Object *obj;
 
-   EVAS_MEMPOOL_INIT(_mp_obj, "evas_object", Evas_Object, 512, NULL);
+   EVAS_MEMPOOL_INIT(_mp_obj, "evas_object", Evas_Object, 32, NULL);
    obj = EVAS_MEMPOOL_ALLOC(_mp_obj, Evas_Object);
    if (!obj) return NULL;
    EVAS_MEMPOOL_PREP(_mp_obj, obj, Evas_Object);
@@ -41,6 +41,17 @@ evas_object_change_reset(Evas_Object *obj)
 }
 
 void
+evas_object_cur_prev(Evas_Object *obj)
+{
+   if (obj->cur.map != obj->prev.map)
+     {
+        if (obj->cache_map) evas_map_free(obj->cache_map);
+        obj->cache_map = obj->prev.map;
+     }
+   obj->prev = obj->cur;
+}
+
+void
 evas_object_free(Evas_Object *obj, int clean_layer)
 {
    int was_smart_child = 0;
@@ -50,6 +61,8 @@ evas_object_free(Evas_Object *obj, int clean_layer)
 #endif
    if (!strcmp(obj->type, "image")) evas_object_image_video_surface_set(obj, NULL);
    evas_object_map_set(obj, NULL);
+   if (obj->prev.map) evas_map_free(obj->prev.map);
+   if (obj->cache_map) evas_map_free(obj->cache_map);
    evas_object_grabs_cleanup(obj);
    evas_object_intercept_cleanup(obj);
    if (obj->smart.parent) was_smart_child = 1;
@@ -93,7 +106,7 @@ evas_object_change(Evas_Object *obj)
         obj->changed_move = EINA_FALSE;
      }
 
-     if (obj->changed) return;
+   if (obj->changed) return;
 
    evas_render_object_recalc(obj);
    /* set changed flag on all objects this one clips too */
@@ -321,7 +334,7 @@ evas_object_render_pre_effect_updates(Eina_Array *rects, Evas_Object *obj, int i
 int
 evas_object_was_in_output_rect(Evas_Object *obj, int x, int y, int w, int h)
 {
-   if (obj->smart.smart) return 0;
+   if (obj->smart.smart && !obj->prev.map && !obj->prev.usemap) return 0;
    /* assumes coords have been recalced */
    if ((RECTS_INTERSECT(x, y, w, h,
                         obj->prev.cache.clip.x,
@@ -407,9 +420,6 @@ evas_object_del(Evas_Object *obj)
         obj->del_ref = EINA_TRUE;
         return;
      }
-#ifdef EVAS_FRAME_QUEUING
-   evas_common_frameq_flush();
-#endif
 
    evas_object_hide(obj);
    if (obj->focused)
@@ -441,14 +451,132 @@ evas_object_del(Evas_Object *obj)
    while (obj->proxy.proxies)
      evas_object_image_source_unset(obj->proxy.proxies->data);
    if (obj->cur.clipper) evas_object_clip_unset(obj);
-   if (obj->smart.smart) evas_object_smart_del(obj);
    evas_object_map_set(obj, NULL);
+   if (obj->smart.smart) evas_object_smart_del(obj);
    _evas_object_event_new();
    evas_object_event_callback_call(obj, EVAS_CALLBACK_FREE, NULL, _evas_event_counter);
    _evas_post_event_callback_call(obj->layer->evas);
    evas_object_smart_cleanup(obj);
    obj->delete_me = 1;
    evas_object_change(obj);
+}
+
+void
+evas_object_update_bounding_box(Evas_Object *obj)
+{
+   Eina_Bool propagate = EINA_FALSE;
+   Eina_Bool computeminmax = EINA_FALSE;
+   Evas_Coord x, y, w, h;
+   Evas_Coord px, py, pw, ph;
+   Eina_Bool noclip;
+
+   if (!obj->smart.parent) return ;
+   if (obj->child_has_map) return ; /* Disable bounding box computation for this object and its parent */
+   /* We could also remove object that are not visible from the bounding box, use the clipping information
+      to reduce the bounding of the object they are clipping, but for the moment this will do it's jobs */
+   noclip = !(obj->clip.clipees || obj->is_static_clip);
+
+   if (obj->smart.smart)
+     {
+        x = obj->cur.bounding_box.x;
+        y = obj->cur.bounding_box.y;
+        w = obj->cur.bounding_box.w;
+        h = obj->cur.bounding_box.h;
+        px = obj->prev.bounding_box.x;
+        py = obj->prev.bounding_box.y;
+        pw = obj->prev.bounding_box.w;
+        ph = obj->prev.bounding_box.h;
+     }
+   else
+     {
+        x = obj->cur.geometry.x;
+        y = obj->cur.geometry.y;
+        w = obj->cur.geometry.w;
+        h = obj->cur.geometry.h;
+        px = obj->prev.geometry.x;
+        py = obj->prev.geometry.y;
+        pw = obj->prev.geometry.w;
+        ph = obj->prev.geometry.h;
+     }
+
+   /* We are not yet trying to find the smallest bounding box, but we want to find a good approximation quickly.
+    * That's why we initialiaze min and max search to geometry of the parent object.
+    */
+
+   if (obj->smart.parent->cur.valid_bounding_box)
+     {
+        /* Update left limit */
+        if (noclip && x < obj->smart.parent->cur.bounding_box.x)
+          {
+             obj->smart.parent->cur.bounding_box.w += obj->smart.parent->cur.bounding_box.x - x;
+             obj->smart.parent->cur.bounding_box.x = x;
+             propagate = EINA_TRUE;
+          }
+        else if ((px == obj->smart.parent->prev.bounding_box.x && x > obj->smart.parent->cur.bounding_box.x)
+                 || (!noclip && x == obj->smart.parent->cur.bounding_box.x))
+          {
+             computeminmax = EINA_TRUE;
+          }
+
+        /* Update top limit */
+        if (noclip && y < obj->smart.parent->cur.bounding_box.y)
+          {
+             obj->smart.parent->cur.bounding_box.h += obj->smart.parent->cur.bounding_box.x - x;
+             obj->smart.parent->cur.bounding_box.y = y;
+             propagate = EINA_TRUE;
+          }
+        else if ((py == obj->smart.parent->prev.bounding_box.y && y  > obj->smart.parent->cur.bounding_box.y)
+                 || (!noclip && y == obj->smart.parent->cur.bounding_box.y))
+          {
+             computeminmax = EINA_TRUE;
+          }
+
+        /* Update right limit */
+        if (noclip && x + w > obj->smart.parent->cur.bounding_box.x + obj->smart.parent->cur.bounding_box.w)
+          {
+             obj->smart.parent->cur.bounding_box.w = x + w - obj->smart.parent->cur.bounding_box.x;
+             propagate = EINA_TRUE;
+          }
+        else if ((px + pw == obj->smart.parent->prev.bounding_box.x + obj->smart.parent->prev.bounding_box.w &&
+                  x + w < obj->smart.parent->cur.bounding_box.x + obj->smart.parent->cur.bounding_box.w)
+                 || (!noclip && x + w == obj->smart.parent->cur.bounding_box.x + obj->smart.parent->cur.bounding_box.w))
+          {
+             computeminmax = EINA_TRUE;
+          }
+
+        /* Update bottom limit */
+        if (noclip && y + h > obj->smart.parent->cur.bounding_box.y + obj->smart.parent->cur.bounding_box.h)
+          {
+             obj->smart.parent->cur.bounding_box.h = y + h - obj->smart.parent->cur.bounding_box.y;
+             propagate = EINA_TRUE;
+          }
+        else if ((py + ph == obj->smart.parent->prev.bounding_box.y + obj->smart.parent->prev.bounding_box.h &&
+                  y + h < obj->smart.parent->cur.bounding_box.y + obj->smart.parent->cur.bounding_box.h) ||
+                 (!noclip && y + h == obj->smart.parent->cur.bounding_box.y + obj->smart.parent->cur.bounding_box.h))
+          {
+             computeminmax = EINA_TRUE;
+          }
+
+	if (computeminmax)
+          {
+             evas_object_smart_need_bounding_box_update(obj->smart.parent);
+          }
+     }
+   else
+     {
+        if (noclip)
+          {
+             obj->smart.parent->cur.bounding_box.x = x;
+             obj->smart.parent->cur.bounding_box.y = y;
+             obj->smart.parent->cur.bounding_box.w = w;
+             obj->smart.parent->cur.bounding_box.h = h;
+             obj->smart.parent->cur.valid_bounding_box = EINA_TRUE;
+             propagate = EINA_TRUE;
+          }
+     }
+
+   if (propagate)
+     evas_object_update_bounding_box(obj->smart.parent);
 }
 
 EAPI void
@@ -467,11 +595,12 @@ evas_object_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
 
    if (!obj->is_frame)
      {
-        int fx, fy;
-
-        evas_output_framespace_get(obj->layer->evas, &fx, &fy, NULL, NULL);
-        if (!obj->smart.parent)
+        if ((!obj->smart.parent) && (obj->smart.smart))
           {
+             int fx, fy;
+
+             evas_output_framespace_get(obj->layer->evas, 
+                                        &fx, &fy, NULL, NULL);
              nx += fx;
              ny += fy;
           }
@@ -507,6 +636,8 @@ evas_object_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
    obj->cur.geometry.x = nx;
    obj->cur.geometry.y = ny;
 
+   evas_object_update_bounding_box(obj);
+
 ////   obj->cur.cache.geometry.validity = 0;
    obj->changed_move = EINA_TRUE;
    evas_object_change(obj);
@@ -538,7 +669,6 @@ EAPI void
 evas_object_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
 {
    int is, was = 0, pass = 0, freeze =0;
-   int nw = 0, nh = 0;
 
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    return;
@@ -546,23 +676,7 @@ evas_object_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
    if (obj->delete_me) return;
    if (w < 0) w = 0; if (h < 0) h = 0;
 
-   nw = w;
-   nh = h;
-   if (!obj->is_frame)
-     {
-        int fw, fh;
-
-        evas_output_framespace_get(obj->layer->evas, NULL, NULL, &fw, &fh);
-        if (!obj->smart.parent)
-          {
-             nw = w - fw;
-             nh = h - fh;
-             if (nw < 0) nw = 0;
-             if (nh < 0) nh = 0;
-          }
-     }
-
-   if (evas_object_intercept_call_resize(obj, nw, nh)) return;
+   if (evas_object_intercept_call_resize(obj, w, h)) return;
 
    if (obj->doing.in_resize > 0)
      {
@@ -570,7 +684,7 @@ evas_object_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
         return;
      }
 
-   if ((obj->cur.geometry.w == nw) && (obj->cur.geometry.h == nh)) return;
+   if ((obj->cur.geometry.w == w) && (obj->cur.geometry.h == h)) return;
 
    if (obj->layer->evas->events_frozen <= 0)
      {
@@ -586,11 +700,13 @@ evas_object_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
    if (obj->smart.smart)
      {
        if (obj->smart.smart->smart_class->resize)
-          obj->smart.smart->smart_class->resize(obj, nw, nh);
+          obj->smart.smart->smart_class->resize(obj, w, h);
      }
 
-   obj->cur.geometry.w = nw;
-   obj->cur.geometry.h = nh;
+   obj->cur.geometry.w = w;
+   obj->cur.geometry.h = h;
+
+   evas_object_update_bounding_box(obj);
 
 ////   obj->cur.cache.geometry.validity = 0;
    evas_object_change(obj);
@@ -625,6 +741,8 @@ evas_object_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
 EAPI void
 evas_object_geometry_get(const Evas_Object *obj, Evas_Coord *x, Evas_Coord *y, Evas_Coord *w, Evas_Coord *h)
 {
+   int nx = 0, ny = 0;
+
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    if (x) *x = 0; if (y) *y = 0; if (w) *w = 0; if (h) *h = 0;
    return;
@@ -635,8 +753,30 @@ evas_object_geometry_get(const Evas_Object *obj, Evas_Coord *x, Evas_Coord *y, E
         return;
      }
 
-   if (x) *x = obj->cur.geometry.x;
-   if (y) *y = obj->cur.geometry.y;
+   nx = obj->cur.geometry.x;
+   ny = obj->cur.geometry.y;
+
+   if (!obj->is_frame)
+     {
+        int fx, fy;
+
+        evas_output_framespace_get(obj->layer->evas, 
+                                   &fx, &fy, NULL, NULL);
+
+        if ((!obj->smart.parent) && (obj->smart.smart))
+          {
+             if (nx > 0) nx -= fx;
+             if (ny > 0) ny -= fy;
+          }
+        else if ((obj->smart.parent) && (!obj->smart.smart))
+          {
+             if (nx > 0) nx -= fx;
+             if (ny > 0) ny -= fy;
+          }
+     }
+
+   if (x) *x = nx;
+   if (y) *y = ny;
    if (w) *w = obj->cur.geometry.w;
    if (h) *h = obj->cur.geometry.h;
 }
@@ -646,7 +786,7 @@ _evas_object_size_hint_alloc(Evas_Object *obj)
 {
    if (obj->size_hints) return;
 
-   EVAS_MEMPOOL_INIT(_mp_sh, "evas_size_hints", Evas_Size_Hints, 512, );
+   EVAS_MEMPOOL_INIT(_mp_sh, "evas_size_hints", Evas_Size_Hints, 32, );
    obj->size_hints = EVAS_MEMPOOL_ALLOC(_mp_sh, Evas_Size_Hints);
    if (!obj->size_hints) return;
    EVAS_MEMPOOL_PREP(_mp_sh, obj->size_hints, Evas_Size_Hints);

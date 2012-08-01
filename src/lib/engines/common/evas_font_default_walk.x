@@ -17,6 +17,7 @@
               (text_props->start > 0)) ? \
            text_props->info->glyph[text_props->start - 1].pen_after : 0 ; \
         size_t char_index; \
+        (void) _pen_x; /* Sometimes it won't be used */ \
         (void) _pen_y; /* Sometimes it won't be used */
 
 /* Visual walk helper macros */
@@ -96,7 +97,7 @@
 
 #define EVAS_FONT_WALK_IS_VISIBLE (_glyph_itr->index != 0)
 #define EVAS_FONT_WALK_X_BEAR (_glyph_itr->x_bear)
-#define EVAS_FONT_WALK_Y_BEAR (fg->glyph_out->top)
+#define EVAS_FONT_WALK_Y_BEAR (_glyph_itr->y_bear)
 #define EVAS_FONT_WALK_X_ADV ((_glyph_itr > text_props->info->glyph) ? \
       _glyph_itr->pen_after - (_glyph_itr - 1)->pen_after : \
       _glyph_itr->pen_after)

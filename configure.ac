@@ -1,12 +1,12 @@
 ##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
 ##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
 m4_define([v_maj], [1])
-m4_define([v_min], [2])
-m4_define([v_mic], [0])
+m4_define([v_min], [6])
+m4_define([v_mic], [99])
 m4_define([v_rev], m4_esyscmd([(svnversion "${SVN_REPO_PATH:-.}" | grep -v '\(export\|Unversioned directory\)' || echo 0) | awk -F : '{printf("%s\n", $1);}' | tr -d ' :MSP\n']))
 m4_if(v_rev, [0], [m4_define([v_rev], m4_esyscmd([git log 2> /dev/null | (grep -m1 git-svn-id || echo 0) | sed -e 's/.*@\([0-9]*\).*/\1/' | tr -d '\n']))])
 ##--   When released, remove the dnl on the below line
-m4_undefine([v_rev])
+dnl m4_undefine([v_rev])
 ##--   When doing snapshots - change soname. remove dnl on below line
 dnl m4_define([relname], [ver-pre-svn-07])
 dnl m4_define([v_rel], [-release relname])
@@ -31,7 +31,7 @@ AC_CACHE_CHECK([whether the Objective C compiler works],
                 AC_LANG_POP([Objective C])])], [rw_cv_prog_objc_works=no])
 ])
 
-AC_INIT([evas], [v_ver]-beta, [enlightenment-devel@lists.sourceforge.net])
+AC_INIT([evas], [v_ver], [enlightenment-devel@lists.sourceforge.net])
 AC_PREREQ([2.52])
 AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_MACRO_DIR([m4])
@@ -92,6 +92,7 @@ want_fribidi="auto"
 want_harfbuzz="auto"
 want_pixman="no"
 want_evas_cserve="yes"
+want_evas_cserve2="yes"
 
 want_evas_engine_buffer="yes"
 want_evas_engine_software_xlib="no"
@@ -100,7 +101,6 @@ want_evas_engine_software_gdi="no"
 want_evas_engine_software_ddraw="no"
 want_evas_engine_software_8_x11="no"
 want_evas_engine_software_16_x11="no"
-want_evas_engine_software_16_ddraw="no"
 want_evas_engine_software_16_wince="no"
 want_evas_engine_software_16_sdl="no"
 want_evas_engine_gl_xlib="no"
@@ -145,7 +145,6 @@ case "$host_os" in
       want_evas_engine_software_gdi="yes"
       want_evas_engine_software_ddraw="yes"
       want_evas_engine_direct3d="yes"
-      want_evas_engine_software_16_ddraw="yes"
       want_evas_image_loader_edb="no"
       want_evas_image_loader_svg="no"
       ;;
@@ -260,7 +259,7 @@ AM_CONDITIONAL([EVAS_HAVE_EXOTIC], [test "x${enable_exotic}" = "xyes"])
 ## strong dependencies
 
 # Eina
-PKG_CHECK_MODULES([EINA], [eina >= 1.2.0])
+PKG_CHECK_MODULES([EINA], [eina >= 1.6.0])
 CPPFLAGS_SAVE="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS $EINA_CFLAGS"
 AC_CHECK_SIZEOF(Eina_Unicode,, [#include <Eina.h>])
@@ -269,7 +268,7 @@ CPPFLAGS="$CPPFLAGS_SAVE"
 # Freetype
 PKG_CHECK_MODULES([FREETYPE], [freetype2 >= 9.3.0])
 
-requirement_evas="freetype2 eina >= 1.2.0 ${requirement_evas}"
+requirement_evas="freetype2 eina >= 1.6.0 ${requirement_evas}"
 
 ## optional dependencies
 
@@ -381,7 +380,7 @@ AC_ARG_ENABLE([harfbuzz],
 
 if test "x${want_harfbuzz}" = "xyes" -o "x${want_harfbuzz}" = "xauto" ; then
    PKG_CHECK_MODULES([HARFBUZZ],
-      [harfbuzz >= 0.6.0],
+      [harfbuzz >= 0.9.0],
       [
        have_harfbuzz="yes"
        requirement_evas="harfbuzz ${requirement_evas}"
@@ -605,14 +604,45 @@ AC_ARG_ENABLE([evas-cserve],
 AC_MSG_CHECKING(whether to build shared cache server and support)
 AC_MSG_RESULT(${want_evas_cserve})
 
+# (shm_open (for cache server)
+AC_ARG_ENABLE([evas-cserve2],
+   AC_HELP_STRING([--disable-evas-cserve2],
+      [disable shared cache server 2 support. @<:@default=enabled@:>@]),
+   [
+    if test "x${enableval}" = "xyes" ; then
+       want_evas_cserve2="yes"
+    else
+       want_evas_cserve2="no"
+    fi
+   ])
+AC_MSG_CHECKING(whether to build shared cache server 2 and support)
+AC_MSG_RESULT(${want_evas_cserve2})
+
+# cserve2 only works on Linux so far.
+if test "x${want_evas_cserve2}" = "xyes" ; then
+   AC_CHECK_HEADERS(
+      [sys/epoll.h sys/inotify.h sys/signalfd.h],
+      [],
+      [
+       want_evas_cserve2="no"
+      ]
+   )
+fi
+
+if test "x${want_evas_cserve2}" = "xyes"; then
+   want_evas_cserve="no"
+fi
+
 shm_open_libs=""
-if test "x${want_evas_cserve}" = "xyes" ; then
+if test "x${want_evas_cserve}" = "xyes" -o "x${want_evas_cserve2}" = "xyes" ; then
    EFL_CHECK_SHM_OPEN(
       [
-       want_evas_cserve="yes"
        shm_open_libs=${EFL_SHM_OPEN_LIBS}
       ],
-      [want_evas_cserve="no"])
+      [
+       want_evas_cserve="no"
+       want_evas_cserve2="no"
+      ])
 fi
 AC_SUBST([shm_open_libs])
 
@@ -621,6 +651,12 @@ if test "x${want_evas_cserve}" = "xyes" ; then
 fi
 
 AM_CONDITIONAL([EVAS_CSERVE], [test "x${want_evas_cserve}" = "xyes"])
+
+if test "x${want_evas_cserve2}" = "xyes" ; then
+  AC_DEFINE(EVAS_CSERVE2, 1, [Shared cache server.])
+fi
+
+AM_CONDITIONAL([EVAS_CSERVE2], [test "x${want_evas_cserve2}" = "xyes"])
 
 
 
@@ -727,8 +763,6 @@ EVAS_CHECK_ENGINE([directfb], [${want_evas_engine_directfb}], [no], [DirectFB])
 EVAS_CHECK_ENGINE([software-8-x11], [${want_evas_engine_software_8_x11}], [no], [Software X11 8 bits grayscale])
 
 EVAS_CHECK_ENGINE([software-16-x11], [${want_evas_engine_software_16_x11}], [no], [Software X11 16 bits])
-
-EVAS_CHECK_ENGINE([software-16-ddraw], [${want_evas_engine_software_16_ddraw}], [no], [Software DirectDraw 16 bits])
 
 EVAS_CHECK_ENGINE([software-16-wince], [${want_evas_engine_software_16_wince}], [no], [Software Windows CE 16 bits])
 
@@ -939,9 +973,6 @@ fi
 if test "x$have_evas_engine_software_16_sdl" = "xyes" -o "x$have_evas_engine_software_16_sdl" = "xstatic"; then
    have_evas_engine_software_16="yes"
 fi
-if test "x$have_evas_engine_software_16_ddraw" = "xyes" -o "x$have_evas_engine_software_16_ddraw" = "xstatic"; then
-   have_evas_engine_software_16="yes"
-fi
 if test "x$have_evas_engine_software_16_wince" = "xyes" -o "x$have_evas_engine_software_16_wince" = "xstatic"; then
    have_evas_engine_software_16="yes"
 fi
@@ -1116,56 +1147,27 @@ AC_ARG_ENABLE(pthreads,
 ## Pipe Renderer
 build_pipe_render="no"
 
-AC_MSG_CHECKING(whether to build Threaded Pipe Rendering support)
-AC_ARG_ENABLE(pipe-render,
-  AC_HELP_STRING([--enable-pipe-render], [enable threaded pipe rendering support]),
-  [ build_pipe_render=$enableval ]
-)
-AC_MSG_RESULT($build_pipe_render)
+# Let disable pipe render strongly as it doesn't massively improve performance, but
+# just hammer more watt for a few more percent. The code is kept as the understanding
+# is that with an async pipeline things will be better.
+#
+#AC_MSG_CHECKING(whether to build Threaded Pipe Rendering support)
+#AC_ARG_ENABLE(pipe-render,
+#  AC_HELP_STRING([--enable-pipe-render], [enable threaded pipe rendering support]),
+#  [ build_pipe_render=$enableval ]
+#)
+#AC_MSG_RESULT($build_pipe_render)
 
-AC_MSG_CHECKING(whether we can build Threaded Pipe Rendering support)
-if test \( "x$build_pipe_render" = "xyes" -o "x$build_pipe_render" = "xauto" \); then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(BUILD_PIPE_RENDER, 1, [Build pipe render support])
-  build_pipe_render="yes"
-  need_pthreads="yes"
-else
-  AC_MSG_RESULT(no)
-  build_pipe_render="no"
-fi
-
-#######################################
-## Async Renderer
-build_async_render="no"
-
-AC_MSG_CHECKING(whether to build Asynchronously Threaded Pipe Rendering support)
-AC_ARG_ENABLE(async-render,
- AC_HELP_STRING([--enable-async-render], [enable asynchronously threaded pipe rendering support]),
- [ build_async_render=$enableval ]
-)
-AC_MSG_RESULT($build_async_render)
-
-AC_MSG_CHECKING(whether we can build Asynchronously Threaded Pipe Rendering support)
-if test \( "x$build_async_render" = "xyes" \); then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(EVAS_FRAME_QUEUING, 1, [Build async render support])
-  build_async_render="yes"
-  AC_DEFINE(BUILD_PIPE_RENDER, 1, [Build pipe render support])
-  build_pipe_render="yes"
-  need_pthreads="yes"
-
-  PKG_CHECK_MODULES([XEXT],
-    [xext < 1.1.1],
-    [ build_avoid_libXext_bug=yes ],
-    [ build_avoid_libXext_bug=no ]
-  )
-  if test \( "x$build_avoid_libXext_bug" = "xyes" \); then
-    AC_DEFINE(LIBXEXT_VERSION_LOW, 1, [To avoid bug on old libXext version])
-  fi
-else
-  AC_MSG_RESULT(no)
-  build_async_render="no"
-fi
+#AC_MSG_CHECKING(whether we can build Threaded Pipe Rendering support)
+#if test \( "x$build_pipe_render" = "xyes" -o "x$build_pipe_render" = "xauto" \); then
+#  AC_MSG_RESULT(yes)
+#  AC_DEFINE(BUILD_PIPE_RENDER, 1, [Build pipe render support])
+#  build_pipe_render="yes"
+#  need_pthreads="yes"
+#else
+#  AC_MSG_RESULT(no)
+#  build_pipe_render="no"
+#fi
 
 #######################################
 ## Async events
@@ -1852,7 +1854,6 @@ evas-software-8-x11.pc
 evas-software-16-x11.pc
 evas-software-gdi.pc
 evas-software-ddraw.pc
-evas-software-16-ddraw.pc
 evas-direct3d.pc
 evas-software-16-wince.pc
 evas-software-sdl.pc
@@ -1865,11 +1866,25 @@ doc/Makefile
 doc/Doxyfile
 src/Makefile
 src/bin/Makefile
+src/bin/loaders/Makefile
+src/bin/loaders/jpeg/Makefile
+src/bin/loaders/png/Makefile
+src/bin/loaders/eet/Makefile
+src/bin/loaders/tiff/Makefile
+src/bin/loaders/xpm/Makefile
+src/bin/loaders/bmp/Makefile
+src/bin/loaders/ico/Makefile
+src/bin/loaders/tga/Makefile
+src/bin/loaders/pmaps/Makefile
+src/bin/loaders/wbmp/Makefile
+src/bin/loaders/psd/Makefile
 src/lib/Makefile
 src/lib/canvas/Makefile
 src/lib/file/Makefile
 src/lib/cache/Makefile
+src/lib/cache2/Makefile
 src/lib/cserve/Makefile
+src/lib/cserve2/Makefile
 src/lib/engines/Makefile
 src/lib/engines/common/Makefile
 src/lib/engines/common/evas_op_add/Makefile
@@ -1900,7 +1915,6 @@ src/modules/engines/software_8/Makefile
 src/modules/engines/software_8_x11/Makefile
 src/modules/engines/software_16/Makefile
 src/modules/engines/software_16_x11/Makefile
-src/modules/engines/software_16_ddraw/Makefile
 src/modules/engines/software_16_sdl/Makefile
 src/modules/engines/wayland_shm/Makefile
 src/modules/engines/wayland_egl/Makefile
@@ -1938,11 +1952,6 @@ evas.spec
 ## Sanity Checks
 
 if test "x$build_pthreads" = "xno" ; then
-  if test "x$build_async_render" = "xyes" ; then
-    echo "ERROR: PThreads off, but async rendering on. Async rendering"
-    echo "  needs thread support."
-    exit 1
-  fi
   if test "x$build_pipe_render" = "xyes" ; then
     echo "ERROR: PThreads off, but pipe rendering on. Pipe rendering"
     echo "  needs thread support."
@@ -1996,7 +2005,6 @@ echo "  Software 8bit grayscale....: $have_evas_engine_software_8"
 # FIXME: kill software 16bit
 echo "  Software 16bit ............: $have_evas_engine_software_16"
 echo "  Software 16bit X11.........: $have_evas_engine_software_16_x11"
-echo "  Software 16bit Directdraw..: $have_evas_engine_software_16_ddraw"
 echo "  Software 16bit WinCE.......: $have_evas_engine_software_16_wince"
 echo "  Software 16bit SDL.........: $have_evas_engine_software_16_sdl (primitive: $sdl_primitive)"
 echo "  Wayland Shm................: $have_evas_engine_wayland_shm"
@@ -2044,6 +2052,7 @@ echo
 echo "Features:"
 echo "  MAGIC_DEBUG.............: $want_evas_magic_debug"
 echo "  Cache Server............: $want_evas_cserve"
+echo "  Cache Server 2..........: $want_evas_cserve2"
 echo
 dnl
 dnl ... DISABLED! some testing has shown that this seems to have some
@@ -2051,7 +2060,6 @@ dnl nasty bugs on both x86 and arm (tegra2 dual core tested), so just
 dnl disabling this for now until it can be fixed
 dnl 
 echo "  Threaded Pipe Rendering.: $build_pipe_render"
-echo "  Async Pipe Rendering....: $build_async_render"
 echo "  Async Events............: $build_async_events"
 echo "  Async Image Preload.....: $build_async_preload"
 echo

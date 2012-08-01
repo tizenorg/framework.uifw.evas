@@ -1,263 +1,263 @@
 /**
-@mainpage Evas
+   @mainpage Evas
 
-@version 1.1
-@date 2000-2012
+   @version 1.2
+   @date 2000-2012
 
-Please see the @ref authors page for contact details.
-@link Evas.h Evas API @endlink
+   Please see the @ref authors page for contact details.
+   @link Evas.h Evas API @endlink
 
-@link Evas.h Evas API @endlink
+   @link Evas.h Evas API @endlink
 
-@section toc Table of Contents
+   @section toc Table of Contents
 
-@li @ref intro
-@li @ref work
-@li @ref compiling
-@li @ref install
-@li @ref next_steps
-@li @ref intro_example
-
-
-@section intro What is Evas?
-
-Evas is a clean display canvas API for several target display systems
-that can draw anti-aliased text, smooth super and sub-sampled scaled
-images, alpha-blend objects and much more.
-
-It abstracts any need to know much about what the characteristics of
-your display system are or what graphics calls are used to draw them
-and how. It deals on an object level where all you do is create and
-manipulate objects in a canvas, set their properties, and the rest is
-done for you.
-
-Evas optimises the rendering pipeline to minimise effort in redrawing
-changes made to the canvas and so takes this work out of the
-programmers hand, saving a lot of time and energy.
-
-It's small and lean, designed to work on embedded systems all the way
-to large and powerful multi-cpu workstations. It can be compiled to
-only have the features you need for your target platform if you so
-wish, thus keeping it small and lean. It has several display
-back-ends, letting it display on several display systems, making it
-portable for cross-device and cross-platform development.
-
-@subsection intro_not_evas What Evas is not?
-
-Evas is not a widget set or widget toolkit, however it is their
-base. See Elementary (http://docs.enlightenment.org/auto/elementary/)
-for a toolkit based on Evas, Edje, Ecore and other Enlightenment
-technologies.
-
-It is not dependent or aware of main loops, input or output
-systems. Input should be polled from various sources and fed to
-Evas. Similarly, it will not create windows or report windows updates
-to your system, rather just drawing the pixels and reporting to the
-user the areas that were changed. Of course these operations are quite
-common and thus they are ready to use in Ecore, particularly in
-Ecore_Evas (http://docs.enlightenment.org/auto/ecore/).
+   @li @ref intro
+   @li @ref work
+   @li @ref compiling
+   @li @ref install
+   @li @ref next_steps
+   @li @ref intro_example
 
 
-@section work How does Evas work?
+   @section intro What is Evas?
 
-Evas is a canvas display library. This is markedly different from most
-display and windowing systems as a canvas is structural and is also a
-state engine, whereas most display and windowing systems are immediate
-mode display targets. Evas handles the logic between a structural
-display via its state engine, and controls the target windowing system
-in order to produce rendered results of the current canvas' state on
-the display.
+   Evas is a clean display canvas API for several target display systems
+   that can draw anti-aliased text, smooth super and sub-sampled scaled
+   images, alpha-blend objects and much more.
 
-Immediate mode display systems retain very little, or no state. A
-program will execute a series of commands, as in the pseudo code:
+   It abstracts any need to know much about what the characteristics of
+   your display system are or what graphics calls are used to draw them
+   and how. It deals on an object level where all you do is create and
+   manipulate objects in a canvas, set their properties, and the rest is
+   done for you.
 
-@verbatim
-draw line from position (0, 0) to position (100, 200);
+   Evas optimises the rendering pipeline to minimise effort in redrawing
+   changes made to the canvas and so takes this work out of the
+   programmers hand, saving a lot of time and energy.
 
-draw rectangle from position (10, 30) to position (50, 500);
+   It's small and lean, designed to work on embedded systems all the way
+   to large and powerful multi-cpu workstations. It can be compiled to
+   only have the features you need for your target platform if you so
+   wish, thus keeping it small and lean. It has several display
+   back-ends, letting it display on several display systems, making it
+   portable for cross-device and cross-platform development.
 
-bitmap_handle = create_bitmap();
-scale bitmap_handle to size 100 x 100;
-draw image bitmap_handle at position (10, 30);
-@endverbatim
+   @subsection intro_not_evas What Evas is not?
 
-The series of commands is executed by the windowing system and the
-results are displayed on the screen (normally). Once the commands are
-executed the display system has little or no idea of how to reproduce
-this image again, and so has to be instructed by the application how
-to redraw sections of the screen whenever needed. Each successive
-command will be executed as instructed by the application and either
-emulated by software or sent to the graphics hardware on the device to
-be performed.
+   Evas is not a widget set or widget toolkit, however it is their
+   base. See Elementary (http://docs.enlightenment.org/auto/elementary/)
+   for a toolkit based on Evas, Edje, Ecore and other Enlightenment
+   technologies.
 
-The advantage of such a system is that it is simple, and gives a
-program tight control over how something looks and is drawn. Given the
-increasing complexity of displays and demands by users to have better
-looking interfaces, more and more work is needing to be done at this
-level by the internals of widget sets, custom display widgets and
-other programs. This means more and more logic and display rendering
-code needs to be written time and time again, each time the
-application needs to figure out how to minimise redraws so that
-display is fast and interactive, and keep track of redraw logic. The
-power comes at a high-price, lots of extra code and work.  Programmers
-not very familiar with graphics programming will often make mistakes
-at this level and produce code that is sub optimal. Those familiar
-with this kind of programming will simply get bored by writing the
-same code again and again.
+   It is not dependent or aware of main loops, input or output
+   systems. Input should be polled from various sources and fed to
+   Evas. Similarly, it will not create windows or report windows updates
+   to your system, rather just drawing the pixels and reporting to the
+   user the areas that were changed. Of course these operations are quite
+   common and thus they are ready to use in Ecore, particularly in
+   Ecore_Evas (http://docs.enlightenment.org/auto/ecore/).
 
-For example, if in the above scene, the windowing system requires the
-application to redraw the area from 0, 0 to 50, 50 (also referred as
-"expose event"), then the programmer must calculate manually the
-updates and repaint it again:
 
-@verbatim
-Redraw from position (0, 0) to position (50, 50):
+   @section work How does Evas work?
 
-// what was in area (0, 0, 50, 50)?
+   Evas is a canvas display library. This is markedly different from most
+   display and windowing systems as a canvas is structural and is also a
+   state engine, whereas most display and windowing systems are immediate
+   mode display targets. Evas handles the logic between a structural
+   display via its state engine, and controls the target windowing system
+   in order to produce rendered results of the current canvas' state on
+   the display.
 
-// 1. intersection part of line (0, 0) to (100, 200)?
+   Immediate mode display systems retain very little, or no state. A
+   program will execute a series of commands, as in the pseudo code:
+
+   @verbatim
+   draw line from position (0, 0) to position (100, 200);
+
+   draw rectangle from position (10, 30) to position (50, 500);
+
+   bitmap_handle = create_bitmap();
+   scale bitmap_handle to size 100 x 100;
+   draw image bitmap_handle at position (10, 30);
+   @endverbatim
+
+   The series of commands is executed by the windowing system and the
+   results are displayed on the screen (normally). Once the commands are
+   executed the display system has little or no idea of how to reproduce
+   this image again, and so has to be instructed by the application how
+   to redraw sections of the screen whenever needed. Each successive
+   command will be executed as instructed by the application and either
+   emulated by software or sent to the graphics hardware on the device to
+   be performed.
+
+   The advantage of such a system is that it is simple, and gives a
+   program tight control over how something looks and is drawn. Given the
+   increasing complexity of displays and demands by users to have better
+   looking interfaces, more and more work is needing to be done at this
+   level by the internals of widget sets, custom display widgets and
+   other programs. This means more and more logic and display rendering
+   code needs to be written time and time again, each time the
+   application needs to figure out how to minimise redraws so that
+   display is fast and interactive, and keep track of redraw logic. The
+   power comes at a high-price, lots of extra code and work.  Programmers
+   not very familiar with graphics programming will often make mistakes
+   at this level and produce code that is sub optimal. Those familiar
+   with this kind of programming will simply get bored by writing the
+   same code again and again.
+
+   For example, if in the above scene, the windowing system requires the
+   application to redraw the area from 0, 0 to 50, 50 (also referred as
+   "expose event"), then the programmer must calculate manually the
+   updates and repaint it again:
+
+   @verbatim
+   Redraw from position (0, 0) to position (50, 50):
+
+   // what was in area (0, 0, 50, 50)?
+
+   // 1. intersection part of line (0, 0) to (100, 200)?
       draw line from position (0, 0) to position (25, 50);
 
-// 2. intersection part of rectangle (10, 30) to (50, 500)?
+   // 2. intersection part of rectangle (10, 30) to (50, 500)?
       draw rectangle from position (10, 30) to position (50, 50)
 
-// 3. intersection part of image at (10, 30), size 100 x 100?
+   // 3. intersection part of image at (10, 30), size 100 x 100?
       bitmap_subimage = subregion from position (0, 0) to position (40, 20)
       draw image bitmap_subimage at position (10, 30);
-@endverbatim
+   @endverbatim
 
-The clever reader might have noticed that, if all elements in the
-above scene are opaque, then the system is doing useless paints: part
-of the line is behind the rectangle, and part of the rectangle is
-behind the image. These useless paints tend to be very costly, as
-pixels tend to be 4 bytes in size, thus an overlapping region of 100 x
-100 pixels is around 40000 useless writes! The developer could write
-code to calculate the overlapping areas and avoid painting then, but
-then it should be mixed with the "expose event" handling mentioned
-above and quickly one realizes the initially simpler method became
-really complex.
+   The clever reader might have noticed that, if all elements in the
+   above scene are opaque, then the system is doing useless paints: part
+   of the line is behind the rectangle, and part of the rectangle is
+   behind the image. These useless paints tend to be very costly, as
+   pixels tend to be 4 bytes in size, thus an overlapping region of 100 x
+   100 pixels is around 40000 useless writes! The developer could write
+   code to calculate the overlapping areas and avoid painting then, but
+   then it should be mixed with the "expose event" handling mentioned
+   above and quickly one realizes the initially simpler method became
+   really complex.
 
-Evas is a structural system in which the programmer creates and
-manages display objects and their properties, and as a result of this
-higher level state management, the canvas is able to redraw the set of
-objects when needed to represent the current state of the canvas.
+   Evas is a structural system in which the programmer creates and
+   manages display objects and their properties, and as a result of this
+   higher level state management, the canvas is able to redraw the set of
+   objects when needed to represent the current state of the canvas.
 
-For example, the pseudo code:
+   For example, the pseudo code:
 
-@verbatim
-line_handle = create_line();
-set line_handle from position (0, 0) to position (100, 200);
-show line_handle;
+   @verbatim
+   line_handle = create_line();
+   set line_handle from position (0, 0) to position (100, 200);
+   show line_handle;
 
-rectangle_handle = create_rectangle();
-move rectangle_handle to position (10, 30);
-resize rectangle_handle to size 40 x 470;
-show rectangle_handle;
+   rectangle_handle = create_rectangle();
+   move rectangle_handle to position (10, 30);
+   resize rectangle_handle to size 40 x 470;
+   show rectangle_handle;
 
-bitmap_handle = create_bitmap();
-scale bitmap_handle to size 100 x 100;
-move bitmap_handle to position (10, 30);
-show bitmap_handle;
+   bitmap_handle = create_bitmap();
+   scale bitmap_handle to size 100 x 100;
+   move bitmap_handle to position (10, 30);
+   show bitmap_handle;
 
-render scene;
-@endverbatim
+   render scene;
+   @endverbatim
 
-This may look longer, but when the display needs to be refreshed or
-updated, the programmer only moves, resizes, shows, hides etc. the
-objects that need to change. The programmer simply thinks at the
-object logic level, and the canvas software does the rest of the work
-for them, figuring out what actually changed in the canvas since it
-was last drawn, how to most efficiently redraw the canvas and its
-contents to reflect the current state, and then it can go off and do
-the actual drawing of the canvas.
+   This may look longer, but when the display needs to be refreshed or
+   updated, the programmer only moves, resizes, shows, hides etc. the
+   objects that need to change. The programmer simply thinks at the
+   object logic level, and the canvas software does the rest of the work
+   for them, figuring out what actually changed in the canvas since it
+   was last drawn, how to most efficiently redraw the canvas and its
+   contents to reflect the current state, and then it can go off and do
+   the actual drawing of the canvas.
 
-This lets the programmer think in a more natural way when dealing with
-a display, and saves time and effort of working out how to load and
-display images, render given the current display system etc. Since
-Evas also is portable across different display systems, this also
-gives the programmer the ability to have their code ported and
-displayed on different display systems with very little work.
+   This lets the programmer think in a more natural way when dealing with
+   a display, and saves time and effort of working out how to load and
+   display images, render given the current display system etc. Since
+   Evas also is portable across different display systems, this also
+   gives the programmer the ability to have their code ported and
+   displayed on different display systems with very little work.
 
-Evas can be seen as a display system that stands somewhere between a
-widget set and an immediate mode display system. It retains basic
-display logic, but does very little high-level logic such as
-scrollbars, sliders, push buttons etc.
-
-
-@section compiling How to compile using Evas ?
-
-Evas is a library your application links to. The procedure for this is
-very simple. You simply have to compile your application with the
-appropriate compiler flags that the @c pkg-config script outputs. For
-example:
-
-Compiling C or C++ files into object files:
-
-@verbatim
-gcc -c -o main.o main.c `pkg-config --cflags evas`
-@endverbatim
-
-Linking object files into a binary executable:
-
-@verbatim
-gcc -o my_application main.o `pkg-config --libs evas`
-@endverbatim
-
-You simply have to make sure that @c pkg-config is in your shell's @c
-PATH (see the manual page for your appropriate shell) and @c evas.pc
-in @c /usr/lib/pkgconfig or its path in the @c PKG_CONFIG_PATH
-environment variable. It's that simple to link and use Evas once you
-have written your code to use it.
-
-Since the program is linked to Evas, it is now able to use any
-advertised API calls to display graphics in a canvas managed by it, as
-well as use the API calls provided to manage data.
-
-You should make sure you add any extra compile and link flags to your
-compile commands that your application may need as well. The above
-example is only guaranteed to make Evas add it's own requirements.
+   Evas can be seen as a display system that stands somewhere between a
+   widget set and an immediate mode display system. It retains basic
+   display logic, but does very little high-level logic such as
+   scrollbars, sliders, push buttons etc.
 
 
-@section install How is it installed?
+   @section compiling How to compile using Evas ?
 
-Simple:
+   Evas is a library your application links to. The procedure for this is
+   very simple. You simply have to compile your application with the
+   appropriate compiler flags that the @c pkg-config script outputs. For
+   example:
 
-@verbatim
-./configure
-make
-su -
-...
-make install
-@endverbatim
+   Compiling C or C++ files into object files:
 
-@section next_steps Next Steps
+   @verbatim
+   gcc -c -o main.o main.c `pkg-config --cflags evas`
+   @endverbatim
 
-After you understood what Evas is and installed it in your system you
-should proceed understanding the programming interface for all
-objects, then see the specific for the most used elements. We'd
-recommend you to take a while to learn Ecore
-(http://docs.enlightenment.org/auto/ecore/) and Edje
-(http://docs.enlightenment.org/auto/edje/) as they will likely save
-you tons of work compared to using just Evas directly.
+   Linking object files into a binary executable:
 
-Recommended reading:
+   @verbatim
+   gcc -o my_application main.o `pkg-config --libs evas`
+   @endverbatim
 
-@li @ref Evas_Object_Group, where you'll get how to basically
+   You simply have to make sure that @c pkg-config is in your shell's @c
+   PATH (see the manual page for your appropriate shell) and @c evas.pc
+   in @c /usr/lib/pkgconfig or its path in the @c PKG_CONFIG_PATH
+   environment variable. It's that simple to link and use Evas once you
+   have written your code to use it.
+
+   Since the program is linked to Evas, it is now able to use any
+   advertised API calls to display graphics in a canvas managed by it, as
+   well as use the API calls provided to manage data.
+
+   You should make sure you add any extra compile and link flags to your
+   compile commands that your application may need as well. The above
+   example is only guaranteed to make Evas add it's own requirements.
+
+
+   @section install How is it installed?
+
+   Simple:
+
+   @verbatim
+   ./configure
+   make
+   su -
+   ...
+   make install
+   @endverbatim
+
+   @section next_steps Next Steps
+
+   After you understood what Evas is and installed it in your system you
+   should proceed understanding the programming interface for all
+   objects, then see the specific for the most used elements. We'd
+   recommend you to take a while to learn Ecore
+   (http://docs.enlightenment.org/auto/ecore/) and Edje
+   (http://docs.enlightenment.org/auto/edje/) as they will likely save
+   you tons of work compared to using just Evas directly.
+
+   Recommended reading:
+
+   @li @ref Evas_Object_Group, where you'll get how to basically
     manipulate generic objects lying on an Evas canvas, handle canvas
     and object events, etc.
-@li @ref Evas_Object_Rectangle, to learn about the most basic object
+   @li @ref Evas_Object_Rectangle, to learn about the most basic object
     type on Evas -- the rectangle.
-@li @ref Evas_Object_Polygon, to learn how to create polygon elements
+   @li @ref Evas_Object_Polygon, to learn how to create polygon elements
     on the canvas.
-@li @ref Evas_Line_Group, to learn how to create line elements on the
+   @li @ref Evas_Line_Group, to learn how to create line elements on the
     canvas.
-@li @ref Evas_Object_Image, to learn about image objects, over which
+   @li @ref Evas_Object_Image, to learn about image objects, over which
     Evas can do a plethora of operations.
-@li @ref Evas_Object_Text, to learn how to create textual elements on
+   @li @ref Evas_Object_Text, to learn how to create textual elements on
     the canvas.
-@li @ref Evas_Object_Textblock, to learn how to create multiline
+   @li @ref Evas_Object_Textblock, to learn how to create multiline
     textual elements on the canvas.
-@li @ref Evas_Smart_Object_Group and @ref Evas_Smart_Group, to define
+   @li @ref Evas_Smart_Object_Group and @ref Evas_Smart_Group, to define
     new objects that provide @b custom functions to handle clipping,
     hiding, moving, resizing, color setting and more. These could
     be as simple as a group of objects that move together (see @ref
@@ -265,46 +265,54 @@ Recommended reading:
     ends to be a widget, providing some intelligence (thus the name)
     to Evas objects -- like a button or check box, for example.
 
-@section intro_example Introductory Example
+   @section intro_example Introductory Example
 
-@include evas-buffer-simple.c
-*/
+   @include evas-buffer-simple.c
+ */
 
 /**
-@page authors Authors
-@author Carsten Haitzler <raster@@rasterman.com>
-@author Till Adam <till@@adam-lilienthal.de>
-@author Steve Ireland <sireland@@pobox.com>
-@author Brett Nash <nash@@nash.id.au>
-@author Tilman Sauerbeck <tilman@@code-monkey.de>
-@author Corey Donohoe <atmos@@atmos.org>
-@author Yuri Hudobin <glassy_ape@@users.sourceforge.net>
-@author Nathan Ingersoll <ningerso@@d.umn.edu>
-@author Willem Monsuwe <willem@@stack.nl>
-@author Jose O Gonzalez <jose_ogp@@juno.com>
-@author Bernhard Nemec <Bernhard.Nemec@@viasyshc.com>
-@author Jorge Luis Zapata Muga <jorgeluis.zapata@@gmail.com>
-@author Cedric Bail <cedric.bail@@free.fr>
-@author Gustavo Sverzut Barbieri <barbieri@@profusion.mobi>
-@author Vincent Torri <vtorri@@univ-evry.fr>
-@author Tim Horton <hortont424@@gmail.com>
-@author Tom Hacohen <tom@@stosb.com>
-@author Mathieu Taillefumier <mathieu.taillefumier@@free.fr>
-@author Iván Briano <ivan@@profusion.mobi>
-@author Gustavo Lima Chaves <glima@@profusion.mobi>
-@author Samsung Electronics
-@author Samsung SAIT
-@author Sung W. Park <sungwoo@@gmail.com>
-@author Jiyoun Park <jy0703.park@@samsung.com>
-@author Myoungwoon Roy Kim(roy_kim) <myoungwoon.kim@@samsung.com> <myoungwoon@@gmail.com>
-@author Thierry el Borgi <thierry@@substantiel.fr>
-@author ChunEon Park <hermet@@hermet.pe.kr>
-@author Christopher 'devilhorns' Michael <cpmichael1@comcast.net>
-@author Seungsoo Woo <om101.woo@samsung.com>
+   @page authors Authors
+   @author Carsten Haitzler <raster@@rasterman.com>
+   @author Till Adam <till@@adam-lilienthal.de>
+   @author Steve Ireland <sireland@@pobox.com>
+   @author Brett Nash <nash@@nash.id.au>
+   @author Tilman Sauerbeck <tilman@@code-monkey.de>
+   @author Corey Donohoe <atmos@@atmos.org>
+   @author Yuri Hudobin <glassy_ape@@users.sourceforge.net>
+   @author Nathan Ingersoll <ningerso@@d.umn.edu>
+   @author Willem Monsuwe <willem@@stack.nl>
+   @author Jose O Gonzalez <jose_ogp@@juno.com>
+   @author Bernhard Nemec <Bernhard.Nemec@@viasyshc.com>
+   @author Jorge Luis Zapata Muga <jorgeluis.zapata@@gmail.com>
+   @author Cedric Bail <cedric.bail@@free.fr>
+   @author Gustavo Sverzut Barbieri <barbieri@@profusion.mobi>
+   @author Vincent Torri <vtorri@@univ-evry.fr>
+   @author Tim Horton <hortont424@@gmail.com>
+   @author Tom Hacohen <tom@@stosb.com>
+   @author Mathieu Taillefumier <mathieu.taillefumier@@free.fr>
+   @author Iván Briano <ivan@@profusion.mobi>
+   @author Gustavo Lima Chaves <glima@@profusion.mobi>
+   @author Samsung Electronics
+   @author Samsung SAIT
+   @author Sung W. Park <sungwoo@@gmail.com>
+   @author Jiyoun Park <jy0703.park@@samsung.com>
+   @author Myoungwoon Roy Kim(roy_kim) <myoungwoon.kim@@samsung.com> <myoungwoon@@gmail.com>
+   @author Thierry el Borgi <thierry@@substantiel.fr>
+   @author Shilpa Singh <shilpa.singh@@samsung.com> <shilpasingh.o@@gmail.com>
+   @author ChunEon Park <hermet@@hermet.pe.kr>
+   @author Christopher 'devilhorns' Michael <cpmichael1@@comcast.net>
+   @author Seungsoo Woo <om101.woo@@samsung.com>
+   @author Youness Alaoui <kakaroto@@kakaroto.homelinux.net>
+   @author Jim Kukunas <james.t.kukunas@@linux.intel.com>
+   @author Nicolas Aguirre <aguirre.nicolas@@gmail.com>
+   @author Rafal Krypa <r.krypa@@samsung.com>
+   @author Hyoyoung Chang <hyoyoung@@gmail.com>
+   @author Jérôme Pinot <ngc891@@gmail.com>
+   @author Rafael Antognolli <antognolli@@profusion.mobi>
 
-Please contact <enlightenment-devel@lists.sourceforge.net> to get in
-contact with the developers and maintainers.
-*/
+   Please contact <enlightenment-devel@lists.sourceforge.net> to get in
+   contact with the developers and maintainers.
+ */
 
 #ifndef _EVAS_H
 #define _EVAS_H
@@ -344,7 +352,7 @@ extern "C" {
 #endif
 
 #define EVAS_VERSION_MAJOR 1
-#define EVAS_VERSION_MINOR 2
+#define EVAS_VERSION_MINOR 6
 
 typedef struct _Evas_Version
 {
@@ -354,7 +362,7 @@ typedef struct _Evas_Version
    int revision;
 } Evas_Version;
 
-EAPI extern Evas_Version *evas_version;
+EAPI extern Evas_Version * evas_version;
 
 /**
  * @file
@@ -366,7 +374,7 @@ EAPI extern Evas_Version *evas_version;
  */
 
 /* BiDi exposed stuff */
-   /*FIXME: document */
+/*FIXME: document */
 typedef enum _Evas_BiDi_Direction
 {
    EVAS_BIDI_DIRECTION_NATURAL,
@@ -436,28 +444,28 @@ typedef enum _Evas_Callback_Type
 
    EVAS_CALLBACK_RENDER_PRE, /**< Called just before rendering starts on the canvas target @since 1.2 */
    EVAS_CALLBACK_RENDER_POST, /**< Called just after rendering stops on the canvas target @since 1.2 */
-     
+
    EVAS_CALLBACK_LAST /**< kept as last element/sentinel -- not really an event */
 } Evas_Callback_Type; /**< The types of events triggering a callback */
 
 /**
  * @def EVAS_CALLBACK_PRIORITY_BEFORE
  * Slightly more prioritized than default.
- * @since 1.1.0
+ * @since 1.1
  */
-#define EVAS_CALLBACK_PRIORITY_BEFORE -100
+#define EVAS_CALLBACK_PRIORITY_BEFORE  -100
 /**
  * @def EVAS_CALLBACK_PRIORITY_DEFAULT
  * Default callback priority level
- * @since 1.1.0
+ * @since 1.1
  */
 #define EVAS_CALLBACK_PRIORITY_DEFAULT 0
 /**
  * @def EVAS_CALLBACK_PRIORITY_AFTER
  * Slightly less prioritized than default.
- * @since 1.1.0
+ * @since 1.1
  */
-#define EVAS_CALLBACK_PRIORITY_AFTER 100
+#define EVAS_CALLBACK_PRIORITY_AFTER   100
 
 /**
  * @typedef Evas_Callback_Priority
@@ -469,7 +477,7 @@ typedef enum _Evas_Callback_Type
  * @see EVAS_CALLBACK_PRIORITY_BEFORE
  * @see EVAS_CALLBACK_PRIORITY_DEFAULT
  *
- * @since 1.1.0
+ * @since 1.1
  */
 typedef short Evas_Callback_Priority;
 
@@ -523,9 +531,9 @@ typedef enum _Evas_Font_Hinting_Flags
 typedef enum _Evas_Colorspace
 {
    EVAS_COLORSPACE_ARGB8888, /**< ARGB 32 bits per pixel, high-byte is Alpha, accessed 1 32bit word at a time */
-     /* these are not currently supported - but planned for the future */
+   /* these are not currently supported - but planned for the future */
    EVAS_COLORSPACE_YCBCR422P601_PL, /**< YCbCr 4:2:2 Planar, ITU.BT-601 specifications. The data pointed to is just an array of row pointer, pointing to the Y rows, then the Cb, then Cr rows */
-   EVAS_COLORSPACE_YCBCR422P709_PL,/**< YCbCr 4:2:2 Planar, ITU.BT-709 specifications. The data pointed to is just an array of row pointer, pointing to the Y rows, then the Cb, then Cr rows */
+   EVAS_COLORSPACE_YCBCR422P709_PL, /**< YCbCr 4:2:2 Planar, ITU.BT-709 specifications. The data pointed to is just an array of row pointer, pointing to the Y rows, then the Cb, then Cr rows */
    EVAS_COLORSPACE_RGB565_A5P, /**< 16bit rgb565 + Alpha plane at end - 5 bits of the 8 being used per alpha byte */
    EVAS_COLORSPACE_GRY8, /**< 8bit grayscale */
    EVAS_COLORSPACE_YCBCR422601_PL, /**<  YCbCr 4:2:2, ITU.BT-601 specifications. The data pointed to is just an array of row pointer, pointing to line of Y,Cb,Y,Cr bytes */
@@ -542,19 +550,19 @@ typedef enum _Evas_Colorspace
  */
 typedef enum _Evas_Object_Table_Homogeneous_Mode
 {
-  EVAS_OBJECT_TABLE_HOMOGENEOUS_NONE = 0,
-  EVAS_OBJECT_TABLE_HOMOGENEOUS_TABLE = 1,
-  EVAS_OBJECT_TABLE_HOMOGENEOUS_ITEM = 2
+   EVAS_OBJECT_TABLE_HOMOGENEOUS_NONE = 0,
+   EVAS_OBJECT_TABLE_HOMOGENEOUS_TABLE = 1,
+   EVAS_OBJECT_TABLE_HOMOGENEOUS_ITEM = 2
 } Evas_Object_Table_Homogeneous_Mode; /**< Table cell pack mode. */
 
-typedef struct _Evas_Coord_Rectangle  Evas_Coord_Rectangle; /**< A generic rectangle handle */
-typedef struct _Evas_Point                   Evas_Point; /**< integer point */
+typedef struct _Evas_Coord_Rectangle       Evas_Coord_Rectangle; /**< A generic rectangle handle */
+typedef struct _Evas_Point                 Evas_Point;   /**< integer point */
 
-typedef struct _Evas_Coord_Point             Evas_Coord_Point;  /**< Evas_Coord point */
-typedef struct _Evas_Coord_Precision_Point   Evas_Coord_Precision_Point; /**< Evas_Coord point with sub-pixel precision */
+typedef struct _Evas_Coord_Point           Evas_Coord_Point;    /**< Evas_Coord point */
+typedef struct _Evas_Coord_Precision_Point Evas_Coord_Precision_Point;   /**< Evas_Coord point with sub-pixel precision */
 
-typedef struct _Evas_Position                Evas_Position; /**< associates given point in Canvas and Output */
-typedef struct _Evas_Precision_Position      Evas_Precision_Position; /**< associates given point in Canvas and Output, with sub-pixel precision */
+typedef struct _Evas_Position              Evas_Position;   /**< associates given point in Canvas and Output */
+typedef struct _Evas_Precision_Position    Evas_Precision_Position;   /**< associates given point in Canvas and Output, with sub-pixel precision */
 
 /**
  * @typedef Evas_Smart_Class
@@ -563,7 +571,23 @@ typedef struct _Evas_Precision_Position      Evas_Precision_Position; /**< assoc
  *
  * @ingroup Evas_Smart_Group
  */
-typedef struct _Evas_Smart_Class             Evas_Smart_Class;
+typedef struct _Evas_Smart_Class Evas_Smart_Class;
+
+/**
+ * @typedef Evas_Smart_Interface
+ *
+ * A smart object's @b base interface definition
+ *
+ * An Evas interface is exactly like the OO-concept: an 'contract' or
+ * API a given object is declared to support. A smart object may have
+ * more than one interface, thus extending the behavior it gets from
+ * sub-classing.
+ *
+ * @since 1.7
+ *
+ * @ingroup Evas_Smart_Group
+ */
+typedef struct _Evas_Smart_Interface         Evas_Smart_Interface;
 
 /**
  * @typedef Evas_Smart_Cb_Description
@@ -572,7 +596,7 @@ typedef struct _Evas_Smart_Class             Evas_Smart_Class;
  *
  * @ingroup Evas_Smart_Group
  */
-typedef struct _Evas_Smart_Cb_Description    Evas_Smart_Cb_Description;
+typedef struct _Evas_Smart_Cb_Description Evas_Smart_Cb_Description;
 
 /**
  * @typedef Evas_Map
@@ -585,7 +609,7 @@ typedef struct _Evas_Smart_Cb_Description    Evas_Smart_Cb_Description;
  *
  * @ingroup Evas_Object_Group_Map
  */
-typedef struct _Evas_Map            Evas_Map;
+typedef struct _Evas_Map Evas_Map;
 
 /**
  * @typedef Evas
@@ -597,7 +621,7 @@ typedef struct _Evas_Map            Evas_Map;
  *
  * @ingroup Evas_Canvas
  */
-typedef struct _Evas                Evas;
+typedef struct _Evas Evas;
 
 /**
  * @typedef Evas_Object
@@ -612,21 +636,21 @@ typedef struct _Evas_Lock           Evas_Lock; /**< An opaque type containing in
 typedef struct _Evas_Smart          Evas_Smart; /**< An Evas Smart Object handle */
 typedef struct _Evas_Native_Surface Evas_Native_Surface; /**< A generic datatype for engine specific native surface information */
 
- /**
-  * @typedef Evas_Video_Surface
-  *
-  * A generic datatype for video specific surface information
-  * @see evas_object_image_video_surface_set
-  * @see evas_object_image_video_surface_get
-  * @since 1.1.0
-  */
-typedef struct _Evas_Video_Surface  Evas_Video_Surface;
+/**
+ * @typedef Evas_Video_Surface
+ *
+ * A generic datatype for video specific surface information
+ * @see evas_object_image_video_surface_set
+ * @see evas_object_image_video_surface_get
+ * @since 1.1
+ */
+typedef struct _Evas_Video_Surface Evas_Video_Surface;
 
-typedef unsigned long long          Evas_Modifier_Mask; /**< An Evas modifier mask type */
+typedef unsigned long long         Evas_Modifier_Mask;  /**< An Evas modifier mask type */
 
-typedef int                         Evas_Coord;
-typedef int                         Evas_Font_Size;
-typedef int                         Evas_Angle;
+typedef int                        Evas_Coord;
+typedef int                        Evas_Font_Size;
+typedef int                        Evas_Angle;
 
 struct _Evas_Coord_Rectangle /**< A rectangle in Evas_Coord */
 {
@@ -649,19 +673,19 @@ struct _Evas_Coord_Point
 struct _Evas_Coord_Precision_Point
 {
    Evas_Coord x, y;
-   double xsub, ysub;
+   double     xsub, ysub;
 };
 
 struct _Evas_Position
 {
-    Evas_Point output;
-    Evas_Coord_Point canvas;
+   Evas_Point       output;
+   Evas_Coord_Point canvas;
 };
 
 struct _Evas_Precision_Position
 {
-    Evas_Point output;
-    Evas_Coord_Precision_Point canvas;
+   Evas_Point                 output;
+   Evas_Coord_Precision_Point canvas;
 };
 
 typedef enum _Evas_Aspect_Control
@@ -674,20 +698,20 @@ typedef enum _Evas_Aspect_Control
 } Evas_Aspect_Control; /**< Aspect types/policies for scaling size hints, used for evas_object_size_hint_aspect_set() */
 
 typedef struct _Evas_Pixel_Import_Source Evas_Pixel_Import_Source; /**< A source description of pixels for importing pixels */
-typedef struct _Evas_Engine_Info      Evas_Engine_Info; /**< A generic Evas Engine information structure */
-typedef struct _Evas_Device           Evas_Device; /**< A source device handle - where the event came from */
-typedef struct _Evas_Event_Mouse_Down Evas_Event_Mouse_Down; /**< Event structure for #EVAS_CALLBACK_MOUSE_DOWN event callbacks */
-typedef struct _Evas_Event_Mouse_Up   Evas_Event_Mouse_Up; /**< Event structure for #EVAS_CALLBACK_MOUSE_UP event callbacks */
-typedef struct _Evas_Event_Mouse_In   Evas_Event_Mouse_In; /**< Event structure for #EVAS_CALLBACK_MOUSE_IN event callbacks */
-typedef struct _Evas_Event_Mouse_Out  Evas_Event_Mouse_Out; /**< Event structure for #EVAS_CALLBACK_MOUSE_OUT event callbacks */
-typedef struct _Evas_Event_Mouse_Move Evas_Event_Mouse_Move; /**< Event structure for #EVAS_CALLBACK_MOUSE_MOVE event callbacks */
-typedef struct _Evas_Event_Mouse_Wheel Evas_Event_Mouse_Wheel; /**< Event structure for #EVAS_CALLBACK_MOUSE_WHEEL event callbacks */
-typedef struct _Evas_Event_Multi_Down Evas_Event_Multi_Down; /**< Event structure for #EVAS_CALLBACK_MULTI_DOWN event callbacks */
-typedef struct _Evas_Event_Multi_Up   Evas_Event_Multi_Up; /**< Event structure for #EVAS_CALLBACK_MULTI_UP event callbacks */
-typedef struct _Evas_Event_Multi_Move Evas_Event_Multi_Move; /**< Event structure for #EVAS_CALLBACK_MULTI_MOVE event callbacks */
-typedef struct _Evas_Event_Key_Down   Evas_Event_Key_Down; /**< Event structure for #EVAS_CALLBACK_KEY_DOWN event callbacks */
-typedef struct _Evas_Event_Key_Up     Evas_Event_Key_Up; /**< Event structure for #EVAS_CALLBACK_KEY_UP event callbacks */
-typedef struct _Evas_Event_Hold       Evas_Event_Hold; /**< Event structure for #EVAS_CALLBACK_HOLD event callbacks */
+typedef struct _Evas_Engine_Info         Evas_Engine_Info; /**< A generic Evas Engine information structure */
+typedef struct _Evas_Device              Evas_Device; /**< A source device handle - where the event came from */
+typedef struct _Evas_Event_Mouse_Down    Evas_Event_Mouse_Down; /**< Event structure for #EVAS_CALLBACK_MOUSE_DOWN event callbacks */
+typedef struct _Evas_Event_Mouse_Up      Evas_Event_Mouse_Up; /**< Event structure for #EVAS_CALLBACK_MOUSE_UP event callbacks */
+typedef struct _Evas_Event_Mouse_In      Evas_Event_Mouse_In; /**< Event structure for #EVAS_CALLBACK_MOUSE_IN event callbacks */
+typedef struct _Evas_Event_Mouse_Out     Evas_Event_Mouse_Out; /**< Event structure for #EVAS_CALLBACK_MOUSE_OUT event callbacks */
+typedef struct _Evas_Event_Mouse_Move    Evas_Event_Mouse_Move; /**< Event structure for #EVAS_CALLBACK_MOUSE_MOVE event callbacks */
+typedef struct _Evas_Event_Mouse_Wheel   Evas_Event_Mouse_Wheel; /**< Event structure for #EVAS_CALLBACK_MOUSE_WHEEL event callbacks */
+typedef struct _Evas_Event_Multi_Down    Evas_Event_Multi_Down; /**< Event structure for #EVAS_CALLBACK_MULTI_DOWN event callbacks */
+typedef struct _Evas_Event_Multi_Up      Evas_Event_Multi_Up; /**< Event structure for #EVAS_CALLBACK_MULTI_UP event callbacks */
+typedef struct _Evas_Event_Multi_Move    Evas_Event_Multi_Move; /**< Event structure for #EVAS_CALLBACK_MULTI_MOVE event callbacks */
+typedef struct _Evas_Event_Key_Down      Evas_Event_Key_Down; /**< Event structure for #EVAS_CALLBACK_KEY_DOWN event callbacks */
+typedef struct _Evas_Event_Key_Up        Evas_Event_Key_Up; /**< Event structure for #EVAS_CALLBACK_KEY_UP event callbacks */
+typedef struct _Evas_Event_Hold          Evas_Event_Hold; /**< Event structure for #EVAS_CALLBACK_HOLD event callbacks */
 
 typedef enum _Evas_Load_Error
 {
@@ -699,7 +723,6 @@ typedef enum _Evas_Load_Error
    EVAS_LOAD_ERROR_CORRUPT_FILE = 5, /**< File corrupt (but was detected as a known format) */
    EVAS_LOAD_ERROR_UNKNOWN_FORMAT = 6 /**< File is not a known format */
 } Evas_Load_Error; /**< Evas image load error codes one can get - see evas_load_error_str() too. */
-
 
 typedef enum _Evas_Alloc_Error
 {
@@ -728,8 +751,8 @@ typedef enum _Evas_Pixel_Import_Pixel_Format
 struct _Evas_Pixel_Import_Source
 {
    Evas_Pixel_Import_Pixel_Format format; /**< pixel format type ie ARGB32, YUV420P_601 etc. */
-   int w, h; /**< width and height of source in pixels */
-   void **rows; /**< an array of pointers (size depends on format) pointing to left edge of each scanline */
+   int                            w, h; /**< width and height of source in pixels */
+   void                         **rows; /**< an array of pointers (size depends on format) pointing to left edge of each scanline */
 };
 
 /* magic version number to know what the native surf struct looks like */
@@ -744,27 +767,29 @@ typedef enum _Evas_Native_Surface_Type
 
 struct _Evas_Native_Surface
 {
-   int                         version;
-   Evas_Native_Surface_Type    type;
+   int                      version;
+   Evas_Native_Surface_Type type;
    union {
-     struct {
-       void          *visual; /**< visual of the pixmap to use (Visual) */
-       unsigned long  pixmap; /**< pixmap id to use (Pixmap) */
-     } x11;
-     struct {
-       unsigned int   texture_id; /**< opengl texture id to use from glGenTextures() */
-       unsigned int   framebuffer_id; /**< 0 if not a FBO, FBO id otherwise from glGenFramebuffers() */
-       unsigned int   internal_format; /**< same as 'internalFormat' for glTexImage2D() */
-       unsigned int   format; /**< same as 'format' for glTexImage2D() */
-       unsigned int   x, y, w, h; /**< region inside the texture to use (image size is assumed as texture size, with 0, 0 being the top-left and co-ordinates working down to the right and bottom being positive) */
-     } opengl;
+      struct
+      {
+         void         *visual; /**< visual of the pixmap to use (Visual) */
+         unsigned long pixmap; /**< pixmap id to use (Pixmap) */
+      } x11;
+      struct
+      {
+         unsigned int texture_id; /**< opengl texture id to use from glGenTextures() */
+         unsigned int framebuffer_id; /**< 0 if not a FBO, FBO id otherwise from glGenFramebuffers() */
+         unsigned int internal_format; /**< same as 'internalFormat' for glTexImage2D() */
+         unsigned int format; /**< same as 'format' for glTexImage2D() */
+         unsigned int x, y, w, h; /**< region inside the texture to use (image size is assumed as texture size, with 0, 0 being the top-left and co-ordinates working down to the right and bottom being positive) */
+      } opengl;
    } data;
 };
 
 /**
  * @def EVAS_VIDEO_SURFACE_VERSION
  * Magic version number to know what the video surf struct looks like
- * @since 1.1.0
+ * @since 1.1
  */
 #define EVAS_VIDEO_SURFACE_VERSION 1
 
@@ -773,30 +798,30 @@ typedef void (*Evas_Video_Coord_Cb)(void *data, Evas_Object *obj, const Evas_Vid
 
 struct _Evas_Video_Surface
 {
-   int version;
+   int                 version;
 
    Evas_Video_Coord_Cb move; /**< Move the video surface to this position */
    Evas_Video_Coord_Cb resize; /**< Resize the video surface to that size */
-   Evas_Video_Cb show; /**< Show the video overlay surface */
-   Evas_Video_Cb hide; /**< Hide the video overlay surface */
-   Evas_Video_Cb update_pixels; /**< Please update the Evas_Object_Image pixels when called */
+   Evas_Video_Cb       show; /**< Show the video overlay surface */
+   Evas_Video_Cb       hide; /**< Hide the video overlay surface */
+   Evas_Video_Cb       update_pixels; /**< Please update the Evas_Object_Image pixels when called */
 
-   Evas_Object   *parent;
-   void          *data;
+   Evas_Object        *parent;
+   void               *data;
 };
 
-#define EVAS_LAYER_MIN -32768 /**< bottom-most layer number */
-#define EVAS_LAYER_MAX 32767  /**< top-most layer number */
+#define EVAS_LAYER_MIN                   -32768 /**< bottom-most layer number */
+#define EVAS_LAYER_MAX                   32767 /**< top-most layer number */
 
-#define EVAS_COLOR_SPACE_ARGB 0 /**< Not used for anything */
-#define EVAS_COLOR_SPACE_AHSV 1 /**< Not used for anything */
-#define EVAS_TEXT_INVALID -1 /**< Not used for anything */
-#define EVAS_TEXT_SPECIAL -2 /**< Not used for anything */
+#define EVAS_COLOR_SPACE_ARGB            0 /**< Not used for anything */
+#define EVAS_COLOR_SPACE_AHSV            1 /**< Not used for anything */
+#define EVAS_TEXT_INVALID                -1 /**< Not used for anything */
+#define EVAS_TEXT_SPECIAL                -2 /**< Not used for anything */
 
-#define EVAS_HINT_EXPAND  1.0 /**< Use with evas_object_size_hint_weight_set(), evas_object_size_hint_weight_get(), evas_object_size_hint_expand_set(), evas_object_size_hint_expand_get() */
-#define EVAS_HINT_FILL   -1.0 /**< Use with evas_object_size_hint_align_set(), evas_object_size_hint_align_get(), evas_object_size_hint_fill_set(), evas_object_size_hint_fill_get() */
-#define evas_object_size_hint_fill_set evas_object_size_hint_align_set /**< Convenience macro to make it easier to understand that align is also used for fill properties (as fill is mutually exclusive to align) */
-#define evas_object_size_hint_fill_get evas_object_size_hint_align_get /**< Convenience macro to make it easier to understand that align is also used for fill properties (as fill is mutually exclusive to align) */
+#define EVAS_HINT_EXPAND                 1.0 /**< Use with evas_object_size_hint_weight_set(), evas_object_size_hint_weight_get(), evas_object_size_hint_expand_set(), evas_object_size_hint_expand_get() */
+#define EVAS_HINT_FILL                   -1.0 /**< Use with evas_object_size_hint_align_set(), evas_object_size_hint_align_get(), evas_object_size_hint_fill_set(), evas_object_size_hint_fill_get() */
+#define evas_object_size_hint_fill_set   evas_object_size_hint_align_set /**< Convenience macro to make it easier to understand that align is also used for fill properties (as fill is mutually exclusive to align) */
+#define evas_object_size_hint_fill_get   evas_object_size_hint_align_get /**< Convenience macro to make it easier to understand that align is also used for fill properties (as fill is mutually exclusive to align) */
 #define evas_object_size_hint_expand_set evas_object_size_hint_weight_set /**< Convenience macro to make it easier to understand that weight is also used for expand properties */
 #define evas_object_size_hint_expand_get evas_object_size_hint_weight_get /**< Convenience macro to make it easier to understand that weight is also used for expand properties */
 
@@ -861,14 +886,14 @@ struct _Evas_Engine_Info /** Generic engine information. Generic info is useless
 
 struct _Evas_Event_Mouse_Down /** Mouse button press event */
 {
-   int button; /**< Mouse button number that went down (1 - 32) */
+   int               button; /**< Mouse button number that went down (1 - 32) */
 
-   Evas_Point output; /**< The X/Y location of the cursor */
-   Evas_Coord_Point canvas; /**< The X/Y location of the cursor */
+   Evas_Point        output; /**< The X/Y location of the cursor */
+   Evas_Coord_Point  canvas; /**< The X/Y location of the cursor */
 
-   void          *data;
-   Evas_Modifier *modifiers; /**< modifier keys pressed during the event */
-   Evas_Lock     *locks;
+   void             *data;
+   Evas_Modifier    *modifiers; /**< modifier keys pressed during the event */
+   Evas_Lock        *locks;
 
    Evas_Button_Flags flags; /**< button flags set during the event */
    unsigned int      timestamp;
@@ -878,14 +903,14 @@ struct _Evas_Event_Mouse_Down /** Mouse button press event */
 
 struct _Evas_Event_Mouse_Up /** Mouse button release event */
 {
-   int button; /**< Mouse button number that was raised (1 - 32) */
+   int               button; /**< Mouse button number that was raised (1 - 32) */
 
-   Evas_Point output;
-   Evas_Coord_Point canvas;
+   Evas_Point        output;
+   Evas_Coord_Point  canvas;
 
-   void          *data;
-   Evas_Modifier *modifiers;
-   Evas_Lock     *locks;
+   void             *data;
+   Evas_Modifier    *modifiers;
+   Evas_Lock        *locks;
 
    Evas_Button_Flags flags;
    unsigned int      timestamp;
@@ -895,157 +920,156 @@ struct _Evas_Event_Mouse_Up /** Mouse button release event */
 
 struct _Evas_Event_Mouse_In /** Mouse enter event */
 {
-   int buttons; /**< Button pressed mask, Bits set to 1 are buttons currently pressed (bit 0 = mouse button 1, bit 1 = mouse button 2 etc.) */
+   int              buttons; /**< Button pressed mask, Bits set to 1 are buttons currently pressed (bit 0 = mouse button 1, bit 1 = mouse button 2 etc.) */
 
-   Evas_Point output;
+   Evas_Point       output;
    Evas_Coord_Point canvas;
 
-   void          *data;
-   Evas_Modifier *modifiers;
-   Evas_Lock     *locks;
-   unsigned int   timestamp;
-   Evas_Event_Flags  event_flags;
-   Evas_Device      *dev;
+   void            *data;
+   Evas_Modifier   *modifiers;
+   Evas_Lock       *locks;
+   unsigned int     timestamp;
+   Evas_Event_Flags event_flags;
+   Evas_Device     *dev;
 };
 
 struct _Evas_Event_Mouse_Out /** Mouse leave event */
 {
-   int buttons; /**< Button pressed mask, Bits set to 1 are buttons currently pressed (bit 0 = mouse button 1, bit 1 = mouse button 2 etc.) */
+   int              buttons; /**< Button pressed mask, Bits set to 1 are buttons currently pressed (bit 0 = mouse button 1, bit 1 = mouse button 2 etc.) */
 
-
-   Evas_Point output;
+   Evas_Point       output;
    Evas_Coord_Point canvas;
 
-   void          *data;
-   Evas_Modifier *modifiers;
-   Evas_Lock     *locks;
-   unsigned int   timestamp;
-   Evas_Event_Flags  event_flags;
-   Evas_Device      *dev;
+   void            *data;
+   Evas_Modifier   *modifiers;
+   Evas_Lock       *locks;
+   unsigned int     timestamp;
+   Evas_Event_Flags event_flags;
+   Evas_Device     *dev;
 };
 
 struct _Evas_Event_Mouse_Move /** Mouse button down event */
 {
-   int buttons; /**< Button pressed mask, Bits set to 1 are buttons currently pressed (bit 0 = mouse button 1, bit 1 = mouse button 2 etc.) */
+   int              buttons; /**< Button pressed mask, Bits set to 1 are buttons currently pressed (bit 0 = mouse button 1, bit 1 = mouse button 2 etc.) */
 
-   Evas_Position cur, prev;
+   Evas_Position    cur, prev;
 
-   void          *data;
-   Evas_Modifier *modifiers;
-   Evas_Lock     *locks;
-   unsigned int   timestamp;
-   Evas_Event_Flags  event_flags;
-   Evas_Device      *dev;
+   void            *data;
+   Evas_Modifier   *modifiers;
+   Evas_Lock       *locks;
+   unsigned int     timestamp;
+   Evas_Event_Flags event_flags;
+   Evas_Device     *dev;
 };
 
 struct _Evas_Event_Mouse_Wheel /** Wheel event */
 {
-   int direction; /* 0 = default up/down wheel FIXME: more wheel types */
-   int z; /* ...,-2,-1 = down, 1,2,... = up */
+   int              direction; /* 0 = default up/down wheel FIXME: more wheel types */
+   int              z; /* ...,-2,-1 = down, 1,2,... = up */
 
-   Evas_Point output;
+   Evas_Point       output;
    Evas_Coord_Point canvas;
 
-   void          *data;
-   Evas_Modifier *modifiers;
-   Evas_Lock     *locks;
-   unsigned int   timestamp;
-   Evas_Event_Flags  event_flags;
-   Evas_Device      *dev;
+   void            *data;
+   Evas_Modifier   *modifiers;
+   Evas_Lock       *locks;
+   unsigned int     timestamp;
+   Evas_Event_Flags event_flags;
+   Evas_Device     *dev;
 };
 
 struct _Evas_Event_Multi_Down /** Multi button press event */
 {
-   int device; /**< Multi device number that went down (1 or more for extra touches) */
-   double radius, radius_x, radius_y;
-   double pressure, angle;
+   int                        device; /**< Multi device number that went down (1 or more for extra touches) */
+   double                     radius, radius_x, radius_y;
+   double                     pressure, angle;
 
-   Evas_Point output;
+   Evas_Point                 output;
    Evas_Coord_Precision_Point canvas;
 
-   void          *data;
-   Evas_Modifier *modifiers;
-   Evas_Lock     *locks;
+   void                      *data;
+   Evas_Modifier             *modifiers;
+   Evas_Lock                 *locks;
 
-   Evas_Button_Flags flags;
-   unsigned int      timestamp;
-   Evas_Event_Flags  event_flags;
-   Evas_Device      *dev;
+   Evas_Button_Flags          flags;
+   unsigned int               timestamp;
+   Evas_Event_Flags           event_flags;
+   Evas_Device               *dev;
 };
 
 struct _Evas_Event_Multi_Up /** Multi button release event */
 {
-   int device; /**< Multi device number that went up (1 or more for extra touches) */
-   double radius, radius_x, radius_y;
-   double pressure, angle;
+   int                        device; /**< Multi device number that went up (1 or more for extra touches) */
+   double                     radius, radius_x, radius_y;
+   double                     pressure, angle;
 
-   Evas_Point output;
+   Evas_Point                 output;
    Evas_Coord_Precision_Point canvas;
 
-   void          *data;
-   Evas_Modifier *modifiers;
-   Evas_Lock     *locks;
+   void                      *data;
+   Evas_Modifier             *modifiers;
+   Evas_Lock                 *locks;
 
-   Evas_Button_Flags flags;
-   unsigned int      timestamp;
-   Evas_Event_Flags  event_flags;
-   Evas_Device      *dev;
+   Evas_Button_Flags          flags;
+   unsigned int               timestamp;
+   Evas_Event_Flags           event_flags;
+   Evas_Device               *dev;
 };
 
 struct _Evas_Event_Multi_Move /** Multi button down event */
 {
-   int device; /**< Multi device number that moved (1 or more for extra touches) */
-   double radius, radius_x, radius_y;
-   double pressure, angle;
+   int                     device; /**< Multi device number that moved (1 or more for extra touches) */
+   double                  radius, radius_x, radius_y;
+   double                  pressure, angle;
 
    Evas_Precision_Position cur;
 
-   void          *data;
-   Evas_Modifier *modifiers;
-   Evas_Lock     *locks;
-   unsigned int   timestamp;
-   Evas_Event_Flags  event_flags;
-   Evas_Device      *dev;
+   void                   *data;
+   Evas_Modifier          *modifiers;
+   Evas_Lock              *locks;
+   unsigned int            timestamp;
+   Evas_Event_Flags        event_flags;
+   Evas_Device            *dev;
 };
 
 struct _Evas_Event_Key_Down /** Key press event */
 {
-   char          *keyname; /**< the name string of the key pressed */
-   void          *data;
-   Evas_Modifier *modifiers;
-   Evas_Lock     *locks;
+   char            *keyname; /**< the name string of the key pressed */
+   void            *data;
+   Evas_Modifier   *modifiers;
+   Evas_Lock       *locks;
 
-   const char    *key; /**< The logical key : (eg shift+1 == exclamation) */
-   const char    *string; /**< A UTF8 string if this keystroke has produced a visible string to be ADDED */
-   const char    *compose; /**< A UTF8 string if this keystroke has modified a string in the middle of being composed - this string replaces the previous one */
-   unsigned int   timestamp;
-   Evas_Event_Flags  event_flags;
-   Evas_Device      *dev;
+   const char      *key; /**< The logical key : (eg shift+1 == exclamation) */
+   const char      *string; /**< A UTF8 string if this keystroke has produced a visible string to be ADDED */
+   const char      *compose; /**< A UTF8 string if this keystroke has modified a string in the middle of being composed - this string replaces the previous one */
+   unsigned int     timestamp;
+   Evas_Event_Flags event_flags;
+   Evas_Device     *dev;
 };
 
 struct _Evas_Event_Key_Up /** Key release event */
 {
-   char          *keyname; /**< the name string of the key released */
-   void          *data;
-   Evas_Modifier *modifiers;
-   Evas_Lock     *locks;
+   char            *keyname; /**< the name string of the key released */
+   void            *data;
+   Evas_Modifier   *modifiers;
+   Evas_Lock       *locks;
 
-   const char    *key; /**< The logical key : (eg shift+1 == exclamation) */
-   const char    *string; /**< A UTF8 string if this keystroke has produced a visible string to be ADDED */
-   const char    *compose; /**< A UTF8 string if this keystroke has modified a string in the middle of being composed - this string replaces the previous one */
-   unsigned int   timestamp;
-   Evas_Event_Flags  event_flags;
-   Evas_Device      *dev;
+   const char      *key; /**< The logical key : (eg shift+1 == exclamation) */
+   const char      *string; /**< A UTF8 string if this keystroke has produced a visible string to be ADDED */
+   const char      *compose; /**< A UTF8 string if this keystroke has modified a string in the middle of being composed - this string replaces the previous one */
+   unsigned int     timestamp;
+   Evas_Event_Flags event_flags;
+   Evas_Device     *dev;
 };
 
 struct _Evas_Event_Hold /** Hold change event */
 {
-   int            hold; /**< The hold flag */
-   void          *data;
+   int              hold; /**< The hold flag */
+   void            *data;
 
-   unsigned int   timestamp;
-   Evas_Event_Flags  event_flags;
-   Evas_Device      *dev;
+   unsigned int     timestamp;
+   Evas_Event_Flags event_flags;
+   Evas_Device     *dev;
 };
 
 /**
@@ -1070,10 +1094,10 @@ typedef enum _Evas_Object_Pointer_Mode
    EVAS_OBJECT_POINTER_MODE_NOGRAB_NO_REPEAT_UPDOWN /**< useful on object with "repeat events" enabled, where mouse/touch up and down events WONT be repeated to objects and these objects wont be auto-grabbed. @since 1.2 */
 } Evas_Object_Pointer_Mode; /**< How the mouse pointer should be handled by Evas. */
 
-typedef void      (*Evas_Smart_Cb) (void *data, Evas_Object *obj, void *event_info); /**< Evas smart objects' "smart callback" function signature */
-typedef void      (*Evas_Event_Cb) (void *data, Evas *e, void *event_info); /**< Evas event callback function signature */
-typedef Eina_Bool (*Evas_Object_Event_Post_Cb) (void *data, Evas *e);
-typedef void      (*Evas_Object_Event_Cb) (void *data, Evas *e, Evas_Object *obj, void *event_info); /**< Evas object event callback function signature */
+typedef void      (*Evas_Smart_Cb)(void *data, Evas_Object *obj, void *event_info);  /**< Evas smart objects' "smart callback" function signature */
+typedef void      (*Evas_Event_Cb)(void *data, Evas *e, void *event_info);  /**< Evas event callback function signature */
+typedef Eina_Bool (*Evas_Object_Event_Post_Cb)(void *data, Evas *e);
+typedef void      (*Evas_Object_Event_Cb)(void *data, Evas *e, Evas_Object *obj, void *event_info);  /**< Evas object event callback function signature */
 typedef void      (*Evas_Async_Events_Put_Cb)(void *target, Evas_Callback_Type type, void *event_info);
 
 /**
@@ -1115,7 +1139,7 @@ typedef void      (*Evas_Async_Events_Put_Cb)(void *target, Evas_Callback_Type t
  *
  * @ingroup Evas_Group
  */
-EAPI int               evas_init                         (void);
+EAPI int               evas_init(void);
 
 /**
  * Shutdown Evas
@@ -1146,8 +1170,7 @@ EAPI int               evas_init                         (void);
  *
  * @ingroup Evas_Group
  */
-EAPI int               evas_shutdown                     (void);
-
+EAPI int               evas_shutdown(void);
 
 /**
  * Return if any allocation errors have occurred during the prior function
@@ -1200,8 +1223,7 @@ EAPI int               evas_shutdown                     (void);
  *
  * @ingroup Evas_Group
  */
-EAPI Evas_Alloc_Error  evas_alloc_error                  (void);
-
+EAPI Evas_Alloc_Error  evas_alloc_error(void);
 
 /**
  * @brief Get evas' internal asynchronous events read file descriptor.
@@ -1226,7 +1248,7 @@ EAPI Evas_Alloc_Error  evas_alloc_error                  (void);
  *
  * @ingroup Evas_Group
  */
-EAPI int               evas_async_events_fd_get          (void) EINA_WARN_UNUSED_RESULT;
+EAPI int               evas_async_events_fd_get(void) EINA_WARN_UNUSED_RESULT;
 
 /**
  * @brief Trigger the processing of all events waiting on the file
@@ -1241,10 +1263,10 @@ EAPI int               evas_async_events_fd_get          (void) EINA_WARN_UNUSED
  *
  * @ingroup Evas_Group
  */
-EAPI int               evas_async_events_process         (void);
+EAPI int               evas_async_events_process(void);
 
 /**
-* Insert asynchronous events on the canvas.
+ * Insert asynchronous events on the canvas.
  *
  * @param target The target to be affected by the events.
  * @param type The type of callback function.
@@ -1258,7 +1280,7 @@ EAPI int               evas_async_events_process         (void);
  *
  * @ingroup Evas_Group
  */
-EAPI Eina_Bool         evas_async_events_put             (const void *target, Evas_Callback_Type type, void *event_info, Evas_Async_Events_Put_Cb func) EINA_ARG_NONNULL(1, 4);
+EAPI Eina_Bool         evas_async_events_put(const void *target, Evas_Callback_Type type, void *event_info, Evas_Async_Events_Put_Cb func) EINA_ARG_NONNULL(1, 4);
 
 /**
  * @defgroup Evas_Canvas Canvas Functions
@@ -1308,7 +1330,7 @@ EAPI Eina_Bool         evas_async_events_put             (const void *target, Ev
  * @return A new uninitialised Evas canvas on success. Otherwise, @c NULL.
  * @ingroup Evas_Canvas
  */
-EAPI Evas             *evas_new                          (void) EINA_WARN_UNUSED_RESULT EINA_MALLOC;
+EAPI Evas             *evas_new(void) EINA_WARN_UNUSED_RESULT EINA_MALLOC;
 
 /**
  * Frees the given evas and any objects created on it.
@@ -1320,7 +1342,7 @@ EAPI Evas             *evas_new                          (void) EINA_WARN_UNUSED
  *
  * @ingroup Evas_Canvas
  */
-EAPI void              evas_free                         (Evas *e)  EINA_ARG_NONNULL(1);
+EAPI void              evas_free(Evas *e)  EINA_ARG_NONNULL(1);
 
 /**
  * Inform to the evas that it got the focus.
@@ -1328,7 +1350,7 @@ EAPI void              evas_free                         (Evas *e)  EINA_ARG_NON
  * @param e The evas to change information.
  * @ingroup Evas_Canvas
  */
-EAPI void              evas_focus_in                     (Evas *e);
+EAPI void              evas_focus_in(Evas *e);
 
 /**
  * Inform to the evas that it lost the focus.
@@ -1336,7 +1358,7 @@ EAPI void              evas_focus_in                     (Evas *e);
  * @param e The evas to change information.
  * @ingroup Evas_Canvas
  */
-EAPI void              evas_focus_out                    (Evas *e);
+EAPI void              evas_focus_out(Evas *e);
 
 /**
  * Get the focus state known by the given evas
@@ -1344,7 +1366,7 @@ EAPI void              evas_focus_out                    (Evas *e);
  * @param e The evas to query information.
  * @ingroup Evas_Canvas
  */
-EAPI Eina_Bool         evas_focus_state_get              (const Evas *e);
+EAPI Eina_Bool         evas_focus_state_get(const Evas *e);
 
 /**
  * Push the nochange flag up 1
@@ -1355,7 +1377,7 @@ EAPI Eina_Bool         evas_focus_state_get              (const Evas *e);
  * @param e The evas to change information.
  * @ingroup Evas_Canvas
  */
-EAPI void              evas_nochange_push                (Evas *e);
+EAPI void              evas_nochange_push(Evas *e);
 
 /**
  * Pop the nochange flag down 1
@@ -1366,8 +1388,7 @@ EAPI void              evas_nochange_push                (Evas *e);
  * @param e The evas to change information.
  * @ingroup Evas_Canvas
  */
-EAPI void              evas_nochange_pop                 (Evas *e);
-
+EAPI void              evas_nochange_pop(Evas *e);
 
 /**
  * Attaches a specific pointer to the evas for fetching later
@@ -1376,7 +1397,7 @@ EAPI void              evas_nochange_pop                 (Evas *e);
  * @param data The pointer to attach
  * @ingroup Evas_Canvas
  */
-EAPI void              evas_data_attach_set              (Evas *e, void *data) EINA_ARG_NONNULL(1);
+EAPI void              evas_data_attach_set(Evas *e, void *data) EINA_ARG_NONNULL(1);
 
 /**
  * Returns the pointer attached by evas_data_attach_set()
@@ -1385,8 +1406,7 @@ EAPI void              evas_data_attach_set              (Evas *e, void *data) E
  * @return The pointer attached
  * @ingroup Evas_Canvas
  */
-EAPI void             *evas_data_attach_get              (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
-
+EAPI void             *evas_data_attach_get(const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Add a damage rectangle.
@@ -1400,9 +1420,11 @@ EAPI void             *evas_data_attach_get              (const Evas *e) EINA_WA
  * This is the function by which one tells evas that a part of the
  * canvas has to be repainted.
  *
+ * @note All newly created Evas rectangles get the default color values of 255 255 255 255 (opaque white).
+ *
  * @ingroup Evas_Canvas
  */
-EAPI void              evas_damage_rectangle_add         (Evas *e, int x, int y, int w, int h) EINA_ARG_NONNULL(1);
+EAPI void              evas_damage_rectangle_add(Evas *e, int x, int y, int w, int h) EINA_ARG_NONNULL(1);
 
 /**
  * Add an "obscured region" to an Evas canvas.
@@ -1460,7 +1482,7 @@ EAPI void              evas_damage_rectangle_add         (Evas *e, int x, int y,
  *
  * @ingroup Evas_Canvas
  */
-EAPI void              evas_obscured_rectangle_add       (Evas *e, int x, int y, int w, int h) EINA_ARG_NONNULL(1);
+EAPI void              evas_obscured_rectangle_add(Evas *e, int x, int y, int w, int h) EINA_ARG_NONNULL(1);
 
 /**
  * Remove all "obscured regions" from an Evas canvas.
@@ -1485,7 +1507,7 @@ EAPI void              evas_obscured_rectangle_add       (Evas *e, int x, int y,
  *
  * @ingroup Evas_Canvas
  */
-EAPI void              evas_obscured_clear               (Evas *e) EINA_ARG_NONNULL(1);
+EAPI void              evas_obscured_clear(Evas *e) EINA_ARG_NONNULL(1);
 
 /**
  * Force immediate renderization of the given Evas canvas.
@@ -1516,7 +1538,7 @@ EAPI void              evas_obscured_clear               (Evas *e) EINA_ARG_NONN
  *
  * @ingroup Evas_Canvas
  */
-EAPI Eina_List        *evas_render_updates               (Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Eina_List        *evas_render_updates(Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Free the rectangles returned by evas_render_updates().
@@ -1530,7 +1552,7 @@ EAPI Eina_List        *evas_render_updates               (Evas *e) EINA_WARN_UNU
  *
  * @ingroup Evas_Canvas
  */
-EAPI void              evas_render_updates_free          (Eina_List *updates);
+EAPI void              evas_render_updates_free(Eina_List *updates);
 
 /**
  * Force renderization of the given canvas.
@@ -1539,7 +1561,7 @@ EAPI void              evas_render_updates_free          (Eina_List *updates);
  *
  * @ingroup Evas_Canvas
  */
-EAPI void              evas_render                       (Evas *e) EINA_ARG_NONNULL(1);
+EAPI void              evas_render(Evas *e) EINA_ARG_NONNULL(1);
 
 /**
  * Update the canvas internal objects but not triggering immediate
@@ -1555,7 +1577,7 @@ EAPI void              evas_render                       (Evas *e) EINA_ARG_NONN
  *
  * @ingroup Evas_Canvas
  */
-EAPI void              evas_norender                     (Evas *e) EINA_ARG_NONNULL(1);
+EAPI void              evas_norender(Evas *e) EINA_ARG_NONNULL(1);
 
 /**
  * Make the canvas discard internally cached data used for rendering.
@@ -1568,7 +1590,7 @@ EAPI void              evas_norender                     (Evas *e) EINA_ARG_NONN
  *
  * @ingroup Evas_Canvas
  */
-EAPI void              evas_render_idle_flush            (Evas *e) EINA_ARG_NONNULL(1);
+EAPI void              evas_render_idle_flush(Evas *e) EINA_ARG_NONNULL(1);
 
 /**
  * Make the canvas discard as much data as possible used by the engine at
@@ -1584,7 +1606,7 @@ EAPI void              evas_render_idle_flush            (Evas *e) EINA_ARG_NONN
  *
  * @ingroup Evas_Canvas
  */
-EAPI void              evas_render_dump                  (Evas *e) EINA_ARG_NONNULL(1);
+EAPI void              evas_render_dump(Evas *e) EINA_ARG_NONNULL(1);
 
 /**
  * @defgroup Evas_Output_Method Render Engine Functions
@@ -1662,7 +1684,7 @@ EAPI void              evas_render_dump                  (Evas *e) EINA_ARG_NONN
  * evas_output_method_set(evas, engine_id);
  * @endcode
  */
-EAPI int               evas_render_method_lookup         (const char *name) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI int               evas_render_method_lookup(const char *name) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * List all the rendering engines compiled into the copy of the Evas library
@@ -1695,7 +1717,7 @@ EAPI int               evas_render_method_lookup         (const char *name) EINA
  * evas_render_method_list_free(engine_list);
  * @endcode
  */
-EAPI Eina_List        *evas_render_method_list           (void) EINA_WARN_UNUSED_RESULT;
+EAPI Eina_List        *evas_render_method_list(void) EINA_WARN_UNUSED_RESULT;
 
 /**
  * This function should be called to free a list of engine names
@@ -1725,8 +1747,7 @@ EAPI Eina_List        *evas_render_method_list           (void) EINA_WARN_UNUSED
  * evas_render_method_list_free(engine_list);
  * @endcode
  */
-EAPI void              evas_render_method_list_free      (Eina_List *list);
-
+EAPI void              evas_render_method_list_free(Eina_List *list);
 
 /**
  * Sets the output engine for the given evas.
@@ -1743,7 +1764,7 @@ EAPI void              evas_render_method_list_free      (Eina_List *list);
  *
  * @ingroup Evas_Output_Method
  */
-EAPI void              evas_output_method_set            (Evas *e, int render_method) EINA_ARG_NONNULL(1);
+EAPI void              evas_output_method_set(Evas *e, int render_method) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the number of the output engine used for the given evas.
@@ -1752,8 +1773,7 @@ EAPI void              evas_output_method_set            (Evas *e, int render_me
  *          returned if there is an error.
  * @ingroup Evas_Output_Method
  */
-EAPI int               evas_output_method_get            (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
-
+EAPI int               evas_output_method_get(const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the current render engine info struct from the given evas.
@@ -1769,7 +1789,7 @@ EAPI int               evas_output_method_get            (const Evas *e) EINA_WA
  *          an engine has not yet been assigned.
  * @ingroup Evas_Output_Method
  */
-EAPI Evas_Engine_Info *evas_engine_info_get              (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Engine_Info *evas_engine_info_get(const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Applies the engine settings for the given evas from the given @c
@@ -1790,7 +1810,7 @@ EAPI Evas_Engine_Info *evas_engine_info_get              (const Evas *e) EINA_WA
  * @return  @c EINA_TRUE if no error occurred, @c EINA_FALSE otherwise.
  * @ingroup Evas_Output_Method
  */
-EAPI Eina_Bool         evas_engine_info_set              (Evas *e, Evas_Engine_Info *info) EINA_ARG_NONNULL(1);
+EAPI Eina_Bool         evas_engine_info_set(Evas *e, Evas_Engine_Info *info) EINA_ARG_NONNULL(1);
 
 /**
  * @defgroup Evas_Output_Size Output and Viewport Resizing Functions
@@ -1816,7 +1836,7 @@ EAPI Eina_Bool         evas_engine_info_set              (Evas *e, Evas_Engine_I
  * @param   h The height in output units, usually pixels.
  * @ingroup Evas_Output_Size
  */
-EAPI void              evas_output_size_set              (Evas *e, int w, int h) EINA_ARG_NONNULL(1);
+EAPI void              evas_output_size_set(Evas *e, int w, int h) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieve the output size of the render engine of the given evas.
@@ -1832,7 +1852,7 @@ EAPI void              evas_output_size_set              (Evas *e, int w, int h)
  * @param   h The pointer to an integer to store the height in.
  * @ingroup Evas_Output_Size
  */
-EAPI void              evas_output_size_get              (const Evas *e, int *w, int *h) EINA_ARG_NONNULL(1);
+EAPI void              evas_output_size_get(const Evas *e, int *w, int *h) EINA_ARG_NONNULL(1);
 
 /**
  * Sets the output viewport of the given evas in evas units.
@@ -1852,7 +1872,7 @@ EAPI void              evas_output_size_get              (const Evas *e, int *w,
  * @param   h The height of the viewport.  Must be greater than 0.
  * @ingroup Evas_Output_Size
  */
-EAPI void              evas_output_viewport_set          (Evas *e, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h) EINA_ARG_NONNULL(1);
+EAPI void              evas_output_viewport_set(Evas *e, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h) EINA_ARG_NONNULL(1);
 
 /**
  * Get the render engine's output viewport co-ordinates in canvas units.
@@ -1878,12 +1898,12 @@ EAPI void              evas_output_viewport_set          (Evas *e, Evas_Coord x,
  * evas_output_viewport_get(evas, &x, &y, &w, &h);
  * @endcode
  */
-EAPI void              evas_output_viewport_get          (const Evas *e, Evas_Coord *x, Evas_Coord *y, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1);
+EAPI void              evas_output_viewport_get(const Evas *e, Evas_Coord *x, Evas_Coord *y, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1);
 
 /**
  * Sets the output framespace size of the render engine of the given evas.
  *
- * The framespace size is used in the Wayland engines to denote space where 
+ * The framespace size is used in the Wayland engines to denote space where
  * the output is not drawn. This is mainly used in ecore_evas to draw borders
  *
  * The units used for @p w and @p h depend on the engine used by the
@@ -1895,22 +1915,22 @@ EAPI void              evas_output_viewport_get          (const Evas *e, Evas_Co
  * @param   w The width in output units, usually pixels.
  * @param   h The height in output units, usually pixels.
  * @ingroup Evas_Output_Size
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI void              evas_output_framespace_set        (Evas *e, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h);
+EAPI void              evas_output_framespace_set(Evas *e, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h);
 
 /**
  * Get the render engine's output framespace co-ordinates in canvas units.
- * 
+ *
  * @param e The pointer to the Evas Canvas
  * @param x The pointer to a x variable to be filled in
  * @param y The pointer to a y variable to be filled in
  * @param w The pointer to a width variable to be filled in
  * @param h The pointer to a height variable to be filled in
  * @ingroup Evas_Output_Size
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI void              evas_output_framespace_get        (const Evas *e, Evas_Coord *x, Evas_Coord *y, Evas_Coord *w, Evas_Coord *h);
+EAPI void              evas_output_framespace_get(const Evas *e, Evas_Coord *x, Evas_Coord *y, Evas_Coord *w, Evas_Coord *h);
 
 /**
  * @defgroup Evas_Coord_Mapping_Group Coordinate Mapping Functions
@@ -1943,7 +1963,7 @@ EAPI void              evas_output_framespace_get        (const Evas *e, Evas_Co
  * canvas_x = evas_coord_screen_x_to_world(evas, screen_x);
  * @endcode
  */
-EAPI Evas_Coord        evas_coord_screen_x_to_world      (const Evas *e, int x) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Coord        evas_coord_screen_x_to_world(const Evas *e, int x) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Convert/scale an ouput screen co-ordinate into canvas co-ordinates
@@ -1967,7 +1987,7 @@ EAPI Evas_Coord        evas_coord_screen_x_to_world      (const Evas *e, int x) 
  * canvas_y = evas_coord_screen_y_to_world(evas, screen_y);
  * @endcode
  */
-EAPI Evas_Coord        evas_coord_screen_y_to_world      (const Evas *e, int y) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Coord        evas_coord_screen_y_to_world(const Evas *e, int y) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Convert/scale a canvas co-ordinate into output screen co-ordinates
@@ -1991,7 +2011,7 @@ EAPI Evas_Coord        evas_coord_screen_y_to_world      (const Evas *e, int y) 
  * screen_x = evas_coord_world_x_to_screen(evas, canvas_x);
  * @endcode
  */
-EAPI int               evas_coord_world_x_to_screen      (const Evas *e, Evas_Coord x) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI int               evas_coord_world_x_to_screen(const Evas *e, Evas_Coord x) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Convert/scale a canvas co-ordinate into output screen co-ordinates
@@ -2015,7 +2035,7 @@ EAPI int               evas_coord_world_x_to_screen      (const Evas *e, Evas_Co
  * screen_y = evas_coord_world_y_to_screen(evas, canvas_y);
  * @endcode
  */
-EAPI int               evas_coord_world_y_to_screen      (const Evas *e, Evas_Coord y) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI int               evas_coord_world_y_to_screen(const Evas *e, Evas_Coord y) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * @defgroup Evas_Pointer_Group Pointer (Mouse) Functions
@@ -2047,7 +2067,7 @@ EAPI int               evas_coord_world_y_to_screen      (const Evas *e, Evas_Co
  * printf("Mouse is at screen position %i, %i\n", mouse_x, mouse_y);
  * @endcode
  */
-EAPI void              evas_pointer_output_xy_get        (const Evas *e, int *x, int *y) EINA_ARG_NONNULL(1);
+EAPI void              evas_pointer_output_xy_get(const Evas *e, int *x, int *y) EINA_ARG_NONNULL(1);
 
 /**
  * This function returns the current known pointer co-ordinates
@@ -2071,7 +2091,7 @@ EAPI void              evas_pointer_output_xy_get        (const Evas *e, int *x,
  * printf("Mouse is at canvas position %f, %f\n", mouse_x, mouse_y);
  * @endcode
  */
-EAPI void              evas_pointer_canvas_xy_get        (const Evas *e, Evas_Coord *x, Evas_Coord *y) EINA_ARG_NONNULL(1);
+EAPI void              evas_pointer_canvas_xy_get(const Evas *e, Evas_Coord *x, Evas_Coord *y) EINA_ARG_NONNULL(1);
 
 /**
  * Returns a bitmask with the mouse buttons currently pressed, set to 1
@@ -2110,7 +2130,7 @@ EAPI void              evas_pointer_canvas_xy_get        (const Evas *e, Evas_Co
  *   }
  * @endcode
  */
-EAPI int               evas_pointer_button_down_mask_get (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI int               evas_pointer_button_down_mask_get(const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Returns whether the mouse pointer is logically inside the canvas
@@ -2140,8 +2160,8 @@ EAPI int               evas_pointer_button_down_mask_get (const Evas *e) EINA_WA
  * else printf("Mouse is out!\n");
  * @endcode
  */
-EAPI Eina_Bool         evas_pointer_inside_get           (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
-   EAPI void              evas_sync(Evas *e) EINA_ARG_NONNULL(1);
+EAPI Eina_Bool         evas_pointer_inside_get(const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI void              evas_sync(Evas *e) EINA_ARG_NONNULL(1);
 
 /**
  * @defgroup Evas_Canvas_Events Canvas Events
@@ -2223,7 +2243,7 @@ EAPI Eina_Bool         evas_pointer_inside_get           (const Evas *e) EINA_WA
  * it more than once on the event, in this case). This would make
  * sense if you passed different functions and/or callback data, only.
  */
-EAPI void              evas_event_callback_add              (Evas *e, Evas_Callback_Type type, Evas_Event_Cb func, const void *data) EINA_ARG_NONNULL(1, 3);
+EAPI void  evas_event_callback_add(Evas *e, Evas_Callback_Type type, Evas_Event_Cb func, const void *data) EINA_ARG_NONNULL(1, 3);
 
 /**
  * Add (register) a callback function to a given canvas event with a
@@ -2238,9 +2258,9 @@ EAPI void              evas_event_callback_add              (Evas *e, Evas_Callb
  * @param data The data pointer to be passed to @p func
  *
  * @see evas_event_callback_add
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI void              evas_event_callback_priority_add(Evas *e, Evas_Callback_Type type, Evas_Callback_Priority priority, Evas_Event_Cb func, const void *data) EINA_ARG_NONNULL(1, 4);
+EAPI void  evas_event_callback_priority_add(Evas *e, Evas_Callback_Type type, Evas_Callback_Priority priority, Evas_Event_Cb func, const void *data) EINA_ARG_NONNULL(1, 4);
 
 /**
  * Delete a callback function from the canvas.
@@ -2266,7 +2286,7 @@ EAPI void              evas_event_callback_priority_add(Evas *e, Evas_Callback_T
  * my_data = evas_event_callback_del(ebject, EVAS_CALLBACK_CANVAS_FOCUS_IN, focus_in_callback);
  * @endcode
  */
-EAPI void             *evas_event_callback_del              (Evas *e, Evas_Callback_Type type, Evas_Event_Cb func) EINA_ARG_NONNULL(1, 3);
+EAPI void *evas_event_callback_del(Evas *e, Evas_Callback_Type type, Evas_Event_Cb func) EINA_ARG_NONNULL(1, 3);
 
 /**
  * Delete (unregister) a callback function registered to a given
@@ -2298,7 +2318,7 @@ EAPI void             *evas_event_callback_del              (Evas *e, Evas_Callb
  * @note For deletion of canvas events callbacks filtering by just
  * type and function pointer, user evas_event_callback_del().
  */
-EAPI void             *evas_event_callback_del_full         (Evas *e, Evas_Callback_Type type, Evas_Event_Cb func, const void *data) EINA_ARG_NONNULL(1, 3);
+EAPI void *evas_event_callback_del_full(Evas *e, Evas_Callback_Type type, Evas_Event_Cb func, const void *data) EINA_ARG_NONNULL(1, 3);
 
 /**
  * Push a callback on the post-event callback stack
@@ -2323,7 +2343,7 @@ EAPI void             *evas_event_callback_del_full         (Evas *e, Evas_Callb
  * actually does the action).
  *
  */
-EAPI void              evas_post_event_callback_push        (Evas *e, Evas_Object_Event_Post_Cb func, const void *data);
+EAPI void  evas_post_event_callback_push(Evas *e, Evas_Object_Event_Post_Cb func, const void *data);
 
 /**
  * Remove a callback from the post-event callback stack
@@ -2336,7 +2356,7 @@ EAPI void              evas_post_event_callback_push        (Evas *e, Evas_Objec
  * the callback stack is removed from being executed when the stack is
  * unwound. Further instances may still be run on unwind.
  */
-EAPI void              evas_post_event_callback_remove      (Evas *e, Evas_Object_Event_Post_Cb func);
+EAPI void  evas_post_event_callback_remove(Evas *e, Evas_Object_Event_Post_Cb func);
 
 /**
  * Remove a callback from the post-event callback stack
@@ -2350,7 +2370,7 @@ EAPI void              evas_post_event_callback_remove      (Evas *e, Evas_Objec
  * in the callback stack is removed from being executed when the stack is
  * unwound. Further instances may still be run on unwind.
  */
-EAPI void              evas_post_event_callback_remove_full (Evas *e, Evas_Object_Event_Post_Cb func, const void *data);
+EAPI void  evas_post_event_callback_remove_full(Evas *e, Evas_Object_Event_Post_Cb func, const void *data);
 
 /**
  * @defgroup Evas_Event_Freezing_Group Input Events Freezing Functions
@@ -2387,30 +2407,30 @@ EAPI void              evas_post_event_callback_remove_full (Evas *e, Evas_Objec
 
 /**
  * Set the default set of flags an event begins with
- * 
+ *
  * @param e The canvas to set the default event flags of
  * @param flags The default flags to use
- * 
+ *
  * Events in evas can have an event_flags member. This starts out with
  * and initial value (no flags). this lets you set the default flags that
  * an event begins with to be @p flags
- * 
+ *
  * @since 1.2
  */
-EAPI void              evas_event_default_flags_set      (Evas *e, Evas_Event_Flags flags) EINA_ARG_NONNULL(1);
+EAPI void             evas_event_default_flags_set(Evas *e, Evas_Event_Flags flags) EINA_ARG_NONNULL(1);
 
 /**
  * Get the defaulty set of flags an event begins with
- * 
+ *
  * @param e The canvas to get the default event flags from
  * @return The default event flags for that canvas
- * 
+ *
  * This gets the default event flags events are produced with when fed in.
- * 
+ *
  * @see evas_event_default_flags_set()
  * @since 1.2
  */
-EAPI Evas_Event_Flags  evas_event_default_flags_get      (const Evas *e) EINA_ARG_NONNULL(1);
+EAPI Evas_Event_Flags evas_event_default_flags_get(const Evas *e) EINA_ARG_NONNULL(1);
 
 /**
  * Freeze all input events processing.
@@ -2441,7 +2461,7 @@ EAPI Evas_Event_Flags  evas_event_default_flags_get      (const Evas *e) EINA_AR
  * realistic code we would be freezing while a toolkit or Edje was
  * doing some UI changes, thawing it back afterwards.
  */
-EAPI void              evas_event_freeze                 (Evas *e) EINA_ARG_NONNULL(1);
+EAPI void             evas_event_freeze(Evas *e) EINA_ARG_NONNULL(1);
 
 /**
  * Thaw a canvas out after freezing (for input events).
@@ -2456,7 +2476,7 @@ EAPI void              evas_event_freeze                 (Evas *e) EINA_ARG_NONN
  *
  * See evas_event_freeze() for an example.
  */
-EAPI void              evas_event_thaw                   (Evas *e) EINA_ARG_NONNULL(1);
+EAPI void             evas_event_thaw(Evas *e) EINA_ARG_NONNULL(1);
 
 /**
  * Return the freeze count on input events of a given canvas.
@@ -2478,7 +2498,7 @@ EAPI void              evas_event_thaw                   (Evas *e) EINA_ARG_NONN
  * @endcode
  *
  */
-EAPI int               evas_event_freeze_get             (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI int              evas_event_freeze_get(const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * After thaw of a canvas, re-evaluate the state of objects and call callbacks
@@ -2489,7 +2509,7 @@ EAPI int               evas_event_freeze_get             (const Evas *e) EINA_WA
  * containment and other states and thus also call callbacks for mouse in and
  * out on new objects if the state change demands it.
  */
-EAPI void              evas_event_thaw_eval              (Evas *e) EINA_ARG_NONNULL(1);
+EAPI void             evas_event_thaw_eval(Evas *e) EINA_ARG_NONNULL(1);
 
 /**
  * @}
@@ -2531,7 +2551,7 @@ EAPI void              evas_event_thaw_eval              (Evas *e) EINA_ARG_NONN
  *
  * @since 1.2
  */
-EAPI int               evas_event_down_count_get         (const Evas *e) EINA_ARG_NONNULL(1);
+EAPI int  evas_event_down_count_get(const Evas *e) EINA_ARG_NONNULL(1);
 
 /**
  * Mouse down event feed.
@@ -2547,7 +2567,7 @@ EAPI int               evas_event_down_count_get         (const Evas *e) EINA_AR
  * by the callback function.
  *
  */
-EAPI void              evas_event_feed_mouse_down        (Evas *e, int b, Evas_Button_Flags flags, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1);
+EAPI void evas_event_feed_mouse_down(Evas *e, int b, Evas_Button_Flags flags, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1);
 
 /**
  * Mouse up event feed.
@@ -2563,7 +2583,7 @@ EAPI void              evas_event_feed_mouse_down        (Evas *e, int b, Evas_B
  * by the callback function.
  *
  */
-EAPI void              evas_event_feed_mouse_up          (Evas *e, int b, Evas_Button_Flags flags, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1);
+EAPI void evas_event_feed_mouse_up(Evas *e, int b, Evas_Button_Flags flags, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1);
 
 /**
  * Mouse move event feed.
@@ -2579,7 +2599,7 @@ EAPI void              evas_event_feed_mouse_up          (Evas *e, int b, Evas_B
  * to be treated by the callback function.
  *
  */
-EAPI void              evas_event_feed_mouse_move        (Evas *e, int x, int y, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1);
+EAPI void evas_event_feed_mouse_move(Evas *e, int x, int y, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1);
 
 /**
  * Mouse in event feed.
@@ -2593,7 +2613,7 @@ EAPI void              evas_event_feed_mouse_move        (Evas *e, int x, int y,
  * by the callback function.
  *
  */
-EAPI void              evas_event_feed_mouse_in          (Evas *e, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1);
+EAPI void evas_event_feed_mouse_in(Evas *e, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1);
 
 /**
  * Mouse out event feed.
@@ -2607,10 +2627,10 @@ EAPI void              evas_event_feed_mouse_in          (Evas *e, unsigned int 
  * by the callback function.
  *
  */
-EAPI void              evas_event_feed_mouse_out         (Evas *e, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1);
-   EAPI void              evas_event_feed_multi_down        (Evas *e, int d, int x, int y, double rad, double radx, double rady, double pres, double ang, double fx, double fy, Evas_Button_Flags flags, unsigned int timestamp, const void *data);
-   EAPI void              evas_event_feed_multi_up          (Evas *e, int d, int x, int y, double rad, double radx, double rady, double pres, double ang, double fx, double fy, Evas_Button_Flags flags, unsigned int timestamp, const void *data);
-   EAPI void              evas_event_feed_multi_move        (Evas *e, int d, int x, int y, double rad, double radx, double rady, double pres, double ang, double fx, double fy, unsigned int timestamp, const void *data);
+EAPI void evas_event_feed_mouse_out(Evas *e, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1);
+EAPI void evas_event_feed_multi_down(Evas *e, int d, int x, int y, double rad, double radx, double rady, double pres, double ang, double fx, double fy, Evas_Button_Flags flags, unsigned int timestamp, const void *data);
+EAPI void evas_event_feed_multi_up(Evas *e, int d, int x, int y, double rad, double radx, double rady, double pres, double ang, double fx, double fy, Evas_Button_Flags flags, unsigned int timestamp, const void *data);
+EAPI void evas_event_feed_multi_move(Evas *e, int d, int x, int y, double rad, double radx, double rady, double pres, double ang, double fx, double fy, unsigned int timestamp, const void *data);
 
 /**
  * Mouse cancel event feed.
@@ -2623,7 +2643,7 @@ EAPI void              evas_event_feed_mouse_out         (Evas *e, unsigned int 
  * mouse cancel event happens.
  *
  */
-EAPI void              evas_event_feed_mouse_cancel      (Evas *e, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1);
+EAPI void evas_event_feed_mouse_cancel(Evas *e, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1);
 
 /**
  * Mouse wheel event feed.
@@ -2639,7 +2659,7 @@ EAPI void              evas_event_feed_mouse_cancel      (Evas *e, unsigned int 
  * be treated by the callback function.
  *
  */
-EAPI void              evas_event_feed_mouse_wheel       (Evas *e, int direction, int z, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1);
+EAPI void evas_event_feed_mouse_wheel(Evas *e, int direction, int z, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1);
 
 /**
  * Key down event feed
@@ -2657,7 +2677,7 @@ EAPI void              evas_event_feed_mouse_wheel       (Evas *e, int direction
  * callback function.
  *
  */
-EAPI void              evas_event_feed_key_down          (Evas *e, const char *keyname, const char *key, const char *string, const char *compose, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1);
+EAPI void evas_event_feed_key_down(Evas *e, const char *keyname, const char *key, const char *string, const char *compose, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1);
 
 /**
  * Key up event feed
@@ -2675,7 +2695,7 @@ EAPI void              evas_event_feed_key_down          (Evas *e, const char *k
  * callback function.
  *
  */
-EAPI void              evas_event_feed_key_up            (Evas *e, const char *keyname, const char *key, const char *string, const char *compose, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1);
+EAPI void evas_event_feed_key_up(Evas *e, const char *keyname, const char *key, const char *string, const char *compose, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1);
 
 /**
  * Hold event feed
@@ -2688,7 +2708,7 @@ EAPI void              evas_event_feed_key_up            (Evas *e, const char *k
  * This function makes the object to stop sending events.
  *
  */
-EAPI void              evas_event_feed_hold              (Evas *e, int hold, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1);
+EAPI void evas_event_feed_hold(Evas *e, int hold, unsigned int timestamp, const void *data) EINA_ARG_NONNULL(1);
 
 /**
  * Re feed event.
@@ -2702,8 +2722,7 @@ EAPI void              evas_event_feed_hold              (Evas *e, int hold, uns
  * This function call evas_event_feed_* functions, so it can
  * cause havoc if not used wisely. Please use it responsibly.
  */
-EAPI void              evas_event_refeed_event           (Evas *e, void *event_copy, Evas_Callback_Type event_type) EINA_ARG_NONNULL(1);
-
+EAPI void evas_event_refeed_event(Evas *e, void *event_copy, Evas_Callback_Type event_type) EINA_ARG_NONNULL(1);
 
 /**
  * @}
@@ -2734,7 +2753,7 @@ EAPI void              evas_event_refeed_event           (Evas *e, void *event_c
  * This function flushes image cache of canvas.
  *
  */
-EAPI void              evas_image_cache_flush            (Evas *e) EINA_ARG_NONNULL(1);
+EAPI void      evas_image_cache_flush(Evas *e) EINA_ARG_NONNULL(1);
 
 /**
  * Reload the image cache
@@ -2744,7 +2763,7 @@ EAPI void              evas_image_cache_flush            (Evas *e) EINA_ARG_NONN
  * This function reloads the image cache of canvas.
  *
  */
-EAPI void              evas_image_cache_reload           (Evas *e) EINA_ARG_NONNULL(1);
+EAPI void      evas_image_cache_reload(Evas *e) EINA_ARG_NONNULL(1);
 
 /**
  * Set the image cache.
@@ -2755,7 +2774,7 @@ EAPI void              evas_image_cache_reload           (Evas *e) EINA_ARG_NONN
  * This function sets the image cache of canvas in bytes.
  *
  */
-EAPI void              evas_image_cache_set              (Evas *e, int size) EINA_ARG_NONNULL(1);
+EAPI void      evas_image_cache_set(Evas *e, int size) EINA_ARG_NONNULL(1);
 
 /**
  * Get the image cache
@@ -2765,7 +2784,7 @@ EAPI void              evas_image_cache_set              (Evas *e, int size) EIN
  * This function returns the image cache size of canvas in bytes.
  *
  */
-EAPI int               evas_image_cache_get              (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI int       evas_image_cache_get(const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Get the maximum image size evas can possibly handle
@@ -2775,14 +2794,14 @@ EAPI int               evas_image_cache_get              (const Evas *e) EINA_WA
  * @param maxh Pointer to hold the return value in pixels of the maximum height
  *
  * This function returns the larges image or surface size that evas can handle
- * in pixels, and if there is one, returns @c EINA_TRUE. It returns 
+ * in pixels, and if there is one, returns @c EINA_TRUE. It returns
  * @c EINA_FALSE if no extra constraint on maximum image size exists. You still
  * should check the return values of @p maxw and @p maxh as there may still be
  * a limit, just a much higher one.
  *
  * @since 1.1
  */
-EAPI Eina_Bool         evas_image_max_size_get           (const Evas *e, int *maxw, int *maxh) EINA_ARG_NONNULL(1);
+EAPI Eina_Bool evas_image_max_size_get(const Evas *e, int *maxw, int *maxh) EINA_ARG_NONNULL(1);
 
 /**
  * @}
@@ -2804,7 +2823,7 @@ EAPI Eina_Bool         evas_image_max_size_get           (const Evas *e, int *ma
  *        #EVAS_FONT_HINTING_AUTO, #EVAS_FONT_HINTING_BYTECODE.
  * @ingroup Evas_Font_Group
  */
-EAPI void                     evas_font_hinting_set        (Evas *e, Evas_Font_Hinting_Flags hinting) EINA_ARG_NONNULL(1);
+EAPI void                    evas_font_hinting_set(Evas *e, Evas_Font_Hinting_Flags hinting) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the font hinting used by the given evas.
@@ -2814,7 +2833,7 @@ EAPI void                     evas_font_hinting_set        (Evas *e, Evas_Font_H
  *         #EVAS_FONT_HINTING_AUTO, #EVAS_FONT_HINTING_BYTECODE.
  * @ingroup Evas_Font_Group
  */
-EAPI Evas_Font_Hinting_Flags  evas_font_hinting_get        (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Font_Hinting_Flags evas_font_hinting_get(const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Checks if the font hinting is supported by the given evas.
@@ -2825,8 +2844,7 @@ EAPI Evas_Font_Hinting_Flags  evas_font_hinting_get        (const Evas *e) EINA_
  * @return @c EINA_TRUE if it is supported, @c EINA_FALSE otherwise.
  * @ingroup Evas_Font_Group
  */
-EAPI Eina_Bool                evas_font_hinting_can_hint   (const Evas *e, Evas_Font_Hinting_Flags hinting) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
-
+EAPI Eina_Bool               evas_font_hinting_can_hint(const Evas *e, Evas_Font_Hinting_Flags hinting) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Force the given evas and associated engine to flush its font cache.
@@ -2834,7 +2852,7 @@ EAPI Eina_Bool                evas_font_hinting_can_hint   (const Evas *e, Evas_
  * @param e The given evas to flush font cache.
  * @ingroup Evas_Font_Group
  */
-EAPI void                     evas_font_cache_flush        (Evas *e) EINA_ARG_NONNULL(1);
+EAPI void                    evas_font_cache_flush(Evas *e) EINA_ARG_NONNULL(1);
 
 /**
  * Changes the size of font cache of the given evas.
@@ -2844,7 +2862,7 @@ EAPI void                     evas_font_cache_flush        (Evas *e) EINA_ARG_NO
  *
  * @ingroup Evas_Font_Group
  */
-EAPI void                     evas_font_cache_set          (Evas *e, int size) EINA_ARG_NONNULL(1);
+EAPI void                    evas_font_cache_set(Evas *e, int size) EINA_ARG_NONNULL(1);
 
 /**
  * Changes the size of font cache of the given evas.
@@ -2854,8 +2872,7 @@ EAPI void                     evas_font_cache_set          (Evas *e, int size) E
  *
  * @ingroup Evas_Font_Group
  */
-EAPI int                      evas_font_cache_get          (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
-
+EAPI int                     evas_font_cache_get(const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * List of available font descriptions known or found by this evas.
@@ -2871,7 +2888,7 @@ EAPI int                      evas_font_cache_get          (const Evas *e) EINA_
  *
  * @ingroup Evas_Font_Group
  */
-EAPI Eina_List               *evas_font_available_list     (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Eina_List              *evas_font_available_list(const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Free list of font descriptions returned by evas_font_dir_available_list().
@@ -2881,7 +2898,7 @@ EAPI Eina_List               *evas_font_available_list     (const Evas *e) EINA_
  *
  * @ingroup Evas_Font_Group
  */
-EAPI void                     evas_font_available_list_free(Evas *e, Eina_List *available) EINA_ARG_NONNULL(1);
+EAPI void                    evas_font_available_list_free(Evas *e, Eina_List *available) EINA_ARG_NONNULL(1);
 
 /**
  * @defgroup Evas_Font_Path_Group Font Path Functions
@@ -2896,7 +2913,7 @@ EAPI void                     evas_font_available_list_free(Evas *e, Eina_List *
  * @param   e The given evas.
  * @ingroup Evas_Font_Path_Group
  */
-EAPI void              evas_font_path_clear              (Evas *e) EINA_ARG_NONNULL(1);
+EAPI void                    evas_font_path_clear(Evas *e) EINA_ARG_NONNULL(1);
 
 /**
  * Appends a font path to the list of font paths used by the given evas.
@@ -2904,7 +2921,7 @@ EAPI void              evas_font_path_clear              (Evas *e) EINA_ARG_NONN
  * @param   path The new font path.
  * @ingroup Evas_Font_Path_Group
  */
-EAPI void              evas_font_path_append             (Evas *e, const char *path) EINA_ARG_NONNULL(1, 2);
+EAPI void                    evas_font_path_append(Evas *e, const char *path) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Prepends a font path to the list of font paths used by the given evas.
@@ -2912,7 +2929,7 @@ EAPI void              evas_font_path_append             (Evas *e, const char *p
  * @param   path The new font path.
  * @ingroup Evas_Font_Path_Group
  */
-EAPI void              evas_font_path_prepend            (Evas *e, const char *path) EINA_ARG_NONNULL(1, 2);
+EAPI void                    evas_font_path_prepend(Evas *e, const char *path) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Retrieves the list of font paths used by the given evas.
@@ -2920,7 +2937,7 @@ EAPI void              evas_font_path_prepend            (Evas *e, const char *p
  * @return  The list of font paths used.
  * @ingroup Evas_Font_Path_Group
  */
-EAPI const Eina_List  *evas_font_path_list               (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI const Eina_List        *evas_font_path_list(const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * @defgroup Evas_Object_Group Generic Object Functions
@@ -3030,7 +3047,7 @@ EAPI const Eina_List  *evas_font_path_list               (const Evas *e) EINA_WA
  *
  * See the full @ref Example_Evas_Object_Manipulation "example".
  */
-EAPI void              evas_object_clip_set              (Evas_Object *obj, Evas_Object *clip) EINA_ARG_NONNULL(1, 2);
+EAPI void             evas_object_clip_set(Evas_Object *obj, Evas_Object *clip) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Get the object clipping @p obj (if any).
@@ -3051,7 +3068,7 @@ EAPI void              evas_object_clip_set              (Evas_Object *obj, Evas
  *
  * See the full @ref Example_Evas_Object_Manipulation "example".
  */
-EAPI Evas_Object      *evas_object_clip_get              (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Object     *evas_object_clip_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Disable/cease clipping on a clipped @p obj object.
@@ -3067,7 +3084,7 @@ EAPI Evas_Object      *evas_object_clip_get              (const Evas_Object *obj
  * evas_object_clipees_get() and evas_object_clip_get().
  *
  */
-EAPI void              evas_object_clip_unset            (Evas_Object *obj);
+EAPI void             evas_object_clip_unset(Evas_Object *obj);
 
 /**
  * Return a list of objects currently clipped by @p obj.
@@ -3108,8 +3125,7 @@ EAPI void              evas_object_clip_unset            (Evas_Object *obj);
  *   }
  * @endcode
  */
-EAPI const Eina_List  *evas_object_clipees_get           (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
-
+EAPI const Eina_List *evas_object_clipees_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Sets or unsets a given object as the currently focused one on its
@@ -3121,8 +3137,8 @@ EAPI const Eina_List  *evas_object_clipees_get           (const Evas_Object *obj
  *
  * Changing focus only affects where (key) input events go. There can
  * be only one object focused at any time. If @p focus is @c EINA_TRUE,
- * @p obj will be set as the currently focused object and it will 
- * receive all keyboard events that are not exclusive key grabs on 
+ * @p obj will be set as the currently focused object and it will
+ * receive all keyboard events that are not exclusive key grabs on
  * other objects.
  *
  * Example:
@@ -3137,7 +3153,7 @@ EAPI const Eina_List  *evas_object_clipees_get           (const Evas_Object *obj
  * @see evas_object_key_grab
  * @see evas_object_key_ungrab
  */
-EAPI void              evas_object_focus_set             (Evas_Object *obj, Eina_Bool focus) EINA_ARG_NONNULL(1);
+EAPI void             evas_object_focus_set(Evas_Object *obj, Eina_Bool focus) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieve whether an object has the focus.
@@ -3160,12 +3176,10 @@ EAPI void              evas_object_focus_set             (Evas_Object *obj, Eina
  * @see evas_object_key_grab
  * @see evas_object_key_ungrab
  */
-EAPI Eina_Bool         evas_object_focus_get             (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
-
+EAPI Eina_Bool        evas_object_focus_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
- * Sets the layer of the its canvas that the given object will be part
- * of.
+ * Sets the layer of its canvas that the given object will be part of.
  *
  * @param   obj The given Evas object.
  * @param   l   The number of the layer to place the object on.
@@ -3186,18 +3200,17 @@ EAPI Eina_Bool         evas_object_focus_get             (const Evas_Object *obj
  *
  * @see evas_object_layer_get()
  */
-EAPI void              evas_object_layer_set             (Evas_Object *obj, short l) EINA_ARG_NONNULL(1);
+EAPI void             evas_object_layer_set(Evas_Object *obj, short l) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the layer of its canvas that the given object is part of.
  *
  * @param   obj The given Evas object to query layer from
- * @return  Number of the its layer
+ * @return  Number of its layer
  *
  * @see evas_object_layer_set()
  */
-EAPI short             evas_object_layer_get             (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
-
+EAPI short            evas_object_layer_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Sets the name of the given Evas object to the given name.
@@ -3215,7 +3228,7 @@ EAPI short             evas_object_layer_get             (const Evas_Object *obj
  *
  * See the full @ref Example_Evas_Events "example".
  */
-EAPI void              evas_object_name_set              (Evas_Object *obj, const char *name) EINA_ARG_NONNULL(1);
+EAPI void             evas_object_name_set(Evas_Object *obj, const char *name) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the name of the given Evas object.
@@ -3231,8 +3244,7 @@ EAPI void              evas_object_name_set              (Evas_Object *obj, cons
  *
  * See the full @ref Example_Evas_Events "example".
  */
-EAPI const char       *evas_object_name_get              (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
-
+EAPI const char      *evas_object_name_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Increments object reference count to defer its deletion.
@@ -3270,9 +3282,9 @@ EAPI const char       *evas_object_name_get              (const Evas_Object *obj
  * @endcode
  *
  * @ingroup Evas_Object_Group_Basic
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI void              evas_object_ref                   (Evas_Object *obj);
+EAPI void             evas_object_ref(Evas_Object *obj);
 
 /**
  * Decrements object reference count.
@@ -3288,9 +3300,9 @@ EAPI void              evas_object_ref                   (Evas_Object *obj);
  * @see evas_object_del()
  *
  * @ingroup Evas_Object_Group_Basic
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI void              evas_object_unref                 (Evas_Object *obj);
+EAPI void             evas_object_unref(Evas_Object *obj);
 
 /**
  * Get the object reference count.
@@ -3307,10 +3319,9 @@ EAPI void              evas_object_unref                 (Evas_Object *obj);
  * @see evas_object_del()
  *
  * @ingroup Evas_Object_Group_Basic
- * @since 1.2.0
+ * @since 1.2
  */
-EAPI int               evas_object_ref_get               (const Evas_Object *obj);
-
+EAPI int              evas_object_ref_get(const Evas_Object *obj);
 
 /**
  * Marks the given Evas object for deletion (when Evas will free its
@@ -3332,7 +3343,7 @@ EAPI int               evas_object_ref_get               (const Evas_Object *obj
  *
  * @ingroup Evas_Object_Group_Basic
  */
-EAPI void              evas_object_del                   (Evas_Object *obj) EINA_ARG_NONNULL(1);
+EAPI void             evas_object_del(Evas_Object *obj) EINA_ARG_NONNULL(1);
 
 /**
  * Move the given Evas object to the given location inside its
@@ -3357,7 +3368,7 @@ EAPI void              evas_object_del                   (Evas_Object *obj) EINA
  *
  * @ingroup Evas_Object_Group_Basic
  */
-EAPI void              evas_object_move                  (Evas_Object *obj, Evas_Coord x, Evas_Coord y) EINA_ARG_NONNULL(1);
+EAPI void             evas_object_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y) EINA_ARG_NONNULL(1);
 
 /**
  * Changes the size of the given Evas object.
@@ -3393,7 +3404,7 @@ EAPI void              evas_object_move                  (Evas_Object *obj, Evas
  *
  * @ingroup Evas_Object_Group_Basic
  */
-EAPI void              evas_object_resize                (Evas_Object *obj, Evas_Coord w, Evas_Coord h) EINA_ARG_NONNULL(1);
+EAPI void             evas_object_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the position and (rectangular) size of the given Evas
@@ -3424,8 +3435,7 @@ EAPI void              evas_object_resize                (Evas_Object *obj, Evas
  *
  * @ingroup Evas_Object_Group_Basic
  */
-EAPI void              evas_object_geometry_get          (const Evas_Object *obj, Evas_Coord *x, Evas_Coord *y, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1);
-
+EAPI void             evas_object_geometry_get(const Evas_Object *obj, Evas_Coord *x, Evas_Coord *y, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1);
 
 /**
  * Makes the given Evas object visible.
@@ -3440,7 +3450,7 @@ EAPI void              evas_object_geometry_get          (const Evas_Object *obj
  *
  * @ingroup Evas_Object_Group_Basic
  */
-EAPI void              evas_object_show                  (Evas_Object *obj) EINA_ARG_NONNULL(1);
+EAPI void             evas_object_show(Evas_Object *obj) EINA_ARG_NONNULL(1);
 
 /**
  * Makes the given Evas object invisible.
@@ -3472,7 +3482,7 @@ EAPI void              evas_object_show                  (Evas_Object *obj) EINA
  *
  * @ingroup Evas_Object_Group_Basic
  */
-EAPI void              evas_object_hide                  (Evas_Object *obj) EINA_ARG_NONNULL(1);
+EAPI void             evas_object_hide(Evas_Object *obj) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves whether or not the given Evas object is visible.
@@ -3493,8 +3503,7 @@ EAPI void              evas_object_hide                  (Evas_Object *obj) EINA
  *
  * @ingroup Evas_Object_Group_Basic
  */
-EAPI Eina_Bool         evas_object_visible_get           (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
-
+EAPI Eina_Bool        evas_object_visible_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Sets the general/main color of the given Evas object to the given
@@ -3511,7 +3520,7 @@ EAPI Eina_Bool         evas_object_visible_get           (const Evas_Object *obj
  *
  * @ingroup Evas_Object_Group_Basic
  */
-EAPI void              evas_object_color_set             (Evas_Object *obj, int r, int g, int b, int a) EINA_ARG_NONNULL(1);
+EAPI void             evas_object_color_set(Evas_Object *obj, int r, int g, int b, int a) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the general/main color of the given Evas object.
@@ -3552,8 +3561,7 @@ EAPI void              evas_object_color_set             (Evas_Object *obj, int 
  *
  * @ingroup Evas_Object_Group_Basic
  */
-EAPI void              evas_object_color_get             (const Evas_Object *obj, int *r, int *g, int *b, int *a) EINA_ARG_NONNULL(1);
-
+EAPI void             evas_object_color_get(const Evas_Object *obj, int *r, int *g, int *b, int *a) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the Evas canvas that the given object lives on.
@@ -3566,7 +3574,7 @@ EAPI void              evas_object_color_get             (const Evas_Object *obj
  *
  * @ingroup Evas_Object_Group_Basic
  */
-EAPI Evas             *evas_object_evas_get              (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas            *evas_object_evas_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the type of the given Evas object.
@@ -3596,7 +3604,7 @@ EAPI Evas             *evas_object_evas_get              (const Evas_Object *obj
  *
  * See the full @ref Example_Evas_Object_Manipulation "example".
  */
-EAPI const char       *evas_object_type_get              (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI const char      *evas_object_type_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Raise @p obj to the top of its layer.
@@ -3610,7 +3618,7 @@ EAPI const char       *evas_object_type_get              (const Evas_Object *obj
  * @see evas_object_stack_below()
  * @see evas_object_lower()
  */
-EAPI void              evas_object_raise                 (Evas_Object *obj) EINA_ARG_NONNULL(1);
+EAPI void             evas_object_raise(Evas_Object *obj) EINA_ARG_NONNULL(1);
 
 /**
  * Lower @p obj to the bottom of its layer.
@@ -3624,7 +3632,7 @@ EAPI void              evas_object_raise                 (Evas_Object *obj) EINA
  * @see evas_object_stack_below()
  * @see evas_object_raise()
  */
-EAPI void              evas_object_lower                 (Evas_Object *obj) EINA_ARG_NONNULL(1);
+EAPI void             evas_object_lower(Evas_Object *obj) EINA_ARG_NONNULL(1);
 
 /**
  * Stack @p obj immediately above @p above
@@ -3652,7 +3660,7 @@ EAPI void              evas_object_lower                 (Evas_Object *obj) EINA
  * @see evas_object_layer_set()
  * @see evas_object_stack_below()
  */
-EAPI void              evas_object_stack_above           (Evas_Object *obj, Evas_Object *above) EINA_ARG_NONNULL(1, 2);
+EAPI void             evas_object_stack_above(Evas_Object *obj, Evas_Object *above) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Stack @p obj immediately below @p below
@@ -3680,7 +3688,7 @@ EAPI void              evas_object_stack_above           (Evas_Object *obj, Evas
  * @see evas_object_layer_set()
  * @see evas_object_stack_below()
  */
-EAPI void              evas_object_stack_below           (Evas_Object *obj, Evas_Object *below) EINA_ARG_NONNULL(1, 2);
+EAPI void             evas_object_stack_below(Evas_Object *obj, Evas_Object *below) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Get the Evas object stacked right above @p obj
@@ -3697,7 +3705,7 @@ EAPI void              evas_object_stack_below           (Evas_Object *obj, Evas
  * @see evas_object_below_get()
  *
  */
-EAPI Evas_Object      *evas_object_above_get             (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Object     *evas_object_above_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Get the Evas object stacked right below @p obj
@@ -3713,7 +3721,7 @@ EAPI Evas_Object      *evas_object_above_get             (const Evas_Object *obj
  * @see evas_object_layer_set()
  * @see evas_object_below_get()
  */
-EAPI Evas_Object      *evas_object_below_get             (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Object     *evas_object_below_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * @}
@@ -3938,7 +3946,7 @@ EAPI Evas_Object      *evas_object_below_get             (const Evas_Object *obj
  * See the full example @ref Example_Evas_Events "here".
  *
  */
-   EAPI void              evas_object_event_callback_add     (Evas_Object *obj, Evas_Callback_Type type, Evas_Object_Event_Cb func, const void *data) EINA_ARG_NONNULL(1, 3);
+EAPI void      evas_object_event_callback_add(Evas_Object *obj, Evas_Callback_Type type, Evas_Object_Event_Cb func, const void *data) EINA_ARG_NONNULL(1, 3);
 
 /**
  * Add (register) a callback function to a given Evas object event with a
@@ -3952,9 +3960,9 @@ EAPI Evas_Object      *evas_object_below_get             (const Evas_Object *obj
  * @param data The data pointer to be passed to @p func
  *
  * @see evas_object_event_callback_add
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI void                 evas_object_event_callback_priority_add(Evas_Object *obj, Evas_Callback_Type type, Evas_Callback_Priority priority, Evas_Object_Event_Cb func, const void *data) EINA_ARG_NONNULL(1, 4);
+EAPI void      evas_object_event_callback_priority_add(Evas_Object *obj, Evas_Callback_Type type, Evas_Callback_Priority priority, Evas_Object_Event_Cb func, const void *data) EINA_ARG_NONNULL(1, 4);
 
 /**
  * Delete a callback function from an object
@@ -3980,7 +3988,7 @@ EAPI void                 evas_object_event_callback_priority_add(Evas_Object *o
  * my_data = evas_object_event_callback_del(object, EVAS_CALLBACK_MOUSE_UP, up_callback);
  * @endcode
  */
-EAPI void             *evas_object_event_callback_del     (Evas_Object *obj, Evas_Callback_Type type, Evas_Object_Event_Cb func) EINA_ARG_NONNULL(1, 3);
+EAPI void     *evas_object_event_callback_del(Evas_Object *obj, Evas_Callback_Type type, Evas_Object_Event_Cb func) EINA_ARG_NONNULL(1, 3);
 
 /**
  * Delete (unregister) a callback function registered to a given
@@ -4014,8 +4022,7 @@ EAPI void             *evas_object_event_callback_del     (Evas_Object *obj, Eva
  * my_data = evas_object_event_callback_del_full(object, EVAS_CALLBACK_MOUSE_UP, up_callback, data);
  * @endcode
  */
-EAPI void             *evas_object_event_callback_del_full(Evas_Object *obj, Evas_Callback_Type type, Evas_Object_Event_Cb func, const void *data) EINA_ARG_NONNULL(1, 3);
-
+EAPI void     *evas_object_event_callback_del_full(Evas_Object *obj, Evas_Callback_Type type, Evas_Object_Event_Cb func, const void *data) EINA_ARG_NONNULL(1, 3);
 
 /**
  * Set whether an Evas object is to pass (ignore) events.
@@ -4036,7 +4043,7 @@ EAPI void             *evas_object_event_callback_del_full(Evas_Object *obj, Eva
  * @see evas_object_propagate_events_set()
  * @see evas_object_freeze_events_set()
  */
-EAPI void              evas_object_pass_events_set        (Evas_Object *obj, Eina_Bool pass) EINA_ARG_NONNULL(1);
+EAPI void      evas_object_pass_events_set(Evas_Object *obj, Eina_Bool pass) EINA_ARG_NONNULL(1);
 
 /**
  * Determine whether an object is set to pass (ignore) events.
@@ -4057,7 +4064,7 @@ EAPI void              evas_object_pass_events_set        (Evas_Object *obj, Ein
  * @see evas_object_propagate_events_get()
  * @see evas_object_freeze_events_get()
  */
-EAPI Eina_Bool         evas_object_pass_events_get        (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Eina_Bool evas_object_pass_events_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Set whether an Evas object is to repeat events.
@@ -4085,7 +4092,7 @@ EAPI Eina_Bool         evas_object_pass_events_get        (const Evas_Object *ob
  * @see evas_object_propagate_events_set()
  * @see evas_object_freeze_events_set()
  */
-EAPI void              evas_object_repeat_events_set      (Evas_Object *obj, Eina_Bool repeat) EINA_ARG_NONNULL(1);
+EAPI void      evas_object_repeat_events_set(Evas_Object *obj, Eina_Bool repeat) EINA_ARG_NONNULL(1);
 
 /**
  * Determine whether an object is set to repeat events.
@@ -4099,7 +4106,7 @@ EAPI void              evas_object_repeat_events_set      (Evas_Object *obj, Ein
  * @see evas_object_propagate_events_get()
  * @see evas_object_freeze_events_get()
  */
-EAPI Eina_Bool         evas_object_repeat_events_get      (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Eina_Bool evas_object_repeat_events_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Set whether events on a smart object's member should get propagated
@@ -4123,7 +4130,7 @@ EAPI Eina_Bool         evas_object_repeat_events_get      (const Evas_Object *ob
  * @see evas_object_pass_events_set()
  * @see evas_object_freeze_events_set()
  */
-EAPI void              evas_object_propagate_events_set   (Evas_Object *obj, Eina_Bool prop) EINA_ARG_NONNULL(1);
+EAPI void      evas_object_propagate_events_set(Evas_Object *obj, Eina_Bool prop) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieve whether an Evas object is set to propagate events.
@@ -4137,7 +4144,7 @@ EAPI void              evas_object_propagate_events_set   (Evas_Object *obj, Ein
  * @see evas_object_pass_events_get()
  * @see evas_object_freeze_events_get()
  */
-EAPI Eina_Bool         evas_object_propagate_events_get   (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Eina_Bool evas_object_propagate_events_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Set whether an Evas object is to freeze (discard) events.
@@ -4148,8 +4155,8 @@ EAPI Eina_Bool         evas_object_propagate_events_get   (const Evas_Object *ob
  *
  * If @p freeze is @c EINA_TRUE, it will make events on @p obj to be @b
  * discarded. Unlike evas_object_pass_events_set(), events will not be
- * passed to @b next lower object. This API can be used for blocking 
- * events while @p obj is on transiting. 
+ * passed to @b next lower object. This API can be used for blocking
+ * events while @p obj is on transiting.
  *
  * If @p freeze is @c EINA_FALSE, events will be processed on that
  * object as normal.
@@ -4158,9 +4165,9 @@ EAPI Eina_Bool         evas_object_propagate_events_get   (const Evas_Object *ob
  * @see evas_object_pass_events_set()
  * @see evas_object_repeat_events_set()
  * @see evas_object_propagate_events_set()
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI void              evas_object_freeze_events_set(Evas_Object *obj, Eina_Bool freeze) EINA_ARG_NONNULL(1);
+EAPI void      evas_object_freeze_events_set(Evas_Object *obj, Eina_Bool freeze) EINA_ARG_NONNULL(1);
 
 /**
  * Determine whether an object is set to freeze (discard) events.
@@ -4173,9 +4180,9 @@ EAPI void              evas_object_freeze_events_set(Evas_Object *obj, Eina_Bool
  * @see evas_object_pass_events_get()
  * @see evas_object_repeat_events_get()
  * @see evas_object_propagate_events_get()
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI Eina_Bool         evas_object_freeze_events_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Eina_Bool evas_object_freeze_events_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * @}
@@ -4527,7 +4534,7 @@ EAPI Eina_Bool         evas_object_freeze_events_get(const Evas_Object *obj) EIN
  * @param obj object to enable the map on
  * @param enabled enabled state
  */
-EAPI void              evas_object_map_enable_set        (Evas_Object *obj, Eina_Bool enabled);
+EAPI void            evas_object_map_enable_set(Evas_Object *obj, Eina_Bool enabled);
 
 /**
  * Get the map enabled state
@@ -4539,30 +4546,7 @@ EAPI void              evas_object_map_enable_set        (Evas_Object *obj, Eina
  * @param obj object to get the map enabled state from
  * @return the map enabled state
  */
-EAPI Eina_Bool         evas_object_map_enable_get        (const Evas_Object *obj);
-
-/**
- * Set the map source object
- *
- * This sets the object from which the map is taken - can be any object that
- * has map enabled on it.
- *
- * Currently not implemented. for future use.
- *
- * @param obj object to set the map source of
- * @param src the source object from which the map is taken
- */
-EAPI void              evas_object_map_source_set        (Evas_Object *obj, Evas_Object *src);
-
-/**
- * Get the map source object
- *
- * @param obj object to set the map source of
- * @return the object set as the source
- *
- * @see evas_object_map_source_set()
- */
-EAPI Evas_Object      *evas_object_map_source_get        (const Evas_Object *obj);
+EAPI Eina_Bool       evas_object_map_enable_get(const Evas_Object *obj);
 
 /**
  * Set current object transformation map.
@@ -4603,7 +4587,7 @@ EAPI Evas_Object      *evas_object_map_source_get        (const Evas_Object *obj
  *
  * @see evas_map_new()
  */
-EAPI void              evas_object_map_set               (Evas_Object *obj, const Evas_Map *map);
+EAPI void            evas_object_map_set(Evas_Object *obj, const Evas_Map *map);
 
 /**
  * Get current object transformation map.
@@ -4627,8 +4611,7 @@ EAPI void              evas_object_map_set               (Evas_Object *obj, cons
  *
  * @see evas_object_map_set()
  */
-EAPI const Evas_Map   *evas_object_map_get               (const Evas_Object *obj);
-
+EAPI const Evas_Map *evas_object_map_get(const Evas_Object *obj);
 
 /**
  * Populate source and destination map points to match exactly object.
@@ -4648,7 +4631,7 @@ EAPI const Evas_Map   *evas_object_map_get               (const Evas_Object *obj
  * @see evas_map_point_coord_set()
  * @see evas_map_point_image_uv_set()
  */
-EAPI void              evas_map_util_points_populate_from_object_full(Evas_Map *m, const Evas_Object *obj, Evas_Coord z);
+EAPI void            evas_map_util_points_populate_from_object_full(Evas_Map *m, const Evas_Object *obj, Evas_Coord z);
 
 /**
  * Populate source and destination map points to match exactly object.
@@ -4669,7 +4652,7 @@ EAPI void              evas_map_util_points_populate_from_object_full(Evas_Map *
  * @see evas_map_point_coord_set()
  * @see evas_map_point_image_uv_set()
  */
-EAPI void              evas_map_util_points_populate_from_object     (Evas_Map *m, const Evas_Object *obj);
+EAPI void            evas_map_util_points_populate_from_object(Evas_Map *m, const Evas_Object *obj);
 
 /**
  * Populate source and destination map points to match given geometry.
@@ -4692,7 +4675,7 @@ EAPI void              evas_map_util_points_populate_from_object     (Evas_Map *
  * @see evas_map_point_coord_set()
  * @see evas_map_point_image_uv_set()
  */
-EAPI void              evas_map_util_points_populate_from_geometry   (Evas_Map *m, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h, Evas_Coord z);
+EAPI void            evas_map_util_points_populate_from_geometry(Evas_Map *m, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h, Evas_Coord z);
 
 /**
  * Set color of all points to given color.
@@ -4708,7 +4691,7 @@ EAPI void              evas_map_util_points_populate_from_geometry   (Evas_Map *
  *
  * @see evas_map_point_color_set()
  */
-EAPI void              evas_map_util_points_color_set                (Evas_Map *m, int r, int g, int b, int a);
+EAPI void            evas_map_util_points_color_set(Evas_Map *m, int r, int g, int b, int a);
 
 /**
  * Change the map to apply the given rotation.
@@ -4727,7 +4710,7 @@ EAPI void              evas_map_util_points_color_set                (Evas_Map *
  * @see evas_map_point_coord_set()
  * @see evas_map_util_zoom()
  */
-EAPI void              evas_map_util_rotate                          (Evas_Map *m, double degrees, Evas_Coord cx, Evas_Coord cy);
+EAPI void            evas_map_util_rotate(Evas_Map *m, double degrees, Evas_Coord cx, Evas_Coord cy);
 
 /**
  * Change the map to apply the given zooming.
@@ -4747,7 +4730,7 @@ EAPI void              evas_map_util_rotate                          (Evas_Map *
  * @see evas_map_point_coord_set()
  * @see evas_map_util_rotate()
  */
-EAPI void              evas_map_util_zoom                            (Evas_Map *m, double zoomx, double zoomy, Evas_Coord cx, Evas_Coord cy);
+EAPI void            evas_map_util_zoom(Evas_Map *m, double zoomx, double zoomy, Evas_Coord cx, Evas_Coord cy);
 
 /**
  * Rotate the map around 3 axes in 3D
@@ -4767,7 +4750,7 @@ EAPI void              evas_map_util_zoom                            (Evas_Map *
  * @param cy rotation's center vertical position.
  * @param cz rotation's center vertical position.
  */
-EAPI void              evas_map_util_3d_rotate                       (Evas_Map *m, double dx, double dy, double dz, Evas_Coord cx, Evas_Coord cy, Evas_Coord cz);
+EAPI void            evas_map_util_3d_rotate(Evas_Map *m, double dx, double dy, double dz, Evas_Coord cx, Evas_Coord cy, Evas_Coord cz);
 
 /**
  * Perform lighting calculations on the given Map
@@ -4823,7 +4806,7 @@ EAPI void              evas_map_util_3d_rotate                       (Evas_Map *
  * @param ag ambient color green value (0 - 255)
  * @param ab ambient color blue value (0 - 255)
  */
-EAPI void              evas_map_util_3d_lighting                     (Evas_Map *m, Evas_Coord lx, Evas_Coord ly, Evas_Coord lz, int lr, int lg, int lb, int ar, int ag, int ab);
+EAPI void            evas_map_util_3d_lighting(Evas_Map *m, Evas_Coord lx, Evas_Coord ly, Evas_Coord lz, int lr, int lg, int lb, int ar, int ag, int ab);
 
 /**
  * Apply a perspective transform to the map
@@ -4847,7 +4830,7 @@ EAPI void              evas_map_util_3d_lighting                     (Evas_Map *
  * @param z0 The "0" z plane value
  * @param foc The focal distance
  */
-EAPI void              evas_map_util_3d_perspective                  (Evas_Map *m, Evas_Coord px, Evas_Coord py, Evas_Coord z0, Evas_Coord foc);
+EAPI void            evas_map_util_3d_perspective(Evas_Map *m, Evas_Coord px, Evas_Coord py, Evas_Coord z0, Evas_Coord foc);
 
 /**
  * Get the clockwise state of a map
@@ -4860,8 +4843,7 @@ EAPI void              evas_map_util_3d_perspective                  (Evas_Map *
  * @param m map to query.
  * @return 1 if clockwise, 0 otherwise
  */
-EAPI Eina_Bool         evas_map_util_clockwise_get                   (Evas_Map *m);
-
+EAPI Eina_Bool       evas_map_util_clockwise_get(Evas_Map *m);
 
 /**
  * Create map of transformation points to be later used with an Evas object.
@@ -4882,7 +4864,7 @@ EAPI Eina_Bool         evas_map_util_clockwise_get                   (Evas_Map *
  *
  * @see evas_object_map_set()
  */
-EAPI Evas_Map         *evas_map_new                      (int count);
+EAPI Evas_Map       *evas_map_new(int count);
 
 /**
  * Set the smoothing for map rendering
@@ -4894,7 +4876,7 @@ EAPI Evas_Map         *evas_map_new                      (int count);
  * @param m map to modify. Must not be NULL.
  * @param enabled enable or disable smooth map rendering
  */
-EAPI void              evas_map_smooth_set               (Evas_Map *m, Eina_Bool enabled);
+EAPI void            evas_map_smooth_set(Evas_Map *m, Eina_Bool enabled);
 
 /**
  * get the smoothing for map rendering
@@ -4903,7 +4885,7 @@ EAPI void              evas_map_smooth_set               (Evas_Map *m, Eina_Bool
  *
  * @param m map to get the smooth from. Must not be NULL.
  */
-EAPI Eina_Bool         evas_map_smooth_get               (const Evas_Map *m);
+EAPI Eina_Bool       evas_map_smooth_get(const Evas_Map *m);
 
 /**
  * Set the alpha flag for map rendering
@@ -4917,7 +4899,7 @@ EAPI Eina_Bool         evas_map_smooth_get               (const Evas_Map *m);
  * @param m map to modify. Must not be NULL.
  * @param enabled enable or disable alpha map rendering
  */
-EAPI void              evas_map_alpha_set                (Evas_Map *m, Eina_Bool enabled);
+EAPI void            evas_map_alpha_set(Evas_Map *m, Eina_Bool enabled);
 
 /**
  * get the alpha flag for map rendering
@@ -4926,7 +4908,7 @@ EAPI void              evas_map_alpha_set                (Evas_Map *m, Eina_Bool
  *
  * @param m map to get the alpha from. Must not be NULL.
  */
-EAPI Eina_Bool         evas_map_alpha_get                (const Evas_Map *m);
+EAPI Eina_Bool       evas_map_alpha_get(const Evas_Map *m);
 
 /**
  * Copy a previously allocated map.
@@ -4936,7 +4918,7 @@ EAPI Eina_Bool         evas_map_alpha_get                (const Evas_Map *m);
  * @param m map to copy. Must not be NULL.
  * @return newly allocated map with the same count and contents as @p m.
  */
-EAPI Evas_Map         *evas_map_dup                      (const Evas_Map *m);
+EAPI Evas_Map       *evas_map_dup(const Evas_Map *m);
 
 /**
  * Free a previously allocated map.
@@ -4946,7 +4928,7 @@ EAPI Evas_Map         *evas_map_dup                      (const Evas_Map *m);
  *
  * @param m map to free.
  */
-EAPI void              evas_map_free                     (Evas_Map *m);
+EAPI void            evas_map_free(Evas_Map *m);
 
 /**
  * Get a maps size.
@@ -4956,7 +4938,7 @@ EAPI void              evas_map_free                     (Evas_Map *m);
  * @param m map to get size.
  * @return -1 on error, points otherwise.
  */
-EAPI int               evas_map_count_get               (const Evas_Map *m) EINA_CONST;
+EAPI int             evas_map_count_get(const Evas_Map *m) EINA_CONST;
 
 /**
  * Change the map point's coordinate.
@@ -4987,7 +4969,7 @@ EAPI int               evas_map_count_get               (const Evas_Map *m) EINA
  * @see evas_map_util_points_populate_from_object_full()
  * @see evas_map_util_points_populate_from_object()
  */
-EAPI void              evas_map_point_coord_set          (Evas_Map *m, int idx, Evas_Coord x, Evas_Coord y, Evas_Coord z);
+EAPI void            evas_map_point_coord_set(Evas_Map *m, int idx, Evas_Coord x, Evas_Coord y, Evas_Coord z);
 
 /**
  * Get the map point's coordinate.
@@ -5000,7 +4982,7 @@ EAPI void              evas_map_point_coord_set          (Evas_Map *m, int idx, 
  * @param y where to return the Y coordinate.
  * @param z where to return the Z coordinate.
  */
-EAPI void              evas_map_point_coord_get          (const Evas_Map *m, int idx, Evas_Coord *x, Evas_Coord *y, Evas_Coord *z);
+EAPI void            evas_map_point_coord_get(const Evas_Map *m, int idx, Evas_Coord *x, Evas_Coord *y, Evas_Coord *z);
 
 /**
  * Change the map point's U and V texture source point
@@ -5021,7 +5003,7 @@ EAPI void              evas_map_point_coord_get          (const Evas_Map *m, int
  * @see evas_map_util_points_populate_from_object_full()
  * @see evas_map_util_points_populate_from_object()
  */
-EAPI void              evas_map_point_image_uv_set       (Evas_Map *m, int idx, double u, double v);
+EAPI void            evas_map_point_image_uv_set(Evas_Map *m, int idx, double u, double v);
 
 /**
  * Get the map point's U and V texture source points
@@ -5033,7 +5015,7 @@ EAPI void              evas_map_point_image_uv_set       (Evas_Map *m, int idx, 
  * @param u where to write the X coordinate within the image/texture source
  * @param v where to write the Y coordinate within the image/texture source
  */
-EAPI void              evas_map_point_image_uv_get       (const Evas_Map *m, int idx, double *u, double *v);
+EAPI void            evas_map_point_image_uv_get(const Evas_Map *m, int idx, double *u, double *v);
 
 /**
  * Set the color of a vertex in the map
@@ -5055,7 +5037,7 @@ EAPI void              evas_map_point_image_uv_get       (const Evas_Map *m, int
  * @see evas_map_point_coord_set()
  * @see evas_object_map_set()
  */
-EAPI void              evas_map_point_color_set          (Evas_Map *m, int idx, int r, int g, int b, int a);
+EAPI void            evas_map_point_color_set(Evas_Map *m, int idx, int r, int g, int b, int a);
 
 /**
  * Get the color set on a vertex in the map
@@ -5073,7 +5055,7 @@ EAPI void              evas_map_point_color_set          (Evas_Map *m, int idx, 
  * @see evas_map_point_coord_set()
  * @see evas_object_map_set()
  */
-EAPI void              evas_map_point_color_get          (const Evas_Map *m, int idx, int *r, int *g, int *b, int *a);
+EAPI void            evas_map_point_color_get(const Evas_Map *m, int idx, int *r, int *g, int *b, int *a);
 /**
  * @}
  */
@@ -5119,7 +5101,7 @@ EAPI void              evas_map_point_color_get          (const Evas_Map *m, int
  *
  * @see evas_object_size_hint_min_set() for an example
  */
-EAPI void              evas_object_size_hint_min_get     (const Evas_Object *obj, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1);
+EAPI void evas_object_size_hint_min_get(const Evas_Object *obj, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1);
 
 /**
  * Sets the hints for an object's minimum size.
@@ -5145,7 +5127,7 @@ EAPI void              evas_object_size_hint_min_get     (const Evas_Object *obj
  *
  * @see evas_object_size_hint_min_get()
  */
-EAPI void              evas_object_size_hint_min_set     (Evas_Object *obj, Evas_Coord w, Evas_Coord h) EINA_ARG_NONNULL(1);
+EAPI void evas_object_size_hint_min_set(Evas_Object *obj, Evas_Coord w, Evas_Coord h) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the hints for an object's maximum size.
@@ -5163,7 +5145,7 @@ EAPI void              evas_object_size_hint_min_set     (Evas_Object *obj, Evas
  *
  * @see evas_object_size_hint_max_set()
  */
-EAPI void              evas_object_size_hint_max_get     (const Evas_Object *obj, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1);
+EAPI void evas_object_size_hint_max_get(const Evas_Object *obj, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1);
 
 /**
  * Sets the hints for an object's maximum size.
@@ -5189,7 +5171,7 @@ EAPI void              evas_object_size_hint_max_get     (const Evas_Object *obj
  *
  * @see evas_object_size_hint_max_get()
  */
-EAPI void              evas_object_size_hint_max_set     (Evas_Object *obj, Evas_Coord w, Evas_Coord h) EINA_ARG_NONNULL(1);
+EAPI void evas_object_size_hint_max_set(Evas_Object *obj, Evas_Coord w, Evas_Coord h) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the hints for an object's optimum size.
@@ -5207,7 +5189,7 @@ EAPI void              evas_object_size_hint_max_set     (Evas_Object *obj, Evas
  *
  * @see evas_object_size_hint_request_set()
  */
-EAPI void              evas_object_size_hint_request_get (const Evas_Object *obj, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1);
+EAPI void evas_object_size_hint_request_get(const Evas_Object *obj, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1);
 
 /**
  * Sets the hints for an object's optimum size.
@@ -5224,7 +5206,7 @@ EAPI void              evas_object_size_hint_request_get (const Evas_Object *obj
  *
  * @see evas_object_size_hint_request_get()
  */
-EAPI void              evas_object_size_hint_request_set (Evas_Object *obj, Evas_Coord w, Evas_Coord h) EINA_ARG_NONNULL(1);
+EAPI void evas_object_size_hint_request_set(Evas_Object *obj, Evas_Coord w, Evas_Coord h) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the hints for an object's aspect ratio.
@@ -5279,7 +5261,7 @@ EAPI void              evas_object_size_hint_request_set (Evas_Object *obj, Evas
  *
  * @see evas_object_size_hint_aspect_set()
  */
-EAPI void              evas_object_size_hint_aspect_get  (const Evas_Object *obj, Evas_Aspect_Control *aspect, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1);
+EAPI void evas_object_size_hint_aspect_get(const Evas_Object *obj, Evas_Aspect_Control *aspect, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1);
 
 /**
  * Sets the hints for an object's aspect ratio.
@@ -5298,7 +5280,7 @@ EAPI void              evas_object_size_hint_aspect_get  (const Evas_Object *obj
  *
  * @see evas_object_size_hint_aspect_get() for more information.
  */
-EAPI void              evas_object_size_hint_aspect_set  (Evas_Object *obj, Evas_Aspect_Control aspect, Evas_Coord w, Evas_Coord h) EINA_ARG_NONNULL(1);
+EAPI void evas_object_size_hint_aspect_set(Evas_Object *obj, Evas_Aspect_Control aspect, Evas_Coord w, Evas_Coord h) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the hints for on object's alignment.
@@ -5314,10 +5296,11 @@ EAPI void              evas_object_size_hint_aspect_set  (Evas_Object *obj, Evas
  *
  * @note Use @c NULL pointers on the hint components you're not
  * interested in: they'll be ignored by the function.
+ * @note If @c obj is invalid, then the hint components will be set with 0.5
  *
  * @see evas_object_size_hint_align_set() for more information
  */
-EAPI void              evas_object_size_hint_align_get   (const Evas_Object *obj, double *x, double *y) EINA_ARG_NONNULL(1);
+EAPI void evas_object_size_hint_align_get(const Evas_Object *obj, double *x, double *y) EINA_ARG_NONNULL(1);
 
 /**
  * Sets the hints for an object's alignment.
@@ -5366,7 +5349,7 @@ EAPI void              evas_object_size_hint_align_get   (const Evas_Object *obj
  * @see evas_object_size_hint_max_set()
  * @see evas_object_size_hint_padding_set()
  */
-EAPI void              evas_object_size_hint_align_set   (Evas_Object *obj, double x, double y) EINA_ARG_NONNULL(1);
+EAPI void evas_object_size_hint_align_set(Evas_Object *obj, double x, double y) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the hints for an object's weight.
@@ -5386,10 +5369,11 @@ EAPI void              evas_object_size_hint_align_set   (Evas_Object *obj, doub
  *
  * @note Use @c NULL pointers on the hint components you're not
  * interested in: they'll be ignored by the function.
+ * @note If @c obj is invalid, then the hint components will be set with 0.0
  *
  * @see evas_object_size_hint_weight_set() for an example
  */
-EAPI void              evas_object_size_hint_weight_get  (const Evas_Object *obj, double *x, double *y) EINA_ARG_NONNULL(1);
+EAPI void evas_object_size_hint_weight_get(const Evas_Object *obj, double *x, double *y) EINA_ARG_NONNULL(1);
 
 /**
  * Sets the hints for an object's weight.
@@ -5423,7 +5407,7 @@ EAPI void              evas_object_size_hint_weight_get  (const Evas_Object *obj
  *
  * @see evas_object_size_hint_weight_get() for more information
  */
-EAPI void              evas_object_size_hint_weight_set  (Evas_Object *obj, double x, double y) EINA_ARG_NONNULL(1);
+EAPI void evas_object_size_hint_weight_set(Evas_Object *obj, double x, double y) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the hints for an object's padding space.
@@ -5459,7 +5443,7 @@ EAPI void              evas_object_size_hint_weight_set  (Evas_Object *obj, doub
  *
  * @see evas_object_size_hint_padding_set()
  */
-EAPI void              evas_object_size_hint_padding_get (const Evas_Object *obj, Evas_Coord *l, Evas_Coord *r, Evas_Coord *t, Evas_Coord *b) EINA_ARG_NONNULL(1);
+EAPI void evas_object_size_hint_padding_get(const Evas_Object *obj, Evas_Coord *l, Evas_Coord *r, Evas_Coord *t, Evas_Coord *b) EINA_ARG_NONNULL(1);
 
 /**
  * Sets the hints for an object's padding space.
@@ -5475,7 +5459,7 @@ EAPI void              evas_object_size_hint_padding_get (const Evas_Object *obj
  *
  * @see evas_object_size_hint_padding_get() for more information
  */
-EAPI void              evas_object_size_hint_padding_set (Evas_Object *obj, Evas_Coord l, Evas_Coord r, Evas_Coord t, Evas_Coord b) EINA_ARG_NONNULL(1);
+EAPI void evas_object_size_hint_padding_set(Evas_Object *obj, Evas_Coord l, Evas_Coord r, Evas_Coord t, Evas_Coord b) EINA_ARG_NONNULL(1);
 
 /**
  * @}
@@ -5536,7 +5520,7 @@ EAPI void              evas_object_size_hint_padding_set (Evas_Object *obj, Evas
  * printf("The data that was attached was %p\n", evas_object_data_get(obj, "name_of_data"));
  * @endcode
  */
-EAPI void                      evas_object_data_set             (Evas_Object *obj, const char *key, const void *data) EINA_ARG_NONNULL(1, 2);
+EAPI void                     evas_object_data_set(Evas_Object *obj, const char *key, const void *data) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Return an attached data pointer on an Evas object by its given
@@ -5567,7 +5551,7 @@ EAPI void                      evas_object_data_set             (Evas_Object *ob
  * else printf("No data was stored on the object\n");
  * @endcode
  */
-EAPI void                     *evas_object_data_get             (const Evas_Object *obj, const char *key) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2);
+EAPI void                    *evas_object_data_get(const Evas_Object *obj, const char *key) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2);
 
 /**
  * Delete an attached data pointer from an object.
@@ -5589,8 +5573,7 @@ EAPI void                     *evas_object_data_get             (const Evas_Obje
  * my_data = evas_object_data_del(obj, "name_of_my_data");
  * @endcode
  */
-EAPI void                     *evas_object_data_del             (Evas_Object *obj, const char *key) EINA_ARG_NONNULL(1, 2);
-
+EAPI void                    *evas_object_data_del(Evas_Object *obj, const char *key) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Set pointer behavior.
@@ -5613,7 +5596,7 @@ EAPI void                     *evas_object_data_del             (Evas_Object *ob
  *
  * @ingroup Evas_Object_Group_Extras
  */
-EAPI void                      evas_object_pointer_mode_set     (Evas_Object *obj, Evas_Object_Pointer_Mode setting) EINA_ARG_NONNULL(1);
+EAPI void                     evas_object_pointer_mode_set(Evas_Object *obj, Evas_Object_Pointer_Mode setting) EINA_ARG_NONNULL(1);
 
 /**
  * Determine how pointer will behave.
@@ -5621,8 +5604,7 @@ EAPI void                      evas_object_pointer_mode_set     (Evas_Object *ob
  * @return pointer behavior.
  * @ingroup Evas_Object_Group_Extras
  */
-EAPI Evas_Object_Pointer_Mode  evas_object_pointer_mode_get     (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
-
+EAPI Evas_Object_Pointer_Mode evas_object_pointer_mode_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Sets whether or not the given Evas object is to be drawn anti-aliased.
@@ -5631,7 +5613,7 @@ EAPI Evas_Object_Pointer_Mode  evas_object_pointer_mode_get     (const Evas_Obje
  * @param   antialias 1 if the object is to be anti_aliased, 0 otherwise.
  * @ingroup Evas_Object_Group_Extras
  */
-EAPI void                      evas_object_anti_alias_set       (Evas_Object *obj, Eina_Bool antialias) EINA_ARG_NONNULL(1);
+EAPI void                     evas_object_anti_alias_set(Evas_Object *obj, Eina_Bool antialias) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves whether or not the given Evas object is to be drawn anti_aliased.
@@ -5639,8 +5621,7 @@ EAPI void                      evas_object_anti_alias_set       (Evas_Object *ob
  * @return  @c 1 if the object is to be anti_aliased.  @c 0 otherwise.
  * @ingroup Evas_Object_Group_Extras
  */
-EAPI Eina_Bool                 evas_object_anti_alias_get       (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
-
+EAPI Eina_Bool                evas_object_anti_alias_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Sets the scaling factor for an Evas object. Does not affect all
@@ -5661,7 +5642,7 @@ EAPI Eina_Bool                 evas_object_anti_alias_get       (const Evas_Obje
  *
  * @ingroup Evas_Object_Group_Extras
  */
-EAPI void                      evas_object_scale_set            (Evas_Object *obj, double scale) EINA_ARG_NONNULL(1);
+EAPI void                     evas_object_scale_set(Evas_Object *obj, double scale) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the scaling factor for the given Evas object.
@@ -5673,8 +5654,7 @@ EAPI void                      evas_object_scale_set            (Evas_Object *ob
  *
  * @see evas_object_scale_set()
  */
-EAPI double                    evas_object_scale_get            (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
-
+EAPI double                   evas_object_scale_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Sets the render_op to be used for rendering the Evas object.
@@ -5682,7 +5662,7 @@ EAPI double                    evas_object_scale_get            (const Evas_Obje
  * @param   op one of the Evas_Render_Op values.
  * @ingroup Evas_Object_Group_Extras
  */
-EAPI void                      evas_object_render_op_set        (Evas_Object *obj, Evas_Render_Op op) EINA_ARG_NONNULL(1);
+EAPI void                     evas_object_render_op_set(Evas_Object *obj, Evas_Render_Op op) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the current value of the operation used for rendering the Evas object.
@@ -5690,7 +5670,7 @@ EAPI void                      evas_object_render_op_set        (Evas_Object *ob
  * @return  one of the enumerated values in Evas_Render_Op.
  * @ingroup Evas_Object_Group_Extras
  */
-EAPI Evas_Render_Op            evas_object_render_op_get        (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Render_Op           evas_object_render_op_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Set whether to use precise (usually expensive) point collision
@@ -5718,7 +5698,7 @@ EAPI Evas_Render_Op            evas_object_render_op_get        (const Evas_Obje
  * @see evas_object_precise_is_inside_get()
  * @ingroup Evas_Object_Group_Extras
  */
-   EAPI void                      evas_object_precise_is_inside_set(Evas_Object *obj, Eina_Bool precise) EINA_ARG_NONNULL(1);
+EAPI void                     evas_object_precise_is_inside_set(Evas_Object *obj, Eina_Bool precise) EINA_ARG_NONNULL(1);
 
 /**
  * Determine whether an object is set to use precise point collision
@@ -5732,7 +5712,7 @@ EAPI Evas_Render_Op            evas_object_render_op_get        (const Evas_Obje
  *
  * @ingroup Evas_Object_Group_Extras
  */
-   EAPI Eina_Bool                 evas_object_precise_is_inside_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Eina_Bool                evas_object_precise_is_inside_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Set a hint flag on the given Evas object that it's used as a "static
@@ -5744,14 +5724,14 @@ EAPI Evas_Render_Op            evas_object_render_op_get        (const Evas_Obje
  *
  * This is a hint to Evas that this object is used as a big static
  * clipper and shouldn't be moved with children and otherwise
- * considered specially. The default value for new objects is 
+ * considered specially. The default value for new objects is
  * @c EINA_FALSE.
  *
  * @see evas_object_static_clip_get()
  *
  * @ingroup Evas_Object_Group_Extras
  */
-   EAPI void                      evas_object_static_clip_set      (Evas_Object *obj, Eina_Bool is_static_clip) EINA_ARG_NONNULL(1);
+EAPI void                     evas_object_static_clip_set(Evas_Object *obj, Eina_Bool is_static_clip) EINA_ARG_NONNULL(1);
 
 /**
  * Get the "static clipper" hint flag for a given Evas object.
@@ -5764,7 +5744,7 @@ EAPI Evas_Render_Op            evas_object_render_op_get        (const Evas_Obje
  *
  * @ingroup Evas_Object_Group_Extras
  */
-   EAPI Eina_Bool                 evas_object_static_clip_get      (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Eina_Bool                evas_object_static_clip_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * @}
@@ -5821,7 +5801,7 @@ EAPI Evas_Render_Op            evas_object_render_op_get        (const Evas_Obje
  *
  * @ingroup Evas_Object_Group_Find
  */
-EAPI Evas_Object      *evas_focus_get                    (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Object *evas_focus_get(const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the object on the given evas with the given name.
@@ -5829,15 +5809,15 @@ EAPI Evas_Object      *evas_focus_get                    (const Evas *e) EINA_WA
  * @param   name The given name.
  * @return  If successful, the Evas object with the given name.  Otherwise,
  *          @c NULL.
- * 
+ *
  * This looks for the evas object given a name by evas_object_name_set(). If
  * the name is not unique canvas-wide, then which one of the many objects
  * with that name is returned is undefined, so only use this if you can ensure
  * the object name is unique.
- * 
+ *
  * @ingroup Evas_Object_Group_Find
  */
-EAPI Evas_Object      *evas_object_name_find             (const Evas *e, const char *name) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Object *evas_object_name_find(const Evas *e, const char *name) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the object from children of the given object with the given name.
@@ -5846,19 +5826,19 @@ EAPI Evas_Object      *evas_object_name_find             (const Evas *e, const c
  * @param   recurse Set to the number of child levels to recurse (0 == don't recurse, 1 == only look at the children of @p obj or their immediate children, but no further etc.).
  * @return  If successful, the Evas object with the given name.  Otherwise,
  *          @c NULL.
- * 
+ *
  * This looks for the evas object given a name by evas_object_name_set(), but
  * it ONLY looks at the children of the object *p obj, and will only recurse
  * into those children if @p recurse is greater than 0. If the name is not
  * unique within immediate children (or the whole child tree) then it is not
  * defined which child object will be returned. If @p recurse is set to -1 then
  * it will recurse without limit.
- * 
+ *
  * @since 1.2
- * 
+ *
  * @ingroup Evas_Object_Group_Find
  */
-EAPI Evas_Object      *evas_object_name_child_find        (const Evas_Object *obj, const char *name, int recurse) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Object *evas_object_name_child_find(const Evas_Object *obj, const char *name, int recurse) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Retrieve the Evas object stacked at the top of a given position in
@@ -5883,7 +5863,7 @@ EAPI Evas_Object      *evas_object_name_child_find        (const Evas_Object *ob
  * objects, acting only on the ones at the "top level", with regard to
  * object parenting.
  */
-EAPI Evas_Object      *evas_object_top_at_xy_get         (const Evas *e, Evas_Coord x, Evas_Coord y, Eina_Bool include_pass_events_objects, Eina_Bool include_hidden_objects) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Object *evas_object_top_at_xy_get(const Evas *e, Evas_Coord x, Evas_Coord y, Eina_Bool include_pass_events_objects, Eina_Bool include_hidden_objects) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Retrieve the Evas object stacked at the top at the position of the
@@ -5901,7 +5881,7 @@ EAPI Evas_Object      *evas_object_top_at_xy_get         (const Evas *e, Evas_Co
  * objects, acting only on the ones at the "top level", with regard to
  * object parenting.
  */
-EAPI Evas_Object      *evas_object_top_at_pointer_get    (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Object *evas_object_top_at_pointer_get(const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Retrieve the Evas object stacked at the top of a given rectangular
@@ -5931,7 +5911,7 @@ EAPI Evas_Object      *evas_object_top_at_pointer_get    (const Evas *e) EINA_WA
  * objects, acting only on the ones at the "top level", with regard to
  * object parenting.
  */
-EAPI Evas_Object      *evas_object_top_in_rectangle_get  (const Evas *e, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h, Eina_Bool include_pass_events_objects, Eina_Bool include_hidden_objects) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Object *evas_object_top_in_rectangle_get(const Evas *e, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h, Eina_Bool include_pass_events_objects, Eina_Bool include_hidden_objects) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Retrieve a list of Evas objects lying over a given position in
@@ -5956,8 +5936,8 @@ EAPI Evas_Object      *evas_object_top_in_rectangle_get  (const Evas *e, Evas_Co
  * objects, acting only on the ones at the "top level", with regard to
  * object parenting.
  */
-EAPI Eina_List        *evas_objects_at_xy_get            (const Evas *e, Evas_Coord x, Evas_Coord y, Eina_Bool include_pass_events_objects, Eina_Bool include_hidden_objects) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
-   EAPI Eina_List        *evas_objects_in_rectangle_get     (const Evas *e, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h, Eina_Bool include_pass_events_objects, Eina_Bool include_hidden_objects) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Eina_List   *evas_objects_at_xy_get(const Evas *e, Evas_Coord x, Evas_Coord y, Eina_Bool include_pass_events_objects, Eina_Bool include_hidden_objects) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Eina_List   *evas_objects_in_rectangle_get(const Evas *e, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h, Eina_Bool include_pass_events_objects, Eina_Bool include_hidden_objects) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Get the lowest (stacked) Evas object on the canvas @p e.
@@ -5978,7 +5958,7 @@ EAPI Eina_List        *evas_objects_at_xy_get            (const Evas *e, Evas_Co
  * objects, acting only on the ones at the "top level", with regard to
  * object parenting.
  */
-EAPI Evas_Object      *evas_object_bottom_get            (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Object *evas_object_bottom_get(const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Get the highest (stacked) Evas object on the canvas @p e.
@@ -6000,7 +5980,7 @@ EAPI Evas_Object      *evas_object_bottom_get            (const Evas *e) EINA_WA
  * objects, acting only on the ones at the "top level", with regard to
  * object parenting.
  */
-EAPI Evas_Object      *evas_object_top_get               (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Object *evas_object_top_get(const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * @}
@@ -6023,18 +6003,18 @@ EAPI Evas_Object      *evas_object_top_get               (const Evas *e) EINA_WA
  * @{
  */
 
-typedef void (*Evas_Object_Intercept_Show_Cb) (void *data, Evas_Object *obj);
-typedef void (*Evas_Object_Intercept_Hide_Cb) (void *data, Evas_Object *obj);
-typedef void (*Evas_Object_Intercept_Move_Cb) (void *data, Evas_Object *obj, Evas_Coord x, Evas_Coord y);
-typedef void (*Evas_Object_Intercept_Resize_Cb) (void *data, Evas_Object *obj, Evas_Coord w, Evas_Coord h);
-typedef void (*Evas_Object_Intercept_Raise_Cb) (void *data, Evas_Object *obj);
-typedef void (*Evas_Object_Intercept_Lower_Cb) (void *data, Evas_Object *obj);
-typedef void (*Evas_Object_Intercept_Stack_Above_Cb) (void *data, Evas_Object *obj, Evas_Object *above);
-typedef void (*Evas_Object_Intercept_Stack_Below_Cb) (void *data, Evas_Object *obj, Evas_Object *above);
-typedef void (*Evas_Object_Intercept_Layer_Set_Cb) (void *data, Evas_Object *obj, int l);
-typedef void (*Evas_Object_Intercept_Color_Set_Cb) (void *data, Evas_Object *obj, int r, int g, int b, int a);
-typedef void (*Evas_Object_Intercept_Clip_Set_Cb) (void *data, Evas_Object *obj, Evas_Object *clip);
-typedef void (*Evas_Object_Intercept_Clip_Unset_Cb) (void *data, Evas_Object *obj);
+typedef void (*Evas_Object_Intercept_Show_Cb)(void *data, Evas_Object *obj);
+typedef void (*Evas_Object_Intercept_Hide_Cb)(void *data, Evas_Object *obj);
+typedef void (*Evas_Object_Intercept_Move_Cb)(void *data, Evas_Object *obj, Evas_Coord x, Evas_Coord y);
+typedef void (*Evas_Object_Intercept_Resize_Cb)(void *data, Evas_Object *obj, Evas_Coord w, Evas_Coord h);
+typedef void (*Evas_Object_Intercept_Raise_Cb)(void *data, Evas_Object *obj);
+typedef void (*Evas_Object_Intercept_Lower_Cb)(void *data, Evas_Object *obj);
+typedef void (*Evas_Object_Intercept_Stack_Above_Cb)(void *data, Evas_Object *obj, Evas_Object *above);
+typedef void (*Evas_Object_Intercept_Stack_Below_Cb)(void *data, Evas_Object *obj, Evas_Object *above);
+typedef void (*Evas_Object_Intercept_Layer_Set_Cb)(void *data, Evas_Object *obj, int l);
+typedef void (*Evas_Object_Intercept_Color_Set_Cb)(void *data, Evas_Object *obj, int r, int g, int b, int a);
+typedef void (*Evas_Object_Intercept_Clip_Set_Cb)(void *data, Evas_Object *obj, Evas_Object *clip);
+typedef void (*Evas_Object_Intercept_Clip_Unset_Cb)(void *data, Evas_Object *obj);
 
 /**
  * Set the callback function that intercepts a show event of a object.
@@ -6049,7 +6029,7 @@ typedef void (*Evas_Object_Intercept_Clip_Unset_Cb) (void *data, Evas_Object *ob
  * @see evas_object_intercept_show_callback_del().
  *
  */
-EAPI void              evas_object_intercept_show_callback_add        (Evas_Object *obj, Evas_Object_Intercept_Show_Cb func, const void *data) EINA_ARG_NONNULL(1, 2);
+EAPI void  evas_object_intercept_show_callback_add(Evas_Object *obj, Evas_Object_Intercept_Show_Cb func, const void *data) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Unset the callback function that intercepts a show event of a
@@ -6064,7 +6044,7 @@ EAPI void              evas_object_intercept_show_callback_add        (Evas_Obje
  * @see evas_object_intercept_show_callback_add().
  *
  */
-EAPI void             *evas_object_intercept_show_callback_del        (Evas_Object *obj, Evas_Object_Intercept_Show_Cb func) EINA_ARG_NONNULL(1, 2);
+EAPI void *evas_object_intercept_show_callback_del(Evas_Object *obj, Evas_Object_Intercept_Show_Cb func) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Set the callback function that intercepts a hide event of a object.
@@ -6079,7 +6059,7 @@ EAPI void             *evas_object_intercept_show_callback_del        (Evas_Obje
  * @see evas_object_intercept_hide_callback_del().
  *
  */
-EAPI void              evas_object_intercept_hide_callback_add        (Evas_Object *obj, Evas_Object_Intercept_Hide_Cb func, const void *data) EINA_ARG_NONNULL(1, 2);
+EAPI void  evas_object_intercept_hide_callback_add(Evas_Object *obj, Evas_Object_Intercept_Hide_Cb func, const void *data) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Unset the callback function that intercepts a hide event of a
@@ -6094,7 +6074,7 @@ EAPI void              evas_object_intercept_hide_callback_add        (Evas_Obje
  * @see evas_object_intercept_hide_callback_add().
  *
  */
-EAPI void             *evas_object_intercept_hide_callback_del        (Evas_Object *obj, Evas_Object_Intercept_Hide_Cb func) EINA_ARG_NONNULL(1, 2);
+EAPI void *evas_object_intercept_hide_callback_del(Evas_Object *obj, Evas_Object_Intercept_Hide_Cb func) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Set the callback function that intercepts a move event of a object.
@@ -6109,7 +6089,7 @@ EAPI void             *evas_object_intercept_hide_callback_del        (Evas_Obje
  * @see evas_object_intercept_move_callback_del().
  *
  */
-EAPI void              evas_object_intercept_move_callback_add        (Evas_Object *obj, Evas_Object_Intercept_Move_Cb func, const void *data) EINA_ARG_NONNULL(1, 2);
+EAPI void  evas_object_intercept_move_callback_add(Evas_Object *obj, Evas_Object_Intercept_Move_Cb func, const void *data) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Unset the callback function that intercepts a move event of a
@@ -6124,26 +6104,26 @@ EAPI void              evas_object_intercept_move_callback_add        (Evas_Obje
  * @see evas_object_intercept_move_callback_add().
  *
  */
-EAPI void             *evas_object_intercept_move_callback_del        (Evas_Object *obj, Evas_Object_Intercept_Move_Cb func) EINA_ARG_NONNULL(1, 2);
+EAPI void *evas_object_intercept_move_callback_del(Evas_Object *obj, Evas_Object_Intercept_Move_Cb func) EINA_ARG_NONNULL(1, 2);
 
-   EAPI void              evas_object_intercept_resize_callback_add      (Evas_Object *obj, Evas_Object_Intercept_Resize_Cb func, const void *data) EINA_ARG_NONNULL(1, 2);
-   EAPI void             *evas_object_intercept_resize_callback_del      (Evas_Object *obj, Evas_Object_Intercept_Resize_Cb func) EINA_ARG_NONNULL(1, 2);
-   EAPI void              evas_object_intercept_raise_callback_add       (Evas_Object *obj, Evas_Object_Intercept_Raise_Cb func, const void *data) EINA_ARG_NONNULL(1, 2);
-   EAPI void             *evas_object_intercept_raise_callback_del       (Evas_Object *obj, Evas_Object_Intercept_Raise_Cb func) EINA_ARG_NONNULL(1, 2);
-   EAPI void              evas_object_intercept_lower_callback_add       (Evas_Object *obj, Evas_Object_Intercept_Lower_Cb func, const void *data) EINA_ARG_NONNULL(1, 2);
-   EAPI void             *evas_object_intercept_lower_callback_del       (Evas_Object *obj, Evas_Object_Intercept_Lower_Cb func) EINA_ARG_NONNULL(1, 2);
-   EAPI void              evas_object_intercept_stack_above_callback_add (Evas_Object *obj, Evas_Object_Intercept_Stack_Above_Cb func, const void *data) EINA_ARG_NONNULL(1, 2);
-   EAPI void             *evas_object_intercept_stack_above_callback_del (Evas_Object *obj, Evas_Object_Intercept_Stack_Above_Cb func) EINA_ARG_NONNULL(1, 2);
-   EAPI void              evas_object_intercept_stack_below_callback_add (Evas_Object *obj, Evas_Object_Intercept_Stack_Below_Cb func, const void *data) EINA_ARG_NONNULL(1, 2);
-   EAPI void             *evas_object_intercept_stack_below_callback_del (Evas_Object *obj, Evas_Object_Intercept_Stack_Below_Cb func) EINA_ARG_NONNULL(1, 2);
-   EAPI void              evas_object_intercept_layer_set_callback_add   (Evas_Object *obj, Evas_Object_Intercept_Layer_Set_Cb func, const void *data) EINA_ARG_NONNULL(1, 2);
-   EAPI void             *evas_object_intercept_layer_set_callback_del   (Evas_Object *obj, Evas_Object_Intercept_Layer_Set_Cb func) EINA_ARG_NONNULL(1, 2);
-   EAPI void              evas_object_intercept_color_set_callback_add   (Evas_Object *obj, Evas_Object_Intercept_Color_Set_Cb func, const void *data) EINA_ARG_NONNULL(1, 2);
-   EAPI void             *evas_object_intercept_color_set_callback_del   (Evas_Object *obj, Evas_Object_Intercept_Color_Set_Cb func) EINA_ARG_NONNULL(1, 2);
-   EAPI void              evas_object_intercept_clip_set_callback_add    (Evas_Object *obj, Evas_Object_Intercept_Clip_Set_Cb func, const void *data) EINA_ARG_NONNULL(1, 2);
-   EAPI void             *evas_object_intercept_clip_set_callback_del    (Evas_Object *obj, Evas_Object_Intercept_Clip_Set_Cb func) EINA_ARG_NONNULL(1, 2);
-   EAPI void              evas_object_intercept_clip_unset_callback_add  (Evas_Object *obj, Evas_Object_Intercept_Clip_Unset_Cb func, const void *data) EINA_ARG_NONNULL(1, 2);
-   EAPI void             *evas_object_intercept_clip_unset_callback_del  (Evas_Object *obj, Evas_Object_Intercept_Clip_Unset_Cb func) EINA_ARG_NONNULL(1, 2);
+EAPI void  evas_object_intercept_resize_callback_add(Evas_Object *obj, Evas_Object_Intercept_Resize_Cb func, const void *data) EINA_ARG_NONNULL(1, 2);
+EAPI void *evas_object_intercept_resize_callback_del(Evas_Object *obj, Evas_Object_Intercept_Resize_Cb func) EINA_ARG_NONNULL(1, 2);
+EAPI void  evas_object_intercept_raise_callback_add(Evas_Object *obj, Evas_Object_Intercept_Raise_Cb func, const void *data) EINA_ARG_NONNULL(1, 2);
+EAPI void *evas_object_intercept_raise_callback_del(Evas_Object *obj, Evas_Object_Intercept_Raise_Cb func) EINA_ARG_NONNULL(1, 2);
+EAPI void  evas_object_intercept_lower_callback_add(Evas_Object *obj, Evas_Object_Intercept_Lower_Cb func, const void *data) EINA_ARG_NONNULL(1, 2);
+EAPI void *evas_object_intercept_lower_callback_del(Evas_Object *obj, Evas_Object_Intercept_Lower_Cb func) EINA_ARG_NONNULL(1, 2);
+EAPI void  evas_object_intercept_stack_above_callback_add(Evas_Object *obj, Evas_Object_Intercept_Stack_Above_Cb func, const void *data) EINA_ARG_NONNULL(1, 2);
+EAPI void *evas_object_intercept_stack_above_callback_del(Evas_Object *obj, Evas_Object_Intercept_Stack_Above_Cb func) EINA_ARG_NONNULL(1, 2);
+EAPI void  evas_object_intercept_stack_below_callback_add(Evas_Object *obj, Evas_Object_Intercept_Stack_Below_Cb func, const void *data) EINA_ARG_NONNULL(1, 2);
+EAPI void *evas_object_intercept_stack_below_callback_del(Evas_Object *obj, Evas_Object_Intercept_Stack_Below_Cb func) EINA_ARG_NONNULL(1, 2);
+EAPI void  evas_object_intercept_layer_set_callback_add(Evas_Object *obj, Evas_Object_Intercept_Layer_Set_Cb func, const void *data) EINA_ARG_NONNULL(1, 2);
+EAPI void *evas_object_intercept_layer_set_callback_del(Evas_Object *obj, Evas_Object_Intercept_Layer_Set_Cb func) EINA_ARG_NONNULL(1, 2);
+EAPI void  evas_object_intercept_color_set_callback_add(Evas_Object *obj, Evas_Object_Intercept_Color_Set_Cb func, const void *data) EINA_ARG_NONNULL(1, 2);
+EAPI void *evas_object_intercept_color_set_callback_del(Evas_Object *obj, Evas_Object_Intercept_Color_Set_Cb func) EINA_ARG_NONNULL(1, 2);
+EAPI void  evas_object_intercept_clip_set_callback_add(Evas_Object *obj, Evas_Object_Intercept_Clip_Set_Cb func, const void *data) EINA_ARG_NONNULL(1, 2);
+EAPI void *evas_object_intercept_clip_set_callback_del(Evas_Object *obj, Evas_Object_Intercept_Clip_Set_Cb func) EINA_ARG_NONNULL(1, 2);
+EAPI void  evas_object_intercept_clip_unset_callback_add(Evas_Object *obj, Evas_Object_Intercept_Clip_Unset_Cb func, const void *data) EINA_ARG_NONNULL(1, 2);
+EAPI void *evas_object_intercept_clip_unset_callback_del(Evas_Object *obj, Evas_Object_Intercept_Clip_Unset_Cb func) EINA_ARG_NONNULL(1, 2);
 
 /**
  * @}
@@ -6166,7 +6146,7 @@ EAPI void             *evas_object_intercept_move_callback_del        (Evas_Obje
  * rectangle, however the rectangle is actually very useful and should be
  * manipulated using the generic @ref Evas_Object_Group "evas object functions".
  *
- * The evas rectangle server a number of key functions when working on evas
+ * The evas rectangle serves a number of key functions when working on evas
  * programs:
  * @li Background
  * @li Debugging
@@ -6252,6 +6232,9 @@ EAPI void             *evas_object_intercept_move_callback_del        (Evas_Obje
  * evas_object_show(clipper);
  * @endcode
  *
+ * @warning We don't guarantee any proper results if you create a Rectangle
+ * object without setting the evas engine.
+ *
  * For an example that more fully exercise the use of an evas object rectangle
  * see @ref Example_Evas_Object_Manipulation.
  *
@@ -6265,7 +6248,7 @@ EAPI void             *evas_object_intercept_move_callback_del        (Evas_Obje
  *
  * @ingroup Evas_Object_Rectangle
  */
-EAPI Evas_Object      *evas_object_rectangle_add         (Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+EAPI Evas_Object *evas_object_rectangle_add(Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
 /**
  * @defgroup Evas_Object_Image Image Object Functions
@@ -6496,7 +6479,10 @@ EAPI Evas_Object      *evas_object_rectangle_add         (Evas *e) EINA_WARN_UNU
  * - #EVAS_COLORSPACE_GRY8:
  *   The image is just a alpha mask (8 bit's per pixel). This is used
  *   for alpha masking.
- * .
+ *
+ * @warning We don't guarantee any proper results if you create a Image object
+ * without setting the evas engine.
+ *
  * Some examples on this group of functions can be found @ref
  * Example_Evas_Images "here".
  *
@@ -6508,8 +6494,7 @@ EAPI Evas_Object      *evas_object_rectangle_add         (Evas *e) EINA_WARN_UNU
  * @{
  */
 
-typedef void (*Evas_Object_Image_Pixels_Get_Cb) (void *data, Evas_Object *o);
-
+typedef void (*Evas_Object_Image_Pixels_Get_Cb)(void *data, Evas_Object *o);
 
 /**
  * Creates a new image object on the given Evas @p e canvas.
@@ -6533,7 +6518,7 @@ typedef void (*Evas_Object_Image_Pixels_Get_Cb) (void *data, Evas_Object *o);
  * evas_object_image_file_set(img, "/path/to/img", NULL);
  * @endcode
  */
-EAPI Evas_Object             *evas_object_image_add                    (Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+EAPI Evas_Object                  *evas_object_image_add(Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
 /**
  * Creates a new image object that @b automatically scales its bound
@@ -6553,8 +6538,7 @@ EAPI Evas_Object             *evas_object_image_add                    (Evas *e)
  * @see evas_object_image_filled_set()
  * @see evas_object_image_fill_set()
  */
-EAPI Evas_Object             *evas_object_image_filled_add             (Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
-
+EAPI Evas_Object                  *evas_object_image_filled_add(Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
 /**
  * Sets the data for an image from memory to be loaded
@@ -6564,8 +6548,8 @@ EAPI Evas_Object             *evas_object_image_filled_add             (Evas *e)
  * itself). The @p data at the address is copied and stored for future use, so
  * no @p data needs to be kept after this call is made. It will be managed and
  * freed for you when no longer needed. The @p size is limited to 2 gigabytes
- * in size, and must be greater than 0. A @c NULL @p data pointer is also 
- * invalid. Set the filename to @c NULL to reset to empty state and have the 
+ * in size, and must be greater than 0. A @c NULL @p data pointer is also
+ * invalid. Set the filename to @c NULL to reset to empty state and have the
  * image file data freed from memory using evas_object_image_file_set().
  *
  * The @p format is optional (pass @c NULL if you don't need/use it). It is
@@ -6579,7 +6563,7 @@ EAPI Evas_Object             *evas_object_image_filled_add             (Evas *e)
  * @param format The format of the file (optional), or @c NULL if not needed
  * @param key The image key in file, or @c NULL.
  */
-EAPI void                     evas_object_image_memfile_set            (Evas_Object *obj, void *data, int size, char *format, char *key) EINA_ARG_NONNULL(1, 2);
+EAPI void                          evas_object_image_memfile_set(Evas_Object *obj, void *data, int size, char *format, char *key) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Set the source file from where an image object must fetch the real
@@ -6612,7 +6596,7 @@ EAPI void                     evas_object_image_memfile_set            (Evas_Obj
  *   }
  * @endcode
  */
-EAPI void                     evas_object_image_file_set               (Evas_Object *obj, const char *file, const char *key) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_file_set(Evas_Object *obj, const char *file, const char *key) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieve the source file from where an image object is to fetch the
@@ -6628,7 +6612,7 @@ EAPI void                     evas_object_image_file_set               (Evas_Obj
  * @note Use @c NULL pointers on the file components you're not
  * interested in: they'll be ignored by the function.
  */
-EAPI void                     evas_object_image_file_get               (const Evas_Object *obj, const char **file, const char **key) EINA_ARG_NONNULL(1, 2);
+EAPI void                          evas_object_image_file_get(const Evas_Object *obj, const char **file, const char **key) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Set the dimensions for an image object's border, a region which @b
@@ -6672,7 +6656,7 @@ EAPI void                     evas_object_image_file_get               (const Ev
  * @see evas_object_image_border_get()
  * @see evas_object_image_border_center_fill_set()
  */
-EAPI void                     evas_object_image_border_set             (Evas_Object *obj, int l, int r, int t, int b) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_border_set(Evas_Object *obj, int l, int r, int t, int b) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieve the dimensions for an image object's border, a region
@@ -6689,7 +6673,7 @@ EAPI void                     evas_object_image_border_set             (Evas_Obj
  *
  * See @ref evas_object_image_border_set() for more details.
  */
-EAPI void                     evas_object_image_border_get             (const Evas_Object *obj, int *l, int *r, int *t, int *b) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_border_get(const Evas_Object *obj, int *l, int *r, int *t, int *b) EINA_ARG_NONNULL(1);
 
 /**
  * Sets @b how the center part of the given image object (not the
@@ -6709,7 +6693,7 @@ EAPI void                     evas_object_image_border_get             (const Ev
  *
  * @see evas_object_image_border_center_fill_get()
  */
-EAPI void                     evas_object_image_border_center_fill_set (Evas_Object *obj, Evas_Border_Fill_Mode fill) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_border_center_fill_set(Evas_Object *obj, Evas_Border_Fill_Mode fill) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves @b how the center part of the given image object (not the
@@ -6721,7 +6705,7 @@ EAPI void                     evas_object_image_border_center_fill_set (Evas_Obj
  *
  * See @ref evas_object_image_fill_set() for more details.
  */
-EAPI Evas_Border_Fill_Mode    evas_object_image_border_center_fill_get (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Border_Fill_Mode         evas_object_image_border_center_fill_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Set whether the image object's fill property should track the
@@ -6739,7 +6723,7 @@ EAPI Evas_Border_Fill_Mode    evas_object_image_border_center_fill_get (const Ev
  * @see evas_object_image_filled_add()
  * @see evas_object_image_fill_get()
  */
-EAPI void                     evas_object_image_filled_set             (Evas_Object *obj, Eina_Bool setting) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_filled_set(Evas_Object *obj, Eina_Bool setting) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieve whether the image object's fill property should track the
@@ -6751,7 +6735,7 @@ EAPI void                     evas_object_image_filled_set             (Evas_Obj
  *
  * @see evas_object_image_filled_set() for more information
  */
-EAPI Eina_Bool                evas_object_image_filled_get             (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Eina_Bool                     evas_object_image_filled_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Sets the scaling factor (multiplier) for the borders of an image
@@ -6763,7 +6747,7 @@ EAPI Eina_Bool                evas_object_image_filled_get             (const Ev
  * @see evas_object_image_border_set()
  * @see evas_object_image_border_scale_get()
  */
-EAPI void                     evas_object_image_border_scale_set       (Evas_Object *obj, double scale);
+EAPI void                          evas_object_image_border_scale_set(Evas_Object *obj, double scale);
 
 /**
  * Retrieves the scaling factor (multiplier) for the borders of an
@@ -6775,7 +6759,7 @@ EAPI void                     evas_object_image_border_scale_set       (Evas_Obj
  * @see evas_object_image_border_set()
  * @see evas_object_image_border_scale_set()
  */
-EAPI double                   evas_object_image_border_scale_get       (const Evas_Object *obj);
+EAPI double                        evas_object_image_border_scale_get(const Evas_Object *obj);
 
 /**
  * Set how to fill an image object's drawing rectangle given the
@@ -6814,7 +6798,7 @@ EAPI double                   evas_object_image_border_scale_get       (const Ev
  * will @b override the values set here automatically, for you, in a
  * given way.
  */
-EAPI void                     evas_object_image_fill_set               (Evas_Object *obj, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_fill_set(Evas_Object *obj, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieve how an image object is to fill its drawing rectangle,
@@ -6835,7 +6819,7 @@ EAPI void                     evas_object_image_fill_set               (Evas_Obj
  *
  * See @ref evas_object_image_fill_set() for more details.
  */
-EAPI void                     evas_object_image_fill_get               (const Evas_Object *obj, Evas_Coord *x, Evas_Coord *y, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_fill_get(const Evas_Object *obj, Evas_Coord *x, Evas_Coord *y, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1);
 
 /**
  * Sets the tiling mode for the given evas image object's fill.
@@ -6843,7 +6827,7 @@ EAPI void                     evas_object_image_fill_get               (const Ev
  * @param   spread One of EVAS_TEXTURE_REFLECT, EVAS_TEXTURE_REPEAT,
  * EVAS_TEXTURE_RESTRICT, or EVAS_TEXTURE_PAD.
  */
-EAPI void                     evas_object_image_fill_spread_set        (Evas_Object *obj, Evas_Fill_Spread spread) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_fill_spread_set(Evas_Object *obj, Evas_Fill_Spread spread) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the spread (tiling mode) for the given image object's
@@ -6852,7 +6836,7 @@ EAPI void                     evas_object_image_fill_spread_set        (Evas_Obj
  * @param   obj The given evas image object.
  * @return  The current spread mode of the image object.
  */
-EAPI Evas_Fill_Spread         evas_object_image_fill_spread_get        (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Fill_Spread              evas_object_image_fill_spread_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Sets the size of the given image object.
@@ -6867,7 +6851,7 @@ EAPI Evas_Fill_Spread         evas_object_image_fill_spread_get        (const Ev
  * larger, then the image will be treated as if it were in the upper
  * left hand corner of a larger image that is otherwise transparent.
  */
-EAPI void                     evas_object_image_size_set               (Evas_Object *obj, int w, int h) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_size_set(Evas_Object *obj, int w, int h) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the size of the given image object.
@@ -6878,7 +6862,7 @@ EAPI void                     evas_object_image_size_set               (Evas_Obj
  *
  * See @ref evas_object_image_size_set() for more details.
  */
-EAPI void                     evas_object_image_size_get               (const Evas_Object *obj, int *w, int *h) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_size_get(const Evas_Object *obj, int *w, int *h) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the row stride of the given image object.
@@ -6889,7 +6873,7 @@ EAPI void                     evas_object_image_size_get               (const Ev
  * The row stride is the number of bytes between the start of a row
  * and the start of the next row for image data.
  */
-EAPI int                      evas_object_image_stride_get             (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI int                           evas_object_image_stride_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves a number representing any error that occurred during the
@@ -6900,7 +6884,7 @@ EAPI int                      evas_object_image_stride_get             (const Ev
  *         one of the #Evas_Load_Error values. #EVAS_LOAD_ERROR_NONE
  *         is returned if there was no error.
  */
-EAPI Evas_Load_Error          evas_object_image_load_error_get         (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Load_Error               evas_object_image_load_error_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Sets the raw image data of the given image object.
@@ -6917,7 +6901,7 @@ EAPI Evas_Load_Error          evas_object_image_load_error_get         (const Ev
  *
  * @see evas_object_image_data_get()
  */
-EAPI void                     evas_object_image_data_set               (Evas_Object *obj, void *data) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_data_set(Evas_Object *obj, void *data) EINA_ARG_NONNULL(1);
 
 /**
  * Get a pointer to the raw image data of the given image object.
@@ -6949,7 +6933,7 @@ EAPI void                     evas_object_image_data_set               (Evas_Obj
  *
  * @see evas_object_image_data_set()
  */
-EAPI void                    *evas_object_image_data_get               (const Evas_Object *obj, Eina_Bool for_writing) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI void                         *evas_object_image_data_get(const Evas_Object *obj, Eina_Bool for_writing) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Converts the raw image data of the given image object to the
@@ -6967,7 +6951,7 @@ EAPI void                    *evas_object_image_data_get               (const Ev
  * @param to_cspace The colorspace to which the image raw data will be converted.
  * @return data A newly allocated data in the format specified by to_cspace.
  */
-EAPI void                    *evas_object_image_data_convert           (Evas_Object *obj, Evas_Colorspace to_cspace) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI void                         *evas_object_image_data_convert(Evas_Object *obj, Evas_Colorspace to_cspace) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Replaces the raw image data of the given image object.
@@ -6992,7 +6976,7 @@ EAPI void                    *evas_object_image_data_convert           (Evas_Obj
  * See @ref evas_object_image_data_get() for more details.
  *
  */
-EAPI void                     evas_object_image_data_copy_set          (Evas_Object *obj, void *data) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_data_copy_set(Evas_Object *obj, void *data) EINA_ARG_NONNULL(1);
 
 /**
  * Mark a sub-region of the given image object to be redrawn.
@@ -7006,7 +6990,7 @@ EAPI void                     evas_object_image_data_copy_set          (Evas_Obj
  * This function schedules a particular rectangular region of an image
  * object to be updated (redrawn) at the next rendering cycle.
  */
-EAPI void                     evas_object_image_data_update_add        (Evas_Object *obj, int x, int y, int w, int h) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_data_update_add(Evas_Object *obj, int x, int y, int w, int h) EINA_ARG_NONNULL(1);
 
 /**
  * Enable or disable alpha channel usage on the given image object.
@@ -7023,7 +7007,7 @@ EAPI void                     evas_object_image_data_update_add        (Evas_Obj
  *
  * @see evas_object_image_alpha_get()
  */
-EAPI void                     evas_object_image_alpha_set              (Evas_Object *obj, Eina_Bool has_alpha) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_alpha_set(Evas_Object *obj, Eina_Bool has_alpha) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieve whether alpha channel data is being used on the given
@@ -7038,7 +7022,7 @@ EAPI void                     evas_object_image_alpha_set              (Evas_Obj
  *
  * See @ref evas_object_image_alpha_set() for more details.
  */
-EAPI Eina_Bool                evas_object_image_alpha_get              (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Eina_Bool                     evas_object_image_alpha_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Sets whether to use high-quality image scaling algorithm on the
@@ -7057,7 +7041,7 @@ EAPI Eina_Bool                evas_object_image_alpha_get              (const Ev
  *
  * @see evas_object_image_smooth_scale_get()
  */
-EAPI void                     evas_object_image_smooth_scale_set       (Evas_Object *obj, Eina_Bool smooth_scale) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_smooth_scale_set(Evas_Object *obj, Eina_Bool smooth_scale) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves whether the given image object is using high-quality
@@ -7068,7 +7052,7 @@ EAPI void                     evas_object_image_smooth_scale_set       (Evas_Obj
  *
  * See @ref evas_object_image_smooth_scale_set() for more details.
  */
-EAPI Eina_Bool                evas_object_image_smooth_scale_get       (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Eina_Bool                     evas_object_image_smooth_scale_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Preload an image object's image data in the background
@@ -7095,7 +7079,7 @@ EAPI Eina_Bool                evas_object_image_smooth_scale_get       (const Ev
  * then, that the user preload an image with it being @b hidden, just
  * to be shown on the #EVAS_CALLBACK_IMAGE_PRELOADED event's callback.
  */
-EAPI void                     evas_object_image_preload                (Evas_Object *obj, Eina_Bool cancel) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_preload(Evas_Object *obj, Eina_Bool cancel) EINA_ARG_NONNULL(1);
 
 /**
  * Reload an image object's image data.
@@ -7104,7 +7088,7 @@ EAPI void                     evas_object_image_preload                (Evas_Obj
  *
  * This function reloads the image data bound to image object @p obj.
  */
-EAPI void                     evas_object_image_reload                 (Evas_Object *obj) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_reload(Evas_Object *obj) EINA_ARG_NONNULL(1);
 
 /**
  * Save the given image object's contents to an (image) file.
@@ -7126,7 +7110,7 @@ EAPI void                     evas_object_image_reload                 (Evas_Obj
  * acceptable flags are @c quality and @c compress. Eg.: @c
  * "quality=100 compress=9"
  */
-EAPI Eina_Bool                evas_object_image_save                   (const Evas_Object *obj, const char *file, const char *key, const char *flags)  EINA_ARG_NONNULL(1, 2);
+EAPI Eina_Bool                     evas_object_image_save(const Evas_Object *obj, const char *file, const char *key, const char *flags)  EINA_ARG_NONNULL(1, 2);
 
 /**
  * Import pixels from given source to a given canvas image object.
@@ -7137,7 +7121,7 @@ EAPI Eina_Bool                evas_object_image_save                   (const Ev
  * This function imports pixels from a given source to a given canvas image.
  *
  */
-EAPI Eina_Bool                evas_object_image_pixels_import          (Evas_Object *obj, Evas_Pixel_Import_Source *pixels) EINA_ARG_NONNULL(1, 2);
+EAPI Eina_Bool                     evas_object_image_pixels_import(Evas_Object *obj, Evas_Pixel_Import_Source *pixels) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Set the callback function to get pixels from a canvas' image.
@@ -7150,15 +7134,21 @@ EAPI Eina_Bool                evas_object_image_pixels_import          (Evas_Obj
  * pixes from a image of the canvas.
  *
  */
-EAPI void                     evas_object_image_pixels_get_callback_set(Evas_Object *obj, Evas_Object_Image_Pixels_Get_Cb func, void *data) EINA_ARG_NONNULL(1, 2);
+EAPI void                          evas_object_image_pixels_get_callback_set(Evas_Object *obj, Evas_Object_Image_Pixels_Get_Cb func, void *data) EINA_ARG_NONNULL(1, 2);
 
 /**
- * Mark whether the given image object is dirty (needs to be redrawn).
+ * Mark whether the given image object is dirty and needs to request its pixels.
  *
  * @param obj The given image object.
  * @param dirty Whether the image is dirty.
+ *
+ * This function will only properly work if a pixels get callback has been set.
+ *
+ * @warning use this function if you really know what you are doing.
+ *
+ * @see evas_object_image_pixels_get_callback_set()
  */
-EAPI void                     evas_object_image_pixels_dirty_set       (Evas_Object *obj, Eina_Bool dirty) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_pixels_dirty_set(Evas_Object *obj, Eina_Bool dirty) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves whether the given image object is dirty (needs to be redrawn).
@@ -7166,7 +7156,7 @@ EAPI void                     evas_object_image_pixels_dirty_set       (Evas_Obj
  * @param obj The given image object.
  * @return Whether the image is dirty.
  */
-EAPI Eina_Bool                evas_object_image_pixels_dirty_get       (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Eina_Bool                     evas_object_image_pixels_dirty_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Set the DPI resolution of an image object's source image.
@@ -7179,7 +7169,7 @@ EAPI Eina_Bool                evas_object_image_pixels_dirty_get       (const Ev
  *
  * @see evas_object_image_load_dpi_get()
  */
-EAPI void                     evas_object_image_load_dpi_set           (Evas_Object *obj, double dpi) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_load_dpi_set(Evas_Object *obj, double dpi) EINA_ARG_NONNULL(1);
 
 /**
  * Get the DPI resolution of a loaded image object in the canvas.
@@ -7191,7 +7181,7 @@ EAPI void                     evas_object_image_load_dpi_set           (Evas_Obj
  *
  * @see evas_object_image_load_dpi_set() for more details
  */
-EAPI double                   evas_object_image_load_dpi_get           (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI double                        evas_object_image_load_dpi_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Set the size of a given image object's source image, when loading
@@ -7206,7 +7196,7 @@ EAPI double                   evas_object_image_load_dpi_get           (const Ev
  *
  * @see evas_object_image_load_size_get()
  */
-EAPI void                     evas_object_image_load_size_set          (Evas_Object *obj, int w, int h) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_load_size_set(Evas_Object *obj, int w, int h) EINA_ARG_NONNULL(1);
 
 /**
  * Get the size of a given image object's source image, when loading
@@ -7221,7 +7211,7 @@ EAPI void                     evas_object_image_load_size_set          (Evas_Obj
  *
  * @see evas_object_image_load_size_set() for more details
  */
-EAPI void                     evas_object_image_load_size_get          (const Evas_Object *obj, int *w, int *h) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_load_size_get(const Evas_Object *obj, int *w, int *h) EINA_ARG_NONNULL(1);
 
 /**
  * Set the scale down factor of a given image object's source image,
@@ -7235,7 +7225,7 @@ EAPI void                     evas_object_image_load_size_get          (const Ev
  *
  * @see evas_object_image_load_scale_down_get()
  */
-EAPI void                     evas_object_image_load_scale_down_set    (Evas_Object *obj, int scale_down) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_load_scale_down_set(Evas_Object *obj, int scale_down) EINA_ARG_NONNULL(1);
 
 /**
  * get the scale down factor of a given image object's source image,
@@ -7245,7 +7235,7 @@ EAPI void                     evas_object_image_load_scale_down_set    (Evas_Obj
  *
  * @see evas_object_image_load_scale_down_set() for more details
  */
-EAPI int                      evas_object_image_load_scale_down_get    (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI int                           evas_object_image_load_scale_down_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Inform a given image object to load a selective region of its
@@ -7266,7 +7256,7 @@ EAPI int                      evas_object_image_load_scale_down_get    (const Ev
  *
  * @see evas_object_image_load_region_get()
  */
-EAPI void                     evas_object_image_load_region_set        (Evas_Object *obj, int x, int y, int w, int h) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_load_region_set(Evas_Object *obj, int x, int y, int w, int h) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieve the coordinates of a given image object's selective
@@ -7283,7 +7273,7 @@ EAPI void                     evas_object_image_load_region_set        (Evas_Obj
  *
  * @see evas_object_image_load_region_get()
  */
-EAPI void                     evas_object_image_load_region_get        (const Evas_Object *obj, int *x, int *y, int *w, int *h) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_load_region_get(const Evas_Object *obj, int *x, int *y, int *w, int *h) EINA_ARG_NONNULL(1);
 
 /**
  * Define if the orientation information in the image file should be honored.
@@ -7292,7 +7282,7 @@ EAPI void                     evas_object_image_load_region_get        (const Ev
  * @param enable @c EINA_TRUE means that it should honor the orientation information
  * @since 1.1
  */
-EAPI void                     evas_object_image_load_orientation_set        (Evas_Object *obj, Eina_Bool enable) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_load_orientation_set(Evas_Object *obj, Eina_Bool enable) EINA_ARG_NONNULL(1);
 
 /**
  * Get if the orientation information in the image file should be honored.
@@ -7300,7 +7290,7 @@ EAPI void                     evas_object_image_load_orientation_set        (Eva
  * @param obj The given image object pointer.
  * @since 1.1
  */
-EAPI Eina_Bool                evas_object_image_load_orientation_get        (const Evas_Object *obj) EINA_ARG_NONNULL(1);
+EAPI Eina_Bool                     evas_object_image_load_orientation_get(const Evas_Object *obj) EINA_ARG_NONNULL(1);
 
 /**
  * Set the colorspace of a given image of the canvas.
@@ -7311,7 +7301,7 @@ EAPI Eina_Bool                evas_object_image_load_orientation_get        (con
  * This function sets the colorspace of given canvas image.
  *
  */
-EAPI void                     evas_object_image_colorspace_set         (Evas_Object *obj, Evas_Colorspace cspace) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_colorspace_set(Evas_Object *obj, Evas_Colorspace cspace) EINA_ARG_NONNULL(1);
 
 /**
  * Get the colorspace of a given image of the canvas.
@@ -7322,18 +7312,18 @@ EAPI void                     evas_object_image_colorspace_set         (Evas_Obj
  * This function returns the colorspace of given canvas image.
  *
  */
-EAPI Evas_Colorspace          evas_object_image_colorspace_get         (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Colorspace               evas_object_image_colorspace_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Get the support state of a given image
  *
  * @param obj The given image object pointer
  * @return The region support state
- * @since 1.2.0
+ * @since 1.2
  *
  * This function returns the state of the region support of given image
  */
-EAPI Eina_Bool          evas_object_image_region_support_get         (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Eina_Bool                     evas_object_image_region_support_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Set the native surface of a given image of the canvas
@@ -7344,7 +7334,7 @@ EAPI Eina_Bool          evas_object_image_region_support_get         (const Evas
  * This function sets a native surface of a given canvas image.
  *
  */
-EAPI void                     evas_object_image_native_surface_set     (Evas_Object *obj, Evas_Native_Surface *surf) EINA_ARG_NONNULL(1, 2);
+EAPI void                          evas_object_image_native_surface_set(Evas_Object *obj, Evas_Native_Surface *surf) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Get the native surface of a given image of the canvas
@@ -7355,31 +7345,31 @@ EAPI void                     evas_object_image_native_surface_set     (Evas_Obj
  * This function returns the native surface of a given canvas image.
  *
  */
-EAPI Evas_Native_Surface     *evas_object_image_native_surface_get     (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Native_Surface          *evas_object_image_native_surface_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Set the video surface linked to a given image of the canvas
  *
  * @param obj The given canvas pointer.
  * @param surf The new video surface.
- * @since 1.1.0
+ * @since 1.1
  *
  * This function link a video surface to a given canvas image.
  *
  */
-EAPI void                     evas_object_image_video_surface_set      (Evas_Object *obj, Evas_Video_Surface *surf) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_video_surface_set(Evas_Object *obj, Evas_Video_Surface *surf) EINA_ARG_NONNULL(1);
 
 /**
  * Get the video surface linekd to a given image of the canvas
  *
  * @param obj The given canvas pointer.
  * @return The video surface of the given canvas image.
- * @since 1.1.0
+ * @since 1.1
  *
  * This function returns the video surface linked to a given canvas image.
  *
  */
-EAPI const Evas_Video_Surface *evas_object_image_video_surface_get      (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI const Evas_Video_Surface     *evas_object_image_video_surface_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Set the scale hint of a given image of the canvas.
@@ -7394,7 +7384,7 @@ EAPI const Evas_Video_Surface *evas_object_image_video_surface_get      (const E
  *
  * @see evas_object_image_scale_hint_get()
  */
-EAPI void                     evas_object_image_scale_hint_set         (Evas_Object *obj, Evas_Image_Scale_Hint hint) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_scale_hint_set(Evas_Object *obj, Evas_Image_Scale_Hint hint) EINA_ARG_NONNULL(1);
 
 /**
  * Get the scale hint of a given image of the canvas.
@@ -7408,7 +7398,7 @@ EAPI void                     evas_object_image_scale_hint_set         (Evas_Obj
  *
  * @see evas_object_image_scale_hint_set() for more details.
  */
-EAPI Evas_Image_Scale_Hint    evas_object_image_scale_hint_get         (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Image_Scale_Hint         evas_object_image_scale_hint_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Set the content hint setting of a given image object of the canvas.
@@ -7425,7 +7415,7 @@ EAPI Evas_Image_Scale_Hint    evas_object_image_scale_hint_get         (const Ev
  *
  * @see evas_object_image_content_hint_get()
  */
-EAPI void                     evas_object_image_content_hint_set       (Evas_Object *obj, Evas_Image_Content_Hint hint) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_content_hint_set(Evas_Object *obj, Evas_Image_Content_Hint hint) EINA_ARG_NONNULL(1);
 
 /**
  * Get the content hint setting of a given image object of the canvas.
@@ -7440,8 +7430,7 @@ EAPI void                     evas_object_image_content_hint_set       (Evas_Obj
  *
  * @see evas_object_image_content_hint_set()
  */
-EAPI Evas_Image_Content_Hint  evas_object_image_content_hint_get       (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
-
+EAPI Evas_Image_Content_Hint       evas_object_image_content_hint_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Enable an image to be used as an alpha mask.
@@ -7455,7 +7444,7 @@ EAPI Evas_Image_Content_Hint  evas_object_image_content_hint_get       (const Ev
  * @param obj Object to use as an alpha mask.
  * @param ismask Use image as alphamask, must be true.
  */
-EAPI void                     evas_object_image_alpha_mask_set         (Evas_Object *obj, Eina_Bool ismask) EINA_ARG_NONNULL(1);
+EAPI void                          evas_object_image_alpha_mask_set(Evas_Object *obj, Eina_Bool ismask) EINA_ARG_NONNULL(1);
 
 /**
  * Set the source object on an image object to used as a @b proxy.
@@ -7480,7 +7469,7 @@ EAPI void                     evas_object_image_alpha_mask_set         (Evas_Obj
  * @see evas_object_image_source_get()
  * @see evas_object_image_source_unset()
  */
-EAPI Eina_Bool                evas_object_image_source_set             (Evas_Object *obj, Evas_Object *src) EINA_ARG_NONNULL(1);
+EAPI Eina_Bool                     evas_object_image_source_set(Evas_Object *obj, Evas_Object *src) EINA_ARG_NONNULL(1);
 
 /**
  * Get the current source object of an image object.
@@ -7491,7 +7480,7 @@ EAPI Eina_Bool                evas_object_image_source_set             (Evas_Obj
  *
  * @see evas_object_image_source_set() for more details
  */
-EAPI Evas_Object             *evas_object_image_source_get             (const Evas_Object *obj) EINA_ARG_NONNULL(1);
+EAPI Evas_Object                  *evas_object_image_source_get(const Evas_Object *obj) EINA_ARG_NONNULL(1);
 
 /**
  * Clear the source object on a proxy image object.
@@ -7502,7 +7491,7 @@ EAPI Evas_Object             *evas_object_image_source_get             (const Ev
  * This is equivalent to calling evas_object_image_source_set() with a
  * @c NULL source.
  */
-EAPI Eina_Bool                evas_object_image_source_unset           (Evas_Object *obj) EINA_ARG_NONNULL(1);
+EAPI Eina_Bool                     evas_object_image_source_unset(Evas_Object *obj) EINA_ARG_NONNULL(1);
 
 /**
  * Check if a file extension may be supported by @ref Evas_Object_Image.
@@ -7510,13 +7499,13 @@ EAPI Eina_Bool                evas_object_image_source_unset           (Evas_Obj
  * @param file The file to check
  * @return @c EINA_TRUE if we may be able to open it, @c EINA_FALSE if it's
  * unlikely.
- * @since 1.1.0
+ * @since 1.1
  *
  * If file is a Eina_Stringshare, use directly @ref evas_object_image_extension_can_load_fast_get.
  *
  * This functions is threadsafe.
  */
-EAPI Eina_Bool evas_object_image_extension_can_load_get(const char *file);
+EAPI Eina_Bool                     evas_object_image_extension_can_load_get(const char *file);
 
 /**
  * Check if a file extension may be supported by @ref Evas_Object_Image.
@@ -7524,11 +7513,11 @@ EAPI Eina_Bool evas_object_image_extension_can_load_get(const char *file);
  * @param file The file to check, it should be an Eina_Stringshare.
  * @return @c EINA_TRUE if we may be able to open it, @c EINA_FALSE if it's
  * unlikely.
- * @since 1.1.0
+ * @since 1.1
  *
  * This functions is threadsafe.
  */
-EAPI Eina_Bool evas_object_image_extension_can_load_fast_get(const char *file);
+EAPI Eina_Bool                     evas_object_image_extension_can_load_fast_get(const char *file);
 
 /**
  * Check if an image object can be animated (have multiple frames)
@@ -7539,7 +7528,7 @@ EAPI Eina_Bool evas_object_image_extension_can_load_fast_get(const char *file);
  * This returns if the image file of an image object is capable of animation
  * such as an animated gif file might. This is only useful to be called once
  * the image object file has been set.
- * 
+ *
  * Example:
  * @code
  * extern Evas_Object *obj;
@@ -7554,9 +7543,9 @@ EAPI Eina_Bool evas_object_image_extension_can_load_fast_get(const char *file);
  *     frame_count = evas_object_image_animated_frame_count_get(obj);
  *     printf("This image has %d frames\n",frame_count);
  *
- *     duration = evas_object_image_animated_frame_duration_get(obj,1,0); 
+ *     duration = evas_object_image_animated_frame_duration_get(obj,1,0);
  *     printf("Frame 1's duration is %f. You had better set object's frame to 2 after this duration using timer\n");
- *     
+ *
  *     loop_count = evas_object_image_animated_loop_count_get(obj);
  *     printf("loop count is %d. You had better run loop %d times\n",loop_count,loop_count);
  *
@@ -7572,16 +7561,16 @@ EAPI Eina_Bool evas_object_image_extension_can_load_fast_get(const char *file);
  *     printf("You set image object's frame to 1. You can see frame 1\n");
  *   }
  * @endcode
- * 
+ *
  * @see evas_object_image_animated_get()
- * @see evas_object_image_animated_frame_count_get() 
+ * @see evas_object_image_animated_frame_count_get()
  * @see evas_object_image_animated_loop_type_get()
  * @see evas_object_image_animated_loop_count_get()
  * @see evas_object_image_animated_frame_duration_get()
  * @see evas_object_image_animated_frame_set()
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI Eina_Bool evas_object_image_animated_get(const Evas_Object *obj);
+EAPI Eina_Bool                     evas_object_image_animated_get(const Evas_Object *obj);
 
 /**
  * Get the total number of frames of the image object.
@@ -7590,16 +7579,16 @@ EAPI Eina_Bool evas_object_image_animated_get(const Evas_Object *obj);
  * @return The number of frames
  *
  * This returns total number of frames the image object supports (if animated)
- * 
+ *
  * @see evas_object_image_animated_get()
- * @see evas_object_image_animated_frame_count_get() 
+ * @see evas_object_image_animated_frame_count_get()
  * @see evas_object_image_animated_loop_type_get()
  * @see evas_object_image_animated_loop_count_get()
  * @see evas_object_image_animated_frame_duration_get()
  * @see evas_object_image_animated_frame_set()
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI int evas_object_image_animated_frame_count_get(const Evas_Object *obj);
+EAPI int                           evas_object_image_animated_frame_count_get(const Evas_Object *obj);
 
 /**
  * Get the kind of looping the image object does.
@@ -7608,21 +7597,21 @@ EAPI int evas_object_image_animated_frame_count_get(const Evas_Object *obj);
  * @return Loop type of the image object
  *
  * This returns the kind of looping the image object wants to do.
- * 
+ *
  * If it returns EVAS_IMAGE_ANIMATED_HINT_LOOP, you should display frames in a sequence like:
  * 1->2->3->1->2->3->1...
  * If it returns EVAS_IMAGE_ANIMATED_HINT_PINGPONG, it is better to
  * display frames in a sequence like: 1->2->3->2->1->2->3->1...
- * 
+ *
  * The default type is EVAS_IMAGE_ANIMATED_HINT_LOOP.
  *
  * @see evas_object_image_animated_get()
- * @see evas_object_image_animated_frame_count_get() 
+ * @see evas_object_image_animated_frame_count_get()
  * @see evas_object_image_animated_loop_type_get()
  * @see evas_object_image_animated_loop_count_get()
  * @see evas_object_image_animated_frame_duration_get()
  * @see evas_object_image_animated_frame_set()
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI Evas_Image_Animated_Loop_Hint evas_object_image_animated_loop_type_get(const Evas_Object *obj);
 
@@ -7635,19 +7624,19 @@ EAPI Evas_Image_Animated_Loop_Hint evas_object_image_animated_loop_type_get(cons
  * This returns loop count of image. The loop count is the number of times
  * the animation will play fully from first to last frame until the animation
  * should stop (at the final frame).
- * 
+ *
  * If 0 is returned, then looping should happen indefinitely (no limit to
  * the number of times it loops).
  *
  * @see evas_object_image_animated_get()
- * @see evas_object_image_animated_frame_count_get() 
+ * @see evas_object_image_animated_frame_count_get()
  * @see evas_object_image_animated_loop_type_get()
  * @see evas_object_image_animated_loop_count_get()
  * @see evas_object_image_animated_frame_duration_get()
  * @see evas_object_image_animated_frame_set()
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI int evas_object_image_animated_loop_count_get(const Evas_Object *obj);
+EAPI int                           evas_object_image_animated_loop_count_get(const Evas_Object *obj);
 
 /**
  * Get the duration of a sequence of frames.
@@ -7658,20 +7647,20 @@ EAPI int evas_object_image_animated_loop_count_get(const Evas_Object *obj);
  *
  * This returns total duration that the specified sequence of frames should
  * take in seconds.
- * 
+ *
  * If you set start_frame to 1 and frame_num 0, you get frame 1's duration
- * If you set start_frame to 1 and frame_num 1, you get frame 1's duration + 
+ * If you set start_frame to 1 and frame_num 1, you get frame 1's duration +
  * frame2's duration
  *
  * @see evas_object_image_animated_get()
- * @see evas_object_image_animated_frame_count_get() 
+ * @see evas_object_image_animated_frame_count_get()
  * @see evas_object_image_animated_loop_type_get()
  * @see evas_object_image_animated_loop_count_get()
  * @see evas_object_image_animated_frame_duration_get()
  * @see evas_object_image_animated_frame_set()
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI double evas_object_image_animated_frame_duration_get(const Evas_Object *obj, int start_frame, int fram_num);
+EAPI double                        evas_object_image_animated_frame_duration_get(const Evas_Object *obj, int start_frame, int fram_num);
 
 /**
  * Set the frame to current frame of an image object
@@ -7683,14 +7672,14 @@ EAPI double evas_object_image_animated_frame_duration_get(const Evas_Object *obj
  * frame.
  *
  * @see evas_object_image_animated_get()
- * @see evas_object_image_animated_frame_count_get() 
+ * @see evas_object_image_animated_frame_count_get()
  * @see evas_object_image_animated_loop_type_get()
  * @see evas_object_image_animated_loop_count_get()
  * @see evas_object_image_animated_frame_duration_get()
  * @see evas_object_image_animated_frame_set()
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI void evas_object_image_animated_frame_set(Evas_Object *obj, int frame_num);
+EAPI void                          evas_object_image_animated_frame_set(Evas_Object *obj, int frame_num);
 /**
  * @}
  */
@@ -7703,6 +7692,9 @@ EAPI void evas_object_image_animated_frame_set(Evas_Object *obj, int frame_num);
  * For multiline and multiple style text, see @ref Evas_Object_Textblock.
  *
  * See some @ref Example_Evas_Text "examples" on this group of functions.
+ *
+ * @warning We don't guarantee any proper results if you create a Text object
+ * without setting the evas engine.
  *
  * @ingroup Evas_Object_Specific
  */
@@ -7720,7 +7712,7 @@ EAPI void evas_object_image_animated_frame_set(Evas_Object *obj, int frame_num);
  * arguments, being 'x' your style variable.
  */
 #define EVAS_TEXT_STYLE_BASIC_SET(x, s) \
-   do { x = ((x) & ~EVAS_TEXT_STYLE_MASK_BASIC) | (s); } while (0)
+  do { x = ((x) & ~EVAS_TEXT_STYLE_MASK_BASIC) | (s); } while (0)
 
 #define EVAS_TEXT_STYLE_MASK_SHADOW_DIRECTION (0x7 << 4)
 
@@ -7730,31 +7722,31 @@ EAPI void evas_object_image_animated_frame_set(Evas_Object *obj, int frame_num);
  * EVAS_TEXT_STYLE_SHADOW_DIRECTION_* values on 's', incrementally.
  */
 #define EVAS_TEXT_STYLE_SHADOW_DIRECTION_SET(x, s) \
-   do { x = ((x) & ~EVAS_TEXT_STYLE_MASK_SHADOW_DIRECTION) | (s); } while (0)
+  do { x = ((x) & ~EVAS_TEXT_STYLE_MASK_SHADOW_DIRECTION) | (s); } while (0)
 
-   typedef enum _Evas_Text_Style_Type
-     {
-	EVAS_TEXT_STYLE_PLAIN, /**< plain, standard text */
-	EVAS_TEXT_STYLE_SHADOW, /**< text with shadow underneath */
-	EVAS_TEXT_STYLE_OUTLINE, /**< text with an outline */
-	EVAS_TEXT_STYLE_SOFT_OUTLINE, /**< text with a soft outline */
-	EVAS_TEXT_STYLE_GLOW, /**< text with a glow effect */
-	EVAS_TEXT_STYLE_OUTLINE_SHADOW, /**< text with both outline and shadow effects */
-	EVAS_TEXT_STYLE_FAR_SHADOW, /**< text with (far) shadow underneath */
-	EVAS_TEXT_STYLE_OUTLINE_SOFT_SHADOW, /**< text with outline and soft shadow effects combined */
-	EVAS_TEXT_STYLE_SOFT_SHADOW, /**< text with (soft) shadow underneath */
-	EVAS_TEXT_STYLE_FAR_SOFT_SHADOW, /**< text with (far soft) shadow underneath */
+typedef enum _Evas_Text_Style_Type
+{
+   EVAS_TEXT_STYLE_PLAIN,      /**< plain, standard text */
+   EVAS_TEXT_STYLE_SHADOW,      /**< text with shadow underneath */
+   EVAS_TEXT_STYLE_OUTLINE,      /**< text with an outline */
+   EVAS_TEXT_STYLE_SOFT_OUTLINE,      /**< text with a soft outline */
+   EVAS_TEXT_STYLE_GLOW,      /**< text with a glow effect */
+   EVAS_TEXT_STYLE_OUTLINE_SHADOW,      /**< text with both outline and shadow effects */
+   EVAS_TEXT_STYLE_FAR_SHADOW,      /**< text with (far) shadow underneath */
+   EVAS_TEXT_STYLE_OUTLINE_SOFT_SHADOW,      /**< text with outline and soft shadow effects combined */
+   EVAS_TEXT_STYLE_SOFT_SHADOW,      /**< text with (soft) shadow underneath */
+   EVAS_TEXT_STYLE_FAR_SOFT_SHADOW,      /**< text with (far soft) shadow underneath */
 
-        /* OR these to modify shadow direction (3 bits needed) */
-	EVAS_TEXT_STYLE_SHADOW_DIRECTION_BOTTOM_RIGHT = (0x0 << 4), /**< shadow growing to bottom right */
-	EVAS_TEXT_STYLE_SHADOW_DIRECTION_BOTTOM       = (0x1 << 4), /**< shadow growing to the bottom */
-	EVAS_TEXT_STYLE_SHADOW_DIRECTION_BOTTOM_LEFT  = (0x2 << 4), /**< shadow growing to bottom left */
-	EVAS_TEXT_STYLE_SHADOW_DIRECTION_LEFT         = (0x3 << 4), /**< shadow growing to the left */
-	EVAS_TEXT_STYLE_SHADOW_DIRECTION_TOP_LEFT     = (0x4 << 4), /**< shadow growing to top left */
-	EVAS_TEXT_STYLE_SHADOW_DIRECTION_TOP          = (0x5 << 4), /**< shadow growing to the top */
-	EVAS_TEXT_STYLE_SHADOW_DIRECTION_TOP_RIGHT    = (0x6 << 4), /**< shadow growing to top right */
-	EVAS_TEXT_STYLE_SHADOW_DIRECTION_RIGHT        = (0x7 << 4) /**< shadow growing to the right */
-     } Evas_Text_Style_Type; /**< Types of styles to be applied on text objects. The @c EVAS_TEXT_STYLE_SHADOW_DIRECTION_* ones are to be ORed together with others imposing shadow, to change shadow's direction */
+   /* OR these to modify shadow direction (3 bits needed) */
+   EVAS_TEXT_STYLE_SHADOW_DIRECTION_BOTTOM_RIGHT = (0x0 << 4),      /**< shadow growing to bottom right */
+   EVAS_TEXT_STYLE_SHADOW_DIRECTION_BOTTOM = (0x1 << 4),            /**< shadow growing to the bottom */
+   EVAS_TEXT_STYLE_SHADOW_DIRECTION_BOTTOM_LEFT = (0x2 << 4),       /**< shadow growing to bottom left */
+   EVAS_TEXT_STYLE_SHADOW_DIRECTION_LEFT = (0x3 << 4),              /**< shadow growing to the left */
+   EVAS_TEXT_STYLE_SHADOW_DIRECTION_TOP_LEFT = (0x4 << 4),          /**< shadow growing to top left */
+   EVAS_TEXT_STYLE_SHADOW_DIRECTION_TOP = (0x5 << 4),               /**< shadow growing to the top */
+   EVAS_TEXT_STYLE_SHADOW_DIRECTION_TOP_RIGHT = (0x6 << 4),         /**< shadow growing to top right */
+   EVAS_TEXT_STYLE_SHADOW_DIRECTION_RIGHT = (0x7 << 4)             /**< shadow growing to the right */
+} Evas_Text_Style_Type;      /**< Types of styles to be applied on text objects. The @c EVAS_TEXT_STYLE_SHADOW_DIRECTION_* ones are to be ORed together with others imposing shadow, to change shadow's direction */
 
 /**
  * Creates a new text object on the provided canvas.
@@ -7770,7 +7762,7 @@ EAPI void evas_object_image_animated_frame_set(Evas_Object *obj, int frame_num);
  * @see evas_object_text_font_set()
  * @see evas_object_text_text_set()
  */
-EAPI Evas_Object      *evas_object_text_add              (Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+EAPI Evas_Object         *evas_object_text_add(Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
 /**
  * Set the font (source) file to be used on a given text object.
@@ -7784,7 +7776,7 @@ EAPI Evas_Object      *evas_object_text_add              (Evas *e) EINA_WARN_UNU
  *
  * @see evas_object_text_font_get()
  */
-EAPI void              evas_object_text_font_source_set  (Evas_Object *obj, const char *font) EINA_ARG_NONNULL(1);
+EAPI void                 evas_object_text_font_source_set(Evas_Object *obj, const char *font) EINA_ARG_NONNULL(1);
 
 /**
  * Get the font file's path which is being used on a given text
@@ -7795,7 +7787,7 @@ EAPI void              evas_object_text_font_source_set  (Evas_Object *obj, cons
  *
  * @see evas_object_text_font_get() for more details
  */
-EAPI const char       *evas_object_text_font_source_get  (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI const char          *evas_object_text_font_source_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Set the font family and size on a given text object.
@@ -7813,7 +7805,7 @@ EAPI const char       *evas_object_text_font_source_get  (const Evas_Object *obj
  * @see evas_object_text_font_get()
  * @see evas_object_text_font_source_set()
  */
-   EAPI void              evas_object_text_font_set         (Evas_Object *obj, const char *font, Evas_Font_Size size) EINA_ARG_NONNULL(1);
+EAPI void                 evas_object_text_font_set(Evas_Object *obj, const char *font, Evas_Font_Size size) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieve the font family and size in use on a given text object.
@@ -7829,7 +7821,7 @@ EAPI const char       *evas_object_text_font_source_get  (const Evas_Object *obj
  *
  * @see evas_object_text_font_set()
  */
-EAPI void              evas_object_text_font_get         (const Evas_Object *obj, const char **font, Evas_Font_Size *size) EINA_ARG_NONNULL(1);
+EAPI void                 evas_object_text_font_get(const Evas_Object *obj, const char **font, Evas_Font_Size *size) EINA_ARG_NONNULL(1);
 
 /**
  * Sets the text string to be displayed by the given text object.
@@ -7839,7 +7831,7 @@ EAPI void              evas_object_text_font_get         (const Evas_Object *obj
  *
  * @see evas_object_text_text_get()
  */
-EAPI void              evas_object_text_text_set         (Evas_Object *obj, const char *text) EINA_ARG_NONNULL(1);
+EAPI void                 evas_object_text_text_set(Evas_Object *obj, const char *text) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the text string currently being displayed by the given
@@ -7852,7 +7844,7 @@ EAPI void              evas_object_text_text_set         (Evas_Object *obj, cons
  *
  * @see evas_object_text_text_set()
  */
-EAPI const char       *evas_object_text_text_get         (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI const char          *evas_object_text_text_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * @brief Sets the BiDi delimiters used in the textblock.
@@ -7863,9 +7855,9 @@ EAPI const char       *evas_object_text_text_get         (const Evas_Object *obj
  *
  * @param obj The given text object.
  * @param delim A null terminated string of delimiters, e.g ",|".
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI void              evas_object_text_bidi_delimiters_set(Evas_Object *obj, const char *delim);
+EAPI void                 evas_object_text_bidi_delimiters_set(Evas_Object *obj, const char *delim);
 
 /**
  * @brief Gets the BiDi delimiters used in the textblock.
@@ -7876,17 +7868,17 @@ EAPI void              evas_object_text_bidi_delimiters_set(Evas_Object *obj, co
  *
  * @param obj The given text object.
  * @return A null terminated string of delimiters, e.g ",|". If empty, returns NULL.
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI const char       *evas_object_text_bidi_delimiters_get(const Evas_Object *obj);
+EAPI const char          *evas_object_text_bidi_delimiters_get(const Evas_Object *obj);
 
-   EAPI Evas_Coord        evas_object_text_ascent_get       (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
-   EAPI Evas_Coord        evas_object_text_descent_get      (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
-   EAPI Evas_Coord        evas_object_text_max_ascent_get   (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
-   EAPI Evas_Coord        evas_object_text_max_descent_get  (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
-   EAPI Evas_Coord        evas_object_text_horiz_advance_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
-   EAPI Evas_Coord        evas_object_text_vert_advance_get (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
-   EAPI Evas_Coord        evas_object_text_inset_get        (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Coord           evas_object_text_ascent_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Coord           evas_object_text_descent_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Coord           evas_object_text_max_ascent_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Coord           evas_object_text_max_descent_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Coord           evas_object_text_horiz_advance_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Coord           evas_object_text_vert_advance_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Coord           evas_object_text_inset_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Retrieve position and dimension information of a character within a text @c Evas_Object.
@@ -7906,15 +7898,15 @@ EAPI const char       *evas_object_text_bidi_delimiters_get(const Evas_Object *o
  *
  * @return @c EINA_FALSE on success, @c EINA_TRUE on error.
  */
-EAPI Eina_Bool         evas_object_text_char_pos_get     (const Evas_Object *obj, int pos, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch) EINA_ARG_NONNULL(1);
-   EAPI int               evas_object_text_char_coords_get  (const Evas_Object *obj, Evas_Coord x, Evas_Coord y, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch) EINA_ARG_NONNULL(1);
+EAPI Eina_Bool            evas_object_text_char_pos_get(const Evas_Object *obj, int pos, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch) EINA_ARG_NONNULL(1);
+EAPI int                  evas_object_text_char_coords_get(const Evas_Object *obj, Evas_Coord x, Evas_Coord y, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch) EINA_ARG_NONNULL(1);
 
 /**
  * Returns the logical position of the last char in the text
  * up to the pos given. this is NOT the position of the last char
  * because of the possibility of RTL in the text.
  */
-EAPI int               evas_object_text_last_up_to_pos   (const Evas_Object *obj, Evas_Coord x, Evas_Coord y) EINA_ARG_NONNULL(1);
+EAPI int                  evas_object_text_last_up_to_pos(const Evas_Object *obj, Evas_Coord x, Evas_Coord y) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the style on use on the given text object.
@@ -7924,7 +7916,7 @@ EAPI int               evas_object_text_last_up_to_pos   (const Evas_Object *obj
  *
  * @see evas_object_text_style_set() for more details.
  */
-EAPI Evas_Text_Style_Type evas_object_text_style_get     (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Text_Style_Type evas_object_text_style_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Sets the style to apply on the given text object.
@@ -7952,7 +7944,7 @@ EAPI Evas_Text_Style_Type evas_object_text_style_get     (const Evas_Object *obj
  * @see evas_object_text_glow_color_set()
  * @see evas_object_text_glow2_color_set()
  */
-EAPI void              evas_object_text_style_set        (Evas_Object *obj, Evas_Text_Style_Type type) EINA_ARG_NONNULL(1);
+EAPI void                 evas_object_text_style_set(Evas_Object *obj, Evas_Text_Style_Type type) EINA_ARG_NONNULL(1);
 
 /**
  * Sets the shadow color for the given text object.
@@ -7979,7 +7971,7 @@ EAPI void              evas_object_text_style_set        (Evas_Object *obj, Evas
  *
  * @see evas_object_text_shadow_color_get()
  */
-EAPI void              evas_object_text_shadow_color_set (Evas_Object *obj, int r, int g, int b, int a) EINA_ARG_NONNULL(1);
+EAPI void                 evas_object_text_shadow_color_set(Evas_Object *obj, int r, int g, int b, int a) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the shadow color for the given text object.
@@ -7999,7 +7991,7 @@ EAPI void              evas_object_text_shadow_color_set (Evas_Object *obj, int 
  *
  * @see evas_object_text_shadow_color_set() for more details.
  */
-EAPI void              evas_object_text_shadow_color_get (const Evas_Object *obj, int *r, int *g, int *b, int *a) EINA_ARG_NONNULL(1);
+EAPI void                 evas_object_text_shadow_color_get(const Evas_Object *obj, int *r, int *g, int *b, int *a) EINA_ARG_NONNULL(1);
 
 /**
  * Sets the glow color for the given text object.
@@ -8021,7 +8013,7 @@ EAPI void              evas_object_text_shadow_color_get (const Evas_Object *obj
  *
  * @see evas_object_text_glow_color_get()
  */
-EAPI void              evas_object_text_glow_color_set   (Evas_Object *obj, int r, int g, int b, int a) EINA_ARG_NONNULL(1);
+EAPI void                 evas_object_text_glow_color_set(Evas_Object *obj, int r, int g, int b, int a) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the glow color for the given text object.
@@ -8041,7 +8033,7 @@ EAPI void              evas_object_text_glow_color_set   (Evas_Object *obj, int 
  *
  * @see evas_object_text_glow_color_set() for more details.
  */
-EAPI void              evas_object_text_glow_color_get   (const Evas_Object *obj, int *r, int *g, int *b, int *a) EINA_ARG_NONNULL(1);
+EAPI void                 evas_object_text_glow_color_get(const Evas_Object *obj, int *r, int *g, int *b, int *a) EINA_ARG_NONNULL(1);
 
 /**
  * Sets the 'glow 2' color for the given text object.
@@ -8059,7 +8051,7 @@ EAPI void              evas_object_text_glow_color_get   (const Evas_Object *obj
  *
  * @see evas_object_text_glow2_color_get()
  */
-EAPI void              evas_object_text_glow2_color_set  (Evas_Object *obj, int r, int g, int b, int a) EINA_ARG_NONNULL(1);
+EAPI void                 evas_object_text_glow2_color_set(Evas_Object *obj, int r, int g, int b, int a) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the 'glow 2' color for the given text object.
@@ -8079,7 +8071,7 @@ EAPI void              evas_object_text_glow2_color_set  (Evas_Object *obj, int 
  *
  * @see evas_object_text_glow2_color_set() for more details.
  */
-EAPI void              evas_object_text_glow2_color_get  (const Evas_Object *obj, int *r, int *g, int *b, int *a) EINA_ARG_NONNULL(1);
+EAPI void                 evas_object_text_glow2_color_get(const Evas_Object *obj, int *r, int *g, int *b, int *a) EINA_ARG_NONNULL(1);
 
 /**
  * Sets the outline color for the given text object.
@@ -8099,7 +8091,7 @@ EAPI void              evas_object_text_glow2_color_get  (const Evas_Object *obj
  *
  * @see evas_object_text_outline_color_get()
  */
-EAPI void              evas_object_text_outline_color_set(Evas_Object *obj, int r, int g, int b, int a) EINA_ARG_NONNULL(1);
+EAPI void                 evas_object_text_outline_color_set(Evas_Object *obj, int r, int g, int b, int a) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the outline color for the given text object.
@@ -8119,7 +8111,7 @@ EAPI void              evas_object_text_outline_color_set(Evas_Object *obj, int 
  *
  * @see evas_object_text_outline_color_set() for more details.
  */
-EAPI void              evas_object_text_outline_color_get(const Evas_Object *obj, int *r, int *g, int *b, int *a) EINA_ARG_NONNULL(1);
+EAPI void                 evas_object_text_outline_color_get(const Evas_Object *obj, int *r, int *g, int *b, int *a) EINA_ARG_NONNULL(1);
 
 /**
  * Gets the text style pad of a text object.
@@ -8131,7 +8123,7 @@ EAPI void              evas_object_text_outline_color_get(const Evas_Object *obj
  * @param b The bottom pad (or @c NULL).
  *
  */
-EAPI void              evas_object_text_style_pad_get    (const Evas_Object *obj, int *l, int *r, int *t, int *b) EINA_ARG_NONNULL(1);
+EAPI void                 evas_object_text_style_pad_get(const Evas_Object *obj, int *l, int *r, int *t, int *b) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the direction of the text currently being displayed in the
@@ -8139,7 +8131,7 @@ EAPI void              evas_object_text_style_pad_get    (const Evas_Object *obj
  * @param  obj The given evas text object.
  * @return the direction of the text
  */
-EAPI Evas_BiDi_Direction evas_object_text_direction_get  (const Evas_Object *obj) EINA_ARG_NONNULL(1) EINA_WARN_UNUSED_RESULT;
+EAPI Evas_BiDi_Direction  evas_object_text_direction_get(const Evas_Object *obj) EINA_ARG_NONNULL(1) EINA_WARN_UNUSED_RESULT;
 
 /**
  * @}
@@ -8262,6 +8254,9 @@ EAPI Evas_BiDi_Direction evas_object_text_direction_get  (const Evas_Object *obj
  * @li ellipsis - Value between 0.0-1.0 to indicate the type of ellipsis, or -1.0 to indicate ellipsis isn't wanted.
  * @li password - "on" or "off". This is used to specifically turn replacing chars with the replacement char (i.e password mode) on and off.
  *
+ * @warning We don't guarantee any proper results if you create a Textblock
+ * object
+ * without setting the evas engine.
  *
  * @todo put here some usage examples
  *
@@ -8270,48 +8265,46 @@ EAPI Evas_BiDi_Direction evas_object_text_direction_get  (const Evas_Object *obj
  * @{
  */
 
-   typedef struct _Evas_Textblock_Style                 Evas_Textblock_Style;
-   typedef struct _Evas_Textblock_Cursor                Evas_Textblock_Cursor;
-   /**
-    * @typedef Evas_Object_Textblock_Node_Format
-    * A format node.
-    */
-   typedef struct _Evas_Object_Textblock_Node_Format    Evas_Object_Textblock_Node_Format;
-   typedef struct _Evas_Textblock_Rectangle             Evas_Textblock_Rectangle;
+typedef struct _Evas_Textblock_Style              Evas_Textblock_Style;
+typedef struct _Evas_Textblock_Cursor             Evas_Textblock_Cursor;
+/**
+ * @typedef Evas_Object_Textblock_Node_Format
+ * A format node.
+ */
+typedef struct _Evas_Object_Textblock_Node_Format Evas_Object_Textblock_Node_Format;
+typedef struct _Evas_Textblock_Rectangle          Evas_Textblock_Rectangle;
 
-   struct _Evas_Textblock_Rectangle
-     {
-	Evas_Coord x, y, w, h;
-     };
+struct _Evas_Textblock_Rectangle
+{
+   Evas_Coord x, y, w, h;
+};
 
-   typedef enum _Evas_Textblock_Text_Type
-     {
-	EVAS_TEXTBLOCK_TEXT_RAW,
-	EVAS_TEXTBLOCK_TEXT_PLAIN,
-	EVAS_TEXTBLOCK_TEXT_MARKUP
-     } Evas_Textblock_Text_Type;
+typedef enum _Evas_Textblock_Text_Type
+{
+   EVAS_TEXTBLOCK_TEXT_RAW,
+   EVAS_TEXTBLOCK_TEXT_PLAIN,
+   EVAS_TEXTBLOCK_TEXT_MARKUP
+} Evas_Textblock_Text_Type;
 
-   typedef enum _Evas_Textblock_Cursor_Type
-     {
-	EVAS_TEXTBLOCK_CURSOR_UNDER,
-	EVAS_TEXTBLOCK_CURSOR_BEFORE
-     } Evas_Textblock_Cursor_Type;
-
+typedef enum _Evas_Textblock_Cursor_Type
+{
+   EVAS_TEXTBLOCK_CURSOR_UNDER,
+   EVAS_TEXTBLOCK_CURSOR_BEFORE
+} Evas_Textblock_Cursor_Type;
 
 /**
  * Adds a textblock to the given evas.
  * @param   e The given evas.
  * @return  The new textblock object.
  */
-EAPI Evas_Object                 *evas_object_textblock_add(Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
-
+EAPI Evas_Object                             *evas_object_textblock_add(Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
 /**
  * Returns the unescaped version of escape.
  * @param escape the string to be escaped
  * @return the unescaped version of escape
  */
-EAPI const char                  *evas_textblock_escape_string_get(const char *escape) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI const char                              *evas_textblock_escape_string_get(const char *escape) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Returns the escaped version of the string.
@@ -8319,7 +8312,7 @@ EAPI const char                  *evas_textblock_escape_string_get(const char *e
  * @param len_ret the len of the part of the string that was used.
  * @return the escaped string.
  */
-EAPI const char                  *evas_textblock_string_escape_get(const char *string, int *len_ret) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI const char                              *evas_textblock_string_escape_get(const char *string, int *len_ret) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Return the unescaped version of the string between start and end.
@@ -8328,7 +8321,7 @@ EAPI const char                  *evas_textblock_string_escape_get(const char *s
  * @param escape_end the end of the string.
  * @return the unescaped version of the range
  */
-EAPI const char                  *evas_textblock_escape_string_range_get(const char *escape_start, const char *escape_end) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2);
+EAPI const char                              *evas_textblock_escape_string_range_get(const char *escape_start, const char *escape_end) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2);
 
 /**
  * Return the plain version of the markup.
@@ -8337,13 +8330,13 @@ EAPI const char                  *evas_textblock_escape_string_range_get(const c
  * version of the text. i.e: <br> and <\n> will be replaced with \n, &...; with
  * the actual char and etc.
  *
- * @param obj The textblock object to work with. (if @c NULL, tries the 
+ * @param obj The textblock object to work with. (if @c NULL, tries the
  * default).
  * @param text The markup text (if @c NULL, return @c NULL).
  * @return An allocated plain text version of the markup.
- * @since 1.2.0
+ * @since 1.2
  */
-EAPI char                        *evas_textblock_text_markup_to_utf8(const Evas_Object *obj, const char *text) EINA_WARN_UNUSED_RESULT EINA_MALLOC;
+EAPI char                                    *evas_textblock_text_markup_to_utf8(const Evas_Object *obj, const char *text) EINA_WARN_UNUSED_RESULT EINA_MALLOC;
 
 /**
  * Return the markup version of the plain text.
@@ -8355,21 +8348,21 @@ EAPI char                        *evas_textblock_text_markup_to_utf8(const Evas_
  * default behaviour, i.e with no extra object information).
  * @param text The markup text (if @c NULL, return @c NULL).
  * @return An allocated plain text version of the markup.
- * @since 1.2.0
+ * @since 1.2
  */
-EAPI char                        *evas_textblock_text_utf8_to_markup(const Evas_Object *obj, const char *text) EINA_WARN_UNUSED_RESULT EINA_MALLOC;
+EAPI char                                    *evas_textblock_text_utf8_to_markup(const Evas_Object *obj, const char *text) EINA_WARN_UNUSED_RESULT EINA_MALLOC;
 
 /**
  * Creates a new textblock style.
  * @return  The new textblock style.
  */
-EAPI Evas_Textblock_Style        *evas_textblock_style_new(void) EINA_WARN_UNUSED_RESULT EINA_MALLOC;
+EAPI Evas_Textblock_Style                    *evas_textblock_style_new(void) EINA_WARN_UNUSED_RESULT EINA_MALLOC;
 
 /**
  * Destroys a textblock style.
  * @param ts The textblock style to free.
  */
-EAPI void                         evas_textblock_style_free(Evas_Textblock_Style *ts) EINA_ARG_NONNULL(1);
+EAPI void                                     evas_textblock_style_free(Evas_Textblock_Style *ts) EINA_ARG_NONNULL(1);
 
 /**
  * Sets the style ts to the style passed as text by text.
@@ -8379,15 +8372,14 @@ EAPI void                         evas_textblock_style_free(Evas_Textblock_Style
  * @param text the text to parse - NOT NULL.
  * @return Returns no value.
  */
-EAPI void                         evas_textblock_style_set(Evas_Textblock_Style *ts, const char *text) EINA_ARG_NONNULL(1);
+EAPI void                                     evas_textblock_style_set(Evas_Textblock_Style *ts, const char *text) EINA_ARG_NONNULL(1);
 
 /**
  * Return the text of the style ts.
  * @param ts  the style to get it's text.
  * @return the text of the style or null on error.
  */
-EAPI const char                  *evas_textblock_style_get(const Evas_Textblock_Style *ts) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
-
+EAPI const char                              *evas_textblock_style_get(const Evas_Textblock_Style *ts) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Set the objects style to ts.
@@ -8395,14 +8387,14 @@ EAPI const char                  *evas_textblock_style_get(const Evas_Textblock_
  * @param ts  the style to set.
  * @return Returns no value.
  */
-EAPI void                         evas_object_textblock_style_set(Evas_Object *obj, Evas_Textblock_Style *ts) EINA_ARG_NONNULL(1);
+EAPI void                                     evas_object_textblock_style_set(Evas_Object *obj, Evas_Textblock_Style *ts) EINA_ARG_NONNULL(1);
 
 /**
  * Return the style of an object.
  * @param obj  the object to get the style from.
  * @return the style of the object.
  */
-EAPI const Evas_Textblock_Style  *evas_object_textblock_style_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI const Evas_Textblock_Style              *evas_object_textblock_style_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Push ts to the top of the user style stack.
@@ -8415,18 +8407,18 @@ EAPI const Evas_Textblock_Style  *evas_object_textblock_style_get(const Evas_Obj
  * @param ts  the style to set.
  * @return Returns no value.
  * @see evas_object_textblock_style_set
- * @since 1.2.0
+ * @since 1.2
  */
-EAPI void                         evas_object_textblock_style_user_push(Evas_Object *obj, Evas_Textblock_Style *ts) EINA_ARG_NONNULL(1);
+EAPI void                                     evas_object_textblock_style_user_push(Evas_Object *obj, Evas_Textblock_Style *ts) EINA_ARG_NONNULL(1);
 
 /**
  * Del the from the top of the user style stack.
  *
  * @param obj  the object to get the style from.
  * @see evas_object_textblock_style_get
- * @since 1.2.0
+ * @since 1.2
  */
-EAPI void                        evas_object_textblock_style_user_pop(Evas_Object *obj) EINA_ARG_NONNULL(1);
+EAPI void                                     evas_object_textblock_style_user_pop(Evas_Object *obj) EINA_ARG_NONNULL(1);
 
 /**
  * Get (don't remove) the style at the top of the user style stack.
@@ -8434,9 +8426,9 @@ EAPI void                        evas_object_textblock_style_user_pop(Evas_Objec
  * @param obj  the object to get the style from.
  * @return the style of the object.
  * @see evas_object_textblock_style_get
- * @since 1.2.0
+ * @since 1.2
  */
-EAPI const Evas_Textblock_Style  *evas_object_textblock_style_user_peek(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI const Evas_Textblock_Style              *evas_object_textblock_style_user_peek(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * @brief Set the "replacement character" to use for the given textblock object.
@@ -8444,7 +8436,7 @@ EAPI const Evas_Textblock_Style  *evas_object_textblock_style_user_peek(const Ev
  * @param obj The given textblock object.
  * @param ch The charset name.
  */
-EAPI void                         evas_object_textblock_replace_char_set(Evas_Object *obj, const char *ch) EINA_ARG_NONNULL(1);
+EAPI void                                     evas_object_textblock_replace_char_set(Evas_Object *obj, const char *ch) EINA_ARG_NONNULL(1);
 
 /**
  * @brief Get the "replacement character" for given textblock object. Returns
@@ -8453,7 +8445,7 @@ EAPI void                         evas_object_textblock_replace_char_set(Evas_Ob
  * @param obj The given textblock object
  * @return Replacement character or @c NULL.
  */
-EAPI const char                  *evas_object_textblock_replace_char_get(Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI const char                              *evas_object_textblock_replace_char_get(Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * @brief Sets the vertical alignment of text within the textblock object
@@ -8465,18 +8457,18 @@ EAPI const char                  *evas_object_textblock_replace_char_get(Evas_Ob
  *
  * @param obj The given textblock object.
  * @param align A value between @c 0.0 and @c 1.0.
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI void                         evas_object_textblock_valign_set(Evas_Object *obj, double align);
+EAPI void                                     evas_object_textblock_valign_set(Evas_Object *obj, double align);
 
 /**
  * @brief Gets the vertical alignment of a textblock
  *
  * @param obj The given textblock object.
  * @return The alignment set for the object.
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI double                       evas_object_textblock_valign_get(const Evas_Object *obj);
+EAPI double                                   evas_object_textblock_valign_get(const Evas_Object *obj);
 
 /**
  * @brief Sets the BiDi delimiters used in the textblock.
@@ -8487,9 +8479,9 @@ EAPI double                       evas_object_textblock_valign_get(const Evas_Ob
  *
  * @param obj The given textblock object.
  * @param delim A null terminated string of delimiters, e.g ",|".
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI void                         evas_object_textblock_bidi_delimiters_set(Evas_Object *obj, const char *delim);
+EAPI void                                     evas_object_textblock_bidi_delimiters_set(Evas_Object *obj, const char *delim);
 
 /**
  * @brief Gets the BiDi delimiters used in the textblock.
@@ -8501,9 +8493,9 @@ EAPI void                         evas_object_textblock_bidi_delimiters_set(Evas
  * @param obj The given textblock object.
  * @return A null terminated string of delimiters, e.g ",|". If empty, returns
  * @c NULL.
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI const char                  *evas_object_textblock_bidi_delimiters_get(const Evas_Object *obj);
+EAPI const char                              *evas_object_textblock_bidi_delimiters_get(const Evas_Object *obj);
 
 /**
  * @brief Sets newline mode. When true, newline character will behave
@@ -8511,9 +8503,9 @@ EAPI const char                  *evas_object_textblock_bidi_delimiters_get(cons
  *
  * @param obj The given textblock object.
  * @param mode @c EINA_TRUE for legacy mode, @c EINA_FALSE otherwise.
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI void                         evas_object_textblock_legacy_newline_set(Evas_Object *obj, Eina_Bool mode) EINA_ARG_NONNULL(1);
+EAPI void                                     evas_object_textblock_legacy_newline_set(Evas_Object *obj, Eina_Bool mode) EINA_ARG_NONNULL(1);
 
 /**
  * @brief Gets newline mode. When true, newline character behaves
@@ -8521,10 +8513,9 @@ EAPI void                         evas_object_textblock_legacy_newline_set(Evas_
  *
  * @param obj The given textblock object.
  * @return @c EINA_TRUE if in legacy mode, @c EINA_FALSE otherwise.
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI Eina_Bool                    evas_object_textblock_legacy_newline_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
-
+EAPI Eina_Bool                                evas_object_textblock_legacy_newline_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Sets the tetxblock's text to the markup text.
@@ -8535,7 +8526,7 @@ EAPI Eina_Bool                    evas_object_textblock_legacy_newline_get(const
  * @param text the markup text to use.
  * @return Return no value.
  */
-EAPI void                         evas_object_textblock_text_markup_set(Evas_Object *obj, const char *text) EINA_ARG_NONNULL(1);
+EAPI void                                     evas_object_textblock_text_markup_set(Evas_Object *obj, const char *text) EINA_ARG_NONNULL(1);
 
 /**
  * Prepends markup to the cursor cur.
@@ -8546,7 +8537,7 @@ EAPI void                         evas_object_textblock_text_markup_set(Evas_Obj
  * @param text the markup text to prepend.
  * @return Return no value.
  */
-EAPI void                         evas_object_textblock_text_markup_prepend(Evas_Textblock_Cursor *cur, const char *text) EINA_ARG_NONNULL(1, 2);
+EAPI void                                     evas_object_textblock_text_markup_prepend(Evas_Textblock_Cursor *cur, const char *text) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Return the markup of the object.
@@ -8554,8 +8545,7 @@ EAPI void                         evas_object_textblock_text_markup_prepend(Evas
  * @param obj the Evas object.
  * @return the markup text of the object.
  */
-EAPI const char                  *evas_object_textblock_text_markup_get(const Evas_Object *obj) EINA_ARG_NONNULL(1);
-
+EAPI const char                              *evas_object_textblock_text_markup_get(const Evas_Object *obj) EINA_ARG_NONNULL(1);
 
 /**
  * Return the object's main cursor.
@@ -8563,7 +8553,7 @@ EAPI const char                  *evas_object_textblock_text_markup_get(const Ev
  * @param obj the object.
  * @return The @p obj's main cursor.
  */
-EAPI Evas_Textblock_Cursor *evas_object_textblock_cursor_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Textblock_Cursor                   *evas_object_textblock_cursor_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Create a new cursor, associate it to the obj and init it to point
@@ -8575,8 +8565,7 @@ EAPI Evas_Textblock_Cursor *evas_object_textblock_cursor_get(const Evas_Object *
  * @param obj the object to associate to.
  * @return the new cursor.
  */
-EAPI Evas_Textblock_Cursor       *evas_object_textblock_cursor_new(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
-
+EAPI Evas_Textblock_Cursor                   *evas_object_textblock_cursor_new(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
 /**
  * Free the cursor and unassociate it from the object.
@@ -8585,8 +8574,7 @@ EAPI Evas_Textblock_Cursor       *evas_object_textblock_cursor_new(const Evas_Ob
  * @param cur the cursor to free.
  * @return Returns no value.
  */
-EAPI void                         evas_textblock_cursor_free(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
-
+EAPI void                                     evas_textblock_cursor_free(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
 
 /**
  * Sets the cursor to the start of the first text node.
@@ -8594,7 +8582,7 @@ EAPI void                         evas_textblock_cursor_free(Evas_Textblock_Curs
  * @param cur the cursor to update.
  * @return Returns no value.
  */
-EAPI void                         evas_textblock_cursor_paragraph_first(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
+EAPI void                                     evas_textblock_cursor_paragraph_first(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
 
 /**
  * sets the cursor to the end of the last text node.
@@ -8602,7 +8590,7 @@ EAPI void                         evas_textblock_cursor_paragraph_first(Evas_Tex
  * @param cur the cursor to set.
  * @return Returns no value.
  */
-EAPI void                         evas_textblock_cursor_paragraph_last(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
+EAPI void                                     evas_textblock_cursor_paragraph_last(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
 
 /**
  * Advances to the start of the next text node
@@ -8611,7 +8599,7 @@ EAPI void                         evas_textblock_cursor_paragraph_last(Evas_Text
  * @return @c EINA_TRUE if it managed to advance a paragraph, @c EINA_FALSE
  * otherwise.
  */
-EAPI Eina_Bool                    evas_textblock_cursor_paragraph_next(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
+EAPI Eina_Bool                                evas_textblock_cursor_paragraph_next(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
 
 /**
  * Advances to the end of the previous text node
@@ -8620,7 +8608,7 @@ EAPI Eina_Bool                    evas_textblock_cursor_paragraph_next(Evas_Text
  * @return @c EINA_TRUE if it managed to advance a paragraph, @c EINA_FALSE
  * otherwise.
  */
-EAPI Eina_Bool                    evas_textblock_cursor_paragraph_prev(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
+EAPI Eina_Bool                                evas_textblock_cursor_paragraph_prev(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
 
 /**
  * Returns the
@@ -8629,7 +8617,7 @@ EAPI Eina_Bool                    evas_textblock_cursor_paragraph_prev(Evas_Text
  * @param anchor the anchor name to get
  * @return Returns the list format node corresponding to the anchor, may be null if there are none.
  */
-EAPI const Eina_List             *evas_textblock_node_format_list_get(const Evas_Object *obj, const char *anchor) EINA_ARG_NONNULL(1, 2);
+EAPI const Eina_List                         *evas_textblock_node_format_list_get(const Evas_Object *obj, const char *anchor) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Returns the first format node.
@@ -8671,7 +8659,7 @@ EAPI const Evas_Object_Textblock_Node_Format *evas_textblock_node_format_prev_ge
  * @param obj the Evas object of the textblock - not null.
  * @param n the current format node - not null.
  */
-EAPI void                         evas_textblock_node_format_remove_pair(Evas_Object *obj, Evas_Object_Textblock_Node_Format *n) EINA_ARG_NONNULL(1, 2);
+EAPI void                                     evas_textblock_node_format_remove_pair(Evas_Object *obj, Evas_Object_Textblock_Node_Format *n) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Sets the cursor to point to the place where format points to.
@@ -8680,7 +8668,7 @@ EAPI void                         evas_textblock_node_format_remove_pair(Evas_Ob
  * @param n the format node to update according.
  * @deprecated duplicate of evas_textblock_cursor_at_format_set
  */
-EAPI void                         evas_textblock_cursor_set_at_format(Evas_Textblock_Cursor *cur, const Evas_Object_Textblock_Node_Format *n) EINA_ARG_NONNULL(1, 2);
+EAPI void                                     evas_textblock_cursor_set_at_format(Evas_Textblock_Cursor *cur, const Evas_Object_Textblock_Node_Format *n) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Return the format node at the position pointed by cur.
@@ -8697,7 +8685,7 @@ EAPI const Evas_Object_Textblock_Node_Format *evas_textblock_cursor_format_get(c
  * @param fnode the format node.
  * @return the textual format of the format node.
  */
-EAPI const char                  *evas_textblock_node_format_text_get(const Evas_Object_Textblock_Node_Format *fnode) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI const char                              *evas_textblock_node_format_text_get(const Evas_Object_Textblock_Node_Format *fnode) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Set the cursor to point to the position of fmt.
@@ -8705,7 +8693,7 @@ EAPI const char                  *evas_textblock_node_format_text_get(const Evas
  * @param cur the cursor to update
  * @param fmt the format to update according to.
  */
-EAPI void                         evas_textblock_cursor_at_format_set(Evas_Textblock_Cursor *cur, const Evas_Object_Textblock_Node_Format *fmt) EINA_ARG_NONNULL(1, 2);
+EAPI void                                     evas_textblock_cursor_at_format_set(Evas_Textblock_Cursor *cur, const Evas_Object_Textblock_Node_Format *fmt) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Check if the current cursor position is a visible format. This way is more
@@ -8717,7 +8705,7 @@ EAPI void                         evas_textblock_cursor_at_format_set(Evas_Textb
  * otherwise.
  * @see evas_textblock_cursor_format_get()
  */
-EAPI Eina_Bool                    evas_textblock_cursor_format_is_visible_get(const Evas_Textblock_Cursor *cur) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Eina_Bool                                evas_textblock_cursor_format_is_visible_get(const Evas_Textblock_Cursor *cur) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Advances to the next format node
@@ -8725,7 +8713,7 @@ EAPI Eina_Bool                    evas_textblock_cursor_format_is_visible_get(co
  * @param cur the cursor to be updated.
  * @return @c EINA_TRUE on success @c EINA_FALSE otherwise.
  */
-EAPI Eina_Bool                    evas_textblock_cursor_format_next(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
+EAPI Eina_Bool                                evas_textblock_cursor_format_next(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
 
 /**
  * Advances to the previous format node.
@@ -8733,7 +8721,7 @@ EAPI Eina_Bool                    evas_textblock_cursor_format_next(Evas_Textblo
  * @param cur the cursor to update.
  * @return @c EINA_TRUE on success @c EINA_FALSE otherwise.
  */
-EAPI Eina_Bool                    evas_textblock_cursor_format_prev(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
+EAPI Eina_Bool                                evas_textblock_cursor_format_prev(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
 
 /**
  * Returns true if the cursor points to a format.
@@ -8742,7 +8730,7 @@ EAPI Eina_Bool                    evas_textblock_cursor_format_prev(Evas_Textblo
  * @return  @c EINA_TRUE if a cursor points to a format @c EINA_FALSE
  * otherwise.
  */
-EAPI Eina_Bool                    evas_textblock_cursor_is_format(const Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
+EAPI Eina_Bool                                evas_textblock_cursor_is_format(const Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
 
 /**
  * Advances 1 char forward.
@@ -8750,7 +8738,7 @@ EAPI Eina_Bool                    evas_textblock_cursor_is_format(const Evas_Tex
  * @param cur the cursor to advance.
  * @return @c EINA_TRUE on success @c EINA_FALSE otherwise.
  */
-EAPI Eina_Bool                    evas_textblock_cursor_char_next(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
+EAPI Eina_Bool                                evas_textblock_cursor_char_next(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
 
 /**
  * Advances 1 char backward.
@@ -8758,25 +8746,25 @@ EAPI Eina_Bool                    evas_textblock_cursor_char_next(Evas_Textblock
  * @param cur the cursor to advance.
  * @return @c EINA_TRUE on success @c EINA_FALSE otherwise.
  */
-EAPI Eina_Bool                    evas_textblock_cursor_char_prev(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
+EAPI Eina_Bool                                evas_textblock_cursor_char_prev(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
 
 /**
  * Moves the cursor to the start of the word under the cursor.
  *
  * @param cur the cursor to move.
  * @return @c EINA_TRUE on success @c EINA_FALSE otherwise.
- * @since 1.2.0
+ * @since 1.2
  */
-EAPI Eina_Bool                    evas_textblock_cursor_word_start(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
+EAPI Eina_Bool                                evas_textblock_cursor_word_start(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
 
 /**
  * Moves the cursor to the end of the word under the cursor.
  *
  * @param cur the cursor to move.
  * @return @c EINA_TRUE on success @c EINA_FALSE otherwise.
- * @since 1.2.0
+ * @since 1.2
  */
-EAPI Eina_Bool                    evas_textblock_cursor_word_end(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
+EAPI Eina_Bool                                evas_textblock_cursor_word_end(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
 
 /**
  * Go to the first char in the node the cursor is pointing on.
@@ -8784,7 +8772,7 @@ EAPI Eina_Bool                    evas_textblock_cursor_word_end(Evas_Textblock_
  * @param cur the cursor to update.
  * @return Returns no value.
  */
-EAPI void                         evas_textblock_cursor_paragraph_char_first(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
+EAPI void                                     evas_textblock_cursor_paragraph_char_first(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
 
 /**
  * Go to the last char in a text node.
@@ -8792,7 +8780,7 @@ EAPI void                         evas_textblock_cursor_paragraph_char_first(Eva
  * @param cur the cursor to update.
  * @return Returns no value.
  */
-EAPI void                         evas_textblock_cursor_paragraph_char_last(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
+EAPI void                                     evas_textblock_cursor_paragraph_char_last(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
 
 /**
  * Go to the start of the current line
@@ -8800,7 +8788,7 @@ EAPI void                         evas_textblock_cursor_paragraph_char_last(Evas
  * @param cur the cursor to update.
  * @return Returns no value.
  */
-EAPI void                         evas_textblock_cursor_line_char_first(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
+EAPI void                                     evas_textblock_cursor_line_char_first(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
 
 /**
  * Go to the end of the current line.
@@ -8808,7 +8796,7 @@ EAPI void                         evas_textblock_cursor_line_char_first(Evas_Tex
  * @param cur the cursor to update.
  * @return Returns no value.
  */
-EAPI void                         evas_textblock_cursor_line_char_last(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
+EAPI void                                     evas_textblock_cursor_line_char_last(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
 
 /**
  * Return the current cursor pos.
@@ -8816,7 +8804,7 @@ EAPI void                         evas_textblock_cursor_line_char_last(Evas_Text
  * @param cur the cursor to take the position from.
  * @return the position or -1 on error
  */
-EAPI int                          evas_textblock_cursor_pos_get(const Evas_Textblock_Cursor *cur) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI int                                      evas_textblock_cursor_pos_get(const Evas_Textblock_Cursor *cur) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Set the cursor pos.
@@ -8824,7 +8812,7 @@ EAPI int                          evas_textblock_cursor_pos_get(const Evas_Textb
  * @param cur the cursor to be set.
  * @param pos the pos to set.
  */
-EAPI void                         evas_textblock_cursor_pos_set(Evas_Textblock_Cursor *cur, int pos) EINA_ARG_NONNULL(1);
+EAPI void                                     evas_textblock_cursor_pos_set(Evas_Textblock_Cursor *cur, int pos) EINA_ARG_NONNULL(1);
 
 /**
  * Go to the start of the line passed
@@ -8833,7 +8821,7 @@ EAPI void                         evas_textblock_cursor_pos_set(Evas_Textblock_C
  * @param line numer to set.
  * @return @c EINA_TRUE on success, @c EINA_FALSE on error.
  */
-EAPI Eina_Bool                    evas_textblock_cursor_line_set(Evas_Textblock_Cursor *cur, int line) EINA_ARG_NONNULL(1);
+EAPI Eina_Bool                                evas_textblock_cursor_line_set(Evas_Textblock_Cursor *cur, int line) EINA_ARG_NONNULL(1);
 
 /**
  * Compare two cursors.
@@ -8842,7 +8830,7 @@ EAPI Eina_Bool                    evas_textblock_cursor_line_set(Evas_Textblock_
  * @param cur2 the second cursor.
  * @return -1 if cur1 < cur2, 0 if cur1 == cur2 and 1 otherwise.
  */
-EAPI int                          evas_textblock_cursor_compare(const Evas_Textblock_Cursor *cur1, const Evas_Textblock_Cursor *cur2) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2);
+EAPI int                                      evas_textblock_cursor_compare(const Evas_Textblock_Cursor *cur1, const Evas_Textblock_Cursor *cur2) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2);
 
 /**
  * Make cur_dest point to the same place as cur. Does not work if they don't
@@ -8852,8 +8840,7 @@ EAPI int                          evas_textblock_cursor_compare(const Evas_Textb
  * @param cur_dest destination cursor.
  * @return Returns no value.
  */
-EAPI void                         evas_textblock_cursor_copy(const Evas_Textblock_Cursor *cur, Evas_Textblock_Cursor *cur_dest) EINA_ARG_NONNULL(1, 2);
-
+EAPI void                                     evas_textblock_cursor_copy(const Evas_Textblock_Cursor *cur, Evas_Textblock_Cursor *cur_dest) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Adds text to the current cursor position and set the cursor to *before*
@@ -8864,7 +8851,7 @@ EAPI void                         evas_textblock_cursor_copy(const Evas_Textbloc
  * @return Returns the len of the text added.
  * @see evas_textblock_cursor_text_prepend()
  */
-EAPI int                          evas_textblock_cursor_text_append(Evas_Textblock_Cursor *cur, const char *text) EINA_ARG_NONNULL(1, 2);
+EAPI int                                      evas_textblock_cursor_text_append(Evas_Textblock_Cursor *cur, const char *text) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Adds text to the current cursor position and set the cursor to *after*
@@ -8875,8 +8862,7 @@ EAPI int                          evas_textblock_cursor_text_append(Evas_Textblo
  * @return Returns the len of the text added.
  * @see evas_textblock_cursor_text_append()
  */
-EAPI int                          evas_textblock_cursor_text_prepend(Evas_Textblock_Cursor *cur, const char *text) EINA_ARG_NONNULL(1, 2);
-
+EAPI int                                      evas_textblock_cursor_text_prepend(Evas_Textblock_Cursor *cur, const char *text) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Adds format to the current cursor position. If the format being added is a
@@ -8901,7 +8887,7 @@ EAPI int                          evas_textblock_cursor_text_prepend(Evas_Textbl
  * @param cur the cursor to look at.
  * @return @c EINA_TRUE if the cursor points to the terminating null, @c EINA_FALSE otherwise.
  */
-EAPI Eina_Bool                    evas_textblock_cursor_format_append(Evas_Textblock_Cursor *cur, const char *format) EINA_ARG_NONNULL(1, 2);
+EAPI Eina_Bool                                evas_textblock_cursor_format_append(Evas_Textblock_Cursor *cur, const char *format) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Adds format to the current cursor position. If the format being added is a
@@ -8918,7 +8904,7 @@ EAPI Eina_Bool                    evas_textblock_cursor_format_append(Evas_Textb
  * @return Returns true if a visible format was added, false otherwise.
  * @see evas_textblock_cursor_format_prepend()
  */
-EAPI Eina_Bool                    evas_textblock_cursor_format_prepend(Evas_Textblock_Cursor *cur, const char *format) EINA_ARG_NONNULL(1, 2);
+EAPI Eina_Bool                                evas_textblock_cursor_format_prepend(Evas_Textblock_Cursor *cur, const char *format) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Delete the character at the location of the cursor. If there's a format
@@ -8927,7 +8913,7 @@ EAPI Eina_Bool                    evas_textblock_cursor_format_prepend(Evas_Text
  * @param cur the cursor pointing to the current location.
  * @return Returns no value.
  */
-EAPI void                         evas_textblock_cursor_char_delete(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
+EAPI void                                     evas_textblock_cursor_char_delete(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
 
 /**
  * Delete the range between cur1 and cur2.
@@ -8936,8 +8922,7 @@ EAPI void                         evas_textblock_cursor_char_delete(Evas_Textblo
  * @param cur2 the second side of the range
  * @return Returns no value.
  */
-EAPI void                         evas_textblock_cursor_range_delete(Evas_Textblock_Cursor *cur1, Evas_Textblock_Cursor *cur2) EINA_ARG_NONNULL(1, 2);
-
+EAPI void                                     evas_textblock_cursor_range_delete(Evas_Textblock_Cursor *cur1, Evas_Textblock_Cursor *cur2) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Return the text of the paragraph cur points to - returns the text in markup.
@@ -8945,7 +8930,7 @@ EAPI void                         evas_textblock_cursor_range_delete(Evas_Textbl
  * @param cur the cursor pointing to the paragraph.
  * @return the text on success, @c NULL otherwise.
  */
-EAPI const char                  *evas_textblock_cursor_paragraph_text_get(const Evas_Textblock_Cursor *cur) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI const char                              *evas_textblock_cursor_paragraph_text_get(const Evas_Textblock_Cursor *cur) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Return the length of the paragraph, cheaper the eina_unicode_strlen()
@@ -8953,7 +8938,7 @@ EAPI const char                  *evas_textblock_cursor_paragraph_text_get(const
  * @param cur the position of the paragraph.
  * @return the length of the paragraph on success, -1 otehrwise.
  */
-EAPI int                          evas_textblock_cursor_paragraph_text_length_get(const Evas_Textblock_Cursor *cur) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI int                                      evas_textblock_cursor_paragraph_text_length_get(const Evas_Textblock_Cursor *cur) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Return the currently visible range.
@@ -8961,9 +8946,9 @@ EAPI int                          evas_textblock_cursor_paragraph_text_length_ge
  * @param start the start of the range.
  * @param end the end of the range.
  * @return @c EINA_TRUE on success, @c EINA_FALSE otherwise.
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI Eina_Bool                         evas_textblock_cursor_visible_range_get(Evas_Textblock_Cursor *start, Evas_Textblock_Cursor *end) EINA_ARG_NONNULL(1, 2);
+EAPI Eina_Bool                                evas_textblock_cursor_visible_range_get(Evas_Textblock_Cursor *start, Evas_Textblock_Cursor *end) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Return the format nodes in the range between cur1 and cur2.
@@ -8971,9 +8956,9 @@ EAPI Eina_Bool                         evas_textblock_cursor_visible_range_get(E
  * @param cur1 one side of the range.
  * @param cur2 the other side of the range
  * @return the foramt nodes in the range. You have to free it.
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI Eina_List *                 evas_textblock_cursor_range_formats_get(const Evas_Textblock_Cursor *cur1, const Evas_Textblock_Cursor *cur2) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2);
+EAPI Eina_List                               *evas_textblock_cursor_range_formats_get(const Evas_Textblock_Cursor *cur1, const Evas_Textblock_Cursor *cur2) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2);
 
 /**
  * Return the text in the range between cur1 and cur2
@@ -8984,18 +8969,17 @@ EAPI Eina_List *                 evas_textblock_cursor_range_formats_get(const E
  * @return the text in the range
  * @see elm_entry_markup_to_utf8()
  */
-EAPI char                        *evas_textblock_cursor_range_text_get(const Evas_Textblock_Cursor *cur1, const Evas_Textblock_Cursor *cur2, Evas_Textblock_Text_Type format) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2);
+EAPI char                                    *evas_textblock_cursor_range_text_get(const Evas_Textblock_Cursor *cur1, const Evas_Textblock_Cursor *cur2, Evas_Textblock_Text_Type format) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2);
 
 /**
  * Return the content of the cursor.
  *
  * Free the returned string pointer when done (if it is not NULL).
- * 
+ *
  * @param cur the cursor
  * @return the text in the range, terminated by a nul byte (may be utf8).
  */
-EAPI char                        *evas_textblock_cursor_content_get(const Evas_Textblock_Cursor *cur) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
-
+EAPI char                                    *evas_textblock_cursor_content_get(const Evas_Textblock_Cursor *cur) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
 /**
  * Returns the geometry of the cursor. Depends on the type of cursor requested.
@@ -9019,7 +9003,7 @@ EAPI char                        *evas_textblock_cursor_content_get(const Evas_T
  * @param ctype the type of the cursor.
  * @return line number of the char on success, -1 on error.
  */
-EAPI int                          evas_textblock_cursor_geometry_get(const Evas_Textblock_Cursor *cur, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch, Evas_BiDi_Direction *dir, Evas_Textblock_Cursor_Type ctype) EINA_ARG_NONNULL(1);
+EAPI int                                      evas_textblock_cursor_geometry_get(const Evas_Textblock_Cursor *cur, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch, Evas_BiDi_Direction *dir, Evas_Textblock_Cursor_Type ctype) EINA_ARG_NONNULL(1);
 
 /**
  * Returns the geometry of the char at cur.
@@ -9031,7 +9015,7 @@ EAPI int                          evas_textblock_cursor_geometry_get(const Evas_
  * @param ch the h of the char.
  * @return line number of the char on success, -1 on error.
  */
-EAPI int                          evas_textblock_cursor_char_geometry_get(const Evas_Textblock_Cursor *cur, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch) EINA_ARG_NONNULL(1);
+EAPI int                                      evas_textblock_cursor_char_geometry_get(const Evas_Textblock_Cursor *cur, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch) EINA_ARG_NONNULL(1);
 
 /**
  * Returns the geometry of the pen at cur.
@@ -9043,7 +9027,7 @@ EAPI int                          evas_textblock_cursor_char_geometry_get(const 
  * @param ch the h of the char.
  * @return line number of the char on success, -1 on error.
  */
-EAPI int                          evas_textblock_cursor_pen_geometry_get(const Evas_Textblock_Cursor *cur, Evas_Coord *cpen_x, Evas_Coord *cy, Evas_Coord *cadv, Evas_Coord *ch) EINA_ARG_NONNULL(1);
+EAPI int                                      evas_textblock_cursor_pen_geometry_get(const Evas_Textblock_Cursor *cur, Evas_Coord *cpen_x, Evas_Coord *cy, Evas_Coord *cadv, Evas_Coord *ch) EINA_ARG_NONNULL(1);
 
 /**
  * Returns the geometry of the line at cur.
@@ -9055,7 +9039,7 @@ EAPI int                          evas_textblock_cursor_pen_geometry_get(const E
  * @param ch the height of the line.
  * @return line number of the line on success, -1 on error.
  */
-EAPI int                          evas_textblock_cursor_line_geometry_get(const Evas_Textblock_Cursor *cur, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch) EINA_ARG_NONNULL(1);
+EAPI int                                      evas_textblock_cursor_line_geometry_get(const Evas_Textblock_Cursor *cur, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch) EINA_ARG_NONNULL(1);
 
 /**
  * Set the position of the cursor according to the X and Y coordinates.
@@ -9065,7 +9049,7 @@ EAPI int                          evas_textblock_cursor_line_geometry_get(const 
  * @param y coord to set by.
  * @return @c EINA_TRUE on success, @c EINA_FALSE otherwise.
  */
-EAPI Eina_Bool                    evas_textblock_cursor_char_coord_set(Evas_Textblock_Cursor *cur, Evas_Coord x, Evas_Coord y) EINA_ARG_NONNULL(1);
+EAPI Eina_Bool                                evas_textblock_cursor_char_coord_set(Evas_Textblock_Cursor *cur, Evas_Coord x, Evas_Coord y) EINA_ARG_NONNULL(1);
 
 /**
  * Set the cursor position according to the y coord.
@@ -9074,7 +9058,7 @@ EAPI Eina_Bool                    evas_textblock_cursor_char_coord_set(Evas_Text
  * @param y the coord to set by.
  * @return the line number found, -1 on error.
  */
-EAPI int                          evas_textblock_cursor_line_coord_set(Evas_Textblock_Cursor *cur, Evas_Coord y) EINA_ARG_NONNULL(1);
+EAPI int                                      evas_textblock_cursor_line_coord_set(Evas_Textblock_Cursor *cur, Evas_Coord y) EINA_ARG_NONNULL(1);
 
 /**
  * Get the geometry of a range.
@@ -9083,9 +9067,8 @@ EAPI int                          evas_textblock_cursor_line_coord_set(Evas_Text
  * @param cur2 other side of the range.
  * @return a list of Rectangles representing the geometry of the range.
  */
-EAPI Eina_List                   *evas_textblock_cursor_range_geometry_get(const Evas_Textblock_Cursor *cur1, const Evas_Textblock_Cursor *cur2) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2);
-   EAPI Eina_Bool                    evas_textblock_cursor_format_item_geometry_get(const Evas_Textblock_Cursor *cur, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch) EINA_ARG_NONNULL(1);
-
+EAPI Eina_List                               *evas_textblock_cursor_range_geometry_get(const Evas_Textblock_Cursor *cur1, const Evas_Textblock_Cursor *cur2) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2);
+EAPI Eina_Bool                                evas_textblock_cursor_format_item_geometry_get(const Evas_Textblock_Cursor *cur, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch) EINA_ARG_NONNULL(1);
 
 /**
  * Checks if the cursor points to the end of the line.
@@ -9093,8 +9076,7 @@ EAPI Eina_List                   *evas_textblock_cursor_range_geometry_get(const
  * @param cur the cursor to check.
  * @return @c EINA_TRUE if true, @c EINA_FALSE otherwise.
  */
-EAPI Eina_Bool                    evas_textblock_cursor_eol_get(const Evas_Textblock_Cursor *cur) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
-
+EAPI Eina_Bool                                evas_textblock_cursor_eol_get(const Evas_Textblock_Cursor *cur) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Get the geometry of a line number.
@@ -9107,7 +9089,7 @@ EAPI Eina_Bool                    evas_textblock_cursor_eol_get(const Evas_Textb
  * @param ch h coord of the line.
  * @return @c EINA_TRUE on success, @c EINA_FALSE otherwise.
  */
-EAPI Eina_Bool                    evas_object_textblock_line_number_geometry_get(const Evas_Object *obj, int line, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch) EINA_ARG_NONNULL(1);
+EAPI Eina_Bool                                evas_object_textblock_line_number_geometry_get(const Evas_Object *obj, int line, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch) EINA_ARG_NONNULL(1);
 
 /**
  * Clear the textblock object.
@@ -9116,7 +9098,7 @@ EAPI Eina_Bool                    evas_object_textblock_line_number_geometry_get
  * @param obj the object to clear.
  * @return nothing.
  */
-EAPI void                         evas_object_textblock_clear(Evas_Object *obj) EINA_ARG_NONNULL(1);
+EAPI void                                     evas_object_textblock_clear(Evas_Object *obj) EINA_ARG_NONNULL(1);
 
 /**
  * Get the formatted width and height. This calculates the actual size after restricting
@@ -9139,7 +9121,7 @@ EAPI void                         evas_object_textblock_clear(Evas_Object *obj) 
  * @return Returns no value.
  * @see evas_object_textblock_size_native_get
  */
-EAPI void                         evas_object_textblock_size_formatted_get(const Evas_Object *obj, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1);
+EAPI void                                     evas_object_textblock_size_formatted_get(const Evas_Object *obj, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1);
 
 /**
  * Get the native width and height. This calculates the actual size without taking account
@@ -9160,8 +9142,362 @@ EAPI void                         evas_object_textblock_size_formatted_get(const
  * @param h the height returned
  * @return Returns no value.
  */
-EAPI void                         evas_object_textblock_size_native_get(const Evas_Object *obj, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1);
-   EAPI void                         evas_object_textblock_style_insets_get(const Evas_Object *obj, Evas_Coord *l, Evas_Coord *r, Evas_Coord *t, Evas_Coord *b) EINA_ARG_NONNULL(1);
+EAPI void                                     evas_object_textblock_size_native_get(const Evas_Object *obj, Evas_Coord *w, Evas_Coord *h) EINA_ARG_NONNULL(1);
+EAPI void                                     evas_object_textblock_style_insets_get(const Evas_Object *obj, Evas_Coord *l, Evas_Coord *r, Evas_Coord *t, Evas_Coord *b) EINA_ARG_NONNULL(1);
+
+/**
+ * @}
+ */
+
+
+/**
+ * @defgroup Evas_Object_Textgrid Textgrid Object Functions
+ *
+ * @todo put here some usage examples
+ *
+ * @since 1.7
+ *
+ * @ingroup Evas_Object_Specific
+ *
+ * @{
+ */
+
+/**
+ * @typedef Evas_Textgrid_Palette
+ *
+ * The palette to use for the forgraound and background colors.
+ *
+ * @since 1.7
+ */
+typedef enum
+{
+   EVAS_TEXTGRID_PALETTE_NONE,     /**< No palette is used */
+   EVAS_TEXTGRID_PALETTE_STANDARD, /**< standard palette (around 16 colors) */
+   EVAS_TEXTGRID_PALETTE_EXTENDED, /**< extended palette (at max 256 colors) */
+   EVAS_TEXTGRID_PALETTE_LAST      /**< ignore it */
+} Evas_Textgrid_Palette;
+
+/**
+ * @typedef Evas_Textgrid_Font_Style
+ *
+ * The style to give to each character of the grid.
+ *
+ * @since 1.7
+ */
+typedef enum
+{
+   EVAS_TEXTGRID_FONT_STYLE_NORMAL = (1 << 0), /**< Normal style */
+   EVAS_TEXTGRID_FONT_STYLE_BOLD   = (1 << 1), /**< Bold style */
+   EVAS_TEXTGRID_FONT_STYLE_ITALIC = (1 << 2)  /**< Oblique style */
+} Evas_Textgrid_Font_Style;
+
+/**
+ * @typedef Evas_Textgrid_Cell
+ *
+ * The values that describes each cell.
+ *
+ * @since 1.7
+ */
+typedef struct _Evas_Textgrid_Cell Evas_Textgrid_Cell;
+
+/**
+ * @struct _Evas_Textgrid_Cell
+ *
+ * The values that describes each cell.
+ *
+ * @since 1.7
+ */
+struct _Evas_Textgrid_Cell
+{
+   Eina_Unicode   codepoint;         /**< the UNICODE value of the character */
+   unsigned char  fg;                /**< the index of the palette for the foreground color */
+   unsigned char  bg;                /**< the index of the palette for the background color */
+   unsigned short bold          : 1; /**< whether the character is bold */
+   unsigned short italic        : 1; /**< whether the character is oblique */
+   unsigned short underline     : 1; /**< whether the character is underlined */
+   unsigned short strikethrough : 1; /**< whether the character is strikethrough'ed */
+   unsigned short fg_extended   : 1; /**< whether the extended palette is used for the foreground color */
+   unsigned short bg_extended   : 1; /**< whether the extended palette is used for the background color */
+   unsigned short double_width  : 1; /**< if the codepoint is merged with the following cell to the right visually (cells must be in pairs with 2nd cell being a duplicate in all ways except codepoint is 0) */
+};
+
+/**
+ * @brief Add a textgrid to the given Evas.
+ *
+ * @param e The given evas.
+ * @return The new textgrid object.
+ *
+ * This function adds a new textgrid object to the Evas @p e and returns the object.
+ *
+ * @since 1.7
+ */
+EAPI Evas_Object *evas_object_textgrid_add(Evas *e);
+
+/**
+ * @brief Set the size of the textgrid object.
+ *
+ * @param obj The textgrid object.
+ * @param w The number of columns (width in cells) of the grid.
+ * @param h The number of rows (height in cells) of the grid.
+ *
+ * This function sets the number of lines @p h and the number
+ * of columns @p w to the textgrid object @p obj. If
+ * @p w or @p h are less or equal than 0, this
+ * functiond does nothing.
+ *
+ * @since 1.7
+ */
+EAPI void evas_object_textgrid_size_set(Evas_Object *obj, int w, int h);
+
+/**
+ * @brief Get the size of the textgrid object.
+ *
+ * @param obj The textgrid object.
+ * @param w The number of columns of the grid.
+ * @param h The number of rows of the grid.
+ *
+ * This function retrieves the number of lines in the buffer @p
+ * h and the number of columns in the buffer @p w of
+ * the textgrid object @p obj. @p w or @p h can be
+ * @c NULL. On error, their value is 0.
+ *
+ * @since 1.7
+ */
+EAPI void evas_object_textgrid_size_get(const Evas_Object *obj, int *w, int *h);
+
+/**
+ * @brief Set the font (source) file to be used on a given textgrid object.
+ *
+ * @param obj The textgrid object to set font for.
+ * @param font_source The font file's path.
+ *
+ * This function allows the font file @p font_source to be explicitly
+ * set for the textgrid object @p obj, overriding system lookup, which
+ * will first occur in the given file's contents. If @font_source is
+ * @c NULL or is an empty string, or the same font_source has already
+ * been set, or on error, this function does nothing.
+ *
+ * @see evas_object_textgrid_font_get()
+ * @see evas_object_textgrid_font_set()
+ * @see evas_object_textgrid_font_source_get()
+ *
+ * @since 1.7
+ */
+EAPI void evas_object_textgrid_font_source_set(Evas_Object *obj, const char *font_source);
+
+/**
+ * @brief Get the font file's path which is being used on a given textgrid object.
+ *
+ * @param obj The textgrid object to set font for.
+ * @return The font file's path.
+ *
+ * This function returns the font source path of the textgrid object
+ * @p obj. If the font source path has not been set, or on error,
+ * @c NULL is returned.
+ *
+ * @see evas_object_textgrid_font_get()
+ * @see evas_object_textgrid_font_set()
+ * @see evas_object_textgrid_font_source_set()
+ *
+ * @since 1.7
+ */
+EAPI const char *evas_object_textgrid_font_source_get(const Evas_Object *obj);
+
+/**
+ * @brief Set the font family and size on a given textgrid object.
+ *
+ * @param obj The textgrid object to set font for.
+ * @param font_name The font (family) name.
+ * @param font_size The font size, in points.
+ *
+ * This function allows the font name @p font_name and size
+ * @p font_size of the textgrid object @p obj to be set. The @p font_name
+ * string has to follow fontconfig's convention on naming fonts, as
+ * it's the underlying library used to query system fonts by Evas (see
+ * the @c fc-list command's output, on your system, to get an
+ * idea). It also has to be a monospace font. If @p font_name is
+ * @c NULL, or if it is an empty string, or if @p font_size is less or
+ * equal than 0, or on error, this function does nothing.
+ *
+ * @see evas_object_textgrid_font_get()
+ * @see evas_object_textgrid_font_source_set()
+ * @see evas_object_textgrid_font_source_get()
+ *
+ * @since 1.7
+ */
+EAPI void evas_object_textgrid_font_set(Evas_Object *obj, const char *font_name, Evas_Font_Size font_size);
+
+/**
+ * @brief Retrieve the font family and size in use on a given textgrid object.
+ *
+ * @param obj The textgrid object to query for font information.
+ * @param font_name A pointer to the location to store the font name in.
+ * @param font_size A pointer to the location to store the font size in.
+ *
+ * This function allows the font name and size of a textgrid object
+ * @p obj to be queried and stored respectively in the buffers
+ * @p font_name and @p font_size. Be aware that the font name string is
+ * still owned by Evas and should @b not have free() called on it by
+ * the caller of the function. On error, the font name is the empty
+ * string and the font size is 0. @p font_name and @p font_source can
+ * be @c NULL.
+ *
+ * @see evas_object_textgrid_font_set()
+ * @see evas_object_textgrid_font_source_set()
+ * @see evas_object_textgrid_font_source_get()
+ *
+ * @since 1.7
+ */
+EAPI void evas_object_textgrid_font_get(const Evas_Object *obj, const char **font_name, Evas_Font_Size *font_size);
+
+/**
+ * @brief Retrieve the size of a cell of the given textgrid object in pixels.
+ *
+ * @param obj The textgrid object to query for font information.
+ * @param width A pointer to the location to store the width in pixels of a cell.
+ * @param height A pointer to the location to store the height in
+ * pixels of a cell.
+ *
+ * This functions retrieves the width and height, in pixels, of a cell
+ * of the textgrid object @p obj and store them respectively in the
+ * buffers @p width and @p height. Their value depends on the
+ * monospace font used for the textgrid object, as well as the
+ * style. @p width and @p height can be @c NULL. On error, they are
+ * set to 0.
+ *
+ * @see evas_object_textgrid_font_set()
+ * @see evas_object_textgrid_supported_font_styles_set()
+ *
+ * @since 1.7
+ */
+EAPI void evas_object_textgrid_cell_size_get(const Evas_Object *obj, Evas_Coord *w, Evas_Coord *h);
+
+/**
+ * @brief The set color to the given palette at the given index of the given textgrid object.
+ *
+ * @param obj The textgrid object to query for font information.
+ * @param pal The type of the palette to set the color.
+ * @param idx The index of the paletter to wich the color is stored.
+ * @param r The red component of the color.
+ * @param g The green component of the color.
+ * @param b The blue component of the color.
+ * @param a The alpha component of the color.
+ *
+ * This function sets the color for the palette of type @p pal at the
+ * index @p idx of the textgrid object @p obj. The ARGB components are
+ * given by @p r, @p g, @p b and @p a. This color can be used when
+ * setting the #Evas_Textgrid_Cell structure. The components must set
+ * a pre-multiplied color. If pal is #EVAS_TEXTGRID_PALETTE_NONE or
+ * #EVAS_TEXTGRID_PALETTE_LAST, or if @p idx is not between 0 and 255,
+ * or on error, this function does nothing. The color components are
+ * clamped between 0 and 255. If @p idx is greater than the latest set
+ * color, the colors between this last index and @p idx - 1 are set to
+ * black (0, 0, 0, 0).
+ *
+ * @see evas_object_textgrid_palette_get()
+ *
+ * @since 1.7
+ */
+EAPI void evas_object_textgrid_palette_set(Evas_Object *obj, Evas_Textgrid_Palette pal, int idx, int r, int g, int b, int a);
+
+/**
+ * @brief The retrieve color to the given palette at the given index of the given textgrid object.
+ *
+ * @param obj The textgrid object to query for font information.
+ * @param pal The type of the palette to set the color.
+ * @param idx The index of the paletter to wich the color is stored.
+ * @param r A pointer to the red component of the color.
+ * @param g A pointer to the green component of the color.
+ * @param b A pointer to the blue component of the color.
+ * @param a A pointer to the alpha component of the color.
+ *
+ * This function retrieves the color for the palette of type @p pal at the
+ * index @p idx of the textgrid object @p obj. The ARGB components are
+ * stored in the buffers @p r, @p g, @p b and @p a. If @p idx is not
+ * between 0 and the index of the latest set color, or if @p pal is
+ * #EVAS_TEXTGRID_PALETTE_NONE or #EVAS_TEXTGRID_PALETTE_LAST, the
+ * values of the components are 0. @p r, @p g, @pb and @p a can be
+ * @c NULL.
+ *
+ * @see evas_object_textgrid_palette_set()
+ *
+ * @since 1.7
+ */
+EAPI void evas_object_textgrid_palette_get(const Evas_Object *obj, Evas_Textgrid_Palette pal, int idx, int *r, int *g, int *b, int *a);
+
+EAPI void evas_object_textgrid_supported_font_styles_set(Evas_Object *obj, Evas_Textgrid_Font_Style styles);
+EAPI Evas_Textgrid_Font_Style evas_object_textgrid_supported_font_styles_get(const Evas_Object *obj);
+
+/**
+ * @brief Set the string at the given row of the given textgrid object.
+ *
+ * @param obj The textgrid object to query for font information.
+ * @param y The row index of the grid.
+ * @param The string as a sequence of #Evas_Textgrid_Cell.
+ *
+ * This function returns cells to the textgrid taken by
+ * evas_object_textgrid_cellrow_get(). The row pointer @p row should be the
+ * same row pointer returned by evas_object_textgrid_cellrow_get() for the
+ * same row @p y.
+ *
+ * @see evas_object_textgrid_cellrow_get()
+ * @see evas_object_textgrid_size_set()
+ * @see evas_object_textgrid_update_add()
+ *
+ * @since 1.7
+ */
+EAPI void evas_object_textgrid_cellrow_set(Evas_Object *obj, int y, const Evas_Textgrid_Cell *row);
+
+/**
+ * @brief Get the string at the given row of the given textgrid object.
+ *
+ * @param obj The textgrid object to query for font information.
+ * @param y The row index of the grid.
+ * @return A pointer to the first cell of the given row.
+ *
+ * This function returns a pointer to the first cell of the line @p y
+ * of the textgrid object @p obj. If @p y is not between 0 and the
+ * number of lines of the grid - 1, or on error, this function return @c NULL.
+ *
+ * @see evas_object_textgrid_cellrow_set()
+ * @see evas_object_textgrid_size_set()
+ * @see evas_object_textgrid_update_add()
+ *
+ * @since 1.7
+ */
+EAPI Evas_Textgrid_Cell *evas_object_textgrid_cellrow_get(const Evas_Object *obj, int y);
+
+/**
+ * @brief Indicate for evas that part of a textgrid region (cells) has been updated.
+ *
+ * @param obj The textgrid object.
+ * @param x The rect region of cells top-left x (column)
+ * @param y The rect region of cells top-left y (row)
+ * @param w The rect region size in number of cells (columns)
+ * @param h The rect region size in number of cells (rows)
+ *
+ * This function declares to evas that a region of cells was updated by
+ * code and needs refreshing. An application should modify cells like this
+ * as an example:
+ * 
+ * @code
+ * Evas_Textgrid_Cell *cells;
+ * int i;
+ * 
+ * cells = evas_object_textgrid_cellrow_get(obj, row);
+ * for (i = 0; i < width; i++) cells[i].codepoint = 'E';
+ * evas_object_textgrid_cellrow_set(obj, row, cells);
+ * evas_object_textgrid_update_add(obj, 0, row, width, 1);
+ * @endcode
+ *
+ * @see evas_object_textgrid_cellrow_set()
+ * @see evas_object_textgrid_cellrow_get()
+ * @see evas_object_textgrid_size_set()
+ *
+ * @since 1.7
+ */
+EAPI void evas_object_textgrid_update_add(Evas_Object *obj, int x, int y, int w, int h);
+
 /**
  * @}
  */
@@ -9170,6 +9506,9 @@ EAPI void                         evas_object_textblock_size_native_get(const Ev
  * @defgroup Evas_Line_Group Line Object Functions
  *
  * Functions used to deal with evas line objects.
+ *
+ * @warning We don't guarantee any proper results if you create a Line object
+ * without setting the evas engine.
  *
  * @ingroup Evas_Object_Specific
  *
@@ -9181,7 +9520,7 @@ EAPI void                         evas_object_textblock_size_native_get(const Ev
  * @param   e The given evas.
  * @return  The new evas line object.
  */
-EAPI Evas_Object      *evas_object_line_add              (Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+EAPI Evas_Object *evas_object_line_add(Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
 /**
  * Sets the coordinates of the end points of the given evas line object.
@@ -9191,7 +9530,7 @@ EAPI Evas_Object      *evas_object_line_add              (Evas *e) EINA_WARN_UNU
  * @param   x2  The X coordinate of the second point.
  * @param   y2  The Y coordinate of the second point.
  */
-EAPI void              evas_object_line_xy_set           (Evas_Object *obj, Evas_Coord x1, Evas_Coord y1, Evas_Coord x2, Evas_Coord y2);
+EAPI void         evas_object_line_xy_set(Evas_Object *obj, Evas_Coord x1, Evas_Coord y1, Evas_Coord x2, Evas_Coord y2);
 
 /**
  * Retrieves the coordinates of the end points of the given evas line object.
@@ -9205,7 +9544,7 @@ EAPI void              evas_object_line_xy_set           (Evas_Object *obj, Evas
  * @param y2  Pointer to an integer in which to store the Y coordinate of the
  *            second end point.
  */
-EAPI void              evas_object_line_xy_get           (const Evas_Object *obj, Evas_Coord *x1, Evas_Coord *y1, Evas_Coord *x2, Evas_Coord *y2);
+EAPI void         evas_object_line_xy_get(const Evas_Object *obj, Evas_Coord *x1, Evas_Coord *y1, Evas_Coord *x2, Evas_Coord *y2);
 /**
  * @}
  */
@@ -9218,6 +9557,9 @@ EAPI void              evas_object_line_xy_get           (const Evas_Object *obj
  * Hint: as evas does not provide ellipse, smooth paths or circle, one
  * can calculate points and convert these to a polygon.
  *
+ * @warning We don't guarantee any proper results if you create a Polygon
+ * object without setting the evas engine.
+ *
  * @ingroup Evas_Object_Specific
  *
  * @{
@@ -9228,7 +9570,7 @@ EAPI void              evas_object_line_xy_get           (const Evas_Object *obj
  * @param   e The given evas.
  * @return  A new evas polygon object.
  */
-EAPI Evas_Object      *evas_object_polygon_add           (Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+EAPI Evas_Object *evas_object_polygon_add(Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
 /**
  * Adds the given point to the given evas polygon object.
@@ -9237,22 +9579,22 @@ EAPI Evas_Object      *evas_object_polygon_add           (Evas *e) EINA_WARN_UNU
  * @param y   The Y coordinate of the given point.
  * @ingroup Evas_Polygon_Group
  */
-EAPI void              evas_object_polygon_point_add     (Evas_Object *obj, Evas_Coord x, Evas_Coord y) EINA_ARG_NONNULL(1);
+EAPI void         evas_object_polygon_point_add(Evas_Object *obj, Evas_Coord x, Evas_Coord y) EINA_ARG_NONNULL(1);
 
 /**
  * Removes all of the points from the given evas polygon object.
  * @param   obj The given polygon object.
  */
-EAPI void              evas_object_polygon_points_clear  (Evas_Object *obj) EINA_ARG_NONNULL(1);
+EAPI void         evas_object_polygon_points_clear(Evas_Object *obj) EINA_ARG_NONNULL(1);
 /**
  * @}
  */
 
-/* @since 1.2.0 */
-EAPI void              evas_object_is_frame_object_set(Evas_Object *obj, Eina_Bool is_frame);
+/* @since 1.2 */
+EAPI void         evas_object_is_frame_object_set(Evas_Object *obj, Eina_Bool is_frame);
 
-/* @since 1.2.0 */
-EAPI Eina_Bool         evas_object_is_frame_object_get(Evas_Object *obj);
+/* @since 1.2 */
+EAPI Eina_Bool    evas_object_is_frame_object_get(Evas_Object *obj);
 
 /**
  * @defgroup Evas_Smart_Group Smart Functions
@@ -9296,25 +9638,51 @@ EAPI Eina_Bool         evas_object_is_frame_object_get(Evas_Object *obj);
  */
 struct _Evas_Smart_Class
 {
-   const char *name; /**< the name string of the class */
-   int         version;
-   void  (*add)         (Evas_Object *o); /**< code to be run when adding object to a canvas */
-   void  (*del)         (Evas_Object *o); /**< code to be run when removing object to a canvas */
-   void  (*move)        (Evas_Object *o, Evas_Coord x, Evas_Coord y); /**< code to be run when moving object on a canvas */
-   void  (*resize)      (Evas_Object *o, Evas_Coord w, Evas_Coord h); /**< code to be run when resizing object on a canvas */
-   void  (*show)        (Evas_Object *o); /**< code to be run when showing object on a canvas */
-   void  (*hide)        (Evas_Object *o); /**< code to be run when hiding object on a canvas */
-   void  (*color_set)   (Evas_Object *o, int r, int g, int b, int a); /**< code to be run when setting color of object on a canvas */
-   void  (*clip_set)    (Evas_Object *o, Evas_Object *clip); /**< code to be run when setting clipper of object on a canvas */
-   void  (*clip_unset)  (Evas_Object *o); /**< code to be run when unsetting clipper of object on a canvas */
-   void  (*calculate)   (Evas_Object *o); /**< code to be run when object has rendering updates on a canvas */
-   void  (*member_add)  (Evas_Object *o, Evas_Object *child); /**< code to be run when child member is added to object */
-   void  (*member_del)  (Evas_Object *o, Evas_Object *child); /**< code to be run when child member is removed from object */
+   const char                      *name; /**< the name string of the class */
+   int                              version;
+   void                             (*add)(Evas_Object *o); /**< code to be run when adding object to a canvas */
+   void                             (*del)(Evas_Object *o); /**< code to be run when removing object from a canvas */
+   void                             (*move)(Evas_Object *o, Evas_Coord x, Evas_Coord y); /**< code to be run when moving object on a canvas. @a x and @a y will be new coordinates one applied to the object. use evas_object_geometry_get() if you need the old values, during this call. after that, the old values will be lost. */
+   void                             (*resize)(Evas_Object *o, Evas_Coord w, Evas_Coord h); /**< code to be run when resizing object on a canvas. @a w and @a h will be new dimensions one applied to the object. use evas_object_geometry_get() if you need the old values, during this call. after that, the old values will be lost. */
+   void                             (*show)(Evas_Object *o); /**< code to be run when showing object on a canvas */
+   void                             (*hide)(Evas_Object *o); /**< code to be run when hiding object on a canvas */
+   void                             (*color_set)(Evas_Object *o, int r, int g, int b, int a); /**< code to be run when setting color of object on a canvas. @a r, @a g, @a b and @a y will be new color components one applied to the object. use evas_object_color_get() if you need the old values, during this call. after that, the old values will be lost. */
+   void                             (*clip_set)(Evas_Object *o, Evas_Object *clip); /**< code to be run when setting clipper of object on a canvas. @a clip will be new clipper one applied to the object. use evas_object_clip_get() if you need the old one, during this call. after that, the old (object pointer) value will be lost. */
+   void                             (*clip_unset)(Evas_Object *o); /**< code to be run when unsetting clipper of object on a canvas. if you need the pointer to a previous set clipper, during this call, use evas_object_clip_get(). after that, the old (object pointer) value will be lost. */
+   void                             (*calculate)(Evas_Object *o); /**< code to be run when object has rendering updates on a canvas */
+   void                             (*member_add)(Evas_Object *o, Evas_Object *child); /**< code to be run when a child member is added to object */
+   void                             (*member_del)(Evas_Object *o, Evas_Object *child); /**< code to be run when a child member is removed from object */
 
    const Evas_Smart_Class          *parent; /**< this class inherits from this parent */
    const Evas_Smart_Cb_Description *callbacks; /**< callbacks at this level, @c NULL terminated */
-   void                            *interfaces; /**< to be used in a future near you */
+   const Evas_Smart_Interface     **interfaces; /**< #Evas_Smart_Interface pointers array, @c NULL terminated. These will be the interfaces supported at this level for an object (parents may have others) @since 1.7 */
    const void                      *data;
+};
+
+/**
+ * @struct _Evas_Smart_Interface
+ *
+ * A smart object's @b base interface definition
+ *
+ * Every Evas interface must have a name field, pointing to a global,
+ * constant string variable. This string pointer will be the only way
+ * of retrieving back a given interface from a smart object. Two
+ * function pointers must be defined, too, which will be called at
+ * object creation and deletion times.
+ *
+ * See also some @ref Example_Evas_Smart_Interfaces "examples" on
+ * smart interfaces.
+ *
+ * @since 1.7
+ *
+ * @ingroup Evas_Smart_Group
+ */
+struct _Evas_Smart_Interface
+{
+   const char *name; /**< Name of the given interface */
+   unsigned    private_size; /**< Size, in bytes, of the interface's private dada blob. This will be allocated and freed automatically for you. Get it with evas_object_smart_interface_data_get(). */
+   Eina_Bool   (*add)(Evas_Object *obj); /**< Function to be called at object creation time. This will take place @b before the object's smart @c add() function. */
+   void        (*del)(Evas_Object *obj); /**< Function to be called at object deletion time. This will take place @b after the object's smart @c del() function. */
 };
 
 /**
@@ -9371,7 +9739,7 @@ struct _Evas_Smart_Cb_Description
  * @see EVAS_SMART_CLASS_INIT_NAME_VERSION_PARENT_CALLBACKS
  * @ingroup Evas_Smart_Group
  */
-#define EVAS_SMART_CLASS_INIT_NULL {NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
+#define EVAS_SMART_CLASS_INIT_NULL    {NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 
 /**
  * @def EVAS_SMART_CLASS_INIT_VERSION
@@ -9406,7 +9774,7 @@ struct _Evas_Smart_Cb_Description
  * @see EVAS_SMART_CLASS_INIT_NAME_VERSION_PARENT_CALLBACKS
  * @ingroup Evas_Smart_Group
  */
-#define EVAS_SMART_CLASS_INIT_NAME_VERSION(name) {name, EVAS_SMART_CLASS_VERSION, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
+#define EVAS_SMART_CLASS_INIT_NAME_VERSION(name)                                     {name, EVAS_SMART_CLASS_VERSION, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 
 /**
  * @def EVAS_SMART_CLASS_INIT_NAME_VERSION_PARENT
@@ -9427,7 +9795,7 @@ struct _Evas_Smart_Cb_Description
  * @see EVAS_SMART_CLASS_INIT_NAME_VERSION_PARENT_CALLBACKS
  * @ingroup Evas_Smart_Group
  */
-#define EVAS_SMART_CLASS_INIT_NAME_VERSION_PARENT(name, parent) {name, EVAS_SMART_CLASS_VERSION, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, parent, NULL, NULL}
+#define EVAS_SMART_CLASS_INIT_NAME_VERSION_PARENT(name, parent)                      {name, EVAS_SMART_CLASS_VERSION, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, parent, NULL, NULL}
 
 /**
  * @def EVAS_SMART_CLASS_INIT_NAME_VERSION_PARENT_CALLBACKS
@@ -9497,33 +9865,123 @@ struct _Evas_Smart_Cb_Description
  * @ingroup Evas_Smart_Group
  */
 #define EVAS_SMART_SUBCLASS_NEW(smart_name, prefix, api_type, parent_type, parent_func, cb_desc) \
-  static const parent_type * prefix##_parent_sc = NULL;			\
-  static void prefix##_smart_set_user(api_type *api);			\
-  static void prefix##_smart_set(api_type *api)				\
-  {									\
-     Evas_Smart_Class *sc;						\
-     if (!(sc = (Evas_Smart_Class *)api))				\
-       return;								\
-     if (!prefix##_parent_sc)						\
-       prefix##_parent_sc = parent_func();				\
-     evas_smart_class_inherit(sc, prefix##_parent_sc);                  \
-     prefix##_smart_set_user(api);					\
-  }									\
-  static Evas_Smart * prefix##_smart_class_new(void)			\
-  {									\
-     static Evas_Smart *smart = NULL;					\
-     static api_type api;						\
-     if (!smart)							\
-       {								\
-	  Evas_Smart_Class *sc = (Evas_Smart_Class *)&api;		\
-	  memset(&api, 0, sizeof(api_type));				\
-	  sc->version = EVAS_SMART_CLASS_VERSION;			\
-	  sc->name = smart_name;					\
-	  sc->callbacks = cb_desc;					\
-	  prefix##_smart_set(&api);					\
-	  smart = evas_smart_class_new(sc);				\
-       }								\
-     return smart;							\
+  static const parent_type * prefix##_parent_sc = NULL;                                          \
+  static void prefix##_smart_set_user(api_type * api);                                           \
+  static void prefix##_smart_set(api_type * api)                                                 \
+  {                                                                                              \
+     Evas_Smart_Class *sc;                                                                       \
+     if (!(sc = (Evas_Smart_Class *)api))                                                        \
+       return;                                                                                   \
+     if (!prefix##_parent_sc)                                                                    \
+       prefix##_parent_sc = parent_func();                                                       \
+     evas_smart_class_inherit(sc, prefix##_parent_sc);                                           \
+     prefix##_smart_set_user(api);                                                               \
+  }                                                                                              \
+  static Evas_Smart *prefix##_smart_class_new(void)                                              \
+  {                                                                                              \
+     static Evas_Smart *smart = NULL;                                                            \
+     static api_type api;                                                                        \
+     if (!smart)                                                                                 \
+       {                                                                                         \
+          Evas_Smart_Class *sc = (Evas_Smart_Class *)&api;                                       \
+          memset(&api, 0, sizeof(api_type));                                                     \
+          sc->version = EVAS_SMART_CLASS_VERSION;                                                \
+          sc->name = smart_name;                                                                 \
+          sc->callbacks = cb_desc;                                                               \
+          prefix##_smart_set(&api);                                                              \
+          smart = evas_smart_class_new(sc);                                                      \
+       }                                                                                         \
+     return smart;                                                                               \
+  }
+
+/**
+ * @def EVAS_SMART_SUBCLASS_IFACE_NEW
+ *
+ * @since 1.7
+ *
+ * Convenience macro to subclass a given Evas smart class. This is the
+ * same as #EVAS_SMART_SUBCLASS_NEW, but now <b>declaring smart
+ * interfaces</b> besides the smart callbacks.
+ *
+ * @param smart_name The name used for the smart class. e.g:
+ *                   @c "Evas_Object_Box".
+ * @param prefix Prefix used for all variables and functions defined
+ *               and referenced by this macro.
+ * @param api_type Type of the structure used as API for the smart
+ *                 class. Either #Evas_Smart_Class or something
+ *                 derived from it.
+ * @param parent_type Type of the parent class API.
+ * @param parent_func Function that gets the parent class. e.g:
+ *                    evas_object_box_smart_class_get().
+ * @param cb_desc Array of smart callback descriptions for this smart
+ *                class.
+ * @param ifaces Array of Evas smart interafaces for this smart
+ *               class.
+ *
+ * This macro saves some typing when writing a smart class derived
+ * from another one. In order to work, the user @b must provide some
+ * functions adhering to the following guidelines:
+ *  - @<prefix@>_smart_set_user(): the @b internal @c _smart_set
+ *    function (defined by this macro) will call this one, provided by
+ *    the user, after inheriting everything from the parent, which
+ *    should <b>take care of setting the right member functions for
+ *    the class</b>, both overrides and extensions, if any.
+ *  - If this new class should be subclassable as well, a @b public
+ *    @c _smart_set() function is desirable to fill in the class used as
+ *    parent by the children. It's up to the user to provide this
+ *    interface, which will most likely call @<prefix@>_smart_set() to
+ *    get the job done.
+ *
+ * After the macro's usage, the following will be defined for use:
+ *  - @<prefix@>_parent_sc: A pointer to the @b parent smart
+ *    class. When calling parent functions from overloaded ones, use
+ *    this global variable.
+ *  - @<prefix@>_smart_class_new(): this function returns the
+ *    #Evas_Smart needed to create smart objects with this class,
+ *    which should be passed to evas_object_smart_add().
+ *
+ * @warning @p smart_name has to be a pointer to a globally available
+ * string! The smart class created here will just have a pointer set
+ * to that, and all object instances will depend on it for smart class
+ * name lookup.
+ *
+ * @ingroup Evas_Smart_Group
+ */
+#define EVAS_SMART_SUBCLASS_IFACE_NEW(smart_name,          \
+                                      prefix,              \
+                                      api_type,            \
+                                      parent_type,         \
+                                      parent_func,         \
+                                      cb_desc,             \
+                                      ifaces)              \
+  static const parent_type * prefix##_parent_sc = NULL;    \
+  static void prefix##_smart_set_user(api_type * api);     \
+  static void prefix##_smart_set(api_type * api)           \
+  {                                                        \
+     Evas_Smart_Class *sc;                                 \
+     if (!(sc = (Evas_Smart_Class *)api))                  \
+       return;                                             \
+     if (!prefix##_parent_sc)                              \
+       prefix##_parent_sc = parent_func();                 \
+     evas_smart_class_inherit(sc, prefix##_parent_sc);     \
+     prefix##_smart_set_user(api);                         \
+  }                                                        \
+  static Evas_Smart *prefix##_smart_class_new(void)        \
+  {                                                        \
+     static Evas_Smart *smart = NULL;                      \
+     static api_type api;                                  \
+     if (!smart)                                           \
+       {                                                   \
+          Evas_Smart_Class *sc = (Evas_Smart_Class *)&api; \
+          memset(&api, 0, sizeof(api_type));               \
+          sc->version = EVAS_SMART_CLASS_VERSION;          \
+          sc->name = smart_name;                           \
+          sc->callbacks = cb_desc;                         \
+          sc->interfaces = ifaces;                         \
+          prefix##_smart_set(&api);                        \
+          smart = evas_smart_class_new(sc);                \
+       }                                                   \
+     return smart;                                         \
   }
 
 /**
@@ -9545,15 +10003,14 @@ struct _Evas_Smart_Cb_Description
  *
  * @ingroup Evas_Smart_Group
  */
-#define EVAS_SMART_DATA_ALLOC(o, priv_type) \
-   priv_type *priv; \
-   priv = evas_object_smart_data_get(o); \
-   if (!priv) { \
-      priv = (priv_type *)calloc(1, sizeof(priv_type)); \
-      if (!priv) return; \
-      evas_object_smart_data_set(o, priv); \
-   }
-
+#define EVAS_SMART_DATA_ALLOC(o, priv_type)              \
+  priv_type * priv;                                      \
+  priv = evas_object_smart_data_get(o);                  \
+  if (!priv) {                                           \
+       priv = (priv_type *)calloc(1, sizeof(priv_type)); \
+       if (!priv) return;                                \
+       evas_object_smart_data_set(o, priv);              \
+    }
 
 /**
  * Free an #Evas_Smart struct
@@ -9571,7 +10028,7 @@ struct _Evas_Smart_Cb_Description
  * when they are not referenced anymore. Thus, this function is of no use
  * for Evas users, most probably.
  */
-EAPI void                             evas_smart_free                     (Evas_Smart *s) EINA_ARG_NONNULL(1);
+EAPI void                              evas_smart_free(Evas_Smart *s) EINA_ARG_NONNULL(1);
 
 /**
  * Creates a new #Evas_Smart from a given #Evas_Smart_Class struct
@@ -9588,7 +10045,7 @@ EAPI void                             evas_smart_free                     (Evas_
  * construct yours, consider using the #EVAS_SMART_SUBCLASS_NEW macro,
  * which will make use of this function automatically for you.
  */
-EAPI Evas_Smart                      *evas_smart_class_new                (const Evas_Smart_Class *sc) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+EAPI Evas_Smart                       *evas_smart_class_new(const Evas_Smart_Class *sc) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
 /**
  * Get the #Evas_Smart_Class handle of an #Evas_Smart struct
@@ -9596,8 +10053,7 @@ EAPI Evas_Smart                      *evas_smart_class_new                (const
  * @param s a valid #Evas_Smart pointer
  * @return the #Evas_Smart_Class in it
  */
-EAPI const Evas_Smart_Class          *evas_smart_class_get                (const Evas_Smart *s) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
-
+EAPI const Evas_Smart_Class           *evas_smart_class_get(const Evas_Smart *s) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * @brief Get the data pointer set on an #Evas_Smart struct
@@ -9607,7 +10063,7 @@ EAPI const Evas_Smart_Class          *evas_smart_class_get                (const
  * This data pointer is set as the data field in the #Evas_Smart_Class
  * passed in to evas_smart_class_new().
  */
-EAPI void                            *evas_smart_data_get                 (const Evas_Smart *s) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI void                             *evas_smart_data_get(const Evas_Smart *s) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Get the smart callbacks known by this #Evas_Smart handle's smart
@@ -9647,7 +10103,6 @@ EAPI void                            *evas_smart_data_get                 (const
  */
 EAPI const Evas_Smart_Cb_Description **evas_smart_callbacks_descriptions_get(const Evas_Smart *s, unsigned int *count) EINA_ARG_NONNULL(1, 1);
 
-
 /**
  * Find a callback description for the callback named @a name.
  *
@@ -9661,8 +10116,7 @@ EAPI const Evas_Smart_Cb_Description **evas_smart_callbacks_descriptions_get(con
  *
  * @see evas_smart_callbacks_descriptions_get()
  */
-EAPI const Evas_Smart_Cb_Description *evas_smart_callback_description_find(const Evas_Smart *s, const char *name) EINA_ARG_NONNULL(1, 2);
-
+EAPI const Evas_Smart_Cb_Description  *evas_smart_callback_description_find(const Evas_Smart *s, const char *name) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Sets one class to inherit from the other.
@@ -9681,7 +10135,7 @@ EAPI const Evas_Smart_Cb_Description *evas_smart_callback_description_find(const
  *        this size. Everything after @c Evas_Smart_Class size is copied
  *        using regular memcpy().
  */
-EAPI Eina_Bool                        evas_smart_class_inherit_full       (Evas_Smart_Class *sc, const Evas_Smart_Class *parent_sc, unsigned int parent_sc_size) EINA_ARG_NONNULL(1, 2);
+EAPI Eina_Bool                         evas_smart_class_inherit_full(Evas_Smart_Class *sc, const Evas_Smart_Class *parent_sc, unsigned int parent_sc_size) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Get the number of users of the smart instance
@@ -9702,19 +10156,19 @@ EAPI Eina_Bool                        evas_smart_class_inherit_full       (Evas_
  * Evas_Smart_Class data from memory (have it be a constant structure and
  * data), or use this API call and be very careful.
  */
-EAPI int                              evas_smart_usage_get(const Evas_Smart *s);
+EAPI int                               evas_smart_usage_get(const Evas_Smart *s);
 
-  /**
-   * @def evas_smart_class_inherit
-   * Easy to use version of evas_smart_class_inherit_full().
-   *
-   * This version will use sizeof(parent_sc), copying everything.
-   *
-   * @param sc child class, will have methods copied from @a parent_sc
-   * @param parent_sc parent class, will provide contents to be copied.
-   * @return 1 on success, 0 on failure.
-   * @ingroup Evas_Smart_Group
-   */
+/**
+ * @def evas_smart_class_inherit
+ * Easy to use version of evas_smart_class_inherit_full().
+ *
+ * This version will use sizeof(parent_sc), copying everything.
+ *
+ * @param sc child class, will have methods copied from @a parent_sc
+ * @param parent_sc parent class, will provide contents to be copied.
+ * @return 1 on success, 0 on failure.
+ * @ingroup Evas_Smart_Group
+ */
 #define evas_smart_class_inherit(sc, parent_sc) evas_smart_class_inherit_full(sc, (Evas_Smart_Class *)parent_sc, sizeof(*parent_sc))
 
 /**
@@ -9778,7 +10232,7 @@ EAPI int                              evas_smart_usage_get(const Evas_Smart *s);
  *
  * @ingroup Evas_Smart_Object_Group
  */
-EAPI Evas_Object      *evas_object_smart_add             (Evas *e, Evas_Smart *s) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2) EINA_MALLOC;
+EAPI Evas_Object *evas_object_smart_add(Evas *e, Evas_Smart *s) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2) EINA_MALLOC;
 
 /**
  * Set an Evas object as a member of a given smart object.
@@ -9800,7 +10254,7 @@ EAPI Evas_Object      *evas_object_smart_add             (Evas *e, Evas_Smart *s
  *
  * @ingroup Evas_Smart_Object_Group
  */
-EAPI void              evas_object_smart_member_add      (Evas_Object *obj, Evas_Object *smart_obj) EINA_ARG_NONNULL(1, 2);
+EAPI void         evas_object_smart_member_add(Evas_Object *obj, Evas_Object *smart_obj) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Removes a member object from a given smart object.
@@ -9815,7 +10269,7 @@ EAPI void              evas_object_smart_member_add      (Evas_Object *obj, Evas
  * @see evas_object_smart_member_add() for more details
  * @see evas_object_smart_members_get()
  */
-EAPI void              evas_object_smart_member_del      (Evas_Object *obj) EINA_ARG_NONNULL(1);
+EAPI void         evas_object_smart_member_del(Evas_Object *obj) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieves the list of the member objects of a given Evas smart
@@ -9827,10 +10281,12 @@ EAPI void              evas_object_smart_member_del      (Evas_Object *obj) EINA
  * The returned list should be freed with @c eina_list_free() when you
  * no longer need it.
  *
+ * @since 1.7 This function will return @c NULL when a non-smart object is passed.
+ *
  * @see evas_object_smart_member_add()
  * @see evas_object_smart_member_del()
-*/
-EAPI Eina_List        *evas_object_smart_members_get     (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+ */
+EAPI Eina_List   *evas_object_smart_members_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Gets the parent smart object of a given Evas object, if it has one.
@@ -9842,7 +10298,7 @@ EAPI Eina_List        *evas_object_smart_members_get     (const Evas_Object *obj
  *
  * @ingroup Evas_Smart_Object_Group
  */
-EAPI Evas_Object      *evas_object_smart_parent_get      (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Object *evas_object_smart_parent_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Checks whether a given smart object or any of its smart object
@@ -9869,7 +10325,7 @@ EAPI Evas_Object      *evas_object_smart_parent_get      (const Evas_Object *obj
  *
  * @ingroup Evas_Smart_Object_Group
  */
-EAPI Eina_Bool         evas_object_smart_type_check      (const Evas_Object *obj, const char *type) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2);
+EAPI Eina_Bool    evas_object_smart_type_check(const Evas_Object *obj, const char *type) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2);
 
 /**
  * Checks whether a given smart object or any of its smart object
@@ -9884,7 +10340,7 @@ EAPI Eina_Bool         evas_object_smart_type_check      (const Evas_Object *obj
  *
  * @ingroup Evas_Smart_Object_Group
  */
-EAPI Eina_Bool         evas_object_smart_type_check_ptr  (const Evas_Object *obj, const char *type) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2);
+EAPI Eina_Bool    evas_object_smart_type_check_ptr(const Evas_Object *obj, const char *type) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2);
 
 /**
  * Get the #Evas_Smart from which @p obj smart object was created.
@@ -9894,7 +10350,7 @@ EAPI Eina_Bool         evas_object_smart_type_check_ptr  (const Evas_Object *obj
  *
  * @ingroup Evas_Smart_Object_Group
  */
-EAPI Evas_Smart       *evas_object_smart_smart_get       (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Smart  *evas_object_smart_smart_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Retrieve user data stored on a given smart object.
@@ -9908,7 +10364,7 @@ EAPI Evas_Smart       *evas_object_smart_smart_get       (const Evas_Object *obj
  *
  * @ingroup Evas_Smart_Object_Group
  */
-EAPI void             *evas_object_smart_data_get        (const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI void        *evas_object_smart_data_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Store a pointer to user data for a given smart object.
@@ -9923,7 +10379,7 @@ EAPI void             *evas_object_smart_data_get        (const Evas_Object *obj
  *
  * @ingroup Evas_Smart_Object_Group
  */
-EAPI void              evas_object_smart_data_set        (Evas_Object *obj, void *data) EINA_ARG_NONNULL(1);
+EAPI void         evas_object_smart_data_set(Evas_Object *obj, void *data) EINA_ARG_NONNULL(1);
 
 /**
  * Add (register) a callback function to the smart event specified by
@@ -9963,7 +10419,7 @@ EAPI void              evas_object_smart_data_set        (Evas_Object *obj, void
  * @see evas_object_smart_callback_del()
  * @ingroup Evas_Smart_Object_Group
  */
-EAPI void              evas_object_smart_callback_add    (Evas_Object *obj, const char *event, Evas_Smart_Cb func, const void *data) EINA_ARG_NONNULL(1, 2, 3);
+EAPI void         evas_object_smart_callback_add(Evas_Object *obj, const char *event, Evas_Smart_Cb func, const void *data) EINA_ARG_NONNULL(1, 2, 3);
 
 /**
  * Add (register) a callback function to the smart event specified by
@@ -9977,10 +10433,10 @@ EAPI void              evas_object_smart_callback_add    (Evas_Object *obj, cons
  * @param data user data to be passed to the callback function
  *
  * @see evas_object_smart_callback_add
- * @since 1.1.0
+ * @since 1.1
  * @ingroup Evas_Smart_Object_Group
  */
-EAPI void              evas_object_smart_callback_priority_add(Evas_Object *obj, const char *event, Evas_Callback_Priority priority, Evas_Smart_Cb func, const void *data);
+EAPI void         evas_object_smart_callback_priority_add(Evas_Object *obj, const char *event, Evas_Callback_Priority priority, Evas_Smart_Cb func, const void *data);
 
 /**
  * Delete (unregister) a callback function from the smart event
@@ -10003,7 +10459,7 @@ EAPI void              evas_object_smart_callback_priority_add(Evas_Object *obj,
  *
  * @ingroup Evas_Smart_Object_Group
  */
-EAPI void             *evas_object_smart_callback_del    (Evas_Object *obj, const char *event, Evas_Smart_Cb func) EINA_ARG_NONNULL(1, 2, 3);
+EAPI void        *evas_object_smart_callback_del(Evas_Object *obj, const char *event, Evas_Smart_Cb func) EINA_ARG_NONNULL(1, 2, 3);
 
 /**
  * Delete (unregister) a callback function from the smart event
@@ -10025,13 +10481,13 @@ EAPI void             *evas_object_smart_callback_del    (Evas_Object *obj, cons
  * remove an exact match of a callback
  *
  * @see evas_object_smart_callback_add() for more details.
- * @since 1.2.0
+ * @since 1.2
  * @ingroup Evas_Smart_Object_Group
  *
  * @note To delete all smart event callbacks which match @p type and @p func,
  * use evas_object_smart_callback_del().
  */
-EAPI void             *evas_object_smart_callback_del_full(Evas_Object *obj, const char *event, Evas_Smart_Cb func, const void *data) EINA_ARG_NONNULL(1, 2, 3);
+EAPI void        *evas_object_smart_callback_del_full(Evas_Object *obj, const char *event, Evas_Smart_Cb func, const void *data) EINA_ARG_NONNULL(1, 2, 3);
 
 /**
  * Call a given smart callback on the smart object @p obj.
@@ -10054,8 +10510,7 @@ EAPI void             *evas_object_smart_callback_del_full(Evas_Object *obj, con
  *
  * @ingroup Evas_Smart_Object_Group
  */
-EAPI void              evas_object_smart_callback_call   (Evas_Object *obj, const char *event, void *event_info) EINA_ARG_NONNULL(1, 2);
-
+EAPI void         evas_object_smart_callback_call(Evas_Object *obj, const char *event, void *event_info) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Set an smart object @b instance's smart callbacks descriptions.
@@ -10089,7 +10544,7 @@ EAPI void              evas_object_smart_callback_call   (Evas_Object *obj, cons
  *
  * @ingroup Evas_Smart_Object_Group
  */
-EAPI Eina_Bool         evas_object_smart_callbacks_descriptions_set(Evas_Object *obj, const Evas_Smart_Cb_Description *descriptions) EINA_ARG_NONNULL(1);
+EAPI Eina_Bool    evas_object_smart_callbacks_descriptions_set(Evas_Object *obj, const Evas_Smart_Cb_Description *descriptions) EINA_ARG_NONNULL(1);
 
 /**
  * Retrieve an smart object's know smart callback descriptions (both
@@ -10124,7 +10579,7 @@ EAPI Eina_Bool         evas_object_smart_callbacks_descriptions_set(Evas_Object 
  *
  * @ingroup Evas_Smart_Object_Group
  */
-EAPI void              evas_object_smart_callbacks_descriptions_get(const Evas_Object *obj, const Evas_Smart_Cb_Description ***class_descriptions, unsigned int *class_count, const Evas_Smart_Cb_Description ***instance_descriptions, unsigned int *instance_count) EINA_ARG_NONNULL(1);
+EAPI void         evas_object_smart_callbacks_descriptions_get(const Evas_Object *obj, const Evas_Smart_Cb_Description ***class_descriptions, unsigned int *class_count, const Evas_Smart_Cb_Description ***instance_descriptions, unsigned int *instance_count) EINA_ARG_NONNULL(1);
 
 /**
  * Find callback description for callback called @a name.
@@ -10142,8 +10597,35 @@ EAPI void              evas_object_smart_callbacks_descriptions_get(const Evas_O
  *        will be done on instance descriptions.
  * @return reference to description if found, @c NULL if not found.
  */
-EAPI void              evas_object_smart_callback_description_find(const Evas_Object *obj, const char *name, const Evas_Smart_Cb_Description **class_description, const Evas_Smart_Cb_Description **instance_description) EINA_ARG_NONNULL(1, 2);
+EAPI void         evas_object_smart_callback_description_find(const Evas_Object *obj, const char *name, const Evas_Smart_Cb_Description **class_description, const Evas_Smart_Cb_Description **instance_description) EINA_ARG_NONNULL(1, 2);
 
+/**
+ * Retrieve an Evas smart object's interface, by name string pointer.
+ *
+ * @param obj An Evas smart object.
+ * @param name Name string of the desired interface, which must be the
+ *             same pointer used at the interface's declarion, when
+ *             creating the smart object @a obj.
+ *
+ * @since 1.7
+ *
+ * @return The interface's handle pointer, if found, @c NULL
+ * otherwise.
+ */
+const void       *evas_object_smart_interface_get(const Evas_Object *obj, const char *name);
+
+/**
+ * Retrieve an Evas smart object interface's <b>private data</b>.
+ *
+ * @param obj An Evas smart object.
+ * @param iface The given object's interface handle.
+ *
+ * @since 1.7
+ *
+ * @return The object interface's private data blob pointer, if found,
+ * @c NULL otherwise.
+ */
+void             *evas_object_smart_interface_data_get(const Evas_Object *obj, const Evas_Smart_Interface *iface);
 
 /**
  * Mark smart object as changed, dirty.
@@ -10159,7 +10641,7 @@ EAPI void              evas_object_smart_callback_description_find(const Evas_Ob
  *
  * @ingroup Evas_Smart_Object_Group
  */
-EAPI void              evas_object_smart_changed         (Evas_Object *obj) EINA_ARG_NONNULL(1);
+EAPI void         evas_object_smart_changed(Evas_Object *obj) EINA_ARG_NONNULL(1);
 
 /**
  * Set or unset the flag signalling that a given smart object needs to
@@ -10189,7 +10671,7 @@ EAPI void              evas_object_smart_changed         (Evas_Object *obj) EINA
  *
  * @ingroup Evas_Smart_Object_Group
  */
-EAPI void              evas_object_smart_need_recalculate_set(Evas_Object *obj, Eina_Bool value) EINA_ARG_NONNULL(1);
+EAPI void         evas_object_smart_need_recalculate_set(Evas_Object *obj, Eina_Bool value) EINA_ARG_NONNULL(1);
 
 /**
  * Get the value of the flag signalling that a given smart object needs to
@@ -10207,7 +10689,7 @@ EAPI void              evas_object_smart_need_recalculate_set(Evas_Object *obj, 
  *
  * @ingroup Evas_Smart_Object_Group
  */
-EAPI Eina_Bool         evas_object_smart_need_recalculate_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Eina_Bool    evas_object_smart_need_recalculate_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Call the @b calculate() smart function immediately on a given smart
@@ -10224,7 +10706,7 @@ EAPI Eina_Bool         evas_object_smart_need_recalculate_get(const Evas_Object 
  *
  * @ingroup Evas_Smart_Object_Group
  */
-EAPI void              evas_object_smart_calculate       (Evas_Object *obj) EINA_ARG_NONNULL(1);
+EAPI void         evas_object_smart_calculate(Evas_Object *obj) EINA_ARG_NONNULL(1);
 
 /**
  * Call user-provided @c calculate() smart functions and unset the
@@ -10237,13 +10719,13 @@ EAPI void              evas_object_smart_calculate       (Evas_Object *obj) EINA
  *
  * @ingroup Evas_Smart_Object_Group
  */
-EAPI void              evas_smart_objects_calculate      (Evas *e);
+EAPI void         evas_smart_objects_calculate(Evas *e);
 
 /**
  * This gets the internal counter that counts the number of smart calculations
- * 
+ *
  * @param e The canvas to get the calculate counter from
- * 
+ *
  * Whenever evas performs smart object calculations on the whole canvas
  * it increments a counter by 1. This is the smart object calculate counter
  * that this function returns the value of. It starts at the value of 0 and
@@ -10251,12 +10733,12 @@ EAPI void              evas_smart_objects_calculate      (Evas *e);
  * 1 every time objects are calculated. You can use this counter to ensure
  * you don't re-do calculations withint the same calculation generation/run
  * if the calculations maybe cause self-feeding effects.
- * 
+ *
  * @ingroup Evas_Smart_Object_Group
  * @since 1.1
  */
-EAPI int               evas_smart_objects_calculate_count_get (const Evas *e);
-   
+EAPI int          evas_smart_objects_calculate_count_get(const Evas *e);
+
 /**
  * Moves all children objects of a given smart object relative to a
  * given offset.
@@ -10273,7 +10755,7 @@ EAPI int               evas_smart_objects_calculate_count_get (const Evas *e);
  * @note Clipped smart objects already make use of this function on
  * their @c move() smart function definition.
  */
-EAPI void                    evas_object_smart_move_children_relative(Evas_Object *obj, Evas_Coord dx, Evas_Coord dy) EINA_ARG_NONNULL(1);
+EAPI void         evas_object_smart_move_children_relative(Evas_Object *obj, Evas_Coord dx, Evas_Coord dy) EINA_ARG_NONNULL(1);
 
 /**
  * @}
@@ -10308,13 +10790,12 @@ EAPI void                    evas_object_smart_move_children_relative(Evas_Objec
  * Every subclass should provide this at the beginning of their own
  * data set with evas_object_smart_data_set().
  */
-  typedef struct _Evas_Object_Smart_Clipped_Data Evas_Object_Smart_Clipped_Data;
-  struct _Evas_Object_Smart_Clipped_Data
-  {
-     Evas_Object *clipper;
-     Evas        *evas;
-  };
-
+typedef struct _Evas_Object_Smart_Clipped_Data Evas_Object_Smart_Clipped_Data;
+struct _Evas_Object_Smart_Clipped_Data
+{
+   Evas_Object *clipper;
+   Evas        *evas;
+};
 
 /**
  * Get the clipper object for the given clipped smart object.
@@ -10328,7 +10809,7 @@ EAPI void                    evas_object_smart_move_children_relative(Evas_Objec
  *
  * @see evas_object_smart_clipped_smart_add()
  */
-EAPI Evas_Object            *evas_object_smart_clipped_clipper_get   (Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Object            *evas_object_smart_clipped_clipper_get(Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Set a given smart class' callbacks so it implements the <b>clipped smart
@@ -10369,20 +10850,20 @@ EAPI Evas_Object            *evas_object_smart_clipped_clipper_get   (Evas_Objec
  * clipped smart object are:
  * - @c add: creates a hidden clipper with "infinite" size, to clip
  *    any incoming members;
- *  - @c del: delete all children objects;
- *  - @c move: move all objects relative relatively;
- *  - @c resize: <b>not defined</b>;
- *  - @c show: if there are children objects, show clipper;
- *  - @c hide: hides clipper;
- *  - @c color_set: set the color of clipper;
- *  - @c clip_set: set clipper of clipper;
- *  - @c clip_unset: unset the clipper of clipper;
+ * - @c del: delete all children objects;
+ * - @c move: move all objects relative relatively;
+ * - @c resize: <b>not defined</b>;
+ * - @c show: if there are children objects, show clipper;
+ * - @c hide: hides clipper;
+ * - @c color_set: set the color of clipper;
+ * - @c clip_set: set clipper of clipper;
+ * - @c clip_unset: unset the clipper of clipper;
  *
  * @note There are other means of assigning parent smart classes to
  * child ones, like the #EVAS_SMART_SUBCLASS_NEW macro or the
  * evas_smart_class_inherit_full() function.
  */
-EAPI void                    evas_object_smart_clipped_smart_set     (Evas_Smart_Class *sc) EINA_ARG_NONNULL(1);
+EAPI void                    evas_object_smart_clipped_smart_set(Evas_Smart_Class *sc) EINA_ARG_NONNULL(1);
 
 /**
  * Get a pointer to the <b>clipped smart object's</b> class, to use
@@ -10391,7 +10872,7 @@ EAPI void                    evas_object_smart_clipped_smart_set     (Evas_Smart
  * @see #Evas_Smart_Object_Clipped for more information on this smart
  * class
  */
-EAPI const Evas_Smart_Class *evas_object_smart_clipped_class_get     (void) EINA_CONST;
+EAPI const Evas_Smart_Class *evas_object_smart_clipped_class_get(void) EINA_CONST;
 
 /**
  * @}
@@ -10427,7 +10908,7 @@ EAPI const Evas_Smart_Class *evas_object_smart_clipped_class_get     (void) EINA
  *
  * @ingroup Evas_Object_Box
  */
-   typedef struct _Evas_Object_Box_Api        Evas_Object_Box_Api;
+typedef struct _Evas_Object_Box_Api Evas_Object_Box_Api;
 
 /**
  * @typedef Evas_Object_Box_Data
@@ -10436,7 +10917,7 @@ EAPI const Evas_Smart_Class *evas_object_smart_clipped_class_get     (void) EINA
  *
  * @ingroup Evas_Object_Box
  */
-   typedef struct _Evas_Object_Box_Data       Evas_Object_Box_Data;
+typedef struct _Evas_Object_Box_Data Evas_Object_Box_Data;
 
 /**
  * @typedef Evas_Object_Box_Option
@@ -10462,7 +10943,7 @@ EAPI const Evas_Smart_Class *evas_object_smart_clipped_class_get     (void) EINA
  *
  * @ingroup Evas_Object_Box
  */
-   typedef struct _Evas_Object_Box_Option     Evas_Object_Box_Option;
+typedef struct _Evas_Object_Box_Option Evas_Object_Box_Option;
 
 /**
  * @typedef Evas_Object_Box_Layout
@@ -10475,7 +10956,7 @@ EAPI const Evas_Smart_Class *evas_object_smart_clipped_class_get     (void) EINA
  *
  * @ingroup Evas_Object_Box
  */
-   typedef void (*Evas_Object_Box_Layout) (Evas_Object *o, Evas_Object_Box_Data *priv, void *user_data);
+typedef void (*Evas_Object_Box_Layout)(Evas_Object *o, Evas_Object_Box_Data *priv, void *user_data);
 
 /**
  * @def EVAS_OBJECT_BOX_API_VERSION
@@ -10498,24 +10979,24 @@ EAPI const Evas_Smart_Class *evas_object_smart_clipped_class_get     (void) EINA
  * @extends Evas_Smart_Class
  * @ingroup Evas_Object_Box
  */
-   struct _Evas_Object_Box_Api
-   {
-      Evas_Smart_Class          base; /**< Base smart class struct, need for all smart objects */
-      int                       version; /**< Version of this smart class definition */
-      Evas_Object_Box_Option *(*append)           (Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object *child); /**< Smart function to append child elements in boxes */
-      Evas_Object_Box_Option *(*prepend)          (Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object *child); /**< Smart function to prepend child elements in boxes */
-      Evas_Object_Box_Option *(*insert_before)    (Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object *child, const Evas_Object *reference); /**< Smart function to insert a child element before another in boxes */
-      Evas_Object_Box_Option *(*insert_after)     (Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object *child, const Evas_Object *reference); /**< Smart function to insert a child element after another in boxes */
-      Evas_Object_Box_Option *(*insert_at)        (Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object *child, unsigned int pos); /**< Smart function to insert a child element at a given position on boxes */
-      Evas_Object            *(*remove)           (Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object *child); /**< Smart function to remove a child element from boxes */
-      Evas_Object            *(*remove_at)        (Evas_Object *o, Evas_Object_Box_Data *priv, unsigned int pos); /**< Smart function to remove a child element from boxes, by its position */
-      Eina_Bool               (*property_set)     (Evas_Object *o, Evas_Object_Box_Option *opt, int property, va_list args); /**< Smart function to set a custom property on a box child */
-      Eina_Bool               (*property_get)     (Evas_Object *o, Evas_Object_Box_Option *opt, int property, va_list args); /**< Smart function to retrieve a custom property from a box child */
-      const char             *(*property_name_get)(Evas_Object *o, int property); /**< Smart function to get the name of a custom property of box children */
-      int                     (*property_id_get)  (Evas_Object *o, const char *name); /**< Smart function to get the numerical ID of a custom property of box children */
-      Evas_Object_Box_Option *(*option_new)       (Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object *child); /**< Smart function to create a new box option struct */
-      void                    (*option_free)      (Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object_Box_Option *opt); /**< Smart function to delete a box option struct */
-   };
+struct _Evas_Object_Box_Api
+{
+   Evas_Smart_Class        base;      /**< Base smart class struct, need for all smart objects */
+   int                     version;      /**< Version of this smart class definition */
+   Evas_Object_Box_Option *(*append)(Evas_Object * o, Evas_Object_Box_Data * priv, Evas_Object * child);            /**< Smart function to append child elements in boxes */
+   Evas_Object_Box_Option *(*prepend)(Evas_Object * o, Evas_Object_Box_Data * priv, Evas_Object * child);           /**< Smart function to prepend child elements in boxes */
+   Evas_Object_Box_Option *(*insert_before)(Evas_Object * o, Evas_Object_Box_Data * priv, Evas_Object * child, const Evas_Object * reference);    /**< Smart function to insert a child element before another in boxes */
+   Evas_Object_Box_Option *(*insert_after)(Evas_Object * o, Evas_Object_Box_Data * priv, Evas_Object * child, const Evas_Object * reference);     /**< Smart function to insert a child element after another in boxes */
+   Evas_Object_Box_Option *(*insert_at)(Evas_Object * o, Evas_Object_Box_Data * priv, Evas_Object * child, unsigned int pos);         /**< Smart function to insert a child element at a given position on boxes */
+   Evas_Object            *(*remove)(Evas_Object * o, Evas_Object_Box_Data * priv, Evas_Object * child);            /**< Smart function to remove a child element from boxes */
+   Evas_Object            *(*remove_at)(Evas_Object * o, Evas_Object_Box_Data * priv, unsigned int pos);          /**< Smart function to remove a child element from boxes, by its position */
+   Eina_Bool               (*property_set)(Evas_Object *o, Evas_Object_Box_Option *opt, int property, va_list args);         /**< Smart function to set a custom property on a box child */
+   Eina_Bool               (*property_get)(const Evas_Object *o, Evas_Object_Box_Option *opt, int property, va_list args);         /**< Smart function to retrieve a custom property from a box child */
+   const char             *(*property_name_get)(const Evas_Object * o, int property);   /**< Smart function to get the name of a custom property of box children */
+   int                     (*property_id_get)(const Evas_Object *o, const char *name);      /**< Smart function to get the numerical ID of a custom property of box children */
+   Evas_Object_Box_Option *(*option_new)(Evas_Object * o, Evas_Object_Box_Data * priv, Evas_Object * child);        /**< Smart function to create a new box option struct */
+   void                    (*option_free)(Evas_Object *o, Evas_Object_Box_Data *priv, Evas_Object_Box_Option *opt);          /**< Smart function to delete a box option struct */
+};
 
 /**
  * @def EVAS_OBJECT_BOX_API_INIT
@@ -10546,7 +11027,7 @@ EAPI const Evas_Smart_Class *evas_object_smart_clipped_class_get     (void) EINA
  * @see EVAS_OBJECT_BOX_API_INIT
  * @ingroup Evas_Object_Box
  */
-#define EVAS_OBJECT_BOX_API_INIT_NULL EVAS_OBJECT_BOX_API_INIT(EVAS_SMART_CLASS_INIT_NULL)
+#define EVAS_OBJECT_BOX_API_INIT_NULL    EVAS_OBJECT_BOX_API_INIT(EVAS_SMART_CLASS_INIT_NULL)
 
 /**
  * @def EVAS_OBJECT_BOX_API_INIT_VERSION
@@ -10597,33 +11078,36 @@ EAPI const Evas_Smart_Class *evas_object_smart_clipped_class_get     (void) EINA
  * @extends Evas_Object_Smart_Clipped_Data
  * @ingroup Evas_Object_Box
  */
-   struct _Evas_Object_Box_Data
+struct _Evas_Object_Box_Data
+{
+   Evas_Object_Smart_Clipped_Data base;
+   const Evas_Object_Box_Api     *api;
+   struct
    {
-      Evas_Object_Smart_Clipped_Data   base;
-      const Evas_Object_Box_Api       *api;
-      struct {
-	 double                        h, v;
-      } align;
-      struct {
-	 Evas_Coord                    h, v;
-      } pad;
-      Eina_List                       *children;
-      struct {
-	 Evas_Object_Box_Layout        cb;
-	 void                         *data;
-	 void                        (*free_data)(void *data);
-      } layout;
-      Eina_Bool                        layouting : 1;
-      Eina_Bool                        children_changed : 1;
-   };
+      double h, v;
+   } align;
+   struct
+   {
+      Evas_Coord h, v;
+   } pad;
+   Eina_List                     *children;
+   struct
+   {
+      Evas_Object_Box_Layout cb;
+      void                  *data;
+      void                   (*free_data)(void *data);
+   } layout;
+   Eina_Bool                      layouting : 1;
+   Eina_Bool                      children_changed : 1;
+};
 
-   struct _Evas_Object_Box_Option
-   {
-      Evas_Object *obj; /**< Pointer to the box child object, itself */
-      Eina_Bool    max_reached:1;
-      Eina_Bool    min_reached:1;
-      Evas_Coord   alloc_size;
-   }; /**< #Evas_Object_Box_Option struct fields */
+struct _Evas_Object_Box_Option
+{
+   Evas_Object *obj;    /**< Pointer to the box child object, itself */
+   Eina_Bool    max_reached : 1;
+   Eina_Bool    min_reached : 1;
+   Evas_Coord   alloc_size;
+};    /**< #Evas_Object_Box_Option struct fields */
 
 /**
  * Set the default box @a api struct (Evas_Object_Box_Api)
@@ -10632,7 +11116,7 @@ EAPI const Evas_Smart_Class *evas_object_smart_clipped_class_get     (void) EINA
  * @param api The box API struct to set back, most probably with
  * overridden fields (on class extensions scenarios)
  */
-EAPI void                       evas_object_box_smart_set                             (Evas_Object_Box_Api *api) EINA_ARG_NONNULL(1);
+EAPI void                       evas_object_box_smart_set(Evas_Object_Box_Api *api) EINA_ARG_NONNULL(1);
 
 /**
  * Get the Evas box smart class, for inheritance purposes.
@@ -10642,7 +11126,7 @@ EAPI void                       evas_object_box_smart_set                       
  * The returned value is @b not to be modified, just use it as your
  * parent class.
  */
-EAPI const Evas_Object_Box_Api *evas_object_box_smart_class_get                       (void) EINA_CONST;
+EAPI const Evas_Object_Box_Api *evas_object_box_smart_class_get(void) EINA_CONST;
 
 /**
  * Set a new layouting function to a given box object
@@ -10670,7 +11154,7 @@ EAPI const Evas_Object_Box_Api *evas_object_box_smart_class_get                 
  * @note A box layouting function will be triggered by the @c
  * 'calculate' smart callback of the box's smart class.
  */
-EAPI void                       evas_object_box_layout_set                            (Evas_Object *o, Evas_Object_Box_Layout cb, const void *data, void (*free_data)(void *data)) EINA_ARG_NONNULL(1, 2);
+EAPI void                       evas_object_box_layout_set(Evas_Object *o, Evas_Object_Box_Layout cb, const void *data, void (*free_data)(void *data)) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Add a new box object on the provided canvas.
@@ -10685,7 +11169,7 @@ EAPI void                       evas_object_box_layout_set                      
  * properties of the box must be set/retrieved via
  * <c>evas_object_box_{h,v}_{align,padding}_{get,set)()</c>.
  */
-EAPI Evas_Object               *evas_object_box_add                                   (Evas *evas) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+EAPI Evas_Object               *evas_object_box_add(Evas *evas) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
 /**
  * Add a new box as a @b child of a given smart object.
@@ -10699,7 +11183,7 @@ EAPI Evas_Object               *evas_object_box_add                             
  *
  * @see evas_object_box_add()
  */
-EAPI Evas_Object               *evas_object_box_add_to                                (Evas_Object *parent) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+EAPI Evas_Object               *evas_object_box_add_to(Evas_Object *parent) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
 /**
  * Layout function which sets the box @a o to a (basic) horizontal box
@@ -10755,7 +11239,7 @@ EAPI Evas_Object               *evas_object_box_add_to                          
  * be set, by the <c>evas_object_size_hint_{min,max}_set()</c>
  * functions.
  */
-EAPI void                       evas_object_box_layout_horizontal                     (Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
+EAPI void                       evas_object_box_layout_horizontal(Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Layout function which sets the box @a o to a (basic) vertical box
@@ -10764,7 +11248,7 @@ EAPI void                       evas_object_box_layout_horizontal               
  * evas_object_box_layout_horizontal(). The description of its
  * behaviour can be derived from that function's documentation.
  */
-EAPI void                       evas_object_box_layout_vertical                       (Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
+EAPI void                       evas_object_box_layout_vertical(Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Layout function which sets the box @a o to a @b homogeneous
@@ -10774,7 +11258,7 @@ EAPI void                       evas_object_box_layout_vertical                 
  * evas_object_box_layout_homogeneous_horizontal().  The description
  * of its behaviour can be derived from that function's documentation.
  */
-EAPI void                       evas_object_box_layout_homogeneous_vertical           (Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
+EAPI void                       evas_object_box_layout_homogeneous_vertical(Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Layout function which sets the box @a o to a @b homogeneous
@@ -10814,7 +11298,7 @@ EAPI void                       evas_object_box_layout_homogeneous_vertical     
  * try to resize this child element to the exact height of its parent
  * (respecting the maximum size hint on the child's height).
  */
-EAPI void                       evas_object_box_layout_homogeneous_horizontal         (Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
+EAPI void                       evas_object_box_layout_homogeneous_horizontal(Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Layout function which sets the box @a o to a <b>maximum size,
@@ -10874,7 +11358,7 @@ EAPI void                       evas_object_box_layout_homogeneous_max_size_hori
  * description of its behaviour can be derived from that function's
  * documentation.
  */
-EAPI void                       evas_object_box_layout_homogeneous_max_size_vertical  (Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
+EAPI void                       evas_object_box_layout_homogeneous_max_size_vertical(Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Layout function which sets the box @a o to a @b flow horizontal
@@ -10916,7 +11400,7 @@ EAPI void                       evas_object_box_layout_homogeneous_max_size_vert
  * @c align_y dictates positioning relative to the <b>largest
  * height</b> required by a child object in the actual row.
  */
-EAPI void                       evas_object_box_layout_flow_horizontal                (Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
+EAPI void                       evas_object_box_layout_flow_horizontal(Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Layout function which sets the box @a o to a @b flow vertical box.
@@ -10925,7 +11409,7 @@ EAPI void                       evas_object_box_layout_flow_horizontal          
  * evas_object_box_layout_flow_horizontal(). The description of its
  * behaviour can be derived from that function's documentation.
  */
-EAPI void                       evas_object_box_layout_flow_vertical                  (Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
+EAPI void                       evas_object_box_layout_flow_vertical(Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Layout function which sets the box @a o to a @b stacking box
@@ -10953,7 +11437,7 @@ EAPI void                       evas_object_box_layout_flow_vertical            
  * width and accounting for its horizontal padding properties). The
  * same applies to the vertical axis.
  */
-EAPI void                       evas_object_box_layout_stack                          (Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
+EAPI void                       evas_object_box_layout_stack(Evas_Object *o, Evas_Object_Box_Data *priv, void *data) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Set the alignment of the whole bounding box of contents, for a
@@ -10974,7 +11458,7 @@ EAPI void                       evas_object_box_layout_stack                    
  *
  * @see evas_object_box_align_get()
  */
-EAPI void                       evas_object_box_align_set                             (Evas_Object *o, double horizontal, double vertical) EINA_ARG_NONNULL(1);
+EAPI void                       evas_object_box_align_set(Evas_Object *o, double horizontal, double vertical) EINA_ARG_NONNULL(1);
 
 /**
  * Get the alignment of the whole bounding box of contents, for a
@@ -10988,7 +11472,7 @@ EAPI void                       evas_object_box_align_set                       
  *
  * @see evas_object_box_align_set() for more information
  */
-EAPI void                       evas_object_box_align_get                             (const Evas_Object *o, double *horizontal, double *vertical) EINA_ARG_NONNULL(1);
+EAPI void                       evas_object_box_align_get(const Evas_Object *o, double *horizontal, double *vertical) EINA_ARG_NONNULL(1);
 
 /**
  * Set the (space) padding between cells set for a given box object.
@@ -11001,7 +11485,7 @@ EAPI void                       evas_object_box_align_get                       
  *
  * @see evas_object_box_padding_get()
  */
-EAPI void                       evas_object_box_padding_set                           (Evas_Object *o, Evas_Coord horizontal, Evas_Coord vertical) EINA_ARG_NONNULL(1);
+EAPI void                       evas_object_box_padding_set(Evas_Object *o, Evas_Coord horizontal, Evas_Coord vertical) EINA_ARG_NONNULL(1);
 
 /**
  * Get the (space) padding between cells set for a given box object.
@@ -11014,7 +11498,7 @@ EAPI void                       evas_object_box_padding_set                     
  *
  * @see evas_object_box_padding_set()
  */
-EAPI void                       evas_object_box_padding_get                           (const Evas_Object *o, Evas_Coord *horizontal, Evas_Coord *vertical) EINA_ARG_NONNULL(1);
+EAPI void                       evas_object_box_padding_get(const Evas_Object *o, Evas_Coord *horizontal, Evas_Coord *vertical) EINA_ARG_NONNULL(1);
 
 /**
  * Append a new @a child object to the given box object @a o.
@@ -11034,7 +11518,7 @@ EAPI void                       evas_object_box_padding_get                     
  * @note This call will trigger the box's _Evas_Object_Box_Api::append
  * smart function.
  */
-EAPI Evas_Object_Box_Option    *evas_object_box_append                                (Evas_Object *o, Evas_Object *child) EINA_ARG_NONNULL(1, 2);
+EAPI Evas_Object_Box_Option    *evas_object_box_append(Evas_Object *o, Evas_Object *child) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Prepend a new @a child object to the given box object @a o.
@@ -11054,7 +11538,7 @@ EAPI Evas_Object_Box_Option    *evas_object_box_append                          
  * @note This call will trigger the box's
  * _Evas_Object_Box_Api::prepend smart function.
  */
-EAPI Evas_Object_Box_Option    *evas_object_box_prepend                               (Evas_Object *o, Evas_Object *child) EINA_ARG_NONNULL(1, 2);
+EAPI Evas_Object_Box_Option    *evas_object_box_prepend(Evas_Object *o, Evas_Object *child) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Insert a new @a child object <b>before another existing one</b>, in
@@ -11077,7 +11561,7 @@ EAPI Evas_Object_Box_Option    *evas_object_box_prepend                         
  * @note This call will trigger the box's
  * _Evas_Object_Box_Api::insert_before smart function.
  */
-EAPI Evas_Object_Box_Option    *evas_object_box_insert_before                         (Evas_Object *o, Evas_Object *child, const Evas_Object *reference) EINA_ARG_NONNULL(1, 2, 3);
+EAPI Evas_Object_Box_Option    *evas_object_box_insert_before(Evas_Object *o, Evas_Object *child, const Evas_Object *reference) EINA_ARG_NONNULL(1, 2, 3);
 
 /**
  * Insert a new @a child object <b>after another existing one</b>, in
@@ -11100,7 +11584,7 @@ EAPI Evas_Object_Box_Option    *evas_object_box_insert_before                   
  * @note This call will trigger the box's
  * _Evas_Object_Box_Api::insert_after smart function.
  */
-EAPI Evas_Object_Box_Option    *evas_object_box_insert_after                          (Evas_Object *o, Evas_Object *child, const Evas_Object *reference) EINA_ARG_NONNULL(1, 2, 3);
+EAPI Evas_Object_Box_Option    *evas_object_box_insert_after(Evas_Object *o, Evas_Object *child, const Evas_Object *reference) EINA_ARG_NONNULL(1, 2, 3);
 
 /**
  * Insert a new @a child object <b>at a given position</b>, in a given
@@ -11124,7 +11608,7 @@ EAPI Evas_Object_Box_Option    *evas_object_box_insert_after                    
  * @note This call will trigger the box's
  * _Evas_Object_Box_Api::insert_at smart function.
  */
-EAPI Evas_Object_Box_Option    *evas_object_box_insert_at                             (Evas_Object *o, Evas_Object *child, unsigned int pos) EINA_ARG_NONNULL(1, 2);
+EAPI Evas_Object_Box_Option    *evas_object_box_insert_at(Evas_Object *o, Evas_Object *child, unsigned int pos) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Remove a given object from a box object, unparenting it again.
@@ -11142,7 +11626,7 @@ EAPI Evas_Object_Box_Option    *evas_object_box_insert_at                       
  * @note This call will trigger the box's _Evas_Object_Box_Api::remove
  * smart function.
  */
-EAPI Eina_Bool                  evas_object_box_remove                                (Evas_Object *o, Evas_Object *child) EINA_ARG_NONNULL(1, 2);
+EAPI Eina_Bool                  evas_object_box_remove(Evas_Object *o, Evas_Object *child) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Remove an object, <b>bound to a given position</b> in a box object,
@@ -11164,7 +11648,7 @@ EAPI Eina_Bool                  evas_object_box_remove                          
  * @note This call will trigger the box's
  * _Evas_Object_Box_Api::remove_at smart function.
  */
-EAPI Eina_Bool                  evas_object_box_remove_at                             (Evas_Object *o, unsigned int pos) EINA_ARG_NONNULL(1);
+EAPI Eina_Bool                  evas_object_box_remove_at(Evas_Object *o, unsigned int pos) EINA_ARG_NONNULL(1);
 
 /**
  * Remove @b all child objects from a box object, unparenting them
@@ -11178,7 +11662,7 @@ EAPI Eina_Bool                  evas_object_box_remove_at                       
  * each of @p o's child objects, in sequence. If, and only if, all
  * those calls succeed, so does this one.
  */
-EAPI Eina_Bool                  evas_object_box_remove_all                            (Evas_Object *o, Eina_Bool clear) EINA_ARG_NONNULL(1);
+EAPI Eina_Bool                  evas_object_box_remove_all(Evas_Object *o, Eina_Bool clear) EINA_ARG_NONNULL(1);
 
 /**
  * Get an iterator to walk the list of children of a given box object.
@@ -11189,7 +11673,7 @@ EAPI Eina_Bool                  evas_object_box_remove_all                      
  *
  * @note Do @b not remove or delete objects while walking the list.
  */
-EAPI Eina_Iterator             *evas_object_box_iterator_new                          (const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+EAPI Eina_Iterator             *evas_object_box_iterator_new(const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
 /**
  * Get an accessor (a structure providing random items access) to the
@@ -11201,7 +11685,7 @@ EAPI Eina_Iterator             *evas_object_box_iterator_new                    
  *
  * @note Do not remove or delete objects while walking the list.
  */
-EAPI Eina_Accessor             *evas_object_box_accessor_new                          (const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+EAPI Eina_Accessor             *evas_object_box_accessor_new(const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
 /**
  * Get the list of children objects in a given box object.
@@ -11218,7 +11702,7 @@ EAPI Eina_Accessor             *evas_object_box_accessor_new                    
  *       It's possible to remove objects from the box when walking
  *       this list, but these removals won't be reflected on it.
  */
-EAPI Eina_List                 *evas_object_box_children_get                          (const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+EAPI Eina_List                 *evas_object_box_children_get(const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
 /**
  * Get the name of the property of the child elements of the box @a o
@@ -11236,7 +11720,7 @@ EAPI Eina_List                 *evas_object_box_children_get                    
  * _Evas_Object_Box_Api::property_name_get smart class function of the
  * box, which is originally set to @c NULL.
  */
-EAPI const char                *evas_object_box_option_property_name_get              (Evas_Object *o, int property) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI const char                *evas_object_box_option_property_name_get(const Evas_Object *o, int property) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Get the numerical identifier of the property of the child elements
@@ -11255,7 +11739,7 @@ EAPI const char                *evas_object_box_option_property_name_get        
  * _Evas_Object_Box_Api::property_id_get smart class function of the
  * box, which is originally set to @c NULL.
  */
-EAPI int                        evas_object_box_option_property_id_get                (Evas_Object *o, const char *name) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2);
+EAPI int                        evas_object_box_option_property_id_get(const Evas_Object *o, const char *name) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2);
 
 /**
  * Set a property value (by its given numerical identifier), on a
@@ -11282,7 +11766,7 @@ EAPI int                        evas_object_box_option_property_id_get          
  * evas_object_box_option_property_vset() with this list and the same
  * previous arguments.
  */
-EAPI Eina_Bool                  evas_object_box_option_property_set                   (Evas_Object *o, Evas_Object_Box_Option *opt, int property, ...) EINA_ARG_NONNULL(1, 2);
+EAPI Eina_Bool                  evas_object_box_option_property_set(Evas_Object *o, Evas_Object_Box_Option *opt, int property, ...) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Set a property value (by its given numerical identifier), on a
@@ -11301,7 +11785,7 @@ EAPI Eina_Bool                  evas_object_box_option_property_set             
  * evas_object_box_option_property_set(). See its documentation for
  * more details.
  */
-EAPI Eina_Bool                  evas_object_box_option_property_vset                  (Evas_Object *o, Evas_Object_Box_Option *opt, int property, va_list args) EINA_ARG_NONNULL(1, 2);
+EAPI Eina_Bool                  evas_object_box_option_property_vset(Evas_Object *o, Evas_Object_Box_Option *opt, int property, va_list args) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Get a property's value (by its given numerical identifier), on a
@@ -11328,7 +11812,7 @@ EAPI Eina_Bool                  evas_object_box_option_property_vset            
  * evas_object_box_option_property_vget() with this list and the same
  * previous arguments.
  */
-EAPI Eina_Bool                  evas_object_box_option_property_get                   (Evas_Object *o, Evas_Object_Box_Option *opt, int property, ...) EINA_ARG_NONNULL(1, 2);
+EAPI Eina_Bool                  evas_object_box_option_property_get(const Evas_Object *o, Evas_Object_Box_Option *opt, int property, ...) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Get a property's value (by its given numerical identifier), on a
@@ -11347,7 +11831,7 @@ EAPI Eina_Bool                  evas_object_box_option_property_get             
  * evas_object_box_option_property_get(). See its documentation for
  * more details.
  */
-EAPI Eina_Bool                  evas_object_box_option_property_vget                  (Evas_Object *o, Evas_Object_Box_Option *opt, int property, va_list args) EINA_ARG_NONNULL(1, 2);
+EAPI Eina_Bool                  evas_object_box_option_property_vget(const Evas_Object *o, Evas_Object_Box_Option *opt, int property, va_list args) EINA_ARG_NONNULL(1, 2);
 
 /**
  * @}
@@ -11374,14 +11858,14 @@ EAPI Eina_Bool                  evas_object_box_option_property_vget            
  *
  * @param evas Canvas in which table will be added.
  */
-EAPI Evas_Object                        *evas_object_table_add             (Evas *evas) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+EAPI Evas_Object                       *evas_object_table_add(Evas *evas) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
 /**
  * @brief Create a table that is child of a given element @a parent.
  *
  * @see evas_object_table_add()
  */
-EAPI Evas_Object                        *evas_object_table_add_to          (Evas_Object *parent) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+EAPI Evas_Object                       *evas_object_table_add_to(Evas_Object *parent) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
 /**
  * @brief Set how this table should layout children.
@@ -11425,34 +11909,34 @@ EAPI Evas_Object                        *evas_object_table_add_to          (Evas
  * no minimum size is provided at all then the table will fallback to
  * expand mode as well.
  */
-EAPI void                                evas_object_table_homogeneous_set (Evas_Object *o, Evas_Object_Table_Homogeneous_Mode homogeneous) EINA_ARG_NONNULL(1);
+EAPI void                               evas_object_table_homogeneous_set(Evas_Object *o, Evas_Object_Table_Homogeneous_Mode homogeneous) EINA_ARG_NONNULL(1);
 
 /**
  * Get the current layout homogeneous mode.
  *
  * @see evas_object_table_homogeneous_set()
  */
-EAPI Evas_Object_Table_Homogeneous_Mode  evas_object_table_homogeneous_get (const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI Evas_Object_Table_Homogeneous_Mode evas_object_table_homogeneous_get(const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Set padding between cells.
  */
-EAPI void                                evas_object_table_padding_set     (Evas_Object *o, Evas_Coord horizontal, Evas_Coord vertical) EINA_ARG_NONNULL(1);
+EAPI void                               evas_object_table_padding_set(Evas_Object *o, Evas_Coord horizontal, Evas_Coord vertical) EINA_ARG_NONNULL(1);
 
 /**
  * Get padding between cells.
  */
-EAPI void                                evas_object_table_padding_get     (const Evas_Object *o, Evas_Coord *horizontal, Evas_Coord *vertical) EINA_ARG_NONNULL(1);
+EAPI void                               evas_object_table_padding_get(const Evas_Object *o, Evas_Coord *horizontal, Evas_Coord *vertical) EINA_ARG_NONNULL(1);
 
 /**
  * Set the alignment of the whole bounding box of contents.
  */
-EAPI void                                evas_object_table_align_set       (Evas_Object *o, double horizontal, double vertical) EINA_ARG_NONNULL(1);
+EAPI void                               evas_object_table_align_set(Evas_Object *o, double horizontal, double vertical) EINA_ARG_NONNULL(1);
 
 /**
  * Get alignment of the whole bounding box of contents.
  */
-EAPI void                                evas_object_table_align_get       (const Evas_Object *o, double *horizontal, double *vertical) EINA_ARG_NONNULL(1);
+EAPI void                               evas_object_table_align_get(const Evas_Object *o, double *horizontal, double *vertical) EINA_ARG_NONNULL(1);
 
 /**
  * Sets the mirrored mode of the table. In mirrored mode the table items go
@@ -11461,19 +11945,19 @@ EAPI void                                evas_object_table_align_get       (cons
  *
  * @param o The table object.
  * @param mirrored the mirrored mode to set
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI void                                evas_object_table_mirrored_set    (Evas_Object *o, Eina_Bool mirrored) EINA_ARG_NONNULL(1);
+EAPI void                               evas_object_table_mirrored_set(Evas_Object *o, Eina_Bool mirrored) EINA_ARG_NONNULL(1);
 
 /**
  * Gets the mirrored mode of the table.
  *
  * @param o The table object.
  * @return @c EINA_TRUE if it's a mirrored table, @c EINA_FALSE otherwise.
- * @since 1.1.0
+ * @since 1.1
  * @see evas_object_table_mirrored_set()
  */
-EAPI Eina_Bool                           evas_object_table_mirrored_get    (const Evas_Object *o) EINA_ARG_NONNULL(1);
+EAPI Eina_Bool                          evas_object_table_mirrored_get(const Evas_Object *o) EINA_ARG_NONNULL(1);
 
 /**
  * Get packing location of a child of table
@@ -11486,9 +11970,9 @@ EAPI Eina_Bool                           evas_object_table_mirrored_get    (cons
  * @param rowspan pointer to store how many relative-vertical position to use for this child.
  *
  * @return 1 on success, 0 on failure.
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI Eina_Bool                           evas_object_table_pack_get(Evas_Object *o, Evas_Object *child, unsigned short *col, unsigned short *row, unsigned short *colspan, unsigned short *rowspan);
+EAPI Eina_Bool                          evas_object_table_pack_get(const Evas_Object *o, Evas_Object *child, unsigned short *col, unsigned short *row, unsigned short *colspan, unsigned short *rowspan);
 
 /**
  * Add a new child to a table object or set its current packing.
@@ -11502,7 +11986,7 @@ EAPI Eina_Bool                           evas_object_table_pack_get(Evas_Object 
  *
  * @return 1 on success, 0 on failure.
  */
-EAPI Eina_Bool                           evas_object_table_pack            (Evas_Object *o, Evas_Object *child, unsigned short col, unsigned short row, unsigned short colspan, unsigned short rowspan) EINA_ARG_NONNULL(1, 2);
+EAPI Eina_Bool                          evas_object_table_pack(Evas_Object *o, Evas_Object *child, unsigned short col, unsigned short row, unsigned short colspan, unsigned short rowspan) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Remove child from table.
@@ -11513,7 +11997,7 @@ EAPI Eina_Bool                           evas_object_table_pack            (Evas
  *
  * @return 1 on success, 0 on failure.
  */
-EAPI Eina_Bool                           evas_object_table_unpack          (Evas_Object *o, Evas_Object *child) EINA_ARG_NONNULL(1, 2);
+EAPI Eina_Bool                          evas_object_table_unpack(Evas_Object *o, Evas_Object *child) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Faster way to remove all child objects from a table object.
@@ -11521,7 +12005,7 @@ EAPI Eina_Bool                           evas_object_table_unpack          (Evas
  * @param o The given table object.
  * @param clear if true, it will delete just removed children.
  */
-EAPI void                                evas_object_table_clear           (Evas_Object *o, Eina_Bool clear) EINA_ARG_NONNULL(1);
+EAPI void                               evas_object_table_clear(Evas_Object *o, Eina_Bool clear) EINA_ARG_NONNULL(1);
 
 /**
  * Get the number of columns and rows this table takes.
@@ -11531,21 +12015,21 @@ EAPI void                                evas_object_table_clear           (Evas
  *       difference for a single cell table is that paddings will be
  *       accounted proportionally.
  */
-EAPI void                                evas_object_table_col_row_size_get(const Evas_Object *o, int *cols, int *rows) EINA_ARG_NONNULL(1);
+EAPI void                               evas_object_table_col_row_size_get(const Evas_Object *o, int *cols, int *rows) EINA_ARG_NONNULL(1);
 
 /**
  * Get an iterator to walk the list of children for the table.
  *
  * @note Do not remove or delete objects while walking the list.
  */
-EAPI Eina_Iterator                      *evas_object_table_iterator_new    (const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+EAPI Eina_Iterator                     *evas_object_table_iterator_new(const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
 /**
  * Get an accessor to get random access to the list of children for the table.
  *
  * @note Do not remove or delete objects while walking the list.
  */
-EAPI Eina_Accessor                      *evas_object_table_accessor_new    (const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+EAPI Eina_Accessor                     *evas_object_table_accessor_new(const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
 /**
  * Get the list of children for the table.
@@ -11555,14 +12039,14 @@ EAPI Eina_Accessor                      *evas_object_table_accessor_new    (cons
  *       It's possible to remove objects from the table when walking this
  *       list, but these removals won't be reflected on it.
  */
-EAPI Eina_List                          *evas_object_table_children_get    (const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+EAPI Eina_List                         *evas_object_table_children_get(const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
 /**
  * Get the child of the table at the given coordinates
  *
  * @note This does not take into account col/row spanning
  */
-EAPI Evas_Object                        *evas_object_table_child_get       (const Evas_Object *o, unsigned short col, unsigned short row) EINA_ARG_NONNULL(1);
+EAPI Evas_Object                       *evas_object_table_child_get(const Evas_Object *o, unsigned short col, unsigned short row) EINA_ARG_NONNULL(1);
 /**
  * @}
  */
@@ -11575,7 +12059,7 @@ EAPI Evas_Object                        *evas_object_table_child_get       (cons
  * children's positions inside the grid object's area.
  *
  * @ingroup Evas_Smart_Object_Group
- * @since 1.1.0
+ * @since 1.1
  */
 
 /**
@@ -11588,17 +12072,17 @@ EAPI Evas_Object                        *evas_object_table_child_get       (cons
  *
  * It's set to a virtual size of 1x1 by default and add children with
  * evas_object_grid_pack().
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI Evas_Object                        *evas_object_grid_add             (Evas *evas) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+EAPI Evas_Object   *evas_object_grid_add(Evas *evas) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
 /**
  * Create a grid that is child of a given element @a parent.
  *
  * @see evas_object_grid_add()
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI Evas_Object                        *evas_object_grid_add_to          (Evas_Object *parent) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+EAPI Evas_Object   *evas_object_grid_add_to(Evas_Object *parent) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
 /**
  * Set the virtual resolution for the grid
@@ -11606,9 +12090,9 @@ EAPI Evas_Object                        *evas_object_grid_add_to          (Evas_
  * @param o The grid object to modify
  * @param w The virtual horizontal size (resolution) in integer units
  * @param h The virtual vertical size (resolution) in integer units
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI void                                evas_object_grid_size_set        (Evas_Object *o, int w, int h) EINA_ARG_NONNULL(1);
+EAPI void           evas_object_grid_size_set(Evas_Object *o, int w, int h) EINA_ARG_NONNULL(1);
 
 /**
  * Get the current virtual resolution
@@ -11617,9 +12101,9 @@ EAPI void                                evas_object_grid_size_set        (Evas_
  * @param w A pointer to an integer to store the virtual width
  * @param h A pointer to an integer to store the virtual height
  * @see evas_object_grid_size_set()
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI void                                evas_object_grid_size_get        (const Evas_Object *o, int *w, int *h) EINA_ARG_NONNULL(1);
+EAPI void           evas_object_grid_size_get(const Evas_Object *o, int *w, int *h) EINA_ARG_NONNULL(1);
 
 /**
  * Sets the mirrored mode of the grid. In mirrored mode the grid items go
@@ -11628,9 +12112,9 @@ EAPI void                                evas_object_grid_size_get        (const
  *
  * @param o The grid object.
  * @param mirrored the mirrored mode to set
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI void                                evas_object_grid_mirrored_set    (Evas_Object *o, Eina_Bool mirrored) EINA_ARG_NONNULL(1);
+EAPI void           evas_object_grid_mirrored_set(Evas_Object *o, Eina_Bool mirrored) EINA_ARG_NONNULL(1);
 
 /**
  * Gets the mirrored mode of the grid.
@@ -11638,9 +12122,9 @@ EAPI void                                evas_object_grid_mirrored_set    (Evas_
  * @param o The grid object.
  * @return @c EINA_TRUE if it's a mirrored grid, @c EINA_FALSE otherwise.
  * @see evas_object_grid_mirrored_set()
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI Eina_Bool                           evas_object_grid_mirrored_get    (const Evas_Object *o) EINA_ARG_NONNULL(1);
+EAPI Eina_Bool      evas_object_grid_mirrored_get(const Evas_Object *o) EINA_ARG_NONNULL(1);
 
 /**
  * Add a new child to a grid object.
@@ -11652,9 +12136,9 @@ EAPI Eina_Bool                           evas_object_grid_mirrored_get    (const
  * @param w The virtual width of the child
  * @param h The virtual height of the child
  * @return 1 on success, 0 on failure.
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI Eina_Bool                           evas_object_grid_pack            (Evas_Object *o, Evas_Object *child, int x, int y, int w, int h) EINA_ARG_NONNULL(1, 2);
+EAPI Eina_Bool      evas_object_grid_pack(Evas_Object *o, Evas_Object *child, int x, int y, int w, int h) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Remove child from grid.
@@ -11664,18 +12148,18 @@ EAPI Eina_Bool                           evas_object_grid_pack            (Evas_
  *       all children, use evas_object_grid_clear() instead.
  *
  * @return 1 on success, 0 on failure.
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI Eina_Bool                           evas_object_grid_unpack          (Evas_Object *o, Evas_Object *child) EINA_ARG_NONNULL(1, 2);
+EAPI Eina_Bool      evas_object_grid_unpack(Evas_Object *o, Evas_Object *child) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Faster way to remove all child objects from a grid object.
  *
  * @param o The given grid object.
  * @param clear if true, it will delete just removed children.
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI void                                evas_object_grid_clear           (Evas_Object *o, Eina_Bool clear) EINA_ARG_NONNULL(1);
+EAPI void           evas_object_grid_clear(Evas_Object *o, Eina_Bool clear) EINA_ARG_NONNULL(1);
 
 /**
  * Get the pack options for a grid child
@@ -11689,25 +12173,25 @@ EAPI void                                evas_object_grid_clear           (Evas_
  * @param w The pointer to where the width will be returned
  * @param h The pointer to where the height will be returned
  * @return 1 on success, 0 on failure.
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI Eina_Bool                           evas_object_grid_pack_get        (Evas_Object *o, Evas_Object *child, int *x, int *y, int *w, int *h);
+EAPI Eina_Bool      evas_object_grid_pack_get(const Evas_Object *o, Evas_Object *child, int *x, int *y, int *w, int *h);
 
 /**
  * Get an iterator to walk the list of children for the grid.
  *
  * @note Do not remove or delete objects while walking the list.
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI Eina_Iterator                      *evas_object_grid_iterator_new    (const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+EAPI Eina_Iterator *evas_object_grid_iterator_new(const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
 /**
  * Get an accessor to get random access to the list of children for the grid.
  *
  * @note Do not remove or delete objects while walking the list.
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI Eina_Accessor                      *evas_object_grid_accessor_new    (const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+EAPI Eina_Accessor *evas_object_grid_accessor_new(const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
 /**
  * Get the list of children for the grid.
@@ -11716,9 +12200,9 @@ EAPI Eina_Accessor                      *evas_object_grid_accessor_new    (const
  *       It's up to the user to destroy it when it no longer needs it.
  *       It's possible to remove objects from the grid when walking this
  *       list, but these removals won't be reflected on it.
- * @since 1.1.0
+ * @since 1.1
  */
-EAPI Eina_List                          *evas_object_grid_children_get    (const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
+EAPI Eina_List     *evas_object_grid_children_get(const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
 /**
  * @}
@@ -11734,79 +12218,79 @@ EAPI Eina_List                          *evas_object_grid_children_get    (const
  * Be warned that it @b doesn't work when <b>threaded image
  * preloading</b> is enabled for Evas, though.
  */
-   typedef struct _Evas_Cserve_Stats       Evas_Cserve_Stats;
-   typedef struct _Evas_Cserve_Image_Cache Evas_Cserve_Image_Cache;
-   typedef struct _Evas_Cserve_Image       Evas_Cserve_Image;
-   typedef struct _Evas_Cserve_Config      Evas_Cserve_Config;
+typedef struct _Evas_Cserve_Stats       Evas_Cserve_Stats;
+typedef struct _Evas_Cserve_Image_Cache Evas_Cserve_Image_Cache;
+typedef struct _Evas_Cserve_Image       Evas_Cserve_Image;
+typedef struct _Evas_Cserve_Config      Evas_Cserve_Config;
 
 /**
  * Statistics about the server that shares cached bitmaps.
  * @ingroup Evas_Cserve
  */
-   struct _Evas_Cserve_Stats
-     {
-        int    saved_memory; /**< current amount of saved memory, in bytes */
-        int    wasted_memory; /**< current amount of wasted memory, in bytes */
-        int    saved_memory_peak; /**< peak amount of saved memory, in bytes */
-        int    wasted_memory_peak; /**< peak amount of wasted memory, in bytes */
-        double saved_time_image_header_load; /**< time, in seconds, saved in header loads by sharing cached loads instead */
-        double saved_time_image_data_load; /**< time, in seconds, saved in data loads by sharing cached loads instead */
-     };
+struct _Evas_Cserve_Stats
+{
+   int    saved_memory;      /**< current amount of saved memory, in bytes */
+   int    wasted_memory;      /**< current amount of wasted memory, in bytes */
+   int    saved_memory_peak;      /**< peak amount of saved memory, in bytes */
+   int    wasted_memory_peak;      /**< peak amount of wasted memory, in bytes */
+   double saved_time_image_header_load;      /**< time, in seconds, saved in header loads by sharing cached loads instead */
+   double saved_time_image_data_load;      /**< time, in seconds, saved in data loads by sharing cached loads instead */
+};
 
 /**
  * A handle of a cache of images shared by a server.
  * @ingroup Evas_Cserve
  */
-   struct _Evas_Cserve_Image_Cache
-     {
-        struct {
-           int     mem_total;
-           int     count;
-        } active, cached;
-        Eina_List *images;
-     };
+struct _Evas_Cserve_Image_Cache
+{
+   struct
+   {
+      int mem_total;
+      int count;
+   } active, cached;
+   Eina_List *images;
+};
 
 /**
  * A handle to an image shared by a server.
  * @ingroup Evas_Cserve
  */
-   struct _Evas_Cserve_Image
-     {
-        const char *file, *key;
-        int         w, h;
-        time_t      file_mod_time;
-        time_t      file_checked_time;
-        time_t      cached_time;
-        int         refcount;
-        int         data_refcount;
-        int         memory_footprint;
-        double      head_load_time;
-        double      data_load_time;
-        Eina_Bool   alpha : 1;
-        Eina_Bool   data_loaded : 1;
-        Eina_Bool   active : 1;
-        Eina_Bool   dead : 1;
-        Eina_Bool   useless : 1;
-     };
+struct _Evas_Cserve_Image
+{
+   const char *file, *key;
+   int         w, h;
+   time_t      file_mod_time;
+   time_t      file_checked_time;
+   time_t      cached_time;
+   int         refcount;
+   int         data_refcount;
+   int         memory_footprint;
+   double      head_load_time;
+   double      data_load_time;
+   Eina_Bool   alpha : 1;
+   Eina_Bool   data_loaded : 1;
+   Eina_Bool   active : 1;
+   Eina_Bool   dead : 1;
+   Eina_Bool   useless : 1;
+};
 
 /**
  * Configuration that controls the server that shares cached bitmaps.
  * @ingroup Evas_Cserve
  */
-    struct _Evas_Cserve_Config
-     {
-        int cache_max_usage;
-        int cache_item_timeout;
-        int cache_item_timeout_check;
-     };
-
+struct _Evas_Cserve_Config
+{
+   int cache_max_usage;
+   int cache_item_timeout;
+   int cache_item_timeout_check;
+};
 
 /**
  * Retrieves if the system wants to share bitmaps using the server.
  * @return @c EINA_TRUE if it wants, @c EINA_FALSE otherwise.
  * @ingroup Evas_Cserve
  */
-EAPI Eina_Bool         evas_cserve_want_get                   (void) EINA_WARN_UNUSED_RESULT;
+EAPI Eina_Bool   evas_cserve_want_get(void) EINA_WARN_UNUSED_RESULT;
 
 /**
  * Retrieves if the system is connected to the server used to share
@@ -11815,7 +12299,7 @@ EAPI Eina_Bool         evas_cserve_want_get                   (void) EINA_WARN_U
  * @return @c EINA_TRUE if it's connected, @c EINA_FALSE otherwise.
  * @ingroup Evas_Cserve
  */
-EAPI Eina_Bool         evas_cserve_connected_get              (void) EINA_WARN_UNUSED_RESULT;
+EAPI Eina_Bool   evas_cserve_connected_get(void) EINA_WARN_UNUSED_RESULT;
 
 /**
  * Retrieves statistics from a running bitmap sharing server.
@@ -11826,14 +12310,14 @@ EAPI Eina_Bool         evas_cserve_connected_get              (void) EINA_WARN_U
  *         @c EINA_FALSE otherwise (when @p stats is untouched)
  * @ingroup Evas_Cserve
  */
-EAPI Eina_Bool         evas_cserve_stats_get                  (Evas_Cserve_Stats *stats) EINA_WARN_UNUSED_RESULT;
+EAPI Eina_Bool   evas_cserve_stats_get(Evas_Cserve_Stats *stats) EINA_WARN_UNUSED_RESULT;
 
 /**
  * Completely discard/clean a given images cache, thus re-setting it.
  *
  * @param cache A handle to the given images cache.
  */
-EAPI void              evas_cserve_image_cache_contents_clean (Evas_Cserve_Image_Cache *cache);
+EAPI void        evas_cserve_image_cache_contents_clean(Evas_Cserve_Image_Cache *cache);
 
 /**
  * Retrieves the current configuration of the Evas image caching
@@ -11852,7 +12336,7 @@ EAPI void              evas_cserve_image_cache_contents_clean (Evas_Cserve_Image
  *
  * @ingroup Evas_Cserve
  */
-EAPI Eina_Bool         evas_cserve_config_get                 (Evas_Cserve_Config *config) EINA_WARN_UNUSED_RESULT;
+EAPI Eina_Bool   evas_cserve_config_get(Evas_Cserve_Config *config) EINA_WARN_UNUSED_RESULT;
 
 /**
  * Changes the configurations of the Evas image caching server.
@@ -11866,14 +12350,14 @@ EAPI Eina_Bool         evas_cserve_config_get                 (Evas_Cserve_Confi
  *
  * @ingroup Evas_Cserve
  */
-EAPI Eina_Bool         evas_cserve_config_set                 (const Evas_Cserve_Config *config) EINA_WARN_UNUSED_RESULT;
+EAPI Eina_Bool   evas_cserve_config_set(const Evas_Cserve_Config *config) EINA_WARN_UNUSED_RESULT;
 
 /**
  * Force the system to disconnect from the bitmap caching server.
  *
  * @ingroup Evas_Cserve
  */
-EAPI void              evas_cserve_disconnect                 (void);
+EAPI void        evas_cserve_disconnect(void);
 
 /**
  * @defgroup Evas_Utils General Utilities
@@ -11911,7 +12395,7 @@ EAPI void              evas_cserve_disconnect                 (void);
  *
  * @ingroup Evas_Utils
  */
-EAPI const char       *evas_load_error_str               (Evas_Load_Error error);
+EAPI const char *evas_load_error_str(Evas_Load_Error error);
 
 /* Evas utility routines for color space conversions */
 /* hsv color space has h in the range 0.0 to 360.0, and s,v in the range 0.0 to 1.0 */
@@ -11932,7 +12416,7 @@ EAPI const char       *evas_load_error_str               (Evas_Load_Error error)
  *
  * @ingroup Evas_Utils
  **/
-EAPI void              evas_color_hsv_to_rgb             (float h, float s, float v, int *r, int *g, int *b);
+EAPI void evas_color_hsv_to_rgb(float h, float s, float v, int *r, int *g, int *b);
 
 /**
  * Convert a given color from RGB to HSV format.
@@ -11949,7 +12433,7 @@ EAPI void              evas_color_hsv_to_rgb             (float h, float s, floa
  *
  * @ingroup Evas_Utils
  **/
-EAPI void              evas_color_rgb_to_hsv             (int r, int g, int b, float *h, float *s, float *v);
+EAPI void evas_color_rgb_to_hsv(int r, int g, int b, float *h, float *s, float *v);
 
 /* argb color space has a,r,g,b in the range 0 to 255 */
 
@@ -11966,7 +12450,7 @@ EAPI void              evas_color_rgb_to_hsv             (int r, int g, int b, f
  *
  * @ingroup Evas_Utils
  **/
-EAPI void              evas_color_argb_premul            (int a, int *r, int *g, int *b);
+EAPI void evas_color_argb_premul(int a, int *r, int *g, int *b);
 
 /**
  * Undo pre-multiplication of a rgb triplet by an alpha factor.
@@ -11983,8 +12467,7 @@ EAPI void              evas_color_argb_premul            (int a, int *r, int *g,
  *
  * @ingroup Evas_Utils
  **/
-EAPI void              evas_color_argb_unpremul          (int a, int *r, int *g, int *b);
-
+EAPI void evas_color_argb_unpremul(int a, int *r, int *g, int *b);
 
 /**
  * Pre-multiplies data by an alpha factor.
@@ -11997,7 +12480,7 @@ EAPI void              evas_color_argb_unpremul          (int a, int *r, int *g,
  *
  * @ingroup Evas_Utils
  **/
-EAPI void              evas_data_argb_premul             (unsigned int *data, unsigned int len);
+EAPI void evas_data_argb_premul(unsigned int *data, unsigned int len);
 
 /**
  * Undo pre-multiplication data by an alpha factor.
@@ -12010,7 +12493,7 @@ EAPI void              evas_data_argb_premul             (unsigned int *data, un
  *
  * @ingroup Evas_Utils
  **/
-EAPI void              evas_data_argb_unpremul           (unsigned int *data, unsigned int len);
+EAPI void evas_data_argb_unpremul(unsigned int *data, unsigned int len);
 
 /* string and font handling */
 
@@ -12033,7 +12516,7 @@ EAPI void              evas_data_argb_unpremul           (unsigned int *data, un
  *
  * @ingroup Evas_Utils
  */
-EAPI int               evas_string_char_next_get         (const char *str, int pos, int *decoded) EINA_ARG_NONNULL(1);
+EAPI int  evas_string_char_next_get(const char *str, int pos, int *decoded) EINA_ARG_NONNULL(1);
 
 /**
  * Gets the previous character in the string
@@ -12054,7 +12537,7 @@ EAPI int               evas_string_char_next_get         (const char *str, int p
  *
  * @ingroup Evas_Utils
  */
-EAPI int               evas_string_char_prev_get         (const char *str, int pos, int *decoded) EINA_ARG_NONNULL(1);
+EAPI int  evas_string_char_prev_get(const char *str, int pos, int *decoded) EINA_ARG_NONNULL(1);
 
 /**
  * Get the length in characters of the string.
@@ -12062,7 +12545,7 @@ EAPI int               evas_string_char_prev_get         (const char *str, int p
  * @return The length in characters (not bytes)
  * @ingroup Evas_Utils
  */
-EAPI int               evas_string_char_len_get          (const char *str) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI int  evas_string_char_len_get(const char *str) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * @defgroup Evas_Keys Key Input Functions
@@ -12120,7 +12603,7 @@ EAPI int               evas_string_char_len_get          (const char *str) EINA_
  * @return An ::Evas_Modifier handle to query Evas' keys subsystem
  *	with evas_key_modifier_is_set(), or @c NULL on error.
  */
-EAPI const Evas_Modifier *evas_key_modifier_get          (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
+EAPI const Evas_Modifier *evas_key_modifier_get(const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Returns a handle to the list of lock keys registered in the canvas
@@ -12138,8 +12621,7 @@ EAPI const Evas_Modifier *evas_key_modifier_get          (const Evas *e) EINA_WA
  * @return An ::Evas_Lock handle to query Evas' keys subsystem with
  *	evas_key_lock_is_set(), or @c NULL on error.
  */
-EAPI const Evas_Lock     *evas_key_lock_get              (const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
-
+EAPI const Evas_Lock     *evas_key_lock_get(const Evas *e) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
 /**
  * Checks the state of a given modifier key, at the time of the
@@ -12159,8 +12641,7 @@ EAPI const Evas_Lock     *evas_key_lock_get              (const Evas *e) EINA_WA
  * @see evas_key_modifier_on
  * @see evas_key_modifier_off
  */
-EAPI Eina_Bool            evas_key_modifier_is_set       (const Evas_Modifier *m, const char *keyname) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2);
-
+EAPI Eina_Bool            evas_key_modifier_is_set(const Evas_Modifier *m, const char *keyname) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2);
 
 /**
  * Checks the state of a given lock key, at the time of the call. If
@@ -12179,8 +12660,7 @@ EAPI Eina_Bool            evas_key_modifier_is_set       (const Evas_Modifier *m
  * @see evas_key_lock_on
  * @see evas_key_lock_off
  */
-EAPI Eina_Bool            evas_key_lock_is_set           (const Evas_Lock *l, const char *keyname) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2);
-
+EAPI Eina_Bool            evas_key_lock_is_set(const Evas_Lock *l, const char *keyname) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2);
 
 /**
  * Adds the @p keyname key to the current list of modifier keys.
@@ -12211,7 +12691,7 @@ EAPI Eina_Bool            evas_key_lock_is_set           (const Evas_Lock *l, co
  *       care of registering on it all standard modifiers: "Shift",
  *       "Control", "Alt", "Meta", "Hyper", "Super".
  */
-EAPI void                 evas_key_modifier_add          (Evas *e, const char *keyname) EINA_ARG_NONNULL(1, 2);
+EAPI void                 evas_key_modifier_add(Evas *e, const char *keyname) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Removes the @p keyname key from the current list of modifier keys
@@ -12226,7 +12706,7 @@ EAPI void                 evas_key_modifier_add          (Evas *e, const char *k
  * @see evas_key_modifier_off
  * @see evas_key_modifier_is_set
  */
-EAPI void                 evas_key_modifier_del          (Evas *e, const char *keyname) EINA_ARG_NONNULL(1, 2);
+EAPI void                 evas_key_modifier_del(Evas *e, const char *keyname) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Adds the @p keyname key to the current list of lock keys.
@@ -12257,7 +12737,7 @@ EAPI void                 evas_key_modifier_del          (Evas *e, const char *k
  *       care of registering on it all standard lock keys: "Caps_Lock",
  *       "Num_Lock", "Scroll_Lock".
  */
-EAPI void                 evas_key_lock_add              (Evas *e, const char *keyname) EINA_ARG_NONNULL(1, 2);
+EAPI void                 evas_key_lock_add(Evas *e, const char *keyname) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Removes the @p keyname key from the current list of lock keys on
@@ -12271,8 +12751,7 @@ EAPI void                 evas_key_lock_add              (Evas *e, const char *k
  * @see evas_key_lock_on
  * @see evas_key_lock_off
  */
-EAPI void                 evas_key_lock_del              (Evas *e, const char *keyname) EINA_ARG_NONNULL(1, 2);
-
+EAPI void                 evas_key_lock_del(Evas *e, const char *keyname) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Enables or turns on programmatically the modifier key with name @p
@@ -12289,7 +12768,7 @@ EAPI void                 evas_key_lock_del              (Evas *e, const char *k
  * @see evas_key_modifier_off
  * @see evas_key_modifier_is_set
  */
-EAPI void                 evas_key_modifier_on           (Evas *e, const char *keyname) EINA_ARG_NONNULL(1, 2);
+EAPI void                 evas_key_modifier_on(Evas *e, const char *keyname) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Disables or turns off programmatically the modifier key with name
@@ -12303,7 +12782,7 @@ EAPI void                 evas_key_modifier_on           (Evas *e, const char *k
  * @see evas_key_modifier_on
  * @see evas_key_modifier_is_set
  */
-EAPI void                 evas_key_modifier_off          (Evas *e, const char *keyname) EINA_ARG_NONNULL(1, 2);
+EAPI void                 evas_key_modifier_off(Evas *e, const char *keyname) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Enables or turns on programmatically the lock key with name @p
@@ -12320,7 +12799,7 @@ EAPI void                 evas_key_modifier_off          (Evas *e, const char *k
  * @see evas_key_lock_del
  * @see evas_key_lock_off
  */
-EAPI void                 evas_key_lock_on               (Evas *e, const char *keyname) EINA_ARG_NONNULL(1, 2);
+EAPI void                 evas_key_lock_on(Evas *e, const char *keyname) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Disables or turns off programmatically the lock key with name @p
@@ -12337,8 +12816,7 @@ EAPI void                 evas_key_lock_on               (Evas *e, const char *k
  * @see evas_key_lock_del
  * @see evas_key_lock_on
  */
-EAPI void                 evas_key_lock_off              (Evas *e, const char *keyname) EINA_ARG_NONNULL(1, 2);
-
+EAPI void                 evas_key_lock_off(Evas *e, const char *keyname) EINA_ARG_NONNULL(1, 2);
 
 /**
  * Creates a bit mask from the @p keyname @b modifier key. Values
@@ -12363,8 +12841,7 @@ EAPI void                 evas_key_lock_off              (Evas *e, const char *k
  * @see evas_object_key_grab
  * @see evas_object_key_ungrab
  */
-EAPI Evas_Modifier_Mask   evas_key_modifier_mask_get     (const Evas *e, const char *keyname) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2);
-
+EAPI Evas_Modifier_Mask   evas_key_modifier_mask_get(const Evas *e, const char *keyname) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2);
 
 /**
  * Requests @p keyname key events be directed to @p obj.
@@ -12406,13 +12883,15 @@ EAPI Evas_Modifier_Mask   evas_key_modifier_mask_get     (const Evas *e, const c
  *
  * See the full example @ref Example_Evas_Events "here".
  *
+ * @warning Providing impossible modifier sets creates undefined behavior
+ *
  * @see evas_object_key_ungrab
  * @see evas_object_focus_set
  * @see evas_object_focus_get
  * @see evas_focus_get
  * @see evas_key_modifier_add
  */
-EAPI Eina_Bool            evas_object_key_grab           (Evas_Object *obj, const char *keyname, Evas_Modifier_Mask modifiers, Evas_Modifier_Mask not_modifiers, Eina_Bool exclusive) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2);
+EAPI Eina_Bool            evas_object_key_grab(Evas_Object *obj, const char *keyname, Evas_Modifier_Mask modifiers, Evas_Modifier_Mask not_modifiers, Eina_Bool exclusive) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2);
 
 /**
  * Removes the grab on @p keyname key events by @p obj.
@@ -12439,7 +12918,7 @@ EAPI Eina_Bool            evas_object_key_grab           (Evas_Object *obj, cons
  * @see evas_object_focus_get
  * @see evas_focus_get
  */
-EAPI void                 evas_object_key_ungrab         (Evas_Object *obj, const char *keyname, Evas_Modifier_Mask modifiers, Evas_Modifier_Mask not_modifiers) EINA_ARG_NONNULL(1, 2);
+EAPI void                 evas_object_key_ungrab(Evas_Object *obj, const char *keyname, Evas_Modifier_Mask modifiers, Evas_Modifier_Mask not_modifiers) EINA_ARG_NONNULL(1, 2);
 
 /**
  * @}

@@ -46,7 +46,9 @@ struct _Outbuf
    struct 
      {
         void *dest;
+
         RGBA_Image *buffer;
+
         Eina_Bool destination_alpha : 1;
      } priv;
 };

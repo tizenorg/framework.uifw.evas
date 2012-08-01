@@ -111,18 +111,13 @@ struct _Outbuf
 
         /* 1 big buffer for updates - flush on idle_flush */
         RGBA_Image *onebuf;
-        Eina_List *onebuf_regions;
+        Eina_Array  onebuf_regions;
 
         /* a list of pending regions to write to the target */
         Eina_List *pending_writes;
 
         /* a list of previous frame pending regions to write to the target */
         Eina_List *prev_pending_writes;
-
-# ifdef EVAS_FRAME_QUEUING
-        /* protecting prev_pending_writes */
-        LK(lock);
-# endif
 
         unsigned char mask_dither : 1;
         unsigned char destination_alpha : 1;

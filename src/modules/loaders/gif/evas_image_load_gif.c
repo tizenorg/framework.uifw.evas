@@ -407,7 +407,7 @@ _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType *gif, Image_Entry
                   memcpy(ptr, ptr_src, siz);
                   /* only decoding image descriptor's region */
                   ptr = ptr + cache_w * scale_y;
-
+                  
                   for (i = 0; i < cur_h; i++)
                     {
                        ptr = ptr + scale_x;
@@ -446,7 +446,7 @@ _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType *gif, Image_Entry
                          {
                             int i1, j1;
                             i1 = i - scale_y;
-
+                            
                             for (j = 0; j < cache_w; j++)
                               {
                                  j1 = j - scale_x;
@@ -508,6 +508,8 @@ _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType *gif, Image_Entry
      }
    else /* first frame decoding */
      {
+        memset(ptr, 0, siz);
+
         /* fill background color */
         for (i = 0; i < cache_h; i++)
           {
@@ -537,7 +539,7 @@ _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType *gif, Image_Entry
                          {
                             if (rows[i1][j1] == alpha)
                               {
-                                 ptr++ ;
+                                 ptr++;
                               }
                             else
                               {
