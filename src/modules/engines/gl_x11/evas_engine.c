@@ -3432,7 +3432,7 @@ _attach_fbo_surface(Render_Engine *data __UNUSED__,
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_STENCIL_OES, sfc->w, sfc->h,
                      0, GL_DEPTH_STENCIL_OES, GL_UNSIGNED_INT_24_8_OES, NULL);
-       if (sfc->rt_msaa_samples)
+        if (sfc->rt_msaa_samples)
           {
              glsym_glFramebufferTexture2DMultisample(GL_FRAMEBUFFER,
                                                      GL_DEPTH_ATTACHMENT,
