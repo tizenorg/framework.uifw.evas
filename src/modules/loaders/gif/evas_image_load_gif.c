@@ -508,6 +508,8 @@ _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType *gif, Image_Entry
      }
    else /* first frame decoding */
      {
+        memset(ptr, 0, siz);
+
         /* fill background color */
         for (i = 0; i < cache_h; i++)
           {
