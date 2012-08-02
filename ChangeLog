@@ -780,3 +780,31 @@
 2012-07-19  Jiyoun Park(jypark)
 
            * Fix jpeg save bug related with error handler
+
+2012-07-22  Cedric Bail
+
+	* Don't crash when calling evas_object_smart_type_check without type.
+
+2012-07-24  Ingvaldur Sigurjonsson
+
+	* Fix typoe in docs
+
+2012-07-24  Hermet (ChunEon Park)
+
+	* Fixed evas_gl resource list have cleared properly when it is released
+  	so it would be no problem when it is reinitialized in one same process.
+
+2012-07-24  Cedric Bail
+
+	* Handle Proxy with the right context.
+
+2012-07-24  Carsten Haitzler (The Rasterman)
+
+        * Fix long-standing bug when changing layer of a smart object,
+        its children dont change their layer value and pointer with it, thus
+        getting layer from them get you the wrong one.
+
+2012-07-26  Cedric Bail
+
+	* Keep track of inactive proxied object change so we always update the proxy correctly.
+
