@@ -40,7 +40,6 @@ _evas_map_calc_map_geometry(Evas_Object *obj)
 
    // WARN: Do not merge below code to SLP until it is fixed.
    // It has an infinite loop bug.
-#if 0
    if (obj->prev.map)
      {
         if (obj->prev.map != obj->cur.map)
@@ -70,7 +69,6 @@ _evas_map_calc_map_geometry(Evas_Object *obj)
      }
    else
       ch = 1;
-#endif
 
    p = obj->cur.map->points;
    p_end = p + obj->cur.map->count;
@@ -88,7 +86,7 @@ _evas_map_calc_map_geometry(Evas_Object *obj)
         if (y < yy1) yy1 = y;
         if (y > yy2) yy2 = y;
      }
-// this causes clip-out bugs now mapped objs canbe opaque!!!
+// this causes clip-out bugs now mapped objs canbe opaque!!!   
 //   // add 1 pixel of fuzz around the map region to ensure updates are correct
 //   x1 -= 1; yy1 -= 1;
 //   x2 += 1; yy2 += 1;

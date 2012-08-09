@@ -349,14 +349,30 @@ _evas_common_rgba_image_post_surface(Image_Entry *ie)
    RGBA_Image *im = (RGBA_Image *)ie;
 
    if (im->pixman.im) pixman_image_unref(im->pixman.im);
-
-   im->pixman.im = pixman_image_create_bits
-     (
-        PIXMAN_a8r8g8b8,
-        im->cache_entry.w, im->cache_entry.h,
-        im->image.data,
-        im->cache_entry.w * 4
-     );
+   if (im->cache_entry.flags.alpha)
+     {
+        im->pixman.im = pixman_image_create_bits
+        (
+// FIXME: endianess determines this
+            PIXMAN_a8r8g8b8,
+//            PIXMAN_b8g8r8a8,
+            im->cache_entry.w, im->cache_entry.h,
+            im->image.data,
+            im->cache_entry.w * 4
+        );
+     }
+   else
+     {
+        im->pixman.im = pixman_image_create_bits
+        (
+// FIXME: endianess determines this
+            PIXMAN_x8r8g8b8,
+//            PIXMAN_b8g8r8x8,
+            im->cache_entry.w, im->cache_entry.h,
+            im->image.data,
+            im->cache_entry.w * 4
+        );
+     }
 # else
    (void)ie;
 # endif
