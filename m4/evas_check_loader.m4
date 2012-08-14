@@ -228,15 +228,14 @@ AC_DEFUN([EVAS_CHECK_LOADER_DEP_SVG],
 [
 
 requirement=""
-have_dep="no"
+have_esvg="no"
 evas_image_loader_[]$1[]_cflags=""
 evas_image_loader_[]$1[]_libs=""
 
-PKG_CHECK_MODULES([SVG], [librsvg-2.0 >= 2.14.0
-                          cairo >= 1.0.0],
-   [have_dep="yes" requirement="librsvg-2.0 cairo"],
-   [have_svg="no"]
-)
+PKG_CHECK_MODULES([SVG],
+   [esvg >= 0.0.16],
+   [have_dep="yes" have_esvg="yes" requirement="esvg"],
+   [have_dep="no"])
 
 if test "x${have_dep}" = "xyes" ; then
    evas_image_loader_[]$1[]_cflags="${SVG_CFLAGS}"

@@ -1,6 +1,9 @@
 #include "evas_common.h"
 #include "evas_private.h"
 #include <math.h>
+#ifdef EVAS_CSERVE2
+#include "evas_cs2_private.h"
+#endif
 
 // debug rendering
 /* #define REND_DGB 1 */
@@ -86,14 +89,6 @@ evas_obscured_clear(Evas *e)
      {
         eina_rectangle_free(r);
      }
-}
-
-static Eina_Bool
-_evas_render_has_map(Evas_Object *obj)
-{
-   return ((!((obj->func->can_map) && (obj->func->can_map(obj)))) &&
-           ((obj->cur.map) && (obj->cur.usemap)));
-   //   return ((obj->cur.map) && (obj->cur.usemap));
 }
 
 static Eina_Bool
@@ -255,14 +250,9 @@ _evas_render_phase1_object_process(Evas *e, Evas_Object *obj,
    obj->rect_del = EINA_FALSE;
    obj->render_pre = EINA_FALSE;
 
-#ifndef EVAS_FRAME_QUEUING
-   /* because of clip objects - delete 2 cycles later */
    if (obj->delete_me == 2)
-#else
-     if (obj->delete_me == evas_common_frameq_get_frameq_sz() + 2)
-#endif
-       eina_array_push(delete_objects, obj);
-     else if (obj->delete_me != 0) obj->delete_me++;
+     eina_array_push(delete_objects, obj);
+   else if (obj->delete_me != 0) obj->delete_me++;
    /* If the object will be removed, we should not cache anything during this run. */
    if (obj->delete_me != 0) clean_them = EINA_TRUE;
 
@@ -511,15 +501,15 @@ _evas_render_check_pending_objects(Eina_Array *pending_objects, Evas *e)
 
    for (i = 0; i < pending_objects->count; ++i)
      {
-        Evas_Object *obj, *parent;
+        Evas_Object *obj;
         int is_active;
         Eina_Bool ok = EINA_FALSE;
         obj = eina_array_data_get(pending_objects, i);
         if (!obj->layer) goto clean_stuff;
 
-        parent = evas_object_smart_parent_get(obj);
-        if (parent && _evas_render_has_map(parent))
-          goto clean_stuff;
+       //If the children are in active objects, They should be cleaned up.
+       if (obj->changed_map && _evas_render_has_map(obj))
+         goto clean_stuff;
 
         evas_object_clip_recalc(obj);
         is_active = evas_object_is_active(obj);
@@ -655,7 +645,7 @@ _evas_render_can_use_overlay(Evas *e, Evas_Object *obj)
 
         /* This doesn't cover the area of the video object, so don't bother with that object */
         if (!eina_rectangles_intersect(&zone, &self))
-          continue ;
+          continue;
 
         xc1 = current->cur.cache.clip.x;
         yc1 = current->cur.cache.clip.y;
@@ -832,8 +822,7 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
       _evas_render_has_map(obj));
    if (_evas_render_has_map(obj))
      {
-        const Evas_Map_Point *p, *p_end;
-        RGBA_Map_Point pts[4], *pt;
+        RGBA_Map_Point *pts;
         int sw, sh;
         Eina_Bool changed = EINA_FALSE, rendered = EINA_FALSE;
 
@@ -850,36 +839,8 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
              return clean_them;
           }
 
-        pts[0].px = obj->cur.map->persp.px << FP;
-        pts[0].py = obj->cur.map->persp.py << FP;
-        pts[0].foc = obj->cur.map->persp.foc << FP;
-        pts[0].z0 = obj->cur.map->persp.z0 << FP;
-
-        p = obj->cur.map->points;
-        p_end = p + obj->cur.map->count;
-        pt = pts;
-        for (; p < p_end; p++, pt++)
-          {
-             pt->x = (lround(p->x) + off_x) * FP1;
-             pt->y = (lround(p->y) + off_y) * FP1;
-             pt->z = (lround(p->z)        ) * FP1;
-             pt->fx = p->px;
-             pt->fy = p->py;
-             pt->fz = p->z;
-             pt->u = lround(p->u) * FP1;
-             pt->v = lround(p->v) * FP1;
-             if      (pt->u < 0) pt->u = 0;
-             else if (pt->u > (sw * FP1)) pt->u = (sw * FP1);
-             if      (pt->v < 0) pt->v = 0;
-             else if (pt->v > (sh * FP1)) pt->v = (sh * FP1);
-             pt->col = ARGB_JOIN(p->a, p->r, p->g, p->b);
-          }
-        /* Copy last for software engine */
-        if (obj->cur.map->count & 0x1)
-          {
-             pts[obj->cur.map->count] = pts[obj->cur.map->count - 1];
-          }
-
+        evas_object_map_update(obj, off_x, off_y, sw, sh, sw, sh);
+        pts = obj->spans->pts;
 
         if (obj->cur.map->surface)
           {
@@ -1082,6 +1043,11 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
      }
    else
      {
+        if (0 && obj->cur.cached_surface)
+          fprintf(stderr, "We should cache '%s' [%i, %i, %i, %i]\n",
+                  evas_object_type_get(obj),
+                  obj->cur.bounding_box.x, obj->cur.bounding_box.x,
+                  obj->cur.bounding_box.w, obj->cur.bounding_box.h);
         if (mapped)
           {
              RDI(level);
@@ -1283,6 +1249,10 @@ evas_render_updates_internal(Evas *e,
    MAGIC_CHECK_END();
    if (!e->changed) return NULL;
 
+#ifdef EVAS_CSERVE2
+   if (evas_cserve2_use_get())
+      evas_cserve2_dispatch();
+#endif
    evas_call_smarts_calculate(e);
 
    RD("[--- RENDER EVAS (size: %ix%i)\n", e->viewport.w, e->viewport.h);
@@ -1338,18 +1308,6 @@ evas_render_updates_internal(Evas *e,
      }
 
    /* phase 4. framespace, output & viewport changes */
-   if (e->framespace.changed)
-     {
-        int fx, fy, fw, fh;
-
-        fx = e->viewport.x - e->framespace.x;
-        fy = e->viewport.y - e->framespace.y;
-        fw = e->viewport.w + e->framespace.w;
-        fh = e->viewport.h + e->framespace.h;
-        e->engine.func->output_redraws_rect_add(e->engine.data.output,
-                                                fx, fy, fw, fh);
-     }
-
    if (e->viewport.changed)
      {
         e->engine.func->output_redraws_rect_add(e->engine.data.output,
@@ -1368,10 +1326,89 @@ evas_render_updates_internal(Evas *e,
      {
         ERR("viewport size != output size!");
      }
+
+   if (e->framespace.changed)
+     {
+        int fx, fy, fw, fh;
+
+        fx = e->viewport.x - e->framespace.x;
+        fy = e->viewport.y - e->framespace.y;
+        fw = e->viewport.w + e->framespace.w;
+        fh = e->viewport.h + e->framespace.h;
+        e->engine.func->output_redraws_rect_add(e->engine.data.output,
+                                                fx, fy, fw, fh);
+     }
+
+   /* phase 4.5: check if object is not in framespace. if not, we need to clip 
+    * it to the 'master' clip.
+    * 
+    * NB: This is for the wayland engine(s). If we do not do this, then 
+    * objects will draw outside the viewport and potentially onto the frame 
+    * itself */
+   if (!strncmp(e->engine.module->definition->name, "wayland", 7))
+     {
+        Eina_Rectangle clip_rect;
+
+        /* see if the master clip has been added yet, if not, then create */
+        if (!e->framespace.clip)
+          {
+             e->framespace.clip = evas_object_rectangle_add(e);
+             evas_object_color_set(e->framespace.clip, 255, 255, 255, 255);
+             evas_object_move(e->framespace.clip,
+                              e->framespace.x, e->viewport.y);
+             evas_object_resize(e->framespace.clip,
+                                e->viewport.w - e->framespace.w, e->viewport.h);
+             evas_object_show(e->framespace.clip);
+          }
+        else
+          {
+             /* master clip is already present. check for size changes in the 
+              * viewport, and update master clip size if needed */
+             if ((e->viewport.changed) || (e->output.changed))
+               evas_object_resize(e->framespace.clip,
+                                  e->viewport.w - e->framespace.w,
+                                  e->viewport.h);
+          }
+
+        EINA_RECTANGLE_SET(&clip_rect,
+                           e->framespace.clip->cur.geometry.x,
+                           e->framespace.clip->cur.geometry.y,
+                           e->framespace.clip->cur.geometry.w,
+                           e->framespace.clip->cur.geometry.h)
+
+        /* With the master clip all setup, we need to loop the objects on this 
+         * canvas and determine if the object is in the viewport space. If it 
+         * is in the viewport space (and not in framespace), then we need to 
+         * clip the object to the master clip so that it does not draw on top 
+         * of the frame (eg: elm 3d test) */
+        for (i = 0; i < e->render_objects.count; ++i)
+          {
+             Eina_Rectangle obj_rect;
+             Evas_Object *pclip;
+
+             obj = eina_array_data_get(&e->render_objects, i);
+             if (evas_object_is_frame_object_get(obj))
+               continue;
+
+             EINA_RECTANGLE_SET(&obj_rect,
+                                obj->cur.geometry.x, obj->cur.geometry.y,
+                                obj->cur.geometry.w, obj->cur.geometry.h);
+
+             /* if the object does not intersect our clip rect, ignore it */
+             if (!eina_rectangles_intersect(&clip_rect, &obj_rect))
+               continue;
+
+             if (!(pclip = evas_object_clip_get(obj)))
+               {
+                  /* clip this object so it does not draw on the window frame */
+                  evas_object_clip_set(obj, e->framespace.clip);
+               }
+          }
+     }
+
    if (redraw_all)
      {
-        e->engine.func->output_redraws_rect_add(e->engine.data.output,
-                                                0, 0,
+        e->engine.func->output_redraws_rect_add(e->engine.data.output, 0, 0,
                                                 e->output.w, e->output.h);
      }
 
@@ -1655,10 +1692,6 @@ evas_render_updates(Evas *e)
    return NULL;
    MAGIC_CHECK_END();
 
-#ifdef EVAS_FRAME_QUEUING
-   evas_common_frameq_flush_ready ();
-#endif
-
    if (!e->changed) return NULL;
    return evas_render_updates_internal(e, 1, 1);
 }
@@ -1669,10 +1702,6 @@ evas_render(Evas *e)
    MAGIC_CHECK(e, Evas, MAGIC_EVAS);
    return;
    MAGIC_CHECK_END();
-
-#ifdef EVAS_FRAME_QUEUING
-   evas_common_frameq_flush_ready ();
-#endif
 
    if (!e->changed) return;
    evas_render_updates_internal(e, 0, 1);
@@ -1716,15 +1745,7 @@ evas_render_idle_flush(Evas *e)
 EAPI void
 evas_sync(Evas *e)
 {
-#ifdef EVAS_FRAME_QUEUING
-   MAGIC_CHECK(e, Evas, MAGIC_EVAS);
-   return;
-   MAGIC_CHECK_END();
-
-   evas_common_frameq_flush();
-#else
-   (void) e;
-#endif
+  (void) e;
 }
 
 static void
@@ -1794,22 +1815,15 @@ evas_render_object_recalc(Evas_Object *obj)
    return;
    MAGIC_CHECK_END();
 
-#ifndef EVAS_FRAME_QUEUING
    if ((!obj->changed) && (obj->delete_me < 2))
-#else
-     if ((!obj->changed))
-#endif
-       {
-          Evas *e;
+     {
+       Evas *e;
 
-          e = obj->layer->evas;
-          if ((!e) || (e->cleanup)) return;
-#ifdef EVAS_FRAME_QUEUING
-          if (obj->delete_me >= evas_common_frameq_get_frameq_sz() + 2) return;
-#endif
-          eina_array_push(&e->pending_objects, obj);
-          obj->changed = EINA_TRUE;
-       }
+       e = obj->layer->evas;
+       if ((!e) || (e->cleanup)) return;
+       eina_array_push(&e->pending_objects, obj);
+       obj->changed = EINA_TRUE;
+     }
 }
 
 /* vim:set ts=8 sw=3 sts=3 expandtab cino=>5n-2f0^-2{2(0W1st0 :*/

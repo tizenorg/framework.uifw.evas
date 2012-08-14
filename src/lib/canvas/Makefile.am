@@ -5,6 +5,7 @@ AM_CPPFLAGS = \
 -I$(top_srcdir)/src/lib \
 -I$(top_srcdir)/src/lib/include \
 -I$(top_srcdir)/src/lib/cserve \
+-I$(top_srcdir)/src/lib/cserve2 \
 -DPACKAGE_BIN_DIR=\"$(bindir)\" \
 -DPACKAGE_LIB_DIR=\"$(libdir)\" \
 -DPACKAGE_DATA_DIR=\"$(datadir)/$(PACKAGE)\" \
@@ -14,7 +15,8 @@ AM_CPPFLAGS = \
 @EVAS_CFLAGS@ \
 @EINA_CFLAGS@ \
 @EVIL_CFLAGS@ \
-@PIXMAN_CFLAGS@
+@PIXMAN_CFLAGS@ \
+@FRIBIDI_CFLAGS@
 
 noinst_LTLIBRARIES   = libevas_canvas.la
 libevas_canvas_la_SOURCES  = \
@@ -42,6 +44,7 @@ evas_object_box.c \
 evas_object_table.c \
 evas_object_text.c \
 evas_object_textblock.c \
+evas_object_textgrid.c \
 evas_object_grid.c \
 evas_font_dir.c \
 evas_rectangle.c \

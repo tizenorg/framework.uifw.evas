@@ -13,8 +13,10 @@ struct _Evas_Object_Smart
    Eina_Inlist      *contained;
    Evas_Smart_Cb_Description_Array callbacks_descriptions;
    int               walking_list;
+   int               member_count;
    Eina_Bool         deletions_waiting : 1;
    Eina_Bool         need_recalculate : 1;
+   Eina_Bool         update_boundingbox_needed : 1;
 };
 
 struct _Evas_Smart_Callback
@@ -94,6 +96,7 @@ evas_object_smart_data_get(const Evas_Object *obj)
    MAGIC_CHECK_END();
    o = (Evas_Object_Smart *)(obj->object_data);
    if (!o) return NULL;
+   if (o->magic != MAGIC_OBJ_SMART) return NULL;
    return o->data;
 }
 
@@ -158,6 +161,7 @@ evas_object_smart_member_add(Evas_Object *obj, Evas_Object *smart_obj)
 
    if (obj->smart.parent) evas_object_smart_member_del(obj);
 
+   o->member_count++;
    evas_object_release(obj, 1);
    obj->layer = smart_obj->layer;
    obj->cur.layer = obj->layer->layer;
@@ -170,6 +174,7 @@ evas_object_smart_member_add(Evas_Object *obj, Evas_Object *smart_obj)
    evas_object_mapped_clip_across_mark(obj);
    if (smart_obj->smart.smart->smart_class->member_add)
      smart_obj->smart.smart->smart_class->member_add(smart_obj, obj);
+   evas_object_update_bounding_box(obj);
 }
 
 EAPI void
@@ -190,6 +195,7 @@ evas_object_smart_member_del(Evas_Object *obj)
 
    o = (Evas_Object_Smart *)(obj->smart.parent->object_data);
    o->contained = eina_inlist_remove(o->contained, EINA_INLIST_GET(obj));
+   o->member_count--;
    obj->smart.parent = NULL;
    evas_object_smart_member_cache_invalidate(obj, EINA_TRUE, EINA_TRUE);
    obj->layer->usage--;
@@ -264,6 +270,7 @@ evas_object_smart_members_get(const Evas_Object *obj)
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    return NULL;
    MAGIC_CHECK_END();
+   if (!obj->smart.smart) return NULL;
    o = (Evas_Object_Smart *)(obj->object_data);
    MAGIC_CHECK(o, Evas_Object_Smart, MAGIC_OBJ_SMART);
    return NULL;
@@ -284,6 +291,7 @@ evas_object_smart_members_get_direct(const Evas_Object *obj)
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    return NULL;
    MAGIC_CHECK_END();
+   if (!obj->smart.smart) return NULL;
    o = (Evas_Object_Smart *)(obj->object_data);
    MAGIC_CHECK(o, Evas_Object_Smart, MAGIC_OBJ_SMART);
    return NULL;
@@ -295,8 +303,12 @@ void
 _evas_object_smart_members_all_del(Evas_Object *obj)
 {
    Evas_Object_Smart *o = (Evas_Object_Smart *)(obj->object_data);
-   while (o->contained)
-     evas_object_del((Evas_Object *)(o->contained));
+   Evas_Object *memobj;
+   Eina_Inlist *itrn;
+   EINA_INLIST_FOREACH_SAFE(o->contained, itrn, memobj)
+     {
+        evas_object_del((Evas_Object *) memobj);
+     }
 }
 
 EAPI Evas_Object *
@@ -359,7 +371,7 @@ evas_object_smart_callback_priority_add(Evas_Object *obj, const char *event, Eva
    MAGIC_CHECK_END();
    if (!event) return;
    if (!func) return;
-   EVAS_MEMPOOL_INIT(_mp_cb, "evas_smart_callback", Evas_Smart_Callback, 512, );
+   EVAS_MEMPOOL_INIT(_mp_cb, "evas_smart_callback", Evas_Smart_Callback, 32, );
    cb = EVAS_MEMPOOL_ALLOC(_mp_cb, Evas_Smart_Callback);
    if (!cb) return;
    EVAS_MEMPOOL_PREP(_mp_cb, cb, Evas_Smart_Callback);
@@ -846,6 +858,95 @@ evas_object_smart_member_stack_below(Evas_Object *member, Evas_Object *other)
    o->contained = eina_inlist_prepend_relative(o->contained, EINA_INLIST_GET(member), EINA_INLIST_GET(other));
 }
 
+void
+evas_object_smart_need_bounding_box_update(Evas_Object *obj)
+{
+   Evas_Object_Smart *o;
+
+   o = (Evas_Object_Smart *)(obj->object_data);
+
+   if (o->update_boundingbox_needed) return ;
+   o->update_boundingbox_needed = EINA_TRUE;
+
+   if (obj->smart.parent) evas_object_smart_need_bounding_box_update(obj->smart.parent);
+}
+
+void
+evas_object_smart_bouding_box_update(Evas_Object *obj)
+{
+   Eina_Inlist *list;
+   Evas_Object *o;
+   Evas_Object_Smart *os;
+   Evas_Coord minx;
+   Evas_Coord miny;
+   Evas_Coord maxw = 0;
+   Evas_Coord maxh = 0;
+
+   os = (Evas_Object_Smart *)(obj->object_data);
+
+   if (!os->update_boundingbox_needed) return ;
+   os->update_boundingbox_needed = EINA_FALSE;
+
+   minx = obj->layer->evas->output.w;
+   miny = obj->layer->evas->output.h;
+
+   list = os->contained;
+   EINA_INLIST_FOREACH(list, o)
+     {
+        Evas_Coord tx;
+        Evas_Coord ty;
+        Evas_Coord tw;
+        Evas_Coord th;
+
+        if (o == obj) continue ;
+        if (o->clip.clipees || o->is_static_clip) continue ;
+
+        if (o->smart.smart)
+          {
+             evas_object_smart_bouding_box_update(o);
+
+             tx = o->cur.bounding_box.x;
+             ty = o->cur.bounding_box.y;
+             tw = o->cur.bounding_box.x + o->cur.bounding_box.w;
+             th = o->cur.bounding_box.y + o->cur.bounding_box.h;
+          }
+        else
+          {
+             tx = o->cur.geometry.x;
+             ty = o->cur.geometry.y;
+             tw = o->cur.geometry.x + o->cur.geometry.w;
+             th = o->cur.geometry.y + o->cur.geometry.h;
+          }
+
+        if (tx < minx) minx = tx;
+        if (ty < miny) miny = ty;
+        if (tw > maxw) maxw = tw;
+        if (th > maxh) maxh = th;
+     }
+
+   if (minx != obj->cur.bounding_box.x)
+     {
+        obj->cur.bounding_box.w += obj->cur.bounding_box.x - minx;
+        obj->cur.bounding_box.x = minx;
+     }
+
+   if (miny != obj->cur.bounding_box.y)
+     {
+        obj->cur.bounding_box.h += obj->cur.bounding_box.y - miny;
+        obj->cur.bounding_box.y = miny;
+     }
+
+   if (maxw != obj->cur.bounding_box.x + obj->cur.bounding_box.w)
+     {
+        obj->cur.bounding_box.w = maxw - obj->cur.bounding_box.x;
+     }
+
+   if (maxh != obj->cur.bounding_box.y + obj->cur.bounding_box.h)
+     {
+        obj->cur.bounding_box.h = maxh - obj->cur.bounding_box.y;
+     }
+}
+
 /* all nice and private */
 static void
 evas_object_smart_init(Evas_Object *obj)
@@ -874,7 +975,7 @@ evas_object_smart_new(void)
    Evas_Object_Smart *o;
 
    /* alloc obj private data */
-   EVAS_MEMPOOL_INIT(_mp_obj, "evas_object_smart", Evas_Object_Smart, 256, NULL);
+   EVAS_MEMPOOL_INIT(_mp_obj, "evas_object_smart", Evas_Object_Smart, 32, NULL);
    o = EVAS_MEMPOOL_ALLOC(_mp_obj, Evas_Object_Smart);
    if (!o) return NULL;
    EVAS_MEMPOOL_PREP(_mp_obj, o, Evas_Object_Smart);
@@ -907,6 +1008,22 @@ static void
 evas_object_smart_render_pre(Evas_Object *obj)
 {
    if (obj->pre_render_done) return;
+   if (!obj->child_has_map)
+     {
+#if 0
+        Evas_Object_Smart *o;
+
+        o = (Evas_Object_Smart *)(obj->object_data);
+        if (o->member_count > 1 &&
+            obj->cur.bounding_box.w == obj->prev.bounding_box.w &&
+            obj->cur.bounding_box.h == obj->prev.bounding_box.h &&
+            (obj->cur.bounding_box.x != obj->prev.bounding_box.x ||
+             obj->cur.bounding_box.y != obj->prev.bounding_box.y))
+          {
+             fprintf(stderr, "Wouhou, I can detect moving smart object (%s, %p < %p)\n", evas_object_type_get(obj), obj, obj->smart.parent);
+          }
+#endif
+     }
    if (obj->changed_map)
      evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes, obj);
 

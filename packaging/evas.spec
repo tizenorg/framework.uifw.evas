@@ -1,7 +1,7 @@
 #sbs-git:slp/pkgs/e/evas evas 1.1.0+svn.69113slp2+build01 828d8bb285397266eb8985fd081fa2692fa3a7d6
 Name:       evas
 Summary:    Multi-platform Canvas Library
-Version:    1.2.0+svn.70433slp2+build18
+Version:    1.2.0+svn.72376slp2+build01
 Release:    1
 Group:      System/Libraries
 License:    BSD
@@ -111,9 +111,11 @@ rm -rf %{buildroot}
 %{_libdir}/evas/modules/engines/*/*/module.so
 %{_libdir}/evas/modules/loaders/*/*/module.so
 %{_libdir}/evas/modules/savers/*/*/module.so
-%{_bindir}/evas_cserve
-%{_bindir}/evas_cserve_tool
-
+%{_libdir}/evas/cserve2/loaders/*/*/module.so
+%{_bindir}/evas_cserve2_client
+%{_libexecdir}/evas_cserve2
+%{_libexecdir}/evas_cserve2_slave
+%{_libexecdir}/dummy_slave
 
 %files devel
 %defattr(-,root,root,-)

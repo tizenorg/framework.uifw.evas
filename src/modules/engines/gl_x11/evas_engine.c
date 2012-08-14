@@ -465,6 +465,7 @@ _gl_ext_sym_init(void)
    //----------- GLES 2.0 Extensions ------------//
    // If the symbol's not found, they get set to NULL
    // If one of the functions in the extension exists, the extension in supported
+
    /* GL_OES_get_program_binary */
    FINDSYM(glsym_glGetProgramBinaryOES, "glGetProgramBinary", glsym_func_void);
    FINDSYM(glsym_glGetProgramBinaryOES, "glGetProgramBinaryEXT", glsym_func_void);
@@ -2912,7 +2913,7 @@ eng_image_stride_get(void *data __UNUSED__, void *image, int *stride)
 }
 
 static void
-eng_font_draw(void *data, void *context, void *surface, Evas_Font_Set *font, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, const Evas_Text_Props *intl_props)
+eng_font_draw(void *data, void *context, void *surface, Evas_Font_Set *font __UNUSED__, int x, int y, int w __UNUSED__, int h __UNUSED__, int ow __UNUSED__, int oh __UNUSED__, Evas_Text_Props *intl_props)
 {
    Render_Engine *re;
 
@@ -2934,8 +2935,8 @@ eng_font_draw(void *data, void *context, void *surface, Evas_Font_Set *font, int
                                               evas_gl_font_texture_new,
                                               evas_gl_font_texture_free,
                                               evas_gl_font_texture_draw);
-        evas_common_font_draw(im, context, (RGBA_Font *) font, x, y,
-                              intl_props);
+	evas_common_font_draw_prepare(intl_props);
+        evas_common_font_draw(im, context, x, y, intl_props);
         evas_common_draw_context_font_ext_set(context,
                                               NULL,
                                               NULL,
@@ -3167,6 +3168,7 @@ _set_gl_surface_cap(Render_Engine *re)
      }
 
 #endif
+
    glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE, &re->gl_cap.max_rb_size);
 
 #if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
@@ -3346,9 +3348,9 @@ _set_internal_config(Render_Engine *re, Render_Engine_GL_Surface *sfc, Evas_GL_C
         if (cfg->options_bits & EVAS_GL_OPTIONS_DIRECT)
           {
              sfc->direct_fb_opt       = 1;
-             fprintf(stderr, "########################################################\n");
-             fprintf(stderr, "######### [Evas] Direct option bit is enabled ##########\n");
-             fprintf(stderr, "########################################################\n");
+             DBG("########################################################");
+             DBG("######### [Evas] Direct option bit is enabled ##########");
+             DBG("########################################################");
           }
         // Add other options here...
      }
@@ -3407,7 +3409,6 @@ _attach_fbo_surface(Render_Engine *data __UNUSED__,
                      GL_RGBA, GL_UNSIGNED_BYTE, NULL);
         glBindTexture(GL_TEXTURE_2D, curr_tex);
 
-        // Attach texture to FBO
         if (sfc->rt_msaa_samples)
            glsym_glFramebufferTexture2DMultisample(GL_FRAMEBUFFER,
                                                    GL_COLOR_ATTACHMENT0,
@@ -4905,9 +4906,9 @@ module_open(Evas_Module *em)
    if (getenv("EVAS_GL_DIRECT_OVERRIDE"))
      {
         gl_direct_override = 1;
-        fprintf(stderr, "########################################################\n");
-        fprintf(stderr, "######### [Evas] Direct overriding is enabled ##########\n");
-        fprintf(stderr, "########################################################\n");
+        DBG("########################################################");
+        DBG("######### [Evas] Direct overriding is enabled ##########");
+        DBG("########################################################");
      }
 
    /* store it for later use */

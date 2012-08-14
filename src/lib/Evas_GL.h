@@ -8,67 +8,6 @@
 extern "C" {
 #endif
 
-typedef struct _Evas_GL               Evas_GL;
-typedef struct _Evas_GL_Surface       Evas_GL_Surface;
-typedef struct _Evas_GL_Context       Evas_GL_Context;
-typedef struct _Evas_GL_Config        Evas_GL_Config;
-typedef struct _Evas_GL_API           Evas_GL_API;
-typedef void                         *Evas_GL_Func;
-typedef void                         *EvasGLImage;
-
-typedef enum _Evas_GL_Color_Format
-{
-    EVAS_GL_RGB_888   = 0,
-    EVAS_GL_RGB_8 = EVAS_GL_RGB_888,
-    EVAS_GL_RGBA_8888 = 1,
-    EVAS_GL_RGBA_8 = EVAS_GL_RGBA_8888,
-} Evas_GL_Color_Format;
-
-typedef enum _Evas_GL_Depth_Bits
-{
-    EVAS_GL_DEPTH_NONE   = 0,
-    EVAS_GL_DEPTH_BIT_8  = 1,
-    EVAS_GL_DEPTH_BIT_16 = 2,
-    EVAS_GL_DEPTH_BIT_24 = 3,
-    EVAS_GL_DEPTH_BIT_32 = 4
-} Evas_GL_Depth_Bits;
-
-typedef enum _Evas_GL_Stencil_Bits
-{
-    EVAS_GL_STENCIL_NONE   = 0,
-    EVAS_GL_STENCIL_BIT_1  = 1,
-    EVAS_GL_STENCIL_BIT_2  = 2,
-    EVAS_GL_STENCIL_BIT_4  = 3,
-    EVAS_GL_STENCIL_BIT_8  = 4,
-    EVAS_GL_STENCIL_BIT_16 = 5
-} Evas_GL_Stencil_Bits;
-
-typedef enum _Evas_GL_Options_Bits
-{
-   EVAS_GL_OPTIONS_NONE    = 0,
-   EVAS_GL_OPTIONS_DIRECT  = (1<<0)
-} Evas_GL_Options_Bits;
-
-typedef enum _Evas_GL_Multisample_Bits
-{
-   EVAS_GL_MULTISAMPLE_NONE = 0,
-   EVAS_GL_MULTISAMPLE_LOW  = 1,
-   EVAS_GL_MULTISAMPLE_MED  = 2,
-   EVAS_GL_MULTISAMPLE_HIGH = 3
-} Evas_GL_Multisample_Bits;
-
-struct _Evas_GL_Config
-{
-   Evas_GL_Color_Format     color_format;
-   Evas_GL_Depth_Bits       depth_bits;
-   Evas_GL_Stencil_Bits     stencil_bits;
-   Evas_GL_Options_Bits     options_bits;
-   Evas_GL_Multisample_Bits   multisample_bits;
-};
-
-#define EVAS_GL_EXTENSIONS       1
-
-
 /**
  * @defgroup Evas_GL Rendering GL on Evas
  *
@@ -395,6 +334,131 @@ init_shaders(GLData *gld)
  */
 
 /**
+  * @typedef Evas_GL
+  *
+  * Evas GL Object for rendering gl in Evas.
+  */ 
+typedef struct _Evas_GL               Evas_GL;
+
+/**
+  * @typedef Evas_GL_Surface
+  *
+  * Evas GL Surface object, a GL rendering target in Evas GL.
+  */ 
+typedef struct _Evas_GL_Surface       Evas_GL_Surface;
+
+/**
+  * @typedef Evas_GL_Context
+  *
+  * Evas GL Context object, a GL rendering context in Evas GL.
+  */ 
+typedef struct _Evas_GL_Context       Evas_GL_Context;
+
+/**
+  * @typedef Evas_GL_Config
+  *
+  * Evas GL Surface configuration object for surface creation.
+  */ 
+typedef struct _Evas_GL_Config        Evas_GL_Config;
+
+/**
+  * @typedef Evas_GL_API
+  *
+  * Evas GL API object that contains the GL APIs to be used in Evas GL.
+  */ 
+typedef struct _Evas_GL_API           Evas_GL_API;
+
+/**
+  * @typedef Evas_GL_Func
+  *
+  * Evas GL Function Object used as a function pointer.
+  */ 
+typedef void                         *Evas_GL_Func;
+
+/**
+  * @typedef EvasGLImage
+  *
+  * Evas GL Image Object used in Evas GL Image extension.
+  */ 
+typedef void                         *EvasGLImage;
+
+/**
+ * Surface Color Format
+ */
+typedef enum _Evas_GL_Color_Format
+{
+    EVAS_GL_RGB_888   = 0,
+    EVAS_GL_RGBA_8888 = 1
+} Evas_GL_Color_Format;
+
+/**
+ * Surface Depth Format
+ */
+typedef enum _Evas_GL_Depth_Bits
+{
+    EVAS_GL_DEPTH_NONE   = 0,
+    EVAS_GL_DEPTH_BIT_8  = 1,
+    EVAS_GL_DEPTH_BIT_16 = 2,
+    EVAS_GL_DEPTH_BIT_24 = 3,
+    EVAS_GL_DEPTH_BIT_32 = 4
+} Evas_GL_Depth_Bits;
+
+/**
+ * Surface Stencil Format
+ */
+typedef enum _Evas_GL_Stencil_Bits
+{
+    EVAS_GL_STENCIL_NONE   = 0,
+    EVAS_GL_STENCIL_BIT_1  = 1,
+    EVAS_GL_STENCIL_BIT_2  = 2,
+    EVAS_GL_STENCIL_BIT_4  = 3,
+    EVAS_GL_STENCIL_BIT_8  = 4,
+    EVAS_GL_STENCIL_BIT_16 = 5
+} Evas_GL_Stencil_Bits;
+
+/**
+ * Configuration Options.
+ *
+ * @since 1.1.0
+ */
+typedef enum _Evas_GL_Options_Bits
+{
+   EVAS_GL_OPTIONS_NONE    = 0,     /**< No extra options */
+   EVAS_GL_OPTIONS_DIRECT  = (1<<0) /**< Optional hint to allow rendering directly to evas' window when possible */
+} Evas_GL_Options_Bits;
+
+/**
+ * Configuration Option for Multisample Anti-aliased (MSAA) rendering surface.
+ * Only works in supported device.
+ *
+ * @since 1.2.0
+ */
+typedef enum _Evas_GL_Multisample_Bits
+{
+   EVAS_GL_MULTISAMPLE_NONE = 0, /**< No multisample rendering */
+   EVAS_GL_MULTISAMPLE_LOW  = 1, /**< MSAA with mininum number of samples */
+   EVAS_GL_MULTISAMPLE_MED  = 2, /**< MSAA with half the number of max samples */
+   EVAS_GL_MULTISAMPLE_HIGH = 3  /**< MSAA with maximum allowed samples */
+} Evas_GL_Multisample_Bits;
+
+/**
+  * @struct _Evas_GL_Config
+  *
+  * Evas GL Surface configuration
+  */
+struct _Evas_GL_Config
+{
+   Evas_GL_Color_Format       color_format;     /**< Surface Color Format */
+   Evas_GL_Depth_Bits         depth_bits;       /**< Surface Depth Bits */
+   Evas_GL_Stencil_Bits       stencil_bits;     /**< Surface Stencil Bits */
+   Evas_GL_Options_Bits       options_bits;     /**< Extra Surface Options */
+   Evas_GL_Multisample_Bits   multisample_bits; /**< Optional Surface MSAA Bits */
+};
+
+#define EVAS_GL_EXTENSIONS       1
+
+
+/**
  * Creates a new Evas_GL object and returns a handle for gl rendering on efl.
  *
  * @param e The given evas canvas OpenGL is to be used on.
@@ -415,7 +479,7 @@ EAPI void                     evas_gl_free               (Evas_GL *evas_gl) EINA
  * As long as the Evas creates a config object for the user, it takes care
  * of the backward compatibility issue.
  */
-EAPI Evas_GL_Config          *evas_gl_config_new         ();
+EAPI Evas_GL_Config          *evas_gl_config_new         (void);
 
 /**
  * Frees a config object created from evas_gl_config_new.
@@ -974,6 +1038,17 @@ typedef signed long int  GLsizeiptr;   // Changed khronos_ssize_t
 
 #define GL_INVALID_FRAMEBUFFER_OPERATION  0x0506
 
+#else
+# ifndef EVAS_GL_NO_GL_H_CHECK
+#  error "You may only include either Evas_GL.h OR use your native OpenGL's headers. If you use Evas to do GL, then you cannot use the native gl headers."
+# endif
+#endif
+
+
+#if !defined(__glext_h_) && !defined(__gl2ext_h_)
+# define __glext_h_
+# define __gl2ext_h_
+
 //---------------------------//
 // GLES extension defines
 
@@ -1132,6 +1207,12 @@ typedef signed long int  GLsizeiptr;   // Changed khronos_ssize_t
 #define GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG                      0x8C01
 #define GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG                     0x8C02
 #define GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG                     0x8C03
+
+/* GL_IMG_multisampled_render_to_texture */
+#define GL_RENDERBUFFER_SAMPLES_IMG                             0x9133
+#define GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE_IMG               0x9134
+#define GL_MAX_SAMPLES_IMG                                      0x9135
+#define GL_TEXTURE_SAMPLES_IMG                                  0x9136
 
 /*------------------------------------------------------------------------*
  * NV extension tokens
