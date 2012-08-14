@@ -3865,6 +3865,9 @@ eng_gl_context_destroy(void *data, void *context)
         return 0;
      }
 
+   if (ctx == current_evgl_ctx)
+     current_evgl_ctx = NULL;
+
    free(ctx);
    context = NULL;
 
