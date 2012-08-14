@@ -1,4 +1,4 @@
-Evas 1.2.0
+Evas 1.7.0
 
 ******************************************************************************
 
@@ -519,8 +519,6 @@ http://code.google.com/p/enesim/
 Install (in that order):
 
 enesim
-emage
-etex
 ender
 etch
 egueb

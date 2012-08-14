@@ -7,7 +7,6 @@
 
 #include "evas_font_ot.h"
 
-typedef struct _Evas_Glyph Evas_Glyph;
 struct _Evas_Glyph
 {
    RGBA_Font_Glyph *fg;
@@ -40,21 +39,22 @@ evas_common_font_draw_internal(RGBA_Image *dst, RGBA_Draw_Context *dc, int x, in
 
    im = dst->image.data;
 
-   if (!text_props->bin) return ;
+   if (!text_props->glyphs) return ;
 
-   glyphs = (void*) eina_binbuf_string_get(text_props->bin);
-   length = eina_binbuf_length_get(text_props->bin) / sizeof (Evas_Glyph);
-   for (it = 0; it < length; ++it)
+   glyphs = text_props->glyphs;
+   length = text_props->glyphs_length;
+   for (it = 0; it < length; ++it, ++glyphs)
      {
         RGBA_Font_Glyph *fg;
         int chr_x, chr_y;
 
-        fg = glyphs[it].fg;
+        fg = glyphs->fg;
 
-        glyphs[it].coord.w = fg->glyph_out->bitmap.width;
-        glyphs[it].coord.h = fg->glyph_out->bitmap.rows;
-        glyphs[it].j = fg->glyph_out->bitmap.pitch;
-        glyphs[it].data = fg->glyph_out->bitmap.buffer;
+	/* FIXME: Why was that moved out of prepare ? This increase cache miss. */
+        glyphs->coord.w = fg->glyph_out->bitmap.width;
+        glyphs->coord.h = fg->glyph_out->bitmap.rows;
+        glyphs->j = fg->glyph_out->bitmap.pitch;
+        glyphs->data = fg->glyph_out->bitmap.buffer;
 
         if (dc->font_ext.func.gl_new)
           {
@@ -63,19 +63,19 @@ evas_common_font_draw_internal(RGBA_Image *dst, RGBA_Draw_Context *dc, int x, in
              fg->ext_dat_free = dc->font_ext.func.gl_free;
           }
 
-        chr_x = x + glyphs[it].coord.x/* EVAS_FONT_WALK_PEN_X + EVAS_FONT_WALK_X_OFF + EVAS_FONT_WALK_X_BEAR */;
-        chr_y = y + glyphs[it].coord.y/* EVAS_FONT_WALK_PEN_Y + EVAS_FONT_WALK_Y_OFF + EVAS_FONT_WALK_Y_BEAR */;
+        chr_x = x + glyphs->coord.x/* EVAS_FONT_WALK_PEN_X + EVAS_FONT_WALK_X_OFF + EVAS_FONT_WALK_X_BEAR */;
+        chr_y = y + glyphs->coord.y/* EVAS_FONT_WALK_PEN_Y + EVAS_FONT_WALK_Y_OFF + EVAS_FONT_WALK_Y_BEAR */;
 
         if (chr_x < (ext_x + ext_w))
           {
              DATA8 *data;
              int i, j, w, h;
 
-             data = glyphs[it].data;
-             j = glyphs[it].j;
-             w = glyphs[it].coord.w;
+             data = glyphs->data;
+             j = glyphs->j;
+             w = glyphs->coord.w;
              if (j < w) j = w;
-             h = glyphs[it].coord.h;
+             h = glyphs->coord.h;
 
 #ifdef HAVE_PIXMAN
 # ifdef PIXMAN_FONT             
@@ -230,16 +230,21 @@ evas_common_font_draw_prepare(Evas_Text_Props *text_props)
 {
    RGBA_Font_Int *fi;
    RGBA_Font_Glyph *fg;
+   Evas_Glyph *glyphs;
+   int glyphs_length;
+   int glyphs_max;
    EVAS_FONT_WALK_TEXT_INIT();
 
    fi = text_props->font_instance;
    if (!fi) return;
 
-   if (!text_props->changed && text_props->generation == fi->generation && text_props->bin)
+   if (!text_props->changed && text_props->generation == fi->generation && text_props->glyphs)
      return ;
 
-   if (!text_props->bin) text_props->bin = eina_binbuf_new();
-   else eina_binbuf_reset(text_props->bin);
+   glyphs = text_props->glyphs;
+   glyphs_length = 0;
+   glyphs_max = text_props->glyphs_length;
+   text_props->glyphs_length = 0;
 
    evas_common_font_int_reload(fi);
 
@@ -254,7 +259,7 @@ evas_common_font_draw_prepare(Evas_Text_Props *text_props)
 
    EVAS_FONT_WALK_TEXT_START()
      {
-        Evas_Glyph glyph;
+        Evas_Glyph *glyph;
         FT_UInt idx;
 
         if (!EVAS_FONT_WALK_IS_VISIBLE) continue;
@@ -264,15 +269,28 @@ evas_common_font_draw_prepare(Evas_Text_Props *text_props)
         if (!fg) continue;
         if (!fg->glyph_out) evas_common_font_int_cache_glyph_render(fg);
 
-        glyph.fg = fg;
-        glyph.coord.x = EVAS_FONT_WALK_PEN_X + EVAS_FONT_WALK_X_OFF + EVAS_FONT_WALK_X_BEAR;
-        glyph.coord.y = EVAS_FONT_WALK_PEN_Y + EVAS_FONT_WALK_Y_OFF + EVAS_FONT_WALK_Y_BEAR;
-        glyph.idx = idx;
+	if (glyphs_length + 1 >= glyphs_max)
+	  {
+             Evas_Glyph *tmp;
 
-        eina_binbuf_append_length(text_props->bin, (void*) &glyph, sizeof (Evas_Glyph));
+             glyphs_max += 8;
+             tmp = realloc(glyphs, glyphs_max * sizeof (Evas_Glyph));
+             if (!tmp) return ;
+             glyphs = tmp;
+             text_props->glyphs = glyphs;
+	  }
+
+        glyph = glyphs + glyphs_length++;
+
+        glyph->fg = fg;
+        glyph->idx = idx;
+        glyph->coord.x = EVAS_FONT_WALK_PEN_X + EVAS_FONT_WALK_X_OFF + EVAS_FONT_WALK_X_BEAR;
+        glyph->coord.y = EVAS_FONT_WALK_PEN_Y + EVAS_FONT_WALK_Y_OFF + EVAS_FONT_WALK_Y_BEAR;
      }
    EVAS_FONT_WALK_TEXT_END();
 
+   text_props->glyphs_length = glyphs_length;
+   text_props->glyphs = glyphs;
    /* check if there's a request queue in fi, if so ask cserve2 to render
     * those glyphs
     */
@@ -283,10 +301,10 @@ evas_common_font_draw_prepare(Evas_Text_Props *text_props)
 EAPI void
 evas_common_font_draw(RGBA_Image *dst, RGBA_Draw_Context *dc, int x, int y, const Evas_Text_Props *text_props)
 {
+   static Cutout_Rects *rects = NULL;
    int ext_x, ext_y, ext_w, ext_h;
    int im_w, im_h;
    RGBA_Gfx_Func func;
-   Cutout_Rects *rects;
    Cutout_Rect  *r;
    int c, cx, cy, cw, ch;
    int i;
@@ -335,7 +353,7 @@ evas_common_font_draw(RGBA_Image *dst, RGBA_Draw_Context *dc, int x, int y, cons
         /* our clip is 0 size.. abort */
         if ((dc->clip.w > 0) && (dc->clip.h > 0))
           {
-             rects = evas_common_draw_context_apply_cutouts(dc);
+             rects = evas_common_draw_context_apply_cutouts(dc, rects);
              for (i = 0; i < rects->active; ++i)
                {
                   r = rects->rects + i;
@@ -344,8 +362,69 @@ evas_common_font_draw(RGBA_Image *dst, RGBA_Draw_Context *dc, int x, int y, cons
                                                  func, r->x, r->y, r->w, r->h,
                                                  im_w, im_h);
                }
-             evas_common_draw_context_apply_clear_cutouts(rects);
           }
         dc->clip.use = c; dc->clip.x = cx; dc->clip.y = cy; dc->clip.w = cw; dc->clip.h = ch;
      }
 }
+
+EAPI void
+evas_common_font_draw_do(const Cutout_Rects *reuse, const Eina_Rectangle *clip, RGBA_Gfx_Func func,
+                         RGBA_Image *dst, RGBA_Draw_Context *dc,
+                         int x, int y, const Evas_Text_Props *text_props)
+{
+   Eina_Rectangle area;
+   Cutout_Rect *r;
+   int i;
+   int im_w, im_h;
+
+   im_w = dst->cache_entry.w;
+   im_h = dst->cache_entry.h;
+
+   if (!reuse)
+     {
+        evas_common_draw_context_clip_clip(dc,
+                                           clip->x, clip->y,
+                                           clip->w, clip->h);
+        evas_common_font_draw_internal(dst, dc, x, y, text_props,
+                                       func,
+                                       dc->clip.x, dc->clip.y,
+                                       dc->clip.w, dc->clip.h,
+                                       im_w, im_h);
+        return ;
+     }
+
+   for (i = 0; i < reuse->active; ++i)
+     {
+        r = reuse->rects + i;
+
+        EINA_RECTANGLE_SET(&area, r->x, r->y, r->w - 1, r->h - 1);
+        if (!eina_rectangle_intersection(&area, clip)) continue ;
+        evas_common_draw_context_set_clip(dc, area.x, area.y, area.w, area.h);
+        evas_common_font_draw_internal(dst, dc, x, y, text_props,
+                                       func, area.x, area.y, area.w, area.h,
+                                       im_w, im_h);
+     }
+}
+
+EAPI Eina_Bool
+evas_common_font_draw_prepare_cutout(Cutout_Rects *reuse, RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Gfx_Func *func)
+{
+   int im_w, im_h;
+
+   im_w = dst->cache_entry.w;
+   im_h = dst->cache_entry.h;
+
+   *func = evas_common_gfx_func_composite_mask_color_span_get(dc->col.col, dst, 1, dc->render_op);
+
+   evas_common_draw_context_clip_clip(dc, 0, 0, im_w, im_h);
+   if (dc->clip.w <= 0) return EINA_FALSE;
+   if (dc->clip.h <= 0) return EINA_FALSE;
+
+   if (dc->cutout.rects)
+     {
+        reuse = evas_common_draw_context_apply_cutouts(dc, reuse);
+     }
+
+   return EINA_TRUE;
+}
+

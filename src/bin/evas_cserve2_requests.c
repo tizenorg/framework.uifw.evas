@@ -33,14 +33,19 @@ typedef struct _Slave_Worker Slave_Worker;
  */
 static struct _Request_Match
 {
-   Font_Request_Type rtype;
+   Slave_Request_Type rtype;
    Slave_Type stype;
    Slave_Command ctype;
+   int require_spares; /* for speculative operations, will require to leave at
+                          least this number of slaves always available */
 } _request_match[] =
 {
-   { CSERVE2_REQ_FONT_LOAD, SLAVE_FONT, FONT_LOAD },
-   { CSERVE2_REQ_FONT_GLYPHS_LOAD, SLAVE_FONT, FONT_GLYPHS_LOAD },
-   { CSERVE2_REQ_LAST, 0, 0 }
+   { CSERVE2_REQ_IMAGE_OPEN, SLAVE_IMAGE, IMAGE_OPEN, 0 },
+   { CSERVE2_REQ_IMAGE_LOAD, SLAVE_IMAGE, IMAGE_LOAD, 0 },
+   { CSERVE2_REQ_IMAGE_SPEC_LOAD, SLAVE_IMAGE, IMAGE_LOAD, 1 },
+   { CSERVE2_REQ_FONT_LOAD, SLAVE_FONT, FONT_LOAD, 0 },
+   { CSERVE2_REQ_FONT_GLYPHS_LOAD, SLAVE_FONT, FONT_GLYPHS_LOAD, 0 },
+   { CSERVE2_REQ_LAST, 0, 0, 0 }
 };
 
 static Slave *_create_image_slave(void *data);
@@ -59,15 +64,19 @@ static struct _Worker
    { SLAVE_FONT, 1, NULL, NULL, _create_font_slave },
 };
 
-struct _Font_Request
+struct _Slave_Request
 {
    EINA_INLIST;
-   Font_Request_Type type;
+   Slave_Request_Type type;
    void *data;
    void *msg;
    Eina_List *waiters;
    Eina_Bool processing;
-   Font_Request_Funcs *funcs;
+   Slave_Request_Funcs *funcs;
+   Slave_Request *dependency;
+   Eina_List *dependents; /* list of requests that depend on this one finishing */
+   Eina_Bool locked : 1; /* locked waiting for a dependency request to finish */
+   Eina_Bool cancelled : 1;
 };
 
 struct _Waiter
@@ -92,7 +101,7 @@ static Request_Queue *requests = NULL;
 static void _cserve2_requests_process(void);
 
 static void
-_request_waiter_add(Font_Request *req, Client *client, unsigned int rid)
+_request_waiter_add(Slave_Request *req, Client *client, unsigned int rid)
 {
    Waiter *w = malloc(sizeof(*w));
 
@@ -104,10 +113,10 @@ _request_waiter_add(Font_Request *req, Client *client, unsigned int rid)
    req->waiters = eina_list_append(req->waiters, w);
 }
 
-Font_Request *
-cserve2_request_add(Font_Request_Type type, unsigned int rid, Client *client, Font_Request_Funcs *funcs __UNUSED__, void *data)
+Slave_Request *
+cserve2_request_add(Slave_Request_Type type, unsigned int rid, Client *client, Slave_Request *dep, Slave_Request_Funcs *funcs, void *data)
 {
-   Font_Request *req, *r;
+   Slave_Request *req, *r;
 
    req = NULL;
 
@@ -138,7 +147,7 @@ cserve2_request_add(Font_Request_Type type, unsigned int rid, Client *client, Fo
    if (!req)
      {
         DBG("Add request for rid: %d", rid);
-        req = malloc(sizeof(*req));
+        req = calloc(1, sizeof(*req));
         req->type = type;
         req->data = data;
         req->waiters = NULL;
@@ -148,7 +157,15 @@ cserve2_request_add(Font_Request_Type type, unsigned int rid, Client *client, Fo
                                                     EINA_INLIST_GET(req));
      }
 
-   _request_waiter_add(req, client, rid);
+   if (dep && !req->dependency)
+     {
+        req->locked = EINA_TRUE;
+        dep->dependents = eina_list_append(dep->dependents, req);
+        req->dependency = dep;
+     }
+
+   if (client && rid)
+     _request_waiter_add(req, client, rid);
 
    _cserve2_requests_process();
 
@@ -156,16 +173,50 @@ cserve2_request_add(Font_Request_Type type, unsigned int rid, Client *client, Fo
 }
 
 void
-cserve2_request_waiter_add(Font_Request *req, unsigned int rid, Client *client)
+cserve2_request_waiter_add(Slave_Request *req, unsigned int rid, Client *client)
 {
    _request_waiter_add(req, client, rid);
 }
 
 void
-cserve2_request_cancel(Font_Request *req, Client *client, Error_Type err)
+cserve2_request_type_set(Slave_Request *req, Slave_Request_Type type)
+{
+   Eina_Inlist **from, **to;
+
+   if (req->processing || (type == req->type))
+     return;
+
+   from = &requests[req->type].waiting;
+   to = &requests[type].waiting;
+
+   req->type = type;
+   *from = eina_inlist_remove(*from, EINA_INLIST_GET(req));
+   *to = eina_inlist_append(*to, EINA_INLIST_GET(req));
+}
+
+static void
+_request_dependents_cancel(Slave_Request *req, Error_Type err)
+{
+   Slave_Request *dep;
+
+   EINA_LIST_FREE(req->dependents, dep)
+     {
+        dep->locked = EINA_FALSE;
+        dep->dependency = NULL;
+        /* Maybe we need a better way to inform the creator of the request
+         * that it was cancelled because its dependency failed? */
+        cserve2_request_cancel_all(dep, err);
+     }
+}
+
+void
+cserve2_request_cancel(Slave_Request *req, Client *client, Error_Type err)
 {
    Eina_List *l, *l_next;
    Waiter *w;
+
+   if (req->funcs && req->funcs->error)
+     req->funcs->error(req->data, err);
 
    EINA_LIST_FOREACH_SAFE(req->waiters, l, l_next, w)
      {
@@ -173,8 +224,7 @@ cserve2_request_cancel(Font_Request *req, Client *client, Error_Type err)
           {
              DBG("Removing answer from waiter client: %d, rid: %d",
                  client->id, w->rid);
-             if (req->funcs && req->funcs->error)
-               req->funcs->error(client, req->data, err, w->rid);
+             cserve2_client_error_send(w->client, w->rid, err);
              req->waiters = eina_list_remove_list(req->waiters, l);
              free(w);
           }
@@ -189,29 +239,48 @@ cserve2_request_cancel(Font_Request *req, Client *client, Error_Type err)
         // TODO: If the request is being processed, it can't be deleted. Must
         // be marked as delete_me instead.
         req->funcs->msg_free(req->msg, req->data);
+
+        if (req->dependency)
+          req->dependency->dependents = eina_list_remove(
+             req->dependency->dependents, req);
+
+        _request_dependents_cancel(req, err);
+
         free(req);
      }
-
+   else if (!req->waiters)
+     req->cancelled = EINA_TRUE;
 }
 
 void
-cserve2_request_cancel_all(Font_Request *req, Error_Type err)
+cserve2_request_cancel_all(Slave_Request *req, Error_Type err)
 {
    Waiter *w;
 
    DBG("Removing all answers.");
 
+   if (req->funcs && req->funcs->error)
+     req->funcs->error(req->data, err);
+
    EINA_LIST_FREE(req->waiters, w)
      {
         DBG("Removing answer from waiter client: %d, rid: %d",
             w->client->id, w->rid);
-        if (req->funcs && req->funcs->error)
-          req->funcs->error(w->client, req->data, err, w->rid);
+        cserve2_client_error_send(w->client, w->rid, err);
         free(w);
      }
 
+   _request_dependents_cancel(req, err);
+
    if (req->processing)
-     return;
+     {
+        req->cancelled = EINA_TRUE;
+        return;
+     }
+
+   if (req->dependency)
+     req->dependency->dependents = eina_list_remove(
+        req->dependency->dependents, req);
 
    requests[req->type].waiting = eina_inlist_remove(
       requests[req->type].waiting, EINA_INLIST_GET(req));
@@ -234,19 +303,24 @@ cserve2_requests_shutdown(void)
 }
 
 static void
-_cserve2_request_failed(Font_Request *req, Error_Type type)
+_cserve2_request_failed(Slave_Request *req, Error_Type type)
 {
    Waiter *w;
 
+   req->funcs->error(req->data, type);
+
    EINA_LIST_FREE(req->waiters, w)
      {
-        req->funcs->error(w->client, req->data, type, w->rid);
+        cserve2_client_error_send(w->client, w->rid, type);
         free(w);
      }
 
    req->funcs->msg_free(req->msg, req->data);
    requests[req->type].processing = eina_inlist_remove(
       requests[req->type].processing, EINA_INLIST_GET(req));
+
+   _request_dependents_cancel(req, type);
+
    free(req);
 }
 
@@ -254,28 +328,61 @@ static void
 _slave_read_cb(Slave *s __UNUSED__, Slave_Command cmd, void *msg, void *data)
 {
    Slave_Worker *sw = data;
-   Font_Request *req = sw->data;
+   Slave_Request *dep, *req = sw->data;
    Eina_List **working, **idle;
    Waiter *w;
+   Msg_Base *resp = NULL;
+   int resp_size;
+
+   if (req->cancelled)
+     goto free_it;
+
+   if (cmd == ERROR)
+     {
+        Error_Type *err = msg;
+        WRN("Received error %d from slave, for request type %d.",
+            *err, req->type);
+        req->funcs->error(req->data, *err);
+     }
+   else
+     {
+        DBG("Received response from slave for message type %d.", req->type);
+        resp = req->funcs->response(req->data, msg, &resp_size);
+     }
 
    EINA_LIST_FREE(req->waiters, w)
      {
         if (cmd == ERROR)
           {
              Error_Type *err = msg;
-             req->funcs->error(w->client, req->data, *err, w->rid);
+             cserve2_client_error_send(w->client, w->rid, *err);
           }
         else
-          req->funcs->response(w->client, req->data, msg, w->rid);
+          {
+             resp->rid = w->rid;
+             cserve2_client_send(w->client, &resp_size, sizeof(resp_size));
+             cserve2_client_send(w->client, resp, resp_size);
+          }
         free(w);
      }
 
+   free(resp);
+
+free_it:
    req->funcs->msg_free(req->msg, req->data);
+
    // FIXME: We shouldn't free this message directly, it must be freed by a
    // callback.
    free(msg);
    requests[req->type].processing = eina_inlist_remove(
       requests[req->type].processing, EINA_INLIST_GET(req));
+
+   EINA_LIST_FREE(req->dependents, dep)
+     {
+        dep->locked = EINA_FALSE;
+        dep->dependency = NULL;
+     }
+
    free(req);
    sw->data = NULL;
 
@@ -291,7 +398,7 @@ static void
 _slave_dead_cb(Slave *s __UNUSED__, void *data)
 {
    Slave_Worker *sw = data;
-   Font_Request *req = sw->data;
+   Slave_Request *req = sw->data;
    Eina_List **working = &_workers[sw->type].working;
 
    if (req)
@@ -353,7 +460,7 @@ _slave_for_request_create(Slave_Type type)
 }
 
 static Eina_Bool
-_cserve2_request_dispatch(Slave_Worker *sw, Slave_Command ctype, Font_Request *req)
+_cserve2_request_dispatch(Slave_Worker *sw, Slave_Command ctype, Slave_Request *req)
 {
    int size;
    char *slave_msg = req->funcs->msg_create(req->data, &size);
@@ -385,6 +492,8 @@ _cserve2_requests_process(void)
          Slave_Command ctype;
          unsigned int max_workers;
          Eina_List **idle, **working;
+         Eina_Inlist *itr;
+         Slave_Request *req;
 
          for (j = 0; _request_match[j].rtype != CSERVE2_REQ_LAST; j++)
            {
@@ -409,15 +518,19 @@ _cserve2_requests_process(void)
          idle = &_workers[type].idle;
          working = &_workers[type].working;
 
-         while (requests[rtype].waiting &&
-                (eina_list_count(*working) < max_workers))
+         EINA_INLIST_FOREACH_SAFE(requests[rtype].waiting, itr, req)
            {
               Slave_Worker *sw;
-              Font_Request *req = EINA_INLIST_CONTAINER_GET(
-                 requests[rtype].waiting, Font_Request);
+
+              if (eina_list_count(*working) >=
+                  (max_workers - _request_match[j].require_spares))
+                break;
+
+              if (req->locked)
+                continue;
 
               requests[rtype].waiting = eina_inlist_remove(
-                 requests[rtype].waiting, requests[rtype].waiting);
+                 requests[rtype].waiting, EINA_INLIST_GET(req));
               requests[rtype].processing = eina_inlist_append(
                  requests[rtype].processing, EINA_INLIST_GET(req));
 
@@ -442,7 +555,6 @@ _cserve2_requests_process(void)
 
               *idle = eina_list_remove_list(*idle, *idle);
               *working = eina_list_append(*working, sw);
-
            }
       }
 }

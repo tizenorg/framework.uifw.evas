@@ -10,6 +10,7 @@
 #include <assert.h>
 
 #include FT_OUTLINE_H
+#include FT_SYNTHESIS_H
 
 FT_Library      evas_ft_lib = 0;
 static int      initialised = 0;
@@ -296,11 +297,33 @@ _fash_int_add(Fash_Int *fash, int item, RGBA_Font_Int *fint, int idx)
 }
 
 static void
+_fash_glyph_free(Fash_Glyph_Map *fmap)
+{
+   int i;
+
+   for (i = 0; i <= 0xff; i++)
+     {
+        RGBA_Font_Glyph *fg = fmap->item[i];
+        if ((fg) && (fg != (void *)(-1)))
+          {
+             FT_Done_Glyph(fg->glyph);
+             /* extension calls */
+             if (fg->ext_dat_free) fg->ext_dat_free(fg->ext_dat);
+             if (fg->glyph_out_free) fg->glyph_out_free(fg->glyph_out);
+             free(fg);
+             fmap->item[i] = NULL;
+          }
+     }
+  free(fmap);
+}
+
+static void
 _fash_gl2_free(Fash_Glyph_Map2 *fash)
 {
    int i;
 
-   for (i = 0; i < 256; i++) if (fash->bucket[i]) free(fash->bucket[i]);
+   // 24bits for unicode - v6 up to E01EF (chrs) & 10FFFD for private use (plane 16)
+   for (i = 0; i < 256; i++) if (fash->bucket[i]) _fash_glyph_free(fash->bucket[i]);
    free(fash);
 }
 
@@ -309,6 +332,7 @@ _fash_gl_free(Fash_Glyph *fash)
 {
    int i;
 
+    // 24bits for unicode - v6 up to E01EF (chrs) & 10FFFD for private use (plane 16)
    for (i = 0; i < 256; i++) if (fash->bucket[i]) _fash_gl2_free(fash->bucket[i]);
    free(fash);
 }
@@ -399,8 +423,7 @@ evas_common_font_int_cache_glyph_get(RGBA_Font_Int *fi, FT_UInt idx)
       FT_Outline_Transform(&fi->src->ft.face->glyph->outline, &transform);
    /* Embolden the outline of Glyph according to rundtime_rend. */
    if (fi->runtime_rend & FONT_REND_WEIGHT)
-      FT_Outline_Embolden(&fi->src->ft.face->glyph->outline,
-            (fi->src->ft.face->size->metrics.x_ppem * 5 * 64) / 100);
+      FT_GlyphSlot_Embolden(fi->src->ft.face->glyph);
 
    fg = malloc(sizeof(struct _RGBA_Font_Glyph));
    if (!fg) return NULL;
@@ -562,9 +585,14 @@ evas_common_get_char_index(RGBA_Font_Int* fi, Eina_Unicode gl)
 //     }
 
    evas_common_font_int_reload(fi);
-   FTLOCK();
+   /*
+    * There is no point in locking FreeType at this point as all caller
+    * are running in the main loop at a time where there is zero chance
+    * that something else try to use it.
+    */
+   /* FTLOCK(); */
    result.index = FT_Get_Char_Index(fi->src->ft.face, gl);
-   FTUNLOCK();
+   /* FTUNLOCK(); */
    result.gl = gl;
 
 //   eina_hash_direct_add(fi->indexes, &result->gl, result);
@@ -605,14 +633,14 @@ evas_common_get_char_index(RGBA_Font_Int* fi, Eina_Unicode gl)
              if (gl > v)
                {
                   min = i;
-                  if ((max - min) == 2) i = max;
+                  if ((max - min) == 1) i = max;
                   else i = (min + max) / 2;
                }
              // if glyph below out position
              else if (gl < v)
                {
                   max = i;
-                  if ((max - min) == 2) i = min;
+                  if ((max - min) == 1) i = min;
                   else i = (min + max) / 2;
                }
           }

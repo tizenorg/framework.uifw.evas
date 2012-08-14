@@ -100,6 +100,54 @@ evas_object_smart_data_get(const Evas_Object *obj)
    return o->data;
 }
 
+EAPI const void *
+evas_object_smart_interface_get(const Evas_Object *obj,
+                                const char *name)
+{
+   unsigned int i;
+   Evas_Smart *s;
+
+   MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
+   return NULL;
+   MAGIC_CHECK_END();
+
+   s = evas_object_smart_smart_get(obj);
+
+   for (i = 0; i < s->interfaces.size; i++)
+     {
+        const Evas_Smart_Interface *iface;
+
+        iface = s->interfaces.array[i];
+
+        if (iface->name == name)
+          return iface;
+     }
+
+   return NULL;
+}
+
+EAPI void *
+evas_object_smart_interface_data_get(const Evas_Object *obj,
+                                     const Evas_Smart_Interface *iface)
+{
+   unsigned int i;
+   Evas_Smart *s;
+
+   MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
+   return NULL;
+   MAGIC_CHECK_END();
+
+   s = evas_object_smart_smart_get(obj);
+
+   for (i = 0; i < s->interfaces.size; i++)
+     {
+        if (iface == s->interfaces.array[i])
+          return obj->interface_privates[i];
+     }
+
+   return NULL;
+}
+
 EAPI Evas_Smart *
 evas_object_smart_smart_get(const Evas_Object *obj)
 {
@@ -225,6 +273,8 @@ evas_object_smart_type_check(const Evas_Object *obj, const char *type)
    return EINA_FALSE;
    MAGIC_CHECK_END();
 
+   EINA_SAFETY_ON_FALSE_RETURN_VAL(type, EINA_FALSE);
+
    if (!obj->smart.smart)
      return EINA_FALSE;
    sc = obj->smart.smart->smart_class;
@@ -246,6 +296,8 @@ evas_object_smart_type_check_ptr(const Evas_Object *obj, const char *type)
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    return EINA_FALSE;
    MAGIC_CHECK_END();
+
+   EINA_SAFETY_ON_FALSE_RETURN_VAL(type, EINA_FALSE);
 
    if (!obj->smart.smart)
      return EINA_FALSE;
@@ -311,10 +363,76 @@ _evas_object_smart_members_all_del(Evas_Object *obj)
      }
 }
 
+static void
+_evas_smart_class_ifaces_private_data_alloc(Evas_Object *obj,
+                                            Evas_Smart *s)
+{
+   unsigned int i, total_priv_sz = 0;
+   const Evas_Smart_Class *sc;
+   unsigned char *ptr;
+
+   /* get total size of interfaces private data */
+   for (sc = s->smart_class; sc; sc = sc->parent)
+     {
+        const Evas_Smart_Interface **ifaces_array = sc->interfaces;
+        if (!ifaces_array) continue;
+
+        while (*ifaces_array)
+          {
+             const Evas_Smart_Interface *iface = *ifaces_array;
+
+             if (!iface->name) break;
+
+             if (iface->private_size > 0)
+               {
+                  unsigned int size = iface->private_size;
+
+                  if (size % sizeof(void *) != 0)
+                    size += sizeof(void *) - (size % sizeof(void *));
+                  total_priv_sz += size;
+               }
+
+             ifaces_array++;
+          }
+     }
+
+   obj->interface_privates = malloc
+       (s->interfaces.size * sizeof(void *) + total_priv_sz);
+   if (!obj->interface_privates)
+     {
+        ERR("malloc failed!");
+        return;
+     }
+
+   /* make private data array ptrs point to right places, WHICH LIE ON
+    * THE SAME STRUCT, AFTER THE # OF INTERFACES COUNT */
+   ptr = (unsigned char *)(obj->interface_privates + s->interfaces.size);
+   for (i = 0; i < s->interfaces.size; i++)
+     {
+        unsigned int size;
+
+        size = s->interfaces.array[i]->private_size;
+
+        if (size == 0)
+          {
+             obj->interface_privates[i] = NULL;
+             continue;
+          }
+
+        obj->interface_privates[i] = ptr;
+        memset(ptr, 0, size);
+
+        if (size % sizeof(void *) != 0)
+          size += sizeof(void *) - (size % sizeof(void *));
+        ptr += size;
+     }
+}
+
 EAPI Evas_Object *
 evas_object_smart_add(Evas *e, Evas_Smart *s)
 {
    Evas_Object *obj;
+   unsigned int i;
 
    MAGIC_CHECK(e, Evas, MAGIC_EVAS);
    return NULL;
@@ -331,6 +449,24 @@ evas_object_smart_add(Evas *e, Evas_Smart *s)
    evas_object_inject(obj, e);
 
    evas_object_smart_use(s);
+
+   _evas_smart_class_ifaces_private_data_alloc(obj, s);
+
+   for (i = 0; i < s->interfaces.size; i++)
+     {
+        const Evas_Smart_Interface *iface;
+
+        iface = s->interfaces.array[i];
+        if (iface->add)
+          {
+             if (!iface->add(obj))
+               {
+                  ERR("failed to create interface %s\n", iface->name);
+                  evas_object_del(obj);
+                  return NULL;
+               }
+          }
+     }
 
    if (s->smart_class->add) s->smart_class->add(obj);
 
@@ -753,11 +889,25 @@ void
 evas_object_smart_del(Evas_Object *obj)
 {
    Evas_Smart *s;
+   unsigned int i;
 
    if (obj->delete_me) return;
    s = obj->smart.smart;
+
    if ((s) && (s->smart_class->del)) s->smart_class->del(obj);
    if (obj->smart.parent) evas_object_smart_member_del(obj);
+
+   for (i = 0; i < s->interfaces.size; i++)
+     {
+        const Evas_Smart_Interface *iface;
+
+        iface = s->interfaces.array[i];
+        if (iface->del) iface->del(obj);
+     }
+
+   free(obj->interface_privates);
+   obj->interface_privates = NULL;
+
    if (s) evas_object_smart_unuse(s);
 }
 
@@ -1007,25 +1157,87 @@ evas_object_smart_render(Evas_Object *obj __UNUSED__, void *output __UNUSED__, v
 static void
 evas_object_smart_render_pre(Evas_Object *obj)
 {
+   Evas *e;
+
    if (obj->pre_render_done) return;
-   if (!obj->child_has_map)
+   if (!obj->child_has_map && !obj->cur.cached_surface)
      {
 #if 0
         Evas_Object_Smart *o;
 
+        fprintf(stderr, "");
         o = (Evas_Object_Smart *)(obj->object_data);
-        if (o->member_count > 1 &&
+        if (/* o->member_count > 1 && */
             obj->cur.bounding_box.w == obj->prev.bounding_box.w &&
             obj->cur.bounding_box.h == obj->prev.bounding_box.h &&
             (obj->cur.bounding_box.x != obj->prev.bounding_box.x ||
              obj->cur.bounding_box.y != obj->prev.bounding_box.y))
           {
-             fprintf(stderr, "Wouhou, I can detect moving smart object (%s, %p < %p)\n", evas_object_type_get(obj), obj, obj->smart.parent);
+             Eina_Bool cache_map = EINA_FALSE;
+
+             /* Check parent speed */
+             /* - same speed => do not map this object */
+             /* - different speed => map this object */
+             /* - if parent is mapped then map this object */
+
+             if (!obj->smart.parent || obj->smart.parent->child_has_map)
+               {
+                  cache_map = EINA_TRUE;
+               }
+             else
+               {
+                  if (_evas_render_has_map(obj->smart.parent))
+                    {
+                       cache_map = EINA_TRUE;
+                    }
+                  else
+                    {
+                       int speed_x, speed_y;
+                       int speed_px, speed_py;
+
+                       speed_x = obj->cur.geometry.x - obj->prev.geometry.x;
+                       speed_y = obj->cur.geometry.y - obj->prev.geometry.y;
+
+                       speed_px = obj->smart.parent->cur.geometry.x - obj->smart.parent->prev.geometry.x;
+                       speed_py = obj->smart.parent->cur.geometry.y - obj->smart.parent->prev.geometry.y;
+
+                       /* speed_x = obj->cur.bounding_box.x - obj->prev.bounding_box.x; */
+                       /* speed_y = obj->cur.bounding_box.y - obj->prev.bounding_box.y; */
+
+                       /* speed_px = obj->smart.parent->cur.bounding_box.x - obj->smart.parent->prev.bounding_box.x; */
+                       /* speed_py = obj->smart.parent->cur.bounding_box.y - obj->smart.parent->prev.bounding_box.y; */
+
+                       fprintf(stderr, "speed: '%s',%p (%i, %i) vs '%s',%p (%i, %i)\n",
+                               evas_object_type_get(obj), obj, speed_x, speed_y,
+                               evas_object_type_get(obj->smart.parent), obj->smart.parent, speed_px, speed_py);
+
+                       if (speed_x != speed_px || speed_y != speed_py)
+                         cache_map = EINA_TRUE;
+                    }
+               }
+
+             if (cache_map)
+               fprintf(stderr, "Wouhou, I can detect moving smart object (%s, %p [%i, %i, %i, %i] < %s, %p [%i, %i, %i, %i])\n",
+                       evas_object_type_get(obj), obj,
+                       obj->cur.bounding_box.x - obj->prev.bounding_box.x,
+                       obj->cur.bounding_box.y - obj->prev.bounding_box.y,
+                       obj->cur.bounding_box.w, obj->cur.bounding_box.h,
+                       evas_object_type_get(obj->smart.parent), obj->smart.parent,
+                       obj->smart.parent->cur.bounding_box.x - obj->smart.parent->prev.bounding_box.x,
+                       obj->smart.parent->cur.bounding_box.y - obj->smart.parent->prev.bounding_box.y,
+                       obj->smart.parent->cur.bounding_box.w, obj->smart.parent->cur.bounding_box.h);
+
+             obj->cur.cached_surface = cache_map;
           }
 #endif
      }
+
+   e = obj->layer->evas;
+
    if (obj->changed_map)
-     evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes, obj);
+     {
+       evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
+     }
 
    obj->pre_render_done = EINA_TRUE;
 }
@@ -1033,7 +1245,7 @@ evas_object_smart_render_pre(Evas_Object *obj)
 static void
 evas_object_smart_render_post(Evas_Object *obj)
 {
-   obj->prev = obj->cur;
+   evas_object_cur_prev(obj);
 }
 
 static unsigned int evas_object_smart_id_get(Evas_Object *obj)

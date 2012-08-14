@@ -352,7 +352,7 @@ extern "C" {
 #endif
 
 #define EVAS_VERSION_MAJOR 1
-#define EVAS_VERSION_MINOR 2
+#define EVAS_VERSION_MINOR 6
 
 typedef struct _Evas_Version
 {
@@ -451,19 +451,19 @@ typedef enum _Evas_Callback_Type
 /**
  * @def EVAS_CALLBACK_PRIORITY_BEFORE
  * Slightly more prioritized than default.
- * @since 1.1.0
+ * @since 1.1
  */
 #define EVAS_CALLBACK_PRIORITY_BEFORE  -100
 /**
  * @def EVAS_CALLBACK_PRIORITY_DEFAULT
  * Default callback priority level
- * @since 1.1.0
+ * @since 1.1
  */
 #define EVAS_CALLBACK_PRIORITY_DEFAULT 0
 /**
  * @def EVAS_CALLBACK_PRIORITY_AFTER
  * Slightly less prioritized than default.
- * @since 1.1.0
+ * @since 1.1
  */
 #define EVAS_CALLBACK_PRIORITY_AFTER   100
 
@@ -477,7 +477,7 @@ typedef enum _Evas_Callback_Type
  * @see EVAS_CALLBACK_PRIORITY_BEFORE
  * @see EVAS_CALLBACK_PRIORITY_DEFAULT
  *
- * @since 1.1.0
+ * @since 1.1
  */
 typedef short Evas_Callback_Priority;
 
@@ -574,6 +574,22 @@ typedef struct _Evas_Precision_Position    Evas_Precision_Position;   /**< assoc
 typedef struct _Evas_Smart_Class Evas_Smart_Class;
 
 /**
+ * @typedef Evas_Smart_Interface
+ *
+ * A smart object's @b base interface definition
+ *
+ * An Evas interface is exactly like the OO-concept: an 'contract' or
+ * API a given object is declared to support. A smart object may have
+ * more than one interface, thus extending the behavior it gets from
+ * sub-classing.
+ *
+ * @since 1.7
+ *
+ * @ingroup Evas_Smart_Group
+ */
+typedef struct _Evas_Smart_Interface         Evas_Smart_Interface;
+
+/**
  * @typedef Evas_Smart_Cb_Description
  *
  * A smart object callback description, used to provide introspection
@@ -626,7 +642,7 @@ typedef struct _Evas_Native_Surface Evas_Native_Surface; /**< A generic datatype
  * A generic datatype for video specific surface information
  * @see evas_object_image_video_surface_set
  * @see evas_object_image_video_surface_get
- * @since 1.1.0
+ * @since 1.1
  */
 typedef struct _Evas_Video_Surface Evas_Video_Surface;
 
@@ -773,7 +789,7 @@ struct _Evas_Native_Surface
 /**
  * @def EVAS_VIDEO_SURFACE_VERSION
  * Magic version number to know what the video surf struct looks like
- * @since 1.1.0
+ * @since 1.1
  */
 #define EVAS_VIDEO_SURFACE_VERSION 1
 
@@ -1899,7 +1915,7 @@ EAPI void              evas_output_viewport_get(const Evas *e, Evas_Coord *x, Ev
  * @param   w The width in output units, usually pixels.
  * @param   h The height in output units, usually pixels.
  * @ingroup Evas_Output_Size
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI void              evas_output_framespace_set(Evas *e, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h);
 
@@ -1912,7 +1928,7 @@ EAPI void              evas_output_framespace_set(Evas *e, Evas_Coord x, Evas_Co
  * @param w The pointer to a width variable to be filled in
  * @param h The pointer to a height variable to be filled in
  * @ingroup Evas_Output_Size
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI void              evas_output_framespace_get(const Evas *e, Evas_Coord *x, Evas_Coord *y, Evas_Coord *w, Evas_Coord *h);
 
@@ -2242,7 +2258,7 @@ EAPI void  evas_event_callback_add(Evas *e, Evas_Callback_Type type, Evas_Event_
  * @param data The data pointer to be passed to @p func
  *
  * @see evas_event_callback_add
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI void  evas_event_callback_priority_add(Evas *e, Evas_Callback_Type type, Evas_Callback_Priority priority, Evas_Event_Cb func, const void *data) EINA_ARG_NONNULL(1, 4);
 
@@ -3266,7 +3282,7 @@ EAPI const char      *evas_object_name_get(const Evas_Object *obj) EINA_WARN_UNU
  * @endcode
  *
  * @ingroup Evas_Object_Group_Basic
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI void             evas_object_ref(Evas_Object *obj);
 
@@ -3284,7 +3300,7 @@ EAPI void             evas_object_ref(Evas_Object *obj);
  * @see evas_object_del()
  *
  * @ingroup Evas_Object_Group_Basic
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI void             evas_object_unref(Evas_Object *obj);
 
@@ -3303,7 +3319,7 @@ EAPI void             evas_object_unref(Evas_Object *obj);
  * @see evas_object_del()
  *
  * @ingroup Evas_Object_Group_Basic
- * @since 1.2.0
+ * @since 1.2
  */
 EAPI int              evas_object_ref_get(const Evas_Object *obj);
 
@@ -3944,7 +3960,7 @@ EAPI void      evas_object_event_callback_add(Evas_Object *obj, Evas_Callback_Ty
  * @param data The data pointer to be passed to @p func
  *
  * @see evas_object_event_callback_add
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI void      evas_object_event_callback_priority_add(Evas_Object *obj, Evas_Callback_Type type, Evas_Callback_Priority priority, Evas_Object_Event_Cb func, const void *data) EINA_ARG_NONNULL(1, 4);
 
@@ -4149,7 +4165,7 @@ EAPI Eina_Bool evas_object_propagate_events_get(const Evas_Object *obj) EINA_WAR
  * @see evas_object_pass_events_set()
  * @see evas_object_repeat_events_set()
  * @see evas_object_propagate_events_set()
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI void      evas_object_freeze_events_set(Evas_Object *obj, Eina_Bool freeze) EINA_ARG_NONNULL(1);
 
@@ -4164,7 +4180,7 @@ EAPI void      evas_object_freeze_events_set(Evas_Object *obj, Eina_Bool freeze)
  * @see evas_object_pass_events_get()
  * @see evas_object_repeat_events_get()
  * @see evas_object_propagate_events_get()
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI Eina_Bool evas_object_freeze_events_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
@@ -7121,10 +7137,16 @@ EAPI Eina_Bool                     evas_object_image_pixels_import(Evas_Object *
 EAPI void                          evas_object_image_pixels_get_callback_set(Evas_Object *obj, Evas_Object_Image_Pixels_Get_Cb func, void *data) EINA_ARG_NONNULL(1, 2);
 
 /**
- * Mark whether the given image object is dirty (needs to be redrawn).
+ * Mark whether the given image object is dirty and needs to request its pixels.
  *
  * @param obj The given image object.
  * @param dirty Whether the image is dirty.
+ *
+ * This function will only properly work if a pixels get callback has been set.
+ *
+ * @warning use this function if you really know what you are doing.
+ *
+ * @see evas_object_image_pixels_get_callback_set()
  */
 EAPI void                          evas_object_image_pixels_dirty_set(Evas_Object *obj, Eina_Bool dirty) EINA_ARG_NONNULL(1);
 
@@ -7297,7 +7319,7 @@ EAPI Evas_Colorspace               evas_object_image_colorspace_get(const Evas_O
  *
  * @param obj The given image object pointer
  * @return The region support state
- * @since 1.2.0
+ * @since 1.2
  *
  * This function returns the state of the region support of given image
  */
@@ -7330,7 +7352,7 @@ EAPI Evas_Native_Surface          *evas_object_image_native_surface_get(const Ev
  *
  * @param obj The given canvas pointer.
  * @param surf The new video surface.
- * @since 1.1.0
+ * @since 1.1
  *
  * This function link a video surface to a given canvas image.
  *
@@ -7342,7 +7364,7 @@ EAPI void                          evas_object_image_video_surface_set(Evas_Obje
  *
  * @param obj The given canvas pointer.
  * @return The video surface of the given canvas image.
- * @since 1.1.0
+ * @since 1.1
  *
  * This function returns the video surface linked to a given canvas image.
  *
@@ -7477,7 +7499,7 @@ EAPI Eina_Bool                     evas_object_image_source_unset(Evas_Object *o
  * @param file The file to check
  * @return @c EINA_TRUE if we may be able to open it, @c EINA_FALSE if it's
  * unlikely.
- * @since 1.1.0
+ * @since 1.1
  *
  * If file is a Eina_Stringshare, use directly @ref evas_object_image_extension_can_load_fast_get.
  *
@@ -7491,7 +7513,7 @@ EAPI Eina_Bool                     evas_object_image_extension_can_load_get(cons
  * @param file The file to check, it should be an Eina_Stringshare.
  * @return @c EINA_TRUE if we may be able to open it, @c EINA_FALSE if it's
  * unlikely.
- * @since 1.1.0
+ * @since 1.1
  *
  * This functions is threadsafe.
  */
@@ -7546,7 +7568,7 @@ EAPI Eina_Bool                     evas_object_image_extension_can_load_fast_get
  * @see evas_object_image_animated_loop_count_get()
  * @see evas_object_image_animated_frame_duration_get()
  * @see evas_object_image_animated_frame_set()
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI Eina_Bool                     evas_object_image_animated_get(const Evas_Object *obj);
 
@@ -7564,7 +7586,7 @@ EAPI Eina_Bool                     evas_object_image_animated_get(const Evas_Obj
  * @see evas_object_image_animated_loop_count_get()
  * @see evas_object_image_animated_frame_duration_get()
  * @see evas_object_image_animated_frame_set()
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI int                           evas_object_image_animated_frame_count_get(const Evas_Object *obj);
 
@@ -7589,7 +7611,7 @@ EAPI int                           evas_object_image_animated_frame_count_get(co
  * @see evas_object_image_animated_loop_count_get()
  * @see evas_object_image_animated_frame_duration_get()
  * @see evas_object_image_animated_frame_set()
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI Evas_Image_Animated_Loop_Hint evas_object_image_animated_loop_type_get(const Evas_Object *obj);
 
@@ -7612,7 +7634,7 @@ EAPI Evas_Image_Animated_Loop_Hint evas_object_image_animated_loop_type_get(cons
  * @see evas_object_image_animated_loop_count_get()
  * @see evas_object_image_animated_frame_duration_get()
  * @see evas_object_image_animated_frame_set()
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI int                           evas_object_image_animated_loop_count_get(const Evas_Object *obj);
 
@@ -7636,7 +7658,7 @@ EAPI int                           evas_object_image_animated_loop_count_get(con
  * @see evas_object_image_animated_loop_count_get()
  * @see evas_object_image_animated_frame_duration_get()
  * @see evas_object_image_animated_frame_set()
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI double                        evas_object_image_animated_frame_duration_get(const Evas_Object *obj, int start_frame, int fram_num);
 
@@ -7655,7 +7677,7 @@ EAPI double                        evas_object_image_animated_frame_duration_get
  * @see evas_object_image_animated_loop_count_get()
  * @see evas_object_image_animated_frame_duration_get()
  * @see evas_object_image_animated_frame_set()
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI void                          evas_object_image_animated_frame_set(Evas_Object *obj, int frame_num);
 /**
@@ -7833,7 +7855,7 @@ EAPI const char          *evas_object_text_text_get(const Evas_Object *obj) EINA
  *
  * @param obj The given text object.
  * @param delim A null terminated string of delimiters, e.g ",|".
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI void                 evas_object_text_bidi_delimiters_set(Evas_Object *obj, const char *delim);
 
@@ -7846,7 +7868,7 @@ EAPI void                 evas_object_text_bidi_delimiters_set(Evas_Object *obj,
  *
  * @param obj The given text object.
  * @return A null terminated string of delimiters, e.g ",|". If empty, returns NULL.
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI const char          *evas_object_text_bidi_delimiters_get(const Evas_Object *obj);
 
@@ -8312,7 +8334,7 @@ EAPI const char                              *evas_textblock_escape_string_range
  * default).
  * @param text The markup text (if @c NULL, return @c NULL).
  * @return An allocated plain text version of the markup.
- * @since 1.2.0
+ * @since 1.2
  */
 EAPI char                                    *evas_textblock_text_markup_to_utf8(const Evas_Object *obj, const char *text) EINA_WARN_UNUSED_RESULT EINA_MALLOC;
 
@@ -8326,7 +8348,7 @@ EAPI char                                    *evas_textblock_text_markup_to_utf8
  * default behaviour, i.e with no extra object information).
  * @param text The markup text (if @c NULL, return @c NULL).
  * @return An allocated plain text version of the markup.
- * @since 1.2.0
+ * @since 1.2
  */
 EAPI char                                    *evas_textblock_text_utf8_to_markup(const Evas_Object *obj, const char *text) EINA_WARN_UNUSED_RESULT EINA_MALLOC;
 
@@ -8385,7 +8407,7 @@ EAPI const Evas_Textblock_Style              *evas_object_textblock_style_get(co
  * @param ts  the style to set.
  * @return Returns no value.
  * @see evas_object_textblock_style_set
- * @since 1.2.0
+ * @since 1.2
  */
 EAPI void                                     evas_object_textblock_style_user_push(Evas_Object *obj, Evas_Textblock_Style *ts) EINA_ARG_NONNULL(1);
 
@@ -8394,7 +8416,7 @@ EAPI void                                     evas_object_textblock_style_user_p
  *
  * @param obj  the object to get the style from.
  * @see evas_object_textblock_style_get
- * @since 1.2.0
+ * @since 1.2
  */
 EAPI void                                     evas_object_textblock_style_user_pop(Evas_Object *obj) EINA_ARG_NONNULL(1);
 
@@ -8404,7 +8426,7 @@ EAPI void                                     evas_object_textblock_style_user_p
  * @param obj  the object to get the style from.
  * @return the style of the object.
  * @see evas_object_textblock_style_get
- * @since 1.2.0
+ * @since 1.2
  */
 EAPI const Evas_Textblock_Style              *evas_object_textblock_style_user_peek(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
@@ -8435,7 +8457,7 @@ EAPI const char                              *evas_object_textblock_replace_char
  *
  * @param obj The given textblock object.
  * @param align A value between @c 0.0 and @c 1.0.
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI void                                     evas_object_textblock_valign_set(Evas_Object *obj, double align);
 
@@ -8444,7 +8466,7 @@ EAPI void                                     evas_object_textblock_valign_set(E
  *
  * @param obj The given textblock object.
  * @return The alignment set for the object.
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI double                                   evas_object_textblock_valign_get(const Evas_Object *obj);
 
@@ -8457,7 +8479,7 @@ EAPI double                                   evas_object_textblock_valign_get(c
  *
  * @param obj The given textblock object.
  * @param delim A null terminated string of delimiters, e.g ",|".
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI void                                     evas_object_textblock_bidi_delimiters_set(Evas_Object *obj, const char *delim);
 
@@ -8471,7 +8493,7 @@ EAPI void                                     evas_object_textblock_bidi_delimit
  * @param obj The given textblock object.
  * @return A null terminated string of delimiters, e.g ",|". If empty, returns
  * @c NULL.
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI const char                              *evas_object_textblock_bidi_delimiters_get(const Evas_Object *obj);
 
@@ -8481,7 +8503,7 @@ EAPI const char                              *evas_object_textblock_bidi_delimit
  *
  * @param obj The given textblock object.
  * @param mode @c EINA_TRUE for legacy mode, @c EINA_FALSE otherwise.
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI void                                     evas_object_textblock_legacy_newline_set(Evas_Object *obj, Eina_Bool mode) EINA_ARG_NONNULL(1);
 
@@ -8491,7 +8513,7 @@ EAPI void                                     evas_object_textblock_legacy_newli
  *
  * @param obj The given textblock object.
  * @return @c EINA_TRUE if in legacy mode, @c EINA_FALSE otherwise.
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI Eina_Bool                                evas_object_textblock_legacy_newline_get(const Evas_Object *obj) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1);
 
@@ -8731,7 +8753,7 @@ EAPI Eina_Bool                                evas_textblock_cursor_char_prev(Ev
  *
  * @param cur the cursor to move.
  * @return @c EINA_TRUE on success @c EINA_FALSE otherwise.
- * @since 1.2.0
+ * @since 1.2
  */
 EAPI Eina_Bool                                evas_textblock_cursor_word_start(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
 
@@ -8740,7 +8762,7 @@ EAPI Eina_Bool                                evas_textblock_cursor_word_start(E
  *
  * @param cur the cursor to move.
  * @return @c EINA_TRUE on success @c EINA_FALSE otherwise.
- * @since 1.2.0
+ * @since 1.2
  */
 EAPI Eina_Bool                                evas_textblock_cursor_word_end(Evas_Textblock_Cursor *cur) EINA_ARG_NONNULL(1);
 
@@ -8924,7 +8946,7 @@ EAPI int                                      evas_textblock_cursor_paragraph_te
  * @param start the start of the range.
  * @param end the end of the range.
  * @return @c EINA_TRUE on success, @c EINA_FALSE otherwise.
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI Eina_Bool                                evas_textblock_cursor_visible_range_get(Evas_Textblock_Cursor *start, Evas_Textblock_Cursor *end) EINA_ARG_NONNULL(1, 2);
 
@@ -8934,7 +8956,7 @@ EAPI Eina_Bool                                evas_textblock_cursor_visible_rang
  * @param cur1 one side of the range.
  * @param cur2 the other side of the range
  * @return the foramt nodes in the range. You have to free it.
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI Eina_List                               *evas_textblock_cursor_range_formats_get(const Evas_Textblock_Cursor *cur1, const Evas_Textblock_Cursor *cur2) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1, 2);
 
@@ -9133,7 +9155,7 @@ EAPI void                                     evas_object_textblock_style_insets
  *
  * @todo put here some usage examples
  *
- * @since 1.3
+ * @since 1.7
  *
  * @ingroup Evas_Object_Specific
  *
@@ -9145,7 +9167,7 @@ EAPI void                                     evas_object_textblock_style_insets
  *
  * The palette to use for the forgraound and background colors.
  *
- * @since 1.3
+ * @since 1.7
  */
 typedef enum
 {
@@ -9160,7 +9182,7 @@ typedef enum
  *
  * The style to give to each character of the grid.
  *
- * @since 1.3
+ * @since 1.7
  */
 typedef enum
 {
@@ -9174,7 +9196,7 @@ typedef enum
  *
  * The values that describes each cell.
  *
- * @since 1.3
+ * @since 1.7
  */
 typedef struct _Evas_Textgrid_Cell Evas_Textgrid_Cell;
 
@@ -9183,7 +9205,7 @@ typedef struct _Evas_Textgrid_Cell Evas_Textgrid_Cell;
  *
  * The values that describes each cell.
  *
- * @since 1.3
+ * @since 1.7
  */
 struct _Evas_Textgrid_Cell
 {
@@ -9207,7 +9229,7 @@ struct _Evas_Textgrid_Cell
  *
  * This function adds a new textgrid object to the Evas @p e and returns the object.
  *
- * @since 1.3
+ * @since 1.7
  */
 EAPI Evas_Object *evas_object_textgrid_add(Evas *e);
 
@@ -9223,7 +9245,7 @@ EAPI Evas_Object *evas_object_textgrid_add(Evas *e);
  * @p w or @p h are less or equal than 0, this
  * functiond does nothing.
  *
- * @since 1.3
+ * @since 1.7
  */
 EAPI void evas_object_textgrid_size_set(Evas_Object *obj, int w, int h);
 
@@ -9239,7 +9261,7 @@ EAPI void evas_object_textgrid_size_set(Evas_Object *obj, int w, int h);
  * the textgrid object @p obj. @p w or @p h can be
  * @c NULL. On error, their value is 0.
  *
- * @since 1.3
+ * @since 1.7
  */
 EAPI void evas_object_textgrid_size_get(const Evas_Object *obj, int *w, int *h);
 
@@ -9259,7 +9281,7 @@ EAPI void evas_object_textgrid_size_get(const Evas_Object *obj, int *w, int *h);
  * @see evas_object_textgrid_font_set()
  * @see evas_object_textgrid_font_source_get()
  *
- * @since 1.3
+ * @since 1.7
  */
 EAPI void evas_object_textgrid_font_source_set(Evas_Object *obj, const char *font_source);
 
@@ -9277,7 +9299,7 @@ EAPI void evas_object_textgrid_font_source_set(Evas_Object *obj, const char *fon
  * @see evas_object_textgrid_font_set()
  * @see evas_object_textgrid_font_source_set()
  *
- * @since 1.3
+ * @since 1.7
  */
 EAPI const char *evas_object_textgrid_font_source_get(const Evas_Object *obj);
 
@@ -9301,7 +9323,7 @@ EAPI const char *evas_object_textgrid_font_source_get(const Evas_Object *obj);
  * @see evas_object_textgrid_font_source_set()
  * @see evas_object_textgrid_font_source_get()
  *
- * @since 1.3
+ * @since 1.7
  */
 EAPI void evas_object_textgrid_font_set(Evas_Object *obj, const char *font_name, Evas_Font_Size font_size);
 
@@ -9324,7 +9346,7 @@ EAPI void evas_object_textgrid_font_set(Evas_Object *obj, const char *font_name,
  * @see evas_object_textgrid_font_source_set()
  * @see evas_object_textgrid_font_source_get()
  *
- * @since 1.3
+ * @since 1.7
  */
 EAPI void evas_object_textgrid_font_get(const Evas_Object *obj, const char **font_name, Evas_Font_Size *font_size);
 
@@ -9346,9 +9368,9 @@ EAPI void evas_object_textgrid_font_get(const Evas_Object *obj, const char **fon
  * @see evas_object_textgrid_font_set()
  * @see evas_object_textgrid_supported_font_styles_set()
  *
- * @since 1.3
+ * @since 1.7
  */
-EAPI void evas_object_textgrid_cell_size_get(const Evas_Object *obj, int *width, int *height);
+EAPI void evas_object_textgrid_cell_size_get(const Evas_Object *obj, Evas_Coord *w, Evas_Coord *h);
 
 /**
  * @brief The set color to the given palette at the given index of the given textgrid object.
@@ -9374,7 +9396,7 @@ EAPI void evas_object_textgrid_cell_size_get(const Evas_Object *obj, int *width,
  *
  * @see evas_object_textgrid_palette_get()
  *
- * @since 1.3
+ * @since 1.7
  */
 EAPI void evas_object_textgrid_palette_set(Evas_Object *obj, Evas_Textgrid_Palette pal, int idx, int r, int g, int b, int a);
 
@@ -9399,7 +9421,7 @@ EAPI void evas_object_textgrid_palette_set(Evas_Object *obj, Evas_Textgrid_Palet
  *
  * @see evas_object_textgrid_palette_set()
  *
- * @since 1.3
+ * @since 1.7
  */
 EAPI void evas_object_textgrid_palette_get(const Evas_Object *obj, Evas_Textgrid_Palette pal, int idx, int *r, int *g, int *b, int *a);
 
@@ -9422,7 +9444,7 @@ EAPI Evas_Textgrid_Font_Style evas_object_textgrid_supported_font_styles_get(con
  * @see evas_object_textgrid_size_set()
  * @see evas_object_textgrid_update_add()
  *
- * @since 1.3
+ * @since 1.7
  */
 EAPI void evas_object_textgrid_cellrow_set(Evas_Object *obj, int y, const Evas_Textgrid_Cell *row);
 
@@ -9441,20 +9463,20 @@ EAPI void evas_object_textgrid_cellrow_set(Evas_Object *obj, int y, const Evas_T
  * @see evas_object_textgrid_size_set()
  * @see evas_object_textgrid_update_add()
  *
- * @since 1.3
+ * @since 1.7
  */
 EAPI Evas_Textgrid_Cell *evas_object_textgrid_cellrow_get(const Evas_Object *obj, int y);
 
 /**
- * @brief Get the string at the given row of the given textgrid object.
+ * @brief Indicate for evas that part of a textgrid region (cells) has been updated.
  *
- * @param obj The textgrid object to query for font information.
+ * @param obj The textgrid object.
  * @param x The rect region of cells top-left x (column)
  * @param y The rect region of cells top-left y (row)
  * @param w The rect region size in number of cells (columns)
  * @param h The rect region size in number of cells (rows)
  *
- * This function delcares to evas that a region of cells was updated by
+ * This function declares to evas that a region of cells was updated by
  * code and needs refreshing. An application should modify cells like this
  * as an example:
  * 
@@ -9472,7 +9494,7 @@ EAPI Evas_Textgrid_Cell *evas_object_textgrid_cellrow_get(const Evas_Object *obj
  * @see evas_object_textgrid_cellrow_get()
  * @see evas_object_textgrid_size_set()
  *
- * @since 1.3
+ * @since 1.7
  */
 EAPI void evas_object_textgrid_update_add(Evas_Object *obj, int x, int y, int w, int h);
 
@@ -9568,10 +9590,10 @@ EAPI void         evas_object_polygon_points_clear(Evas_Object *obj) EINA_ARG_NO
  * @}
  */
 
-/* @since 1.2.0 */
+/* @since 1.2 */
 EAPI void         evas_object_is_frame_object_set(Evas_Object *obj, Eina_Bool is_frame);
 
-/* @since 1.2.0 */
+/* @since 1.2 */
 EAPI Eina_Bool    evas_object_is_frame_object_get(Evas_Object *obj);
 
 /**
@@ -9633,8 +9655,34 @@ struct _Evas_Smart_Class
 
    const Evas_Smart_Class          *parent; /**< this class inherits from this parent */
    const Evas_Smart_Cb_Description *callbacks; /**< callbacks at this level, @c NULL terminated */
-   void                            *interfaces; /**< to be used in a future near you */
+   const Evas_Smart_Interface     **interfaces; /**< #Evas_Smart_Interface pointers array, @c NULL terminated. These will be the interfaces supported at this level for an object (parents may have others) @since 1.7 */
    const void                      *data;
+};
+
+/**
+ * @struct _Evas_Smart_Interface
+ *
+ * A smart object's @b base interface definition
+ *
+ * Every Evas interface must have a name field, pointing to a global,
+ * constant string variable. This string pointer will be the only way
+ * of retrieving back a given interface from a smart object. Two
+ * function pointers must be defined, too, which will be called at
+ * object creation and deletion times.
+ *
+ * See also some @ref Example_Evas_Smart_Interfaces "examples" on
+ * smart interfaces.
+ *
+ * @since 1.7
+ *
+ * @ingroup Evas_Smart_Group
+ */
+struct _Evas_Smart_Interface
+{
+   const char *name; /**< Name of the given interface */
+   unsigned    private_size; /**< Size, in bytes, of the interface's private dada blob. This will be allocated and freed automatically for you. Get it with evas_object_smart_interface_data_get(). */
+   Eina_Bool   (*add)(Evas_Object *obj); /**< Function to be called at object creation time. This will take place @b before the object's smart @c add() function. */
+   void        (*del)(Evas_Object *obj); /**< Function to be called at object deletion time. This will take place @b after the object's smart @c del() function. */
 };
 
 /**
@@ -9844,6 +9892,96 @@ struct _Evas_Smart_Cb_Description
           smart = evas_smart_class_new(sc);                                                      \
        }                                                                                         \
      return smart;                                                                               \
+  }
+
+/**
+ * @def EVAS_SMART_SUBCLASS_IFACE_NEW
+ *
+ * @since 1.7
+ *
+ * Convenience macro to subclass a given Evas smart class. This is the
+ * same as #EVAS_SMART_SUBCLASS_NEW, but now <b>declaring smart
+ * interfaces</b> besides the smart callbacks.
+ *
+ * @param smart_name The name used for the smart class. e.g:
+ *                   @c "Evas_Object_Box".
+ * @param prefix Prefix used for all variables and functions defined
+ *               and referenced by this macro.
+ * @param api_type Type of the structure used as API for the smart
+ *                 class. Either #Evas_Smart_Class or something
+ *                 derived from it.
+ * @param parent_type Type of the parent class API.
+ * @param parent_func Function that gets the parent class. e.g:
+ *                    evas_object_box_smart_class_get().
+ * @param cb_desc Array of smart callback descriptions for this smart
+ *                class.
+ * @param ifaces Array of Evas smart interafaces for this smart
+ *               class.
+ *
+ * This macro saves some typing when writing a smart class derived
+ * from another one. In order to work, the user @b must provide some
+ * functions adhering to the following guidelines:
+ *  - @<prefix@>_smart_set_user(): the @b internal @c _smart_set
+ *    function (defined by this macro) will call this one, provided by
+ *    the user, after inheriting everything from the parent, which
+ *    should <b>take care of setting the right member functions for
+ *    the class</b>, both overrides and extensions, if any.
+ *  - If this new class should be subclassable as well, a @b public
+ *    @c _smart_set() function is desirable to fill in the class used as
+ *    parent by the children. It's up to the user to provide this
+ *    interface, which will most likely call @<prefix@>_smart_set() to
+ *    get the job done.
+ *
+ * After the macro's usage, the following will be defined for use:
+ *  - @<prefix@>_parent_sc: A pointer to the @b parent smart
+ *    class. When calling parent functions from overloaded ones, use
+ *    this global variable.
+ *  - @<prefix@>_smart_class_new(): this function returns the
+ *    #Evas_Smart needed to create smart objects with this class,
+ *    which should be passed to evas_object_smart_add().
+ *
+ * @warning @p smart_name has to be a pointer to a globally available
+ * string! The smart class created here will just have a pointer set
+ * to that, and all object instances will depend on it for smart class
+ * name lookup.
+ *
+ * @ingroup Evas_Smart_Group
+ */
+#define EVAS_SMART_SUBCLASS_IFACE_NEW(smart_name,          \
+                                      prefix,              \
+                                      api_type,            \
+                                      parent_type,         \
+                                      parent_func,         \
+                                      cb_desc,             \
+                                      ifaces)              \
+  static const parent_type * prefix##_parent_sc = NULL;    \
+  static void prefix##_smart_set_user(api_type * api);     \
+  static void prefix##_smart_set(api_type * api)           \
+  {                                                        \
+     Evas_Smart_Class *sc;                                 \
+     if (!(sc = (Evas_Smart_Class *)api))                  \
+       return;                                             \
+     if (!prefix##_parent_sc)                              \
+       prefix##_parent_sc = parent_func();                 \
+     evas_smart_class_inherit(sc, prefix##_parent_sc);     \
+     prefix##_smart_set_user(api);                         \
+  }                                                        \
+  static Evas_Smart *prefix##_smart_class_new(void)        \
+  {                                                        \
+     static Evas_Smart *smart = NULL;                      \
+     static api_type api;                                  \
+     if (!smart)                                           \
+       {                                                   \
+          Evas_Smart_Class *sc = (Evas_Smart_Class *)&api; \
+          memset(&api, 0, sizeof(api_type));               \
+          sc->version = EVAS_SMART_CLASS_VERSION;          \
+          sc->name = smart_name;                           \
+          sc->callbacks = cb_desc;                         \
+          sc->interfaces = ifaces;                         \
+          prefix##_smart_set(&api);                        \
+          smart = evas_smart_class_new(sc);                \
+       }                                                   \
+     return smart;                                         \
   }
 
 /**
@@ -10143,7 +10281,7 @@ EAPI void         evas_object_smart_member_del(Evas_Object *obj) EINA_ARG_NONNUL
  * The returned list should be freed with @c eina_list_free() when you
  * no longer need it.
  *
- * @since 1.3 This function will return @c NULL when a non-smart object is passed.
+ * @since 1.7 This function will return @c NULL when a non-smart object is passed.
  *
  * @see evas_object_smart_member_add()
  * @see evas_object_smart_member_del()
@@ -10295,7 +10433,7 @@ EAPI void         evas_object_smart_callback_add(Evas_Object *obj, const char *e
  * @param data user data to be passed to the callback function
  *
  * @see evas_object_smart_callback_add
- * @since 1.1.0
+ * @since 1.1
  * @ingroup Evas_Smart_Object_Group
  */
 EAPI void         evas_object_smart_callback_priority_add(Evas_Object *obj, const char *event, Evas_Callback_Priority priority, Evas_Smart_Cb func, const void *data);
@@ -10343,7 +10481,7 @@ EAPI void        *evas_object_smart_callback_del(Evas_Object *obj, const char *e
  * remove an exact match of a callback
  *
  * @see evas_object_smart_callback_add() for more details.
- * @since 1.2.0
+ * @since 1.2
  * @ingroup Evas_Smart_Object_Group
  *
  * @note To delete all smart event callbacks which match @p type and @p func,
@@ -10460,6 +10598,34 @@ EAPI void         evas_object_smart_callbacks_descriptions_get(const Evas_Object
  * @return reference to description if found, @c NULL if not found.
  */
 EAPI void         evas_object_smart_callback_description_find(const Evas_Object *obj, const char *name, const Evas_Smart_Cb_Description **class_description, const Evas_Smart_Cb_Description **instance_description) EINA_ARG_NONNULL(1, 2);
+
+/**
+ * Retrieve an Evas smart object's interface, by name string pointer.
+ *
+ * @param obj An Evas smart object.
+ * @param name Name string of the desired interface, which must be the
+ *             same pointer used at the interface's declarion, when
+ *             creating the smart object @a obj.
+ *
+ * @since 1.7
+ *
+ * @return The interface's handle pointer, if found, @c NULL
+ * otherwise.
+ */
+const void       *evas_object_smart_interface_get(const Evas_Object *obj, const char *name);
+
+/**
+ * Retrieve an Evas smart object interface's <b>private data</b>.
+ *
+ * @param obj An Evas smart object.
+ * @param iface The given object's interface handle.
+ *
+ * @since 1.7
+ *
+ * @return The object interface's private data blob pointer, if found,
+ * @c NULL otherwise.
+ */
+void             *evas_object_smart_interface_data_get(const Evas_Object *obj, const Evas_Smart_Interface *iface);
 
 /**
  * Mark smart object as changed, dirty.
@@ -11779,7 +11945,7 @@ EAPI void                               evas_object_table_align_get(const Evas_O
  *
  * @param o The table object.
  * @param mirrored the mirrored mode to set
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI void                               evas_object_table_mirrored_set(Evas_Object *o, Eina_Bool mirrored) EINA_ARG_NONNULL(1);
 
@@ -11788,7 +11954,7 @@ EAPI void                               evas_object_table_mirrored_set(Evas_Obje
  *
  * @param o The table object.
  * @return @c EINA_TRUE if it's a mirrored table, @c EINA_FALSE otherwise.
- * @since 1.1.0
+ * @since 1.1
  * @see evas_object_table_mirrored_set()
  */
 EAPI Eina_Bool                          evas_object_table_mirrored_get(const Evas_Object *o) EINA_ARG_NONNULL(1);
@@ -11804,7 +11970,7 @@ EAPI Eina_Bool                          evas_object_table_mirrored_get(const Eva
  * @param rowspan pointer to store how many relative-vertical position to use for this child.
  *
  * @return 1 on success, 0 on failure.
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI Eina_Bool                          evas_object_table_pack_get(const Evas_Object *o, Evas_Object *child, unsigned short *col, unsigned short *row, unsigned short *colspan, unsigned short *rowspan);
 
@@ -11893,7 +12059,7 @@ EAPI Evas_Object                       *evas_object_table_child_get(const Evas_O
  * children's positions inside the grid object's area.
  *
  * @ingroup Evas_Smart_Object_Group
- * @since 1.1.0
+ * @since 1.1
  */
 
 /**
@@ -11906,7 +12072,7 @@ EAPI Evas_Object                       *evas_object_table_child_get(const Evas_O
  *
  * It's set to a virtual size of 1x1 by default and add children with
  * evas_object_grid_pack().
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI Evas_Object   *evas_object_grid_add(Evas *evas) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
@@ -11914,7 +12080,7 @@ EAPI Evas_Object   *evas_object_grid_add(Evas *evas) EINA_WARN_UNUSED_RESULT EIN
  * Create a grid that is child of a given element @a parent.
  *
  * @see evas_object_grid_add()
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI Evas_Object   *evas_object_grid_add_to(Evas_Object *parent) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
@@ -11924,7 +12090,7 @@ EAPI Evas_Object   *evas_object_grid_add_to(Evas_Object *parent) EINA_WARN_UNUSE
  * @param o The grid object to modify
  * @param w The virtual horizontal size (resolution) in integer units
  * @param h The virtual vertical size (resolution) in integer units
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI void           evas_object_grid_size_set(Evas_Object *o, int w, int h) EINA_ARG_NONNULL(1);
 
@@ -11935,7 +12101,7 @@ EAPI void           evas_object_grid_size_set(Evas_Object *o, int w, int h) EINA
  * @param w A pointer to an integer to store the virtual width
  * @param h A pointer to an integer to store the virtual height
  * @see evas_object_grid_size_set()
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI void           evas_object_grid_size_get(const Evas_Object *o, int *w, int *h) EINA_ARG_NONNULL(1);
 
@@ -11946,7 +12112,7 @@ EAPI void           evas_object_grid_size_get(const Evas_Object *o, int *w, int 
  *
  * @param o The grid object.
  * @param mirrored the mirrored mode to set
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI void           evas_object_grid_mirrored_set(Evas_Object *o, Eina_Bool mirrored) EINA_ARG_NONNULL(1);
 
@@ -11956,7 +12122,7 @@ EAPI void           evas_object_grid_mirrored_set(Evas_Object *o, Eina_Bool mirr
  * @param o The grid object.
  * @return @c EINA_TRUE if it's a mirrored grid, @c EINA_FALSE otherwise.
  * @see evas_object_grid_mirrored_set()
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI Eina_Bool      evas_object_grid_mirrored_get(const Evas_Object *o) EINA_ARG_NONNULL(1);
 
@@ -11970,7 +12136,7 @@ EAPI Eina_Bool      evas_object_grid_mirrored_get(const Evas_Object *o) EINA_ARG
  * @param w The virtual width of the child
  * @param h The virtual height of the child
  * @return 1 on success, 0 on failure.
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI Eina_Bool      evas_object_grid_pack(Evas_Object *o, Evas_Object *child, int x, int y, int w, int h) EINA_ARG_NONNULL(1, 2);
 
@@ -11982,7 +12148,7 @@ EAPI Eina_Bool      evas_object_grid_pack(Evas_Object *o, Evas_Object *child, in
  *       all children, use evas_object_grid_clear() instead.
  *
  * @return 1 on success, 0 on failure.
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI Eina_Bool      evas_object_grid_unpack(Evas_Object *o, Evas_Object *child) EINA_ARG_NONNULL(1, 2);
 
@@ -11991,7 +12157,7 @@ EAPI Eina_Bool      evas_object_grid_unpack(Evas_Object *o, Evas_Object *child) 
  *
  * @param o The given grid object.
  * @param clear if true, it will delete just removed children.
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI void           evas_object_grid_clear(Evas_Object *o, Eina_Bool clear) EINA_ARG_NONNULL(1);
 
@@ -12007,7 +12173,7 @@ EAPI void           evas_object_grid_clear(Evas_Object *o, Eina_Bool clear) EINA
  * @param w The pointer to where the width will be returned
  * @param h The pointer to where the height will be returned
  * @return 1 on success, 0 on failure.
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI Eina_Bool      evas_object_grid_pack_get(const Evas_Object *o, Evas_Object *child, int *x, int *y, int *w, int *h);
 
@@ -12015,7 +12181,7 @@ EAPI Eina_Bool      evas_object_grid_pack_get(const Evas_Object *o, Evas_Object 
  * Get an iterator to walk the list of children for the grid.
  *
  * @note Do not remove or delete objects while walking the list.
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI Eina_Iterator *evas_object_grid_iterator_new(const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
@@ -12023,7 +12189,7 @@ EAPI Eina_Iterator *evas_object_grid_iterator_new(const Evas_Object *o) EINA_WAR
  * Get an accessor to get random access to the list of children for the grid.
  *
  * @note Do not remove or delete objects while walking the list.
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI Eina_Accessor *evas_object_grid_accessor_new(const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 
@@ -12034,7 +12200,7 @@ EAPI Eina_Accessor *evas_object_grid_accessor_new(const Evas_Object *o) EINA_WAR
  *       It's up to the user to destroy it when it no longer needs it.
  *       It's possible to remove objects from the grid when walking this
  *       list, but these removals won't be reflected on it.
- * @since 1.1.0
+ * @since 1.1
  */
 EAPI Eina_List     *evas_object_grid_children_get(const Evas_Object *o) EINA_WARN_UNUSED_RESULT EINA_ARG_NONNULL(1) EINA_MALLOC;
 

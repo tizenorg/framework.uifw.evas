@@ -1,11 +1,11 @@
 /**
- * Simple Evas example illustrating a custom Evas smart object
+ * Simple Evas example illustrating Evas smart interfaces
  *
  * You'll need at least one engine built for it (excluding the buffer
  * one). See stdout/stderr for output.
  *
  * @verbatim
- * gcc -o evas-smart-object evas-smart-object.c `pkg-config --libs --cflags evas ecore ecore-evas`
+ * gcc -o evas-smart-interface evas-smart-interface.c `pkg-config --libs --cflags evas ecore ecore-evas`
  * @endverbatim
  */
 
@@ -87,6 +87,50 @@ static struct test_data d = {0};
 static const char *border_img_path = PACKAGE_EXAMPLES_DIR "/red.png";
 
 #define _evas_smart_example_type "Evas_Smart_Example"
+
+static const char iface1_data[] = "iface1_data";
+static const char IFACE1_NAME[] = "iface1";
+
+static Eina_Bool _iface1_add(Evas_Object *);
+static void      _iface1_del(Evas_Object *);
+static void      _iface1_custom_fn(Evas_Object *);
+
+typedef struct _Evas_Smart_Example_Interface Evas_Smart_Example_Interface;
+struct _Evas_Smart_Example_Interface
+{
+   Evas_Smart_Interface base;
+   void                 (*example_func)(Evas_Object *obj);
+};
+
+static Evas_Smart_Example_Interface iface1;
+
+static Eina_Bool
+_iface1_add(Evas_Object *obj)
+{
+   printf("iface1's add()!\n");
+
+   return EINA_TRUE;
+}
+
+static void
+_iface1_del(Evas_Object *obj)
+{
+   printf("iface1's del()! Data is %s\n",
+          (char *)evas_object_smart_interface_data_get
+            (obj, (Evas_Smart_Interface *)&iface1));
+}
+
+static void
+_iface1_custom_fn(Evas_Object *obj)
+{
+   printf("iface1's custom_fn()!\n");
+}
+
+static const Evas_Smart_Interface *_smart_interfaces[] =
+{
+   (Evas_Smart_Interface *)&iface1, NULL
+};
+
 #define EVT_CHILDREN_NUMBER_CHANGED "children,changed"
 
 static const Evas_Smart_Cb_Description _smart_callbacks[] =
@@ -133,9 +177,10 @@ struct _Evas_Smart_Example_Data
        return val;                                             \
     }
 
-EVAS_SMART_SUBCLASS_NEW(_evas_smart_example_type, _evas_smart_example,
-                        Evas_Smart_Class, Evas_Smart_Class,
-                        evas_object_smart_clipped_class_get, _smart_callbacks);
+EVAS_SMART_SUBCLASS_IFACE_NEW
+  (_evas_smart_example_type, _evas_smart_example, Evas_Smart_Class,
+  Evas_Smart_Class, evas_object_smart_clipped_class_get, _smart_callbacks,
+  _smart_interfaces);
 
 static void
 _on_destroy(Ecore_Evas *ee __UNUSED__)
@@ -633,6 +678,7 @@ int
 main(void)
 {
    const Evas_Smart_Cb_Description **descriptions;
+   Evas_Smart_Example_Interface *iface;
    unsigned int count;
    Eina_Bool ret;
 
@@ -660,7 +706,15 @@ main(void)
    evas_object_resize(d.bg, WIDTH, HEIGHT);
    evas_object_show(d.bg);
 
+   iface = (Evas_Smart_Example_Interface *)&iface1;
+   iface->base.name = IFACE1_NAME;
+   iface->base.private_size = sizeof(iface1_data);
+   iface->base.add = _iface1_add;
+   iface->base.del = _iface1_del;
+   iface->example_func = _iface1_custom_fn;
+
    d.smt = evas_smart_example_add(d.evas);
+
    evas_object_move(d.smt, WIDTH / 4, HEIGHT / 4);
    evas_object_resize(d.smt, WIDTH / 2, HEIGHT / 2);
    evas_object_show(d.smt);
@@ -702,6 +756,24 @@ main(void)
    evas_object_focus_set(d.bg, EINA_TRUE);
    evas_object_event_callback_add(
      d.bg, EVAS_CALLBACK_KEY_DOWN, _on_keydown, NULL);
+
+   iface = (Evas_Smart_Example_Interface *)evas_object_smart_interface_get
+       (d.smt, IFACE1_NAME);
+   if (iface)
+     {
+        char *data;
+
+        fprintf(stdout, "We've found a smart interface on the smart object!"
+                        "\n\tname: %s\n", iface->base.name);
+
+        fprintf(stdout, "Setting its interface data...\n");
+        data = evas_object_smart_interface_data_get
+            (d.smt, (Evas_Smart_Interface *)iface);
+        memcpy(data, iface1_data, sizeof(iface1_data));
+
+        fprintf(stdout, "Calling an interface's function...\n");
+        iface->example_func(d.smt);
+     }
 
    fprintf(stdout, commands);
    ecore_main_loop_begin();

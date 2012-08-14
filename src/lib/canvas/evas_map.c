@@ -43,36 +43,30 @@ _evas_map_calc_map_geometry(Evas_Object *obj)
 #if 0
    if (obj->prev.map)
      {
-        // FIXME: this causes an infinite loop somewhere... hard to debug
-        if (obj->prev.map->count == obj->cur.map->count)
+        if (obj->prev.map != obj->cur.map)
           {
-             const Evas_Map_Point *p2;
-
-             p = obj->cur.map->points;
-             p_end = p + obj->cur.map->count;
-             p2 = obj->prev.map->points;
-
-             for (; p < p_end; p++, p2++)
+             // FIXME: this causes an infinite loop somewhere... hard to debug
+             if (obj->prev.map->count == obj->cur.map->count)
                {
-                  if ((p->a != p2->a) ||
-                      (p->r != p2->r) ||
-                      (p->g != p2->g) ||
-                      (p->b != p2->b))
+                  const Evas_Map_Point *p2;
+
+                  p = obj->cur.map->points;
+                  p2 = obj->prev.map->points;
+
+                  ch = memcmp(p, p2,
+                              sizeof (Evas_Map_Point) * obj->prev.map->count);
+
+                  ch = !!ch;
+                  if (!ch)
                     {
-                       ch = 1;
-                       break;
-                    }
-                  if ((p->x != p2->x) ||
-                      (p->y != p2->y) ||
-                      (p->z != p2->z))
-                    {
-                       ch = 1;
-                       break;
+                       if (obj->cache_map) evas_map_free(obj->cache_map); 
+                       obj->cache_map = obj->cur.map;
+                       obj->cur.map = obj->prev.map;
                     }
                }
+             else
+               ch = 1;
           }
-        else
-           ch = 1;
      }
    else
       ch = 1;
@@ -106,6 +100,11 @@ _evas_map_calc_map_geometry(Evas_Object *obj)
    obj->cur.map->normal_geometry.y = yy1;
    obj->cur.map->normal_geometry.w = (x2 - x1);
    obj->cur.map->normal_geometry.h = (yy2 - yy1);
+   obj->changed_map = ch;
+   // This shouldn't really be needed, but without it we do have case
+   // where the clip is wrong when a map doesn't change, so always forcing
+   // it, as long as someone doesn't find a better fix.
+   evas_object_clip_dirty(obj);
    if (ch) _evas_map_calc_geom_change(obj);
 }
 
@@ -146,7 +145,9 @@ _evas_map_copy(Evas_Map *dst, const Evas_Map *src)
         ERR("cannot copy map of different sizes: dst=%i, src=%i", dst->count, src->count);
         return EINA_FALSE;
      }
-   memcpy(dst->points, src->points, src->count * sizeof(Evas_Map_Point));
+   if (dst == src) return EINA_TRUE;
+   if (dst->points != src->points)
+     memcpy(dst->points, src->points, src->count * sizeof(Evas_Map_Point));
    dst->smooth = src->smooth;
    dst->alpha = src->alpha;
    dst->persp = src->persp;
@@ -172,10 +173,10 @@ _evas_map_free(Evas_Object *obj, Evas_Map *m)
      {
         if (m->surface)
           obj->layer->evas->engine.func->image_map_surface_free
-          (obj->layer->evas->engine.data.output, m->surface);
+            (obj->layer->evas->engine.data.output, m->surface);
         if (obj->spans)
           {
-             // FIXME: destroy engine side spans
+             obj->layer->evas->engine.func->image_map_clean(obj->layer->evas->engine.data.output, obj->spans);
              free(obj->spans);
              obj->spans = NULL;
           }      
@@ -453,7 +454,7 @@ evas_object_map_set(Evas_Object *obj, const Evas_Map *map)
    return;
    MAGIC_CHECK_END();
 
-   if (!map)
+   if (!map || map->count < 4)
      {
         if (obj->cur.map)
           {
@@ -467,8 +468,19 @@ evas_object_map_set(Evas_Object *obj, const Evas_Map *map)
                   obj->cur.map->surface = NULL;
                }
              obj->prev.geometry = obj->cur.map->normal_geometry;
-             _evas_map_free(obj, obj->cur.map);
-             obj->cur.map = NULL;
+
+             if (obj->prev.map == obj->cur.map)
+               obj->cur.map = NULL;
+             else if (!obj->cache_map)
+               {
+                  obj->cache_map = obj->cur.map;
+                  obj->cur.map = NULL;
+               }
+             else
+               {
+                  _evas_map_free(obj, obj->cur.map);
+                  obj->cur.map = NULL;
+               }
 
              if (!obj->prev.map)
                {
@@ -484,17 +496,25 @@ evas_object_map_set(Evas_Object *obj, const Evas_Map *map)
         return;
      }
 
+   if (obj->prev.map == obj->cur.map)
+     obj->cur.map = NULL;
+
+   if (!obj->cur.map)
+     {
+        obj->cur.map = obj->cache_map;
+        obj->cache_map = NULL;
+     }
+
    // We do have the same exact count of point in this map, so just copy it
    if ((obj->cur.map) && (obj->cur.map->count == map->count))
      _evas_map_copy(obj->cur.map, map);
    else
      {
-        if (obj->cur.map) evas_map_free(obj->cur.map);
+        if (obj->cur.map) _evas_map_free(obj, obj->cur.map);
         obj->cur.map = _evas_map_dup(map);
         if (obj->cur.usemap)
            evas_object_mapped_clip_across_mark(obj);
      }
-   obj->changed_map = EINA_TRUE;
 
    _evas_map_calc_map_geometry(obj);
 }
@@ -1046,6 +1066,10 @@ evas_object_map_update(Evas_Object *obj,
             obj->spans->uv.w != uvw || obj->spans->uv.h != uvh)
           obj->changed_map = EINA_TRUE;
      }
+   else
+     {
+        obj->changed_map = EINA_TRUE;
+     }
 
    if (!obj->changed_map) return ;
 
@@ -1058,9 +1082,6 @@ evas_object_map_update(Evas_Object *obj,
           }
         obj->spans = NULL;
      }
-
-   if (!((obj->cur.map) && (obj->cur.map->count > 3) && (obj->cur.usemap)))
-     return ;
 
    if (!obj->spans)
      obj->spans = calloc(1, sizeof (RGBA_Map) +

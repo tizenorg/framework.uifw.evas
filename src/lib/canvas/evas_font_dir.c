@@ -495,6 +495,7 @@ evas_font_load(Evas *evas, Evas_Font_Description *fdesc, const char *source, Eva
    Evas_Font_Set *font = NULL;
    Eina_List *fonts, *l;
    Fndat *fd;
+   Fndat *found_fd = NULL;
    char *nm;
    Font_Rend_Flags wanted_rend = 0;
 
@@ -525,14 +526,20 @@ evas_font_load(Evas *evas, Evas_Font_Description *fdesc, const char *source, Eva
 #ifdef HAVE_FONTCONFIG
 		  else if (fd->set && fd->p_nm)
 		    {
-		       font = evas_load_fontconfig(evas, fd->set, size,
-                             wanted_rend);
-		       goto on_find;
+                       found_fd = fd;
 		    }
 #endif
 	       }
 	  }
      }
+
+#ifdef HAVE_FONTCONFIG
+   if (found_fd)
+     {
+        font = evas_load_fontconfig(evas, found_fd->set, size, wanted_rend);
+        goto on_find;
+     }
+#endif
 
    EINA_LIST_FOREACH(fonts_zero, l, fd)
      {
@@ -552,14 +559,20 @@ evas_font_load(Evas *evas, Evas_Font_Description *fdesc, const char *source, Eva
 #ifdef HAVE_FONTCONFIG
 		  else if (fd->set && fd->p_nm)
 		    {
-		       font = evas_load_fontconfig(evas, fd->set, size,
-                             wanted_rend);
-		       goto on_find;
+                       found_fd = fd;
 		    }
 #endif
 	       }
 	  }
      }
+
+#ifdef HAVE_FONTCONFIG
+   if (found_fd)
+     {
+        font = evas_load_fontconfig(evas, found_fd->set, size, wanted_rend);
+        goto on_find;
+     }
+#endif
 
    fonts = evas_font_set_get(fdesc->name);
    EINA_LIST_FOREACH(fonts, l, nm) /* Load each font in append */

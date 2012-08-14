@@ -777,12 +777,10 @@ evas_cache2_image_load_data(Image_Entry *ie)
      {
         evas_cserve2_image_load_data_wait(ie);
         RGBA_Image *im = (RGBA_Image *)ie;
-        im->image.data = evas_cserve2_image_data_get(ie);
         DBG("try cserve2 image data '%s' '%s' loaded!",
             ie->file, ie->key ? ie->key : "");
         if (im->image.data)
           {
-             im->image.no_free = 1;
              error = EVAS_LOAD_ERROR_NONE;
           }
         else
@@ -822,9 +820,6 @@ evas_cache2_image_unload_data(Image_Entry *im)
 
    if (!im->flags.loaded)
      return;
-
-//    if (im->data2)
-   im->flags.loaded = 0;
 }
 
 EAPI void

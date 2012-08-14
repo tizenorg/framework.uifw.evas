@@ -13,7 +13,6 @@ typedef enum {
    CSERVE2_LOAD,
    CSERVE2_LOADED,
    CSERVE2_PRELOAD,
-   CSERVE2_PRELOADED,
    CSERVE2_UNLOAD,
    CSERVE2_CLOSE,
    CSERVE2_FONT_LOAD,
@@ -210,7 +209,10 @@ struct _Msg_Stats {
                                  * really used, i.e. fonts that have glyphs
                                  * rendered */
       int fonts_used_saved_time;
+      int glyphs_request_time; /* time spent waiting for glyph requests */
       int glyphs_load_time; /* total time spent loading glyphs */
+      int glyphs_render_time; /* total time spent rendering glyphs */
+      int glyphs_slave_time; /* total time spent on the slave processing glyph load requests */
       int glyphs_saved_time; /* total time spent loading glyphs */
    } fonts;
    struct {

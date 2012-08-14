@@ -45,6 +45,7 @@ typedef struct _Evas_Callbacks              Evas_Callbacks;
 typedef struct _Evas_Format                 Evas_Format;
 typedef struct _Evas_Map_Point              Evas_Map_Point;
 typedef struct _Evas_Smart_Cb_Description_Array Evas_Smart_Cb_Description_Array;
+typedef struct _Evas_Smart_Interfaces_Array Evas_Smart_Interfaces_Array;
 typedef struct _Evas_Post_Callback          Evas_Post_Callback;
 typedef struct _Evas_Coord_Touch_Point      Evas_Coord_Touch_Point;
 
@@ -245,6 +246,12 @@ struct _Evas_Smart_Cb_Description_Array
    const Evas_Smart_Cb_Description **array;
 };
 
+struct _Evas_Smart_Interfaces_Array
+{
+   unsigned int                 size;
+   const Evas_Smart_Interface **array;
+};
+
 struct _Evas_Smart
 {
    DATA32            magic;
@@ -254,6 +261,7 @@ struct _Evas_Smart
    const Evas_Smart_Class *smart_class;
 
    Evas_Smart_Cb_Description_Array callbacks;
+   Evas_Smart_Interfaces_Array interfaces;
 
    unsigned char     delete_me : 1;
    unsigned char     class_allocated : 1;
@@ -535,6 +543,7 @@ struct _Evas_Object
       Eina_Bool             parent_cached_surface : 1;
    } cur, prev;
 
+   Evas_Map                   *cache_map;
    char                       *name;
 
    Evas_Intercept_Func        *interceptors;
@@ -586,6 +595,10 @@ struct _Evas_Object
    struct {
         int                      in_move, in_resize;
    } doing;
+
+  /* ptr array + data blob holding all interfaces private data for
+   * this object */
+   void                      **interface_privates;
 
    unsigned int                ref;
 
@@ -834,9 +847,10 @@ struct _Evas_Func
    int  (*image_scale_hint_get)            (void *data, void *image);
    int  (*font_last_up_to_pos)             (void *data, Evas_Font_Set *font, const Evas_Text_Props *intl_props, int x, int y);
 
-   void (*image_map_draw)                  (void *data, void *context, void *surface, void *image, int npoints, RGBA_Map_Point *p, int smooth, int level);
+   void (*image_map_draw)                  (void *data, void *context, void *surface, void *image, RGBA_Map *m, int smooth, int level);
    void *(*image_map_surface_new)          (void *data, int w, int h, int alpha);
    void (*image_map_surface_free)          (void *data, void *surface);
+   void (*image_map_clean)                 (void *data, RGBA_Map *m);
 
    void (*image_content_hint_set)          (void *data, void *surface, int hint);
    int  (*image_content_hint_get)          (void *data, void *surface);
@@ -898,6 +912,7 @@ extern "C" {
 
 Evas_Object *evas_object_new(Evas *e);
 void evas_object_change_reset(Evas_Object *obj);
+void evas_object_cur_prev(Evas_Object *obj);
 void evas_object_free(Evas_Object *obj, int clean_layer);
 void evas_object_update_bounding_box(Evas_Object *obj);
 void evas_object_inject(Evas_Object *obj, Evas *e);

@@ -2,6 +2,10 @@
 # include "config.h"
 #endif
 
+#ifdef DEBUG_LOAD_TIME
+#include <sys/time.h>
+#endif
+
 #ifdef BUILD_FONT_LOADER_EET
 #include <Eet.h>
 #endif
@@ -13,6 +17,7 @@
 #include FT_TYPES_H
 #include FT_MODULE_H
 #include FT_OUTLINE_H
+#include FT_SYNTHESIS_H
 
 #include "evas_cserve2.h"
 
@@ -310,9 +315,7 @@ _font_slave_glyph_load(Font_Info *fi, unsigned int idx, unsigned int hint)
      FT_Outline_Transform(&fsi->face->glyph->outline, &transform);
    /* Embolden the outline of Glyph according to rundtime_rend. */
    if (fi->runtime_rend & FONT_REND_WEIGHT)
-     FT_Outline_Embolden(&fsi->face->glyph->outline,
-                         (fsi->face->size->metrics.x_ppem * 5 * 64) /
-                         100);
+      FT_GlyphSlot_Embolden(fsi->face->glyph);
 
    return EINA_TRUE;
 }
@@ -434,6 +437,22 @@ _font_slave_int_shm_calculate(Font_Info *fi, unsigned int hint)
    return size;
 }
 
+#ifdef DEBUG_LOAD_TIME
+static int
+_timeval_sub(const struct timeval *tv2, const struct timeval *tv1)
+{
+    int t1, t2;
+
+    t1 = tv1->tv_usec + tv1->tv_sec * 1000000;
+    t2 = tv2->tv_usec + tv2->tv_sec * 1000000;
+
+    if (t2 > t1)
+      return t2 - t1;
+
+    return 0;
+}
+#endif
+
 static Slave_Msg_Font_Glyphs_Loaded *
 _font_slave_glyphs_load(const void *cmddata, void *data __UNUSED__)
 {
@@ -441,11 +460,21 @@ _font_slave_glyphs_load(const void *cmddata, void *data __UNUSED__)
    Slave_Msg_Font_Glyphs_Loaded *response;
    Font_Info *fi;
    unsigned int i;
-   unsigned int total_glyphs;
+   unsigned int total_glyphs = 0;
+#ifdef DEBUG_LOAD_TIME
+   unsigned int gl_load_time = 0;
+   unsigned int gl_render_time = 0;
+   struct timeval tv_start, tv_end;
+   struct timeval rstart, rfinish;
+#endif
    Eina_List *caches = NULL;
    Slave_Msg_Font_Cache *c = NULL;
 
    fi = msg->font.ftdata2;
+
+#ifdef DEBUG_LOAD_TIME
+   gettimeofday(&rstart, NULL);
+#endif
 
    _font_slave_size_use(fi);
 
@@ -484,8 +513,24 @@ _font_slave_glyphs_load(const void *cmddata, void *data __UNUSED__)
              total_glyphs = 0;
           }
 
+#ifdef DEBUG_LOAD_TIME
+        gettimeofday(&tv_start, NULL);
+#endif
         if (_font_slave_glyph_load(fi, msg->glyphs.glyphs[i], msg->font.hint))
-          r = _font_slave_glyph_render(fi, c, msg->glyphs.glyphs[i]);
+          {
+#ifdef DEBUG_LOAD_TIME
+             gettimeofday(&tv_end, NULL);
+             gl_load_time += _timeval_sub(&tv_end, &tv_start);
+             // copy the time that we got here to be used as start of render
+             tv_start.tv_sec = tv_end.tv_sec;
+             tv_start.tv_usec = tv_end.tv_usec;
+#endif
+             r = _font_slave_glyph_render(fi, c, msg->glyphs.glyphs[i]);
+#ifdef DEBUG_LOAD_TIME
+             gettimeofday(&tv_end, NULL);
+             gl_render_time += _timeval_sub(&tv_end, &tv_start);
+#endif
+          }
         if (!r) // SHM is full
           {
              fi->shmsize = _font_slave_int_shm_prev_calculate
@@ -505,6 +550,14 @@ _font_slave_glyphs_load(const void *cmddata, void *data __UNUSED__)
    i = 0;
    EINA_LIST_FREE(caches, c)
      response->caches[i++] = c;
+
+#ifdef DEBUG_LOAD_TIME
+   response->gl_load_time = gl_load_time;
+   response->gl_render_time = gl_render_time;
+
+   gettimeofday(&rfinish, NULL);
+   response->gl_slave_time = _timeval_sub(&rfinish, &rstart);
+#endif
 
    return response;
 }

@@ -335,28 +335,10 @@ _image_opened_cb(void *data, const void *msg_received)
 }
 
 static void
-_image_loaded_cb(void *data, const void *msg_received)
+_loaded_handle(Image_Entry *ie, const Msg_Loaded *msg)
 {
-   const Msg_Base *answer = msg_received;
-   const Msg_Loaded *msg = msg_received;
-   Image_Entry *ie = data;
    Data_Entry *dentry = ie->data2;
    const char *shmpath;
-
-   ie->load_rid = 0;
-
-   if (!ie->data2)
-     return;
-
-   if (answer->type == CSERVE2_ERROR)
-     {
-        const Msg_Error *msg_error = msg_received;
-        ERR("Couldn't load image: '%s':'%s'; error: %d",
-            ie->file, ie->key, msg_error->error);
-        free(ie->data2);
-        ie->data2 = NULL;
-        return;
-     }
 
    shmpath = ((const char *)msg) + sizeof(*msg);
 
@@ -387,9 +369,37 @@ _image_loaded_cb(void *data, const void *msg_received)
 
    if (ie->data2)
      {
-        ie->flags.loaded = EINA_TRUE;
+        RGBA_Image *im = (RGBA_Image *)ie;
+        im->image.data = evas_cserve2_image_data_get(ie);
         ie->flags.alpha_sparse = msg->alpha_sparse;
+        ie->flags.loaded = EINA_TRUE;
+        im->image.no_free = 1;
      }
+}
+
+static void
+_image_loaded_cb(void *data, const void *msg_received)
+{
+   const Msg_Base *answer = msg_received;
+   const Msg_Loaded *msg = msg_received;
+   Image_Entry *ie = data;
+
+   ie->load_rid = 0;
+
+   if (!ie->data2)
+     return;
+
+   if (answer->type == CSERVE2_ERROR)
+     {
+        const Msg_Error *msg_error = msg_received;
+        ERR("Couldn't load image: '%s':'%s'; error: %d",
+            ie->file, ie->key, msg_error->error);
+        free(ie->data2);
+        ie->data2 = NULL;
+        return;
+     }
+
+   _loaded_handle(ie, msg);
 }
 
 static void
@@ -411,6 +421,8 @@ _image_preloaded_cb(void *data, const void *msg_received)
         dentry->preloaded_cb = NULL;
         return;
      }
+
+   _loaded_handle(ie, msg_received);
 
    if (dentry && (dentry->preloaded_cb))
      {
@@ -540,6 +552,16 @@ _image_setopts_server_send(Image_Entry *ie)
    msg.base.type = CSERVE2_SETOPTS;
    msg.file_id = fentry->file_id;
    msg.image_id = dentry->image_id;
+
+   msg.opts.scale_down = ie->load_opts.scale_down_by;
+   msg.opts.dpi = ie->load_opts.dpi;
+   msg.opts.w = ie->load_opts.w;
+   msg.opts.h = ie->load_opts.h;
+   msg.opts.rx = ie->load_opts.region.x;
+   msg.opts.ry = ie->load_opts.region.y;
+   msg.opts.rw = ie->load_opts.region.w;
+   msg.opts.rh = ie->load_opts.region.h;
+   msg.opts.orientation = ie->load_opts.orientation;
 
    if (!_server_send(&msg, sizeof(msg), 0, NULL))
      return 0;
@@ -1167,7 +1189,9 @@ evas_cserve2_font_glyph_request(Font_Entry *fe, unsigned int idx, Font_Hint_Flag
    CS_Glyph_Out *glyph;
 
    if (fe->rid)
-     _server_dispatch_until(fe->rid);
+     _server_dispatch_until(0); /* dispatch anything pending just to avoid
+                                   requesting glyphs for a font we may already
+                                   know it failed loading, but don't block */
 
    if (fe->failed)
      return EINA_FALSE;
@@ -1212,7 +1236,9 @@ evas_cserve2_font_glyph_used(Font_Entry *fe, unsigned int idx, Font_Hint_Flags h
    CS_Glyph_Out *glyph;
 
    if (fe->rid)
-     _server_dispatch_until(fe->rid);
+     _server_dispatch_until(0); /* dispatch anything pending just to avoid
+                                   requesting glyphs for a font we may already
+                                   know it failed loading, but don't block */
 
    if (fe->failed)
      return EINA_FALSE;
