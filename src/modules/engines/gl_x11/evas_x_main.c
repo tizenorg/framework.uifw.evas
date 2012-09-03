@@ -234,11 +234,6 @@ eng_window_new(Display *disp,
         if (strstr((const char *)renderer, "Software Rasterizer"))
           blacklist = 1;
      }
-   //Temporary Code for Tizen Emulator. With this driver, mapbuf would not
-   //work correctly some kind of the reason.
-   else if (strstr((const char *)vendor, "Huone Inc."))
-     blacklist = 1;
-
    if (strstr((const char *)renderer, "softpipe"))
      blacklist = 1;
    if (blacklist)
