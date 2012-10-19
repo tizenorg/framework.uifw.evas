@@ -1,0 +1,8 @@
+Change-Id: Ibe359fde3762e4ea90a1d11ac5840302c20e1b12
+Code-Review+2: Myoungwoon Roy Kim <roytizen@tizen.org>
+Verified+1: Myoungwoon Roy Kim <roytizen@tizen.org>
+Submitted-by: Daniel Juyung Seo <seojuyung2@gmail.com>
+Submitted-at: Fri, 19 Oct 2012 12:45:29 +0900
+Reviewed-on: http://review.tizen.org/gerrit/2222
+Project: framework/uifw/evas
+Branch: refs/heads/master
