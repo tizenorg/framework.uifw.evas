@@ -1,18 +1,6 @@
 #include "evas_common.h"
 #include "evas_private.h"
 
-/**
- * @defgroup Evas_Object_Name_Group Object Name Function
- *
- * Functions that retrieve and set the name of an evas object.
- */
-
-/**
- * Sets the name of the given evas object to the given name.
- * @param   obj  The given object.
- * @param   name The given name.
- * @ingroup Evas_Object_Name_Group
- */
 EAPI void
 evas_object_name_set(Evas_Object *obj, const char *name)
 {
@@ -21,24 +9,17 @@ evas_object_name_set(Evas_Object *obj, const char *name)
    MAGIC_CHECK_END();
    if (obj->name)
      {
-	obj->layer->evas->name_hash = evas_hash_del(obj->layer->evas->name_hash, obj->name, obj);
-	free(obj->name);
+        eina_hash_del(obj->layer->evas->name_hash, obj->name, obj);
+        free(obj->name);
      }
    if (!name) obj->name = NULL;
    else
      {
-	obj->name = strdup(name);
-	obj->layer->evas->name_hash = evas_hash_add(obj->layer->evas->name_hash, obj->name, obj);
+        obj->name = strdup(name);
+        eina_hash_add(obj->layer->evas->name_hash, obj->name, obj);
      }
 }
 
-/**
- * Retrieves the name of the given evas object.
- * @param   obj The given object.
- * @return  The name of the object.  @c NULL if no name has been given
- *          to the object.
- * @ingroup Evas_Object_Name_Group
- */
 EAPI const char *
 evas_object_name_get(const Evas_Object *obj)
 {
@@ -48,14 +29,6 @@ evas_object_name_get(const Evas_Object *obj)
    return obj->name;
 }
 
-/**
- * Retrieves the object on the given evas with the given name.
- * @param   e    The given evas.
- * @param   name The given name.
- * @return  If successful, the evas object with the given name.  Otherwise,
- *          @c NULL.
- * @ingroup Evas_Object_Name_Group
- */
 EAPI Evas_Object *
 evas_object_name_find(const Evas *e, const char *name)
 {
@@ -63,5 +36,37 @@ evas_object_name_find(const Evas *e, const char *name)
    return NULL;
    MAGIC_CHECK_END();
    if (!name) return NULL;
-   return (Evas_Object *)evas_hash_find(e->name_hash, name);
+   return (Evas_Object *)eina_hash_find(e->name_hash, name);
+}
+
+static Evas_Object *
+_evas_object_name_child_find(const Evas_Object *obj, const char *name, int recurse)
+{
+   const Eina_Inlist *lst;
+   Evas_Object *child;
+   
+   if (!obj->smart.smart) return NULL;
+   lst = evas_object_smart_members_get_direct(obj);
+   EINA_INLIST_FOREACH(lst, child)
+     {
+        if (child->delete_me) continue;
+        if (!child->name) continue;
+        if (!strcmp(name, child->name)) return child;
+        if (recurse != 0)
+          {
+             if ((obj = _evas_object_name_child_find(child, name, recurse - 1)))
+               return (Evas_Object *)obj;
+          }
+     }
+   return NULL;
+}
+
+EAPI Evas_Object *
+evas_object_name_child_find(const Evas_Object *obj, const char *name, int recurse)
+{
+   MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
+   return NULL;
+   MAGIC_CHECK_END();
+   if (!name) return NULL;
+   return _evas_object_name_child_find(obj, name, recurse);
 }

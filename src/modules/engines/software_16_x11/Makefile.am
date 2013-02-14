@@ -8,30 +8,41 @@ AM_CPPFLAGS = \
 -I$(top_srcdir)/src/modules/engines \
 -I$(top_srcdir)/src/modules/engines/software_16 \
 @FREETYPE_CFLAGS@ \
-@x_cflags@
+@EVAS_GENERAL_CFLAGS@ \
+@PIXMAN_CFLAGS@ \
+@FRIBIDI_CFLAGS@ \
+@evas_engine_software_16_x11_cflags@
 
 if BUILD_ENGINE_SOFTWARE_16_X11
 
-pkgdir = $(libdir)/evas/modules/engines/software_16_x11/$(MODULE_ARCH)
-
-pkg_LTLIBRARIES	= module.la
-
-module_la_SOURCES = \
-evas_engine.h \
+SOFTWARE_16_X11_SOURCES =  \
 evas_engine.c \
 evas_x_buffer.c
 
-module_la_LIBADD = @x_libs@ $(top_builddir)/src/lib/libevas.la
-module_la_LDFLAGS = -module -avoid-version
-module_la_LIBTOOLFLAGS = --tag=disable-static
-module_la_DEPENDENCIES = $(top_builddir)/config.h
+SOFTWARE_16_X11_LIBADD = @evas_engine_software_16_x11_libs@
 
-include_HEADERS = Evas_Engine_Software_16_X11.h
+
+includes_HEADERS = Evas_Engine_Software_16_X11.h
+includesdir = $(includedir)/evas-@VMAJ@
+
+if !EVAS_STATIC_BUILD_SOFTWARE_16_X11
+
+pkgdir = $(libdir)/evas/modules/engines/software_16_x11/$(MODULE_ARCH)
+pkg_LTLIBRARIES	= module.la
+
+module_la_SOURCES = $(SOFTWARE_16_X11_SOURCES)
+module_la_LIBADD = @EVAS_GENERAL_LIBS@ $(SOFTWARE_16_X11_LIBADD) $(top_builddir)/src/lib/libevas.la
+module_la_LDFLAGS = -no-undefined -module -avoid-version
+module_la_LIBTOOLFLAGS = --tag=disable-static
+
+else
+
+noinst_LTLIBRARIES = libevas_engine_software_16_x11.la
+
+libevas_engine_software_16_x11_la_SOURCES = $(SOFTWARE_16_X11_SOURCES)
+libevas_engine_software_16_x11_la_LIBADD = $(SOFTWARE_16_X11_LIBADD)
 
 endif
+endif
 
-EXTRA_DIST = \
-evas_engine.h \
-evas_engine.c \
-evas_x_buffer.c \
-Evas_Engine_Software_16_X11.h
+EXTRA_DIST = evas_engine.h

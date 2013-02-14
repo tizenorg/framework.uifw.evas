@@ -2,10 +2,8 @@
 #include "evas_private.h"
 
 void
-evas_rects_return_difference_rects(Evas_Rectangles *rects, int x, int y, int w, int h, int xx, int yy, int ww, int hh)
+evas_rects_return_difference_rects(Eina_Array *rects, int x, int y, int w, int h, int xx, int yy, int ww, int hh)
 {
-   unsigned int available = 0;
-
    if (!RECTS_INTERSECT(x, y, w, h, xx, yy, ww, hh))
      {
 	evas_add_rect(rects, x, y, w, h);
@@ -13,48 +11,47 @@ evas_rects_return_difference_rects(Evas_Rectangles *rects, int x, int y, int w, 
      }
    else
      {
-	int x1[4], y1[4], i, j;
-	Evas_Rectangles tmp = { 0, 0, NULL };
+	int pt_x[4], pt_y[4], i, j;
 
 	if (x < xx)
 	  {
-	     x1[0] = x;
-	     x1[1] = xx;
+	     pt_x[0] = x;
+	     pt_x[1] = xx;
 	  }
 	else
 	  {
-	     x1[0] = xx;
-	     x1[1] = x;
+	     pt_x[0] = xx;
+	     pt_x[1] = x;
 	  }
 	if ((x + w) < (xx + ww))
 	  {
-	     x1[2] = x + w;
-	     x1[3] = xx + ww;
+	     pt_x[2] = x + w;
+	     pt_x[3] = xx + ww;
 	  }
 	else
 	  {
-	     x1[2] = xx + ww;
-	     x1[3] = x + w;
+	     pt_x[2] = xx + ww;
+	     pt_x[3] = x + w;
 	  }
 	if (y < yy)
 	  {
-	     y1[0] = y;
-	     y1[1] = yy;
+	     pt_y[0] = y;
+	     pt_y[1] = yy;
 	  }
 	else
 	  {
-	     y1[0] = yy;
-	     y1[1] = y;
+	     pt_y[0] = yy;
+	     pt_y[1] = y;
 	  }
 	if ((y + h) < (yy + hh))
 	  {
-	     y1[2] = y + h;
-	     y1[3] = yy + hh;
+	     pt_y[2] = y + h;
+	     pt_y[3] = yy + hh;
 	  }
 	else
 	  {
-	     y1[2] = yy + hh;
-	     y1[3] = y + h;
+	     pt_y[2] = yy + hh;
+	     pt_y[3] = y + h;
 	  }
 	for (j = 0; j < 3; j++)
 	  {
@@ -63,10 +60,10 @@ evas_rects_return_difference_rects(Evas_Rectangles *rects, int x, int y, int w, 
 		  int intsec1, intsec2;
 		  int tx, ty, tw, th;
 
-		  tx = x1[i];
-		  ty = y1[j];
-		  tw = x1[i + 1] - x1[i];
-		  th = y1[j + 1] - y1[j];
+		  tx = pt_x[i];
+		  ty = pt_y[j];
+		  tw = pt_x[i + 1] - pt_x[i];
+		  th = pt_y[j + 1] - pt_y[j];
 
 		  intsec1 = (RECTS_INTERSECT(tx, ty, tw, th, x, y, w, h));
 		  intsec2 = (RECTS_INTERSECT(tx, ty, tw, th, xx, yy, ww, hh));
@@ -76,26 +73,26 @@ evas_rects_return_difference_rects(Evas_Rectangles *rects, int x, int y, int w, 
 		    }
 	       }
 	  }
-/* 	if (tmp.count > 0) */
-/* 	  { */
-/* 	     unsigned int i; */
+/*	if (tmp.count > 0) */
+/*	  { */
+/*	     unsigned int i; */
 
-/* 	     for (i = 0; i < tmp.count; ++i) */
-/* 	       { */
-/* 		  if ((tmp.array[i].w > 0) && (tmp.array[i].h > 0)) */
-/* 		    { */
-/* 		       int intsec1, intsec2; */
+/*	     for (i = 0; i < tmp.count; ++i) */
+/*	       { */
+/*		  if ((tmp.array[i].w > 0) && (tmp.array[i].h > 0)) */
+/*		    { */
+/*		       int intsec1, intsec2; */
 
-/* 		       intsec1 = (RECTS_INTERSECT(tmp.array[i].x, tmp.array[i].y, tmp.array[i].w, tmp.array[i].h, x, y, w, h)); */
-/* 		       intsec2 = (RECTS_INTERSECT(tmp.array[i].x, tmp.array[i].y, tmp.array[i].w, tmp.array[i].h, xx, yy, ww, hh)); */
-/* 		       if (intsec1 ^ intsec2) */
-/* 			 { */
-/* 			    evas_add_rect(rects, tmp.array[i].x, tmp.array[i].y, tmp.array[i].w, tmp.array[i].h); */
-/* 			 } */
-/* 		    } */
-/* 	       } */
-/* 	     free(tmp.array); */
-/* 	  } */
+/*		       intsec1 = (RECTS_INTERSECT(tmp.array[i].x, tmp.array[i].y, tmp.array[i].w, tmp.array[i].h, x, y, w, h)); */
+/*		       intsec2 = (RECTS_INTERSECT(tmp.array[i].x, tmp.array[i].y, tmp.array[i].w, tmp.array[i].h, xx, yy, ww, hh)); */
+/*		       if (intsec1 ^ intsec2) */
+/*			 { */
+/*			    evas_add_rect(rects, tmp.array[i].x, tmp.array[i].y, tmp.array[i].w, tmp.array[i].h); */
+/*			 } */
+/*		    } */
+/*	       } */
+/*	     free(tmp.array); */
+/*	  } */
 
      }
 }

@@ -1,6 +1,13 @@
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
+#ifdef EVAS_CSERVE2
+#include "evas_cs2_private.h"
+#endif
+
 #include "evas_common.h"
 #include "evas_engine.h"
-#include <sys/time.h>
 
 void
 evas_buffer_outbuf_buf_init(void)
@@ -12,6 +19,11 @@ evas_buffer_outbuf_buf_free(Outbuf *buf)
 {
    if (buf->priv.back_buf)
      {
+#ifdef EVAS_CSERVE2
+        if (evas_cserve2_use_get())
+          evas_cache2_image_close(&buf->priv.back_buf->cache_entry);
+        else
+#endif
         evas_cache_image_drop(&buf->priv.back_buf->cache_entry);
      }
    free(buf);
@@ -20,12 +32,12 @@ evas_buffer_outbuf_buf_free(Outbuf *buf)
 Outbuf *
 evas_buffer_outbuf_buf_setup_fb(int w, int h, Outbuf_Depth depth, void *dest, int dest_row_bytes, int use_color_key, DATA32 color_key, int alpha_level,
 				void * (*new_update_region) (int x, int y, int w, int h, int *row_bytes),
-				void   (*free_update_region) (int x, int y, int w, int h, void *data)
+				void   (*free_update_region) (int x, int y, int w, int h, void *data),
+				void * (*switch_buffer) (void *data, void *dest_buffer),
+				void *switch_data
 				)
 {
    Outbuf *buf;
-   int y;
-   int bpp;
    
    buf = calloc(1, sizeof(Outbuf));
    if (!buf) return NULL;
@@ -40,21 +52,25 @@ evas_buffer_outbuf_buf_setup_fb(int w, int h, Outbuf_Depth depth, void *dest, in
    buf->alpha_level = alpha_level;
    buf->color_key = color_key;
    buf->use_color_key = use_color_key;
+   buf->first_frame = 1;
 
    buf->func.new_update_region = new_update_region;
    buf->func.free_update_region = free_update_region;
-
-   bpp = sizeof(DATA32);
-   if ((buf->depth == OUTBUF_DEPTH_RGB_24BPP_888_888) ||
-       (buf->depth == OUTBUF_DEPTH_BGR_24BPP_888_888))
-     bpp = 3;
+   buf->func.switch_buffer = switch_buffer;
+   buf->switch_data = switch_data;
 
    if ((buf->depth == OUTBUF_DEPTH_ARGB_32BPP_8888_8888) &&
        (buf->dest) && (buf->dest_row_bytes == (buf->w * sizeof(DATA32))))
      {
-	for (y = 0; y < h; y++)
-	  memset(((unsigned char *)(buf->dest)) + (y * buf->dest_row_bytes), 
-		 0, w * bpp);
+	memset(buf->dest, 0, h * buf->dest_row_bytes);
+#ifdef EVAS_CSERVE2
+        if (evas_cserve2_use_get())
+          buf->priv.back_buf = (RGBA_Image *) evas_cache2_image_data(evas_common_image_cache2_get(),
+                                                                     w, h,
+                                                                     buf->dest,
+                                                                     1, EVAS_COLORSPACE_ARGB8888);
+        else
+#endif
 	buf->priv.back_buf = (RGBA_Image *) evas_cache_image_data(evas_common_image_cache_get(),
                                                                   w, h,
                                                                   buf->dest,
@@ -63,6 +79,14 @@ evas_buffer_outbuf_buf_setup_fb(int w, int h, Outbuf_Depth depth, void *dest, in
    else if ((buf->depth == OUTBUF_DEPTH_RGB_32BPP_888_8888) &&
        (buf->dest) && (buf->dest_row_bytes == (buf->w * sizeof(DATA32))))
      {
+#ifdef EVAS_CSERVE2
+        if (evas_cserve2_use_get())
+          buf->priv.back_buf = (RGBA_Image *) evas_cache2_image_data(evas_common_image_cache2_get(),
+                                                                     w, h,
+                                                                     buf->dest,
+                                                                     0, EVAS_COLORSPACE_ARGB8888);
+        else
+#endif
         buf->priv.back_buf = (RGBA_Image *) evas_cache_image_data(evas_common_image_cache_get(),
                                                                   w, h,
                                                                   buf->dest,
@@ -76,28 +100,20 @@ RGBA_Image *
 evas_buffer_outbuf_buf_new_region_for_update(Outbuf *buf, int x, int y, int w, int h, int *cx, int *cy, int *cw, int *ch)
 {
    RGBA_Image *im;
-   DATA32 *ptr;
 
    if (buf->priv.back_buf)
      {
 	*cx = x; *cy = y; *cw = w; *ch = h;
-	if (buf->priv.back_buf->cache_entry.flags.alpha)
-	  {
-	     int  ww = w;
-	     ptr = buf->priv.back_buf->image.data + (y * buf->priv.back_buf->cache_entry.w) + x;
-	     while (h--)
-	       {
-		  while (w--)
-		    *ptr++ = 0;
-		  w = ww;
-		  ptr += (buf->priv.back_buf->cache_entry.w - w);
-	       }
-	  }
 	return buf->priv.back_buf;
      }
    else
      {
 	*cx = 0; *cy = 0; *cw = w; *ch = h;
+#ifdef EVAS_CSERVE2
+        if (evas_cserve2_use_get())
+          im = (RGBA_Image *)evas_cache2_image_empty(evas_common_image_cache2_get());
+        else
+#endif
 	im = (RGBA_Image *) evas_cache_image_empty(evas_common_image_cache_get());
         if (im)
           {
@@ -105,11 +121,12 @@ evas_buffer_outbuf_buf_new_region_for_update(Outbuf *buf, int x, int y, int w, i
 		 ((buf->depth == OUTBUF_DEPTH_BGRA_32BPP_8888_8888)))
 	       {
 		  im->cache_entry.flags.alpha = 1;
+#ifdef EVAS_CSERVE2
+                  if (evas_cserve2_use_get())
+                    evas_cache2_image_size_set(&im->cache_entry, w, h);
+                  else
+#endif
                   im = (RGBA_Image *) evas_cache_image_size_set(&im->cache_entry, w, h);
-                  if (im)
-                    {
-                       memset(im->image.data, 0, w * h * sizeof(DATA32));
-                    }
                }
           }
      }
@@ -119,7 +136,47 @@ evas_buffer_outbuf_buf_new_region_for_update(Outbuf *buf, int x, int y, int w, i
 void
 evas_buffer_outbuf_buf_free_region_for_update(Outbuf *buf, RGBA_Image *update)
 {
-   if (update != buf->priv.back_buf) evas_cache_image_drop(&update->cache_entry);
+   if (update != buf->priv.back_buf)
+     {
+#ifdef EVAS_CSERVE2
+        if (evas_cserve2_use_get())
+          evas_cache2_image_close(&update->cache_entry);
+        else
+#endif
+          evas_cache_image_drop(&update->cache_entry);
+     }
+}
+
+void
+evas_buffer_outbuf_buf_switch_buffer(Outbuf *buf)
+{
+   if (buf->func.switch_buffer)
+     {
+        buf->dest = buf->func.switch_buffer(buf->switch_data, buf->dest);
+        if (buf->priv.back_buf)
+          {
+#ifdef EVAS_CSERVE2
+             if (evas_cserve2_use_get())
+               {
+                  evas_cache2_image_close(&buf->priv.back_buf->cache_entry);
+                  buf->priv.back_buf = (RGBA_Image *) evas_cache2_image_data(evas_common_image_cache2_get(),
+                                                                            buf->w, buf->h,
+                                                                            buf->dest,
+                                                                            buf->depth == OUTBUF_DEPTH_ARGB_32BPP_8888_8888 ? 1 : 0,
+                                                                            EVAS_COLORSPACE_ARGB8888);
+               }
+             else
+#endif
+               {
+                  evas_cache_image_drop(&buf->priv.back_buf->cache_entry);
+                  buf->priv.back_buf = (RGBA_Image *) evas_cache_image_data(evas_common_image_cache_get(),
+                                                                            buf->w, buf->h,
+                                                                            buf->dest,
+                                                                            buf->depth == OUTBUF_DEPTH_ARGB_32BPP_8888_8888 ? 1 : 0,
+                                                                            EVAS_COLORSPACE_ARGB8888);
+               }
+          }
+     }
 }
 
 void
@@ -265,7 +322,7 @@ evas_buffer_outbuf_buf_push_updated_region(Outbuf *buf, RGBA_Image *update, int 
 	     int yy, row_bytes;
 
 	     row_bytes = buf->dest_row_bytes;
-	     dest = (DATA8 *)(buf->dest) + (y * row_bytes) + (x * 4);
+	     dest = (DATA32 *)((DATA8 *)(buf->dest) + (y * row_bytes) + (x * 4));
 	     if (buf->func.new_update_region)
 	       {
 		  dest = buf->func.new_update_region(x, y, w, h, &row_bytes);
@@ -281,7 +338,7 @@ evas_buffer_outbuf_buf_push_updated_region(Outbuf *buf, RGBA_Image *update, int 
 		       for (yy = 0; yy < h; yy++)
 			 {
 			    src = update->image.data + (yy * update->cache_entry.w);
-			    dst = (DATA8 *)(buf->dest) + ((y + yy) * row_bytes);
+			    dst = (DATA32 *)((DATA8 *)(buf->dest) + ((y + yy) * row_bytes));
 			    func(src, dst, w);
 			 }
 		       
@@ -307,7 +364,7 @@ evas_buffer_outbuf_buf_push_updated_region(Outbuf *buf, RGBA_Image *update, int 
 	       }
 	     for (yy = 0; yy < h; yy++)
 	       {
-		  dst = dest + (yy * row_bytes);
+		  dst = (DATA32 *)(dest + (yy * row_bytes));
 		  src = update->image.data + (yy * update->cache_entry.w);
 		  for (xx = 0; xx < w; xx++)
 		    {
@@ -338,7 +395,7 @@ evas_buffer_outbuf_buf_push_updated_region(Outbuf *buf, RGBA_Image *update, int 
 	       }
 	     for (yy = 0; yy < h; yy++)
 	       {
-		  dst = dest + (yy * row_bytes);
+		  dst = (DATA32 *)(dest + (yy * row_bytes));
 		  src = update->image.data + (yy * update->cache_entry.w);
 		  for (xx = 0; xx < w; xx++)
 		    {

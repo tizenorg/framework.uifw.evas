@@ -1,40 +1,99 @@
 MAINTAINERCLEANFILES = Makefile.in
 
+SUBDIRS =
+
+if BUILD_LOADER_BMP
+if !EVAS_STATIC_BUILD_BMP
+SUBDIRS += bmp
+endif
+endif
+
 if BUILD_LOADER_EDB
-edb_subdir = edb
+if !EVAS_STATIC_BUILD_EDB
+SUBDIRS += edb
+endif
 endif
 
 if BUILD_LOADER_EET
-eet_subdir = eet
+if !EVAS_STATIC_BUILD_EET
+SUBDIRS += eet
+endif
+endif
+
+if BUILD_LOADER_GENERIC
+if !EVAS_STATIC_BUILD_GENERIC
+SUBDIRS += generic
+endif
 endif
 
 if BUILD_LOADER_GIF
-gif_subdir = gif
+if !EVAS_STATIC_BUILD_GIF
+SUBDIRS += gif
+endif
+endif
+
+if BUILD_LOADER_ICO
+if !EVAS_STATIC_BUILD_ICO
+SUBDIRS += ico
+endif
 endif
 
 if BUILD_LOADER_JPEG
-jpeg_subdir = jpeg
+if !EVAS_STATIC_BUILD_JPEG
+SUBDIRS += jpeg
 endif
-
-if BUILD_LOADER_PNG
-png_subdir = png
-endif
-
-if BUILD_LOADER_TIFF
-tiff_subdir = tiff
-endif
-
-if BUILD_LOADER_XPM
-xpm_subdir = xpm
-endif
-
-if BUILD_LOADER_SVG
-svg_subdir = svg
 endif
 
 if BUILD_LOADER_PMAPS
-pmaps_subdir = pmaps
+if !EVAS_STATIC_BUILD_PMAPS
+SUBDIRS += pmaps
+endif
 endif
 
+if BUILD_LOADER_PNG
+if !EVAS_STATIC_BUILD_PNG
+SUBDIRS += png
+endif
+endif
 
-SUBDIRS = $(edb_subdir) $(eet_subdir) $(gif_subdir) $(jpeg_subdir) $(png_subdir) $(tiff_subdir) $(xpm_subdir) $(svg_subdir) $(pmaps_subdir)
+if BUILD_LOADER_PSD
+if !EVAS_STATIC_BUILD_PSD
+SUBDIRS += psd
+endif
+endif
+
+if BUILD_LOADER_SVG
+if !EVAS_STATIC_BUILD_SVG
+SUBDIRS += svg
+endif
+endif
+
+if BUILD_LOADER_TGA
+if !EVAS_STATIC_BUILD_TGA
+SUBDIRS += tga
+endif
+endif
+
+if BUILD_LOADER_TIFF
+if !EVAS_STATIC_BUILD_TIFF
+SUBDIRS += tiff
+endif
+endif
+
+if BUILD_LOADER_WBMP
+if !EVAS_STATIC_BUILD_WBMP
+SUBDIRS += wbmp
+endif
+endif
+
+if BUILD_LOADER_WEBP
+if !EVAS_STATIC_BUILD_WEBP
+SUBDIRS += webp
+endif
+endif
+
+if BUILD_LOADER_XPM
+if !EVAS_STATIC_BUILD_XPM
+SUBDIRS += xpm
+endif
+endif

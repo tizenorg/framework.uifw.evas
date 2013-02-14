@@ -14,9 +14,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <termios.h>
-#include <signal.h>
 #include <errno.h>
-#include <signal.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/wait.h>
@@ -29,14 +27,14 @@ typedef struct _fb_mode FB_Mode;
 
 struct _fb_mode
 {
-  int             width;
-  int             height;
-  int             refresh;
-  int             depth;
-  int             bpp;
+  unsigned int    width;
+  unsigned int    height;
+  unsigned int    refresh;
+  unsigned int    depth;
+  unsigned int    bpp;
   int             fb_fd;
   void           *mem;
-  int             mem_offset;
+  unsigned int    mem_offset;
   struct fb_var_screeninfo fb_var;
 };
 
@@ -52,8 +50,8 @@ int  fb_postinit(FB_Mode *mode);
 int  fb_await_switch(int block);
 /* list all current possible video modes listed in /etc/fb.modes             */
 /* returns pointer to an aray of FB_Mode, and sets num_return to the number  */
-/* of elements int he returned array                                         */
-FB_Mode *fb_list_modes(int *num_return);
+/* of elements in the returned array                                         */
+FB_Mode *fb_list_modes(unsigned int *num_return);
 /* sets the fb mode to the resolution width x height and the depth to depth. */
 /* and if refresh > 0 attempts to use a mode with a refresh rate (in Hz) of  */
 /* that. If this fails it will return NULL - if it succeeds it will return   */
@@ -61,20 +59,20 @@ FB_Mode *fb_list_modes(int *num_return);
 /* be used. If refresh is 0 it uses the DEFAULT mode (the one with no        */
 /* refresh rate at the end of its name (WIDTHxHEIGHT-REFRESH)                */
 /* NB: in 8bpp you get a 332 palette. This is fixed so all modes are         */
-/* "truecolor" - the onyl difference is how many bits bep red, green and     */
+/* "truecolor" - the only difference is how many bits bep red, green and     */
 /* blue channel. This is for speed reasons                                   */
-FB_Mode *fb_setmode(int width, int height, int depth, int refresh);
+FB_Mode *fb_setmode(unsigned int width, unsigned int height, unsigned int depth, unsigned int refresh);
 /* returns the current fb mode being used in FB_Mode                         */
 FB_Mode *fb_getmode(void);
 /* changes the bit depth of the current fb mode to depth and returns a new   */
 /* handle to a new fb mode with updated parameters. frees cur_mode for you.  */
-FB_Mode *fb_changedepth(FB_Mode *cur_mode, int depth);
+FB_Mode *fb_changedepth(FB_Mode *cur_mode, unsigned int depth);
 /* changes resolution - retaining current depth of the current mode,         */
 /* returning a handle to the new mode once done. frees cur_mode for you.     */
-FB_Mode *fb_changeres(FB_Mode *cur_mode, int width, int height, int refresh);
+FB_Mode *fb_changeres(FB_Mode *cur_mode, unsigned int width, unsigned int height, unsigned int refresh);
 /* chnages both resolution and depth and returns a handle to the new mode    */
 /* when done. frees cur_mode for you                                         */
-FB_Mode *fb_changemode(FB_Mode *cur_mode, int width, int height, int depth, int refresh);
+FB_Mode *fb_changemode(FB_Mode *cur_mode, unsigned int width, unsigned int height, unsigned int depth, unsigned int refresh);
 
 /* ------------------------------------------------------------------------- */
 /* How to init:                                                              */

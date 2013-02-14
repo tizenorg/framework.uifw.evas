@@ -1,9 +1,8 @@
-
 /* blend pixel --> dst */
 
 #ifdef BUILD_MMX
 static void
-_op_blend_p_dp_mmx(DATA32 *s, DATA8 *m, DATA32 c, DATA32 *d, int l) {
+_op_blend_p_dp_mmx(DATA32 *s, DATA8 *m __UNUSED__, DATA32 c __UNUSED__, DATA32 *d, int l) {
    DATA32 *e = d + l;
    pxor_r2r(mm0, mm0);
    MOV_A2R(ALPHA_256, mm6)
@@ -24,7 +23,9 @@ _op_blend_p_dp_mmx(DATA32 *s, DATA8 *m, DATA32 c, DATA32 *d, int l) {
 }
 
 static void
-_op_blend_pas_dp_mmx(DATA32 *s, DATA8 *m, DATA32 c, DATA32 *d, int l) {
+_op_blend_pas_dp_mmx(DATA32 *s, DATA8 *m __UNUSED__, DATA32 c __UNUSED__, DATA32 *d, int l) {
+   _op_blend_p_dp_mmx(s, m, c, d, l);
+   return;
    DATA32 *e = d + l;
    pxor_r2r(mm0, mm0);
    MOV_A2R(ALPHA_256, mm6)
@@ -75,7 +76,7 @@ init_blend_pixel_span_funcs_mmx(void)
 
 #ifdef BUILD_MMX
 static void
-_op_blend_pt_p_dp_mmx(DATA32 s, DATA8 m, DATA32 c, DATA32 *d) {
+_op_blend_pt_p_dp_mmx(DATA32 s, DATA8 m __UNUSED__, DATA32 c __UNUSED__, DATA32 *d) {
 	pxor_r2r(mm0, mm0);
 	MOV_A2R(ALPHA_256, mm6)
 	MOV_P2R(s, mm2, mm0)
@@ -117,7 +118,7 @@ init_blend_pixel_pt_funcs_mmx(void)
 
 #ifdef BUILD_MMX
 static void
-_op_blend_rel_p_dp_mmx(DATA32 *s, DATA8 *m, DATA32 c, DATA32 *d, int l) {
+_op_blend_rel_p_dp_mmx(DATA32 *s, DATA8 *m __UNUSED__, DATA32 c __UNUSED__, DATA32 *d, int l) {
    DATA32 *e = d + l;
    pxor_r2r(mm0, mm0);
    MOV_A2R(ALPHA_256, mm6)
@@ -141,7 +142,7 @@ _op_blend_rel_p_dp_mmx(DATA32 *s, DATA8 *m, DATA32 c, DATA32 *d, int l) {
 }
 
 static void
-_op_blend_rel_pan_dp_mmx(DATA32 *s, DATA8 *m, DATA32 c, DATA32 *d, int l) {
+_op_blend_rel_pan_dp_mmx(DATA32 *s, DATA8 *m __UNUSED__, DATA32 c __UNUSED__, DATA32 *d, int l) {
    DATA32 *e = d + l;
    pxor_r2r(mm0, mm0);
    MOV_A2R(ALPHA_256, mm6)
@@ -177,7 +178,7 @@ init_blend_rel_pixel_span_funcs_mmx(void)
 
 #ifdef BUILD_MMX
 static void
-_op_blend_rel_pt_p_dp_mmx(DATA32 s, DATA8 m, DATA32 c, DATA32 *d) {
+_op_blend_rel_pt_p_dp_mmx(DATA32 s, DATA8 m __UNUSED__, DATA32 c __UNUSED__, DATA32 *d) {
 	pxor_r2r(mm0, mm0);
 	MOV_A2R(ALPHA_256, mm6)
 	MOV_A2R(ALPHA_255, mm5)

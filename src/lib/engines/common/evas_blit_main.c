@@ -1,7 +1,3 @@
-/*
- * vim:ts=8:sw=3:sts=8:noexpandtab:cino=>5n-3f0^-2{2
- */
-
 #include "evas_common.h"
 
 #if defined BUILD_MMX || defined BUILD_SSE
@@ -14,6 +10,11 @@ static void evas_common_copy_pixels_c        (DATA32 *src, DATA32 *dst, int len)
 static void evas_common_copy_pixels_mmx      (DATA32 *src, DATA32 *dst, int len);
 static void evas_common_copy_pixels_mmx2     (DATA32 *src, DATA32 *dst, int len);
 static void evas_common_copy_pixels_sse/*NB*/ (DATA32 *src, DATA32 *dst, int len);
+
+#ifdef BUILD_NEON
+static void evas_common_copy_pixels_neon     (DATA32 *src, DATA32 *dst, int len);
+static void evas_common_copy_pixels_rev_neon (DATA32 *src, DATA32 *dst, int len);
+#endif
 
 static void evas_common_copy_pixels_rev_c           (DATA32 *src, DATA32 *dst, int len);
 static void evas_common_copy_pixels_rev_mmx         (DATA32 *src, DATA32 *dst, int len);
@@ -36,7 +37,7 @@ evas_common_blit_rectangle(const RGBA_Image *src, RGBA_Image *dst, int src_x, in
 
    /* clip clip clip */
    if (w <= 0) return;
-   if (src_x + w > src->cache_entry.w) w = src->cache_entry.w - src_x;
+   if (src_x + w > (int)src->cache_entry.w) w = src->cache_entry.w - src_x;
    if (w <= 0) return;
    if (src_x < 0)
      {
@@ -47,7 +48,7 @@ evas_common_blit_rectangle(const RGBA_Image *src, RGBA_Image *dst, int src_x, in
    if (w <= 0) return;
 
    if (h <= 0) return;
-   if (src_y + h > src->cache_entry.h) h = src->cache_entry.h - src_y;
+   if (src_y + h > (int)src->cache_entry.h) h = src->cache_entry.h - src_y;
    if (h <= 0) return;
    if (src_y < 0)
      {
@@ -58,7 +59,7 @@ evas_common_blit_rectangle(const RGBA_Image *src, RGBA_Image *dst, int src_x, in
    if (h <= 0) return;
 
    if (w <= 0) return;
-   if (dst_x + w > dst->cache_entry.w) w = dst->cache_entry.w - dst_x;
+   if (dst_x + w > (int)dst->cache_entry.w) w = dst->cache_entry.w - dst_x;
    if (w <= 0) return;
    if (dst_x < 0)
      {
@@ -69,7 +70,7 @@ evas_common_blit_rectangle(const RGBA_Image *src, RGBA_Image *dst, int src_x, in
    if (w <= 0) return;
 
    if (h <= 0) return;
-   if (dst_y + h > dst->cache_entry.h) h = dst->cache_entry.h - dst_y;
+   if (dst_y + h > (int)dst->cache_entry.h) h = dst->cache_entry.h - dst_y;
    if (h <= 0) return;
    if (dst_y < 0)
      {
@@ -116,7 +117,6 @@ evas_common_blit_rectangle(const RGBA_Image *src, RGBA_Image *dst, int src_x, in
      }
 }
 
-
 /****************************************************************************/
 
 static void
@@ -125,33 +125,137 @@ evas_common_copy_rev_pixels_c(DATA32 *src, DATA32 *dst, int len)
    DATA32 *dst_end = dst + len;
 
    src += len - 1;
-   while (dst < dst_end)
-	*dst++ = *src--;
+   while (dst < dst_end) *dst++ = *src--;
 }
+
+
+#ifdef BUILD_NEON
+static void
+evas_common_copy_pixels_rev_neon(DATA32 *src, DATA32 *dst, int len)
+{
+   uint32_t *tmp = (void *)37;
+#define AP	"evas_common_copy_rev_pixels_neon_"
+   asm volatile (
+		".fpu neon				\n\t"
+		// Can we do 32 byte?
+		"andS		%[tmp],	%[d], $0x1f	\n\t"
+		"beq		"AP"quadstart		\n\t"
+
+		// Can we do at least 16 byte?
+		"andS		%[tmp], %[d], $0x4	\n\t"
+		"beq		"AP"dualstart		\n\t"
+
+	// Only once
+	AP"singleloop:					\n\t"
+		"sub		%[s], #4		\n\t"
+		"vld1.32	d0[0],  [%[s]]		\n\t"
+		"vst1.32	d0[0],  [%[d]]!		\n\t"
+
+	// Up to 3 times
+	AP"dualstart:					\n\t"
+		"sub		%[tmp], %[e], %[d]	\n\t"
+		"cmp		%[tmp], #31		\n\t"
+		"blt		"AP"loopout		\n\t"
+
+		"andS		%[tmp], %[d], $0x1f	\n\t"
+		"beq		"AP"quadstart		\n\t"
+
+	AP"dualloop:					\n\t"
+		"sub		%[s], #8		\n\t"
+		"vldm		%[s], {d0}		\n\t"
+		"vrev64.32	d1, d0			\n\t"
+		"vstm		%[d]!, {d1}		\n\t"
+
+		"andS		%[tmp], %[d], $0x1f	\n\t"
+		"bne		"AP"dualloop		\n\t"
+
+
+	AP"quadstart:					\n\t"
+		"sub		%[tmp], %[e], %[d]	\n\t"
+		"cmp		%[tmp], #32		\n\t"
+		"blt		"AP"loopout		\n\t"
+
+		"sub		%[tmp],%[e],#32		\n\t"
+
+	AP "quadloop:					\n\t"
+		"sub		%[s],	#32		\n\t"
+		"vldm		%[s],	{d0,d1,d2,d3}	\n\t"
+
+		"vrev64.32	d7,d0			\n\t"
+		"vrev64.32	d6,d1			\n\t"
+		"vrev64.32	d5,d2			\n\t"
+		"vrev64.32	d4,d3			\n\t"
+
+		"vstm		%[d]!,	{d4,d5,d6,d7}	\n\t"
+
+		"cmp		%[tmp], %[d]		\n\t"
+                "bhi		"AP"quadloop		\n\t"
+
+
+	AP "loopout:					\n\t"
+		"cmp 		%[d], %[e]		\n\t"
+                "beq 		"AP"done		\n\t"
+		"sub		%[tmp],%[e], %[d]	\n\t"
+		"cmp		%[tmp],$0x04		\n\t"
+		"beq		"AP"singleloop2		\n\t"
+
+	AP "dualloop2:					\n\t"
+		"sub		%[tmp],%[e],$0x7	\n\t"
+	AP "dualloop2int:				\n\t"
+		"sub		%[s], #8		\n\t"
+		"vldm		%[s], {d0}		\n\t"
+		"vrev64.32	d1,d0			\n\t"
+		"vstm		%[d]!, {d1}		\n\t"
+
+		"cmp 		%[tmp], %[d]		\n\t"
+		"bhi 		"AP"dualloop2int	\n\t"
+
+		// Single ??
+		"cmp 		%[e], %[d]		\n\t"
+		"beq		"AP"done		\n\t"
+
+	AP "singleloop2:				\n\t"
+		"sub		%[s], #4		\n\t"
+		"vld1.32	d0[0], [%[s]]		\n\t"
+		"vst1.32	d0[0], [%[d]]		\n\t"
+
+	AP "done:\n\t"
+
+		: // No output regs
+		// Input
+		: [s] "r" (src + len), [e] "r" (dst + len), [d] "r" (dst),[tmp] "r" (tmp)
+		// Clobbered
+		: "q0","q1","q2","q3","0","1","memory"
+   );
+#undef AP
+
+}
+#endif
+
 
 #ifdef BUILD_C
 static void
 evas_common_copy_pixels_c(DATA32 *src, DATA32 *dst, int len)
 {
    DATA32 *dst_end = dst + len;
-
-   while (dst < dst_end)
-	*dst++ = *src++;
+   
+   while (dst < dst_end) *dst++ = *src++;
 }
 #endif
 
 #ifdef BUILD_MMX
 static void
 evas_common_copy_pixels_mmx(DATA32 *src, DATA32 *dst, int len)
-{
+{ // XXX cppcheck: [./src/lib/engines/common/evas_blit_main.c:248]: (error) Invalid number of character ({). Can't process file.
+  // so... wtf? what's wrong with this { ? or anytrhing surrounding it?
    DATA32 *dst_end, *dst_end_pre;
 #ifdef ALIGN_FIX
    intptr_t src_align;
    intptr_t dst_align;
-
+   
    src_align = (intptr_t)src & 0x3f; /* 64 byte alignment */
    dst_align = (intptr_t)dst & 0x3f; /* 64 byte alignment */
-
+   
    if ((src_align != dst_align) ||
        ((src_align & 0x3) != 0))
      {
@@ -178,8 +282,7 @@ evas_common_copy_pixels_mmx(DATA32 *src, DATA32 *dst, int len)
 	src += 16;
 	dst += 16;
      }
-   while (dst < dst_end)
-	*dst++ = *src++;
+   while (dst < dst_end) *dst++ = *src++;
 }
 #endif
 
@@ -221,10 +324,101 @@ evas_common_copy_pixels_mmx2(DATA32 *src, DATA32 *dst, int len)
 	src += 16;
 	dst += 16;
      }
-   while (dst < dst_end)
-	*dst++ = *src++;
+   while (dst < dst_end) *dst++ = *src++;
 }
 #endif
+
+#ifdef BUILD_NEON
+static void
+evas_common_copy_pixels_neon(DATA32 *src, DATA32 *dst, int len){
+   uint32_t *e,*tmp = (void *)37;
+   e = dst + len;
+#define AP	"evas_common_copy_pixels_neon_"
+   asm volatile (
+		".fpu neon				\n\t"
+		// Can we do 32 byte?
+		"andS		%[tmp],	%[d], $0x1f	\n\t"
+		"beq		"AP"quadstart		\n\t"
+
+		// Can we do at least 16 byte?
+		"andS		%[tmp], %[d], $0x4	\n\t"
+		"beq		"AP"dualstart		\n\t"
+
+	// Only once
+	AP"singleloop:					\n\t"
+		"vld1.32	d0[0],  [%[s]]!		\n\t"
+		"vst1.32	d0[0],  [%[d]]!		\n\t"
+
+	// Up to 3 times
+	AP"dualstart:					\n\t"
+		"sub		%[tmp], %[e], %[d]	\n\t"
+		"cmp		%[tmp], #31		\n\t"
+		"blt		"AP"loopout		\n\t"
+
+		"andS		%[tmp], %[d], $0x1f	\n\t"
+		"beq		"AP"quadstart		\n\t"
+
+	AP"dualloop:					\n\t"
+		"vldm		%[s]!, {d0}		\n\t"
+		"vstm		%[d]!, {d0}		\n\t"
+
+		"andS		%[tmp], %[d], $0x1f	\n\t"
+		"bne		"AP"dualloop		\n\t"
+
+
+	AP"quadstart:					\n\t"
+		"sub		%[tmp], %[e], %[d]	\n\t"
+		"cmp		%[tmp], #64		\n\t"
+		"blt		"AP"loopout		\n\t"
+
+		"sub		%[tmp],%[e],#63		\n\t"
+
+	AP "quadloop:					\n\t"
+		"vldm		%[s]!,	{d0,d1,d2,d3}	\n\t"
+		"vldm		%[s]!,	{d4,d5,d6,d7}	\n\t"
+		"vstm		%[d]!,	{d0,d1,d2,d3}	\n\t"
+		"vstm		%[d]!,	{d4,d5,d6,d7}	\n\t"
+
+		"cmp		%[tmp], %[d]		\n\t"
+                "bhi		"AP"quadloop		\n\t"
+
+
+	AP "loopout:					\n\t"
+		"cmp 		%[d], %[e]		\n\t"
+                "beq 		"AP"done		\n\t"
+		"sub		%[tmp],%[e], %[d]	\n\t"
+		"cmp		%[tmp],$0x04		\n\t"
+		"beq		"AP"singleloop2		\n\t"
+
+	AP "dualloop2:					\n\t"
+		"sub		%[tmp],%[e],$0x7	\n\t"
+	AP "dualloop2int:				\n\t"
+		"vldm		%[s]!, {d0}		\n\t"
+		"vstm		%[d]!, {d0}		\n\t"
+
+		"cmp 		%[tmp], %[d]		\n\t"
+		"bhi 		"AP"dualloop2int	\n\t"
+
+		// Single ??
+		"cmp 		%[e], %[d]		\n\t"
+		"beq		"AP"done		\n\t"
+
+	AP "singleloop2:				\n\t"
+		"vld1.32	d0[0], [%[s]]		\n\t"
+		"vst1.32	d0[0], [%[d]]		\n\t"
+
+	AP "done:\n\t"
+
+		: // No output regs
+		// Input
+		: [s] "r" (src), [e] "r" (e), [d] "r" (dst),[tmp] "r" (tmp)
+		// Clobbered
+		: "q0","q1","q2","q3","memory"
+   );
+#undef AP
+
+}
+#endif /* BUILD_NEON */
 
 #ifdef BUILD_SSE
 static void
@@ -310,8 +504,7 @@ evas_common_copy_pixels_rev_c(DATA32 *src, DATA32 *dst, int len)
    dst_end = dst - 1;
    dst = dst + len - 1;
 
-   while (dst > dst_end)
-	*dst-- = *src--;
+   while (dst > dst_end) *dst-- = *src--;
 }
 #endif
 
@@ -412,8 +605,16 @@ evas_common_draw_func_copy_get(int pixels, int reverse)
 	  if (evas_common_cpu_has_feature(CPU_FEATURE_MMX))
 	    return evas_common_copy_pixels_rev_mmx;
 #endif
+#ifdef BUILD_NEON
+# if defined(BUILD_SSE) || defined(BUILD_MMX)
+	else
+# endif
+	  if (evas_common_cpu_has_feature(CPU_FEATURE_NEON))
+	    return evas_common_copy_pixels_rev_neon;
+#endif
+
 #ifdef BUILD_C
-# ifdef BUILD_MMX
+# if defined(BUILD_MMX) || defined(BUILD_NEON)
 	else
 # endif
 	  return evas_common_copy_pixels_rev_c;
@@ -438,6 +639,15 @@ evas_common_draw_func_copy_get(int pixels, int reverse)
 # endif
 		 return evas_common_copy_pixels_sse;
 # ifdef BUILD_MMX
+	     else
+# endif
+#endif
+# ifdef BUILD_NEON
+# ifdef BUILD_C
+	     if (evas_common_cpu_has_feature(CPU_FEATURE_NEON))
+# endif
+	       return evas_common_copy_pixels_neon;
+# ifdef BUILD_SSE
 	     else
 # endif
 #endif
@@ -487,5 +697,4 @@ evas_common_draw_func_copy_get(int pixels, int reverse)
 #else
    return NULL;
 #endif
-   pixels = 0;
 }

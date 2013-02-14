@@ -1,70 +1,74 @@
-/*
- * vim:ts=8:sw=3:sts=8:noexpandtab:cino=>5n-3f0^-2{2
- */
-
 #include "evas_common.h"
 #include "evas_scale_smooth.h"
 #include "evas_blend_private.h"
 
+#define SCALE_CALC_X_POINTS(P, SW, DW, CX, CW) \
+  P = alloca((CW + 1) * sizeof (int));         \
+  scale_calc_x_points(P, SW, DW, CX, CW);
 
-static DATA32 **scale_calc_y_points(DATA32 *src, int sw, int sh, int dh);
-static int     *scale_calc_x_points(int sw, int dw);
-static int     *scale_calc_a_points(int s, int d);
+#define SCALE_CALC_Y_POINTS(P, SRC, SW, SH, DH, CY, CH) \
+  P = alloca((CH + 1) * sizeof (DATA32 *));             \
+  scale_calc_y_points(P, SRC, SW, SH, DH, CY, CH);
 
-static DATA32 **
-scale_calc_y_points(DATA32 *src, int sw, int sh, int dh)
+#define SCALE_CALC_A_POINTS(P, S, D, C, CC) \
+  P = alloca(CC * sizeof (int));            \
+  scale_calc_a_points(P, S, D, C, CC);
+
+static void scale_calc_y_points(DATA32 **p, DATA32 *src, int sw, int sh, int dh, int cy, int ch);
+static void scale_calc_x_points(int *p, int sw, int dw, int cx, int cw);
+static void scale_calc_a_points(int *p, int s, int d, int c, int cc);
+
+static void
+scale_calc_y_points(DATA32** p, DATA32 *src, int sw, int sh, int dh, int cy, int ch)
 {
-   DATA32 **p;
    int i, val, inc;
-
-   p = malloc((dh + 1) * sizeof(DATA32 *));
-   if (!p) return NULL;
+   if (sh > SCALE_SIZE_MAX) return;
    val = 0;
    inc = (sh << 16) / dh;
    for (i = 0; i < dh; i++)
      {
-	p[i] = src + ((val >> 16) * sw);
+        if ((i >= cy) && (i < (cy + ch)))
+           p[i - cy] = src + ((val >> 16) * sw);
 	val += inc;
      }
-   p[i] = p[i - 1];
-   return p;
+   if ((i >= cy) && (i < (cy + ch)))
+      p[i - cy] = p[i - cy - 1];
 }
 
-static int *
-scale_calc_x_points(int sw, int dw)
+static void
+scale_calc_x_points(int *p, int sw, int dw, int cx, int cw)
 {
-   int *p;
    int i, val, inc;
-
-   p = malloc((dw + 1) * sizeof(int));
-   if (!p) return NULL;
+   if (sw > SCALE_SIZE_MAX) return;
    val = 0;
    inc = (sw << 16) / dw;
    for (i = 0; i < dw; i++)
      {
-	p[i] = val >> 16;
+        if ((i >= cx) && (i < (cx + cw)))
+           p[i - cx] = val >> 16;
 	val += inc;
      }
-   p[i] = p[i - 1];
-   return p;
+   if ((i >= cx) && (i < (cx + cw)))
+      p[i - cx] = p[i - cx - 1];
 }
 
-static int *
-scale_calc_a_points(int s, int d)
+static void
+scale_calc_a_points(int *p, int s, int d, int c, int cc)
 {
-   int *p;
    int i, val, inc;
 
-   p = malloc(d * sizeof(int));
-   if (!p) return NULL;
+   if (s > SCALE_SIZE_MAX) return;
    if (d >= s)
      {
 	val = 0;
 	inc = (s << 16) / d;
 	for (i = 0; i < d; i++)
 	  {
-	     p[i] = (val >> 8) - ((val >> 8) & 0xffffff00);
-	     if ((val >> 16) >= (s - 1)) p[i] = 0;
+             if ((i >= c) && (i < (c + cc)))
+               {
+                  p[i - c] = (val >> 8) - ((val >> 8) & 0xffffff00);
+                  if ((val >> 16) >= (s - 1)) p[i - c] = 0;
+               }
 	     val += inc;
 	  }
      }
@@ -78,12 +82,11 @@ scale_calc_a_points(int s, int d)
 	for (i = 0; i < d; i++)
 	  {
 	     ap = ((0x100 - ((val >> 8) & 0xff)) * Cp) >> 8;
-	     p[i] = ap | (Cp << 16);
+             if ((i >= c) && (i < (c + cc)))
+                p[i - c] = ap | (Cp << 16);
 	     val += inc;
 	  }
      }
-//   sleep(1);
-   return p;
 }
 
 #ifdef BUILD_SCALE_SMOOTH
@@ -172,7 +175,6 @@ evas_common_scale_rgba_mipmap_down_1x2_c(DATA32 *src, DATA32 *dst, int src_w, in
    if (dst_h < 1) dst_h = 1;
 
    src_ptr = src;
-   src_ptr2 = src + src_w;
    dst_ptr = dst;
    for (y = 0; y < dst_h; y++)
      {
@@ -316,8 +318,11 @@ evas_common_scale_rgba_mipmap_down_2x2_mmx(DATA32 *src, DATA32 *dst, int src_w, 
    if (dst_w < 1) dst_w = 1;
    if (dst_h < 1) dst_h = 1;
 
+   /* NB: Dead assignments (reassigned to different values below)
    src_ptr = src;
    src_ptr2 = src + src_w;
+    */
+
    dst_ptr = dst;
    for (y = 0; y < dst_h; y++)
      {
@@ -401,7 +406,9 @@ evas_common_scale_rgba_mipmap_down_1x2_mmx(DATA32 *src, DATA32 *dst, int src_w, 
    if (dst_w < 1) dst_w = 1;
    if (dst_h < 1) dst_h = 1;
 
-   src_ptr = src;
+   /* NB: Dead assignment (gets reassigned later) */
+//   src_ptr = src;
+
    src_ptr2 = src + src_w;
    dst_ptr = dst;
    for (y = 0; y < dst_h; y++)
@@ -453,7 +460,7 @@ evas_common_scale_rgba_in_to_out_clip_smooth(RGBA_Image *src, RGBA_Image *dst,
 # ifdef BUILD_MMX
    int mmx, sse, sse2;
 # endif
-   Cutout_Rects *rects;
+   static Cutout_Rects *rects = NULL;
    Cutout_Rect  *r;
    int          c, cx, cy, cw, ch;
    int          i;
@@ -496,7 +503,7 @@ evas_common_scale_rgba_in_to_out_clip_smooth(RGBA_Image *src, RGBA_Image *dst,
 	dc->clip.use = c; dc->clip.x = cx; dc->clip.y = cy; dc->clip.w = cw; dc->clip.h = ch;
 	return;
      }
-   rects = evas_common_draw_context_apply_cutouts(dc);
+   rects = evas_common_draw_context_apply_cutouts(dc, rects);
    for (i = 0; i < rects->active; ++i)
      {
 	r = rects->rects + i;
@@ -518,8 +525,76 @@ evas_common_scale_rgba_in_to_out_clip_smooth(RGBA_Image *src, RGBA_Image *dst,
 					     dst_region_w, dst_region_h);
 # endif
      }
-   evas_common_draw_context_apply_clear_cutouts(rects);
    /* restore clip info */
    dc->clip.use = c; dc->clip.x = cx; dc->clip.y = cy; dc->clip.w = cw; dc->clip.h = ch;
 }
+
+EAPI void
+evas_common_scale_rgba_in_to_out_clip_smooth_do(const Cutout_Rects *reuse,
+						const Eina_Rectangle *clip,
+						RGBA_Image *src, RGBA_Image *dst,
+						RGBA_Draw_Context *dc,
+						int src_region_x, int src_region_y,
+						int src_region_w, int src_region_h,
+						int dst_region_x, int dst_region_y,
+						int dst_region_w, int dst_region_h)
+{
+# ifdef BUILD_MMX
+   int mmx, sse, sse2;
+# endif
+   Eina_Rectangle area;
+   Cutout_Rect *r;
+   int i;
+
+# ifdef BUILD_MMX
+   evas_common_cpu_can_do(&mmx, &sse, &sse2);
+# endif
+   if (!reuse)
+     {
+        evas_common_draw_context_clip_clip(dc, clip->x, clip->y, clip->w, clip->h);
+# ifdef BUILD_MMX
+	if (mmx)
+	  evas_common_scale_rgba_in_to_out_clip_smooth_mmx(src, dst, dc,
+					       src_region_x, src_region_y,
+					       src_region_w, src_region_h,
+					       dst_region_x, dst_region_y,
+					       dst_region_w, dst_region_h);
+	else
+# endif
+# ifdef BUILD_C
+	  evas_common_scale_rgba_in_to_out_clip_smooth_c(src, dst, dc,
+					     src_region_x, src_region_y,
+					     src_region_w, src_region_h,
+					     dst_region_x, dst_region_y,
+					     dst_region_w, dst_region_h);
+# endif
+        return ;
+     }
+
+   for (i = 0; i < reuse->active; ++i)
+     {
+        r = reuse->rects + i;
+
+        EINA_RECTANGLE_SET(&area, r->x, r->y, r->w, r->h);
+        if (!eina_rectangle_intersection(&area, clip)) continue ;
+        evas_common_draw_context_set_clip(dc, area.x, area.y, area.w, area.h);
+# ifdef BUILD_MMX
+	if (mmx)
+	  evas_common_scale_rgba_in_to_out_clip_smooth_mmx(src, dst, dc,
+					       src_region_x, src_region_y,
+					       src_region_w, src_region_h,
+					       dst_region_x, dst_region_y,
+					       dst_region_w, dst_region_h);
+	else
+# endif
+# ifdef BUILD_C
+	  evas_common_scale_rgba_in_to_out_clip_smooth_c(src, dst, dc,
+					     src_region_x, src_region_y,
+					     src_region_w, src_region_h,
+					     dst_region_x, dst_region_y,
+					     dst_region_w, dst_region_h);
+# endif
+     }
+}
+
 #endif

@@ -1,27 +1,58 @@
 MAINTAINERCLEANFILES = Makefile.in
 
-SUBDIRS = \
-software_generic \
-buffer \
-cairo_common \
-cairo_x11 \
-fb \
-gl_common \
-gl_x11 \
-gl_glew \
-software_qtopia \
-software_win32_gdi \
-software_ddraw \
-software_x11 \
-software_xcb \
-xrender_x11 \
-xrender_xcb \
-software_sdl \
-glitz_x11 \
-software_16 \
-software_16_x11 \
-direct3d \
-software_16_ddraw \
-software_16_wince \
-software_16_sdl
+SUBDIRS =
 
+if !EVAS_STATIC_BUILD_SOFTWARE_GENERIC
+SUBDIRS += software_generic
+endif
+if !EVAS_STATIC_BUILD_BUFFER
+SUBDIRS += buffer
+endif
+if !EVAS_STATIC_BUILD_DIRECT3D
+SUBDIRS += direct3d
+endif
+if !EVAS_STATIC_BUILD_DIRECTFB
+SUBDIRS += directfb
+endif
+if !EVAS_STATIC_BUILD_FB
+SUBDIRS += fb
+endif
+
+if !EVAS_STATIC_BUILD_PSL1GHT
+SUBDIRS += psl1ght
+endif
+
+if !EVAS_STATIC_BUILD_GL_COMMON
+SUBDIRS += gl_common
+endif
+if !EVAS_STATIC_BUILD_GL_X11
+SUBDIRS += gl_x11
+endif
+if !EVAS_STATIC_BUILD_GL_SDL
+SUBDIRS += gl_sdl
+endif
+if !EVAS_STATIC_BUILD_GL_COCOA
+SUBDIRS += gl_cocoa
+endif
+
+if !EVAS_STATIC_BUILD_SOFTWARE_8
+SUBDIRS += software_8
+endif
+if !EVAS_STATIC_BUILD_SOFTWARE_8_X11
+SUBDIRS += software_8_x11
+endif
+if !EVAS_STATIC_BUILD_SOFTWARE_DDRAW
+SUBDIRS += software_ddraw
+endif
+if !EVAS_STATIC_BUILD_SOFTWARE_GDI
+SUBDIRS += software_gdi
+endif
+if !EVAS_STATIC_BUILD_SOFTWARE_X11
+SUBDIRS += software_x11
+endif
+if !EVAS_STATIC_BUILD_WAYLAND_SHM
+SUBDIRS += wayland_shm
+endif
+if !EVAS_STATIC_BUILD_WAYLAND_EGL
+SUBDIRS += wayland_egl
+endif

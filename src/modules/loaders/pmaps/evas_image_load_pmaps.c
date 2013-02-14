@@ -1,21 +1,26 @@
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
+#ifdef HAVE_EVIL
+# include <Evil.h>
 #endif
 
 #include "evas_common.h"
 #include "evas_private.h"
 
-#define FILE_BUFFER_SIZE 1024
+#define FILE_BUFFER_SIZE 1024 * 32
 #define FILE_BUFFER_UNREAD_SIZE 16
 
-static int evas_image_load_file_head_pmaps(Image_Entry *ie,
-				    const char *file, const char *key);
-static int evas_image_load_file_data_pmaps(Image_Entry *ie,
-				    const char *file, const char *key);
+static Eina_Bool evas_image_load_file_head_pmaps(Image_Entry *ie, const char *file, const char *key, int *error) EINA_ARG_NONNULL(1, 2, 4);
+static Eina_Bool evas_image_load_file_data_pmaps(Image_Entry *ie, const char *file, const char *key, int *error) EINA_ARG_NONNULL(1, 2, 4);
 
 Evas_Image_Load_Func evas_image_load_pmaps_func = {
+   EINA_TRUE,
    evas_image_load_file_head_pmaps,
-   evas_image_load_file_data_pmaps
+   evas_image_load_file_data_pmaps,
+   NULL,
+   EINA_FALSE
 };
 
 /* The buffer to load pmaps images */
@@ -23,7 +28,9 @@ typedef struct Pmaps_Buffer Pmaps_Buffer;
 
 struct Pmaps_Buffer
 {
-   FILE *file;
+   Eina_File *file;
+   void *map;
+   size_t position;
 
    /* the buffer */
    DATA8 buffer[FILE_BUFFER_SIZE];
@@ -45,9 +52,9 @@ struct Pmaps_Buffer
 };
 
 /* internal used functions */
-static int pmaps_buffer_open(Pmaps_Buffer *b, const char *filename);
+static Eina_Bool pmaps_buffer_open(Pmaps_Buffer *b, const char *filename, int *error);
 static void pmaps_buffer_close(Pmaps_Buffer *b);
-static int pmaps_buffer_header_parse(Pmaps_Buffer *b);
+static Eina_Bool pmaps_buffer_header_parse(Pmaps_Buffer *b, int *error);
 static int pmaps_buffer_plain_int_get(Pmaps_Buffer *b, int *val);
 static int pmaps_buffer_1byte_int_get(Pmaps_Buffer *b, int *val);
 static int pmaps_buffer_2byte_int_get(Pmaps_Buffer *b, int *val);
@@ -59,69 +66,60 @@ static size_t pmaps_buffer_plain_update(Pmaps_Buffer *b);
 static size_t pmaps_buffer_raw_update(Pmaps_Buffer *b);
 static int pmaps_buffer_comment_skip(Pmaps_Buffer *b);
 
-static int
-evas_image_load_file_head_pmaps(Image_Entry *ie, const char *file,
-				const char *key)
+static Eina_Bool
+evas_image_load_file_head_pmaps(Image_Entry *ie, const char *file, const char *key __UNUSED__, int *error)
 {
    Pmaps_Buffer b;
 
-   if ((!file))
-      return 0;
-
-   if (!pmaps_buffer_open(&b, file))
+   if (!pmaps_buffer_open(&b, file, error))
      {
 	pmaps_buffer_close(&b);
-	return 0;
+	return EINA_FALSE;
      }
 
-   if (!pmaps_buffer_header_parse(&b))
+   if (!pmaps_buffer_header_parse(&b, error))
      {
 	pmaps_buffer_close(&b);
-	return 0;
+	return EINA_FALSE;
      }
 
    ie->w = b.w;
    ie->h = b.h;
 
    pmaps_buffer_close(&b);
-   return 1;
-   /* we don't have a use for key, skip warnings */
-   key = NULL;
+   *error = EVAS_LOAD_ERROR_NONE;
+   return EINA_TRUE;
 }
 
-static int
-evas_image_load_file_data_pmaps(Image_Entry *ie, const char *file,
-				const char *key)
+static Eina_Bool
+evas_image_load_file_data_pmaps(Image_Entry *ie, const char *file, const char *key __UNUSED__, int *error)
 {
    Pmaps_Buffer b;
    int pixels;
    DATA32 *ptr;
 
-   if ((!file))
-      return 0;
-
-   if (!pmaps_buffer_open(&b, file))
+   if (!pmaps_buffer_open(&b, file, error))
      {
 	pmaps_buffer_close(&b);
-	return 0;
+	return EINA_FALSE;
      }
 
-   if (!pmaps_buffer_header_parse(&b))
+   if (!pmaps_buffer_header_parse(&b, error))
      {
 	pmaps_buffer_close(&b);
-	return 0;
+	return EINA_FALSE;
      }
 
    pixels = b.w * b.h;
 
    evas_cache_image_surface_alloc(ie, b.w, b.h);
-   if (!evas_cache_image_pixels(ie))
+   ptr = evas_cache_image_pixels(ie);
+   if (!ptr)
      {
 	pmaps_buffer_close(&b);
-	return 0;
+	*error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
+	return EINA_FALSE;
      }
-
-   ptr = evas_cache_image_pixels(ie);
 
    if (b.type[1] != '4')
      {
@@ -155,21 +153,33 @@ evas_image_load_file_data_pmaps(Image_Entry *ie, const char *file,
    memset(ptr, 0xff, 4 * pixels);
    pmaps_buffer_close(&b);
 
-   return 1;
-   /* we don't have a use for key, skip warnings */
-   key = NULL;
+   *error = EVAS_LOAD_ERROR_NONE;
+   return EINA_TRUE;
 }
 
 /* internal used functions */
-static int
-pmaps_buffer_open(Pmaps_Buffer *b, const char *filename)
+static Eina_Bool
+pmaps_buffer_open(Pmaps_Buffer *b, const char *filename, int *error)
 {
    size_t len;
 
-   b->file = fopen(filename, "r");
+   b->file = eina_file_open(filename, EINA_FALSE);
    if (!b->file)
-      return 0;
+     {
+	*error = EVAS_LOAD_ERROR_DOES_NOT_EXIST;
+	return EINA_FALSE;
+     }
 
+   b->map = eina_file_map_all(b->file, EINA_FILE_SEQUENTIAL);
+   if (!b->map)
+     {
+        *error = EVAS_LOAD_ERROR_DOES_NOT_EXIST;
+        eina_file_close(b->file);
+        b->file = NULL;
+        return EINA_FALSE;
+     }
+
+   b->position = 0;
    *b->buffer = 0;
    *b->unread = 0;
    b->last_buffer = 0;
@@ -178,7 +188,14 @@ pmaps_buffer_open(Pmaps_Buffer *b, const char *filename)
    len = pmaps_buffer_plain_update(b);
 
    if (len < 3)
-      return 0;
+     {
+	*error = EVAS_LOAD_ERROR_CORRUPT_FILE;
+        eina_file_map_free(b->file, b->map);
+        eina_file_close(b->file);
+        b->map = NULL;
+        b->file = NULL;
+	return EINA_FALSE;
+     }
 
    /* copy the type */
    b->type[0] = b->buffer[0];
@@ -187,35 +204,53 @@ pmaps_buffer_open(Pmaps_Buffer *b, const char *filename)
    /* skip the PX */
    b->current = b->buffer + 2;
 
-   return 1;
+   *error = EVAS_LOAD_ERROR_NONE;
+   return EINA_TRUE;
 }
 
 static void
 pmaps_buffer_close(Pmaps_Buffer *b)
 {
    if (b->file)
-      fclose(b->file);
+     {
+        if (b->map) eina_file_map_free(b->file, b->map);
+        b->map = NULL;
+        eina_file_close(b->file);
+        b->file = NULL;
+     }
 }
 
-static int
-pmaps_buffer_header_parse(Pmaps_Buffer *b)
+static Eina_Bool
+pmaps_buffer_header_parse(Pmaps_Buffer *b, int *error)
 {
    /* if there is no P at the beginning it is not a file we can parse */
    if (b->type[0] != 'P')
-      return 0;
+     {
+	*error = EVAS_LOAD_ERROR_UNKNOWN_FORMAT;
+	return EINA_FALSE;
+     }
 
    /* get the width */
    if (!pmaps_buffer_plain_int_get(b, &(b->w)) || b->w < 1)
-      return 0;
+     {
+	*error = EVAS_LOAD_ERROR_CORRUPT_FILE;
+	return EINA_FALSE;
+     }
 
    /* get the height */
    if (!pmaps_buffer_plain_int_get(b, &(b->h)) || b->h < 1)
-      return 0;
+     {
+	*error = EVAS_LOAD_ERROR_CORRUPT_FILE;
+	return EINA_FALSE;
+     }
 
    /* get the maximum value. P1 and P4 don't have a maximum value. */
    if (!(b->type[1] == '1' || b->type[1] == '4')
        && (!pmaps_buffer_plain_int_get(b, &(b->max)) || b->max < 1))
-      return 0;
+     {
+	*error = EVAS_LOAD_ERROR_UNKNOWN_FORMAT;
+	return EINA_FALSE;
+     }
 
    /* set up the color get callback */
    switch (b->type[1])
@@ -280,7 +315,7 @@ static size_t
 pmaps_buffer_plain_update(Pmaps_Buffer *b)
 {
    size_t r;
-   size_t steps = 0;
+   size_t max;
 
    /* if we already are in the last buffer we can not update it */
    if (b->last_buffer)
@@ -291,8 +326,13 @@ pmaps_buffer_plain_update(Pmaps_Buffer *b)
    if (b->unread_len)
       memcpy(b->buffer, b->unread, b->unread_len);
 
-   r = fread(&b->buffer[b->unread_len], 1,
-	     FILE_BUFFER_SIZE - b->unread_len - 1, b->file) + b->unread_len;
+   max = FILE_BUFFER_SIZE - b->unread_len - 1;
+   if (b->position + max > eina_file_size_get(b->file))
+     max = eina_file_size_get(b->file) - b->position;
+
+   memcpy(&b->buffer[b->unread_len], b->map + b->position, max);
+   b->position += max;
+   r = max + b->unread_len;
 
    /* we haven't read anything nor have we bytes in the unread buffer */
    if (r == 0)
@@ -310,25 +350,9 @@ pmaps_buffer_plain_update(Pmaps_Buffer *b)
      }
 
    b->buffer[r] = 0;
-   r--;
 
-   while (steps < (FILE_BUFFER_UNREAD_SIZE - 2)
-	  && r > 1 && !isspace(b->buffer[r]))
-     {
-	steps++;
-	r--;
-     }
-
-   if (steps != 0)
-     {
-	memcpy(b->unread, &b->buffer[r], steps + 1);
-	b->unread_len = steps + 1;
-     }
-   else
-     {
-	b->unread[0] = '\0';
-	b->unread_len = 0;
-     }
+   b->unread[0] = '\0';
+   b->unread_len = 0;
 
    b->buffer[r] = '\0';
    b->current = b->buffer;
@@ -341,6 +365,7 @@ static size_t
 pmaps_buffer_raw_update(Pmaps_Buffer *b)
 {
    size_t r;
+   size_t max;
 
    if (b->last_buffer)
       return 0;
@@ -348,23 +373,27 @@ pmaps_buffer_raw_update(Pmaps_Buffer *b)
    if (b->unread_len)
       memcpy(b->buffer, b->unread, b->unread_len);
 
-   r = fread(&b->buffer[b->unread_len], 1,
-	     FILE_BUFFER_SIZE - b->unread_len - 1, b->file) + b->unread_len;
+   max = FILE_BUFFER_SIZE - b->unread_len;
+   if (b->position + max > eina_file_size_get(b->file))
+     max = eina_file_size_get(b->file) - b->position;
 
-   if (r < FILE_BUFFER_SIZE - 1)
+   memcpy(&b->buffer[b->unread_len], b->map + b->position, max);
+   b->position += max;
+   r = max + b->unread_len;
+
+   if (r < FILE_BUFFER_SIZE)
      {
-	/*we reached eof */ ;
+	/*we reached eof */
 	b->last_buffer = 1;
      }
 
-   b->buffer[r] = 0;
    b->end = b->buffer + r;
    b->current = b->buffer;
 
    if (b->unread_len)
      {
 	/* the buffer is now read */
-	*b->unread = '\0';
+	*b->unread = 0;
 	b->unread_len = 0;
      }
 
@@ -477,7 +506,7 @@ pmaps_buffer_rgb_get(Pmaps_Buffer *b, DATA32 *color)
    if (vb > 255)
       vb = 255;
 
-   *color = 0xff000000 | (vr << 16) | (vg << 8) | vb;
+   *color = ARGB_JOIN(0xff, vr, vg, vb);
 
    return 1;
 }
@@ -494,7 +523,7 @@ pmaps_buffer_gray_get(Pmaps_Buffer *b, DATA32 *color)
       val = (val * 255) / b->max;
    if (val > 255)
       val = 255;
-   *color = 0xff000000 | (val << 16) | (val << 8) | val;
+   *color = ARGB_JOIN(0xff, val, val, val);
 
    return 1;
 }
@@ -530,7 +559,7 @@ pmaps_buffer_plain_bw_get(Pmaps_Buffer *b, DATA32 *val)
 }
 
 /* external functions */
-EAPI int
+static int
 module_open(Evas_Module *em)
 {
    if (!em)
@@ -539,16 +568,23 @@ module_open(Evas_Module *em)
    return 1;
 }
 
-EAPI void
-module_close(void)
+static void
+module_close(Evas_Module *em __UNUSED__)
 {
-
 }
 
-EAPI Evas_Module_Api evas_modapi = {
+static Evas_Module_Api evas_modapi = {
    EVAS_MODULE_API_VERSION,
-   EVAS_MODULE_TYPE_IMAGE_LOADER,
    "pmaps",
-   "none"
+   "none",
+   {
+     module_open,
+     module_close
+   }
 };
 
+EVAS_MODULE_DEFINE(EVAS_MODULE_TYPE_IMAGE_LOADER, image_loader, pmaps);
+
+#ifndef EVAS_STATIC_BUILD_PMAPS
+EVAS_EINA_MODULE_DEFINE(image_loader, pmaps);
+#endif

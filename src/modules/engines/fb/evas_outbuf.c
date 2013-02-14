@@ -11,8 +11,8 @@ evas_fb_outbuf_fb_init(void)
 void
 evas_fb_outbuf_fb_free(Outbuf *buf)
 {
-   /* FIXME: impliment */
-   printf("destroying fb info.. not implemented!!!! WARNING. LEAK!\n");
+   /* FIXME: implement */
+   WRN("destroying fb info.. not implemented!!!! WARNING. LEAK!");
    if (buf->priv.back_buf)
      evas_cache_image_drop(&buf->priv.back_buf->cache_entry);
    free(buf);
@@ -25,7 +25,7 @@ evas_fb_outbuf_fb_setup_fb(int w, int h, int rot, Outbuf_Depth depth, int vt_no,
    /* setup window and/or fb */
    /* if (dithered) create backbuf */
    Outbuf *buf;
-   int fb_fd = -1;
+   int fb_fd;
    int fb_depth;
 
    fb_depth = -1;
@@ -51,6 +51,11 @@ evas_fb_outbuf_fb_setup_fb(int w, int h, int rot, Outbuf_Depth depth, int vt_no,
 	return NULL;
      }
    fb_fd = fb_postinit(buf->priv.fb.fb);
+   if (fb_fd < 1)
+     {
+        free(buf);
+        return NULL;
+     }
 
    if (rot == 0 || rot == 180)
      {
@@ -122,7 +127,7 @@ evas_fb_outbuf_fb_blit(Outbuf *buf, int src_x, int src_y, int w, int h, int dst_
      {
 	if (buf->priv.fb.fb)
 	  {
-	     /* FIXME: need to impliment an fb call for "copy area" */
+	     /* FIXME: need to implement an fb call for "copy area" */
 	  }
      }
 }
@@ -220,10 +225,6 @@ evas_fb_outbuf_fb_new_region_for_update(Outbuf *buf, int x, int y, int w, int h,
         im->cache_entry.flags.alpha = 1;
         im = (RGBA_Image *) evas_cache_image_size_set(&im->cache_entry, w, h);
 
-        /* handle framebuffers with alpha channel */
-        if (buf->priv.fb.fb->fb_var.transp.length > 0) {
-           memset(im->image.data, 0, w * h * sizeof(DATA32));
-        }
         return im;
      }
    return NULL;
@@ -339,7 +340,7 @@ evas_fb_outbuf_fb_reconfigure(Outbuf *buf, int w, int h, int rot, Outbuf_Depth d
      }
    if (buf->priv.fb.fb)
      {
-	/* FIXME: impliment this */
+	/* FIXME: implement this */
      }
    /* if backbuf delet it */
    /* resize window or reset fb mode */
