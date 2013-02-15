@@ -1,39 +1,48 @@
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
+#ifdef BUILD_ASYNC_EVENTS
+
+# ifndef _MSC_VER
+#  include <unistd.h>
+# endif
+# include <fcntl.h>
+# include <errno.h>
+
+#endif
+
 #include "evas_common.h"
 #include "evas_private.h"
 
 #ifdef BUILD_ASYNC_EVENTS
 
-#include <unistd.h>
-#include <fcntl.h>
-#include <pthread.h>
-#include <errno.h>
-
 static int _fd_write = -1;
 static int _fd_read = -1;
+static pid_t _fd_pid = 0;
 
 static int _init_evas_event = 0;
-static pthread_mutex_t _mutex = PTHREAD_MUTEX_INITIALIZER;
 
 typedef struct _Evas_Event_Async	Evas_Event_Async;
+
 struct _Evas_Event_Async
 {
-   void			(*func)(void *target, Evas_Callback_Type type, void *event_info);
-   void			 *target;
-   Evas_Callback_Type	  type;
-   void			 *event_info;
+   const void		    *target;
+   void			    *event_info;
+   Evas_Async_Events_Put_Cb  func;
+   Evas_Callback_Type	     type;
 };
-
-#endif
 
 int
 evas_async_events_init(void)
 {
-#ifdef BUILD_ASYNC_EVENTS
    int filedes[2];
 
    _init_evas_event++;
    if (_init_evas_event > 1) return _init_evas_event;
 
+   _fd_pid = getpid();
+   
    if (pipe(filedes) == -1)
      {
 	_init_evas_event = 0;
@@ -46,15 +55,11 @@ evas_async_events_init(void)
    fcntl(_fd_read, F_SETFL, O_NONBLOCK);
 
    return _init_evas_event;
-#else
-   return 0;
-#endif
 }
 
 int
 evas_async_events_shutdown(void)
 {
-#ifdef BUILD_ASYNC_EVENTS
    _init_evas_event--;
    if (_init_evas_event > 0) return _init_evas_event;
 
@@ -64,15 +69,25 @@ evas_async_events_shutdown(void)
    _fd_write = -1;
 
    return _init_evas_event;
-#else
-   return 0;
-#endif
 }
+
+static void
+_evas_async_events_fork_handle(void)
+{
+   int i, count = _init_evas_event;
+   
+   if (getpid() == _fd_pid) return;
+   for (i = 0; i < count; i++) evas_async_events_shutdown();
+   for (i = 0; i < count; i++) evas_async_events_init();
+}
+
+#endif
 
 EAPI int
 evas_async_events_fd_get(void)
 {
 #ifdef BUILD_ASYNC_EVENTS
+   _evas_async_events_fork_handle();
    return _fd_read;
 #else
    return -1;
@@ -83,39 +98,40 @@ EAPI int
 evas_async_events_process(void)
 {
 #ifdef BUILD_ASYNC_EVENTS
-   static Evas_Event_Async current;
-   static int size = 0;
+   Evas_Event_Async *ev;
    int check;
    int count = 0;
 
    if (_fd_read == -1) return 0;
 
+   _evas_async_events_fork_handle();
+   
    do
      {
-	check = read(_fd_read, ((char*) &current) + size, sizeof(current) - size);
+	check = read(_fd_read, &ev, sizeof (Evas_Event_Async *));
 
-	if (check > 0)
+	if (check == sizeof (Evas_Event_Async *))
 	  {
-	     size += check;
-	     if (size == sizeof(current))
-	       {
-		  if (current.func) current.func(current.target, current.type, current.event_info);
-		  size = 0;
-		  count++;
-	       }
+             if (ev->func) ev->func((void *)ev->target, ev->type, ev->event_info);
+	     free(ev);
+	     count++;
 	  }
      }
    while (check > 0);
 
+   evas_cache_image_wakeup();
+
    if (check < 0)
-     switch (errno)
-       {
-	case EBADF:
-	case EINVAL:
-	case EIO:
-	case EISDIR:
-	   _fd_read = -1;
-       }
+     {
+        switch (errno)
+          {
+           case EBADF:
+           case EINVAL:
+           case EIO:
+           case EISDIR:
+             _fd_read = -1;
+          }
+     }
 
    return count;
 #else
@@ -123,47 +139,53 @@ evas_async_events_process(void)
 #endif
 }
 
-EAPI Evas_Bool
-evas_async_events_put(void *target, Evas_Callback_Type type, void *event_info, void (*func)(void *target, Evas_Callback_Type type, void *event_info))
+EAPI Eina_Bool
+evas_async_events_put(const void *target, Evas_Callback_Type type, void *event_info, Evas_Async_Events_Put_Cb func)
 {
 #ifdef BUILD_ASYNC_EVENTS
-   Evas_Event_Async new;
+   Evas_Event_Async *ev;
    ssize_t check;
-   int	offset = 0;
-   Evas_Bool result = 0;
+   Eina_Bool result = EINA_FALSE;
 
    if (!func) return 0;
    if (_fd_write == -1) return 0;
 
-   new.func = func;
-   new.target = target;
-   new.type = type;
-   new.event_info = event_info;
+   _evas_async_events_fork_handle();
+   
+   ev = calloc(1, sizeof (Evas_Event_Async));
+   if (!ev) return 0;
 
-   pthread_mutex_lock(&_mutex);
+   ev->func = func;
+   ev->target = target;
+   ev->type = type;
+   ev->event_info = event_info;
 
-   do {
-      check = write(_fd_write, ((char*)&new) + offset, sizeof(new) - offset);
-      offset += check;
-   } while (offset != sizeof(new) && (errno == EINTR || errno == EAGAIN));
+   do
+     {
+        check = write(_fd_write, &ev, sizeof (Evas_Event_Async*));
+     }
+   while ((check != sizeof (Evas_Event_Async*)) &&
+          ((errno == EINTR) || (errno == EAGAIN)));
 
-   if (offset == sizeof(new))
-     result = 1;
+   evas_cache_image_wakeup();
+
+   if (check == sizeof (Evas_Event_Async*))
+     result = EINA_TRUE;
    else
-     switch (errno)
-       {
-	case EBADF:
-	case EINVAL:
-	case EIO:
-	case EPIPE:
-	   _fd_write = -1;
-       }
-
-   pthread_mutex_unlock(&_mutex);
+     {
+        switch (errno)
+          {
+           case EBADF:
+           case EINVAL:
+           case EIO:
+           case EPIPE:
+             _fd_write = -1;
+          }
+     }
 
    return result;
 #else
-   return 0;
+   func((void*) target, type, event_info);
+   return EINA_TRUE;
 #endif
 }
-

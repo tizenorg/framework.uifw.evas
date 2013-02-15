@@ -42,8 +42,9 @@ struct _Outbuf
          LPDIRECTDRAWSURFACE surface_back;
          LPDIRECTDRAWCLIPPER clipper;
          int                 depth;
-         unsigned char       swap : 1;
-         unsigned char       bit_swap : 1;
+         unsigned char       fullscreen : 1;
+         unsigned char       swap       : 1;
+         unsigned char       bit_swap   : 1;
       } dd;
       struct {
          DATA32              r, g, b;
@@ -51,17 +52,17 @@ struct _Outbuf
 
       /* 1 big buffer for updates - flush on idle_flush */
       RGBA_Image            *onebuf;
-      Evas_List             *onebuf_regions;
+      Eina_List             *onebuf_regions;
 
       /* a list of pending regions to write to the target */
-      Evas_List             *pending_writes;
+      Eina_List             *pending_writes;
       /* a list of previous frame pending regions to write to the target */
-      Evas_List             *prev_pending_writes;
+      Eina_List             *prev_pending_writes;
 
-      unsigned char          mask_dither : 1;
+      unsigned char          mask_dither       : 1;
       unsigned char          destination_alpha : 1;
-      unsigned char          debug : 1;
-      unsigned char          synced : 1;
+      unsigned char          debug             : 1;
+      unsigned char          synced            : 1;
    } priv;
 };
 
@@ -81,10 +82,35 @@ struct _DD_Output_Buffer
    int   height;
    int   depth;
    int   pitch;
-/*    int              w, h, bpl; */
-   int              psize;
+   int   psize;
 };
 
+extern int _evas_log_dom_module;
+
+#ifdef EVAS_DEFAULT_LOG_COLOR
+# undef EVAS_DEFAULT_LOG_COLOR
+#endif
+#define EVAS_DEFAULT_LOG_COLOR EINA_COLOR_CYAN
+#ifdef ERR
+# undef ERR
+#endif
+#define ERR(...) EINA_LOG_DOM_ERR(_evas_log_dom_module, __VA_ARGS__)
+#ifdef DBG
+# undef DBG
+#endif
+#define DBG(...) EINA_LOG_DOM_DBG(_evas_log_dom_module, __VA_ARGS__)
+#ifdef INF
+# undef INF
+#endif
+#define INF(...) EINA_LOG_DOM_INFO(_evas_log_dom_module, __VA_ARGS__)
+#ifdef WRN
+# undef WRN
+#endif
+#define WRN(...) EINA_LOG_DOM_WARN(_evas_log_dom_module, __VA_ARGS__)
+#ifdef CRT
+# undef CRT
+#endif
+#define CRT(...) EINA_LOG_DOM_CRIT(_evas_log_dom_module, __VA_ARGS__)
 
 /* evas_outbuf.c */
 
@@ -97,7 +123,8 @@ Outbuf *evas_software_ddraw_outbuf_setup(int          width,
                                          int          rotation,
                                          Outbuf_Depth depth,
                                          HWND         window,
-                                         int          w_depth);
+                                         int          w_depth,
+                                         int          fullscreen);
 
 void evas_software_ddraw_outbuf_reconfigure(Outbuf      *buf,
                                             int          width,
@@ -168,6 +195,7 @@ extern "C" {
 
 int evas_software_ddraw_init (HWND    window,
                               int     depth,
+                              int     fullscreen,
                               Outbuf *buf);
 
 void evas_software_ddraw_shutdown(Outbuf *buf);

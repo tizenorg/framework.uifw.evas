@@ -1,10 +1,30 @@
 #include "evas_common.h"
-
 #ifdef EVAS_RECT_SPLIT
+
+static inline void rect_list_node_pool_set_max(int max);
+static inline void rect_list_node_pool_flush(void);
+static inline list_node_t *rect_list_node_pool_get(void);
+static inline void rect_list_node_pool_put(list_node_t *node);
+static inline void rect_init(rect_t *r, int x, int y, int w, int h);
+static inline void rect_list_append_node(list_t *rects, list_node_t *node);
+static inline void rect_list_append(list_t *rects, const rect_t r);
+static inline void rect_list_append_xywh(list_t *rects, int x, int y, int w, int h);
+static inline void rect_list_concat(list_t *rects, list_t *other);
+static inline list_node_t *rect_list_unlink_next(list_t *rects, list_node_t *parent_node);
+static inline void rect_list_del_next(list_t *rects, list_node_t *parent_node);
+static inline void rect_list_clear(list_t *rects);
+static inline void rect_list_del_split_strict(list_t *rects, const rect_t del_r);
+static inline void rect_list_add_split_strict(list_t *rects, list_node_t *node);
+static inline list_node_t *rect_list_add_split_fuzzy(list_t *rects, list_node_t *node, int accepted_error);
+static inline void rect_list_merge_rects(list_t *rects, list_t *to_merge, int accepted_error);
+static inline void rect_list_add_split_fuzzy_and_merge(list_t *rects, list_node_t *node, int split_accepted_error, int merge_accepted_error);
+static inline void rect_print(const rect_t r);
+#if 0
+static inline void rect_list_print(const list_t rects);
+#endif
 
 static const list_node_t list_node_zeroed = { NULL };
 static const list_t list_zeroed = { NULL, NULL };
-
 
 typedef struct list_node_pool
 {
@@ -15,13 +35,13 @@ typedef struct list_node_pool
 
 static list_node_pool_t list_node_pool = { NULL, 0, 1024 };
 
-void
+static inline void
 rect_list_node_pool_set_max(int max)
 {
    int diff;
 
    diff = list_node_pool.len - max;
-   for (; diff > 0 && list_node_pool.node != NULL; diff--)
+   for (; diff > 0 && list_node_pool.node; diff--)
      {
         list_node_t *node;
 
@@ -35,7 +55,7 @@ rect_list_node_pool_set_max(int max)
    list_node_pool.max = max;
 }
 
-void
+static inline void
 rect_list_node_pool_flush(void)
 {
    while (list_node_pool.node)
@@ -50,7 +70,7 @@ rect_list_node_pool_flush(void)
      }
 }
 
-inline list_node_t *
+static inline list_node_t *
 rect_list_node_pool_get(void)
 {
    if (list_node_pool.node)
@@ -66,7 +86,7 @@ rect_list_node_pool_get(void)
    else return malloc(sizeof(rect_node_t));
 }
 
-inline void
+static inline void
 rect_list_node_pool_put(list_node_t *node)
 {
    if (list_node_pool.len < list_node_pool.max)
@@ -78,7 +98,7 @@ rect_list_node_pool_put(list_node_t *node)
    else free(node);
 }
 
-inline void
+static inline void
 rect_init(rect_t *r, int x, int y, int w, int h)
 {
    r->area = w * h;
@@ -93,23 +113,24 @@ rect_init(rect_t *r, int x, int y, int w, int h)
    r->height = h;
 }
 
-void
+static inline void
 rect_print(const rect_t r)
 {
-   printf("<rect(%d, %d, %d, %d)>", r.left, r.top, r.width, r.height);
+   INF("<rect(%d, %d, %d, %d)>", r.left, r.top, r.width, r.height);
 }
 
-void
+#if 0
+static inline void
 rect_list_print(const list_t rects)
 {
    list_node_t *node;
    int len;
 
    len = 0;
-   for (node = rects.head; node != NULL; node = node->next) len++;
+   for (node = rects.head; node; node = node->next) len++;
 
-   printf("[");
-   for (node = rects.head; node != NULL; node = node->next)
+   putchar('[');
+   for (node = rects.head; node; node = node->next)
      {
 	rect_print(((rect_node_t *)node)->rect);
 	if (node->next)
@@ -123,10 +144,11 @@ rect_list_print(const list_t rects)
 	       }
 	  }
      }
-   printf("]\n");
+   putchar(']');
 }
+#endif
 
-inline void
+static inline void
 rect_list_append_node(list_t *rects, list_node_t *node)
 {
    if (rects->tail)
@@ -141,7 +163,7 @@ rect_list_append_node(list_t *rects, list_node_t *node)
      }
 }
 
-inline void
+static inline void
 rect_list_append(list_t *rects, const rect_t r)
 {
    rect_node_t *rect_node;
@@ -153,7 +175,7 @@ rect_list_append(list_t *rects, const rect_t r)
    rect_list_append_node(rects, (list_node_t *)rect_node);
 }
 
-inline void
+static inline void
 rect_list_append_xywh(list_t *rects, int x, int y, int w, int h)
 {
    rect_t r;
@@ -162,7 +184,7 @@ rect_list_append_xywh(list_t *rects, int x, int y, int w, int h)
    rect_list_append(rects, r);
 }
 
-inline void
+static inline void
 rect_list_concat(list_t *rects, list_t *other)
 {
    if (!other->head)
@@ -181,7 +203,7 @@ rect_list_concat(list_t *rects, list_t *other)
    *other = list_zeroed;
 }
 
-inline list_node_t *
+static inline list_node_t *
 rect_list_unlink_next(list_t *rects, list_node_t *parent_node)
 {
     list_node_t *node;
@@ -202,7 +224,7 @@ rect_list_unlink_next(list_t *rects, list_node_t *parent_node)
    return node;
 }
 
-inline void
+static inline void
 rect_list_del_next(list_t *rects, list_node_t *parent_node)
 {
     list_node_t *node;
@@ -211,7 +233,7 @@ rect_list_del_next(list_t *rects, list_node_t *parent_node)
     rect_list_node_pool_put(node);
 }
 
-void
+static inline void
 rect_list_clear(list_t *rects)
 {
    list_node_t *node;
@@ -316,7 +338,7 @@ _split_strict(list_t *dirty, const rect_t current, rect_t r)
      }
 }
 
-void
+static inline void
 rect_list_del_split_strict(list_t *rects, const rect_t del_r)
 {
    list_t modified = list_zeroed;
@@ -368,7 +390,7 @@ rect_list_del_split_strict(list_t *rects, const rect_t del_r)
    rect_list_concat(rects, &modified);
 }
 
-void
+static inline void
 rect_list_add_split_strict(list_t *rects, list_node_t *node)
 {
    list_t dirty = list_zeroed;
@@ -593,7 +615,7 @@ _split_fuzzy(list_t *dirty, const rect_t a, rect_t *b)
    return action;
 }
 
-list_node_t *
+static inline list_node_t *
 rect_list_add_split_fuzzy(list_t *rects, list_node_t *node, int accepted_error)
 {
    list_t dirty = list_zeroed;
@@ -718,7 +740,7 @@ rect_list_add_split_fuzzy(list_t *rects, list_node_t *node, int accepted_error)
 			*/
 		       /* prev_cur_node = cur_node; */
 		       /* cur_node = cur_node->next; */
-		       printf("Should not get here!\n");
+		       WRN("Should not get here!");
 		       abort();
 		    }
 
@@ -763,7 +785,7 @@ _calc_outer_rect_area(const rect_t a, const rect_t b, rect_t *outer)
    outer->area = outer->width * outer->height;
 }
 
-void
+static inline void
 rect_list_merge_rects(list_t *rects, list_t *to_merge, int accepted_error)
 {
    while (to_merge->head)
@@ -777,7 +799,7 @@ rect_list_merge_rects(list_t *rects, list_t *to_merge, int accepted_error)
         merged = 0;
         parent_node = NULL;
         node = rects->head;
-        while (node != NULL)
+        while (node)
 	  {
 	     rect_t r2, outer;
 	     int area;
@@ -816,7 +838,7 @@ rect_list_merge_rects(list_t *rects, list_t *to_merge, int accepted_error)
     }
 }
 
-void
+static inline void
 rect_list_add_split_fuzzy_and_merge(list_t *rects,
                                     list_node_t *node,
                                     int split_accepted_error,
@@ -845,11 +867,15 @@ rect_list_add_split_fuzzy_and_merge(list_t *rects,
 #ifdef RECTUPDATE
 #elif defined(EVAS_RECT_SPLIT)
 #else
+/*
 static int  tilebuf_x_intersect(Tilebuf *tb, int x, int w, int *x1, int *x2, int *x1_fill, int *x2_fill);
 static int  tilebuf_y_intersect(Tilebuf *tb, int y, int h, int *y1, int *y2, int *y1_fill, int *y2_fill);
 static int  tilebuf_intersect(int tsize, int tlen, int tnum, int x, int w, int *x1, int *x2, int *x1_fill, int *x2_fill);
+ */
 #endif
+/*
 static void tilebuf_setup(Tilebuf *tb);
+ */
 
 EAPI void
 evas_common_tilebuf_init(void)
@@ -876,12 +902,16 @@ EAPI void
 evas_common_tilebuf_free(Tilebuf *tb)
 {
 #ifdef RECTUPDATE
+/*   
    evas_common_regionbuf_free(tb->rb);
+ */
 #elif defined(EVAS_RECT_SPLIT)
    rect_list_clear(&tb->rects);
    rect_list_node_pool_flush();
 #else
+/*   
    if (tb->tiles.tiles) free(tb->tiles.tiles);
+ */
 #endif
    free(tb);
 }
@@ -891,7 +921,9 @@ evas_common_tilebuf_set_tile_size(Tilebuf *tb, int tw, int th)
 {
    tb->tile_size.w = tw;
    tb->tile_size.h = th;
+/*   
    tilebuf_setup(tb);
+ */
 }
 
 EAPI void
@@ -903,25 +935,22 @@ evas_common_tilebuf_get_tile_size(Tilebuf *tb, int *tw, int *th)
 
 #ifdef EVAS_RECT_SPLIT
 static inline int
-_add_redraw(list_t *rects, int max_w, int max_h, int x, int y, int w, int h)
+_add_redraw(list_t *rects, int x, int y, int w, int h)
 {
    rect_node_t *rn;
-
-   if ((w <= 0) || (h <= 0)) return 0;
-   RECTS_CLIP_TO_RECT(x, y, w, h, 0, 0, max_w, max_h);
-   if ((w <= 0) || (h <= 0)) return 0;
-
+/* we dont need to do this fuzz stuff - it actually creates overdraw bugs
+ * when evas shouldnt draw at all.
    x >>= 1;
    y >>= 1;
    w += 2;
    w >>= 1;
    h += 2;
    h >>= 1;
-
+ */
    rn = (rect_node_t *)rect_list_node_pool_get();
    rn->_lst = list_node_zeroed;
    rect_init(&rn->rect, x, y, w, h);
-   //fprintf(stderr, "ACCOUNTING: add_redraw: %4d,%4d %3dx%3d\n", x, y, w, h);
+   //INF("ACCOUNTING: add_redraw: %4d,%4d %3dx%3d", x, y, w, h);
    //testing on my core2 duo desktop - fuzz of 32 or 48 is best.
 #define FUZZ 32
    rect_list_add_split_fuzzy_and_merge(rects, (list_node_t *)rn,
@@ -934,6 +963,7 @@ EAPI int
 evas_common_tilebuf_add_redraw(Tilebuf *tb, int x, int y, int w, int h)
 {
 #ifdef RECTUPDATE
+/*   
    int i;
 
    if ((w <= 0) || (h <= 0)) return 0;
@@ -942,9 +972,20 @@ evas_common_tilebuf_add_redraw(Tilebuf *tb, int x, int y, int w, int h)
    for (i = 0; i < h; i++)
      evas_common_regionbuf_span_add(tb->rb, x, x + w - 1, y + i);
    return 1;
+ */
 #elif defined(EVAS_RECT_SPLIT)
-   return _add_redraw(&tb->rects, tb->outbuf_w, tb->outbuf_h, x, y, w, h);
+   if ((w <= 0) || (h <= 0)) return 0;
+   RECTS_CLIP_TO_RECT(x, y, w, h, 0, 0, tb->outbuf_w, tb->outbuf_h);
+   if ((w <= 0) || (h <= 0)) return 0;
+   // optimize a common case -> adding the exact same rect 2x in a row
+   if ((tb->prev_add.x == x) && (tb->prev_add.y == y) && 
+       (tb->prev_add.w == w) && (tb->prev_add.h == h)) return 1;
+   tb->prev_add.x = x; tb->prev_add.y = y;
+   tb->prev_add.w = w; tb->prev_add.h = h;
+   tb->prev_del.w = 0; tb->prev_del.h = 0;
+   return _add_redraw(&tb->rects, x, y, w, h);
 #else
+/*   
    int tx1, tx2, ty1, ty2, tfx1, tfx2, tfy1, tfy2, xx, yy;
    int num;
 
@@ -952,7 +993,7 @@ evas_common_tilebuf_add_redraw(Tilebuf *tb, int x, int y, int w, int h)
    RECTS_CLIP_TO_RECT(x, y, w, h, 0, 0, tb->outbuf_w, tb->outbuf_h);
    if ((w <= 0) || (h <= 0)) return 0;
    num = 0;
-   /* wipes out any motion vectors in tiles it touches into redraws */
+   // wipes out any motion vectors in tiles it touches into redraws
    if (tilebuf_x_intersect(tb, x, w, &tx1, &tx2, &tfx1, &tfx2) &&
        tilebuf_y_intersect(tb, y, h, &ty1, &ty2, &tfy1, &tfy2))
      {
@@ -978,6 +1019,7 @@ evas_common_tilebuf_add_redraw(Tilebuf *tb, int x, int y, int w, int h)
 	num = (tx2 - tx1 + 1) * (ty2 - ty1 + 1);
      }
    return num;
+ */
 #endif
 }
 
@@ -985,10 +1027,12 @@ EAPI int
 evas_common_tilebuf_del_redraw(Tilebuf *tb, int x, int y, int w, int h)
 {
 #ifdef RECTUPDATE
+/*   
    int i;
 
    for (i = 0; i < h; i++)
      evas_common_regionbuf_span_del(tb->rb, x, x + w - 1, y + i);
+ */
 #elif defined(EVAS_RECT_SPLIT)
    rect_t r;
 
@@ -996,7 +1040,9 @@ evas_common_tilebuf_del_redraw(Tilebuf *tb, int x, int y, int w, int h)
    if ((w <= 0) || (h <= 0)) return 0;
    RECTS_CLIP_TO_RECT(x, y, w, h, 0, 0, tb->outbuf_w, tb->outbuf_h);
    if ((w <= 0) || (h <= 0)) return 0;
-
+   
+/* we dont need to do this fuzz stuff - it actually creates overdraw bugs
+ * when evas shouldnt draw at all.
    x += 1;
    y += 1;
    x >>= 1;
@@ -1007,19 +1053,26 @@ evas_common_tilebuf_del_redraw(Tilebuf *tb, int x, int y, int w, int h)
    h >>= 1;
 
    if ((w <= 0) || (h <= 0)) return 0;
-
+ */
+   
+   // optimize a common case -> deleting the exact same rect 2x in a row
+   if ((tb->prev_del.x == x) && (tb->prev_del.y == y) && 
+       (tb->prev_del.w == w) && (tb->prev_del.h == h)) return 1;
+   tb->prev_del.x = x; tb->prev_del.y = y;
+   tb->prev_del.w = w; tb->prev_del.h = h;
+   tb->prev_add.w = 0; tb->prev_add.h = 0;
    rect_init(&r, x, y, w, h);
-   //fprintf(stderr, "ACCOUNTING: del_redraw: %4d,%4d %3dx%3d\n", x, y, w, h);
 
    rect_list_del_split_strict(&tb->rects, r);
    tb->need_merge = 1;
    return 0;
 #else
+/*   
    int tx1, tx2, ty1, ty2, tfx1, tfx2, tfy1, tfy2, xx, yy;
    int num;
 
    num = 0;
-   /* wipes out any motion vectors in tiles it touches into redraws */
+   // wipes out any motion vectors in tiles it touches into redraws
    if (tilebuf_x_intersect(tb, x, w, &tx1, &tx2, &tfx1, &tfx2) &&
        tilebuf_y_intersect(tb, y, h, &ty1, &ty2, &tfy1, &tfy2))
      {
@@ -1050,33 +1103,37 @@ evas_common_tilebuf_del_redraw(Tilebuf *tb, int x, int y, int w, int h)
 	num = (tx2 - tx1 + 1) * (ty2 - ty1 + 1);
      }
    return num;
+ */
 #endif
 }
 
 EAPI int
-evas_common_tilebuf_add_motion_vector(Tilebuf *tb, int x, int y, int w, int h, int dx, int dy, int alpha)
+evas_common_tilebuf_add_motion_vector(Tilebuf *tb __UNUSED__, int x __UNUSED__, int y __UNUSED__, int w __UNUSED__, int h __UNUSED__, int dx __UNUSED__, int dy __UNUSED__, int alpha __UNUSED__)
 {
 #ifdef EVAS_RECT_SPLIT
+/* motion vector handling never has been used -> disable it   
    list_t lr = list_zeroed;
    int num;
 
-   num = _add_redraw(&lr, tb->outbuf_w, tb->outbuf_h, x, y, w, h);
-   num += _add_redraw(&lr, tb->outbuf_w, tb->outbuf_h, x + dx, y + dy, w, h);
-   while (lr.head != NULL)
+   num = _add_redraw(&lr, x, y, w, h);
+   num += _add_redraw(&lr, x + dx, y + dy, w, h);
+   while (lr.head)
      {
         list_node_t *node = rect_list_unlink_next(&lr, NULL);
         rect_list_add_split_fuzzy_and_merge(&tb->rects, node,
                                             FUZZ * FUZZ, FUZZ * FUZZ);
      }
    return num;
+ */
+   return 0;
 #else
-   /* FIXME: need to actually impliment motion vectors. for now it just */
-   /*        implements redraws */
+/*   
    int num;
 
    num = evas_common_tilebuf_add_redraw(tb, x, y, w, h);
    num += evas_common_tilebuf_add_redraw(tb, x + dx, y + dy, w, h);
    return num;
+ */
 #endif
 }
 
@@ -1084,13 +1141,19 @@ EAPI void
 evas_common_tilebuf_clear(Tilebuf *tb)
 {
 #ifdef RECTUPDATE
+/*   
    evas_common_regionbuf_clear(tb->rb);
+ */
 #elif defined(EVAS_RECT_SPLIT)
+   tb->prev_add.x = tb->prev_add.y = tb->prev_add.w = tb->prev_add.h = 0;
+   tb->prev_del.x = tb->prev_del.y = tb->prev_del.w = tb->prev_del.h = 0;
    rect_list_clear(&tb->rects);
    tb->need_merge = 0;
 #else
+/*   
    if (!tb->tiles.tiles) return;
    memset(tb->tiles.tiles, 0, tb->tiles.w * tb->tiles.h * sizeof(Tilebuf_Tile));
+ */
 #endif
 }
 
@@ -1098,50 +1161,94 @@ EAPI Tilebuf_Rect *
 evas_common_tilebuf_get_render_rects(Tilebuf *tb)
 {
 #ifdef RECTUPDATE
+/*   
    return evas_common_regionbuf_rects_get(tb->rb);
+ */
 #elif defined(EVAS_RECT_SPLIT)
    list_node_t *n;
    Tilebuf_Rect *rects = NULL;
+   int bx1 = 0, bx2 = 0, by1 = 0, by2 = 0, num = 0;
 
-   if (tb->need_merge) {
-       list_t to_merge;
-       to_merge = tb->rects;
-       tb->rects = list_zeroed;
-       rect_list_merge_rects(&tb->rects, &to_merge, FUZZ * FUZZ);
-       tb->need_merge = 0;
-   }
+   if (tb->need_merge)
+     {
+        list_t to_merge;
+        to_merge = tb->rects;
+        tb->rects = list_zeroed;
+        rect_list_merge_rects(&tb->rects, &to_merge, FUZZ * FUZZ);
+        tb->need_merge = 0;
+     }
+   
+   n = tb->rects.head;
+   if (n)
+     {
+        bx1 = ((rect_node_t *)n)->rect.left;
+        bx2 = bx1 + ((rect_node_t *)n)->rect.width;
+        by1 = ((rect_node_t *)n)->rect.top;
+        by2 = by1 + ((rect_node_t *)n)->rect.height;
+        n = n->next;
+        for (; n; n = n->next)
+          {
+             
+             int x1, x2, y1, y2;
+             
+             x1 = ((rect_node_t *)n)->rect.left;
+             if (x1 < bx1) bx1 = x1;
+             x2 = x1 + ((rect_node_t *)n)->rect.width;
+             if (x2 > bx2) bx2 = x2;
+             
+             y1 = ((rect_node_t *)n)->rect.top;
+             if (y1 < by1) by1 = y1;
+             y2 = y1 + ((rect_node_t *)n)->rect.height;
+             if (y2 > by2) by2 = y2;
+             num++;
+          }
+     }
+#define MAXREG 24
+   /* magic number - but if we have > MAXREG regions to update, take bounding box */
+   if (num > MAXREG)
+     {
+        Tilebuf_Rect *r;
 
-   for (n = tb->rects.head; n != NULL; n = n->next) {
-       rect_t cur;
+        r = malloc(sizeof(Tilebuf_Rect));
+        r->x = bx1;
+        r->y = by1;
+        r->w = bx2 - bx1;
+        r->h = by2 - by1;
+        
+        rects = (Tilebuf_Rect *)eina_inlist_append(EINA_INLIST_GET(rects), EINA_INLIST_GET(r));
+        return rects;
+     }
 
-       cur = ((rect_node_t *)n)->rect;
-
+   for (n = tb->rects.head; n; n = n->next)
+     {
+        rect_t cur;
+        
+        cur = ((rect_node_t *)n)->rect;
+/* disable fuzz - created bugs.
        cur.left <<= 1;
        cur.top <<= 1;
        cur.width <<= 1;
        cur.height <<= 1;
-
-       RECTS_CLIP_TO_RECT(cur.left, cur.top, cur.width, cur.height,
-			  0, 0, tb->outbuf_w, tb->outbuf_h);
-       if ((cur.width > 0) && (cur.height > 0))
-	 {
-	    Tilebuf_Rect *r;
-
-	    r = malloc(sizeof(Tilebuf_Rect));
-	    r->_list_data.next = NULL;
-	    r->_list_data.prev = NULL;
-	    r->_list_data.last = NULL;
-	    r->x = cur.left;
-	    r->y = cur.top;
-	    r->w = cur.width;
-	    r->h = cur.height;
-
-	    rects = evas_object_list_append(rects, r);
-	 }
-   }
+ */
+        RECTS_CLIP_TO_RECT(cur.left, cur.top, cur.width, cur.height,
+                           0, 0, tb->outbuf_w, tb->outbuf_h);
+        if ((cur.width > 0) && (cur.height > 0))
+          {
+             Tilebuf_Rect *r;
+             
+             r = malloc(sizeof(Tilebuf_Rect));
+             r->x = cur.left;
+             r->y = cur.top;
+             r->w = cur.width;
+             r->h = cur.height;
+             
+             rects = (Tilebuf_Rect *)eina_inlist_append(EINA_INLIST_GET(rects), EINA_INLIST_GET(r));
+          }
+     }
    return rects;
 
 #else
+/*   
    Tilebuf_Rect *rects = NULL;
    Tilebuf_Tile *tbt;
    int x, y;
@@ -1162,7 +1269,7 @@ evas_common_tilebuf_get_render_rects(Tilebuf *tb)
                   r->_list_data.prev = NULL;
                   r->_list_data.last = NULL;
 
-/* amalgamate tiles */
+                  // amalgamate tiles
 #if 1
                   tbti = tbt;
 		  while (can_expand_x)
@@ -1217,13 +1324,14 @@ evas_common_tilebuf_get_render_rects(Tilebuf *tb)
 		  r->y = y * tb->tile_size.h;
 		  r->w = (xx) * tb->tile_size.w;
 		  r->h = (yy) * tb->tile_size.h;
-		  rects = evas_object_list_append(rects, r);
+		  rects = eina_inlist_append(rects, r);
 		  x = x + (xx - 1);
                   tbt += xx - 1;
 	       }
 	  }
      }
    return rects;
+ */
 #endif
 }
 
@@ -1235,7 +1343,7 @@ evas_common_tilebuf_free_render_rects(Tilebuf_Rect *rects)
 	Tilebuf_Rect *r;
 
 	r = rects;
-	rects = evas_object_list_remove(rects, r);
+	rects = (Tilebuf_Rect *)eina_inlist_remove(EINA_INLIST_GET(rects), EINA_INLIST_GET(r));
 	free(r);
      }
 }
@@ -1247,7 +1355,7 @@ evas_common_tilebuf_free_render_rects(Tilebuf_Rect *rects)
 
 
 /* internal usage */
-
+/*
 static void
 tilebuf_setup(Tilebuf *tb)
 {
@@ -1274,10 +1382,12 @@ tilebuf_setup(Tilebuf *tb)
    memset(tb->tiles.tiles, 0, tb->tiles.w * tb->tiles.h * sizeof(Tilebuf_Tile));
 #endif
 }
+*/
 
 #ifdef RECTUPDATE
 #elif defined(EVAS_RECT_SPLIT)
 #else
+/*
 static int
 tilebuf_x_intersect(Tilebuf *tb, int x, int w, int *x1, int *x2, int *x1_fill, int *x2_fill)
 {
@@ -1297,11 +1407,11 @@ tilebuf_intersect(int tsize, int tlen, int tnum, int x, int w, int *x1, int *x2,
 {
    int p1, p2;
 
-   /* initial clip out of region */
+   // initial clip out of region
    if ((x + w) <= 0) return 0;
    if (x >= tlen) return 0;
 
-   /* adjust x & w so it all fits in region */
+   // adjust x & w so it all fits in region
    if (x < 0)
      {
 	w += x;
@@ -1310,13 +1420,13 @@ tilebuf_intersect(int tsize, int tlen, int tnum, int x, int w, int *x1, int *x2,
    if (w < 0) return 0;
    if ((x + w) > tlen) w = tlen - x;
 
-   /* now figure if the first edge is fully filling its tile */
+   // now figure if the first edge is fully filling its tile
    p1 = (x) / tsize;
    if ((p1 * tsize) == (x)) *x1_fill = 1;
    else                     *x1_fill = 0;
    *x1 = p1;
 
-   /* now figure if the last edge is fully filling its tile */
+   // now figure if the last edge is fully filling its tile
    p2 = (x + w - 1) / tsize;
    if (((p2 + 1) * tsize) == (x + w)) *x2_fill = 1;
    else                               *x2_fill = 0;
@@ -1325,4 +1435,5 @@ tilebuf_intersect(int tsize, int tlen, int tnum, int x, int w, int *x1, int *x2,
    return 1;
    tnum = 0;
 }
+*/
 #endif

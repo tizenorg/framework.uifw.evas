@@ -1,7 +1,3 @@
-/*
- * vim:ts=8:sw=3:sts=8:noexpandtab:cino=>5n-3f0^-2{2
- */
-
 #include "evas_common.h"
 #include "evas_blend_private.h"
 
@@ -13,12 +9,12 @@ const DATA32 ALPHA_255 = 255;
 const DATA32 ALPHA_256 = 256;
 
 static void
-_composite_span_nothing(DATA32 *s, DATA8 *m, DATA32 c, DATA32 *d, int l)
+_composite_span_nothing(DATA32 *s __UNUSED__, DATA8 *m __UNUSED__, DATA32 c __UNUSED__, DATA32 *d __UNUSED__, int l __UNUSED__)
 {
 }
 
 static void
-_composite_pt_nothing(DATA32 s, DATA8 m, DATA32 c, DATA32 *d)
+_composite_pt_nothing(DATA32 s __UNUSED__, DATA8 m __UNUSED__, DATA32 c __UNUSED__, DATA32 *d __UNUSED__)
 {
 }
 

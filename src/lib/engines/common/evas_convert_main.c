@@ -1,15 +1,14 @@
-/*
- * vim:ts=8:sw=3:sts=8:noexpandtab:cino=>5n-3f0^-2{2
- */
-
 #include "evas_common.h"
 #include "evas_convert_rgb_8.h"
 #include "evas_convert_rgb_16.h"
 #include "evas_convert_rgb_24.h"
 #include "evas_convert_rgb_32.h"
+#include "evas_convert_grypal_6.h"
+#include "evas_convert_gry_8.h"
 #include "evas_convert_yuv.h"
 
 #ifdef USE_DITHER_44
+
 const DATA8 _evas_dither_44[4][4] =
 {
      { 0,  8,  2, 10},
@@ -17,9 +16,11 @@ const DATA8 _evas_dither_44[4][4] =
      { 3, 11,  1,  9},
      {15,  7, 13,  5}
 };
+
 #endif
 
 #ifdef USE_DITHER_128128
+
 const DATA8 _evas_dither_128128[128][128] =
 {
      { 0, 41, 23, 5, 17, 39, 7, 15, 62, 23, 40, 51, 31, 47, 9, 32, 52, 27, 57, 25, 6, 61, 27, 52, 37, 7, 40, 63, 18, 36, 10, 42, 25, 62, 45, 34, 20, 42, 37, 14, 35, 29, 50, 10, 61, 2, 40, 8, 37, 12, 58, 22, 5, 41, 10, 39, 0, 60, 11, 46, 2, 55, 38, 17, 36, 59, 13, 54, 37, 56, 8, 29, 16, 13, 63, 22, 41, 55, 7, 20, 49, 14, 23, 55, 37, 23, 19, 36, 15, 49, 23, 63, 30, 14, 38, 27, 53, 13, 22, 41, 19, 31, 7, 19, 50, 30, 49, 16, 3, 32, 56, 40, 29, 34, 8, 48, 19, 45, 4, 51, 12, 46, 35, 49, 16, 42, 12, 62 },
@@ -151,7 +152,8 @@ const DATA8 _evas_dither_128128[128][128] =
      { 19, 42, 9, 48, 2, 44, 11, 37, 48, 20, 33, 16, 55, 35, 49, 15, 37, 20, 59, 16, 53, 22, 56, 31, 50, 11, 34, 54, 16, 51, 4, 49, 33, 53, 21, 28, 56, 24, 31, 9, 52, 16, 48, 24, 44, 13, 51, 20, 31, 49, 18, 6, 34, 2, 44, 14, 47, 8, 15, 43, 13, 41, 33, 52, 20, 61, 7, 51, 34, 62, 4, 20, 36, 33, 43, 8, 46, 13, 53, 17, 45, 42, 9, 31, 52, 11, 30, 56, 13, 59, 17, 44, 27, 6, 62, 11, 43, 17, 49, 38, 26, 2, 16, 27, 58, 21, 54, 18, 26, 5, 35, 61, 43, 27, 7, 39, 14, 58, 37, 55, 20, 33, 13, 40, 62, 10, 55, 5 },
      { 51, 14, 61, 29, 59, 20, 55, 31, 0, 49, 11, 60, 3, 26, 22, 56, 0, 40, 12, 43, 41, 8, 36, 0, 17, 57, 24, 2, 46, 26, 61, 18, 0, 38, 12, 59, 6, 49, 3, 57, 19, 63, 5, 33, 18, 54, 28, 56, 0, 43, 26, 46, 63, 27, 56, 22, 27, 54, 38, 28, 63, 24, 10, 45, 0, 31, 42, 21, 12, 25, 44, 49, 59, 6, 26, 50, 3, 34, 27, 59, 0, 35, 62, 16, 4, 58, 47, 0, 43, 24, 37, 2, 54, 20, 46, 31, 0, 56, 34, 5, 55, 45, 60, 37, 0, 40, 10, 38, 63, 46, 15, 20, 0, 53, 21, 62, 30, 11, 24, 27, 40, 0, 57, 26, 3, 45, 27, 35 }
 };
-#endif
+
+#endif /* USE_DITHER_128128 */
 
 EAPI void
 evas_common_convert_init(void)
@@ -159,12 +161,20 @@ evas_common_convert_init(void)
 }
 
 EAPI Gfx_Func_Convert
-evas_common_convert_func_get(DATA8 *dest, int w, int h, int depth, DATA32 rmask, DATA32 gmask, DATA32 bmask, Convert_Pal_Mode pal_mode, int rotation)
+evas_common_convert_func_get(DATA8 *dest, int w, int h __UNUSED__, int depth, DATA32 rmask, DATA32 gmask, DATA32 bmask, Convert_Pal_Mode pal_mode, int rotation)
 {
    if ((rmask == 0) && (gmask == 0) && (bmask == 0))
      {
 	if (depth == 8)
 	  {
+#ifdef BUILD_CONVERT_8_GRY_1
+	     if (pal_mode == PAL_MODE_NONE)
+	       return evas_common_convert_rgba_to_8bpp_gry_256_dith;
+#endif
+#ifdef BUILD_CONVERT_8_GRY_16
+	     if (pal_mode == PAL_MODE_NONE)
+	       return evas_common_convert_rgba_to_8bpp_gry_16_dith;
+#endif
 #ifdef BUILD_CONVERT_8_RGB_332
 	     if (pal_mode == PAL_MODE_RGB332)
 	       return evas_common_convert_rgba_to_8bpp_rgb_332_dith;
@@ -193,12 +203,10 @@ evas_common_convert_func_get(DATA8 *dest, int w, int h, int depth, DATA32 rmask,
 	     if (pal_mode == PAL_MODE_RGB111)
 	       return evas_common_convert_rgba_to_8bpp_rgb_111_dith;
 #endif
-	  }
-	if (depth == 1)
-	  {
-	  }
-	if (depth == 4)
-	  {
+#ifdef BUILD_CONVERT_8_GRAYSCALE_64
+         if (pal_mode == PAL_MODE_GRAY64)
+            return evas_common_convert_rgba_to_8bpp_pal_gray64;
+#endif
 	  }
      }
    else
@@ -540,6 +548,27 @@ evas_common_convert_func_get(DATA8 *dest, int w, int h, int depth, DATA32 rmask,
 #endif
 	       }
 #endif
+#ifdef BUILD_CONVERT_32_RGB_666
+	     if ((rmask == 0x0003f000) && (gmask == 0x00000fc0) && (bmask == 0x0000003f))
+	       {
+#ifdef BUILD_CONVERT_32_RGB_ROT0
+		  if (rotation == 0)
+		    return evas_common_convert_rgba_to_32bpp_rgb_666;
+#endif
+#ifdef BUILD_CONVERT_32_RGB_ROT180
+//		  if (rotation == 180)
+//		    return evas_common_convert_rgba_to_32bpp_rgb_8888_rot_180;
+#endif
+#ifdef BUILD_CONVERT_32_RGB_ROT270
+//		  if (rotation == 270)
+//		    return evas_common_convert_rgba_to_32bpp_rgb_8888_rot_270;
+#endif
+#ifdef BUILD_CONVERT_32_RGB_ROT90
+//		  if (rotation == 90)
+//		    return evas_common_convert_rgba_to_32bpp_rgb_8888_rot_90;
+#endif
+	       }
+#endif
 	  }
 	if (depth == 24)
 	  {
@@ -550,6 +579,13 @@ evas_common_convert_func_get(DATA8 *dest, int w, int h, int depth, DATA32 rmask,
 		    return evas_common_convert_rgba_to_24bpp_rgb_888;
 	       }
 #endif
+#ifdef BUILD_CONVERT_24_RGB_666
+	     if ((rmask == 0x0003f000) && (gmask == 0x00000fc0) && (bmask == 0x0000003f))
+	       {
+		  if (rotation == 0)
+		    return evas_common_convert_rgba_to_24bpp_rgb_666;
+	       }
+#endif
 #ifdef BUILD_CONVERT_24_BGR_888
 	     if ((rmask == 0x000000ff) && (gmask == 0x0000ff00) && (bmask == 0x00ff0000))
 	       {
@@ -558,7 +594,7 @@ evas_common_convert_func_get(DATA8 *dest, int w, int h, int depth, DATA32 rmask,
 	       }
 #endif
 	  }
-	printf("depth = %i mode = %i\n", depth, pal_mode);
+	INF("depth = %i mode = %i", depth, pal_mode);
 	if (depth == 8)
 	  {
 #ifdef BUILD_CONVERT_8_RGB_332
@@ -590,15 +626,7 @@ evas_common_convert_func_get(DATA8 *dest, int w, int h, int depth, DATA32 rmask,
 	       return evas_common_convert_rgba_to_8bpp_rgb_111_dith;
 #endif
 	  }
-	if (depth == 1)
-	  {
-	  }
-	if (depth == 4)
-	  {
-	  }
     }
    /* no optimised converter for this... no generic one either. NULL */
    return NULL;
-   h = 0;
-   pal_mode = 0;
 }

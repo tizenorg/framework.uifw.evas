@@ -1,7 +1,3 @@
-/*
- * vim:ts=8:sw=3:sts=8:noexpandtab:cino=>5n-3f0^-2{2
- */
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
@@ -11,8 +7,6 @@
 #include "evas_common.h"
 #include "evas_private.h"
 
-
-extern Evas_List *evas_modules;
 
 int
 evas_common_save_image_to_file(RGBA_Image *im, const char *file, const char *key, int quality, int compress)

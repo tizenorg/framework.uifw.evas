@@ -1,82 +1,93 @@
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
+#ifdef HAVE_CONFIG_H
+# include <config.h>
 #endif
 
+#include <stdio.h>
 #include <png.h>
 #include <setjmp.h>
+
+#ifdef HAVE_EVIL
+# include <Evil.h>
+#endif
+
+#ifdef _WIN32_WCE
+# define E_FOPEN(file, mode) evil_fopen_native((file), (mode))
+# define E_FCLOSE(stream) evil_fclose_native(stream)
+#else
+# define E_FOPEN(file, mode) fopen((file), (mode))
+# define E_FCLOSE(stream) fclose(stream)
+#endif
 
 #include "evas_common.h"
 #include "evas_private.h"
 
-int evas_image_save_file_png(RGBA_Image *im, const char *file, const char *key, int quality, int compress);
+static int evas_image_save_file_png(RGBA_Image *im, const char *file, const char *key, int quality, int compress);
 
-Evas_Image_Save_Func evas_image_save_png_func =
+static Evas_Image_Save_Func evas_image_save_png_func =
 {
    evas_image_save_file_png
 };
 
 static int
-save_image_png(RGBA_Image *im, const char *file, int compress, int interlace)
+save_image_png(RGBA_Image *im, const char *file, int do_compress, int interlace)
 {
    FILE               *f;
    png_structp         png_ptr;
    png_infop           info_ptr;
    DATA32             *ptr, *data = NULL;
-   int                 x, y, j;
+   unsigned int        x, y, j;
    png_bytep           row_ptr, png_data = NULL;
    png_color_8         sig_bit;
    int                 num_passes = 1, pass;
 
    if (!im || !im->image.data || !file)
       return 0;
-   
-   f = fopen(file, "wb");
+
+   f = E_FOPEN(file, "wb");
    if (!f) return 0;
-   
+
    png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
    if (!png_ptr)
-     {
-	fclose(f);
-	return 0;
-     }
+     goto close_file;
+
    info_ptr = png_create_info_struct(png_ptr);
-   if (info_ptr == NULL)
+   if (!info_ptr)
      {
-	fclose(f);
-	png_destroy_write_struct(&png_ptr, (png_infopp) NULL);
-	return 0;
+	png_destroy_write_struct(&png_ptr, NULL);
+	goto close_file;
      }
-   if (setjmp(png_ptr->jmpbuf))
+   if (setjmp(png_jmpbuf(png_ptr)))
      {
-	fclose(f);
 	png_destroy_write_struct(&png_ptr, (png_infopp) & info_ptr);
 	png_destroy_info_struct(png_ptr, (png_infopp) & info_ptr);
-	return 0;
+	goto close_file;
      }
-   
+
    if (interlace)
      {
 #ifdef PNG_WRITE_INTERLACING_SUPPORTED
-	png_ptr->interlaced = PNG_INTERLACE_ADAM7;
-	num_passes = png_set_interlace_handling(png_ptr);
+	interlace = PNG_INTERLACE_ADAM7;
+#else
+	interlace = PNG_INTERLACE_NONE;
 #endif
      }
-   
+   else
+     interlace = PNG_INTERLACE_NONE;
+
    if (im->cache_entry.flags.alpha)
      {
 	data = malloc(im->cache_entry.w * im->cache_entry.h * sizeof(DATA32));
 	if (!data)
 	  {
-	    fclose(f);
 	    png_destroy_write_struct(&png_ptr, (png_infopp) & info_ptr);
 	    png_destroy_info_struct(png_ptr, (png_infopp) & info_ptr);
-	    return 0;
+	    goto close_file;
 	  }
 	memcpy(data, im->image.data, im->cache_entry.w * im->cache_entry.h * sizeof(DATA32));
 	evas_common_convert_argb_unpremul(data, im->cache_entry.w * im->cache_entry.h);
 	png_init_io(png_ptr, f);
         png_set_IHDR(png_ptr, info_ptr, im->cache_entry.w, im->cache_entry.h, 8,
-		     PNG_COLOR_TYPE_RGB_ALPHA, png_ptr->interlaced,
+		     PNG_COLOR_TYPE_RGB_ALPHA, interlace,
 		     PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
 #ifdef WORDS_BIGENDIAN
 	png_set_swap_alpha(png_ptr);
@@ -89,7 +100,7 @@ save_image_png(RGBA_Image *im, const char *file, int compress, int interlace)
 	data = im->image.data;
 	png_init_io(png_ptr, f);
 	png_set_IHDR(png_ptr, info_ptr, im->cache_entry.w, im->cache_entry.h, 8,
-		     PNG_COLOR_TYPE_RGB, png_ptr->interlaced,
+		     PNG_COLOR_TYPE_RGB, interlace,
 		     PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
 	png_data = alloca(im->cache_entry.w * 3 * sizeof(char));
      }
@@ -98,16 +109,20 @@ save_image_png(RGBA_Image *im, const char *file, int compress, int interlace)
    sig_bit.blue = 8;
    sig_bit.alpha = 8;
    png_set_sBIT(png_ptr, info_ptr, &sig_bit);
-   
-   png_set_compression_level(png_ptr, compress);
+
+   png_set_compression_level(png_ptr, do_compress);
    png_write_info(png_ptr, info_ptr);
    png_set_shift(png_ptr, &sig_bit);
    png_set_packing(png_ptr);
 
+#ifdef PNG_WRITE_INTERLACING_SUPPORTED
+   num_passes = png_set_interlace_handling(png_ptr);
+#endif
+
    for (pass = 0; pass < num_passes; pass++)
      {
 	ptr = data;
-	
+
 	for (y = 0; y < im->cache_entry.h; y++)
 	  {
 	     if (im->cache_entry.flags.alpha)
@@ -129,19 +144,24 @@ save_image_png(RGBA_Image *im, const char *file, int compress, int interlace)
    png_write_end(png_ptr, info_ptr);
    png_destroy_write_struct(&png_ptr, (png_infopp) & info_ptr);
    png_destroy_info_struct(png_ptr, (png_infopp) & info_ptr);
-   
+
    if (im->cache_entry.flags.alpha)
      free(data);
-   fclose(f);
+   E_FCLOSE(f);
    return 1;
+
+ close_file:
+   E_FCLOSE(f);
+   return 0;
 }
 
-int evas_image_save_file_png(RGBA_Image *im, const char *file, const char *key, int quality, int compress)
+static int 
+evas_image_save_file_png(RGBA_Image *im, const char *file, const char *key __UNUSED__, int quality __UNUSED__, int do_compress)
 {
-   return save_image_png(im, file, compress, 0);
+   return save_image_png(im, file, do_compress, 0);
 }
 
-EAPI int
+static int
 module_open(Evas_Module *em)
 {
    if (!em) return 0;
@@ -149,16 +169,25 @@ module_open(Evas_Module *em)
    return 1;
 }
 
-EAPI void
-module_close(void)
+static void
+module_close(Evas_Module *em __UNUSED__)
 {
-   
 }
 
-EAPI Evas_Module_Api evas_modapi =
+static Evas_Module_Api evas_modapi =
 {
    EVAS_MODULE_API_VERSION,
-     EVAS_MODULE_TYPE_IMAGE_SAVER,
-     "png",
-     "none"
+   "png",
+   "none",
+   {
+     module_open,
+     module_close
+   }
 };
+
+EVAS_MODULE_DEFINE(EVAS_MODULE_TYPE_IMAGE_SAVER, image_saver, png);
+
+#ifndef EVAS_STATIC_BUILD_PNG
+EVAS_EINA_MODULE_DEFINE(image_saver, png);
+#endif
+

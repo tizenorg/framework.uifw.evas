@@ -3,6 +3,8 @@
 #include "evas_engine.h"
 #include "Evas_Engine_FB.h"
 
+int _evas_engine_fb_log_dom = -1;
+
 /* function tables - filled in later (func and parent func) */
 static Evas_Func func, pfunc;
 
@@ -14,7 +16,7 @@ struct _Render_Engine
    Tilebuf          *tb;
    Outbuf           *ob;
    Tilebuf_Rect     *rects;
-   Evas_Object_List *cur_rect;
+   Eina_Inlist      *cur_rect;
    int               end : 1;
 };
 
@@ -23,7 +25,7 @@ static void *_output_setup(int w, int h, int rot, int vt, int dev, int refresh);
 
 static void *eng_info(Evas *e);
 static void eng_info_free(Evas *e, void *info);
-static void eng_setup(Evas *e, void *info);
+static int eng_setup(Evas *e, void *info);
 static void eng_output_free(void *data);
 static void eng_output_resize(void *data, int w, int h);
 static void eng_output_tile_size_set(void *data, int w, int h);
@@ -42,6 +44,8 @@ _output_setup(int w, int h, int rot, int vt, int dev, int refresh)
    Render_Engine *re;
 
    re = calloc(1, sizeof(Render_Engine));
+   if (!re)
+     return NULL;
    /* if we haven't initialized - init (automatic abort if already done) */
    evas_common_cpu_init();
 
@@ -50,7 +54,6 @@ _output_setup(int w, int h, int rot, int vt, int dev, int refresh)
    evas_common_convert_init();
    evas_common_scale_init();
    evas_common_rectangle_init();
-   evas_common_gradient_init();
    evas_common_polygon_init();
    evas_common_line_init();
    evas_common_font_init();
@@ -71,27 +74,25 @@ _output_setup(int w, int h, int rot, int vt, int dev, int refresh)
 
 /* engine api this module provides */
 static void *
-eng_info(Evas *e)
+eng_info(Evas *e __UNUSED__)
 {
    Evas_Engine_Info_FB *info;
-
    info = calloc(1, sizeof(Evas_Engine_Info_FB));
    if (!info) return NULL;
    info->magic.magic = rand();
+   info->render_mode = EVAS_RENDER_MODE_BLOCKING;
    return info;
-   e = NULL;
 }
 
 static void
-eng_info_free(Evas *e, void *info)
+eng_info_free(Evas *e __UNUSED__, void *info)
 {
    Evas_Engine_Info_FB *in;
-
    in = (Evas_Engine_Info_FB *)info;
    free(in);
 }
 
-static void
+static int
 eng_setup(Evas *e, void *in)
 {
    Render_Engine *re;
@@ -105,8 +106,10 @@ eng_setup(Evas *e, void *in)
 		      info->info.device_number,
 		      info->info.refresh);
    e->engine.data.output = re;
-   if (!e->engine.data.output) return;
+   if (!e->engine.data.output) return 0;
    e->engine.data.context = e->engine.func->context_new(e->engine.data.output);
+
+   return 1;
 }
 
 static void
@@ -192,7 +195,7 @@ eng_output_redraws_next_update_get(void *data, int *x, int *y, int *w, int *h, i
    if (!re->rects)
      {
 	re->rects = evas_common_tilebuf_get_render_rects(re->tb);
-	re->cur_rect = (Evas_Object_List *)re->rects;
+	re->cur_rect = EINA_INLIST_GET(re->rects);
      }
    if (!re->cur_rect) return NULL;
    rect = (Tilebuf_Rect *)re->cur_rect;
@@ -218,36 +221,48 @@ eng_output_redraws_next_update_push(void *data, void *surface, int x, int y, int
    Render_Engine *re;
 
    re = (Render_Engine *)data;
-   evas_common_pipe_begin(surface);
-   evas_common_pipe_flush(surface);
+#ifdef BUILD_PIPE_RENDER
+   evas_common_pipe_map_begin(surface);
+#endif   
    evas_fb_outbuf_fb_push_updated_region(re->ob, surface, x, y, w, h);
    evas_fb_outbuf_fb_free_region_for_update(re->ob, surface);
    evas_common_cpu_end_opt();
 }
 
 static void
-eng_output_flush(void *data)
+eng_output_flush(void *data __UNUSED__)
 {
-   Render_Engine *re;
-
-   re = (Render_Engine *)data;
 }
 
 static void
-eng_output_idle_flush(void *data)
+eng_output_idle_flush(void *data __UNUSED__)
+{
+}
+
+static Eina_Bool
+eng_canvas_alpha_get(void *data, void *context __UNUSED__)
 {
    Render_Engine *re;
 
    re = (Render_Engine *)data;
+   return (re->ob->priv.fb.fb->fb_var.transp.length > 0);
 }
 
 /* module advertising code */
-EAPI int
+static int
 module_open(Evas_Module *em)
 {
    if (!em) return 0;
    /* get whatever engine module we inherit from */
    if (!_evas_module_engine_inherit(&pfunc, "software_generic")) return 0;
+   _evas_engine_fb_log_dom = eina_log_domain_register
+     ("evas-fb", EVAS_DEFAULT_LOG_COLOR);
+   if (_evas_engine_fb_log_dom < 0)
+     {
+        EINA_LOG_ERR("Can not create a module log domain.");
+        return 0;
+     }
+
    /* store it for later use */
    func = pfunc;
    /* now to override methods */
@@ -255,6 +270,7 @@ module_open(Evas_Module *em)
    ORD(info);
    ORD(info_free);
    ORD(setup);
+   ORD(canvas_alpha_get);
    ORD(output_free);
    ORD(output_resize);
    ORD(output_tile_size_set);
@@ -270,15 +286,25 @@ module_open(Evas_Module *em)
    return 1;
 }
 
-EAPI void
-module_close(void)
+static void
+module_close(Evas_Module *em __UNUSED__)
 {
+  eina_log_domain_unregister(_evas_engine_fb_log_dom);
 }
 
-EAPI Evas_Module_Api evas_modapi = 
+static Evas_Module_Api evas_modapi =
 {
-   EVAS_MODULE_API_VERSION, 
-     EVAS_MODULE_TYPE_ENGINE,
-     "fb",
-     "none"
+  EVAS_MODULE_API_VERSION,
+  "fb",
+  "none",
+  {
+    module_open,
+    module_close
+  }
 };
+
+EVAS_MODULE_DEFINE(EVAS_MODULE_TYPE_ENGINE, engine, fb);
+
+#ifndef EVAS_STATIC_BUILD_FB
+EVAS_EINA_MODULE_DEFINE(engine, fb);
+#endif
