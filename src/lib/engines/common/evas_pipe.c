@@ -1,8 +1,20 @@
-/*
- * vim:ts=8:sw=3:sts=8:noexpandtab:cino=>5n-3f0^-2{2
- */
-
 #include "evas_common.h"
+#include <unistd.h>
+
+#ifdef BUILD_PIPE_RENDER
+
+# ifdef BUILD_PTHREAD
+typedef struct _Thinfo
+{
+   RGBA_Image            *im;
+   int                    thread_num;
+   pthread_t              thread_id;
+   pthread_barrier_t     *barrier;
+   const Eina_Inlist     *tasks;
+   Eina_Array             cutout_trash;
+   Eina_Array             rects_task;
+} Thinfo;
+#endif
 
 static RGBA_Pipe *evas_common_pipe_add(RGBA_Pipe *pipe, RGBA_Pipe_Op **op);
 static void evas_common_pipe_draw_context_copy(RGBA_Draw_Context *dc, RGBA_Pipe_Op *op);
@@ -10,32 +22,32 @@ static void evas_common_pipe_op_free(RGBA_Pipe_Op *op);
 
 /* utils */
 static RGBA_Pipe *
-evas_common_pipe_add(RGBA_Pipe *pipe, RGBA_Pipe_Op **op)
+evas_common_pipe_add(RGBA_Pipe *rpipe, RGBA_Pipe_Op **op)
 {
    RGBA_Pipe *p;
    int first_pipe = 0;
 
-   if (!pipe)
+   if (!rpipe)
      {
-	first_pipe = 1;
-	p = calloc(1, sizeof(RGBA_Pipe));
-	if (!p) return NULL;
-	pipe = evas_object_list_append(pipe, p);
+        first_pipe = 1;
+        p = calloc(1, sizeof(RGBA_Pipe));
+        if (!p) return NULL;
+        rpipe = (RGBA_Pipe *)eina_inlist_append(EINA_INLIST_GET(rpipe), EINA_INLIST_GET(p));
      }
-   p = (RGBA_Pipe *)((Evas_Object_List *)pipe)->last;
+   p = (RGBA_Pipe *)(EINA_INLIST_GET(rpipe))->last;
    if (p->op_num == PIPE_LEN)
      {
-	p = calloc(1, sizeof(RGBA_Pipe));
-	if (!p) return NULL;
-	pipe = evas_object_list_append(pipe, p);
+        p = calloc(1, sizeof(RGBA_Pipe));
+        if (!p) return NULL;
+        rpipe = (RGBA_Pipe *)eina_inlist_append(EINA_INLIST_GET(rpipe), EINA_INLIST_GET(p));
      }
    p->op_num++;
    *op = &(p->op[p->op_num - 1]);
    if (first_pipe)
      {
-	/* FIXME: PTHREAD init any thread locks etc */
+        /* FIXME: PTHREAD init any thread locks etc */
      }
-   return pipe;
+   return rpipe;
 }
 
 static void
@@ -44,11 +56,13 @@ evas_common_pipe_draw_context_copy(RGBA_Draw_Context *dc, RGBA_Pipe_Op *op)
    memcpy(&(op->context), dc, sizeof(RGBA_Draw_Context));
    if (op->context.cutout.active > 0)
      {
-	op->context.cutout.rects = malloc(sizeof(Cutout_Rect) * op->context.cutout.active);
-	memcpy(op->context.cutout.rects, dc->cutout.rects, sizeof(Cutout_Rect) * op->context.cutout.active);
+        op->context.cutout.rects = malloc(sizeof(Cutout_Rect) * op->context.cutout.active);
+        memcpy(op->context.cutout.rects, dc->cutout.rects, sizeof(Cutout_Rect) * op->context.cutout.active);
      }
    else
-     op->context.cutout.rects = NULL;
+     {
+        op->context.cutout.rects = NULL;
+     }
 }
 
 static void
@@ -57,124 +71,150 @@ evas_common_pipe_op_free(RGBA_Pipe_Op *op)
    evas_common_draw_context_apply_clean_cutouts(&op->context.cutout);
 }
 
-/* main api calls */
 #ifdef BUILD_PTHREAD
-typedef struct _Thinfo
-{
-   int                    thread_num;
-   pthread_t              thread_id;
-   pthread_barrier_t     *barrier;
-   RGBA_Pipe_Thread_Info *info;
-} Thinfo;
-
+/* main api calls */
 static void *
 evas_common_pipe_thread(void *data)
 {
    Thinfo *thinfo;
 
-//   printf("TH [...........\n");
+// INF("TH [...........");
    thinfo = data;
    for (;;)
      {
-	RGBA_Pipe_Thread_Info *info;
-	RGBA_Pipe *p;
+        const RGBA_Pipe_Thread_Info *info;
+        RGBA_Pipe *p;
 
-	/* wait for start signal */
-//	printf(" TH %i START...\n", thinfo->thread_num);
-	pthread_barrier_wait(&(thinfo->barrier[0]));
-	info = thinfo->info;
-//	if (info)
-//	  {
-//	     thinfo->info = NULL;
-//	     printf(" TH %i GO\n", thinfo->thread_num);
-	     for (p = info->im->pipe; p; p = (RGBA_Pipe *)((Evas_Object_List *)p)->next)
-	       {
-		  int i;
+        /* wait for start signal */
+// INF(" TH %i START...", thinfo->thread_num);
+        pthread_barrier_wait(&(thinfo->barrier[0]));
 
-		  for (i = 0; i < p->op_num; i++)
-		    {
-		       if (p->op[i].op_func)
-			 p->op[i].op_func(info->im, &(p->op[i]), info);
-		    }
-	       }
-	     free(info);
-//	  }
-//	printf(" TH %i DONE\n", thinfo->thread_num);
-	/* send finished signal */
-	pthread_barrier_wait(&(thinfo->barrier[1]));
+        EINA_INLIST_FOREACH(thinfo->tasks, info)
+          {
+             EINA_INLIST_FOREACH(EINA_INLIST_GET(thinfo->im->cache_entry.pipe), p)
+               {
+                  int i;
+
+                  for (i = 0; i < p->op_num; i++)
+                    {
+                       if (p->op[i].op_func && p->op[i].render)
+                         p->op[i].op_func(thinfo->im, &(p->op[i]), info);
+                    }
+               }
+          }
+
+        thinfo->tasks = NULL;
+
+        pthread_barrier_wait(&(thinfo->barrier[1]));
      }
    return NULL;
 }
 #endif
 
 #ifdef BUILD_PTHREAD
+static Eina_List *im_task = NULL;
+static Eina_List *text_task = NULL;
+static Thinfo task_thinfo[TH_MAX];
+static pthread_barrier_t task_thbarrier[2];
+static LK(im_task_mutex);
+static LK(text_task_mutex);
+
 static int               thread_num = 0;
 static Thinfo            thinfo[TH_MAX];
 static pthread_barrier_t thbarrier[2];
+
+static RGBA_Pipe_Thread_Info *buf = NULL;
+static unsigned int           buf_size = 0;
+
+static Cutout_Rects *
+evas_pipe_cutout_rects_pop(Thinfo *info)
+{
+   Cutout_Rects *r;
+
+   r = eina_array_pop(&info->cutout_trash);
+   if (!r) r = evas_common_draw_context_cutouts_new();
+   return r;
+}
+
+static void
+evas_pipe_cutout_rects_push(Thinfo *info, Cutout_Rects *r)
+{
+   /* evas_common_draw_context_apply_clean_cutouts(r); */
+   evas_common_draw_context_cutouts_free(r);
+   eina_array_push(&info->cutout_trash, r);
+}
+
+static void
+evas_pipe_cutout_rects_rotate(Cutout_Rects *r)
+{
+   static int current = 0;
+
+   if (current >= thread_num) current = 0;
+   evas_pipe_cutout_rects_push(&task_thinfo[current], r);
+   current++;
+}
+
+static void
+evas_pipe_prepare_push(RGBA_Pipe_Op *op)
+{
+   static int current = 0;
+
+   if (current >= thread_num) current = 0;
+   eina_array_push(&task_thinfo[current].rects_task, op);
+   current++;
+}
+
 #endif
 
-EAPI void
+static void
 evas_common_pipe_begin(RGBA_Image *im)
 {
+#define SZ 128
 #ifdef BUILD_PTHREAD
-   int i, y, h;
+   unsigned int x, y, cpu;
+   RGBA_Pipe_Thread_Info *info;
+   unsigned int estimatex, estimatey;
+   unsigned int needed_size;
 
-   if (!im->pipe) return;
+   if (!im->cache_entry.pipe) return;
    if (thread_num == 1) return;
-   if (thread_num == 0)
+
+   if (im->cache_entry.w * im->cache_entry.h / thread_num < SZ * SZ)
      {
-	int cpunum;
-
-	cpunum = evas_common_cpu_count();
-	thread_num = cpunum;
-	if (thread_num == 1) return;
-	pthread_barrier_init(&(thbarrier[0]), NULL, thread_num + 1);
-	pthread_barrier_init(&(thbarrier[1]), NULL, thread_num + 1);
-	for (i = 0; i < thread_num; i++)
-	  {
-	     pthread_attr_t attr;
-	     cpu_set_t cpu;
-
-	     pthread_attr_init(&attr);
-	     CPU_ZERO(&cpu);
-	     CPU_SET(i % cpunum, &cpu);
-	     pthread_attr_setaffinity_np(&attr, sizeof(cpu), &cpu);
-	     thinfo[i].thread_num = i;
-	     thinfo[i].info = NULL;
-	     thinfo[i].barrier = thbarrier;
-	     /* setup initial locks */
-	     pthread_create(&(thinfo[i].thread_id), &attr,
-			    evas_common_pipe_thread, &(thinfo[i]));
-	     pthread_attr_destroy(&attr);
-	  }
+        estimatex = im->cache_entry.w;
+        estimatey = im->cache_entry.h / thread_num;
+        if (estimatey == 0) estimatey = 1;
      }
-   y = 0;
-   h = im->cache_entry.h / thread_num;
-   if (h < 1) h = 1;
-   for (i = 0; i < thread_num; i++)
+   else
      {
-	RGBA_Pipe_Thread_Info *info;
-
-//	     if (y >= im->cache_entry.h) break;
-	info = calloc(1, sizeof(RGBA_Pipe_Thread_Info));
-	info->im = im;
-#ifdef EVAS_SLI
-	info->x = 0;
-	info->w = im->cache_entry.w;
-	info->y = i;
-	info->h = thread_num;
-#else
-	info->x = 0;
-	info->y = y;
-	info->w = im->cache_entry.w;
-	if (i == (thread_num - 1))
-	  info->h = im->cache_entry.h - y;
-	else
-	  info->h = h;
-	y += info->h;
-#endif
-	thinfo[i].info = info;
+        estimatex = SZ;
+        estimatey = SZ;
      }
+
+   needed_size = ((im->cache_entry.w / estimatex) + 1 ) * ((im->cache_entry.h /  estimatey) + 1);
+   if (buf_size < needed_size)
+     {
+        buf = realloc(buf, sizeof (RGBA_Pipe_Thread_Info) * needed_size);
+        buf_size = needed_size;
+     }
+
+   info = buf;
+   cpu = 0;
+   for (y = 0; y < im->cache_entry.h; y += estimatey)
+     for (x = 0; x < im->cache_entry.w; x += estimatex)
+       {
+          EINA_RECTANGLE_SET(&info->area, x, y,
+                             (x + estimatex > im->cache_entry.w) ? im->cache_entry.w - x : estimatex,
+                             (y + estimatey > im->cache_entry.h) ? im->cache_entry.h - y : estimatey);
+
+	  thinfo[cpu].im = im;
+          thinfo[cpu].tasks = eina_inlist_prepend((void*) thinfo[cpu].tasks, EINA_INLIST_GET(info));
+          cpu++;
+          if (cpu >= (unsigned int) thread_num) cpu = 0;
+
+          info++;
+       }
+
    /* tell worker threads to start */
    pthread_barrier_wait(&(thbarrier[0]));
 #endif
@@ -183,30 +223,35 @@ evas_common_pipe_begin(RGBA_Image *im)
 EAPI void
 evas_common_pipe_flush(RGBA_Image *im)
 {
-
-   RGBA_Pipe *p;
-   int i;
-
-   if (!im->pipe) return;
+   if (!im->cache_entry.pipe) return;
 #ifdef BUILD_PTHREAD
    if (thread_num > 1)
      {
-	/* sync worker threads */
-	pthread_barrier_wait(&(thbarrier[1]));
+       /* sync worker threads */
+       pthread_barrier_wait(&(thbarrier[1]));
      }
    else
 #endif
      {
-	/* process pipe - 1 thead */
-	for (p = im->pipe; p; p = (RGBA_Pipe *)((Evas_Object_List *)p)->next)
-	  {
-	     for (i = 0; i < p->op_num; i++)
-	       {
-		  if (p->op[i].op_func)
-		    p->op[i].op_func(im, &(p->op[i]), NULL);
-	       }
-	  }
+        RGBA_Pipe_Thread_Info info;
+        RGBA_Pipe *p;
+        int i;
+
+        EINA_RECTANGLE_SET(&info.area, 0, 0, im->cache_entry.w, im->cache_entry.h);
+
+        /* process pipe - 1 thead */
+        for (p = im->cache_entry.pipe; p; p = (RGBA_Pipe *)(EINA_INLIST_GET(p))->next)
+          {
+             for (i = 0; i < p->op_num; i++)
+               {
+                  if (p->op[i].render && p->op[i].op_func)
+                    {
+                       p->op[i].op_func(im, &(p->op[i]), &info);
+                    }
+               }
+          }
      }
+
    evas_common_cpu_end_opt();
    evas_common_pipe_free(im);
 }
@@ -218,20 +263,23 @@ evas_common_pipe_free(RGBA_Image *im)
    RGBA_Pipe *p;
    int i;
 
-   if (!im->pipe) return;
+   if (!im->cache_entry.pipe) return;
    /* FIXME: PTHREAD join all threads here (if not finished) */
 
    /* free pipe */
-   while (im->pipe)
+   while (im->cache_entry.pipe)
      {
-	p = im->pipe;
-	for (i = 0; i < p->op_num; i++)
-	  {
-	     if (p->op[i].free_func)
-	       p->op[i].free_func(&(p->op[i]));
-	  }
-	im->pipe = evas_object_list_remove(im->pipe, p);
-	free(p);
+        p = im->cache_entry.pipe;
+        for (i = 0; i < p->op_num; i++)
+          {
+             if (p->op[i].free_func)
+               {
+                  p->op[i].free_func(&(p->op[i]));
+               }
+             if (p->op[i].rects) evas_pipe_cutout_rects_rotate(p->op[i].rects);
+          }
+        im->cache_entry.pipe = (RGBA_Pipe *)eina_inlist_remove(EINA_INLIST_GET(im->cache_entry.pipe), EINA_INLIST_GET(p));
+        free(p);
      }
 }
 
@@ -240,84 +288,81 @@ evas_common_pipe_free(RGBA_Image *im)
 /* draw ops */
 /**************** RECT ******************/
 static void
-evas_common_pipe_rectangle_draw_do(RGBA_Image *dst, RGBA_Pipe_Op *op, RGBA_Pipe_Thread_Info *info)
+evas_common_pipe_rectangle_draw_do(RGBA_Image *dst, const RGBA_Pipe_Op *op, const RGBA_Pipe_Thread_Info *info)
 {
-   if (info)
-     {
-	RGBA_Draw_Context context;
+   RGBA_Draw_Context context;
 
-	memcpy(&(context), &(op->context), sizeof(RGBA_Draw_Context));
-#ifdef EVAS_SLI
-	evas_common_draw_context_set_sli(&(context), info->y, info->h);
-#else
-	evas_common_draw_context_clip_clip(&(context), info->x, info->y, info->w, info->h);
-#endif
-	evas_common_rectangle_draw(dst, &(context),
-				   op->op.rect.x, op->op.rect.y,
-				   op->op.rect.w, op->op.rect.h);
-     }
-   else
-     evas_common_rectangle_draw(dst, &(op->context),
-				op->op.rect.x, op->op.rect.y,
-				op->op.rect.w, op->op.rect.h);
+   memcpy(&(context), &(op->context), sizeof(RGBA_Draw_Context));
+   evas_common_rectangle_draw_do(op->rects, &info->area, dst, &(context),
+				 op->op.rect.x, op->op.rect.y,
+				 op->op.rect.w, op->op.rect.h);
+}
+
+static Eina_Bool
+evas_common_pipe_rectangle_prepare(void *data, RGBA_Image *dst, RGBA_Pipe_Op *op)
+{
+   Cutout_Rects *recycle;
+   Thinfo *info = data;
+   Eina_Bool r;
+
+   recycle = evas_pipe_cutout_rects_pop(info);
+   r = evas_common_rectangle_draw_prepare(recycle, dst, &(op->context),
+                                          op->op.rect.x, op->op.rect.y,
+                                          op->op.rect.w, op->op.rect.h);
+   if (recycle->active) op->rects = recycle;
+   else evas_pipe_cutout_rects_push(info, recycle);
+
+   return r;
 }
 
 EAPI void
-evas_common_pipe_rectangle_draw(RGBA_Image *dst, RGBA_Draw_Context *dc,
-				int x, int y, int w, int h)
+evas_common_pipe_rectangle_draw(RGBA_Image *dst, RGBA_Draw_Context *dc, int x, int y, int w, int h)
 {
    RGBA_Pipe_Op *op;
 
    if ((w < 1) || (h < 1)) return;
-   dst->pipe = evas_common_pipe_add(dst->pipe, &op);
-   if (!dst->pipe) return;
+   dst->cache_entry.pipe = evas_common_pipe_add(dst->cache_entry.pipe, &op);
+   if (!dst->cache_entry.pipe) return;
    op->op.rect.x = x;
    op->op.rect.y = y;
    op->op.rect.w = w;
    op->op.rect.h = h;
    op->op_func = evas_common_pipe_rectangle_draw_do;
    op->free_func = evas_common_pipe_op_free;
+   op->prepare_func = evas_common_pipe_rectangle_prepare;
+   evas_pipe_prepare_push(op);
    evas_common_pipe_draw_context_copy(dc, op);
 }
 
 /**************** LINE ******************/
 static void
-evas_common_pipe_line_draw_do(RGBA_Image *dst, RGBA_Pipe_Op *op, RGBA_Pipe_Thread_Info *info)
+evas_common_pipe_line_draw_do(RGBA_Image *dst, const RGBA_Pipe_Op *op, const RGBA_Pipe_Thread_Info *info)
 {
-   if (info)
-     {
-	RGBA_Draw_Context context;
+   RGBA_Draw_Context context;
 
-	memcpy(&(context), &(op->context), sizeof(RGBA_Draw_Context));
-#ifdef EVAS_SLI
-	evas_common_draw_context_set_sli(&(context), info->y, info->h);
-#else
-	evas_common_draw_context_clip_clip(&(context), info->x, info->y, info->w, info->h);
-#endif
-	evas_common_line_draw(dst, &(context),
-			      op->op.line.x0, op->op.line.y0,
-			      op->op.line.x1, op->op.line.y1);
-     }
-   else
-     evas_common_line_draw(dst, &(op->context),
-			   op->op.line.x0, op->op.line.y0,
-			   op->op.line.x1, op->op.line.y1);
+   memcpy(&(context), &(op->context), sizeof(RGBA_Draw_Context));
+   evas_common_draw_context_clip_clip(&(context), info->area.x, info->area.y, info->area.w, info->area.h);
+   evas_common_line_draw(dst, &(context),
+                         op->op.line.x0, op->op.line.y0,
+                         op->op.line.x1, op->op.line.y1);
 }
 
 EAPI void
 evas_common_pipe_line_draw(RGBA_Image *dst, RGBA_Draw_Context *dc,
-			   int x0, int y0, int x1, int y1)
+                           int x0, int y0, int x1, int y1)
 {
    RGBA_Pipe_Op *op;
 
-   dst->pipe = evas_common_pipe_add(dst->pipe, &op);
-   if (!dst->pipe) return;
+   dst->cache_entry.pipe = evas_common_pipe_add(dst->cache_entry.pipe, &op);
+   if (!dst->cache_entry.pipe) return;
    op->op.line.x0 = x0;
    op->op.line.y0 = y0;
    op->op.line.x1 = x1;
    op->op.line.y1 = y1;
    op->op_func = evas_common_pipe_line_draw_do;
    op->free_func = evas_common_pipe_op_free;
+   op->prepare_func = NULL;
+   op->render = EINA_TRUE;
    evas_common_pipe_draw_context_copy(dc, op);
 }
 
@@ -325,115 +370,61 @@ evas_common_pipe_line_draw(RGBA_Image *dst, RGBA_Draw_Context *dc,
 static void
 evas_common_pipe_op_poly_free(RGBA_Pipe_Op *op)
 {
+#if 0
    RGBA_Polygon_Point *p;
 
    while (op->op.poly.points)
      {
-	p = op->op.poly.points;
-	op->op.poly.points = evas_object_list_remove(op->op.poly.points, p);
-	free(p);
+        p = op->op.poly.points;
+        op->op.poly.points = (RGBA_Polygon_Point *)eina_inlist_remove(EINA_INLIST_GET(op->op.poly.points),
+                                                      EINA_INLIST_GET(p));
+        free(p);
      }
+#endif
    evas_common_pipe_op_free(op);
 }
 
 static void
-evas_common_pipe_poly_draw_do(RGBA_Image *dst, RGBA_Pipe_Op *op, RGBA_Pipe_Thread_Info *info)
+evas_common_pipe_poly_draw_do(RGBA_Image *dst, const RGBA_Pipe_Op *op, const RGBA_Pipe_Thread_Info *info)
 {
-   if (info)
-     {
-	RGBA_Draw_Context context;
+   RGBA_Draw_Context context;
 
-	memcpy(&(context), &(op->context), sizeof(RGBA_Draw_Context));
-#ifdef EVAS_SLI
-	evas_common_draw_context_set_sli(&(context), info->y, info->h);
-#else
-	evas_common_draw_context_clip_clip(&(context), info->x, info->y, info->w, info->h);
-#endif
-	evas_common_polygon_draw(dst, &(context),
-				 op->op.poly.points);
-     }
-   else
-     evas_common_polygon_draw(dst, &(op->context),
-			      op->op.poly.points);
+   memcpy(&(context), &(op->context), sizeof(RGBA_Draw_Context));
+   evas_common_draw_context_clip_clip(&(context), info->area.x, info->area.y, info->area.w, info->area.h);
+   evas_common_polygon_draw(dst, &(context),
+                            op->op.poly.points, op->op.poly.x, op->op.poly.y);
 }
 
 EAPI void
 evas_common_pipe_poly_draw(RGBA_Image *dst, RGBA_Draw_Context *dc,
-			   RGBA_Polygon_Point *points)
+                           RGBA_Polygon_Point *points, int x, int y)
 {
    RGBA_Pipe_Op *op;
-   RGBA_Polygon_Point *pts = NULL, *p, *pp;
+   /* RGBA_Polygon_Point *pts = NULL, *p, *pp; */
 
    if (!points) return;
-   dst->pipe = evas_common_pipe_add(dst->pipe, &op);
-   if (!dst->pipe) return;
+   dst->cache_entry.pipe = evas_common_pipe_add(dst->cache_entry.pipe, &op);
+   if (!dst->cache_entry.pipe) return;
    /* FIXME: copy points - maybe we should refcount? */
-   for (p = points; p; p = (RGBA_Polygon_Point *)((Evas_Object_List *)p)->next)
+#if 0
+   for (p = points; p; p = (RGBA_Polygon_Point *)(EINA_INLIST_GET(p))->next)
      {
-	pp = calloc(1, sizeof(RGBA_Polygon_Point));
-	if (pp)
-	  {
-	     pp->x = p->x;
-	     pp->y = p->y;
-	     pts = evas_object_list_append(pts, pp);
-	  }
+        pp = calloc(1, sizeof(RGBA_Polygon_Point));
+        if (pp)
+          {
+             pp->x = p->x + x;
+             pp->y = p->y + y;
+             pts = (RGBA_Polygon_Point *)eina_inlist_append(EINA_INLIST_GET(pts), EINA_INLIST_GET(pp));
+          }
      }
-   op->op.poly.points = pts;
+#endif
+   op->op.poly.x = x;
+   op->op.poly.y = y;
+   op->op.poly.points = points/* pts */;
    op->op_func = evas_common_pipe_poly_draw_do;
    op->free_func = evas_common_pipe_op_poly_free;
-   evas_common_pipe_draw_context_copy(dc, op);
-}
-
-/**************** GRAD ******************/
-static void
-evas_common_pipe_op_grad_free(RGBA_Pipe_Op *op)
-{
-   evas_common_gradient_free(op->op.grad.grad);
-   evas_common_pipe_op_free(op);
-}
-
-static void
-evas_common_pipe_grad_draw_do(RGBA_Image *dst, RGBA_Pipe_Op *op, RGBA_Pipe_Thread_Info *info)
-{
-   if (info)
-     {
-	RGBA_Draw_Context context;
-
-	memcpy(&(context), &(op->context), sizeof(RGBA_Draw_Context));
-#ifdef EVAS_SLI
-	evas_common_draw_context_set_sli(&(context), info->y, info->h);
-#else
-	evas_common_draw_context_clip_clip(&(context), info->x, info->y, info->w, info->h);
-#endif
-	evas_common_gradient_draw(dst, &(context),
-				  op->op.grad.x, op->op.grad.y,
-				  op->op.grad.w, op->op.grad.h,
-				  op->op.grad.grad);
-     }
-   else
-     evas_common_gradient_draw(dst, &(op->context),
-			       op->op.grad.x, op->op.grad.y,
-			       op->op.grad.w, op->op.grad.h,
-			       op->op.grad.grad);
-}
-
-EAPI void
-evas_common_pipe_grad_draw(RGBA_Image *dst, RGBA_Draw_Context *dc,
-			   int x, int y, int w, int h, RGBA_Gradient *gr)
-{
-   RGBA_Pipe_Op *op;
-
-   if (!gr) return;
-   dst->pipe = evas_common_pipe_add(dst->pipe, &op);
-   if (!dst->pipe) return;
-   op->op.grad.x = x;
-   op->op.grad.y = y;
-   op->op.grad.w = w;
-   op->op.grad.h = h;
-   gr->references++;
-   op->op.grad.grad = gr;
-   op->op_func = evas_common_pipe_grad_draw_do;
-   op->free_func = evas_common_pipe_op_grad_free;
+   op->render = EINA_TRUE;
+   op->prepare_func = NULL; /* FIXME: If we really want to improve it, we should prepare span for it here */
    evas_common_pipe_draw_context_copy(dc, op);
 }
 
@@ -441,51 +432,53 @@ evas_common_pipe_grad_draw(RGBA_Image *dst, RGBA_Draw_Context *dc,
 static void
 evas_common_pipe_op_text_free(RGBA_Pipe_Op *op)
 {
-   evas_common_font_free(op->op.text.font);
-   free(op->op.text.text);
+   evas_common_text_props_content_unref(op->op.text.intl_props);
    evas_common_pipe_op_free(op);
 }
 
 static void
-evas_common_pipe_text_draw_do(RGBA_Image *dst, RGBA_Pipe_Op *op, RGBA_Pipe_Thread_Info *info)
+evas_common_pipe_text_draw_do(RGBA_Image *dst, const RGBA_Pipe_Op *op, const RGBA_Pipe_Thread_Info *info)
 {
-   if (info)
-     {
-	RGBA_Draw_Context context;
+   RGBA_Draw_Context context;
 
-	memcpy(&(context), &(op->context), sizeof(RGBA_Draw_Context));
-#ifdef EVAS_SLI
-	evas_common_draw_context_set_sli(&(context), info->y, info->h);
-#else
-	evas_common_draw_context_clip_clip(&(context), info->x, info->y, info->w, info->h);
-#endif
-	evas_common_font_draw(dst, &(context),
-			      op->op.text.font, op->op.text.x, op->op.text.y,
-			      op->op.text.text);
-     }
-   else
-     evas_common_font_draw(dst, &(op->context),
-			   op->op.text.font, op->op.text.x, op->op.text.y,
-			   op->op.text.text);
+   memcpy(&(context), &(op->context), sizeof(RGBA_Draw_Context));
+   evas_common_font_draw_do(op->rects, &info->area, op->op.text.func, dst, &(context), op->op.text.x, op->op.text.y, op->op.text.intl_props);
+}
+
+static Eina_Bool
+evas_common_pipe_text_draw_prepare(void *data, RGBA_Image *dst, RGBA_Pipe_Op *op)
+{
+   Cutout_Rects *recycle;
+   Thinfo *info = data;
+   Eina_Bool r;
+
+   recycle = evas_pipe_cutout_rects_pop(info);
+   r = evas_common_font_draw_prepare_cutout(recycle, dst, &(op->context),
+					    &(op->op.text.func));
+   if (recycle->active) op->rects = recycle;
+   else evas_pipe_cutout_rects_push(info, recycle);
+
+   return r;
 }
 
 EAPI void
 evas_common_pipe_text_draw(RGBA_Image *dst, RGBA_Draw_Context *dc,
-			   RGBA_Font *fn, int x, int y, const char *text)
+			   int x, int y, Evas_Text_Props *intl_props)
 {
    RGBA_Pipe_Op *op;
 
-   if ((!fn) || (!text)) return;
-   dst->pipe = evas_common_pipe_add(dst->pipe, &op);
-   if (!dst->pipe) return;
+   dst->cache_entry.pipe = evas_common_pipe_add(dst->cache_entry.pipe, &op);
+   if (!dst->cache_entry.pipe) return;
    op->op.text.x = x;
    op->op.text.y = y;
-   op->op.text.text = strdup(text);
-   fn->references++;
-   op->op.text.font = fn;
+   op->op.text.intl_props = intl_props;
+   evas_common_text_props_content_ref(intl_props);
    op->op_func = evas_common_pipe_text_draw_do;
    op->free_func = evas_common_pipe_op_text_free;
+   op->prepare_func = evas_common_pipe_text_draw_prepare;
+   evas_pipe_prepare_push(op);
    evas_common_pipe_draw_context_copy(dc, op);
+   evas_common_pipe_text_prepare(intl_props);
 }
 
 /**************** IMAGE *****************/
@@ -494,71 +487,82 @@ evas_common_pipe_op_image_free(RGBA_Pipe_Op *op)
 {
    op->op.image.src->ref--;
    if (op->op.image.src->ref == 0)
-     evas_cache_image_drop(&op->op.image.src->cache_entry);
+     {
+        evas_cache_image_drop(&op->op.image.src->cache_entry);
+     }
    evas_common_pipe_op_free(op);
 }
 
-static void
-evas_common_pipe_image_draw_do(RGBA_Image *dst, RGBA_Pipe_Op *op, RGBA_Pipe_Thread_Info *info)
+static Eina_Bool
+evas_common_pipe_op_image_prepare(void *data, RGBA_Image *dst, RGBA_Pipe_Op *op)
 {
-   if (info)
-     {
-	RGBA_Draw_Context context;
+   Cutout_Rects *recycle;
+   Thinfo *info = data;
+   Eina_Bool r;
 
-	memcpy(&(context), &(op->context), sizeof(RGBA_Draw_Context));
-#ifdef EVAS_SLI
-	evas_common_draw_context_set_sli(&(context), info->y, info->h);
+   recycle = evas_pipe_cutout_rects_pop(info);
+   r = evas_common_scale_rgba_in_to_out_clip_prepare(recycle,
+						     op->op.image.src, dst,
+						     &(op->context),
+                                                     op->op.image.dx, op->op.image.dy,
+                                                     op->op.image.dw, op->op.image.dh);
+   if (recycle->active) op->rects = recycle;
+   else evas_pipe_cutout_rects_push(info, recycle);
+
+   return r;
+}
+
+static void
+evas_common_pipe_image_draw_do(RGBA_Image *dst, const RGBA_Pipe_Op *op, const RGBA_Pipe_Thread_Info *info)
+{
+   RGBA_Draw_Context context;
+
+   memcpy(&(context), &(op->context), sizeof(RGBA_Draw_Context));
+
+#ifdef SCALECACHE
+   /* FIXME: Make the scalecache path use the prepared Cutout ? */
+   evas_common_draw_context_clip_clip(&(context), info->area.x, info->area.y, info->area.w, info->area.h);
+   evas_common_rgba_image_scalecache_do((Image_Entry *)(op->op.image.src),
+                                        dst, &(context),
+                                        op->op.image.smooth,
+                                        op->op.image.sx,
+                                        op->op.image.sy,
+                                        op->op.image.sw,
+                                        op->op.image.sh,
+                                        op->op.image.dx,
+                                        op->op.image.dy,
+                                        op->op.image.dw,
+                                        op->op.image.dh);
 #else
-	evas_common_draw_context_clip_clip(&(context), info->x, info->y, info->w, info->h);
-#endif
-	if (op->op.image.smooth)
-	  evas_common_scale_rgba_in_to_out_clip_smooth(op->op.image.src,
-						       dst, &(context),
-						       op->op.image.sx,
-						       op->op.image.sy,
-						       op->op.image.sw,
-						       op->op.image.sh,
-						       op->op.image.dx,
-						       op->op.image.dy,
-						       op->op.image.dw,
-						       op->op.image.dh);
-	else
-	  evas_common_scale_rgba_in_to_out_clip_sample(op->op.image.src,
-						       dst, &(context),
-						       op->op.image.sx,
-						       op->op.image.sy,
-						       op->op.image.sw,
-						       op->op.image.sh,
-						       op->op.image.dx,
-						       op->op.image.dy,
-						       op->op.image.dw,
-						       op->op.image.dh);
+   if (op->op.image.smooth)
+     {
+        evas_common_scale_rgba_in_to_out_clip_smooth_do(op->rects, &info->area,
+                                                        op->op.image.src,
+                                                        dst, &(context),
+                                                        op->op.image.sx,
+                                                        op->op.image.sy,
+                                                        op->op.image.sw,
+                                                        op->op.image.sh,
+                                                        op->op.image.dx,
+                                                        op->op.image.dy,
+                                                        op->op.image.dw,
+                                                        op->op.image.dh);
      }
    else
      {
-	if (op->op.image.smooth)
-	  evas_common_scale_rgba_in_to_out_clip_smooth(op->op.image.src,
-						       dst, &(op->context),
-						       op->op.image.sx,
-						       op->op.image.sy,
-						       op->op.image.sw,
-						       op->op.image.sh,
-						       op->op.image.dx,
-						       op->op.image.dy,
-						       op->op.image.dw,
-						       op->op.image.dh);
-	else
-	  evas_common_scale_rgba_in_to_out_clip_sample(op->op.image.src,
-						       dst, &(op->context),
-						       op->op.image.sx,
-						       op->op.image.sy,
-						       op->op.image.sw,
-						       op->op.image.sh,
-						       op->op.image.dx,
-						       op->op.image.dy,
-						       op->op.image.dw,
-						       op->op.image.dh);
+        evas_common_scale_rgba_in_to_out_clip_sample_do(op->rects, &info->area,
+                                                        op->op.image.src,
+                                                        dst, &(context),
+                                                        op->op.image.sx,
+                                                        op->op.image.sy,
+                                                        op->op.image.sw,
+                                                        op->op.image.sh,
+                                                        op->op.image.dx,
+                                                        op->op.image.dy,
+                                                        op->op.image.dw,
+                                                        op->op.image.dh);
      }
+#endif
 }
 
 EAPI void
@@ -573,8 +577,8 @@ evas_common_pipe_image_draw(RGBA_Image *src, RGBA_Image *dst,
 
    if (!src) return;
 //   evas_common_pipe_flush(src);
-   dst->pipe = evas_common_pipe_add(dst->pipe, &op);
-   if (!dst->pipe) return;
+   dst->cache_entry.pipe = evas_common_pipe_add(dst->cache_entry.pipe, &op);
+   if (!dst->cache_entry.pipe) return;
    op->op.image.smooth = smooth;
    op->op.image.sx = src_region_x;
    op->op.image.sy = src_region_y;
@@ -588,5 +592,338 @@ evas_common_pipe_image_draw(RGBA_Image *src, RGBA_Image *dst,
    op->op.image.src = src;
    op->op_func = evas_common_pipe_image_draw_do;
    op->free_func = evas_common_pipe_op_image_free;
+   op->prepare_func = evas_common_pipe_op_image_prepare;
+   evas_pipe_prepare_push(op);
    evas_common_pipe_draw_context_copy(dc, op);
+
+   evas_common_pipe_image_load(src);
+}
+
+static void
+evas_common_pipe_op_map_free(RGBA_Pipe_Op *op)
+{
+   op->op.map.src->ref--;
+   if (op->op.map.src->ref == 0)
+     evas_cache_image_drop(&op->op.map.src->cache_entry);
+   /* free(op->op.map.p); */
+   evas_common_pipe_op_free(op);
+}
+
+static void
+evas_common_pipe_map_draw_do(RGBA_Image *dst, const RGBA_Pipe_Op *op, const RGBA_Pipe_Thread_Info *info)
+{
+   RGBA_Draw_Context context;
+
+   memcpy(&(context), &(op->context), sizeof(RGBA_Draw_Context));
+   evas_common_map_rgba_do(&info->area, op->op.map.src, dst,
+                           &context, op->op.map.m,
+                           op->op.map.smooth, op->op.map.level);
+}
+
+static Eina_Bool
+evas_common_pipe_map_draw_prepare(void *data, RGBA_Image *dst, RGBA_Pipe_Op *op)
+{
+   RGBA_Draw_Context context;
+   Thinfo *info = data; 
+   Eina_Bool r; 
+
+   memcpy(&(context), &(op->context), sizeof(RGBA_Draw_Context));
+   r = evas_common_map_rgba_prepare(op->op.map.src, dst,
+				    &context, op->op.map.m);
+
+   return r;
+}
+
+EAPI void
+evas_common_pipe_map_draw(RGBA_Image *src, RGBA_Image *dst,
+                          RGBA_Draw_Context *dc, RGBA_Map *m,
+                          int smooth, int level)
+{
+   RGBA_Pipe_Op *op;
+   /* RGBA_Map_Point *pts_copy; */
+   int i;
+
+   if (!src) return;
+   /* pts_copy = malloc(sizeof (RGBA_Map_Point) * 4); */
+   /* if (!pts_copy) return; */
+   dst->cache_entry.pipe = evas_common_pipe_add(dst->cache_entry.pipe, &op);
+   if (!dst->cache_entry.pipe) 
+     {
+       /* free(pts_copy); */
+       return; 
+     }
+
+   /* for (i = 0; i < 4; ++i) */
+   /*   pts_copy[i] = p[i]; */
+
+   op->op.map.smooth = smooth;
+   op->op.map.level = level;
+   src->ref++;
+   op->op.map.src = src;
+   op->op.map.m = m;
+   op->op_func = evas_common_pipe_map_draw_do;
+   op->free_func = evas_common_pipe_op_map_free;
+   op->prepare_func = evas_common_pipe_map_draw_prepare;
+   evas_pipe_prepare_push(op);
+   evas_common_pipe_draw_context_copy(dc, op);
+
+   evas_common_pipe_image_load(src);
+}
+
+static void
+evas_common_pipe_map_render(RGBA_Image *root)
+{
+  RGBA_Pipe *p;
+  int i;
+
+  /* Map imply that we need to process them recursively first. */
+  for (p = root->cache_entry.pipe; p; p = (RGBA_Pipe *)(EINA_INLIST_GET(p))->next)
+    {
+      for (i = 0; i < p->op_num; i++)
+	{
+	  if (p->op[i].op_func == evas_common_pipe_map_draw_do)
+	    {
+	      if (p->op[i].op.map.src->cache_entry.pipe)
+		evas_common_pipe_map_render(p->op[i].op.map.src);
+	    }
+	  else if (p->op[i].op_func == evas_common_pipe_image_draw_do)
+	    {
+	      if (p->op[i].op.image.src->cache_entry.pipe)
+		evas_common_pipe_map_render(p->op[i].op.image.src);
+	    }
+	}
+    }
+
+  evas_common_pipe_begin(root);
+  evas_common_pipe_flush(root);
+}
+
+#ifdef BUILD_PTHREAD
+static void*
+evas_common_pipe_load(void *data)
+{
+  Thinfo *tinfo;
+
+  tinfo = data;
+  for (;;)
+    {
+      RGBA_Pipe_Op *op;
+      Eina_Array_Iterator it;
+      unsigned int i;
+      /* wait for start signal */
+      pthread_barrier_wait(&(tinfo->barrier[0]));
+
+      while (im_task)
+	{
+	  RGBA_Image *im = NULL;
+
+	  LKL(im_task_mutex);
+	  im = eina_list_data_get(im_task);
+	  im_task = eina_list_remove_list(im_task, im_task);
+	  LKU(im_task_mutex);
+
+	  if (im)
+	    {
+	      if (im->cache_entry.space == EVAS_COLORSPACE_ARGB8888)
+		evas_cache_image_load_data(&im->cache_entry);
+	      evas_common_image_colorspace_normalize(im);
+
+	      im->flags &= ~RGBA_IMAGE_TODO_LOAD;
+	    }
+	}
+
+      while (text_task)
+	{
+           Evas_Text_Props *text_props;
+           RGBA_Font_Int *fi;
+
+           LKL(text_task_mutex);
+           fi = eina_list_data_get(text_task);
+           text_task = eina_list_remove_list(text_task, text_task);
+           LKU(text_task_mutex);
+
+           if (fi)
+             {
+                LKL(fi->ft_mutex);
+                EINA_LIST_FREE(fi->task, text_props)
+		  {
+                     evas_common_font_draw_prepare(text_props);
+                     text_props->changed = EINA_FALSE;
+		     text_props->prepare = EINA_FALSE;
+		  }
+                LKU(fi->ft_mutex);
+             }
+	}
+
+      EINA_ARRAY_ITER_NEXT(&tinfo->rects_task, i, op, it)
+        op->render = op->prepare_func(tinfo, tinfo->im, op);
+      eina_array_clean(&tinfo->rects_task);
+
+      /* send finished signal */
+      pthread_barrier_wait(&(tinfo->barrier[1]));
+    }
+
+  return NULL;
+}
+#endif
+
+static volatile int bval = 0;
+
+static void
+evas_common_pipe_load_do(RGBA_Image *im)
+{
+#ifdef BUILD_PTHREAD
+   int i;
+
+   for (i = 0; i < thread_num; i++)
+     task_thinfo[i].im = im;
+
+   /* Notify worker thread. */
+   pthread_barrier_wait(&(task_thbarrier[0]));
+
+   /* sync worker threads */
+   pthread_barrier_wait(&(task_thbarrier[1]));
+#endif
+}
+
+EAPI void
+evas_common_pipe_image_load(RGBA_Image *im)
+{
+  if (im->flags & RGBA_IMAGE_TODO_LOAD)
+    return ;
+
+  if (im->cache_entry.space == EVAS_COLORSPACE_ARGB8888
+      && !evas_cache_image_is_loaded(&(im->cache_entry)))
+    goto add_task;
+
+  if (!((!im->cs.data) || ((!im->cs.dirty) && (!(im->flags & RGBA_IMAGE_IS_DIRTY)))))
+    goto add_task;
+
+  return ;
+
+ add_task:
+  LKL(im_task_mutex);
+  im_task = eina_list_append(im_task, im);
+  LKU(im_task_mutex);
+  im->flags |= RGBA_IMAGE_TODO_LOAD;
+}
+
+EAPI void
+evas_common_pipe_text_prepare(Evas_Text_Props *text_props)
+{
+   RGBA_Font_Int *fi;
+
+   fi = text_props->font_instance;
+   if (!fi) return ;
+
+   if (!text_props->changed && text_props->generation == fi->generation && text_props->glyphs)
+     return ;
+
+   LKL(fi->ft_mutex);
+
+   if (!fi->task)
+     {
+       LKL(text_task_mutex);
+       text_task = eina_list_append(text_task, fi);
+       LKU(text_task_mutex);
+     }
+
+   if (text_props->prepare) goto end;
+   text_props->prepare = EINA_TRUE;
+   fi->task = eina_list_append(fi->task, text_props);
+
+ end:
+   LKU(fi->ft_mutex);
+}
+
+EAPI void
+evas_common_pipe_map_begin(RGBA_Image *root)
+{
+  if (!evas_common_pipe_init())
+    {
+      RGBA_Image *im;
+
+      EINA_LIST_FREE(im_task, im)
+	{
+	  if (im->cache_entry.space == EVAS_COLORSPACE_ARGB8888)
+	    evas_cache_image_load_data(&im->cache_entry);
+	  evas_common_image_colorspace_normalize(im);
+
+	  im->flags &= ~RGBA_IMAGE_TODO_LOAD;
+	}
+    }
+
+  evas_common_pipe_load_do(root);
+
+  evas_common_pipe_map_render(root);
+}
+#endif
+
+EAPI Eina_Bool
+evas_common_pipe_init(void)
+{
+#ifdef BUILD_PIPE_RENDER
+   if (thread_num == 0)
+     {
+	int cpunum;
+	int i;
+
+	cpunum = eina_cpu_count();
+	thread_num = cpunum;
+// on  single cpu we still want this initted.. otherwise we block forever
+// waiting onm pthread barriers for async rendering on a single core!
+//	if (thread_num == 1) return EINA_FALSE;
+
+	eina_threads_init();
+
+        LKI(im_task_mutex);
+	LKI(text_task_mutex);
+
+	pthread_barrier_init(&(thbarrier[0]), NULL, thread_num + 1);
+	pthread_barrier_init(&(thbarrier[1]), NULL, thread_num + 1);
+	for (i = 0; i < thread_num; i++)
+	  {
+	     pthread_attr_t attr;
+	     cpu_set_t cpu;
+
+	     pthread_attr_init(&attr);
+	     CPU_ZERO(&cpu);
+	     CPU_SET(i % cpunum, &cpu);
+	     pthread_attr_setaffinity_np(&attr, sizeof(cpu), &cpu);
+	     thinfo[i].thread_num = i;
+	     thinfo[i].tasks = NULL;
+	     thinfo[i].barrier = thbarrier;
+	     /* setup initial locks */
+	     pthread_create(&(thinfo[i].thread_id), &attr,
+			    evas_common_pipe_thread, &(thinfo[i]));
+	     pthread_attr_destroy(&attr);
+	  }
+
+	pthread_barrier_init(&(task_thbarrier[0]), NULL, thread_num + 1);
+	pthread_barrier_init(&(task_thbarrier[1]), NULL, thread_num + 1);
+	for (i = 0; i < thread_num; i++)
+	  {
+	     pthread_attr_t attr;
+	     cpu_set_t cpu;
+
+	     pthread_attr_init(&attr);
+	     CPU_ZERO(&cpu);
+	     CPU_SET(i % cpunum, &cpu);
+	     pthread_attr_setaffinity_np(&attr, sizeof(cpu), &cpu);
+	     task_thinfo[i].thread_num = i;
+	     task_thinfo[i].tasks = NULL;
+	     task_thinfo[i].barrier = task_thbarrier;
+             eina_array_step_set(&task_thinfo[i].cutout_trash, sizeof (Eina_Array), 8);
+             eina_array_step_set(&task_thinfo[i].rects_task, sizeof (Eina_Array), 8);
+	     /* setup initial locks */
+	     pthread_create(&(task_thinfo[i].thread_id), &attr,
+			    evas_common_pipe_load, &(task_thinfo[i]));
+	     pthread_attr_destroy(&attr);
+	  }
+     }
+
+   if (thread_num == 1) return EINA_FALSE;
+   return EINA_TRUE;
+#endif
+   return EINA_FALSE;
 }

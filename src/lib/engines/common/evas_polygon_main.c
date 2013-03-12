@@ -1,6 +1,6 @@
-/*
- * vim:ts=8:sw=3:sts=8:noexpandtab:cino=>5n-3f0^-2{2
- */
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
 
 #include <math.h>
 
@@ -13,7 +13,7 @@ typedef struct _RGBA_Vertex RGBA_Vertex;
 
 struct _RGBA_Span
 {
-   Evas_Object_List _list_data;
+   EINA_INLIST;
    int x, y, w;
 };
 
@@ -79,7 +79,7 @@ evas_common_polygon_point_add(RGBA_Polygon_Point *points, int x, int y)
    if (!pt) return points;
    pt->x = x;
    pt->y = y;
-   points = evas_object_list_append(points, pt);
+   points = (RGBA_Polygon_Point *)eina_inlist_append(EINA_INLIST_GET(points), EINA_INLIST_GET(pt));
    return points;
 }
 
@@ -93,7 +93,7 @@ evas_common_polygon_points_clear(RGBA_Polygon_Point *points)
 	     RGBA_Polygon_Point *old_p;
 
 	     old_p = points;
-	     points = evas_object_list_remove(points, points);
+	     points = (RGBA_Polygon_Point *)eina_inlist_remove(EINA_INLIST_GET(points), EINA_INLIST_GET(points));
 	     free(old_p);
 	  }
      }
@@ -123,19 +123,27 @@ polygon_edge_sorter(const void *a, const void *b)
 }
 
 EAPI void
-evas_common_polygon_draw(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Polygon_Point *points)
+evas_common_polygon_draw(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Polygon_Point *points, int x, int y)
 {
    RGBA_Gfx_Func      func;
    RGBA_Polygon_Point *pt;
    RGBA_Vertex       *point;
    RGBA_Edge         *edges;
-   Evas_Object_List  *spans, *l;
+   Eina_Inlist  *spans;
    int                num_active_edges;
    int                n;
    int                i, j, k;
-   int                y0, y1, y;
+   int                yy0, yy1, yi;
    int                ext_x, ext_y, ext_w, ext_h;
    int               *sorted_index;
+
+#ifdef HAVE_PIXMAN
+# ifdef PIXMAN_POLY
+   pixman_op_t op = PIXMAN_OP_SRC; // _EVAS_RENDER_COPY
+   if (dc->render_op == _EVAS_RENDER_BLEND)
+     op = PIXMAN_OP_OVER;
+# endif   
+#endif
 
    ext_x = 0;
    ext_y = 0;
@@ -166,7 +174,7 @@ evas_common_polygon_draw(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Polygon_Po
 
    evas_common_cpu_end_opt();
 
-   n = 0; for (l = (Evas_Object_List *)points; l; l = l->next) n++;
+   n = 0; EINA_INLIST_FOREACH(points, pt) n++;
    if (n < 3) return;
    edges = malloc(sizeof(RGBA_Edge) * n);
    if (!edges) return;
@@ -185,58 +193,56 @@ evas_common_polygon_draw(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Polygon_Po
      }
 
    k = 0;
-   for (l = (Evas_Object_List *)points; l; l = l->next)
+   EINA_INLIST_FOREACH(points, pt)
      {
-	pt = (RGBA_Polygon_Point *)l;
-	point[k].x = pt->x;
-	point[k].y = pt->y;
+	point[k].x = pt->x + x;
+	point[k].y = pt->y + y;
 	point[k].i = k;
 	k++;
      }
    qsort(point, n, sizeof(RGBA_Vertex), polygon_point_sorter);
    for (k = 0; k < n; k++) sorted_index[k] = point[k].i;
    k = 0;
-   for (l = (Evas_Object_List *)points; l; l = l->next)
+   EINA_INLIST_FOREACH(points, pt)
      {
-	pt = (RGBA_Polygon_Point *)l;
-	point[k].x = pt->x;
-	point[k].y = pt->y;
+	point[k].x = pt->x + x;
+	point[k].y = pt->y + y;
 	point[k].i = k;
 	k++;
      }
 
-   y0 = MAX(ext_y, ceil(point[sorted_index[0]].y - 0.5));
-   y1 = MIN(ext_y + ext_h - 1, floor(point[sorted_index[n - 1]].y - 0.5));
+   yy0 = MAX(ext_y, ceil(point[sorted_index[0]].y - 0.5));
+   yy1 = MIN(ext_y + ext_h - 1, floor(point[sorted_index[n - 1]].y - 0.5));
 
    k = 0;
    num_active_edges = 0;
    spans = NULL;
 
-   for (y = y0; y <= y1; y++)
+   for (yi = yy0; yi <= yy1; yi++)
      {
-	for (; (k < n) && (point[sorted_index[k]].y <= ((double)y + 0.5)); k++)
+	for (; (k < n) && (point[sorted_index[k]].y <= ((double)yi + 0.5)); k++)
 	  {
 	     i = sorted_index[k];
 
 	     if (i > 0) j = i - 1;
 	     else j = n - 1;
-	     if (point[j].y <= ((double)y - 0.5))
+	     if (point[j].y <= ((double)yi - 0.5))
 	       {
 		  POLY_EDGE_DEL(j)
 	       }
-	     else if (point[j].y > ((double)y + 0.5))
+	     else if (point[j].y > ((double)yi + 0.5))
 	       {
-		  POLY_EDGE_ADD(j, y)
+		  POLY_EDGE_ADD(j, yi)
 	       }
 	     if (i < (n - 1)) j = i + 1;
 	     else j = 0;
-	     if (point[j].y <= ((double)y - 0.5))
+	     if (point[j].y <= ((double)yi - 0.5))
 	       {
 		  POLY_EDGE_DEL(i)
 	       }
-	     else if (point[j].y > ((double)y + 0.5))
+	     else if (point[j].y > ((double)yi + 0.5))
 	       {
-		  POLY_EDGE_ADD(i, y)
+		  POLY_EDGE_ADD(i, yi)
 	       }
 	  }
 
@@ -258,8 +264,8 @@ evas_common_polygon_draw(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Polygon_Po
 		  if (x0 < ext_x) x0 = ext_x;
 		  if (x1 >= (ext_x + ext_w)) x1 = ext_x + ext_w - 1;
 		  span = malloc(sizeof(RGBA_Span));
-		  spans = evas_object_list_append(spans, span);
-		  span->y = y;
+		  spans = eina_inlist_append(spans, EINA_INLIST_GET(span));
+		  span->y = yi;
 		  span->x = x0;
 		  span->w = (x1 - x0) + 1;
 	       }
@@ -275,26 +281,39 @@ evas_common_polygon_draw(RGBA_Image *dst, RGBA_Draw_Context *dc, RGBA_Polygon_Po
    func = evas_common_gfx_func_composite_color_span_get(dc->col.col, dst, 1, dc->render_op);
    if (spans)
      {
-	for (l = spans; l; l = l->next)
+	RGBA_Span *span;
+
+	EINA_INLIST_FOREACH(spans, span)
 	  {
-	     RGBA_Span *span;
 	     DATA32 *ptr;
 
-	     span = (RGBA_Span *)l;
-#ifdef EVAS_SLI
-	     if (((span->y) % dc->sli.h) == dc->sli.y)
+#ifdef HAVE_PIXMAN
+# ifdef PIXMAN_POLY
+	     if ((dst->pixman.im) && (dc->col.pixman_color_image) &&
+		 (!dc->mask.mask))
+	       pixman_image_composite(op, dc->col.pixman_color_image,
+				      NULL, dst->pixman.im,
+				      span->x, span->y, 0, 0,
+				      span->x, span->y, span->w, 1);
+	     else if ((dst->pixman.im) && (dc->col.pixman_color_image) &&
+		      (dc->mask.mask))
+	       pixman_image_composite(op, dc->col.pixman_color_image,
+				      dc->mask.mask->pixman.im,
+				      dst->pixman.im,
+				      span->x, span->y, 0, 0,
+				      span->x, span->y, span->w, 1);
+	     else
+# endif
 #endif
 	       {
-		  ptr = dst->image.data + (span->y * (dst->cache_entry.w)) + span->x;
-		  func(NULL, NULL, dc->col.col, ptr, span->w);
+		 ptr = dst->image.data + (span->y * (dst->cache_entry.w)) + span->x;
+		 func(NULL, NULL, dc->col.col, ptr, span->w);
 	       }
-	  }
+          }
 	while (spans)
 	  {
-	     RGBA_Span *span;
-
 	     span = (RGBA_Span *)spans;
-	     spans = evas_object_list_remove(spans, spans);
+	     spans = eina_inlist_remove(spans, spans);
 	     free(span);
 	  }
      }

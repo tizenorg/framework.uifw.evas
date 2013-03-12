@@ -1,7 +1,3 @@
-/*
- * vim:ts=8:sw=3:sts=8:noexpandtab:cino=>5n-3f0^-2{2
- */
-
 #ifndef _EVAS_DRAW_H
 #define _EVAS_DRAW_H
 
@@ -21,12 +17,14 @@ EAPI void               evas_common_draw_context_unset_clip              (RGBA_D
 EAPI void               evas_common_draw_context_set_color               (RGBA_Draw_Context *dc, int r, int g, int b, int a);
 EAPI void               evas_common_draw_context_set_multiplier          (RGBA_Draw_Context *dc, int r, int g, int b, int a);
 EAPI void               evas_common_draw_context_unset_multiplier        (RGBA_Draw_Context *dc);
+EAPI void               evas_common_draw_context_set_mask                (RGBA_Draw_Context *dc, RGBA_Image *im, int x, int y, int w, int h);
+EAPI void               evas_common_draw_context_unset_mask              (RGBA_Draw_Context *dc);
 EAPI Cutout_Rects      *evas_common_draw_context_cutouts_new             (void);
 EAPI void               evas_common_draw_context_cutouts_free            (Cutout_Rects* rects);
-EAPI void               evas_common_draw_context_cutouts_del             (Cutout_Rects* rects, int index);
+EAPI void               evas_common_draw_context_cutouts_del             (Cutout_Rects* rects, int idx);
 EAPI void               evas_common_draw_context_add_cutout              (RGBA_Draw_Context *dc, int x, int y, int w, int h);
 EAPI void               evas_common_draw_context_clear_cutouts           (RGBA_Draw_Context *dc);
-EAPI Cutout_Rects      *evas_common_draw_context_apply_cutouts           (RGBA_Draw_Context *dc);
+EAPI Cutout_Rects      *evas_common_draw_context_apply_cutouts           (RGBA_Draw_Context *dc, Cutout_Rects *recycle);
 EAPI void               evas_common_draw_context_apply_clear_cutouts     (Cutout_Rects* rects);
 EAPI void               evas_common_draw_context_apply_clean_cutouts     (Cutout_Rects* rects);
 EAPI void               evas_common_draw_context_set_anti_alias          (RGBA_Draw_Context *dc, unsigned char aa);

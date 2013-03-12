@@ -4,6 +4,7 @@
 #include "Evas_Engine_Software_16_X11.h"
 #include "evas_common_soft16.h"
 
+int _evas_engine_soft16_x11_log_dom = -1;
 /* function tables - filled in later (func and parent func) */
 static Evas_Func func, pfunc;
 
@@ -30,7 +31,7 @@ struct _Render_Engine
 
 static void *eng_info(Evas *e);
 static void eng_info_free(Evas *e, void *info);
-static void eng_setup(Evas *e, void *info);
+static int eng_setup(Evas *e, void *info);
 static void eng_output_free(void *data);
 static void eng_output_resize(void *data, int w, int h);
 static void eng_output_tile_size_set(void *data, int w, int h);
@@ -47,19 +48,19 @@ static void *
 eng_info(Evas *e)
 {
    Evas_Engine_Info_Software_16_X11 *info;
-
+   
    info = calloc(1, sizeof(Evas_Engine_Info_Software_16_X11));
    if (!info) return NULL;
    info->magic.magic = rand();
+   info->render_mode = EVAS_RENDER_MODE_BLOCKING;
    return info;
    e = NULL;
 }
 
 static void
-eng_info_free(Evas *e, void *info)
+eng_info_free(Evas *e __UNUSED__, void *info)
 {
    Evas_Engine_Info_Software_16_X11 *in;
-
    in = (Evas_Engine_Info_Software_16_X11 *)info;
    free(in);
 }
@@ -68,12 +69,12 @@ static void
 _tmp_out_alloc(Render_Engine *re)
 {
    Tilebuf_Rect *r;
-   int w = 0, h = 0;
+   unsigned int w = 0, h = 0;
 
-   for (r = re->rects; r; r = (Tilebuf_Rect *)(r->_list_data.next))
+   EINA_INLIST_FOREACH(re->rects, r)
      {
-	if (r->w > w) w = r->w;
-	if (r->h > h) h = r->h;
+	if (r->w > (int)w) w = r->w;
+	if (r->h > (int)h) h = r->h;
      }
 
    if (re->tmp_out)
@@ -98,7 +99,7 @@ _tmp_out_alloc(Render_Engine *re)
 }
 
 
-static void
+static int
 eng_setup(Evas *e, void *in)
 {
    Render_Engine *re;
@@ -126,7 +127,6 @@ eng_setup(Evas *e, void *in)
 	evas_common_convert_init();
 	evas_common_scale_init();
 	evas_common_rectangle_init();
-	evas_common_gradient_init();
 	evas_common_polygon_init();
 	evas_common_line_init();
 	evas_common_font_init();
@@ -136,6 +136,8 @@ eng_setup(Evas *e, void *in)
 
 	/* render engine specific data */
 	re = calloc(1, sizeof(Render_Engine));
+        if (!re)
+          return 0;
 	e->engine.data.output = re;
 	re->disp = info->info.display;
 	re->draw = info->info.drawable;
@@ -172,13 +174,16 @@ eng_setup(Evas *e, void *in)
 	     re->tmp_out = NULL;
 	  }
      }
-   if (!e->engine.data.output) return;
+   if (!e->engine.data.output) return 0;
+   
    /* add a draw context if we dont have one */
    if (!e->engine.data.context)
      e->engine.data.context =
      e->engine.func->context_new(e->engine.data.output);
    /* check if the display can do shm */
-   re->shm = evas_software_x11_x_can_do_shm(re->disp);
+   re->shm = evas_software_16_x11_x_can_do_shm(re->disp);
+
+   return 1;
 }
 
 static void
@@ -187,7 +192,8 @@ eng_output_free(void *data)
    Render_Engine *re;
 
    re = (Render_Engine *)data;
-   if (re->shbuf) evas_software_x11_x_output_buffer_free(re->shbuf, 0);
+   
+   if (re->shbuf) evas_software_16_x11_x_output_buffer_free(re->shbuf, 0);
    if (re->clip_rects) XDestroyRegion(re->clip_rects);
    if (re->gc) XFreeGC(re->disp, re->gc);
    if (re->tb) evas_common_tilebuf_free(re->tb);
@@ -217,7 +223,7 @@ eng_output_resize(void *data, int w, int h)
      evas_common_tilebuf_set_tile_size(re->tb, TILESIZE, TILESIZE);
    if (re->shbuf)
      {
-        evas_software_x11_x_output_buffer_free(re->shbuf, 0);
+        evas_software_16_x11_x_output_buffer_free(re->shbuf, 0);
 	re->shbuf = NULL;
      }
    if (re->clip_rects)
@@ -285,7 +291,7 @@ _output_buffer_alloc(Render_Engine *re)
 	h = re->w;
      }
 
-   re->shbuf = evas_software_x11_x_output_buffer_new
+   re->shbuf = evas_software_16_x11_x_output_buffer_new
      (re->disp, DefaultVisual(re->disp, DefaultScreen(re->disp)),
       DefaultDepth(re->disp, DefaultScreen(re->disp)),
       w, h, 1, NULL);
@@ -321,7 +327,7 @@ eng_output_redraws_next_update_get(void *data, int *x, int *y, int *w, int *h, i
      }
    rect = re->cur_rect;
    ux = rect->x; uy = rect->y; uw = rect->w; uh = rect->h;
-   re->cur_rect = (Tilebuf_Rect *)(re->cur_rect->_list_data.next);
+   re->cur_rect = (Tilebuf_Rect *)((EINA_INLIST_GET(re->cur_rect))->next);
    if (!re->cur_rect)
      {
 	evas_common_tilebuf_free_render_rects(re->rects);
@@ -436,13 +442,12 @@ static void
 _tmp_out_process(Render_Engine *re, int out_x, int out_y, int w, int h)
 {
    Soft16_Image *d, *s;
-   DATA16 *dp, *sp;
-   int y, x, d_dir;
 
    d = re->shbuf->im;
    s = re->tmp_out;
 
-   if ((w < 1) || (h < 1) || (out_x >= d->cache_entry.w) || (out_y >= d->cache_entry.h))
+   if ((w < 1) || (h < 1) ||
+       (out_x >= (int)d->cache_entry.w) || (out_y >= (int)d->cache_entry.h))
      return;
 
    if (re->rot == 90)
@@ -454,10 +459,10 @@ _tmp_out_process(Render_Engine *re, int out_x, int out_y, int w, int h)
 }
 
 static void
-eng_output_redraws_next_update_push(void *data, void *surface, int x, int y, int w, int h)
+eng_output_redraws_next_update_push(void *data, void *surface __UNUSED__, int x, int y, int w, int h)
 {
    Render_Engine *re;
-   XRectangle r;
+   XRectangle r = { 0, 0, 0, 0 };
 
    re = (Render_Engine *)data;
 
@@ -502,7 +507,6 @@ static void
 eng_output_flush(void *data)
 {
    Render_Engine *re;
-   int w, h;
 
    re = (Render_Engine *)data;
    if (re->clip_rects)
@@ -513,7 +517,7 @@ eng_output_flush(void *data)
      }
    else return;
 
-   evas_software_x11_x_output_buffer_paste
+   evas_software_16_x11_x_output_buffer_paste
      (re->shbuf, re->draw, re->gc, 0, 0, re->shbuf->im->cache_entry.w, re->shbuf->im->cache_entry.h, 1);
    XSetClipMask(re->disp, re->gc, None);
 }
@@ -526,7 +530,7 @@ eng_output_idle_flush(void *data)
    re = (Render_Engine *)data;
    if (re->shbuf)
      {
-	evas_software_x11_x_output_buffer_free(re->shbuf, 0);
+	evas_software_16_x11_x_output_buffer_free(re->shbuf, 0);
 	re->shbuf = NULL;
      }
    if (re->clip_rects)
@@ -541,14 +545,34 @@ eng_output_idle_flush(void *data)
      }
 }
 
+static Eina_Bool
+eng_canvas_alpha_get(void *data __UNUSED__, void *context __UNUSED__)
+{
+   return EINA_FALSE;
+}
 
 /* module advertising code */
-EAPI int
+static int
 module_open(Evas_Module *em)
 {
+   static Eina_Bool xrm_inited = EINA_FALSE;
+   if (!xrm_inited)
+     {
+	xrm_inited = EINA_TRUE;
+	XrmInitialize();
+     }
+
    if (!em) return 0;
    /* get whatever engine module we inherit from */
    if (!_evas_module_engine_inherit(&pfunc, "software_16")) return 0;
+   _evas_engine_soft16_x11_log_dom = eina_log_domain_register
+     ("evas-software_16_x11", EVAS_DEFAULT_LOG_COLOR);
+   if (_evas_engine_soft16_x11_log_dom < 0)
+     {
+        EINA_LOG_ERR("Can not create a module log domain.");
+        return 0;
+     }
+
    /* store it for later use */
    func = pfunc;
    /* now to override methods */
@@ -556,6 +580,7 @@ module_open(Evas_Module *em)
    ORD(info);
    ORD(info_free);
    ORD(setup);
+   ORD(canvas_alpha_get);
    ORD(output_free);
    ORD(output_resize);
    ORD(output_tile_size_set);
@@ -571,15 +596,26 @@ module_open(Evas_Module *em)
    return 1;
 }
 
-EAPI void
-module_close(void)
+static void
+module_close(Evas_Module *em __UNUSED__)
 {
+  eina_log_domain_unregister(_evas_engine_soft16_x11_log_dom);
 }
 
-EAPI Evas_Module_Api evas_modapi = 
+static Evas_Module_Api evas_modapi =
 {
-   EVAS_MODULE_API_VERSION, 
-     EVAS_MODULE_TYPE_ENGINE,
-     "software_16_x11",
-     "none"
+   EVAS_MODULE_API_VERSION,
+   "software_16_x11",
+   "none",
+   {
+     module_open,
+     module_close
+   }
 };
+
+EVAS_MODULE_DEFINE(EVAS_MODULE_TYPE_ENGINE, engine, software_16_x11);
+
+#ifndef EVAS_STATIC_BUILD_SOFTWARE_16_X11
+EVAS_EINA_MODULE_DEFINE(engine, software_16_x11);
+#endif
+

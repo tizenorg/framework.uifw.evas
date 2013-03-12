@@ -7,7 +7,6 @@ SCALE_FUNC(RGBA_Image *src, RGBA_Image *dst,
 	   int dst_region_w, int dst_region_h)
 {
    DATA32  *dst_ptr;
-   int      dst_jump;
    int      dst_clip_x, dst_clip_y, dst_clip_w, dst_clip_h;
    int      src_w, src_h, dst_w, dst_h;
 
@@ -137,8 +136,15 @@ SCALE_FUNC(RGBA_Image *src, RGBA_Image *dst,
      }
    if (dst_clip_h <= 0) return;
 
-   /* figure out dst jump */
-   dst_jump = dst_w - dst_clip_w;
+   /* some maximum region sizes to avoid insane calc point tables */
+   if (dst_clip_w > 65536) return;
+   if (dst_clip_h > 65536) return;
+   if (dst_region_w > (65536 * 1024)) return;
+   if (dst_region_h > (65536 * 1024)) return;
+   
+   /* figure out dst jump
+    * NB: Unused currently, so commented out */
+//   dst_jump = dst_w - dst_clip_w;
 
    /* figure out dest start ptr */
    dst_ptr = dst->image.data + dst_clip_x + (dst_clip_y * dst_w);

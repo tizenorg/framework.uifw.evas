@@ -1,20 +1,16 @@
-/*
- * vim:ts=8:sw=3:sts=8:noexpandtab:cino=>5n-3f0^-2{2
- */
-
 #include "evas_common.h"
 #include "evas_convert_color.h"
 #include "evas_scale_span.h"
 
 static void
-evas_common_scale_rgba_span_(DATA32 *src, DATA8 *mask, int src_len, DATA32 mul_col, DATA32 *dst, int dst_len, int dir)
+evas_common_scale_rgba_span_(DATA32 *src, DATA8 *mask __UNUSED__, int src_len, DATA32 mul_col, DATA32 *dst, int dst_len, int dir)
 {
    int  mul = 0, step = 1;
    DATA32 *pdst = dst;
 
    if (!src || !dst) return;
    if ((src_len < 1) || (dst_len < 1)) return;
-   if ((src_len > 65535) || (dst_len > 65535)) return;
+   if ((src_len > SCALE_SIZE_MAX) || (dst_len > SCALE_SIZE_MAX)) return;
    if (mul_col != 0xffffffff)
 	mul = 1;
    if (dir < 0)
@@ -118,7 +114,7 @@ evas_common_scale_rgba_a8_span_(DATA32 *src, DATA8 *mask, int src_len, DATA32 mu
 
    if (!src || !mask || !dst) return;
    if ((src_len < 1) || (dst_len < 1)) return;
-   if ((src_len > 65535) || (dst_len > 65535)) return;
+   if ((src_len > SCALE_SIZE_MAX) || (dst_len > SCALE_SIZE_MAX)) return;
    if (mul_col != 0xffffffff)
 	mul = 1;
    if (dir < 0)
@@ -238,14 +234,14 @@ evas_common_scale_rgba_a8_span_(DATA32 *src, DATA8 *mask, int src_len, DATA32 mu
 }
 
 static void
-evas_common_scale_a8_span_(DATA32 *src, DATA8 *mask, int src_len, DATA32 mul_col, DATA32 *dst, int dst_len, int dir)
+evas_common_scale_a8_span_(DATA32 *src __UNUSED__, DATA8 *mask, int src_len, DATA32 mul_col, DATA32 *dst, int dst_len, int dir)
 {
    int    step = 1;
    DATA32 *pdst = dst;
 
    if (!mask || !dst) return;
    if ((src_len < 1) || (dst_len < 1)) return;
-   if ((src_len > 65535) || (dst_len > 65535)) return;
+   if ((src_len > SCALE_SIZE_MAX) || (dst_len > SCALE_SIZE_MAX)) return;
    if (dir < 0)
      {
 	pdst += dst_len - 1;
@@ -313,14 +309,14 @@ evas_common_scale_a8_span_(DATA32 *src, DATA8 *mask, int src_len, DATA32 mul_col
 }
 
 static void
-evas_common_scale_clip_a8_span_(DATA32 *src, DATA8 *mask, int src_len, DATA32 mul_col, DATA32 *dst, int dst_len, int dir)
+evas_common_scale_clip_a8_span_(DATA32 *src __UNUSED__, DATA8 *mask, int src_len, DATA32 mul_col, DATA32 *dst, int dst_len, int dir)
 {
    int   mul = 0, step = 1;
    DATA32 *pdst = dst;
 
    if (!mask || !dst) return;
    if ((src_len < 1) || (dst_len < 1)) return;
-   if ((src_len > 65535) || (dst_len > 65535)) return;
+   if ((src_len > SCALE_SIZE_MAX) || (dst_len > SCALE_SIZE_MAX)) return;
    if (mul_col != 0xffffffff)
 	mul = 1;
    if (dir < 0)
@@ -480,14 +476,14 @@ evas_common_scale_clip_a8_span(DATA32 *src, DATA8 *mask, int src_len, DATA32 mul
 }
 
 EAPI void
-evas_common_scale_hsva_span(DATA32 *src, DATA8 *mask, int src_len, DATA32 mul_col, DATA32 *dst, int dst_len, int dir)
+evas_common_scale_hsva_span(DATA32 *src, DATA8 *mask __UNUSED__, int src_len, DATA32 mul_col, DATA32 *dst, int dst_len, int dir)
 {
    int  mul = 0, step = 1;
    DATA32 *pdst = dst;
 
    if (!src || !dst) return;
    if ((src_len < 1) || (dst_len < 1)) return;
-   if ((src_len > 65535) || (dst_len > 65535)) return;
+   if ((src_len > SCALE_SIZE_MAX) || (dst_len > SCALE_SIZE_MAX)) return;
    if (mul_col != 0xffffffff)
 	mul = 1;
    if (dir < 0)
@@ -570,7 +566,7 @@ evas_common_scale_hsva_a8_span(DATA32 *src, DATA8 *mask, int src_len, DATA32 mul
 
    if (!src || !mask || !dst) return;
    if ((src_len < 1) || (dst_len < 1)) return;
-   if ((src_len > 65535) || (dst_len > 65535)) return;
+   if ((src_len > SCALE_SIZE_MAX) || (dst_len > SCALE_SIZE_MAX)) return;
    if (mul_col != 0xffffffff)
 	mul = 1;
    if (dir < 0)

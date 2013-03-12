@@ -3,6 +3,7 @@
 #include "evas_engine.h"
 #include "Evas_Engine_Software_DDraw.h"
 
+int _evas_engine_soft_ddraw_log_dom = -1;
 /* function tables - filled in later (func and parent func) */
 static Evas_Func func, pfunc;
 
@@ -14,9 +15,13 @@ struct _Render_Engine
    Tilebuf          *tb;
    Outbuf           *ob;
    Tilebuf_Rect     *rects;
-   Evas_Object_List *cur_rect;
+   Eina_Inlist      *cur_rect;
    int               end : 1;
 };
+
+
+/* log domain variable */
+int _evas_log_dom_module = -1;
 
 
 static void *
@@ -24,7 +29,8 @@ _output_setup(int  width,
               int  height,
               int  rot,
               HWND window,
-              int  depth)
+              int  depth,
+              int  fullscreen)
 {
    Render_Engine *re;
 
@@ -40,7 +46,6 @@ _output_setup(int  width,
    evas_common_convert_init();
    evas_common_scale_init();
    evas_common_rectangle_init();
-   evas_common_gradient_init();
    evas_common_polygon_init();
    evas_common_line_init();
    evas_common_font_init();
@@ -51,7 +56,7 @@ _output_setup(int  width,
 
    re->ob = evas_software_ddraw_outbuf_setup(width, height, rot,
                                              OUTBUF_DEPTH_INHERIT,
-                                             window, depth);
+                                             window, depth, fullscreen);
    if (!re->ob)
      {
 	free(re);
@@ -59,7 +64,7 @@ _output_setup(int  width,
      }
 
    /* for updates return 1 big buffer, but only use portions of it, also cache
-    it and keepit around until an idle_flush */
+    it and keep it around until an idle_flush */
    /* disable for now - i am hunting down why some expedite tests are slower,
     * as well as shaped stuff is broken and probable non-32bpp is broken as
     * convert funcs dont do the right thing
@@ -91,6 +96,7 @@ eng_info(Evas *e)
    info = calloc(1, sizeof(Evas_Engine_Info_Software_DDraw));
    if (!info) return NULL;
    info->magic.magic = rand();
+   info->render_mode = EVAS_RENDER_MODE_BLOCKING;
    return info;
    e = NULL;
 }
@@ -99,12 +105,11 @@ static void
 eng_info_free(Evas *e, void *info)
 {
    Evas_Engine_Info_Software_DDraw *in;
-
    in = (Evas_Engine_Info_Software_DDraw *)info;
    free(in);
 }
 
-static void
+static int
 eng_setup(Evas *e, void *in)
 {
    Render_Engine                   *re;
@@ -116,7 +121,8 @@ eng_setup(Evas *e, void *in)
                                            e->output.h,
                                            info->info.rotation,
                                            info->info.window,
-                                           info->info.depth);
+                                           info->info.depth,
+                                           info->info.fullscreen);
    else
      {
 	int ponebuf = 0;
@@ -129,14 +135,17 @@ eng_setup(Evas *e, void *in)
                                                   info->info.rotation,
                                                   OUTBUF_DEPTH_INHERIT,
                                                   info->info.window,
-                                                  info->info.depth);
+                                                  info->info.depth,
+                                                  info->info.fullscreen);
 	re->ob->onebuf = ponebuf;
      }
-   if (!e->engine.data.output) return;
+   if (!e->engine.data.output) return 0;
    if (!e->engine.data.context)
      e->engine.data.context = e->engine.func->context_new(e->engine.data.output);
 
    re = e->engine.data.output;
+
+   return 1;
 }
 
 static void
@@ -237,7 +246,7 @@ eng_output_redraws_next_update_get(void *data,
    if (!re->rects)
      {
 	re->rects = evas_common_tilebuf_get_render_rects(re->tb);
-	re->cur_rect = (Evas_Object_List *)re->rects;
+	re->cur_rect = EINA_INLIST_GET(re->rects);
      }
    if (!re->cur_rect) return NULL;
    rect = (Tilebuf_Rect *)re->cur_rect;
@@ -277,8 +286,9 @@ eng_output_redraws_next_update_push(void *data, void *surface, int x, int y, int
    Render_Engine *re;
 
    re = (Render_Engine *)data;
-   evas_common_pipe_begin(surface);
-   evas_common_pipe_flush(surface);
+#ifdef BUILD_PIPE_RENDER
+   evas_common_pipe_map_begin(surface);
+#endif   
    evas_software_ddraw_outbuf_push_updated_region(re->ob, surface, x, y, w, h);
    evas_software_ddraw_outbuf_free_region_for_update(re->ob, surface);
    evas_common_cpu_end_opt();
@@ -302,14 +312,26 @@ eng_output_idle_flush(void *data)
    evas_software_ddraw_outbuf_idle_flush(re->ob);
 }
 
+static Eina_Bool
+eng_canvas_alpha_get(void *data, void *context)
+{
+   return EINA_FALSE;
+}
 
 /* module advertising code */
-EAPI int
+static int
 module_open(Evas_Module *em)
 {
    if (!em) return 0;
    /* get whatever engine module we inherit from */
    if (!_evas_module_engine_inherit(&pfunc, "software_generic")) return 0;
+   _evas_log_dom_module = eina_log_domain_register
+     ("evas-software_ddraw", EVAS_DEFAULT_LOG_COLOR);
+   if (_evas_log_dom_module < 0)
+     {
+        EINA_LOG_ERR("Can not create a module log domain.");
+        return 0;
+     }
    /* store it for later use */
    func = pfunc;
    /* now to override methods */
@@ -317,6 +339,7 @@ module_open(Evas_Module *em)
    ORD(info);
    ORD(info_free);
    ORD(setup);
+   ORD(canvas_alpha_get);
    ORD(output_free);
    ORD(output_resize);
    ORD(output_tile_size_set);
@@ -332,15 +355,25 @@ module_open(Evas_Module *em)
    return 1;
 }
 
-EAPI void
-module_close(void)
+static void
+module_close(Evas_Module *em)
 {
+  eina_log_domain_unregister(_evas_log_dom_module);
 }
 
-EAPI Evas_Module_Api evas_modapi =
+static Evas_Module_Api evas_modapi =
 {
    EVAS_MODULE_API_VERSION,
-   EVAS_MODULE_TYPE_ENGINE,
    "software_ddraw",
-   "none"
+   "none",
+   {
+     module_open,
+     module_close
+   }
 };
+
+EVAS_MODULE_DEFINE(EVAS_MODULE_TYPE_ENGINE, engine, software_ddraw);
+
+#ifndef EVAS_STATIC_BUILD_SOFTWARE_DDRAW
+EVAS_EINA_MODULE_DEFINE(engine, software_ddraw);
+#endif

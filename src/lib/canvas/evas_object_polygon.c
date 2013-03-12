@@ -10,12 +10,14 @@ typedef struct _Evas_Polygon_Point       Evas_Polygon_Point;
 
 struct _Evas_Object_Polygon
 {
-   DATA32            magic;
-   Evas_List        *points;
-   
-   void             *engine_data;
-
-   char              changed : 1;
+   DATA32               magic;
+   Eina_List           *points;
+   void                *engine_data;
+   struct {
+      int x, y;
+   } offset;
+   Evas_Coord_Rectangle geometry;
+   char                 changed : 1;
 };
 
 struct _Evas_Polygon_Point
@@ -31,6 +33,10 @@ static void evas_object_polygon_free(Evas_Object *obj);
 static void evas_object_polygon_render_pre(Evas_Object *obj);
 static void evas_object_polygon_render_post(Evas_Object *obj);
 
+static unsigned int evas_object_polygon_id_get(Evas_Object *obj);
+static unsigned int evas_object_polygon_visual_id_get(Evas_Object *obj);
+static void *evas_object_polygon_engine_data_get(Evas_Object *obj);
+
 static int evas_object_polygon_is_opaque(Evas_Object *obj);
 static int evas_object_polygon_was_opaque(Evas_Object *obj);
 static int evas_object_polygon_is_inside(Evas_Object *obj, Evas_Coord x, Evas_Coord y);
@@ -43,6 +49,9 @@ static const Evas_Object_Func object_func =
      evas_object_polygon_render,
      evas_object_polygon_render_pre,
      evas_object_polygon_render_post,
+     evas_object_polygon_id_get,
+     evas_object_polygon_visual_id_get,
+     evas_object_polygon_engine_data_get,
    /* these are optional. NULL = nothing */
      NULL,
      NULL,
@@ -52,24 +61,18 @@ static const Evas_Object_Func object_func =
      evas_object_polygon_was_opaque,
      evas_object_polygon_is_inside,
      evas_object_polygon_was_inside,
+     NULL,
+     NULL,
+     NULL,
+     NULL,
      NULL
 };
 
 /* the actual api call to add a rect */
 /* it has no other api calls as all properties are standard */
 
-/**
- * @defgroup Evas_Polygon_Group Polygon Functions
- *
- * Functions that operate on evas polygon objects.
- */
+EVAS_MEMPOOL(_mp_obj);
 
-/**
- * Adds a new evas polygon object to the given evas.
- * @param   e The given evas.
- * @return  A new evas polygon object.
- * @ingroup Evas_Polygon_Group
- */
 EAPI Evas_Object *
 evas_object_polygon_add(Evas *e)
 {
@@ -78,19 +81,12 @@ evas_object_polygon_add(Evas *e)
    MAGIC_CHECK(e, Evas, MAGIC_EVAS);
    return NULL;
    MAGIC_CHECK_END();
-   obj = evas_object_new();
+   obj = evas_object_new(e);
    evas_object_polygon_init(obj);
    evas_object_inject(obj, e);
    return obj;
 }
 
-/**
- * Adds the given point to the given evas polygon object.
- * @param obj The given evas polygon object.
- * @param x   The X coordinate of the given point.
- * @param y   The Y coordinate of the given point.
- * @ingroup Evas_Polygon_Group
- */
 EAPI void
 evas_object_polygon_point_add(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
 {
@@ -106,70 +102,93 @@ evas_object_polygon_point_add(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
    MAGIC_CHECK(o, Evas_Object_Polygon, MAGIC_OBJ_POLYGON);
    return;
    MAGIC_CHECK_END();
-   if (obj->layer->evas->events_frozen != 0)
-     {
-	if (!evas_event_passes_through(obj))
-	  was = evas_object_is_in_output_rect(obj,
-					      obj->layer->evas->pointer.x,
-					      obj->layer->evas->pointer.y, 1, 1);
-     }
-   p = malloc(sizeof(Evas_Polygon_Point));
-   if (!p) return;
-   p->x = x;
-   p->y = y;
 
+   if (obj->layer->evas->events_frozen <= 0)
+     {
+        if (!evas_event_passes_through(obj) &&
+            !evas_event_freezes_through(obj))
+          was = evas_object_is_in_output_rect(obj,
+                                              obj->layer->evas->pointer.x,
+                                              obj->layer->evas->pointer.y,
+                                              1, 1);
+     }
    if (!o->points)
      {
-	obj->cur.geometry.x = p->x;
-	obj->cur.geometry.y = p->y;
-	obj->cur.geometry.w = 2.0;
-	obj->cur.geometry.h = 2.0;
+        o->offset.x = obj->cur.geometry.x;
+        o->offset.y = obj->cur.geometry.y;
      }
    else
      {
-	if (x < obj->cur.geometry.x) min_x = x;
-	else min_x = obj->cur.geometry.x;
-	if (x > (obj->cur.geometry.x + obj->cur.geometry.w - 2.0)) max_x = x;
-	else max_x = obj->cur.geometry.x + obj->cur.geometry.w - 2.0;
-	if (y < obj->cur.geometry.y) min_y = y;
-	else min_y = obj->cur.geometry.y;
-	if (y > (obj->cur.geometry.y + obj->cur.geometry.h - 2.0)) max_y = y;
-	else max_y = obj->cur.geometry.y + obj->cur.geometry.h - 2.0;
-	obj->cur.geometry.x = min_x;
-	obj->cur.geometry.y = min_y;
-	obj->cur.geometry.w = max_x - min_x + 2.0;
-	obj->cur.geometry.h = max_y - min_y + 2.0;
-     }
-   o->points = evas_list_append(o->points, p);
+        /* Update all points and take offset into account. */
+        Eina_List *over;
 
-////   obj->cur.cache.geometry.validity = 0;
-   o->changed = 1;
-   evas_object_change(obj);
-   evas_object_coords_recalc(obj);
-   if (obj->layer->evas->events_frozen != 0)
+        EINA_LIST_FOREACH(o->points, over, p)
+          {
+             p->x += o->offset.x;
+             p->y += o->offset.y;
+          }
+     }
+
+   p = malloc(sizeof(Evas_Polygon_Point));
+   if (!p) return;
+   p->x = x + o->offset.x;
+   p->y = y + o->offset.y;
+
+   if (!o->points)
      {
-	is = evas_object_is_in_output_rect(obj,
-					   obj->layer->evas->pointer.x,
-					   obj->layer->evas->pointer.y, 1, 1);
-	if (!evas_event_passes_through(obj))
-	  {
-	     if ((is ^ was) && obj->cur.visible)
-	       evas_event_feed_mouse_move(obj->layer->evas,
-					  obj->layer->evas->pointer.x,
-					  obj->layer->evas->pointer.y,
-					  obj->layer->evas->last_timestamp,
-					  NULL);
-	  }
+        obj->cur.geometry.x = p->x;
+        obj->cur.geometry.y = p->y;
+        obj->cur.geometry.w = 2;
+        obj->cur.geometry.h = 2;
+     }
+   else
+     {
+        if (p->x < obj->cur.geometry.x) min_x = p->x;
+        else min_x = obj->cur.geometry.x;
+        if (p->x > (obj->cur.geometry.x + obj->cur.geometry.w - 2))
+          max_x = p->x;
+        else max_x = obj->cur.geometry.x + obj->cur.geometry.w - 2;
+        if (p->y < obj->cur.geometry.y) min_y = p->y;
+        else min_y = obj->cur.geometry.y;
+        if (p->y > (obj->cur.geometry.y + obj->cur.geometry.h - 2))
+          max_y = p->y;
+        else max_y = obj->cur.geometry.y + obj->cur.geometry.h - 2;
+        obj->cur.geometry.x = min_x;
+        obj->cur.geometry.y = min_y;
+        obj->cur.geometry.w = max_x - min_x + 2;
+        obj->cur.geometry.h = max_y - min_y + 2;
+     }
+   o->points = eina_list_append(o->points, p);
+
+   o->geometry = obj->cur.geometry;
+   o->offset.x = 0;
+   o->offset.y = 0;
+
+   ////   obj->cur.cache.geometry.validity = 0;
+   o->changed = EINA_TRUE;
+   evas_object_change(obj);
+   evas_object_clip_dirty(obj);
+   evas_object_coords_recalc(obj);
+   if (obj->layer->evas->events_frozen <= 0)
+     {
+        is = evas_object_is_in_output_rect(obj,
+                                           obj->layer->evas->pointer.x,
+                                           obj->layer->evas->pointer.y, 1, 1);
+        if (!evas_event_passes_through(obj) &&
+            !evas_event_freezes_through(obj) )
+          {
+             if ((is ^ was) && obj->cur.visible)
+               evas_event_feed_mouse_move(obj->layer->evas,
+                                          obj->layer->evas->pointer.x,
+                                          obj->layer->evas->pointer.y,
+                                          obj->layer->evas->last_timestamp,
+                                          NULL);
+          }
      }
    evas_object_inform_call_move(obj);
    evas_object_inform_call_resize(obj);
 }
 
-/**
- * Removes all of the points from the given evas polygon object.
- * @param   obj The given polygon object.
- * @ingroup Evas_Polygon_Group
- */
 EAPI void
 evas_object_polygon_points_clear(Evas_Object *obj)
 {
@@ -184,35 +203,34 @@ evas_object_polygon_points_clear(Evas_Object *obj)
    return;
    MAGIC_CHECK_END();
    was = evas_object_is_in_output_rect(obj,
-				       obj->layer->evas->pointer.x,
-				       obj->layer->evas->pointer.y, 1, 1);
+                                       obj->layer->evas->pointer.x,
+                                       obj->layer->evas->pointer.y, 1, 1);
    while (o->points)
      {
-	free(o->points->data);
-	o->points = evas_list_remove(o->points, o->points->data);
+        free(o->points->data);
+        o->points = eina_list_remove(o->points, o->points->data);
      }
+   obj->cur.geometry.x = 0;
+   obj->cur.geometry.y = 0;
    obj->cur.geometry.w = 0;
    obj->cur.geometry.h = 0;
-////   obj->cur.cache.geometry.validity = 0;
-   o->changed = 1;
+   ////   obj->cur.cache.geometry.validity = 0;
+   o->changed = EINA_TRUE;
    evas_object_change(obj);
+   evas_object_clip_dirty(obj);
    evas_object_coords_recalc(obj);
    is = evas_object_is_in_output_rect(obj,
-				      obj->layer->evas->pointer.x,
-				      obj->layer->evas->pointer.y, 1, 1);
+                                      obj->layer->evas->pointer.x,
+                                      obj->layer->evas->pointer.y, 1, 1);
    if ((is || was) && obj->cur.visible)
      evas_event_feed_mouse_move(obj->layer->evas,
-				obj->layer->evas->pointer.x,
-				obj->layer->evas->pointer.y,
-				obj->layer->evas->last_timestamp,
-				NULL);
+                                obj->layer->evas->pointer.x,
+                                obj->layer->evas->pointer.y,
+                                obj->layer->evas->last_timestamp,
+                                NULL);
    evas_object_inform_call_move(obj);
    evas_object_inform_call_resize(obj);
 }
-
-
-
-
 
 /* all nice and private */
 static void
@@ -225,10 +243,10 @@ evas_object_polygon_init(Evas_Object *obj)
    obj->cur.color.g = 255;
    obj->cur.color.b = 255;
    obj->cur.color.a = 255;
-   obj->cur.geometry.x = 0.0;
-   obj->cur.geometry.y = 0.0;
-   obj->cur.geometry.w = 0.0;
-   obj->cur.geometry.h = 0.0;
+   obj->cur.geometry.x = 0;
+   obj->cur.geometry.y = 0;
+   obj->cur.geometry.w = 0;
+   obj->cur.geometry.h = 0;
    obj->cur.layer = 0;
    /* set up object-specific settings */
    obj->prev = obj->cur;
@@ -243,7 +261,10 @@ evas_object_polygon_new(void)
    Evas_Object_Polygon *o;
 
    /* alloc obj private data */
-   o = calloc(1, sizeof(Evas_Object_Polygon));
+   EVAS_MEMPOOL_INIT(_mp_obj, "evas_object_polygon", Evas_Object_Polygon, 4, NULL);
+   o = EVAS_MEMPOOL_ALLOC(_mp_obj, Evas_Object_Polygon);
+   if (!o) return NULL;
+   EVAS_MEMPOOL_PREP(_mp_obj, o, Evas_Object_Polygon);
    o->magic = MAGIC_OBJ_POLYGON;
    return o;
 }
@@ -261,62 +282,62 @@ evas_object_polygon_free(Evas_Object *obj)
    /* free obj */
    while (o->points)
      {
-	free(o->points->data);
-	o->points = evas_list_remove(o->points, o->points->data);
+        free(o->points->data);
+        o->points = eina_list_remove(o->points, o->points->data);
      }
    o->engine_data = obj->layer->evas->engine.func->polygon_points_clear(obj->layer->evas->engine.data.output,
-									obj->layer->evas->engine.data.context,
-									o->engine_data);
+                                                                        obj->layer->evas->engine.data.context,
+                                                                        o->engine_data);
    o->magic = 0;
-   free(o);
+   EVAS_MEMPOOL_FREE(_mp_obj, o);
 }
 
 static void
 evas_object_polygon_render(Evas_Object *obj, void *output, void *context, void *surface, int x, int y)
 {
    Evas_Object_Polygon *o;
-   Evas_List *l;
+   Eina_List *l;
+   Evas_Polygon_Point *p;
 
    /* render object to surface with context, and offxet by x,y */
    o = (Evas_Object_Polygon *)(obj->object_data);
    obj->layer->evas->engine.func->context_color_set(output,
-						    context,
-						    obj->cur.cache.clip.r,
-						    obj->cur.cache.clip.g,
-						    obj->cur.cache.clip.b,
-						    obj->cur.cache.clip.a);
+                                                    context,
+                                                    obj->cur.cache.clip.r,
+                                                    obj->cur.cache.clip.g,
+                                                    obj->cur.cache.clip.b,
+                                                    obj->cur.cache.clip.a);
    obj->layer->evas->engine.func->context_multiplier_unset(output,
-							   context);
+                                                           context);
    obj->layer->evas->engine.func->context_render_op_set(output, context,
-							obj->cur.render_op);
-   o->engine_data = obj->layer->evas->engine.func->polygon_points_clear(obj->layer->evas->engine.data.output,
-									obj->layer->evas->engine.data.context,
-									o->engine_data);
-   for (l = o->points; l; l = l->next)
+                                                        obj->cur.render_op);
+   if (o->changed)
      {
-	Evas_Polygon_Point *p;
-	//int px, py;
-
-        p = l->data;
-
-        //px = evas_coord_world_x_to_screen(obj->layer->evas, p->x);
-	//py = evas_coord_world_y_to_screen(obj->layer->evas, p->y);
-	o->engine_data = obj->layer->evas->engine.func->polygon_point_add(obj->layer->evas->engine.data.output,
-									  obj->layer->evas->engine.data.context,
-									  o->engine_data,
-									  p->x + x, p->y + y);
+        o->engine_data = obj->layer->evas->engine.func->polygon_points_clear(obj->layer->evas->engine.data.output,
+                                                                             obj->layer->evas->engine.data.context,
+                                                                             o->engine_data);
+        EINA_LIST_FOREACH(o->points, l, p)
+          {
+             //px = evas_coord_world_x_to_screen(obj->layer->evas, p->x);
+             //py = evas_coord_world_y_to_screen(obj->layer->evas, p->y);
+             o->engine_data = obj->layer->evas->engine.func->polygon_point_add(obj->layer->evas->engine.data.output,
+                                                                               obj->layer->evas->engine.data.context,
+                                                                               o->engine_data,
+                                                                               p->x, p->y);
+          }
      }
+
    if (o->engine_data)
      obj->layer->evas->engine.func->polygon_draw(output,
-						 context,
-						 surface,
-						 o->engine_data);
+                                                 context,
+                                                 surface,
+                                                 o->engine_data,
+                                                 o->offset.x + x, o->offset.y + y);
 }
 
 static void
 evas_object_polygon_render_pre(Evas_Object *obj)
 {
-   Evas_Rectangles rects = { 0, 0, NULL };
    Evas_Object_Polygon *o;
    int is_v, was_v;
 
@@ -332,9 +353,9 @@ evas_object_polygon_render_pre(Evas_Object *obj)
    /* if someone is clipping this obj - go calculate the clipper */
    if (obj->cur.clipper)
      {
-	if (obj->cur.cache.clip.dirty)
-	  evas_object_clip_recalc(obj->cur.clipper);
-	obj->cur.clipper->func->render_pre(obj->cur.clipper);
+        if (obj->cur.cache.clip.dirty)
+          evas_object_clip_recalc(obj->cur.clipper);
+        obj->cur.clipper->func->render_pre(obj->cur.clipper);
      }
    /* now figure what changed and add draw rects */
    /* if it just became visible or invisible */
@@ -342,24 +363,30 @@ evas_object_polygon_render_pre(Evas_Object *obj)
    was_v = evas_object_was_visible(obj);
    if (is_v != was_v)
      {
-	evas_object_render_pre_visible_change(&rects, obj, is_v, was_v);
-	goto done;
+        evas_object_render_pre_visible_change(&obj->layer->evas->clip_changes, obj, is_v, was_v);
+        goto done;
+     }
+   if (obj->changed_map)
+     {
+        evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes,
+                                            obj);
+        goto done;
      }
    /* it's not visible - we accounted for it appearing or not so just abort */
    if (!is_v) goto done;
    /* clipper changed this is in addition to anything else for obj */
-   evas_object_render_pre_clipper_change(&rects, obj);
+   evas_object_render_pre_clipper_change(&obj->layer->evas->clip_changes, obj);
    /* if we restacked (layer or just within a layer) */
    if (obj->restack)
      {
-	evas_object_render_pre_prev_cur_add(&rects, obj);
-	goto done;
+        evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes, obj);
+        goto done;
      }
    /* if it changed render op */
    if (obj->cur.render_op != obj->prev.render_op)
      {
-	evas_object_render_pre_prev_cur_add(&rects, obj);
-	goto done;
+        evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes, obj);
+        goto done;
      }
    /* if it changed color */
    if ((obj->cur.color.r != obj->prev.color.r) ||
@@ -367,11 +394,11 @@ evas_object_polygon_render_pre(Evas_Object *obj)
        (obj->cur.color.b != obj->prev.color.b) ||
        (obj->cur.color.a != obj->prev.color.a))
      {
-	evas_object_render_pre_prev_cur_add(&rects, obj);
-	goto done;
+        evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes, obj);
+        goto done;
      }
    /* if it changed geometry - and obviously not visibility or color */
-   /* caluclate differences since we have a constant color fill */
+   /* calculate differences since we have a constant color fill */
    /* we really only need to update the differences */
    if ((obj->cur.geometry.x != obj->prev.geometry.x) ||
        (obj->cur.geometry.y != obj->prev.geometry.y) ||
@@ -379,11 +406,25 @@ evas_object_polygon_render_pre(Evas_Object *obj)
        (obj->cur.geometry.h != obj->prev.geometry.h) ||
        (o->changed))
      {
-	evas_object_render_pre_prev_cur_add(&rects, obj);
-	goto done;
+        evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes, obj);
+        goto done;
      }
    done:
-   evas_object_render_pre_effect_updates(&rects, obj, is_v, was_v);
+   if ((obj->cur.geometry.x != obj->prev.geometry.x) ||
+       (obj->cur.geometry.y != obj->prev.geometry.y))
+     {
+        if (!o->changed)
+          {
+             o->offset.x += obj->cur.geometry.x - obj->prev.geometry.x;
+             o->offset.y += obj->cur.geometry.y - obj->prev.geometry.y;
+          }
+        else
+          {
+             o->offset.x += obj->cur.geometry.x - o->geometry.x;
+             o->offset.y += obj->cur.geometry.y - o->geometry.y;
+          }
+     }
+   evas_object_render_pre_effect_updates(&obj->layer->evas->clip_changes, obj, is_v, was_v);
 }
 
 static void
@@ -396,65 +437,118 @@ evas_object_polygon_render_post(Evas_Object *obj)
    /* data anymore we can free it if the object deems this is a good idea */
    o = (Evas_Object_Polygon *)(obj->object_data);
    /* remove those pesky changes */
-   while (obj->clip.changes)
-     {
-	Evas_Rectangle *r;
-
-	r = (Evas_Rectangle *)obj->clip.changes->data;
-	obj->clip.changes = evas_list_remove(obj->clip.changes, r);
-	free(r);
-     }
+   evas_object_clip_changes_clean(obj);
    /* move cur to prev safely for object data */
-   obj->prev = obj->cur;
+   evas_object_cur_prev(obj);
    o->changed = 0;
 }
 
-static int
-evas_object_polygon_is_opaque(Evas_Object *obj)
+static unsigned int evas_object_polygon_id_get(Evas_Object *obj)
 {
    Evas_Object_Polygon *o;
 
+   o = (Evas_Object_Polygon *)(obj->object_data);
+   if (!o) return 0;
+   return MAGIC_OBJ_POLYGON;
+}
+
+static unsigned int evas_object_polygon_visual_id_get(Evas_Object *obj)
+{
+   Evas_Object_Polygon *o;
+
+   o = (Evas_Object_Polygon *)(obj->object_data);
+   if (!o) return 0;
+   return MAGIC_OBJ_SHAPE;
+}
+
+static void *evas_object_polygon_engine_data_get(Evas_Object *obj)
+{
+   Evas_Object_Polygon *o;
+
+   o = (Evas_Object_Polygon *)(obj->object_data);
+   if (!o) return NULL;
+   return o->engine_data;
+}
+
+static int
+evas_object_polygon_is_opaque(Evas_Object *obj __UNUSED__)
+{
    /* this returns 1 if the internal object data implies that the object is */
    /* currently fully opaque over the entire line it occupies */
-   o = (Evas_Object_Polygon *)(obj->object_data);
    return 0;
 }
 
 static int
-evas_object_polygon_was_opaque(Evas_Object *obj)
+evas_object_polygon_was_opaque(Evas_Object *obj __UNUSED__)
 {
-   Evas_Object_Polygon *o;
-
    /* this returns 1 if the internal object data implies that the object was */
    /* previously fully opaque over the entire line it occupies */
-   o = (Evas_Object_Polygon *)(obj->object_data);
    return 0;
 }
 
+/* We count the number of edges a "ray" 90 degs upwards from our point
+ * intersects with. If it's even, we are outside of the polygon, if it's odd,
+ * we are inside of it. */
 static int
 evas_object_polygon_is_inside(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
 {
    Evas_Object_Polygon *o;
+   int num_edges = 0; /* Number of edges we crossed */
+   Eina_List *itr;
+   Evas_Polygon_Point *p;
 
-   /* this returns 1 if the canvas co-ordinates are inside the object based */
-   /* on object private data. not much use for rects, but for polys, images */
-   /* and other complex objects it might be */
    o = (Evas_Object_Polygon *)(obj->object_data);
-   return 1;
-   x = 0;
-   y = 0;
+   if (!o) return 0;
+   if (!o->points) return 0;
+
+   /* Adjust X and Y according to current geometry */
+   x -= o->offset.x;
+   y -= o->offset.y;
+
+   if (eina_list_count(o->points) == 1)
+     {
+        p = eina_list_data_get(o->points);
+        return ((p->x == x) && (p->y == y));
+     }
+
+   EINA_LIST_FOREACH(o->points, itr, p)
+     {
+        Evas_Coord line_y;
+        Eina_List *next = eina_list_next(itr);
+        Evas_Polygon_Point *p_next;
+        /* Get the next, or if there's no next, take the first */
+        if (next)
+          {
+             p_next = eina_list_data_get(next);
+          }
+        else
+          {
+             p_next = eina_list_data_get(o->points);
+          }
+
+        /* Make sure that we are directly below the edge,
+         * and that p->x != p_next->x */
+        if (((p->x < p_next->x) && (p->x <= x) && (x < p_next->x)) ||
+              ((p->x > p_next->x) && (p_next->x < x) && (x <= p->x)))
+          {
+             line_y = ((double) (p->y - p_next->y) /
+                   (double) (p->x - p_next->x)) *
+                (x - p_next->x) + p_next->y;
+             /* We crossed that edge if the line is directly above us */
+             if (line_y < y)
+                num_edges++;
+          }
+     }
+
+   /* Return true if num_edges is odd */
+   return ((num_edges % 2) == 1);
 }
 
 static int
-evas_object_polygon_was_inside(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
+evas_object_polygon_was_inside(Evas_Object *obj __UNUSED__, Evas_Coord x __UNUSED__, Evas_Coord y __UNUSED__)
 {
-   Evas_Object_Polygon *o;
-
    /* this returns 1 if the canvas co-ordinates were inside the object based */
    /* on object private data. not much use for rects, but for polys, images */
    /* and other complex objects it might be */
-   o = (Evas_Object_Polygon *)(obj->object_data);
    return 1;
-   x = 0;
-   y = 0;
 }

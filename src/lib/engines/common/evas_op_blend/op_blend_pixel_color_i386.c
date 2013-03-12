@@ -1,9 +1,8 @@
-
 /* blend pixel x color --> dst */
 
 #ifdef BUILD_MMX
 static void
-_op_blend_p_c_dp_mmx(DATA32 *s, DATA8 *m, DATA32 c, DATA32 *d, int l) {
+_op_blend_p_c_dp_mmx(DATA32 *s, DATA8 *m __UNUSED__, DATA32 c, DATA32 *d, int l) {
    DATA32 *e = d + l;
    MOV_A2R(ALPHA_256, mm6)
    MOV_A2R(ALPHA_255, mm5)
@@ -27,7 +26,7 @@ _op_blend_p_c_dp_mmx(DATA32 *s, DATA8 *m, DATA32 c, DATA32 *d, int l) {
 }
 
 static void
-_op_blend_pan_can_dp_mmx(DATA32 *s, DATA8 *m, DATA32 c, DATA32 *d, int l) {
+_op_blend_pan_can_dp_mmx(DATA32 *s, DATA8 *m __UNUSED__, DATA32 c, DATA32 *d, int l) {
    DATA32 *e = d + l;
    pxor_r2r(mm0, mm0);
    MOV_P2R(c, mm2, mm0)
@@ -41,7 +40,7 @@ _op_blend_pan_can_dp_mmx(DATA32 *s, DATA8 *m, DATA32 c, DATA32 *d, int l) {
 }
 
 static void
-_op_blend_pan_caa_dp_mmx(DATA32 *s, DATA8 *m, DATA32 c, DATA32 *d, int l) {
+_op_blend_pan_caa_dp_mmx(DATA32 *s, DATA8 *m __UNUSED__, DATA32 c, DATA32 *d, int l) {
    DATA32 *e = d + l;
    c = 1 + (c & 0xff);
    MOV_A2R(c, mm2)
@@ -101,7 +100,7 @@ init_blend_pixel_color_span_funcs_mmx(void)
 
 #ifdef BUILD_MMX
 static void
-_op_blend_pt_p_c_dp_mmx(DATA32 s, DATA8 m, DATA32 c, DATA32 *d) {
+_op_blend_pt_p_c_dp_mmx(DATA32 s, DATA8 m __UNUSED__, DATA32 c, DATA32 *d) {
 	MOV_A2R(ALPHA_256, mm4)
 	MOV_A2R(ALPHA_255, mm5)
 	pxor_r2r(mm0, mm0);
