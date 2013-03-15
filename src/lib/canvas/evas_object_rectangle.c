@@ -194,7 +194,7 @@ evas_object_rectangle_render_pre(Evas_Object *obj)
 	evas_object_render_pre_visible_change(&obj->layer->evas->clip_changes, obj, is_v, was_v);
 	goto done;
      }
-   if (obj->changed_map)
+   if (obj->changed_map || obj->changed_src_visible)
      {
         evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes,
                                             obj);

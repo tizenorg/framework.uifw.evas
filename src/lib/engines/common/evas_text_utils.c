@@ -54,24 +54,54 @@ evas_common_text_props_content_ref(Evas_Text_Props *props)
 }
 
 void
+evas_common_text_props_content_nofree_unref(Evas_Text_Props *props)
+{
+   /* No content in this case */
+   if (!props->info)
+      return;
+
+   if (--(props->info->refcount) == 0)
+     {
+        if (props->font_instance)
+          {
+             evas_common_font_int_unref(props->font_instance);
+             props->font_instance = NULL;
+          }
+
+        free(props->glyphs);
+        props->glyphs = NULL;
+        props->glyphs_length = 0;
+        
+        if (props->info->glyph)
+          free(props->info->glyph);
+#ifdef OT_SUPPORT
+        if (props->info->ot)
+          free(props->info->ot);
+#endif
+        free(props->info);
+        props->info = NULL;
+     }
+}
+
+void
 evas_common_text_props_content_unref(Evas_Text_Props *props)
 {
    /* No content in this case */
    if (!props->info)
       return;
 
-   if (props->font_instance)
-     {
-        evas_common_font_int_unref(props->font_instance);
-        props->font_instance = NULL;
-     }
-   
+   free(props->glyphs);
+   props->glyphs = NULL;
+   props->glyphs_length = 0;
+
    if (--(props->info->refcount) == 0)
      {
-        free(props->glyphs);
-        props->glyphs = NULL;
-        props->glyphs_length = 0;
-
+        if (props->font_instance)
+          {
+             evas_common_font_int_unref(props->font_instance);
+             props->font_instance = NULL;
+          }
+   
         if (props->info->glyph)
           free(props->info->glyph);
 #ifdef OT_SUPPORT
@@ -207,8 +237,14 @@ evas_common_text_props_index_find(const Evas_Text_Props *props, int _cutoff)
 
    return mid;
 #else
-   return _cutoff;
-   (void) props;
+   if (props->bidi.dir == EVAS_BIDI_DIRECTION_RTL)
+     {
+        return props->len - _cutoff - 1;
+     }
+   else
+     {
+        return _cutoff;
+     }
 #endif
 }
 
@@ -222,7 +258,6 @@ evas_common_text_props_split(Evas_Text_Props *base,
    size_t cutoff;
 
    /* Translate text cutoff pos to string object cutoff point */
-#ifdef OT_SUPPORT
    _cutoff = evas_common_text_props_index_find(base, _cutoff);
 
    if (_cutoff >= 0)
@@ -234,9 +269,6 @@ evas_common_text_props_split(Evas_Text_Props *base,
         ERR("Couldn't find the cutoff position. Is it inside a cluster?");
         return;
      }
-#else
-   cutoff = (size_t) _cutoff;
-#endif
 
    evas_common_text_props_content_copy_and_ref(ext, base);
    if (base->bidi.dir == EVAS_BIDI_DIRECTION_RTL)

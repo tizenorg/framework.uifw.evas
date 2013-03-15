@@ -194,7 +194,7 @@ evas_object_textgrid_textprop_ref(Evas_Object *obj, Evas_Object_Textgrid *o, Ein
 
    if (o->last_glyphs)
      {
-        if (o->last_mask && (o->last_mask & codepoint) == o->last_mask)
+        if ((o->last_mask) && ((o->last_mask & codepoint) == o->last_mask))
           goto end;
      }
 
@@ -235,8 +235,8 @@ evas_object_textgrid_textprop_ref(Evas_Object *obj, Evas_Object_Textgrid *o, Ein
         goto end;
      }
 
-   while (shift > 8
-          && o->master[offset].next[(codepoint & mask) >> shift] != 0)
+   while ((shift > 8)
+          && (o->master[offset].next[(codepoint & mask) >> shift] != 0))
      {
         offset = o->master[offset].next[(codepoint & mask) >> shift];
         mask >>= 4;
@@ -322,7 +322,12 @@ evas_object_textgrid_textprop_unref(Evas_Object_Textgrid *o, unsigned int props_
           eina_array_push(&o->glyphs_cleanup,
                           (void *)((unsigned long)props_index));
         else
-          evas_common_text_props_content_unref(props);
+          {
+             Evas_Glyph *glyphs = props->glyphs;
+             int glyphs_length = props->glyphs_length;
+
+             evas_common_text_props_content_nofree_unref(props);
+          }
      }
 }
 
@@ -456,8 +461,8 @@ evas_object_textgrid_free(Evas_Object *obj)
 
         props_index = (unsigned int) (intptr_t) eina_array_pop(&o->glyphs_cleanup);
         prop = &(o->glyphs[props_index >> 8].props[props_index & 0xFF]);
-        
-        evas_common_text_props_content_unref(prop);
+
+        evas_common_text_props_content_nofree_unref(prop);
         if (!prop->info)
           {
              o->glyphs_used[props_index >> 8]--;
@@ -734,7 +739,7 @@ evas_object_textgrid_render_pre(Evas_Object *obj)
 	evas_object_render_pre_visible_change(&obj->layer->evas->clip_changes, obj, is_v, was_v);
 	goto done;
      }
-   if (obj->changed_map)
+   if (obj->changed_map || obj->changed_src_visible)
      {
         evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes,
                                             obj);
@@ -853,7 +858,7 @@ evas_object_textgrid_render_post(Evas_Object *obj)
         props_index = (unsigned int) (intptr_t) eina_array_pop(&o->glyphs_cleanup);
         prop = &(o->glyphs[props_index >> 8].props[props_index & 0xFF]);
         
-        evas_common_text_props_content_unref(prop);
+        evas_common_text_props_content_nofree_unref(prop);
         if (!prop->info)
           {
              o->glyphs_used[props_index >> 8]--;
@@ -1066,6 +1071,7 @@ evas_object_textgrid_font_set(Evas_Object *obj, const char *font_name, Evas_Font
    Evas_Object_Textgrid *o;
    int is, was = 0, pass = 0, freeze = 0;
    Evas_Font_Description *font_description;
+   Eina_Bool source_invisible = EINA_FALSE;
    
    if ((!font_name) || (!*font_name) || (font_size <= 0))
      return;
@@ -1099,7 +1105,8 @@ evas_object_textgrid_font_set(Evas_Object *obj, const char *font_name, Evas_Font
      {
         pass = evas_event_passes_through(obj);
         freeze = evas_event_freezes_through(obj);
-        if ((!pass) && (!freeze))
+        source_invisible = evas_object_is_source_invisible(obj);
+        if ((!pass) && (!freeze) && (!source_invisible))
           was = evas_object_is_in_output_rect(obj,
                                               obj->layer->evas->pointer.x,
                                               obj->layer->evas->pointer.y,
@@ -1186,7 +1193,7 @@ evas_object_textgrid_font_set(Evas_Object *obj, const char *font_name, Evas_Font
         props_index = (unsigned int) (intptr_t) eina_array_pop(&o->glyphs_cleanup);
         prop = &(o->glyphs[props_index >> 8].props[props_index & 0xFF]);
         
-        evas_common_text_props_content_unref(prop);
+        evas_common_text_props_content_nofree_unref(prop);
         if (!prop->info)
           {
              o->glyphs_used[props_index >> 8]--;

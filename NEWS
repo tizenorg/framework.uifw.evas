@@ -1,8 +1,5 @@
 Evas 1.8.0
 
-Changes since Evas 1.7.1
--------------------------
-
 Additions:
    * Add EVAS_GL_LINE_OFFSET_HACK_DISABLE to turn off line shift correction by evas.
 
@@ -10,6 +7,70 @@ Fixes:
    * Fix evas textblock tag parser to respect escaped spaces and escaped single quotes
    * Fix the line drawing clipping problem on arm gl driver.
 
+Evas 1.7.7
+
+Changes since Evas 1.7.6
+-------------------------
+
+    * Fix SIGFPE in evas map update if image is 0.
+    * Evas textblock: Fixed issue and simplified cursor_geometry_get.
+    * Evas text: Fixed issue with horiz advance.
+    * Evas text utils: Fixed issue with no-harfbuzz bidi.
+    * Fixed pixman surface alloc where allocated and image size differ.
+
+Changes since Evas 1.7.5:
+-------------------------
+
+   * Fix build of Evas XCB backend.
+   * Fix evas bmp loader code which deal with image size.
+   * Fix not up to date clip cache for Evas_Object_Text.
+   * Evas texblock: Fixed a bug with breaking after format items.
+   * Evas textblock: Fixed issue with line height when breaking on a format.
+   
+Changes since Evas 1.7.4:
+-------------------------
+
+   * Fix mask write lines to not choose too small segments
+
+Evas 1.7.4
+
+Changes since Evas 1.7.3:
+-------------------------
+
+Fixes:
+   * Fix the gl line incorrect position drawing.
+   * Fix uninitialized data in Evas_Smart initialization code.
+   * Fix potential segv in software engine native_set call.
+   * Fix uninitialized data in OpenGL engine native_set call.
+   * Fix crash when precise_is_inside is set on an image, and events are generated from it.
+   * Properly close async pipe fd on exec.
+   * Fix the line drawing clipping problem on arm gl driver.
+   * Fix big rendering/conversion problem in kvm/qemu 24bpp.
+   * Fix Evas RGBA_Image->flags.loaded for copied images. 
+   * Fix evas_object_image_is_inside()
+   * Fix small memory leak in evas_bidi_utils error path
+    
+    
+Evas 1.7.3
+
+Changes since Evas 1.7.2
+-------------------------
+
+Fixes:
+   * Fixed evas_object_box to reset size_hint_min to zero when no child.
+   * Don't leak fd on exec.
+
+Evas 1.7.2
+
+Changes since Evas 1.7.1
+-------------------------
+
+Fixes:
+   * Fix evas textblock tag parser to respect escaped spaces and escaped single quotes
+   * Fixed longstanding memset bug in evas box.
+   * Fixed GLX native surface handling (fixes new mesa+intel comp bug).
+   * Fixed textblock textprop leak.
+    
 Changes since Evas 1.7.0:
 -------------------------
 
@@ -27,6 +88,7 @@ Improvements:
    * EVAS_GL_NO_BLACKLIST env var to turn off blacklisted drivers in gl
    * Evas gl engine can do partial swaps now.
    * evas_object_del() now takes NULL parameters
+   * make xpm loader faster (from O(N) to O(log(N))).
 
 Fixes:
 
@@ -35,7 +97,11 @@ Fixes:
    * Fix evas_object_image_alpha_set when image data not loaded yet.
    * Fix map surface leak.
    * Fix native surface set to null crash bug in gl engine.
-
+   * Fix font sizing issue with some rare sizes and fonts when rounding wrong.
+   * Fix software line drawing c fallback code.
+   * Update move event when object freeze event is off.
+   * coordinate compute bug for Evas GL direct rendering.
+    
 Removal:
    * No more support s3c6410.
 

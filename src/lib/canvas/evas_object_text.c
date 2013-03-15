@@ -238,7 +238,7 @@ static Evas_Coord
 _evas_object_text_horiz_advance_get(const Evas_Object *obj,
       const Evas_Object_Text *o)
 {
-   Evas_Object_Text_Item *it, *last_it = NULL;
+   Evas_Object_Text_Item *it;
    Evas_Coord adv;
    (void) obj;
 
@@ -246,11 +246,8 @@ _evas_object_text_horiz_advance_get(const Evas_Object *obj,
    EINA_INLIST_FOREACH(EINA_INLIST_GET(o->items), it)
      {
         adv += it->adv;
-        last_it = it;
      }
 
-   if (last_it && (last_it->w > last_it->adv))
-      adv += last_it->w - last_it->adv;
    return adv;
 }
 
@@ -320,6 +317,7 @@ evas_object_text_font_set(Evas_Object *obj, const char *font, Evas_Font_Size siz
    Evas_Object_Text *o;
    int is, was = 0, pass = 0, freeze = 0;
    Evas_Font_Description *fdesc;
+   Eina_Bool source_invisible = EINA_FALSE;
 
    if ((!font) || (size <= 0)) return;
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
@@ -350,7 +348,8 @@ evas_object_text_font_set(Evas_Object *obj, const char *font, Evas_Font_Size siz
      {
         pass = evas_event_passes_through(obj);
         freeze = evas_event_freezes_through(obj);
-        if ((!pass) && (!freeze))
+        source_invisible = evas_object_is_source_invisible(obj);
+        if ((!pass) && (!freeze) && (!source_invisible))
           was = evas_object_is_in_output_rect(obj,
                                               obj->layer->evas->pointer.x,
                                               obj->layer->evas->pointer.y, 1, 1);
@@ -1699,7 +1698,7 @@ evas_object_text_render_pre(Evas_Object *obj)
 					      obj, is_v, was_v);
 	goto done;
      }
-   if (obj->changed_map)
+   if (obj->changed_map || obj->changed_src_visible)
      {
         evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes,
                                             obj);
@@ -1934,5 +1933,6 @@ _evas_object_text_recalc(Evas_Object *obj)
         obj->cur.geometry.h = o->max_ascent + o->max_descent + t + b;
 ////        obj->cur.cache.geometry.validity = 0;
      }
+   evas_object_clip_dirty(obj);
 }
 

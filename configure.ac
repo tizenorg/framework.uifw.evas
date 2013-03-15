@@ -540,7 +540,7 @@ AC_SUBST(lt_enable_auto_import)
 ### Checks for library functions
 
 AC_ISC_POSIX
-AC_CHECK_FUNCS([siglongjmp])
+AC_CHECK_FUNCS([siglongjmp fcntl])
 
 # alloca
 AC_FUNC_ALLOCA

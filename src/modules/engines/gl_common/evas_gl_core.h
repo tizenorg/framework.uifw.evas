@@ -4,6 +4,7 @@
 #include "Evas_GL.h"
 
 typedef void *EVGLNative_Display;
+typedef void *EVGLNative_Window;
 typedef void *EVGLNative_Surface;
 typedef void *EVGLNative_Context;
 typedef struct _EVGL_Engine         EVGL_Engine;
@@ -15,7 +16,6 @@ typedef struct _EVGL_Resource       EVGL_Resource;
 typedef struct _EVGL_Cap            EVGL_Cap;
 typedef struct _EVGL_Surface_Cap    EVGL_Surface_Cap;
 typedef struct _EVGL_Surface_Format EVGL_Surface_Format;
-typedef struct _Native_Surface      Native_Surface;
 
 
 extern EVGL_Engine *evgl_engine_create(EVGL_Interface *efunc, void *engine_data);

@@ -26,7 +26,11 @@ SOFTWARE_X11_SOURCES += \
 evas_xlib_outbuf.c \
 evas_xlib_buffer.c \
 evas_xlib_color.c \
-evas_xlib_main.c
+evas_xlib_main.c \
+evas_xlib_swapbuf.c \
+evas_xlib_swapbuf.h \
+evas_xlib_swapper.c \
+evas_xlib_swapper.h
 
 SOFTWARE_X11_LIBADD = @FREETYPE_LIBS@ @EVAS_GENERAL_LIBS@ @evas_engine_software_xlib_libs@ @dlopen_libs@
 

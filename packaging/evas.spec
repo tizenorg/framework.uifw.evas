@@ -1,7 +1,7 @@
 #sbs-git:slp/pkgs/e/evas evas 1.1.0+svn.69113slp2+build01 828d8bb285397266eb8985fd081fa2692fa3a7d6
 Name:       evas
 Summary:    Multi-platform Canvas Library
-Version:    1.7.1+svn.77561+build01r01
+Version:    1.7.1+svn.77561+build04r02
 Release:    1
 Group:      System/Libraries
 License:    BSD
@@ -121,6 +121,8 @@ cp %{_builddir}/%{buildsubdir}/COPYING %{buildroot}/usr/share/license/%{name}
 %manifest %{name}.manifest
 /usr/share/license/%{name}
 %manifest %{name}.manifest
+# The temp file for eina_prefix by raster
+%{_datadir}/evas/checkme
 
 
 %files devel
@@ -129,5 +131,3 @@ cp %{_builddir}/%{buildsubdir}/COPYING %{buildroot}/usr/share/license/%{name}
 %{_libdir}/libevas.so
 %{_libdir}/pkgconfig/*.pc
 %{_datadir}/evas/examples/*
-# The temp file for eina_prefix by raster
-%{_datadir}/evas/checkme

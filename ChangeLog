@@ -1048,7 +1048,7 @@
 2012-09-20  Carsten Haitzler (The Rasterman)
 
        * Fix native surface crash when setting to null in some
-       situations.
+       situations in gl engine.
 
 2012-09-24  Sung W. Park (sung_)
 
@@ -1107,12 +1107,156 @@
 
        * Fix the vertical line drawing on gl backened.
 
+2012-10-20  Cedric Bail
+ 
+ 	1.7.1 release
+
+2012-10-25  Cedric Bail
+
+       * Make XPM loader faster.
+
 2012-11-02  Carsten Haitzler (The Rasterman)
 
        * Fix evas textblock tag parser to respect escaped spaces and
          escaped single quotes. This fixes an edje text class restyling bug.
 
+2012-11-09  Vincent Torri
+
+       * Fixed longstanding memset bug in evas box.
+
+2012-11-13  Carsten Haitzler (The Rasterman)
+
+        * Fixed GLX native surface handling to use glXChooseFBConfig.
+        This frixes a break in compositing on new intel mesa drivers.
+
 2012-11-20  ChunEon Park (Hermet)
 
         * Fix the evas memory leak - eina_rectangles allocated internally.
 
+2012-11-21  Carsten Haitzler (The Rasterman)
+
+        * Fixed leak in textblock and text props in general that made
+        textblock recalcs lead very badly. Required changed to textgrid
+        though a sit relied on the leaky behavior.
+
+2012-11-22  Sung W. Park (sung_)
+
+        * Fixed a bug where if an image object rendered using Evas GL
+        direct rendering and then another image object using Native
+        Surface rendering, there was a potential for it to fall into
+        the same direct rendering path.
+
+2012-11-23  Luis Felipe Strano Moraes
+
+        1.7.2 release
+
+2012-11-29  Cedric Bail
+
+	* Only unreference font when text is not used anymore.
+
+2012-11-30  Gustavo Sverzut Barbieri (k-s)
+
+	* Fix evas_object_box.c to properly reset size_hint_min to zero if
+	there are no objects packed into the box.
+
+2012-12-07  Cedric Bail
+
+	* Don't leak fd on exec.
+
+2012-12-07  Luis Felipe Strano Moraes
+
+	* Release 1.7.3
+
+2012-12-12  ChunEon park <hermet@hermet.pe.kr>
+
+        * Fix the evas gl line incorrect position problem.
+
+2012-12-13  Cedric Bail
+
+	* Fix uninitialized data in Evas_Smart initialization code.
+	* Fix potential segv in software engine native_set call.
+	* Fix uninitialized data in OpenGL engine native_set call.
+
+2012-12-13  Rafael Antognolli (antognolli)
+
+	* Remove strange image_put from image_is_inside. Fixes crashes when
+	precise_is_inside is set on image objects.
+
+2012-12-14  Cedric Bail
+
+	* Properly close async pipe fd on exec.
+
+2012-12-17 Vincent Torri
+
+	* Add XML output to doc
+	* Add installation rule for doc
+
+2012-12-19  Gustavo Sverzut Barbierie (k-s)
+
+	* Fixed RGBA_Image->flags.loaded for copied images.
+	* Fixed evas_object_image_is_inside() implementation.
+
+2012-12-19  Carsten Haitzler (The Rasterman)
+
+        * Fixed 24bpp issue with rendering in evas. It shows itself
+        only under qemu/kvm with the cirruse driver that I have found.
+        In this case the screen is really 24bpp packed and this case
+        just never comes up on any vaguely modern gfx system.
+
+2012-12-21  Stefan Schmidt
+
+        * Fix small memory leak in evas_bidi_utils error path
+
+2012-12-21  Luis Felipe Strano Moraes
+
+	* 1.7.4 release
+
+2013-01-02  Carsten Haitzler (The Rasterman)
+
+        * Fixed evas_software_xlib_x_write_mask_line() issue - it was
+        finding a segment in the shm cache of the wrong size for masks!
+
+2013-01-04  Luis Felipe Strano Moraes
+
+	* 1.7.5 release
+
+2013-01-05  Joel Klinghed
+
+        * fribidi header include path fix.
+
+2013-01-07  Thomas Petazzoni
+
+	* Fix build of Evas XCB backend.
+
+2013-01-09  Jiyoun Park (jypark)
+
+	* Fix evas bmp loader code which deal with image size.
+
+2013-01-11  Cedric Bail
+
+	* Fix not up to date clip cache for Evas_Object_Text.
+
+2013-01-11  Tom Hacohen (TAsn)
+
+	* Static libs: Updated liblinebreak to libunibreak's latest version.
+	* Evas texblock: Fixed a bug with breaking after format items.
+
+2013-01-14  Tom Hacohen (TAsn)
+
+       * Evas textblock: Fixed issue with line height when breaking on a
+       format.
+
+2013-01-15  ChunEon Park (Hermet) <hermet@hermet.pe.kr>
+
+        * Fix SIGFPE in evas map update if image size is 0.
+
+2013-01-15  Tom Hacohen (TAsn)
+
+	* Evas texblock: Fixed issue and simplified cursor_geometry_get.
+	* Evas text: Fixed issue with horiz advance.
+	* Evas text utils: Fixed issue with no-harfbuzz bidi.
+
+2013-01-16  Carsten Haitzler (The Rasterman)
+
+        * Fixed pixman image wrapping to handle allocated size instead
+        of image size (unless allocated is 0/wrong).

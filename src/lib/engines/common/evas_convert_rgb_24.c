@@ -23,7 +23,7 @@ evas_common_convert_rgba_to_24bpp_rgb_888(DATA32 *src, DATA8 *dst, int src_jump,
 	     dst_ptr+=3;
 	  }
 	src_ptr += src_jump;
-	dst_ptr += (dst_jump * 3);
+	dst_ptr += dst_jump;
      }
    return;
 }
@@ -55,7 +55,7 @@ evas_common_convert_rgba_to_24bpp_rgb_666(DATA32 *src, DATA8 *dst, int src_jump,
 	     dst_ptr+=3;
 	  }
 	src_ptr += src_jump;
-	dst_ptr += (dst_jump * 3);
+	dst_ptr += dst_jump;
      }
    return;
 }
@@ -82,7 +82,7 @@ evas_common_convert_rgba_to_24bpp_bgr_888(DATA32 *src, DATA8 *dst, int src_jump,
 	     dst_ptr+=3;
 	  }
 	src_ptr += src_jump;
-	dst_ptr += (dst_jump * 3);
+	dst_ptr += dst_jump;
      }
    return;
 }

@@ -54,6 +54,7 @@ _evas_event_object_list_raw_in_get(Evas *e, Eina_List *in,
              return in;
           }
         if (evas_event_passes_through(obj)) continue;
+        if (evas_object_is_source_invisible(obj)) continue;
         if ((obj->cur.visible) && (obj->delete_me == 0) &&
             (!obj->clip.clipees) &&
             (evas_object_clippers_is_visible(obj)))
@@ -273,7 +274,7 @@ evas_event_feed_mouse_down(Evas *e, int b, Evas_Button_Flags flags, unsigned int
    MAGIC_CHECK(e, Evas, MAGIC_EVAS);
    return;
    MAGIC_CHECK_END();
-
+   INF("ButtonEvent:down time=%u x=%d y=%d button=%d downs=%d", timestamp, e->pointer.x, e->pointer.y, b, e->pointer.downs);
    if ((b < 1) || (b > 32)) return;
 
    e->pointer.button |= (1 << (b - 1));
@@ -476,7 +477,7 @@ evas_event_feed_mouse_up(Evas *e, int b, Evas_Button_Flags flags, unsigned int t
    MAGIC_CHECK(e, Evas, MAGIC_EVAS);
    return;
    MAGIC_CHECK_END();
-
+   INF("ButtonEvent:up time=%u x=%d y=%d button=%d downs=%d", timestamp, e->pointer.x, e->pointer.y, b, e->pointer.downs);
    if ((b < 1) || (b > 32)) return;
    if (e->pointer.downs <= 0) return;
 
@@ -707,6 +708,8 @@ evas_event_feed_mouse_move(Evas *e, int x, int y, unsigned int timestamp, const 
                        obj->mouse_grabbed) &&
                       (!evas_event_passes_through(obj)) &&
                       (!evas_event_freezes_through(obj)) &&
+                      (!evas_object_is_source_invisible(obj) ||
+                       obj->mouse_grabbed) &&
                       (!obj->clip.clipees))
                     {
                        if ((px != x) || (py != y))
@@ -846,6 +849,8 @@ evas_event_feed_mouse_move(Evas *e, int x, int y, unsigned int timestamp, const 
                  eina_list_data_find(ins, obj) &&
                  (!evas_event_passes_through(obj)) &&
                  (!evas_event_freezes_through(obj)) &&
+                 (!evas_object_is_source_invisible(obj) ||
+                  obj->mouse_grabbed) &&
                  (!obj->clip.clipees) &&
                  ((!obj->precise_is_inside) || evas_object_is_inside(obj, x, y))
                 )
@@ -1014,6 +1019,8 @@ nogrep:
                  eina_list_data_find(newin, obj) &&
                  (!evas_event_passes_through(obj)) &&
                  (!evas_event_freezes_through(obj)) &&
+                 (!evas_object_is_source_invisible(obj) ||
+                  obj->mouse_grabbed) &&
                  (!obj->clip.clipees) &&
                  ((!obj->precise_is_inside) || evas_object_is_inside(obj, x, y))
                 )
@@ -1228,7 +1235,7 @@ evas_event_feed_multi_down(Evas *e,
    MAGIC_CHECK(e, Evas, MAGIC_EVAS);
    return;
    MAGIC_CHECK_END();
-
+   INF("ButtonEvent:multi down time=%u x=%d y=%d device=%d downs=%d", timestamp, x, y, d, e->pointer.downs);
    e->pointer.downs++;
    if (e->events_frozen > 0) return;
    e->last_timestamp = timestamp;
@@ -1314,7 +1321,7 @@ evas_event_feed_multi_up(Evas *e,
    MAGIC_CHECK(e, Evas, MAGIC_EVAS);
    return;
    MAGIC_CHECK_END();
-
+   INF("ButtonEvent:multi up time=%u x=%d y=%d device=%d downs=%d", timestamp, x, y, d, e->pointer.downs);
    if (e->pointer.downs <= 0) return;
    e->pointer.downs--;
    if (e->events_frozen > 0) return;
@@ -1438,6 +1445,8 @@ evas_event_feed_multi_move(Evas *e,
                  (evas_object_clippers_is_visible(obj) || obj->mouse_grabbed) &&
                  (!evas_event_passes_through(obj)) &&
                  (!evas_event_freezes_through(obj)) &&
+                 (!evas_object_is_source_invisible(obj) ||
+                  obj->mouse_grabbed) &&
                  (!obj->clip.clipees))
                {
                   ev.cur.canvas.x = x;
@@ -1505,6 +1514,8 @@ evas_event_feed_multi_move(Evas *e,
                  eina_list_data_find(ins, obj) &&
                  (!evas_event_passes_through(obj)) &&
                  (!evas_event_freezes_through(obj)) &&
+                 (!evas_object_is_source_invisible(obj) ||
+                  obj->mouse_grabbed) &&
                  (!obj->clip.clipees) &&
                  ((!obj->precise_is_inside) || evas_object_is_inside(obj, x, y))
                 )
@@ -1770,7 +1781,7 @@ evas_object_freeze_events_set(Evas_Object *obj, Eina_Bool freeze)
    freeze = !!freeze;
    if (obj->freeze_events == freeze) return;
    obj->freeze_events = freeze;
-   evas_object_smart_member_cache_invalidate(obj, EINA_FALSE, EINA_TRUE);
+   evas_object_smart_member_cache_invalidate(obj, EINA_FALSE, EINA_TRUE, EINA_FALSE);
 }
 
 EAPI Eina_Bool
@@ -1791,7 +1802,7 @@ evas_object_pass_events_set(Evas_Object *obj, Eina_Bool pass)
    pass = !!pass;
    if (obj->pass_events == pass) return;
    obj->pass_events = pass;
-   evas_object_smart_member_cache_invalidate(obj, EINA_TRUE, EINA_FALSE);
+   evas_object_smart_member_cache_invalidate(obj, EINA_TRUE, EINA_FALSE, EINA_FALSE);
    if (evas_object_is_in_output_rect(obj,
                                      obj->layer->evas->pointer.x,
                                      obj->layer->evas->pointer.y, 1, 1) &&

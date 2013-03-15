@@ -1348,6 +1348,21 @@ _format_command(Evas_Object *obj, Evas_Object_Textblock_Format *fmt, const char 
            &(fmt->color.glow2.r), &(fmt->color.glow2.g),
            &(fmt->color.glow2.b), &(fmt->color.glow2.a));
    else if (cmd == backing_colorstr)
+     /**
+      * @page evas_textblock_style_page Evas Textblock Style Options
+      *
+      * @subsection evas_textblock_style_backing_color Backing Color
+      *
+      * Sets a background color for text. The following formats are
+      * accepted:
+      * @li "#RRGGBB"
+      * @li "#RRGGBBAA"
+      * @li "#RGB"
+      * @li "#RGBA"
+      * @code
+      * backing_color=<color>
+      * @endcode
+      */
      _format_color_parse(tmp_param,
            &(fmt->color.backing.r), &(fmt->color.backing.g),
            &(fmt->color.backing.b), &(fmt->color.backing.a));
@@ -3468,7 +3483,7 @@ _layout_get_word_mixwrap_common(Ctxt *c, Evas_Object_Textblock_Format *fmt,
                }
 
 
-             if ((wrap < len) && (wrap > line_start))
+             if ((wrap < len) && (wrap >= line_start))
                {
                   MOVE_NEXT_UNTIL(len, wrap);
                   return wrap;
@@ -3724,6 +3739,7 @@ _layout_par(Ctxt *c)
     * inside the list and then walk them on the next iteration. */
    for (i = c->par->logical_items ; i ; )
      {
+        Evas_Coord prevdescent = 0, prevascent = 0;
         int adv_line = 0;
         int redo_item = 0;
         it = _ITEM(eina_list_data_get(i));
@@ -3745,6 +3761,8 @@ _layout_par(Ctxt *c)
              Evas_Object_Textblock_Format_Item *fi = _ITEM_FORMAT(it);
              if (fi->formatme)
                {
+                  prevdescent = c->maxdescent;
+                  prevascent = c->maxascent;
                   /* If there are no text items yet, calc ascent/descent
                    * according to the current format. */
                   if (c->maxascent + c->maxdescent == 0)
@@ -3881,9 +3899,11 @@ _layout_par(Ctxt *c)
                                     there's already no cut before*/
                                  wrap = -1;
                               }
-                        }
+                         }
                        else
-                          wrap -= it->text_pos; /* Cut here */
+                         {
+                            wrap -= it->text_pos; /* Cut here */
+                         }
                     }
 
                   if (wrap > 0)
@@ -3897,6 +3917,12 @@ _layout_par(Ctxt *c)
                   else if (wrap == 0)
                     {
                        /* Should wrap before the item */
+
+                       /* We didn't end up using the item, so revert the ascent
+                        * and descent changes. */
+                       c->maxdescent = prevdescent;
+                       c->maxascent = prevascent;
+
                        adv_line = 0;
                        redo_item = 1;
                        _layout_line_advance(c, it->format);
@@ -8177,14 +8203,11 @@ EAPI int
 evas_textblock_cursor_geometry_get(const Evas_Textblock_Cursor *cur, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch, Evas_BiDi_Direction *dir, Evas_Textblock_Cursor_Type ctype)
 {
    int ret = -1;
-   const Evas_Textblock_Cursor *dir_cur;
-   Evas_Textblock_Cursor cur2;
    Evas_Object_Textblock *o;
    if (!cur) return -1;
    o = (Evas_Object_Textblock *)(cur->obj->object_data);
    if (!o->formatted.valid) _relayout(cur->obj);
 
-   dir_cur = cur;
    if (ctype == EVAS_TEXTBLOCK_CURSOR_UNDER)
      {
         ret = evas_textblock_cursor_pen_geometry_get(cur, cx, cy, cw, ch);
@@ -8194,142 +8217,30 @@ evas_textblock_cursor_geometry_get(const Evas_Textblock_Cursor *cur, Evas_Coord 
         /* In the case of a "before cursor", we should get the coordinates
          * of just after the previous char (which in bidi text may not be
          * just before the current char). */
-        Evas_Coord x, y, h, w;
-        Evas_Object_Textblock_Node_Format *fmt;
+        Evas_Coord x, y, w, h;
 
-        /* If it's at the end of the line, we want to get the position, not
-         * the position of the previous */
-        if ((cur->pos > 0) && !_evas_textblock_cursor_is_at_the_end(cur))
-          {
-#ifdef BIDI_SUPPORT
-             Eina_Bool before_char = EINA_FALSE;
-#endif
-             cur2.obj = cur->obj;
-             evas_textblock_cursor_copy(cur, &cur2);
-             evas_textblock_cursor_char_prev(&cur2);
+        Evas_Object_Textblock_Line *ln;
+        Evas_Object_Textblock_Item *it;
 
-             fmt = _evas_textblock_cursor_node_format_at_pos_get(&cur2);
-
-             if (!fmt || !_IS_LINE_SEPARATOR(fmt->format))
-               {
-                  dir_cur = &cur2;
-#ifdef BIDI_SUPPORT
-                  before_char = EINA_FALSE;
-#endif
-               }
-#ifdef BIDI_SUPPORT
-             else
-               {
-                  before_char = EINA_TRUE;
-               }
-#endif
-             ret = evas_textblock_cursor_pen_geometry_get(
-                   dir_cur, &x, &y, &w, &h);
-#ifdef BIDI_SUPPORT
-             /* Adjust if the char is an rtl char */
-             if (ret >= 0)
-               {
-                  Eina_Bool is_rtl = EINA_FALSE;
-                  if (dir_cur->node->par->is_bidi)
-                    {
-                       Evas_Object_Textblock_Line *ln;
-                       Evas_Object_Textblock_Item *it;
-                       _find_layout_item_match(dir_cur, &ln, &it);
-                       if ((it->type == EVAS_TEXTBLOCK_ITEM_TEXT) &&
-                             (_ITEM_TEXT(it)->text_props.bidi.dir ==
-                              EVAS_BIDI_DIRECTION_RTL))
-                          is_rtl = EINA_TRUE;
-                       else if ((it->type == EVAS_TEXTBLOCK_ITEM_FORMAT) &&
-                             (_ITEM_FORMAT(it)->bidi_dir ==
-                              EVAS_BIDI_DIRECTION_RTL))
-                          is_rtl = EINA_TRUE;
-                    }
-
-                  if ((!before_char && is_rtl) ||
-                        (before_char && !is_rtl))
-                    {
-                       /* Just don't advance the width */
-                       w = 0;
-                    }
-               }
-#endif
-          }
-        else if (cur->pos == 0)
-          {
-             ret = evas_textblock_cursor_pen_geometry_get(
-                   dir_cur, &x, &y, &w, &h);
-#ifdef BIDI_SUPPORT
-             Eina_Bool is_rtl = EINA_FALSE;
-             if (dir_cur->node && dir_cur->node->par->is_bidi)
-               {
-                  Evas_Object_Textblock_Line *ln;
-                  Evas_Object_Textblock_Item *it;
-                  _find_layout_item_match(dir_cur, &ln, &it);
-                  if ((it->type == EVAS_TEXTBLOCK_ITEM_TEXT) &&
-                        (_ITEM_TEXT(it)->text_props.bidi.dir ==
-                         EVAS_BIDI_DIRECTION_RTL))
-                     is_rtl = EINA_TRUE;
-                  else if ((it->type == EVAS_TEXTBLOCK_ITEM_FORMAT) &&
-                        (_ITEM_FORMAT(it)->bidi_dir ==
-                         EVAS_BIDI_DIRECTION_RTL))
-                     is_rtl = EINA_TRUE;
-               }
-
-             /* Adjust if the char is an rtl char */
-             if ((ret >= 0) && (!is_rtl))
-               {
-                  /* Just don't advance the width */
-                  w = 0;
-               }
-#endif
-          }
-        else
-          {
-             ret = evas_textblock_cursor_pen_geometry_get(
-                   dir_cur, &x, &y, &w, &h);
-          }
+        ret = evas_textblock_cursor_pen_geometry_get(cur, &x, &y, &w, &h);
+        _find_layout_item_match(cur, &ln, &it);
         if (ret >= 0)
           {
-             if (cx) *cx = x + w;
+             Evas_BiDi_Direction itdir =
+                (it->type == EVAS_TEXTBLOCK_ITEM_TEXT) ?
+                _ITEM_TEXT(it)->text_props.bidi.dir :
+                _ITEM_FORMAT(it)->bidi_dir;
+             if (itdir == EVAS_BIDI_DIRECTION_RTL)
+               {
+                  if (cx) *cx = x + w;
+               }
+             else
+               {
+                  if (cx) *cx = x;
+               }
              if (cy) *cy = y;
-             if (cw) *cw = 0;
-             if (ch) *ch = h;
-          }
-     }
-
-   if (dir && dir_cur && dir_cur->node)
-     {
-#ifdef BIDI_SUPPORT
-        Eina_Bool is_rtl = EINA_FALSE;
-        if (dir_cur->node->par->is_bidi)
-          {
-             Evas_Object_Textblock_Line *ln;
-             Evas_Object_Textblock_Item *it;
-             _find_layout_item_match(dir_cur, &ln, &it);
-             if ((it->type == EVAS_TEXTBLOCK_ITEM_TEXT) &&
-                   (_ITEM_TEXT(it)->text_props.bidi.dir ==
-                    EVAS_BIDI_DIRECTION_RTL))
-                is_rtl = EINA_TRUE;
-             else if ((it->type == EVAS_TEXTBLOCK_ITEM_FORMAT) &&
-                   (_ITEM_FORMAT(it)->bidi_dir ==
-                    EVAS_BIDI_DIRECTION_RTL))
-                is_rtl = EINA_TRUE;
-          }
-
-        if (_evas_textblock_cursor_is_at_the_end(dir_cur) && (dir_cur->pos > 0))
-          {
-             *dir = (is_rtl) ?
-                EVAS_BIDI_DIRECTION_RTL : EVAS_BIDI_DIRECTION_LTR;
-          }
-        else if (dir_cur->pos > 0)
-          {
-             *dir = (is_rtl) ?
-                EVAS_BIDI_DIRECTION_RTL : EVAS_BIDI_DIRECTION_LTR;
-          }
-        else
-#endif
-          {
-             *dir = EVAS_BIDI_DIRECTION_LTR;
+             if (cw) *cw = 0;                                                                if (ch) *ch = h;
+             if (dir) *dir = itdir;
           }
      }
    return ret;
@@ -9830,15 +9741,23 @@ evas_object_textblock_render(Evas_Object *obj, void *output, void *context, void
         DRAW_FORMAT(strikethrough, (ln->h / 2), 1);
 
         /* UNDERLINE */
-        DRAW_FORMAT(underline, ln->baseline + 1, 1);
+        // TIZEN ONLY : for not overlapping with characters.
+        DRAW_FORMAT(underline, ln->baseline + 4, 1);
+        //DRAW_FORMAT(underline, ln->baseline + 1, 1);
 
         /* UNDERLINE DASHED */
-        DRAW_FORMAT_DASHED(underline_dash, ln->baseline + 1, 1,
-                         ti->parent.format->underline_dash_width,
-                         ti->parent.format->underline_dash_gap);
+        // TIZEN ONLY : for not overlapping with characters.
+        DRAW_FORMAT_DASHED(underline_dash, ln->baseline + 4, 1,
+                           ti->parent.format->underline_dash_width,
+                           ti->parent.format->underline_dash_gap);
+        //DRAW_FORMAT_DASHED(underline_dash, ln->baseline + 1, 1,
+        //                   ti->parent.format->underline_dash_width,
+        //                   ti->parent.format->underline_dash_gap);
 
         /* UNDERLINE2 */
-        DRAW_FORMAT(underline2, ln->baseline + 3, 1);
+        // TIZEN ONLY : for not overlapping with characters.
+        DRAW_FORMAT(underline2, ln->baseline + 6, 1);
+        //DRAW_FORMAT(underline2, ln->baseline + 3, 1);
      }
    ITEM_WALK_END();
 }
@@ -9894,7 +9813,7 @@ evas_object_textblock_render_pre(Evas_Object *obj)
 	evas_object_render_pre_visible_change(&obj->layer->evas->clip_changes, obj, is_v, was_v);
 	goto done;
      }
-   if (obj->changed_map)
+   if (obj->changed_map || obj->changed_src_visible)
      {
         evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes,
                                             obj);

@@ -824,7 +824,7 @@ evas_image_load_specific_frame(Image_Entry *ie, const char *file, int frame_inde
 {
    int                fd;
    GifFileType       *gif;
-   Image_Entry_Frame *frame = NULL;
+   Image_Entry_Frame *frame = NULL, *tmp;
    Gif_Frame         *gif_frame = NULL;
 
 #ifndef __EMX__
@@ -877,6 +877,18 @@ evas_image_load_specific_frame(Image_Entry *ie, const char *file, int frame_inde
      }
 
    ie->frames = eina_list_append(ie->frames, frame);
+
+   /* Remove older frames so we only cache two. This should be enough to render
+    * the frames that depend on the prior one */
+   if (eina_list_count(ie->frames) > 2)
+     {
+        tmp = eina_list_data_get(ie->frames);
+        ie->frames = eina_list_remove(ie->frames, tmp);
+        free(tmp->data);
+        free(tmp->info);
+        free(tmp);
+     }
+
    DGifCloseFile(gif);
    return EINA_TRUE;
 }

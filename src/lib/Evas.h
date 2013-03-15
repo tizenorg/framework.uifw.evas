@@ -3636,14 +3636,14 @@ EAPI void             evas_object_color_set(Evas_Object *obj, int r, int g, int 
  * @param a Pointer to an integer in which to store the alpha
  *          component of the color.
  *
- * Retrieves the “main” color's RGB component (and alpha channel)
+ * Retrieves the "main" color's RGB component (and alpha channel)
  * values, <b>which range from 0 to 255</b>. For the alpha channel,
  * which defines the object's transparency level, 0 means totally
  * transparent, while 255 means opaque. These color values are
  * premultiplied by the alpha value.
  *
- * Usually you’ll use this attribute for text and rectangle objects,
- * where the “main” color is their unique one. If set for objects
+ * Usually you'll use this attribute for text and rectangle objects,
+ * where the "main" color is their unique one. If set for objects
  * which themselves have colors, like the images one, those colors get
  * modulated by this one.
  *
@@ -7648,6 +7648,45 @@ EAPI Evas_Object                  *evas_object_image_source_get(const Evas_Objec
  * @c NULL source.
  */
 EAPI Eina_Bool                     evas_object_image_source_unset(Evas_Object *obj) EINA_ARG_NONNULL(1);
+
+/**
+ * Set the source object to be visible or not.
+ *
+ * @param obj Proxy (image) object.
+ * @param visible @c EINA_TRUE is source object to be shown, @c EINA_FALSE
+ * otherwise.
+ *
+ * If the @p visible set to @c EINA_FALSE, the source object of the proxy(@p obj
+ * ) will be invisible.
+ *
+ * This API works differently to evas_object_show() and evas_object_hide().
+ * Once source object is hidden by evas_object_hide() then the proxy object will * be hidden as well. Actually in this case both objects are excluded from the
+ * Evas internal update circle.
+ *
+ * By this API, instead, one can toggle the visibility of a proxy's source
+ * object remaining the proxy visibility untouched.
+ *
+ * @see evas_object_image_source_visible_get()
+ * @see evas_object_image_source_set()
+ * @see evas_object_show()
+ * @see evas_object_hide()
+ * @since 1.8
+ */
+EAPI void                          evas_object_image_source_visible_set(Evas_Object *obj, Eina_Bool visible) EINA_ARG_NONNULL(1);
+
+/**
+ * Get the state of the source object visibility.
+ *
+ * @param obj Proxy (image) object.
+ * @return @c EINA_TRUE if source object is visible, @c EINA_FALSE otherwise.
+ *
+ * @see evas_object_image_source_visible_set()
+ * @see evas_object_image_source_set()
+ * @see evas_object_show()
+ * @see evas_object_hide()
+ * @since 1.8
+ */
+EAPI Eina_Bool                     evas_object_image_source_visible_get(const Evas_Object *obj) EINA_ARG_NONNULL(1);
 
 /**
  * Check if a file extension may be supported by @ref Evas_Object_Image.

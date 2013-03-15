@@ -53,7 +53,7 @@ _find_xob(Display *d, Visual *v, int depth, int w, int h, int shm, void *data)
 	lbytes = (((w * bpp) + 3) / 4) * 4;
      }
    else
-     lbytes = ((w + 31) / 32) * 4;
+     lbytes = ((w + 63) / 64) * 8;
    sz = lbytes * h;
    SHMPOOL_LOCK();
    EINA_LIST_FOREACH(shmpool, l, xob2)
@@ -61,7 +61,7 @@ _find_xob(Display *d, Visual *v, int depth, int w, int h, int shm, void *data)
 	int szdif;
 
 	if ((xob2->xim->depth != depth) || (xob2->visual != v) ||
-	    (xob2->display != d))
+	    (xob2->display != d) || (xob2->w != w))
 	  continue;
 	szdif = xob2->psize - sz;
 	if (szdif < 0) continue;
@@ -89,7 +89,7 @@ _find_xob(Display *d, Visual *v, int depth, int w, int h, int shm, void *data)
    shmpool = eina_list_remove_list(shmpool, xl);
    xob->w = w;
    xob->h = h;
-   xob->bpl = lbytes;
+//   xob->bpl = lbytes;
    xob->xim->width = xob->w;
    xob->xim->height = xob->h;
    xob->xim->bytes_per_line = xob->bpl;
@@ -223,7 +223,6 @@ evas_software_xlib_outbuf_setup_x(int w, int h, int rot, Outbuf_Depth depth,
 						  buf->priv.x11.xlib.vis,
 						  buf->priv.x11.xlib.depth,
 						  1, 1, buf->priv.x11.xlib.shm, NULL);
-
       conv_func = NULL;
       if (xob)
 	{
@@ -340,7 +339,8 @@ evas_software_xlib_outbuf_setup_x(int w, int h, int rot, Outbuf_Depth depth,
                                                             buf->priv.mask.b, PAL_MODE_NONE,
                                                             buf->rot);
 	     }
-	   evas_software_xlib_x_output_buffer_free(xob, 1);
+           buf->priv.x11.xlib.imdepth = evas_software_xlib_x_output_buffer_depth(xob);
+           evas_software_xlib_x_output_buffer_free(xob, 1);
 	   if (!conv_func)
 	     {
                 ERR("At depth: %i, RGB format mask: %08x %08x %08x, "
@@ -409,6 +409,7 @@ evas_software_xlib_outbuf_new_region_for_update(Outbuf *buf, int x, int y, int w
 
 	use_shm = buf->priv.x11.xlib.shm;
 	if ((buf->rot == 0) &&
+            (buf->priv.x11.xlib.imdepth == 32) &&
 	    (buf->priv.mask.r == 0xff0000) &&
 	    (buf->priv.mask.g == 0x00ff00) &&
 	    (buf->priv.mask.b == 0x0000ff))
@@ -564,6 +565,7 @@ evas_software_xlib_outbuf_new_region_for_update(Outbuf *buf, int x, int y, int w
    alpha = ((buf->priv.x11.xlib.mask) || (buf->priv.destination_alpha));
 
    if ((buf->rot == 0) &&
+       (buf->priv.x11.xlib.imdepth == 32) &&
        (buf->priv.mask.r == 0xff0000) &&
        (buf->priv.mask.g == 0x00ff00) &&
        (buf->priv.mask.b == 0x0000ff))
@@ -1010,21 +1012,34 @@ evas_software_xlib_outbuf_push_updated_region(Outbuf *buf, RGBA_Image *update, i
    if (buf->priv.pal)
      {
 	if (data != (unsigned char *)src_data)
-	  conv_func(src_data, data,
-		    update->cache_entry.w - w,
-		    bpl /
-		    ((evas_software_xlib_x_output_buffer_depth(obr->xob) /
-		      8)) - obr->w, obr->w, obr->h, x, y,
-		    buf->priv.pal->lookup);
+	  conv_func(src_data, data, update->cache_entry.w - w,
+                    bpl - obr->w, obr->w, obr->h, x, y,
+                    buf->priv.pal->lookup);
      }
    else
      {
+        int pixelb = evas_software_xlib_x_output_buffer_depth(obr->xob) / 8;
+        int run;
+        int dstjump;
+        
+        if (pixelb == 3)
+          {
+             run = obr->w * pixelb;
+             dstjump = bpl - run;
+          }
+        else if ((pixelb == 2) || (pixelb == 4))
+          {
+             run = obr->w;
+             dstjump = (bpl / pixelb) - run;
+          }
+        else
+          {
+             run = obr->w;
+             dstjump = bpl - run;
+          }
 	if (data != (unsigned char *)src_data)
-	  conv_func(src_data, data,
-		    update->cache_entry.w - w,
-		    bpl /
-		    ((evas_software_xlib_x_output_buffer_depth(obr->xob) /
-		      8)) - obr->w, obr->w, obr->h, x, y, NULL);
+	  conv_func(src_data, data, update->cache_entry.w - w, dstjump,
+                    obr->w, obr->h, x, y, NULL);
      }
 #if 1
 #else

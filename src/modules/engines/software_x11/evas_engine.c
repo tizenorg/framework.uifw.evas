@@ -6,6 +6,7 @@
 
 #ifdef BUILD_ENGINE_SOFTWARE_XLIB
 # include "evas_xlib_outbuf.h"
+# include "evas_xlib_swapbuf.h"
 # include "evas_xlib_color.h"
 #endif
 
@@ -30,8 +31,11 @@ struct _Render_Engine
    Tilebuf *tb;
    Outbuf *ob;
    Tilebuf_Rect *rects;
+   Tilebuf_Rect *rects_prev[3];
    Eina_Inlist *cur_rect;
+   short mode;
    unsigned char end : 1;
+   unsigned char lost_back : 1;
    void (*outbuf_free)(Outbuf *ob);
    void (*outbuf_reconfigure)(Outbuf *ob, int w, int h, int rot, Outbuf_Depth depth);
    int (*outbuf_get_rot)(Outbuf *ob);
@@ -40,6 +44,7 @@ struct _Render_Engine
    void (*outbuf_free_region_for_update)(Outbuf *ob, RGBA_Image *update);
    void (*outbuf_flush)(Outbuf *ob);
    void (*outbuf_idle_flush)(Outbuf *ob);
+   int (*outbuf_swap_mode_get)(Outbuf *ob);
    Eina_Bool (*outbuf_alpha_get)(Outbuf *ob);
    
    struct {
@@ -72,6 +77,7 @@ static void eng_output_idle_flush(void *data);
 
 #ifdef BUILD_ENGINE_SOFTWARE_XLIB
 
+/*
 static void *
 _output_egl_setup(int w, int h, int rot, Display *disp, Drawable draw,
                   Visual *vis, Colormap cmap, int depth, int debug,
@@ -128,13 +134,12 @@ _output_egl_setup(int w, int h, int rot, Display *disp, Drawable draw,
 	free(re);
 	return NULL;
      }
-
-   /* in preliminary tests 16x16 gave highest framerates */
    evas_common_tilebuf_set_tile_size(re->tb, TILESIZE, TILESIZE);
    
    return re;
 }
-
+*/
+   
 static void
 _output_egl_shutdown(Render_Engine *re)
 {
@@ -156,7 +161,7 @@ _output_xlib_setup(int w, int h, int rot, Display *disp, Drawable draw,
    evas_software_xlib_x_init();
    evas_software_xlib_x_color_init();
    evas_software_xlib_outbuf_init();
-   
+
    re->ob = 
      evas_software_xlib_outbuf_setup_x(w, h, rot, OUTBUF_DEPTH_INHERIT, disp, 
                                        draw, vis, cmap, depth, grayscale,
@@ -188,6 +193,44 @@ _output_xlib_setup(int w, int h, int rot, Display *disp, Drawable draw,
      }
 
    /* in preliminary tests 16x16 gave highest framerates */
+   evas_common_tilebuf_set_tile_size(re->tb, TILESIZE, TILESIZE);
+   return re;
+}
+
+static void *
+_output_swapbuf_setup(int w, int h, int rot, Display *disp, Drawable draw,
+                      Visual *vis, Colormap cmap, int depth,
+                      int debug EINA_UNUSED,
+                      int grayscale, int max_colors, Pixmap mask,
+                      int shape_dither, int destination_alpha)
+{
+   Render_Engine *re;
+
+   if (!(re = calloc(1, sizeof(Render_Engine)))) return NULL;
+
+   evas_software_xlib_x_init();
+   evas_software_xlib_x_color_init();
+   evas_software_xlib_swapbuf_init();
+   
+   re->ob = 
+     evas_software_xlib_swapbuf_setup_x(w, h, rot, OUTBUF_DEPTH_INHERIT, disp, 
+                                        draw, vis, cmap, depth, grayscale,
+                                        max_colors, mask, shape_dither,
+                                        destination_alpha);
+   if (!re->ob)
+     {
+	free(re);
+	return NULL;
+     }
+
+   re->tb = evas_common_tilebuf_new(w, h);
+   if (!re->tb)
+     {
+	evas_software_xlib_swapbuf_free(re->ob);
+	free(re);
+	return NULL;
+     }
+
    evas_common_tilebuf_set_tile_size(re->tb, TILESIZE, TILESIZE);
    return re;
 }
@@ -407,29 +450,38 @@ eng_setup(Evas *e, void *in)
 #ifdef BUILD_ENGINE_SOFTWARE_XLIB
         if (info->info.backend == EVAS_ENGINE_INFO_SOFTWARE_X11_BACKEND_XLIB)
           {
-             re = _output_egl_setup(e->output.w, e->output.h,
-                                    info->info.rotation, info->info.connection,
-                                    info->info.drawable, info->info.visual,
-                                    info->info.colormap,
-                                    info->info.depth, info->info.debug,
-                                    info->info.alloc_grayscale,
-                                    info->info.alloc_colors_max,
-                                    info->info.mask, info->info.shape_dither,
-                                    info->info.destination_alpha);
+             static int try_swapbuf = -1;
+             
+             if (try_swapbuf == -1)
+               {
+                  if (getenv("EVAS_DRI_SWAPBUF")) try_swapbuf = 1;
+                  else try_swapbuf = 0;
+               }
+             if (try_swapbuf)
+               re = _output_swapbuf_setup(e->output.w, e->output.h,
+                                          info->info.rotation, info->info.connection,
+                                          info->info.drawable, info->info.visual,
+                                          info->info.colormap,
+                                          info->info.depth, info->info.debug,
+                                          info->info.alloc_grayscale,
+                                          info->info.alloc_colors_max,
+                                          info->info.mask, info->info.shape_dither,
+                                          info->info.destination_alpha);
              if (re)
                {
-                  // XXX these need to provide egl functions not xlib
-                  re->outbuf_free = evas_software_xlib_outbuf_free;
-                  re->outbuf_reconfigure = evas_software_xlib_outbuf_reconfigure;
-                  re->outbuf_get_rot = evas_software_xlib_outbuf_get_rot;
-                  re->outbuf_new_region_for_update = evas_software_xlib_outbuf_new_region_for_update;
-                  re->outbuf_push_updated_region = evas_software_xlib_outbuf_push_updated_region;
-                  re->outbuf_free_region_for_update = evas_software_xlib_outbuf_free_region_for_update;
-                  re->outbuf_flush = evas_software_xlib_outbuf_flush;
-                  re->outbuf_idle_flush = evas_software_xlib_outbuf_idle_flush;
-                  re->outbuf_alpha_get = evas_software_xlib_outbuf_alpha_get;
+                  re->outbuf_free                   = evas_software_xlib_swapbuf_free;
+                  re->outbuf_reconfigure            = evas_software_xlib_swapbuf_reconfigure;
+                  re->outbuf_get_rot                = evas_software_xlib_swapbuf_get_rot;
+                  re->outbuf_new_region_for_update  = evas_software_xlib_swapbuf_new_region_for_update;
+                  re->outbuf_push_updated_region    = evas_software_xlib_swapbuf_push_updated_region;
+                  re->outbuf_free_region_for_update = evas_software_xlib_swapbuf_free_region_for_update;
+                  re->outbuf_flush                  = evas_software_xlib_swapbuf_flush;
+                  re->outbuf_idle_flush             = evas_software_xlib_swapbuf_idle_flush;
+                  re->outbuf_alpha_get              = evas_software_xlib_swapbuf_alpha_get;
+                  re->outbuf_swap_mode_get          = evas_software_xlib_swapbuf_buffer_state_get;
                }
-             else
+
+             if (!re)
                {
                   re = _output_xlib_setup(e->output.w, e->output.h,
                                           info->info.rotation, info->info.connection,
@@ -441,15 +493,16 @@ eng_setup(Evas *e, void *in)
                                           info->info.mask, info->info.shape_dither,
                                           info->info.destination_alpha);
                   
-                  re->outbuf_free = evas_software_xlib_outbuf_free;
-                  re->outbuf_reconfigure = evas_software_xlib_outbuf_reconfigure;
-                  re->outbuf_get_rot = evas_software_xlib_outbuf_get_rot;
-                  re->outbuf_new_region_for_update = evas_software_xlib_outbuf_new_region_for_update;
-                  re->outbuf_push_updated_region = evas_software_xlib_outbuf_push_updated_region;
+                  re->outbuf_free                   = evas_software_xlib_outbuf_free;
+                  re->outbuf_reconfigure            = evas_software_xlib_outbuf_reconfigure;
+                  re->outbuf_get_rot                = evas_software_xlib_outbuf_get_rot;
+                  re->outbuf_new_region_for_update  = evas_software_xlib_outbuf_new_region_for_update;
+                  re->outbuf_push_updated_region    = evas_software_xlib_outbuf_push_updated_region;
                   re->outbuf_free_region_for_update = evas_software_xlib_outbuf_free_region_for_update;
-                  re->outbuf_flush = evas_software_xlib_outbuf_flush;
-                  re->outbuf_idle_flush = evas_software_xlib_outbuf_idle_flush;
-                  re->outbuf_alpha_get = evas_software_xlib_outbuf_alpha_get;
+                  re->outbuf_flush                  = evas_software_xlib_outbuf_flush;
+                  re->outbuf_idle_flush             = evas_software_xlib_outbuf_idle_flush;
+                  re->outbuf_alpha_get              = evas_software_xlib_outbuf_alpha_get;
+                  re->outbuf_swap_mode_get          = NULL;
                }
           }
 #endif
@@ -467,18 +520,16 @@ eng_setup(Evas *e, void *in)
                                     info->info.mask, info->info.shape_dither,
                                     info->info.destination_alpha);
 
-             re->outbuf_free = evas_software_xcb_outbuf_free;
-             re->outbuf_reconfigure = evas_software_xcb_outbuf_reconfigure;
-             re->outbuf_get_rot = evas_software_xcb_outbuf_rotation_get;
-             re->outbuf_new_region_for_update = 
-               evas_software_xcb_outbuf_new_region_for_update;
-             re->outbuf_push_updated_region = 
-               evas_software_xcb_outbuf_push_updated_region;
-             re->outbuf_free_region_for_update = 
-               evas_software_xcb_outbuf_free_region_for_update;
-             re->outbuf_flush = evas_software_xcb_outbuf_flush;
-             re->outbuf_idle_flush = evas_software_xcb_outbuf_idle_flush;
-	     re->outbuf_alpha_get = evas_software_xcb_outbuf_alpha_get;
+             re->outbuf_free                   = evas_software_xcb_outbuf_free;
+             re->outbuf_reconfigure            = evas_software_xcb_outbuf_reconfigure;
+             re->outbuf_get_rot                = evas_software_xcb_outbuf_rotation_get;
+             re->outbuf_new_region_for_update  = evas_software_xcb_outbuf_new_region_for_update;
+             re->outbuf_push_updated_region    = evas_software_xcb_outbuf_push_updated_region;
+             re->outbuf_free_region_for_update = evas_software_xcb_outbuf_free_region_for_update;
+             re->outbuf_flush                  = evas_software_xcb_outbuf_flush;
+             re->outbuf_idle_flush             = evas_software_xcb_outbuf_idle_flush;
+	     re->outbuf_alpha_get              = evas_software_xcb_outbuf_alpha_get;
+             re->outbuf_swap_mode_get          = NULL;
           }
 #endif
 
@@ -489,29 +540,49 @@ eng_setup(Evas *e, void *in)
 	int ponebuf = 0;
 
 	re = e->engine.data.output;
-	ponebuf = re->ob->onebuf;
+        if ((re) && (re->ob)) ponebuf = re->ob->onebuf;
 
 #ifdef BUILD_ENGINE_SOFTWARE_XLIB
         if (info->info.backend == EVAS_ENGINE_INFO_SOFTWARE_X11_BACKEND_XLIB)
           {
-             // XXXX do egl stuff as above
-             evas_software_xlib_outbuf_free(re->ob);
-             re->ob = 
-               evas_software_xlib_outbuf_setup_x(e->output.w, e->output.h,
-                                                 info->info.rotation,
-                                                 OUTBUF_DEPTH_INHERIT,
-                                                 info->info.connection,
-                                                 info->info.drawable,
-                                                 info->info.visual,
-                                                 info->info.colormap,
-                                                 info->info.depth,
-                                                 info->info.alloc_grayscale,
-                                                 info->info.alloc_colors_max,
-                                                 info->info.mask,
-                                                 info->info.shape_dither,
-                                                 info->info.destination_alpha);
+             // XXX
+             re->outbuf_free(re->ob);
 
-             evas_software_xlib_outbuf_debug_set(re->ob, info->info.debug);
+             if (re->outbuf_free == evas_software_xlib_swapbuf_free)
+               {
+                  re->ob = 
+                    evas_software_xlib_swapbuf_setup_x(e->output.w, e->output.h,
+                                                       info->info.rotation,
+                                                       OUTBUF_DEPTH_INHERIT,
+                                                       info->info.connection,
+                                                       info->info.drawable,
+                                                       info->info.visual,
+                                                       info->info.colormap,
+                                                       info->info.depth,
+                                                       info->info.alloc_grayscale,
+                                                       info->info.alloc_colors_max,
+                                                       info->info.mask,
+                                                       info->info.shape_dither,
+                                                       info->info.destination_alpha);
+               }
+             else
+               {
+                  re->ob = 
+                    evas_software_xlib_outbuf_setup_x(e->output.w, e->output.h,
+                                                      info->info.rotation,
+                                                      OUTBUF_DEPTH_INHERIT,
+                                                      info->info.connection,
+                                                      info->info.drawable,
+                                                      info->info.visual,
+                                                      info->info.colormap,
+                                                      info->info.depth,
+                                                      info->info.alloc_grayscale,
+                                                      info->info.alloc_colors_max,
+                                                      info->info.mask,
+                                                      info->info.shape_dither,
+                                                      info->info.destination_alpha);
+                  evas_software_xlib_outbuf_debug_set(re->ob, info->info.debug);
+               }
           }
 #endif
 
@@ -534,11 +605,10 @@ eng_setup(Evas *e, void *in)
                                               info->info.mask,
                                               info->info.shape_dither,
                                               info->info.destination_alpha);
-
              evas_software_xcb_outbuf_debug_set(re->ob, info->info.debug);
           }
 #endif
-	re->ob->onebuf = ponebuf;
+        if ((re) && (re->ob)) re->ob->onebuf = ponebuf;
      }
    if (!e->engine.data.output) return 0;
    if (!e->engine.data.context) 
@@ -562,6 +632,9 @@ eng_output_free(void *data)
         re->outbuf_free(re->ob);
         evas_common_tilebuf_free(re->tb);
         if (re->rects) evas_common_tilebuf_free_render_rects(re->rects);
+        if (re->rects_prev[0]) evas_common_tilebuf_free_render_rects(re->rects_prev[0]);
+        if (re->rects_prev[1]) evas_common_tilebuf_free_render_rects(re->rects_prev[1]);
+        if (re->rects_prev[2]) evas_common_tilebuf_free_render_rects(re->rects_prev[2]);
         _output_egl_shutdown(re);
         free(re);
      }
@@ -620,41 +693,183 @@ eng_output_redraws_clear(void *data)
    evas_common_tilebuf_clear(re->tb);
 }
 
+static Tilebuf_Rect *
+_merge_rects(Tilebuf *tb, Tilebuf_Rect *r1, Tilebuf_Rect *r2, Tilebuf_Rect *r3)
+{
+   Tilebuf_Rect *r, *rects;
+//   int px1, py1, px2, py2;
+   
+   if (r1)
+     {
+        EINA_INLIST_FOREACH(EINA_INLIST_GET(r1), r)
+          {
+             evas_common_tilebuf_add_redraw(tb, r->x, r->y, r->w, r->h);
+          }
+     }
+   if (r2)
+     {
+        EINA_INLIST_FOREACH(EINA_INLIST_GET(r2), r)
+          {
+             evas_common_tilebuf_add_redraw(tb, r->x, r->y, r->w, r->h);
+          }
+     }
+   if (r2)
+     {
+        EINA_INLIST_FOREACH(EINA_INLIST_GET(r3), r)
+          {
+             evas_common_tilebuf_add_redraw(tb, r->x, r->y, r->w, r->h);
+          }
+     }
+   rects = evas_common_tilebuf_get_render_rects(tb);
+
+/*   
+   // bounding box -> make a bounding box single region update of all regions.
+   // yes we could try and be smart and figure out size of regions, how far
+   // apart etc. etc. to try and figure out an optimal "set". this is a tradeoff
+   // between multiple update regions to render and total pixels to render.
+   if (rects)
+     {
+        px1 = rects->x; py1 = rects->y;
+        px2 = rects->x + rects->w; py2 = rects->y + rects->h;
+        EINA_INLIST_FOREACH(EINA_INLIST_GET(rects), r)
+          {
+             if (r->x < x1) px1 = r->x;
+             if (r->y < y1) py1 = r->y;
+             if ((r->x + r->w) > x2) px2 = r->x + r->w;
+             if ((r->y + r->h) > y2) py2 = r->y + r->h;
+          }
+        evas_common_tilebuf_free_render_rects(rects);
+        rects = calloc(1, sizeof(Tilebuf_Rect));
+        if (rects)
+          {
+             rects->x = px1;
+             rects->y = py1;
+             rects->w = px2 - px1;
+             rects->h = py2 - py1;
+          }
+     }
+ */
+   evas_common_tilebuf_clear(tb);
+   return rects;
+}
+
+
 static void *
 eng_output_redraws_next_update_get(void *data, int *x, int *y, int *w, int *h, int *cx, int *cy, int *cw, int *ch)
 {
    Render_Engine *re;
    RGBA_Image *surface;
    Tilebuf_Rect *rect;
-   int ux, uy, uw, uh;
+   Eina_Bool first_rect = EINA_FALSE;
 
+#define CLEAR_PREV_RECTS(x) \
+   do { \
+      if (re->rects_prev[x]) \
+        evas_common_tilebuf_free_render_rects(re->rects_prev[x]); \
+      re->rects_prev[x] = NULL; \
+   } while (0)
+   
    re = (Render_Engine *)data;
    if (re->end)
      {
 	re->end = 0;
 	return NULL;
      }
+   
    if (!re->rects)
      {
+        int mode = MODE_COPY;
+
+        if (re->outbuf_swap_mode_get) mode = re->outbuf_swap_mode_get(re->ob);
+        re->mode = mode;
 	re->rects = evas_common_tilebuf_get_render_rects(re->tb);
-	re->cur_rect = EINA_INLIST_GET(re->rects);
+        if (re->rects)
+          {
+             if (re->lost_back)
+               {
+                  /* if we lost our backbuffer since the last frame redraw all */
+                  re->lost_back = 0;
+                  evas_common_tilebuf_add_redraw(re->tb, 0, 0, re->ob->w, re->ob->h);
+                  evas_common_tilebuf_free_render_rects(re->rects);
+                  re->rects = evas_common_tilebuf_get_render_rects(re->tb);
+               }
+             /* ensure we get rid of previous rect lists we dont need if mode
+              * changed/is appropriate */
+             evas_common_tilebuf_clear(re->tb);
+             CLEAR_PREV_RECTS(2);
+             re->rects_prev[2] = re->rects_prev[1];
+             re->rects_prev[1] = re->rects_prev[0];
+             re->rects_prev[0] = re->rects;
+             re->rects = NULL;
+             switch (re->mode)
+               {
+                case MODE_FULL:
+                case MODE_COPY: // no prev rects needed
+                  re->rects = _merge_rects(re->tb, re->rects_prev[0], NULL, NULL);
+                  break;
+                case MODE_DOUBLE: // double mode - only 1 level of prev rect
+                  re->rects = _merge_rects(re->tb, re->rects_prev[0], re->rects_prev[1], NULL);
+                  break;
+                case MODE_TRIPLE: // keep all
+                  re->rects = _merge_rects(re->tb, re->rects_prev[0], re->rects_prev[1], re->rects_prev[2]);
+                  break;
+                default:
+                  break;
+               }
+             first_rect = EINA_TRUE;
+          }
+        evas_common_tilebuf_clear(re->tb);
+        re->cur_rect = EINA_INLIST_GET(re->rects);
      }
    if (!re->cur_rect) return NULL;
    rect = (Tilebuf_Rect *)re->cur_rect;
-   ux = rect->x; uy = rect->y; uw = rect->w; uh = rect->h;
-   re->cur_rect = re->cur_rect->next;
-   if (!re->cur_rect)
+   if (re->rects)
      {
-	evas_common_tilebuf_free_render_rects(re->rects);
-	re->rects = NULL;
-	re->end = 1;
+        switch (re->mode)
+          {
+           case MODE_COPY:
+           case MODE_DOUBLE:
+           case MODE_TRIPLE:
+             rect = (Tilebuf_Rect *)re->cur_rect;
+             *x = rect->x;
+             *y = rect->y;
+             *w = rect->w;
+             *h = rect->h;
+             *cx = rect->x;
+             *cy = rect->y;
+             *cw = rect->w;
+             *ch = rect->h;
+             re->cur_rect = re->cur_rect->next;
+             break;
+           case MODE_FULL:
+             re->cur_rect = NULL;
+             if (x) *x = 0;
+             if (y) *y = 0;
+             if (w) *w = re->ob->w;
+             if (h) *h = re->ob->h;
+             if (cx) *cx = 0;
+             if (cy) *cy = 0;
+             if (cw) *cw = re->ob->w;
+             if (ch) *ch = re->ob->h;
+             break;
+           default:
+             break;
+          }
+        if (first_rect)
+          {
+             // do anything needed fir the first frame
+          }
+        surface = 
+          re->outbuf_new_region_for_update(re->ob,
+                                           *x, *y, *w, *h,
+                                           cx, cy, cw, ch);
+        if (!re->cur_rect)
+          {
+             re->end = 1;
+          }
+        return surface;
      }
-
-   surface = 
-     re->outbuf_new_region_for_update(re->ob, ux, uy, uw, uh, cx, cy, cw, ch);
-
-   *x = ux; *y = uy; *w = uw; *h = uh;
-   return surface;
+   return NULL;
 }
 
 static void
@@ -666,7 +881,6 @@ eng_output_redraws_next_update_push(void *data, void *surface, int x, int y, int
 #if defined(BUILD_PIPE_RENDER)
    evas_common_pipe_map_begin(surface);
 #endif /* BUILD_PIPE_RENDER */
-
    re->outbuf_push_updated_region(re->ob, surface, x, y, w, h);
    re->outbuf_free_region_for_update(re->ob, surface);
    evas_common_cpu_end_opt();
@@ -679,6 +893,11 @@ eng_output_flush(void *data)
 
    re = (Render_Engine *)data;
    re->outbuf_flush(re->ob);
+   if (re->rects)
+     {
+        evas_common_tilebuf_free_render_rects(re->rects);
+        re->rects = NULL;
+     }
 }
 
 static void
@@ -704,16 +923,6 @@ eng_canvas_alpha_get(void *data, void *context __UNUSED__)
 static int
 module_open(Evas_Module *em)
 {
-#ifdef BUILD_ENGINE_SOFTWARE_XLIB
-   static Eina_Bool xrm_inited = EINA_FALSE;
-
-   if (!xrm_inited)
-     {
-	xrm_inited = EINA_TRUE;
-	XrmInitialize();
-     }
-#endif
-
    if (!em) return 0;
 
    /* get whatever engine module we inherit from */

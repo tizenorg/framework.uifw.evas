@@ -105,6 +105,19 @@ evas_event_passes_through(Evas_Object *obj)
 }
 
 static inline int
+evas_object_is_source_invisible(Evas_Object *obj)
+{
+   if (obj->parent_cache.src_invisible_valid)
+     return obj->parent_cache.src_invisible;
+   if (obj->proxy.proxies && obj->proxy.src_invisible) return 1;
+   if (!obj->smart.parent) return 0;
+   obj->parent_cache.src_invisible =
+      evas_object_is_source_invisible(obj->smart.parent);
+   obj->parent_cache.src_invisible_valid = EINA_TRUE;
+   return obj->parent_cache.src_invisible;
+}
+
+static inline int
 evas_object_is_visible(Evas_Object *obj)
 {                        /* post 1.0 -> enable? */
    if ((obj->cur.visible)/* && (obj->cur.color.a > 0)*/ &&

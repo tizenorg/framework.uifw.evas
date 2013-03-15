@@ -218,7 +218,7 @@ evas_object_smart_member_add(Evas_Object *obj, Evas_Object *smart_obj)
    obj->layer->usage++;
    obj->smart.parent = smart_obj;
    o->contained = eina_inlist_append(o->contained, EINA_INLIST_GET(obj));
-   evas_object_smart_member_cache_invalidate(obj, EINA_TRUE, EINA_TRUE);
+   evas_object_smart_member_cache_invalidate(obj, EINA_TRUE, EINA_TRUE, EINA_TRUE);
    obj->restack = 1;
    evas_object_change(obj);
    evas_object_mapped_clip_across_mark(obj);
@@ -247,7 +247,7 @@ evas_object_smart_member_del(Evas_Object *obj)
    o->contained = eina_inlist_remove(o->contained, EINA_INLIST_GET(obj));
    o->member_count--;
    obj->smart.parent = NULL;
-   evas_object_smart_member_cache_invalidate(obj, EINA_TRUE, EINA_TRUE);
+   evas_object_smart_member_cache_invalidate(obj, EINA_TRUE, EINA_TRUE, EINA_TRUE);
    obj->layer->usage--;
    obj->cur.layer = obj->layer->layer;
    evas_object_inject(obj, obj->layer->evas);
@@ -949,7 +949,8 @@ evas_object_smart_cleanup(Evas_Object *obj)
 void
 evas_object_smart_member_cache_invalidate(Evas_Object *obj,
                                           Eina_Bool pass_events,
-                                          Eina_Bool freeze_events)
+                                          Eina_Bool freeze_events,
+                                          Eina_Bool source_invisible)
 {
    Evas_Object_Smart *o;
    Evas_Object *member;
@@ -962,6 +963,8 @@ evas_object_smart_member_cache_invalidate(Evas_Object *obj,
      obj->parent_cache.pass_events_valid = EINA_FALSE;
    if (freeze_events)
      obj->parent_cache.freeze_events_valid = EINA_FALSE;
+   if (source_invisible)
+     obj->parent_cache.src_invisible_valid = EINA_FALSE;
 
    o = obj->object_data;
    if (o->magic != MAGIC_OBJ_SMART) return;
@@ -969,7 +972,7 @@ evas_object_smart_member_cache_invalidate(Evas_Object *obj,
    EINA_INLIST_FOREACH(o->contained, member)
      evas_object_smart_member_cache_invalidate(member,
                                                pass_events,
-                                               freeze_events);
+                                               freeze_events, source_invisible);
 }
 
 void
@@ -1236,7 +1239,7 @@ evas_object_smart_render_pre(Evas_Object *obj)
 
    e = obj->layer->evas;
 
-   if (obj->changed_map)
+   if (obj->changed_map || obj->changed_src_visible)
      {
        evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
      }

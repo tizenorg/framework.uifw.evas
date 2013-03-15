@@ -38,6 +38,7 @@ evas_object_change_reset(Evas_Object *obj)
    obj->changed_color = EINA_FALSE;
    obj->changed_map = EINA_FALSE;
    obj->changed_pchange = EINA_FALSE;
+   obj->changed_src_visible = EINA_FALSE;
 }
 
 void
@@ -607,6 +608,7 @@ evas_object_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
    Evas *evas;
    int is, was = 0, pass = 0, freeze = 0;
    int nx = 0, ny = 0;
+   Eina_Bool source_invisible = EINA_FALSE;
 
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    return;
@@ -641,7 +643,8 @@ evas_object_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
      {
         pass = evas_event_passes_through(obj);
         freeze = evas_event_freezes_through(obj);
-        if ((!pass) && (!freeze))
+        source_invisible = evas_object_is_source_invisible(obj);
+        if ((!pass) && (!freeze) && (!source_invisible))
           was = evas_object_is_in_output_rect(obj,
                                               obj->layer->evas->pointer.x,
                                               obj->layer->evas->pointer.y, 1, 1);
@@ -690,6 +693,7 @@ EAPI void
 evas_object_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
 {
    int is, was = 0, pass = 0, freeze =0;
+   Eina_Bool source_invisible = EINA_FALSE;
 
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    return;
@@ -711,6 +715,7 @@ evas_object_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
      {
         pass = evas_event_passes_through(obj);
         freeze = evas_event_freezes_through(obj);
+        source_invisible = evas_object_is_source_invisible(obj);
         if ((!pass) && (!freeze))
           was = evas_object_is_in_output_rect(obj,
                                               obj->layer->evas->pointer.x,
@@ -1096,7 +1101,8 @@ evas_object_show(Evas_Object *obj)
         evas_object_clip_across_clippees_check(obj);
         evas_object_recalc_clippees(obj);
         if ((!evas_event_passes_through(obj)) &&
-            (!evas_event_freezes_through(obj)))
+            (!evas_event_freezes_through(obj)) &&
+            (!evas_object_is_source_invisible(obj)))
           {
              if (!obj->smart.smart)
                {
@@ -1139,7 +1145,8 @@ evas_object_hide(Evas_Object *obj)
         evas_object_clip_across_clippees_check(obj);
         evas_object_recalc_clippees(obj);
         if ((!evas_event_passes_through(obj)) &&
-            (!evas_event_freezes_through(obj)))
+            (!evas_event_freezes_through(obj)) &&
+            (!evas_object_is_source_invisible(obj)))
           {
              if ((!obj->smart.smart) ||
                  ((obj->cur.map) && (obj->cur.map->count == 4) && (obj->cur.usemap)))
@@ -1384,6 +1391,7 @@ evas_object_top_at_xy_get(const Evas *e, Evas_Coord x, Evas_Coord y, Eina_Bool i
              if (obj->delete_me) continue;
              if ((!include_pass_events_objects) &&
                  (evas_event_passes_through(obj))) continue;
+             if (evas_object_is_source_invisible(obj)) continue;
              if ((!include_hidden_objects) && (!obj->cur.visible)) continue;
              evas_object_clip_recalc(obj);
              if ((evas_object_is_in_output_rect(obj, xx, yy, 1, 1)) &&
@@ -1429,6 +1437,7 @@ evas_object_top_in_rectangle_get(const Evas *e, Evas_Coord x, Evas_Coord y, Evas
              if (obj->delete_me) continue;
              if ((!include_pass_events_objects) &&
                  (evas_event_passes_through(obj))) continue;
+             if (evas_object_is_source_invisible(obj)) continue;
              if ((!include_hidden_objects) && (!obj->cur.visible)) continue;
              evas_object_clip_recalc(obj);
              if ((evas_object_is_in_output_rect(obj, xx, yy, ww, hh)) &&
@@ -1462,6 +1471,7 @@ evas_objects_at_xy_get(const Evas *e, Evas_Coord x, Evas_Coord y, Eina_Bool incl
              if (obj->delete_me) continue;
              if ((!include_pass_events_objects) &&
                  (evas_event_passes_through(obj))) continue;
+             if (evas_object_is_source_invisible(obj)) continue;
              if ((!include_hidden_objects) && (!obj->cur.visible)) continue;
              evas_object_clip_recalc(obj);
              if ((evas_object_is_in_output_rect(obj, xx, yy, 1, 1)) &&
@@ -1513,6 +1523,7 @@ evas_objects_in_rectangle_get(const Evas *e, Evas_Coord x, Evas_Coord y, Evas_Co
              if (obj->delete_me) continue;
              if ((!include_pass_events_objects) &&
                  (evas_event_passes_through(obj))) continue;
+             if (evas_object_is_source_invisible(obj)) continue;
              if ((!include_hidden_objects) && (!obj->cur.visible)) continue;
              evas_object_clip_recalc(obj);
              if ((evas_object_is_in_output_rect(obj, xx, yy, ww, hh)) &&

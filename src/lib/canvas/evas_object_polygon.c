@@ -106,7 +106,8 @@ evas_object_polygon_point_add(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
    if (obj->layer->evas->events_frozen <= 0)
      {
         if (!evas_event_passes_through(obj) &&
-            !evas_event_freezes_through(obj))
+            !evas_event_freezes_through(obj) &&
+            !evas_object_is_source_invisible(obj))
           was = evas_object_is_in_output_rect(obj,
                                               obj->layer->evas->pointer.x,
                                               obj->layer->evas->pointer.y,
@@ -175,7 +176,8 @@ evas_object_polygon_point_add(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
                                            obj->layer->evas->pointer.x,
                                            obj->layer->evas->pointer.y, 1, 1);
         if (!evas_event_passes_through(obj) &&
-            !evas_event_freezes_through(obj) )
+            !evas_event_freezes_through(obj) &&
+            !evas_object_is_source_invisible(obj))
           {
              if ((is ^ was) && obj->cur.visible)
                evas_event_feed_mouse_move(obj->layer->evas,
@@ -366,7 +368,7 @@ evas_object_polygon_render_pre(Evas_Object *obj)
         evas_object_render_pre_visible_change(&obj->layer->evas->clip_changes, obj, is_v, was_v);
         goto done;
      }
-   if (obj->changed_map)
+   if (obj->changed_map || obj->changed_src_visible)
      {
         evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes,
                                             obj);

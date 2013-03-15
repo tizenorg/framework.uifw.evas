@@ -212,7 +212,7 @@ _evas_render_phase1_direct(Evas *e,
                 _evas_render_has_map(obj),
                 _evas_render_had_map(obj));
              if ((obj->smart.smart) &&
-                 (_evas_render_has_map(obj)))
+                 (_evas_render_has_map(obj) || (obj->changed_src_visible)))
                {
                   RD("      has map + smart\n");
                   _evas_render_prev_cur_clip_cache_add(e, obj);
@@ -813,7 +813,7 @@ _evas_render_can_use_overlay(Evas *e, Evas_Object *obj)
 Eina_Bool
 evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
                    int off_x, int off_y, int mapped,
-                   int ecx, int ecy, int ecw, int ech
+                   int ecx, int ecy, int ecw, int ech, Eina_Bool proxy_render
 #ifdef REND_DBG
                    , int level
 #endif
@@ -822,6 +822,9 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
    void *ctx;
    Evas_Object *obj2;
    Eina_Bool clean_them = EINA_FALSE;
+
+   if ((evas_object_is_source_invisible(obj) && (!proxy_render)))
+     return clean_them;
 
    evas_object_clip_recalc(obj);
 
@@ -963,7 +966,8 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
                           clean_them |= evas_render_mapped(e, obj2, ctx,
                                                            obj->map.surface,
                                                            off_x2, off_y2, 1,
-                                                           ecx, ecy, ecw, ech
+                                                           ecx, ecy, ecw, ech,
+                                                           proxy_render
 #ifdef REND_DBG
                                                            , level + 1
 #endif
@@ -1075,7 +1079,8 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
                           clean_them |= evas_render_mapped(e, obj2, ctx,
                                                            surface,
                                                            off_x, off_y, 1,
-                                                           ecx, ecy, ecw, ech
+                                                           ecx, ecy, ecw, ech,
+                                                           proxy_render
 #ifdef REND_DBG
                                                            , level + 1
 #endif
@@ -1169,6 +1174,7 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
 static void
 _evas_render_cutout_add(Evas *e, Evas_Object *obj, int off_x, int off_y)
 {
+   if (evas_object_is_source_invisible(obj)) return;
    if (evas_object_is_opaque(obj))
      {
         Evas_Coord cox, coy, cow, coh;
@@ -1571,7 +1577,8 @@ evas_render_updates_internal(Evas *e,
 #endif
                             clean_them |= evas_render_mapped(e, obj, e->engine.data.context,
                                                              surface, off_x, off_y, 0,
-                                                             cx, cy, cw, ch
+                                                             cx, cy, cw, ch,
+                                                             EINA_FALSE
 #ifdef REND_DBG
                                                              , 1
 #endif

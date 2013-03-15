@@ -213,9 +213,11 @@ evas_preload_thread_run(void (*func_heavy) (void *data),
    LKL(_mutex);
    if (_threads_count == 0)
      {
-	LKU(_mutex);
-	if (work->func_cancel) work->func_cancel(work->data);
-	free(work);
+        _workers = EINA_INLIST_CONTAINER_GET(eina_inlist_remove(EINA_INLIST_GET(_workers), EINA_INLIST_GET(work)), Evas_Preload_Pthread_Worker);
+
+        LKU(_mutex);
+        if (work->func_cancel) work->func_cancel(work->data);
+        free(work);
         return NULL;
      }
    LKU(_mutex);
