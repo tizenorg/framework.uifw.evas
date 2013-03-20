@@ -552,6 +552,14 @@ evas_gl_common_context_new(void)
              if ((strstr((char *)ext, "GL_ARB_get_program_binary")) ||
                  (strstr((char *)ext, "GL_OES_get_program_binary")))
                shared->info.bin_program = 1;
+#ifdef GL_UNPACK_ROW_LENGTH
+             shared->info.unpack_row_length = 1;
+# ifdef GL_GLES
+             if (!strstr((char *)ext, "_unpack_subimage"))
+               shared->info.unpack_row_length = 0;
+# endif
+#endif
+
 #ifdef GL_TEXTURE_MAX_ANISOTROPY_EXT
              if ((strstr((char *)ext, "GL_EXT_texture_filter_anisotropic")))
                 glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT,
