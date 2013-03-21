@@ -658,6 +658,7 @@ struct _Evas_Object
 
    Eina_Bool                   is_frame : 1;
    Eina_Bool                   child_has_map : 1;
+   Eina_Bool                   on_deletion : 1;
 };
 
 struct _Evas_Func_Node

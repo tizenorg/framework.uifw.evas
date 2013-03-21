@@ -444,6 +444,14 @@ evas_object_del(Evas_Object *obj)
         return;
      }
 
+   // FIXME: After EO is integrated, remove on_deletion flag.
+   if (obj->on_deletion)
+     {
+        CRITICAL("Object %p [%s] is already deleting", obj, obj->type);
+        return;
+     }
+   obj->on_deletion = 1;
+
    evas_object_hide(obj);
    if (obj->focused)
      {
