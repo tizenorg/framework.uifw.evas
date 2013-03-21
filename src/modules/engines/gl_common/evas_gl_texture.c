@@ -858,11 +858,13 @@ evas_gl_common_texture_update(Evas_GL_Texture *tex, RGBA_Image *im)
    fmt = tex->pt->format;
    glBindTexture(GL_TEXTURE_2D, tex->pt->texture);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+#ifdef GL_UNPACK_ROW_LENGTH
    if (tex->gc->shared->info.unpack_row_length)
      {
         glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
         GLERR(__FUNCTION__, __FILE__, __LINE__, "");
      }
+#endif
    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 
@@ -895,6 +897,7 @@ evas_gl_common_texture_update(Evas_GL_Texture *tex, RGBA_Image *im)
                1, 1,
                fmt, tex->pt->dataformat,
                im->image.data + ((im->cache_entry.h - 1) * im->cache_entry.w) + (im->cache_entry.w - 1));
+#ifdef GL_UNPACK_ROW_LENGTH
    if (tex->gc->shared->info.unpack_row_length)
      {
         glPixelStorei(GL_UNPACK_ROW_LENGTH, im->cache_entry.w);
@@ -915,6 +918,7 @@ evas_gl_common_texture_update(Evas_GL_Texture *tex, RGBA_Image *im)
                     im->image.data + (im->cache_entry.w - 1));
      }
    else
+#endif
      {
         DATA32 *tpix, *ps, *pd;
         int i;
@@ -1045,11 +1049,13 @@ evas_gl_common_texture_alpha_update(Evas_GL_Texture *tex, DATA8 *pixels,
    if (!tex->pt) return;
    glBindTexture(GL_TEXTURE_2D, tex->pt->texture);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
+#ifdef GL_UNPACK_ROW_LENGTH
    if (tex->gc->shared->info.unpack_row_length)
      {
         glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
         GLERR(__FUNCTION__, __FILE__, __LINE__, "");
      }
+#endif
    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
    _tex_sub_2d(tex->x, tex->y, w, h, tex->pt->format, tex->pt->dataformat,
@@ -1122,6 +1128,7 @@ evas_gl_common_texture_yuv_update(Evas_GL_Texture *tex, DATA8 **rows, unsigned i
 {
    if (!tex->pt) return;
    // FIXME: works on lowest size 4 pixel high buffers. must also be multiple of 2
+#ifdef GL_UNPACK_ROW_LENGTH
    if (tex->gc->shared->info.unpack_row_length)
      {
         glPixelStorei(GL_UNPACK_ROW_LENGTH, rows[1] - rows[0]);
@@ -1146,6 +1153,7 @@ evas_gl_common_texture_yuv_update(Evas_GL_Texture *tex, DATA8 **rows, unsigned i
         _tex_sub_2d(0, 0, w / 2, h / 2, tex->ptv->format, tex->ptv->dataformat, rows[h + (h / 2)]);
      }
    else
+#endif
      {
         unsigned int y;
 
@@ -1380,6 +1388,7 @@ evas_gl_common_texture_nv12_update(Evas_GL_Texture *tex, DATA8 **rows, unsigned 
    tex->ptuv = tex->double_buffer.ptuv[tex->double_buffer.source];
 
    // FIXME: works on lowest size 4 pixel high buffers. must also be multiple of 2
+#ifdef GL_UNPACK_ROW_LENGTH
    if (tex->gc->shared->info.unpack_row_length)
      {
         glPixelStorei(GL_UNPACK_ROW_LENGTH, rows[1] - rows[0]);
@@ -1398,6 +1407,7 @@ evas_gl_common_texture_nv12_update(Evas_GL_Texture *tex, DATA8 **rows, unsigned 
         _tex_sub_2d(0, 0, w / 2, h / 2, tex->ptuv->format, tex->ptuv->dataformat, rows[h]);
      }
    else
+#endif
      {
         unsigned int y;
 
