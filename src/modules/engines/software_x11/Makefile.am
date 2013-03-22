@@ -26,6 +26,8 @@ SOFTWARE_X11_SOURCES += \
 evas_xlib_outbuf.c \
 evas_xlib_buffer.c \
 evas_xlib_color.c \
+evas_xlib_image.c \
+evas_xlib_image.h \
 evas_xlib_main.c \
 evas_xlib_swapbuf.c \
 evas_xlib_swapbuf.h \

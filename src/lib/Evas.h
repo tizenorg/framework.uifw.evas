@@ -786,6 +786,7 @@ struct _Evas_Native_Surface
       {
          void         *visual; /**< visual of the pixmap to use (Visual) */
          unsigned long pixmap; /**< pixmap id to use (Pixmap) */
+         int           depth; /**< depth of the pixmap to use (Depth) */
       } x11;
       struct
       {

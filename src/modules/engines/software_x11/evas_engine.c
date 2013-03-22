@@ -8,6 +8,7 @@
 # include "evas_xlib_outbuf.h"
 # include "evas_xlib_swapbuf.h"
 # include "evas_xlib_color.h"
+# include "evas_xlib_image.h"
 #endif
 
 #ifdef BUILD_ENGINE_SOFTWARE_XCB
@@ -72,6 +73,12 @@ static void *eng_output_redraws_next_update_get(void *data, int *x, int *y, int 
 static void eng_output_redraws_next_update_push(void *data, void *surface, int x, int y, int w, int h);
 static void eng_output_flush(void *data);
 static void eng_output_idle_flush(void *data);
+static void *eng_image_native_set(void *data, void *image, void *native);
+static void *eng_image_native_get(void *data __UNUSED__, void *image);
+static Eina_Bool eng_image_draw(void *data __UNUSED__, void *context, void *surface, void *image,
+                                int src_x, int src_y, int src_w, int src_h,
+                                int dst_x, int dst_y, int dst_w, int dst_h,
+                                int smooth, Eina_Bool do_async);
 
 /* internal engine routines */
 
@@ -918,6 +925,67 @@ eng_canvas_alpha_get(void *data, void *context __UNUSED__)
    return (re->ob->priv.destination_alpha) || (re->outbuf_alpha_get(re->ob));
 }
 
+static void *
+eng_image_native_set(void *data, void *image, void *native)
+{
+   //return image;
+   Evas_Native_Surface *ns = native;
+   RGBA_Image *im = image;
+   Render_Engine *re = (Render_Engine *)data;
+
+   if (!im || !ns) return NULL;
+   if (ns->type != EVAS_NATIVE_SURFACE_X11) return NULL;
+#ifdef BUILD_ENGINE_SOFTWARE_XLIB
+   return evas_xlib_image_native_set(re->ob, image, ns);
+#endif
+   return im;
+}
+
+static void *
+eng_image_native_get(void *data __UNUSED__, void *image)
+{
+#ifdef BUILD_ENGINE_SOFTWARE_XLIB
+   RGBA_Image *im = image;
+   Native *n;
+   if (!im) return NULL;
+   n = im->native.data;
+   if (!n) return NULL;
+   return &(n->ns);
+#endif
+   return NULL;
+}
+
+static Eina_Bool
+eng_image_draw(void *data __UNUSED__, void *context, void *surface, void *image,
+               int src_x, int src_y, int src_w, int src_h,
+               int dst_x, int dst_y, int dst_w, int dst_h,
+               int smooth, Eina_Bool do_async)
+{
+   RGBA_Image *im;
+   Native *n = NULL;
+
+   if (!image) return EINA_FALSE;
+   im = image;
+   if (im->native.data)
+     n = im->native.data;
+   if ((n) && (n->ns.type == EVAS_NATIVE_SURFACE_X11))
+     {
+#ifdef BUILD_ENGINE_SOFTWARE_XLIB
+        if(evas_xlib_image_shm_copy(im))
+          {
+             evas_common_image_colorspace_dirty(im);
+          }
+#endif
+     }
+   evas_common_rgba_image_scalecache_prepare(&im->cache_entry, surface, context, smooth,
+           src_x, src_y, src_w, src_h,
+           dst_x, dst_y, dst_w, dst_h);
+   evas_common_rgba_image_scalecache_do(&im->cache_entry, surface, context, smooth,
+           src_x, src_y, src_w, src_h,
+           dst_x, dst_y, dst_w, dst_h);
+   evas_common_cpu_end_opt();
+   return EINA_TRUE;
+}
 
 /* module advertising code */
 static int
@@ -957,6 +1025,9 @@ module_open(Evas_Module *em)
    ORD(output_flush);
    ORD(output_idle_flush);
 
+   ORD(image_draw);
+   ORD(image_native_set);
+   ORD(image_native_get);
    /* now advertise out own api */
    em->functions = (void *)(&func);
    return 1;
