@@ -31,7 +31,7 @@ BuildRequires:  pkgconfig(gles20)
 %ifarch %{arm}
 BuildRequires:  pkgconfig(libdri2)
 BuildRequires:  pkgconfig(xfixes)
-BuildRequires:  pkgconfig(libdrm_slp)
+BuildRequires:  pkgconfig(libtbm)
 %endif
 
 
