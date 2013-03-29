@@ -1025,9 +1025,9 @@ module_open(Evas_Module *em)
    ORD(output_flush);
    ORD(output_idle_flush);
 
-   ORD(image_draw);
-   ORD(image_native_set);
-   ORD(image_native_get);
+//   ORD(image_draw);
+//   ORD(image_native_set);
+//   ORD(image_native_get);
    /* now advertise out own api */
    em->functions = (void *)(&func);
    return 1;
