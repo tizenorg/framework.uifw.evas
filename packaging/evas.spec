@@ -1,7 +1,7 @@
 #sbs-git:slp/pkgs/e/evas evas 1.1.0+svn.69113slp2+build01 828d8bb285397266eb8985fd081fa2692fa3a7d6
 Name:       evas
 Summary:    Multi-platform Canvas Library
-Version:    1.7.1+svn.77561+build05r03
+Version:    1.7.1+svn.77561+build05r04
 Release:    1
 Group:      System/Libraries
 License:    BSD
@@ -28,11 +28,9 @@ BuildRequires:  giflib-devel
 BuildRequires:  pkgconfig(pixman-1)
 BuildRequires:  pkgconfig(gles11)
 BuildRequires:  pkgconfig(gles20)
-%ifarch %{arm}
 BuildRequires:  pkgconfig(libdri2)
 BuildRequires:  pkgconfig(xfixes)
 BuildRequires:  pkgconfig(libtbm)
-%endif
 
 
 %description
