@@ -7789,7 +7789,14 @@ evas_textblock_cursor_range_delete(Evas_Textblock_Cursor *cur1, Evas_Textblock_C
         /* Remove the formats and the strings in the first and last nodes */
         len = eina_ustrbuf_length_get(n1->unicode);
         eina_ustrbuf_remove(n1->unicode, cur1->pos, len);
-        eina_ustrbuf_remove(n2->unicode, 0, cur2->pos);
+        /* TIZEN ONLY : till Tom hacohen gives a clear answer, this code should be here for not showing broken character. */
+        if (cur2->pos == 0)
+          {
+             len = eina_ustrbuf_length_get(n2->unicode);
+             eina_ustrbuf_remove(n2->unicode, 0, len);
+          }
+        else
+          eina_ustrbuf_remove(n2->unicode, 0, cur2->pos);
         /* Merge the nodes because we removed the PS */
         _evas_textblock_cursors_update_offset(cur1, cur1->node, cur1->pos,
                                               -cur1->pos);
