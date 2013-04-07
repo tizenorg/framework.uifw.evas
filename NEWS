@@ -7,6 +7,7 @@ Fixes:
    * Fix evas textblock tag parser to respect escaped spaces and escaped single quotes
    * Fix the line drawing clipping problem on arm gl driver.
    * Evas: Fix Evas_Object_Text when LTR and RTL are used in the same paragraph.
+   * Evas font: click on left/right half of char does matter now.
 
 Evas 1.7.7
 
