@@ -1260,3 +1260,8 @@
 
         * Fixed pixman image wrapping to handle allocated size instead
         of image size (unless allocated is 0/wrong).
+
+2013-02-19 Daniel Zaoui
+
+        * Fix Evas_Object_Text when LTR and RTL are used in the same
+        paragraph.

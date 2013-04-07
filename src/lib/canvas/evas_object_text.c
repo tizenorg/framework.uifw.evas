@@ -554,7 +554,7 @@ _evas_object_text_layout(Evas_Object *obj, Evas_Object_Text *o, const Eina_Unico
         if (tmp_cut > 0)
            script_len = tmp_cut;
 
-        script = evas_common_language_script_type_get(text, script_len);
+        script = evas_common_language_script_type_get(text + pos, script_len);
 
         while (script_len > 0)
           {
