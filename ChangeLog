@@ -1271,3 +1271,7 @@
         * Evas font: char position, returned by
           evas_common_font_query_char_at_coords(),
           depends on left/right half of char and its direction.
+
+2013-04-10 Tom Hacohen (Tasn) Yakov Goldberg
+
+        * Evas textblock : Added split cursor for BiDi text

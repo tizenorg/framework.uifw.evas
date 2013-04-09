@@ -9,6 +9,9 @@ Fixes:
    * Evas: Fix Evas_Object_Text when LTR and RTL are used in the same paragraph.
    * Evas font: click on left/right half of char does matter now.
 
+Improvements:
+   * Evas textblock : Added split cursor for BiDi text
+
 Evas 1.7.7
 
 Changes since Evas 1.7.6
