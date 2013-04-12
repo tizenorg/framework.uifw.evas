@@ -985,6 +985,7 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
                                                            , level + 1
 #endif
                                                           );
+                          evas_object_change_reset(obj2);
                        }
                }
              else
