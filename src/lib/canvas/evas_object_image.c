@@ -3284,7 +3284,8 @@ evas_object_image_render_pre(Evas_Object *obj)
    /* it's not visible - we accounted for it appearing or not so just abort */
    if (!is_v) goto done;
    /* clipper changed this is in addition to anything else for obj */
-   evas_object_render_pre_clipper_change(&e->clip_changes, obj);
+   if (was_v)
+     evas_object_render_pre_clipper_change(&e->clip_changes, obj);
    /* if we restacked (layer or just within a layer) and don't clip anyone */
    if (obj->restack)
      {
