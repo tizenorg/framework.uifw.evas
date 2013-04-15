@@ -385,17 +385,30 @@ _evas_render_phase1_object_process(Evas *e, Evas_Object *obj,
           }
         else
           {
-             if ((is_active) && (!obj->clip.clipees) &&
-                 _evas_render_is_relevant(obj))
+             if ((!obj->clip.clipees) && _evas_render_is_relevant(obj))
                {
-                  RDI(level);
-                  RD("      relevant + active\n");
-                  if (obj->restack)
-                    eina_array_push(restack_objects, obj);
+                  if (is_active)
+                    {
+                       RDI(level);
+                       RD("      relevant + active\n");
+                       if (obj->restack)
+                         eina_array_push(restack_objects, obj);
+                       else
+                         {
+                            eina_array_push(render_objects, obj);
+                            obj->render_pre = EINA_TRUE;
+                         }
+                    }
                   else
                     {
-                       eina_array_push(render_objects, obj);
-                       obj->render_pre = EINA_TRUE;
+                       /* It goes to be hidden. Prev caching should be replaced
+                          by the current (hidden) state. */
+                       if (evas_object_is_visible(obj) !=
+                           evas_object_was_visible(obj))
+                         evas_object_cur_prev(obj);
+
+                       RDI(level);
+                       RD("      skip - not smart, not active or clippees or not relevant\n");
                     }
                }
              else
