@@ -171,10 +171,17 @@ evas_xlib_image_native_set(void *data, void *image, void *native)
    Evas_Native_Surface *ns = native;
    Outbuf *ob = (Outbuf *)data;
 
+   Window wdum;
+   int idum;
+   unsigned int uidum;
+
    d = ob->priv.x11.xlib.disp;
    vis = ns->data.x11.visual;
    pm = ns->data.x11.pixmap;
-   depth = ns->data.x11.depth;
+
+   // fixme: round trip :(
+   // get pixmap depth info
+   XGetGeometry(d, pm, &wdum, &idum, &idum, &uidum, &uidum, &uidum, &depth);
 
    if (ns)
      {
