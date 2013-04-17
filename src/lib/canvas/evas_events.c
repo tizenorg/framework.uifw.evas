@@ -274,7 +274,7 @@ evas_event_feed_mouse_down(Evas *e, int b, Evas_Button_Flags flags, unsigned int
    MAGIC_CHECK(e, Evas, MAGIC_EVAS);
    return;
    MAGIC_CHECK_END();
-   INF("ButtonEvent:down time=%u x=%d y=%d button=%d downs=%d", timestamp, e->pointer.x, e->pointer.y, b, e->pointer.downs);
+   INF("ButtonEvent:down time=%u button=%d downs=%d", timestamp, b, e->pointer.downs);
    if ((b < 1) || (b > 32)) return;
 
    e->pointer.button |= (1 << (b - 1));
@@ -477,7 +477,7 @@ evas_event_feed_mouse_up(Evas *e, int b, Evas_Button_Flags flags, unsigned int t
    MAGIC_CHECK(e, Evas, MAGIC_EVAS);
    return;
    MAGIC_CHECK_END();
-   INF("ButtonEvent:up time=%u x=%d y=%d button=%d downs=%d", timestamp, e->pointer.x, e->pointer.y, b, e->pointer.downs);
+   INF("ButtonEvent:up time=%u button=%d downs=%d", timestamp, b, e->pointer.downs);
    if ((b < 1) || (b > 32)) return;
    if (e->pointer.downs <= 0) return;
 
@@ -1235,7 +1235,7 @@ evas_event_feed_multi_down(Evas *e,
    MAGIC_CHECK(e, Evas, MAGIC_EVAS);
    return;
    MAGIC_CHECK_END();
-   INF("ButtonEvent:multi down time=%u x=%d y=%d device=%d downs=%d", timestamp, x, y, d, e->pointer.downs);
+   INF("ButtonEvent:multi down time=%u device=%d downs=%d", timestamp, d, e->pointer.downs);
    e->pointer.downs++;
    if (e->events_frozen > 0) return;
    e->last_timestamp = timestamp;
@@ -1321,7 +1321,7 @@ evas_event_feed_multi_up(Evas *e,
    MAGIC_CHECK(e, Evas, MAGIC_EVAS);
    return;
    MAGIC_CHECK_END();
-   INF("ButtonEvent:multi up time=%u x=%d y=%d device=%d downs=%d", timestamp, x, y, d, e->pointer.downs);
+   INF("ButtonEvent:multi up time=%u device=%d downs=%d", timestamp, d, e->pointer.downs);
    if (e->pointer.downs <= 0) return;
    e->pointer.downs--;
    if (e->events_frozen > 0) return;
