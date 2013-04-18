@@ -2706,6 +2706,8 @@ eng_gl_surface_create(void *data, void *config, int w, int h)
    Render_Engine  *re  = (Render_Engine *)data;
    Evas_GL_Config *cfg = (Evas_GL_Config *)config;
 
+   if ((re != NULL) && (re->evgl_engine != NULL))  re->evgl_engine->engine_data = re;
+
    return evgl_surface_create(re->evgl_engine, cfg, w, h);
 }
 
@@ -2714,6 +2716,8 @@ eng_gl_surface_destroy(void *data, void *surface)
 {
    Render_Engine *re  = (Render_Engine *)data;
    EVGL_Surface  *sfc = (EVGL_Surface *)surface;
+
+   if ((re != NULL) && (re->evgl_engine != NULL))  re->evgl_engine->engine_data = re;
 
    return evgl_surface_destroy(re->evgl_engine, sfc);
 }
@@ -2724,6 +2728,8 @@ eng_gl_context_create(void *data, void *share_context)
    Render_Engine *re   = (Render_Engine *)data;
    EVGL_Context  *sctx = (EVGL_Context *)share_context;
 
+   if ((re != NULL) && (re->evgl_engine != NULL))  re->evgl_engine->engine_data = re;
+
    return evgl_context_create(re->evgl_engine, sctx);
 }
 
@@ -2733,23 +2739,29 @@ eng_gl_context_destroy(void *data, void *context)
    Render_Engine *re  = (Render_Engine *)data;
    EVGL_Context  *ctx = (EVGL_Context *)context;
 
+   if ((re != NULL) && (re->evgl_engine != NULL))  re->evgl_engine->engine_data = re;
+
    return evgl_context_destroy(re->evgl_engine, ctx);
 }
 
 static int
-eng_gl_make_current(void *data __UNUSED__, void *surface, void *context)
+eng_gl_make_current(void *data, void *surface, void *context)
 {
    Render_Engine *re  = (Render_Engine *)data;
    EVGL_Surface  *sfc = (EVGL_Surface *)surface;
    EVGL_Context  *ctx = (EVGL_Context *)context;
 
+   if ((re != NULL) && (re->evgl_engine != NULL))  re->evgl_engine->engine_data = re;
+
    return evgl_make_current(re->evgl_engine, sfc, ctx);
 }
 
 static void *
-eng_gl_string_query(void *data __UNUSED__, int name)
+eng_gl_string_query(void *data, int name)
 {
    Render_Engine *re  = (Render_Engine *)data;
+
+   if ((re != NULL) && (re->evgl_engine != NULL))  re->evgl_engine->engine_data = re;
 
    return (void *)evgl_string_query(re->evgl_engine, name);
 }
@@ -2762,19 +2774,23 @@ eng_gl_proc_address_get(void *data __UNUSED__, const char *name __UNUSED__)
 }
 
 static int
-eng_gl_native_surface_get(void *data __UNUSED__, void *surface, void *native_surface)
+eng_gl_native_surface_get(void *data, void *surface, void *native_surface)
 {
    Render_Engine *re  = (Render_Engine *)data;
    EVGL_Surface  *sfc = (EVGL_Surface *)surface;
    Evas_Native_Surface *ns = (Evas_Native_Surface *)native_surface;
 
+   if ((re != NULL) && (re->evgl_engine != NULL))  re->evgl_engine->engine_data = re;
+
    return evgl_native_surface_get(re->evgl_engine, sfc, ns);
 }
 
 static void *
-eng_gl_api_get(void *data __UNUSED__)
+eng_gl_api_get(void *data)
 {
    Render_Engine *re = (Render_Engine *)data;
+
+   if ((re != NULL) && (re->evgl_engine != NULL))  re->evgl_engine->engine_data = re;
 
    return evgl_api_get(re->evgl_engine);
 }
@@ -2783,6 +2799,8 @@ static void
 eng_gl_img_obj_set(void *data, void *image, int has_alpha)
 {
    Render_Engine *re = (Render_Engine *)data;
+
+   if ((re != NULL) && (re->evgl_engine != NULL))  re->evgl_engine->engine_data = re;
 
    // Normally direct rendering isn't allowed if alpha is on and
    // rotation is not 0.  BUT, if override is on, allow it.
