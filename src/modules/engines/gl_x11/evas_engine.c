@@ -2767,8 +2767,7 @@ eng_gl_make_current(void *data, void *surface, void *context)
    EVGL_Surface  *sfc = (EVGL_Surface *)surface;
    EVGL_Context  *ctx = (EVGL_Context *)context;
 
-   if ((re != NULL) && (re->evgl_engine != NULL))
-      re->evgl_engine->engine_data = re;
+   if ((re != NULL) && (re->evgl_engine != NULL))  re->evgl_engine->engine_data = re;
 
    return evgl_make_current(re->evgl_engine, sfc, ctx);
 }

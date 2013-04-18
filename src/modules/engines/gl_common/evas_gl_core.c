@@ -1124,7 +1124,7 @@ evgl_engine_create(EVGL_Interface *efunc, void *engine_data)
    int direct_off = 0, debug_mode = 0;
    char *s = NULL;
 
-   if (evgl_engine)
+   if ((evgl_engine) && (evgl_engine->engine_data != engine_data))
      {
         evgl_engine->engine_data = engine_data;
         return evgl_engine;
