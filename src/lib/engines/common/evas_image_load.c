@@ -240,9 +240,9 @@ evas_common_load_rgba_image_module_from_file(Image_Entry *ie)
 		       goto end;
 		    }
 		  evas_module_unload(em);
-		  INF("failed to load file head using module '%s' (%p): "
-		      "%s (%s)",
-		      loader, em, ie->file, evas_load_error_str(ret));
+		  //INF("failed to load file head using module '%s' (%p): "
+		  //    "%s (%s)",
+		  //    loader, em, ie->file, evas_load_error_str(ret));
 	       }
 	     else
 	       WRN("failed to load module '%s' (%p)", loader, em);
@@ -279,9 +279,9 @@ evas_common_load_rgba_image_module_from_file(Image_Entry *ie)
 		       goto end;
 		    }
 		  else
-		    INF("brute force loader '%s' (%p) failed on %s (%s)",
-			loaders_name[i], em, ie->file,
-			evas_load_error_str(ret));
+		    //INF("brute force loader '%s' (%p) failed on %s (%s)",
+			//loaders_name[i], em, ie->file,
+			//evas_load_error_str(ret));
 
 		  evas_module_unload(em);
 	       }
