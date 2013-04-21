@@ -999,8 +999,8 @@ eng_image_native_set(void *data, void *image, void *native)
    RGBA_Image *im = image;
    Render_Engine *re = (Render_Engine *)data;
 
-   if (!im || !ns) return NULL;
-   if (ns->type != EVAS_NATIVE_SURFACE_X11) return NULL;
+   if (!im || !ns) return im;
+   if (ns->type != EVAS_NATIVE_SURFACE_X11) return im;
 #ifdef BUILD_ENGINE_SOFTWARE_XLIB
    return evas_xlib_image_native_set(re->ob, image, ns);
 #endif
