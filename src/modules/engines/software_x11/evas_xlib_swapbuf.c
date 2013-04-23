@@ -226,18 +226,22 @@ evas_software_xlib_swapbuf_new_region_for_update(Outbuf *buf, int x, int y, int 
         if (!im)
           {
              int ww = 0, hh = 0;
+             int d, bpp;
+
+             d = evas_xlib_swapper_depth_get(buf->priv.swapper);
+             bpp = d / 8;
 
              data = evas_xlib_swapper_buffer_map(buf->priv.swapper, &bpl,   &(ww), &(hh));
 #ifdef EVAS_CSERVE2
              if (evas_cserve2_use_get())
                im = (RGBA_Image *)evas_cache2_image_data(evas_common_image_cache2_get(),
-                                                         bpl/4, hh, data,
+                                                         bpl/bpp, hh, data,
                                                          buf->priv.destination_alpha,
                                                          EVAS_COLORSPACE_ARGB8888);
              else
 #endif
                im = (RGBA_Image *)evas_cache_image_data(evas_common_image_cache_get(),
-                                                        bpl/4, hh, data,
+                                                        bpl/bpp, hh, data,
                                                         buf->priv.destination_alpha,
                                                         EVAS_COLORSPACE_ARGB8888);
              buf->priv.onebuf = im;
