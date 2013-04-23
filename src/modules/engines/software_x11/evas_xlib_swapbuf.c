@@ -231,13 +231,13 @@ evas_software_xlib_swapbuf_new_region_for_update(Outbuf *buf, int x, int y, int 
 #ifdef EVAS_CSERVE2
              if (evas_cserve2_use_get())
                im = (RGBA_Image *)evas_cache2_image_data(evas_common_image_cache2_get(),
-                                                         ww, hh, data,
+                                                         bpl/4, hh, data,
                                                          buf->priv.destination_alpha,
                                                          EVAS_COLORSPACE_ARGB8888);
              else
 #endif
                im = (RGBA_Image *)evas_cache_image_data(evas_common_image_cache_get(),
-                                                        ww, hh, data,
+                                                        bpl/4, hh, data,
                                                         buf->priv.destination_alpha,
                                                         EVAS_COLORSPACE_ARGB8888);
              buf->priv.onebuf = im;
