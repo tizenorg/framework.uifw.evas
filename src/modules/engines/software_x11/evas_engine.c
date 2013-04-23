@@ -461,8 +461,8 @@ eng_setup(Evas *e, void *in)
              
              if (try_swapbuf == -1)
                {
-                  if (getenv("EVAS_DRI_SWAPBUF")) try_swapbuf = 1;
-                  else try_swapbuf = 0;
+                  if (getenv("EVAS_NO_DRI_SWAPBUF")) try_swapbuf = 0;
+                  else try_swapbuf = 1;
                }
              if (try_swapbuf)
                re = _output_swapbuf_setup(e->output.w, e->output.h,
