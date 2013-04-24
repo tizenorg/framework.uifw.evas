@@ -78,7 +78,7 @@ static void *eng_image_native_get(void *data __UNUSED__, void *image);
 static Eina_Bool eng_image_draw(void *data __UNUSED__, void *context, void *surface, void *image,
                                 int src_x, int src_y, int src_w, int src_h,
                                 int dst_x, int dst_y, int dst_w, int dst_h,
-                                int smooth, Eina_Bool do_async);
+                                int smooth);
 
 /* internal engine routines */
 
@@ -925,6 +925,72 @@ eng_canvas_alpha_get(void *data, void *context __UNUSED__)
    return (re->ob->priv.destination_alpha) || (re->outbuf_alpha_get(re->ob));
 }
 
+static void
+evas_software_image_map_draw(void *data, void *context, RGBA_Image *surface, RGBA_Image *im, RGBA_Map *m, int smooth, int level, int offset)
+{
+   if (m->count - offset < 3) return;
+
+   if ((m->pts[0 + offset].x == m->pts[3 + offset].x) &&
+       (m->pts[1 + offset].x == m->pts[2 + offset].x) &&
+       (m->pts[0 + offset].y == m->pts[1 + offset].y) &&
+       (m->pts[3 + offset].y == m->pts[2 + offset].y) &&
+       (m->pts[0 + offset].x <= m->pts[1 + offset].x) &&
+       (m->pts[0 + offset].y <= m->pts[2 + offset].y) &&
+       (m->pts[0 + offset].u == 0) &&
+       (m->pts[0 + offset].v == 0) &&
+       (m->pts[1 + offset].u == (int)(im->cache_entry.w << FP)) &&
+       (m->pts[1 + offset].v == 0) &&
+       (m->pts[2 + offset].u == (int)(im->cache_entry.w << FP)) &&
+       (m->pts[2 + offset].v == (int)(im->cache_entry.h << FP)) &&
+       (m->pts[3 + offset].u == 0) &&
+       (m->pts[3 + offset].v == (int)(im->cache_entry.h << FP)) &&
+       (m->pts[0 + offset].col == 0xffffffff) &&
+       (m->pts[1 + offset].col == 0xffffffff) &&
+       (m->pts[2 + offset].col == 0xffffffff) &&
+       (m->pts[3 + offset].col == 0xffffffff))
+     {
+        int dx, dy, dw, dh;
+
+        dx = m->pts[0 + offset].x >> FP;
+        dy = m->pts[0 + offset].y >> FP;
+        dw = (m->pts[2 + offset].x >> FP) - dx;
+        dh = (m->pts[2 + offset].y >> FP) - dy;
+        eng_image_draw
+          (data, context, surface, im,
+           0, 0, im->cache_entry.w, im->cache_entry.h,
+           dx, dy, dw, dh, smooth);
+     }
+   else
+     {
+#ifdef BUILD_PIPE_RENDER
+        if ((cpunum > 1))
+          {
+             evas_common_pipe_map_draw(im, surface, context, m, smooth, level);
+             return ;
+          }
+        else
+#endif
+          {
+             evas_common_map_rgba(im, surface, context, m->count - offset, &m->pts[offset], smooth, level);
+          }
+     }
+   evas_common_cpu_end_opt();
+
+   if (m->count > 4)
+     {
+        evas_software_image_map_draw(data, context, surface, im, m, smooth, level, offset + 2);
+     }
+}
+
+static void
+eng_image_map_draw(void *data, void *context, void *surface, void *image, RGBA_Map *m, int smooth, int level)
+{
+   if (!image) return;
+   if (m->count < 3) return;
+
+   evas_software_image_map_draw(data, context, surface, image, m, smooth, level, 0);
+}
+
 static void *
 eng_image_native_set(void *data, void *image, void *native)
 {
@@ -959,7 +1025,7 @@ static Eina_Bool
 eng_image_draw(void *data __UNUSED__, void *context, void *surface, void *image,
                int src_x, int src_y, int src_w, int src_h,
                int dst_x, int dst_y, int dst_w, int dst_h,
-               int smooth, Eina_Bool do_async)
+               int smooth)
 {
    RGBA_Image *im;
    Native *n = NULL;
@@ -1025,9 +1091,10 @@ module_open(Evas_Module *em)
    ORD(output_flush);
    ORD(output_idle_flush);
 
-//   ORD(image_draw);
-//   ORD(image_native_set);
-//   ORD(image_native_get);
+   ORD(image_map_draw);
+   ORD(image_draw);
+   ORD(image_native_set);
+   ORD(image_native_get);
    /* now advertise out own api */
    em->functions = (void *)(&func);
    return 1;
