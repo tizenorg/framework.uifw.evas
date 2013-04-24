@@ -278,7 +278,7 @@ evas_common_load_rgba_image_module_from_file(Image_Entry *ie)
 			   loaders_name[i], em, ie->file);
 		       goto end;
 		    }
-		  else
+		    //else
 		    //INF("brute force loader '%s' (%p) failed on %s (%s)",
 			//loaders_name[i], em, ie->file,
 			//evas_load_error_str(ret));
