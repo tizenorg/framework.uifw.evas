@@ -843,14 +843,27 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
 
    RDI(level);
    RD("      { evas_render_mapped(%p, %p,   %p, %p,   %i, %i,   %i,   %i)\n", e, obj, context, surface, off_x, off_y, mapped, level);
+
    if (mapped)
      {
-        if ((!evas_object_is_visible(obj)) || (obj->clip.clipees) ||
-            (obj->cur.have_clipees))
+        if (!proxy_render)
           {
-             RDI(level);
-             RD("      }\n");
-             return clean_them;
+             if ((!evas_object_is_visible(obj)) || (obj->clip.clipees)
+                 || (obj->cur.have_clipees))
+               {
+                  RDI(level);
+                  RD("      }\n");
+                  return clean_them;
+               }
+          }
+        else
+          {
+             if ((obj->clip.clipees) || (obj->cur.have_clipees))
+               {
+                  RDI(level);
+                  RD("      }\n");
+                  return clean_them;
+               }
           }
      }
    else if (!(((evas_object_is_active(obj) && (!obj->clip.clipees) &&
@@ -1105,7 +1118,8 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
                {
                   RDI(level);
 
-                  if (obj->cur.clipper)
+                  //FIXME: Consider to clip by the proxy clipper.
+                  if (obj->cur.clipper && !proxy_render)
                     {
                        RD("        clip: %i %i %ix%i [%i %i %ix%i]\n",
                           obj->cur.cache.clip.x + off_x,
@@ -1149,7 +1163,8 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
           }
         else
           {
-             if (obj->cur.clipper)
+             //FIXME: Consider to clip by the proxy clipper.
+             if (obj->cur.clipper && !proxy_render)
                {
                   int x, y, w, h;
 
