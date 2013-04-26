@@ -448,6 +448,12 @@ _evas_common_rgba_image_surface_delete(Image_Entry *ie)
 #endif
    if (ie->file)
      DBG("unload: [%p] %s %s", ie, ie->file, ie->key);
+
+   if (im->native.data)
+     {
+        if (im->native.func.free)
+          im->native.func.free(im->native.func.data, im);
+     }
    if ((im->cs.data) && (im->image.data))
      {
 	if (im->cs.data != im->image.data)
