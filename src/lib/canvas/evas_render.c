@@ -826,7 +826,7 @@ _evas_render_can_use_overlay(Evas *e, Evas_Object *obj)
 Eina_Bool
 evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
                    int off_x, int off_y, int mapped,
-                   int ecx, int ecy, int ecw, int ech, Eina_Bool proxy_render
+                   int ecx, int ecy, int ecw, int ech, Evas_Object *proxy_obj
 #ifdef REND_DBG
                    , int level
 #endif
@@ -835,9 +835,18 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
    void *ctx;
    Evas_Object *obj2;
    Eina_Bool clean_them = EINA_FALSE;
+   Eina_Bool proxy_src_clip = EINA_FALSE;
 
-   if ((evas_object_is_source_invisible(obj) && (!proxy_render)))
-     return clean_them;
+   if (!proxy_obj)
+     {
+        if (evas_object_is_source_invisible(obj))
+          return clean_them;
+     }
+   else
+     {
+        if (proxy_obj == obj)
+          proxy_src_clip = evas_object_image_source_clip_get(proxy_obj);
+     }
 
    evas_object_clip_recalc(obj);
 
@@ -846,7 +855,7 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
 
    if (mapped)
      {
-        if (!proxy_render)
+        if (!proxy_obj || proxy_src_clip)
           {
              if ((!evas_object_is_visible(obj)) || (obj->clip.clipees)
                  || (obj->cur.have_clipees))
@@ -993,7 +1002,7 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
                                                            obj->map.surface,
                                                            off_x2, off_y2, 1,
                                                            ecx, ecy, ecw, ech,
-                                                           proxy_render
+                                                           proxy_obj
 #ifdef REND_DBG
                                                            , level + 1
 #endif
@@ -1107,7 +1116,7 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
                                                            surface,
                                                            off_x, off_y, 1,
                                                            ecx, ecy, ecw, ech,
-                                                           proxy_render
+                                                           proxy_obj
 #ifdef REND_DBG
                                                            , level + 1
 #endif
@@ -1119,7 +1128,7 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
                   RDI(level);
 
                   //FIXME: Consider to clip by the proxy clipper.
-                  if (obj->cur.clipper && !proxy_render)
+                  if (obj->cur.clipper && (!proxy_obj || proxy_src_clip))
                     {
                        RD("        clip: %i %i %ix%i [%i %i %ix%i]\n",
                           obj->cur.cache.clip.x + off_x,
@@ -1164,7 +1173,7 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
         else
           {
              //FIXME: Consider to clip by the proxy clipper.
-             if (obj->cur.clipper && !proxy_render)
+             if (obj->cur.clipper && (!proxy_obj || proxy_src_clip))
                {
                   int x, y, w, h;
 
@@ -1607,7 +1616,7 @@ evas_render_updates_internal(Evas *e,
                             clean_them |= evas_render_mapped(e, obj, e->engine.data.context,
                                                              surface, off_x, off_y, 0,
                                                              cx, cy, cw, ch,
-                                                             EINA_FALSE
+                                                             NULL
 #ifdef REND_DBG
                                                              , 1
 #endif

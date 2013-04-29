@@ -90,6 +90,7 @@ struct _Evas_Object_Image
    Eina_Bool         video_surface : 1;
    Eina_Bool         video_visible : 1;
    Eina_Bool         created : 1;
+   Eina_Bool         proxy_src_clip : 1;
 };
 
 /* private methods for image objects */
@@ -466,11 +467,12 @@ evas_object_image_source_visible_get(const Evas_Object *obj)
    Eina_Bool visible = EINA_FALSE;
 
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
-   return;
+   return EINA_FALSE;
    MAGIC_CHECK_END();
+
    o = (Evas_Object_Image *)(obj->object_data);
    MAGIC_CHECK(o, Evas_Object_Image, MAGIC_OBJ_IMAGE);
-   return;
+   return EINA_FALSE;
    MAGIC_CHECK_END();
 
    visible = !o->cur.source->proxy.src_invisible;
@@ -553,6 +555,40 @@ EAPI Eina_Bool
 evas_object_image_source_unset(Evas_Object *obj)
 {
    return evas_object_image_source_set(obj, NULL);
+}
+
+EAPI void
+evas_object_image_source_clip_set(Evas_Object *obj, Eina_Bool source_clip)
+{
+   Evas_Object_Image *o;
+
+   MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
+   return;
+   MAGIC_CHECK_END();
+
+   o = obj->object_data;
+
+   source_clip = !!source_clip;
+   if (o->proxy_src_clip == source_clip) return;
+   o->proxy_src_clip = source_clip;
+
+   if (!o->cur.source) return;
+
+   evas_object_change(o->cur.source);
+}
+
+EAPI Eina_Bool
+evas_object_image_source_clip_get(const Evas_Object *obj)
+{
+   Evas_Object_Image *o;
+
+   MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
+   return EINA_FALSE;
+   MAGIC_CHECK_END();
+
+   o = obj->object_data;
+
+   return o->proxy_src_clip;
 }
 
 EAPI void
@@ -2348,7 +2384,7 @@ _proxy_subrender_recurse(Evas_Object *obj, Evas_Object *clip, void *output, void
  * Used to force a draw if necessary, else just makes sures it's available.
  */
 static void
-_proxy_subrender(Evas *e, Evas_Object *source)
+_proxy_subrender(Evas *e, Evas_Object *source, Evas_Object *proxy)
 {
    void *ctx;
 /*   Evas_Object *obj2, *clip;*/
@@ -2393,7 +2429,7 @@ _proxy_subrender(Evas *e, Evas_Object *source)
    evas_render_mapped(e, source, ctx, source->proxy.surface,
                       -source->cur.geometry.x,
                       -source->cur.geometry.y,
-                      1, 0, 0, e->output.w, e->output.h, EINA_TRUE
+                      1, 0, 0, e->output.w, e->output.h, proxy
 #ifdef REND_DBG
                       , 1
 #endif
@@ -2773,6 +2809,7 @@ evas_object_image_new(void)
    o->cur.source = NULL;
    o->prev = o->cur;
    o->tmpf_fd = -1;
+   o->proxy_src_clip = EINA_TRUE;
    return o;
 }
 
@@ -2911,7 +2948,7 @@ evas_object_image_render(Evas_Object *obj, void *output, void *context, void *su
    else
      {
         o->proxyrendering = EINA_TRUE;
-        _proxy_subrender(obj->layer->evas, o->cur.source);
+        _proxy_subrender(obj->layer->evas, o->cur.source, obj);
         pixels = o->cur.source->proxy.surface;
         imagew = o->cur.source->proxy.w;
         imageh = o->cur.source->proxy.h;
@@ -3777,7 +3814,7 @@ evas_object_image_is_inside(Evas_Object *obj, Evas_Coord px, Evas_Coord py)
    else
      {
         o->proxyrendering = EINA_TRUE;
-        _proxy_subrender(obj->layer->evas, o->cur.source);
+        _proxy_subrender(obj->layer->evas, o->cur.source, obj);
         pixels = o->cur.source->proxy.surface;
         imagew = o->cur.source->proxy.w;
         imageh = o->cur.source->proxy.h;

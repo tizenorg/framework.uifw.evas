@@ -7689,6 +7689,32 @@ EAPI void                          evas_object_image_source_visible_set(Evas_Obj
 EAPI Eina_Bool                     evas_object_image_source_visible_get(const Evas_Object *obj) EINA_ARG_NONNULL(1);
 
 /**
+ * Clip the proxy object with the source object's clipper.
+ *
+ * @param obj Proxy (image) object.
+ * @param source_clip whether @p obj is clipped by the source clipper.
+ * (@c EINA_TRUE) or not (@c EINA_FALSE)
+ *
+ * @see evas_object_clip_set()
+ * @see evas_object_image_source_set()
+ * @since 1.8
+ */
+EAPI void evas_object_image_source_clip_set(Evas_Object *obj, Eina_Bool source_clip) EINA_ARG_NONNULL(1);
+
+/**
+ * Determine whether an object is clipped by source object's clipper.
+ *
+ * @param obj Proxy (image) object.
+ * @return @c EINA_TRUE if source clip is enabled, @c EINA_FALSE otherwise.
+ *
+ * @see evas_object_clip_set()
+ * @see evas_object_image_source_set()
+ * @see evas_object_image_source_clip_set()
+ * @since 1.8
+ */
+EAPI Eina_Bool evas_object_image_source_clip_get(const Evas_Object *obj) EINA_ARG_NONNULL(1);
+
+/**
  * Check if a file extension may be supported by @ref Evas_Object_Image.
  *
  * @param file The file to check
