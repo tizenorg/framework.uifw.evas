@@ -2605,6 +2605,17 @@ _layout_line_finalize(Ctxt *c, Evas_Object_Textblock_Format *fmt)
                    &c->maxdescent, &fi->y, &fi->parent.w, &fi->parent.h);
              fi->parent.adv = fi->parent.w;
           }
+        else
+          {
+             Evas_Coord asc = 0, desc = 0;
+             _layout_format_ascent_descent_adjust(c->obj, &asc, &desc,
+                   it->format);
+
+             if (asc > c->maxascent)
+                c->maxascent = asc;
+             if (desc > c->maxdescent)
+                c->maxdescent = desc;
+          }
 
 loop_advance:
         it->x = x;
@@ -9328,11 +9339,16 @@ _size_native_calc_line_finalize(const Evas_Object *obj, Eina_List *items,
 
    if (it)
      {
+        Evas_Coord asc = 0, desc = 0;
         /* If there are no text items yet, calc ascent/descent
          * according to the current format. */
-        if (*ascent + *descent == 0)
-           _layout_format_ascent_descent_adjust(obj, ascent, descent,
-                 it->format);
+        _layout_format_ascent_descent_adjust(obj, &asc, &desc,
+              it->format);
+
+        if (asc > *ascent)
+           *ascent = asc;
+        if (desc > *descent)
+           *descent = desc;
 
         /* Add margins. */
         if (it->format)
