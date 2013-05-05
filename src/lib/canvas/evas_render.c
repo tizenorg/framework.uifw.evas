@@ -824,6 +824,28 @@ _evas_render_can_use_overlay(Evas *e, Evas_Object *obj)
 }
 
 Eina_Bool
+_smart_members_changed_check(Evas_Object *obj)
+{
+   Evas_Object *o2;
+
+   if (!evas_object_is_visible(obj) &&
+       !evas_object_was_visible(obj))
+     return EINA_FALSE;
+
+   if (!obj->smart.smart) return EINA_TRUE;
+   if (obj->changed_color) return EINA_TRUE;
+   if ((obj->changed_pchange) && (obj->changed_map)) return EINA_TRUE;
+
+   EINA_INLIST_FOREACH(evas_object_smart_members_get_direct(obj), o2)
+     {
+        if (!o2->changed) continue;
+        if (_smart_members_changed_check(o2)) return EINA_TRUE;
+     }
+
+   return EINA_FALSE;
+}
+
+Eina_Bool
 evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
                    int off_x, int off_y, int mapped,
                    int ecx, int ecy, int ecw, int ech, Evas_Object *proxy_obj
@@ -935,30 +957,27 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
              RD("        fisrt surf: %ix%i\n", sw, sh);
              changed = EINA_TRUE;
           }
-        if (obj->smart.smart)
+        if (!changed)
           {
-             Evas_Object *o2;
-
-             EINA_INLIST_FOREACH(evas_object_smart_members_get_direct(obj), o2)
+             if (obj->smart.smart)
                {
-                  if (!evas_object_is_visible(o2) &&
-                      !evas_object_was_visible(o2))
+                  Evas_Object *o2;
+
+                  EINA_INLIST_FOREACH(evas_object_smart_members_get_direct(obj),
+                                      o2)
                     {
-                       continue;
+                       if (!o2->changed) continue;
+                       changed = _smart_members_changed_check(o2);
+                       if (changed) break;
                     }
-                  if (o2->changed)
-                    {
-                       changed = EINA_TRUE;
-                       break;
-                    }
+                  if (obj->changed_color) changed = EINA_TRUE;
                }
-             if (obj->changed_color) changed = EINA_TRUE;
-          }
-        else if (obj->changed)
-          {
-             if (((obj->changed_pchange) && (obj->changed_map)) ||
-                 (obj->changed_color))
-               changed = EINA_TRUE;
+             else if (obj->changed)
+               {
+                  if (((obj->changed_pchange) && (obj->changed_map)) ||
+                      (obj->changed_color))
+                    changed = EINA_TRUE;
+               }
           }
 
         /* mark the old map as invalid, so later we don't reuse it as a
