@@ -857,18 +857,9 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
    void *ctx;
    Evas_Object *obj2;
    Eina_Bool clean_them = EINA_FALSE;
-   Eina_Bool proxy_src_clip = EINA_FALSE;
 
-   if (!proxy_obj)
-     {
-        if (evas_object_is_source_invisible(obj))
-          return clean_them;
-     }
-   else
-     {
-        if (proxy_obj == obj)
-          proxy_src_clip = evas_object_image_source_clip_get(proxy_obj);
-     }
+   if ((evas_object_is_source_invisible(obj) && (!proxy_obj)))
+     return clean_them;
 
    evas_object_clip_recalc(obj);
 
@@ -877,24 +868,12 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
 
    if (mapped)
      {
-        if (!proxy_obj || proxy_src_clip)
+        if ((!evas_object_is_visible(obj)) || (obj->clip.clipees) ||
+            (obj->cur.have_clipees))
           {
-             if ((!evas_object_is_visible(obj)) || (obj->clip.clipees)
-                 || (obj->cur.have_clipees))
-               {
-                  RDI(level);
-                  RD("      }\n");
-                  return clean_them;
-               }
-          }
-        else
-          {
-             if ((obj->clip.clipees) || (obj->cur.have_clipees))
-               {
-                  RDI(level);
-                  RD("      }\n");
-                  return clean_them;
-               }
+             RDI(level);
+             RD("      }\n");
+             return clean_them;
           }
      }
    else if (!(((evas_object_is_active(obj) && (!obj->clip.clipees) &&
@@ -1146,8 +1125,7 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
                {
                   RDI(level);
 
-                  //FIXME: Consider to clip by the proxy clipper.
-                  if (obj->cur.clipper && (!proxy_obj || proxy_src_clip))
+                  if (obj->cur.clipper)
                     {
                        RD("        clip: %i %i %ix%i [%i %i %ix%i]\n",
                           obj->cur.cache.clip.x + off_x,
@@ -1191,8 +1169,7 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
           }
         else
           {
-             //FIXME: Consider to clip by the proxy clipper.
-             if (obj->cur.clipper && (!proxy_obj || proxy_src_clip))
+             if (obj->cur.clipper)
                {
                   int x, y, w, h;
 
