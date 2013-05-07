@@ -995,14 +995,43 @@ static void *
 eng_image_native_set(void *data, void *image, void *native)
 {
    //return image;
-   Evas_Native_Surface *ns = native;
-   RGBA_Image *im = image;
    Render_Engine *re = (Render_Engine *)data;
+   Evas_Native_Surface *ns = native;
+   RGBA_Image *im = image, *im2;
+   Image_Entry *ie = image;
 
-   if (!im || !ns) return im;
-   if (ns->type != EVAS_NATIVE_SURFACE_X11) return im;
+   if (!im) return im;
+
+   if (ns)
+     {
+        if (ns->type != EVAS_NATIVE_SURFACE_X11) return im;
+        if (im->native.data)
+          {
+             //image have native surface already
+             Evas_Native_Surface *ens = im->native.data;
+             if ((ens->data.x11.visual == ns->data.x11.visual) &&
+                 (ens->data.x11.pixmap == ns->data.x11.pixmap))
+               return im;
+          }
+     }
+   if ((!ns) && (!im->native.data)) return im;
+
+   //create new im and clean already existed im even though ns = NULL
+   im2 = (RGBA_Image *)evas_cache_image_data(evas_common_image_cache_get(),
+                                             ie->w, ie->h, NULL, ie->flags.alpha,
+                                             EVAS_COLORSPACE_ARGB8888);
+   if (im->native.data)
+     {
+        if (im->native.func.free)
+          im->native.func.free(im->native.func.data, im);
+     }
+
+   evas_cache_image_drop(&im->cache_entry);
+   im = im2;
+
+   if (!ns) return im;
 #ifdef BUILD_ENGINE_SOFTWARE_XLIB
-   return evas_xlib_image_native_set(re->ob, image, ns);
+   return evas_xlib_image_native_set(re->ob, im, ns);
 #endif
    return im;
 }

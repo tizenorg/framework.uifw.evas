@@ -43,6 +43,7 @@ evas_xlib_image_free(Evas_X_Image *exim)
    exim->xim = NULL;
    shmdt(exim->shminfo.shmaddr);
    shmctl(exim->shminfo.shmid, IPC_RMID, 0);
+   free(exim);
 }
 
 Evas_X_Image *
@@ -163,8 +164,7 @@ evas_xlib_image_native_set(void *data, void *image, void *native)
    Visual  *vis = NULL;
    Pixmap   pm = 0;
    Native  *n = NULL;
-   int      depth = 0;
-   RGBA_Image *im = image, im2;
+   RGBA_Image *im = image;
    int w, h;
    Evas_X_Image *exim;
    char* pix;
@@ -173,7 +173,7 @@ evas_xlib_image_native_set(void *data, void *image, void *native)
 
    Window wdum;
    int idum;
-   unsigned int uidum;
+   unsigned int uidum, depth = 0;
 
    d = ob->priv.x11.xlib.disp;
    vis = ns->data.x11.visual;
@@ -183,27 +183,7 @@ evas_xlib_image_native_set(void *data, void *image, void *native)
    // get pixmap depth info
    XGetGeometry(d, pm, &wdum, &idum, &idum, &uidum, &uidum, &uidum, &depth);
 
-   if (ns)
-     {
-        if (im->native.data)
-          {
-             //image have native surface already
-             Evas_Native_Surface *ens = im->native.data;
-             if ((ens->data.x11.visual == vis) &&
-                 (ens->data.x11.pixmap == pm))
-               return im;
-          }
-     }
-   if ((!ns) && (!im->native.data)) return im;
 
-   //Clean already existed native
-   if (im->native.data)
-     {
-        if (im->native.func.free)
-          im->native.func.free(im->native.func.data, im);
-        //TODO:disable native image
-     }
-   if (!ns) return im;
    //TODO: deal with pixmap cache
    w = im->cache_entry.w;
    h = im->cache_entry.h;
