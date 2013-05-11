@@ -629,7 +629,7 @@ eng_image_native_set(void *data __UNUSED__, void *image, void *native __UNUSED__
 
    im2 = evas_cache_image_data(evas_common_image_cache_get(),
                                im->w, im->h,
-                               ns->data.x11.visual, 1,
+                               NULL, 1,
                                EVAS_COLORSPACE_ARGB8888);
    evas_cache_image_drop(im);
    im = im2;
