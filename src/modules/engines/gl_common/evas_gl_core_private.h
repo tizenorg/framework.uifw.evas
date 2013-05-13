@@ -100,6 +100,14 @@ struct _EVGL_Surface
 
    // Attached Context
    int     fbo_attached;
+
+   // Init Flag
+   int     buffers_allocated;
+
+   // Rough estimate of buffer in memory per renderbuffer
+   // 0. color 1. depth 2. stencil 3. depth_stencil
+   int     buffer_mem[4];
+
    //-------------------------//
 
    EVGL_Context *current_ctx;
@@ -200,6 +208,7 @@ struct _EVGL_Resource
    EVGLNative_Surface   surface;
 
    EVGL_Context        *current_ctx;
+   void                *current_eng;
 
    int                  direct_rendered;
    Evas_Object         *direct_img_obj;
@@ -224,12 +233,18 @@ struct _EVGL_Engine
    int                main_tid;
 
    int                direct_override;
+   int                direct_mem_opt;
    int                api_debug_mode;
 
    // Force Off fo Debug purposes
-   int                force_direct_off;
+   int                direct_force_off;
 
-   void              *engine_data;
+   // Keep track of all the current surfaces/contexts
+   Eina_List         *surfaces;
+   Eina_List         *contexts;
+
+   //void              *engine_data;  
+
 };
 
 
@@ -238,9 +253,11 @@ extern EVGL_Engine   *evgl_engine;
 
 // Internally used functions
 extern void           _evgl_api_get(Evas_GL_API *api, int debug);
-extern EVGL_Resource *_evgl_tls_resource_get(EVGL_Engine *ee);
+extern EVGL_Resource *_evgl_tls_resource_get();
+extern EVGL_Resource *_evgl_tls_resource_create(void *data);
+extern void           _evgl_tls_resource_destroy(void *data);
 extern EVGL_Context  *_evgl_current_context_get();
 extern int            _evgl_not_in_pixel_get();
-extern int            _evgl_direct_enabled(EVGL_Engine *ee);
+extern int            _evgl_direct_enabled();
 
 #endif //_EVAS_GL_CORE_PRIVATE_H

@@ -36,7 +36,7 @@ void _direct_rendering_check(const char *api)
         return;
      }
 
-   if (_evgl_not_in_pixel_get(evgl_engine))
+   if (_evgl_not_in_pixel_get())
      {
         CRIT("\e[1;33m%s\e[m: This API is being called outside Pixel Get Callback Function.", api);
      }
@@ -68,7 +68,7 @@ _evgl_glBindFramebuffer(GLenum target, GLuint framebuffer)
    // Take care of BindFramebuffer 0 issue
    if (framebuffer==0)
      {
-        if (_evgl_direct_enabled(evgl_engine))
+        if (_evgl_direct_enabled())
            glBindFramebuffer(target, 0);
         else
            glBindFramebuffer(target, ctx->surface_fbo);
@@ -131,9 +131,11 @@ _evgl_glShaderBinary(GLsizei n, const GLuint* shaders, GLenum binaryformat, cons
 #else
    // FIXME: need to dlsym/getprocaddress for this
    ERR("Binary Shader is not supported here yet.");
-   return;
-   n = binaryformat = length = 0;
-   shaders = binary = 0;
+   (void)n;
+   (void)shaders;
+   (void)binaryformat;
+   (void)binary;
+   (void)length;
 #endif
 }
 
@@ -247,16 +249,21 @@ compute_gl_coordinates(Evas_Object *obj, int rot, int clip,
 static void
 _evgl_glClear(GLbitfield mask)
 {
-   EVGL_Engine *ee = evgl_engine;
    EVGL_Resource *rsc;
    EVGL_Context *ctx;
    Evas_Object *img;
    int rot = 0;
    int oc[4] = {0,0,0,0}, nc[4] = {0,0,0,0};
 
-   if (!(rsc=_evgl_tls_resource_get(ee)))
+   if (!(rsc=_evgl_tls_resource_get()))
      {
         ERR("Unable to execute GL command. Error retrieving tls");
+        return;
+     }
+
+   if (!rsc->current_eng)
+     {
+        ERR("Unable to retrive Current Engine");
         return;
      }
 
@@ -267,7 +274,7 @@ _evgl_glClear(GLbitfield mask)
         return;
      }
 
-   if (_evgl_direct_enabled(evgl_engine))
+   if (_evgl_direct_enabled())
      {
         if (!(rsc->current_ctx->current_fbo))
           {
@@ -278,7 +285,7 @@ _evgl_glClear(GLbitfield mask)
                }
 
              img = rsc->direct_img_obj;
-             rot = ee->funcs->rotation_angle_get(ee->engine_data);
+             rot = evgl_engine->funcs->rotation_angle_get(rsc->current_eng);
 
              compute_gl_coordinates(img, rot, 0, 0, 0, 0, 0, oc, nc);
 
@@ -343,12 +350,11 @@ _evgl_glDisable(GLenum cap)
 void
 _evgl_glGetIntegerv(GLenum pname, GLint* params)
 {
-   EVGL_Engine *ee = evgl_engine;
    EVGL_Resource *rsc;
    EVGL_Context *ctx;
    Evas_Object *img;
 
-   if (_evgl_direct_enabled(evgl_engine))
+   if (_evgl_direct_enabled())
      {
         if (!params)
           {
@@ -356,8 +362,18 @@ _evgl_glGetIntegerv(GLenum pname, GLint* params)
              return;
           }
 
-        rsc=_evgl_tls_resource_get(ee);
+        if (!(rsc=_evgl_tls_resource_get()))
+          {
+             ERR("Unable to execute GL command. Error retrieving tls");
+             return;
+          }
+
         ctx = rsc->current_ctx;
+        if (!ctx)
+          {
+             ERR("Unable to retrive Current Context");
+             return;
+          }
 
         // Only need to handle it if it's directly rendering to the window
         if (!(rsc->current_ctx->current_fbo))
@@ -372,9 +388,8 @@ _evgl_glGetIntegerv(GLenum pname, GLint* params)
                        return;
                     }
                }
-
              /*!!! Temporary Fixes to avoid Webkit issue
-             if (pname==GL_VIEWPORT)
+             if (pname == GL_VIEWPORT)
                {
                   if (ctx->viewport_updated)
                     {
@@ -385,7 +400,7 @@ _evgl_glGetIntegerv(GLenum pname, GLint* params)
                */
 
              // If it hasn't been initialized yet, return img object size
-             if ((pname==GL_SCISSOR_BOX)) // || (pname==GL_VIEWPORT))
+             if ((pname == GL_SCISSOR_BOX)) //|| (pname == GL_VIEWPORT))
                {
                   params[0] = 0;
                   params[1] = 0;
@@ -402,16 +417,22 @@ _evgl_glGetIntegerv(GLenum pname, GLint* params)
 static void
 _evgl_glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, void* pixels)
 {
-   EVGL_Engine *ee = evgl_engine;
    EVGL_Resource *rsc;
    EVGL_Context *ctx;
    Evas_Object *img;
    int rot = 0;
    int oc[4] = {0,0,0,0}, nc[4] = {0,0,0,0};
 
-   if (!(rsc=_evgl_tls_resource_get(ee)))
+
+   if (!(rsc=_evgl_tls_resource_get()))
      {
         ERR("Unable to execute GL command. Error retrieving tls");
+        return;
+     }
+
+   if (!rsc->current_eng)
+     {
+        ERR("Unable to retrive Current Engine");
         return;
      }
 
@@ -422,13 +443,13 @@ _evgl_glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum forma
         return;
      }
 
-   if (_evgl_direct_enabled(evgl_engine))
+   if (_evgl_direct_enabled())
      {
 
         if (!(rsc->current_ctx->current_fbo))
           {
              img = rsc->direct_img_obj;
-             rot = ee->funcs->rotation_angle_get(ee->engine_data);
+             rot = evgl_engine->funcs->rotation_angle_get(rsc->current_eng);
 
              compute_gl_coordinates(img, rot, 1, x, y, width, height, oc, nc);
              glReadPixels(nc[0], nc[1], nc[2], nc[3], format, type, pixels);
@@ -447,16 +468,21 @@ _evgl_glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum forma
 static void
 _evgl_glScissor(GLint x, GLint y, GLsizei width, GLsizei height)
 {
-   EVGL_Engine *ee = evgl_engine;
    EVGL_Resource *rsc;
    EVGL_Context *ctx;
    Evas_Object *img;
    int rot = 0;
    int oc[4] = {0,0,0,0}, nc[4] = {0,0,0,0};
 
-   if (!(rsc=_evgl_tls_resource_get(ee)))
+   if (!(rsc=_evgl_tls_resource_get()))
      {
         ERR("Unable to execute GL command. Error retrieving tls");
+        return;
+     }
+
+   if (!rsc->current_eng)
+     {
+        ERR("Unable to retrive Current Engine");
         return;
      }
 
@@ -467,7 +493,7 @@ _evgl_glScissor(GLint x, GLint y, GLsizei width, GLsizei height)
         return;
      }
 
-   if (_evgl_direct_enabled(evgl_engine))
+   if (_evgl_direct_enabled())
      {
         if (!(rsc->current_ctx->current_fbo))
           {
@@ -477,7 +503,7 @@ _evgl_glScissor(GLint x, GLint y, GLsizei width, GLsizei height)
                }
 
              img = rsc->direct_img_obj;
-             rot = ee->funcs->rotation_angle_get(ee->engine_data);
+             rot = evgl_engine->funcs->rotation_angle_get(rsc->current_eng);
 
              compute_gl_coordinates(img, rot, 1, x, y, width, height, oc, nc);
              glScissor(nc[0], nc[1], nc[2], nc[3]);
@@ -527,16 +553,21 @@ _evgl_glScissor(GLint x, GLint y, GLsizei width, GLsizei height)
 static void
 _evgl_glViewport(GLint x, GLint y, GLsizei width, GLsizei height)
 {
-   EVGL_Engine *ee = evgl_engine;
    EVGL_Resource *rsc;
    EVGL_Context *ctx;
    Evas_Object *img;
    int rot = 0;
    int oc[4] = {0,0,0,0}, nc[4] = {0,0,0,0};
 
-   if (!(rsc=_evgl_tls_resource_get(ee)))
+   if (!(rsc=_evgl_tls_resource_get()))
      {
         ERR("Unable to execute GL command. Error retrieving tls");
+        return;
+     }
+
+   if (!rsc->current_eng)
+     {
+        ERR("Unable to retrive Current Engine");
         return;
      }
 
@@ -547,7 +578,7 @@ _evgl_glViewport(GLint x, GLint y, GLsizei width, GLsizei height)
         return;
      }
 
-   if (_evgl_direct_enabled(evgl_engine))
+   if (_evgl_direct_enabled())
      {
         if (!(rsc->current_ctx->current_fbo))
           {
@@ -558,7 +589,7 @@ _evgl_glViewport(GLint x, GLint y, GLsizei width, GLsizei height)
                }
 
              img = rsc->direct_img_obj;
-             rot = ee->funcs->rotation_angle_get(ee->engine_data);
+             rot = evgl_engine->funcs->rotation_angle_get(rsc->current_eng);
 
              compute_gl_coordinates(img, rot, 0, x, y, width, height, oc, nc);
 
@@ -618,9 +649,6 @@ _evgld_glActiveTexture(GLenum texture)
    EVGL_FUNC_BEGIN();
    glActiveTexture(texture);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -637,14 +665,11 @@ finish:
 }
 
 void
-_evgld_glBindAttribLocation(GLuint program, GLuint index, const char* name)
+_evgld_glBindAttribLocation(GLuint program, GLuint idx, const char* name)
 {
    EVGL_FUNC_BEGIN();
-   glBindAttribLocation(program, index, name);
+   glBindAttribLocation(program, idx, name);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -654,9 +679,6 @@ _evgld_glBindBuffer(GLenum target, GLuint buffer)
    EVGL_FUNC_BEGIN();
    glBindBuffer(target, buffer);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -667,10 +689,6 @@ _evgld_glBindFramebuffer(GLenum target, GLuint framebuffer)
 
    _evgl_glBindFramebuffer(target, framebuffer);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -680,9 +698,6 @@ _evgld_glBindRenderbuffer(GLenum target, GLuint renderbuffer)
    EVGL_FUNC_BEGIN();
    glBindRenderbuffer(target, renderbuffer);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -692,9 +707,6 @@ _evgld_glBindTexture(GLenum target, GLuint texture)
    EVGL_FUNC_BEGIN();
    glBindTexture(target, texture);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -704,9 +716,6 @@ _evgld_glBlendColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha)
    EVGL_FUNC_BEGIN();
    glBlendColor(red, green, blue, alpha);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -716,9 +725,6 @@ _evgld_glBlendEquation(GLenum mode)
    EVGL_FUNC_BEGIN();
    glBlendEquation(mode);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -728,9 +734,6 @@ _evgld_glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha)
    EVGL_FUNC_BEGIN();
    glBlendEquationSeparate(modeRGB, modeAlpha);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -740,9 +743,6 @@ _evgld_glBlendFunc(GLenum sfactor, GLenum dfactor)
    EVGL_FUNC_BEGIN();
    glBlendFunc(sfactor, dfactor);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -752,9 +752,6 @@ _evgld_glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum
    EVGL_FUNC_BEGIN();
    glBlendFuncSeparate(srcRGB, dstRGB, srcAlpha, dstAlpha);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -764,9 +761,6 @@ _evgld_glBufferData(GLenum target, GLsizeiptr size, const void* data, GLenum usa
    EVGL_FUNC_BEGIN();
    glBufferData(target, size, data, usage);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -776,9 +770,6 @@ _evgld_glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const vo
    EVGL_FUNC_BEGIN();
    glBufferSubData(target, offset, size, data);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -790,9 +781,6 @@ _evgld_glCheckFramebufferStatus(GLenum target)
    EVGL_FUNC_BEGIN();
    ret = glCheckFramebufferStatus(target);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
    return ret;
 }
@@ -803,9 +791,6 @@ _evgld_glClearColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha)
    EVGL_FUNC_BEGIN();
    glClearColor(red, green, blue, alpha);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -817,9 +802,6 @@ _evgld_glClearDepthf(GLclampf depth)
    _evgl_glClearDepthf(depth);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -829,9 +811,6 @@ _evgld_glClearStencil(GLint s)
    EVGL_FUNC_BEGIN();
    glClearStencil(s);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -841,9 +820,6 @@ _evgld_glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alp
    EVGL_FUNC_BEGIN();
    glColorMask(red, green, blue, alpha);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -853,9 +829,6 @@ _evgld_glCompileShader(GLuint shader)
    EVGL_FUNC_BEGIN();
    glCompileShader(shader);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -865,9 +838,6 @@ _evgld_glCompressedTexImage2D(GLenum target, GLint level, GLenum internalformat,
    EVGL_FUNC_BEGIN();
    glCompressedTexImage2D(target, level, internalformat, width, height, border, imageSize, data);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -877,9 +847,6 @@ _evgld_glCompressedTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLin
    EVGL_FUNC_BEGIN();
    glCompressedTexSubImage2D(target, level, xoffset, yoffset, width, height, format, imageSize, data);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -889,9 +856,6 @@ _evgld_glCopyTexImage2D(GLenum target, GLint level, GLenum internalformat, GLint
    EVGL_FUNC_BEGIN();
    glCopyTexImage2D(target, level, internalformat, x, y, width, height, border);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -901,9 +865,6 @@ _evgld_glCopyTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoff
    EVGL_FUNC_BEGIN();
    glCopyTexSubImage2D(target, level, xoffset, yoffset, x, y, width, height);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -915,9 +876,6 @@ _evgld_glCreateProgram(void)
    EVGL_FUNC_BEGIN();
    ret = glCreateProgram();
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
    return ret;
 }
@@ -929,9 +887,6 @@ _evgld_glCreateShader(GLenum type)
    EVGL_FUNC_BEGIN();
    ret = glCreateShader(type);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
    return ret;
 }
@@ -942,9 +897,6 @@ _evgld_glCullFace(GLenum mode)
    EVGL_FUNC_BEGIN();
    glCullFace(mode);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -954,9 +906,6 @@ _evgld_glDeleteBuffers(GLsizei n, const GLuint* buffers)
    EVGL_FUNC_BEGIN();
    glDeleteBuffers(n, buffers);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -966,9 +915,6 @@ _evgld_glDeleteFramebuffers(GLsizei n, const GLuint* framebuffers)
    EVGL_FUNC_BEGIN();
    glDeleteFramebuffers(n, framebuffers);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -978,9 +924,6 @@ _evgld_glDeleteProgram(GLuint program)
    EVGL_FUNC_BEGIN();
    glDeleteProgram(program);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -990,9 +933,6 @@ _evgld_glDeleteRenderbuffers(GLsizei n, const GLuint* renderbuffers)
    EVGL_FUNC_BEGIN();
    glDeleteRenderbuffers(n, renderbuffers);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1002,9 +942,6 @@ _evgld_glDeleteShader(GLuint shader)
    EVGL_FUNC_BEGIN();
    glDeleteShader(shader);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1014,9 +951,6 @@ _evgld_glDeleteTextures(GLsizei n, const GLuint* textures)
    EVGL_FUNC_BEGIN();
    glDeleteTextures(n, textures);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1026,9 +960,6 @@ _evgld_glDepthFunc(GLenum func)
    EVGL_FUNC_BEGIN();
    glDepthFunc(func);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1038,9 +969,6 @@ _evgld_glDepthMask(GLboolean flag)
    EVGL_FUNC_BEGIN();
    glDepthMask(flag);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1052,9 +980,6 @@ _evgld_glDepthRangef(GLclampf zNear, GLclampf zFar)
    _evgl_glDepthRangef(zNear, zFar);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1064,21 +989,15 @@ _evgld_glDetachShader(GLuint program, GLuint shader)
    EVGL_FUNC_BEGIN();
    glDetachShader(program, shader);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
 void
-_evgld_glDisableVertexAttribArray(GLuint index)
+_evgld_glDisableVertexAttribArray(GLuint idx)
 {
    EVGL_FUNC_BEGIN();
-   glDisableVertexAttribArray(index);
+   glDisableVertexAttribArray(idx);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1088,9 +1007,6 @@ _evgld_glDrawArrays(GLenum mode, GLint first, GLsizei count)
    EVGL_FUNC_BEGIN();
    glDrawArrays(mode, first, count);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1100,21 +1016,15 @@ _evgld_glDrawElements(GLenum mode, GLsizei count, GLenum type, const void* indic
    EVGL_FUNC_BEGIN();
    glDrawElements(mode, count, type, indices);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
 void
-_evgld_glEnableVertexAttribArray(GLuint index)
+_evgld_glEnableVertexAttribArray(GLuint idx)
 {
    EVGL_FUNC_BEGIN();
-   glEnableVertexAttribArray(index);
+   glEnableVertexAttribArray(idx);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1124,9 +1034,6 @@ _evgld_glFinish(void)
    EVGL_FUNC_BEGIN();
    glFinish();
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1136,9 +1043,6 @@ _evgld_glFlush(void)
    EVGL_FUNC_BEGIN();
    glFlush();
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1148,9 +1052,6 @@ _evgld_glFramebufferRenderbuffer(GLenum target, GLenum attachment, GLenum render
    EVGL_FUNC_BEGIN();
    glFramebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1160,9 +1061,6 @@ _evgld_glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget
    EVGL_FUNC_BEGIN();
    glFramebufferTexture2D(target, attachment, textarget, texture, level);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1172,49 +1070,37 @@ _evgld_glFrontFace(GLenum mode)
    EVGL_FUNC_BEGIN();
    glFrontFace(mode);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
 void
-_evgld_glGetVertexAttribfv(GLuint index, GLenum pname, GLfloat* params)
+_evgld_glGetVertexAttribfv(GLuint idx, GLenum pname, GLfloat* params)
 {
    EVGL_FUNC_BEGIN();
-   glGetVertexAttribfv(index, pname, params);
+   glGetVertexAttribfv(idx, pname, params);
 
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
 void
-_evgld_glGetVertexAttribiv(GLuint index, GLenum pname, GLint* params)
+_evgld_glGetVertexAttribiv(GLuint idx, GLenum pname, GLint* params)
 {
    EVGL_FUNC_BEGIN();
-   glGetVertexAttribiv(index, pname, params);
+   glGetVertexAttribiv(idx, pname, params);
 
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
 void
-_evgld_glGetVertexAttribPointerv(GLuint index, GLenum pname, void** pointer)
+_evgld_glGetVertexAttribPointerv(GLuint idx, GLenum pname, void** pointer)
 {
    EVGL_FUNC_BEGIN();
-   glGetVertexAttribPointerv(index, pname, pointer);
+   glGetVertexAttribPointerv(idx, pname, pointer);
 
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1224,9 +1110,6 @@ _evgld_glHint(GLenum target, GLenum mode)
    EVGL_FUNC_BEGIN();
    glHint(target, mode);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1236,9 +1119,6 @@ _evgld_glGenBuffers(GLsizei n, GLuint* buffers)
    EVGL_FUNC_BEGIN();
    glGenBuffers(n, buffers);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1248,9 +1128,6 @@ _evgld_glGenerateMipmap(GLenum target)
    EVGL_FUNC_BEGIN();
    glGenerateMipmap(target);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1260,9 +1137,6 @@ _evgld_glGenFramebuffers(GLsizei n, GLuint* framebuffers)
    EVGL_FUNC_BEGIN();
    glGenFramebuffers(n, framebuffers);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1272,9 +1146,6 @@ _evgld_glGenRenderbuffers(GLsizei n, GLuint* renderbuffers)
    EVGL_FUNC_BEGIN();
    glGenRenderbuffers(n, renderbuffers);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1284,33 +1155,24 @@ _evgld_glGenTextures(GLsizei n, GLuint* textures)
    EVGL_FUNC_BEGIN();
    glGenTextures(n, textures);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
 void
-_evgld_glGetActiveAttrib(GLuint program, GLuint index, GLsizei bufsize, GLsizei* length, GLint* size, GLenum* type, char* name)
+_evgld_glGetActiveAttrib(GLuint program, GLuint idx, GLsizei bufsize, GLsizei* length, GLint* size, GLenum* type, char* name)
 {
    EVGL_FUNC_BEGIN();
-   glGetActiveAttrib(program, index, bufsize, length, size, type, name);
+   glGetActiveAttrib(program, idx, bufsize, length, size, type, name);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
 void
-_evgld_glGetActiveUniform(GLuint program, GLuint index, GLsizei bufsize, GLsizei* length, GLint* size, GLenum* type, char* name)
+_evgld_glGetActiveUniform(GLuint program, GLuint idx, GLsizei bufsize, GLsizei* length, GLint* size, GLenum* type, char* name)
 {
    EVGL_FUNC_BEGIN();
-   glGetActiveUniform(program, index, bufsize, length, size, type, name);
+   glGetActiveUniform(program, idx, bufsize, length, size, type, name);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1320,9 +1182,6 @@ _evgld_glGetAttachedShaders(GLuint program, GLsizei maxcount, GLsizei* count, GL
    EVGL_FUNC_BEGIN();
    glGetAttachedShaders(program, maxcount, count, shaders);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1333,9 +1192,6 @@ _evgld_glGetAttribLocation(GLuint program, const char* name)
    EVGL_FUNC_BEGIN();
    ret = glGetAttribLocation(program, name);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
    return ret;
 }
@@ -1346,9 +1202,6 @@ _evgld_glGetBooleanv(GLenum pname, GLboolean* params)
    EVGL_FUNC_BEGIN();
    glGetBooleanv(pname, params);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1358,9 +1211,6 @@ _evgld_glGetBufferParameteriv(GLenum target, GLenum pname, GLint* params)
    EVGL_FUNC_BEGIN();
    glGetBufferParameteriv(target, pname, params);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1371,9 +1221,6 @@ _evgld_glGetError(void)
 
    EVGL_FUNC_BEGIN();
    ret = glGetError();
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
    return ret;
 }
@@ -1384,9 +1231,6 @@ _evgld_glGetFloatv(GLenum pname, GLfloat* params)
    EVGL_FUNC_BEGIN();
    glGetFloatv(pname, params);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1396,9 +1240,6 @@ _evgld_glGetFramebufferAttachmentParameteriv(GLenum target, GLenum attachment, G
    EVGL_FUNC_BEGIN();
    glGetFramebufferAttachmentParameteriv(target, attachment, pname, params);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1408,9 +1249,6 @@ _evgld_glGetProgramiv(GLuint program, GLenum pname, GLint* params)
    EVGL_FUNC_BEGIN();
    glGetProgramiv(program, pname, params);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1420,9 +1258,6 @@ _evgld_glGetProgramInfoLog(GLuint program, GLsizei bufsize, GLsizei* length, cha
    EVGL_FUNC_BEGIN();
    glGetProgramInfoLog(program, bufsize, length, infolog);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1432,9 +1267,6 @@ _evgld_glGetRenderbufferParameteriv(GLenum target, GLenum pname, GLint* params)
    EVGL_FUNC_BEGIN();
    glGetRenderbufferParameteriv(target, pname, params);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1444,9 +1276,6 @@ _evgld_glGetShaderiv(GLuint shader, GLenum pname, GLint* params)
    EVGL_FUNC_BEGIN();
    glGetShaderiv(shader, pname, params);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1456,9 +1285,6 @@ _evgld_glGetShaderInfoLog(GLuint shader, GLsizei bufsize, GLsizei* length, char*
    EVGL_FUNC_BEGIN();
    glGetShaderInfoLog(shader, bufsize, length, infolog);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1470,9 +1296,6 @@ _evgld_glGetShaderPrecisionFormat(GLenum shadertype, GLenum precisiontype, GLint
    _evgl_glGetShaderPrecisionFormat(shadertype, precisiontype, range, precision);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1482,9 +1305,6 @@ _evgld_glGetShaderSource(GLuint shader, GLsizei bufsize, GLsizei* length, char* 
    EVGL_FUNC_BEGIN();
    glGetShaderSource(shader, bufsize, length, source);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1502,9 +1322,6 @@ _evgld_glGetString(GLenum name)
 #endif
    ret = glGetString(name);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
    return ret;
 }
@@ -1515,9 +1332,6 @@ _evgld_glGetTexParameterfv(GLenum target, GLenum pname, GLfloat* params)
    EVGL_FUNC_BEGIN();
    glGetTexParameterfv(target, pname, params);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1527,9 +1341,6 @@ _evgld_glGetTexParameteriv(GLenum target, GLenum pname, GLint* params)
    EVGL_FUNC_BEGIN();
    glGetTexParameteriv(target, pname, params);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1539,9 +1350,6 @@ _evgld_glGetUniformfv(GLuint program, GLint location, GLfloat* params)
    EVGL_FUNC_BEGIN();
    glGetUniformfv(program, location, params);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1551,9 +1359,6 @@ _evgld_glGetUniformiv(GLuint program, GLint location, GLint* params)
    EVGL_FUNC_BEGIN();
    glGetUniformiv(program, location, params);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 int
@@ -1564,9 +1369,6 @@ _evgld_glGetUniformLocation(GLuint program, const char* name)
    EVGL_FUNC_BEGIN();
    ret = glGetUniformLocation(program, name);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
    return ret;
 }
@@ -1579,9 +1381,6 @@ _evgld_glIsBuffer(GLuint buffer)
    EVGL_FUNC_BEGIN();
    ret = glIsBuffer(buffer);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
    return ret;
 }
@@ -1594,9 +1393,6 @@ _evgld_glIsEnabled(GLenum cap)
    EVGL_FUNC_BEGIN();
    ret = glIsEnabled(cap);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
    return ret;
 }
@@ -1609,9 +1405,6 @@ _evgld_glIsFramebuffer(GLuint framebuffer)
    EVGL_FUNC_BEGIN();
    ret = glIsFramebuffer(framebuffer);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
    return ret;
 }
@@ -1623,9 +1416,6 @@ _evgld_glIsProgram(GLuint program)
    EVGL_FUNC_BEGIN();
    ret = glIsProgram(program);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
    return ret;
 }
@@ -1637,9 +1427,6 @@ _evgld_glIsRenderbuffer(GLuint renderbuffer)
    EVGL_FUNC_BEGIN();
    ret = glIsRenderbuffer(renderbuffer);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
    return ret;
 }
@@ -1651,9 +1438,6 @@ _evgld_glIsShader(GLuint shader)
    EVGL_FUNC_BEGIN();
    ret = glIsShader(shader);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
    return ret;
 }
@@ -1665,9 +1449,6 @@ _evgld_glIsTexture(GLuint texture)
    EVGL_FUNC_BEGIN();
    ret = glIsTexture(texture);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
    return ret;
 }
@@ -1678,9 +1459,6 @@ _evgld_glLineWidth(GLfloat width)
    EVGL_FUNC_BEGIN();
    glLineWidth(width);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1690,9 +1468,6 @@ _evgld_glLinkProgram(GLuint program)
    EVGL_FUNC_BEGIN();
    glLinkProgram(program);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1702,9 +1477,6 @@ _evgld_glPixelStorei(GLenum pname, GLint param)
    EVGL_FUNC_BEGIN();
    glPixelStorei(pname, param);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1714,9 +1486,6 @@ _evgld_glPolygonOffset(GLfloat factor, GLfloat units)
    EVGL_FUNC_BEGIN();
    glPolygonOffset(factor, units);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1728,9 +1497,6 @@ _evgld_glReleaseShaderCompiler(void)
    _evgl_glReleaseShaderCompiler();
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1740,9 +1506,6 @@ _evgld_glRenderbufferStorage(GLenum target, GLenum internalformat, GLsizei width
    EVGL_FUNC_BEGIN();
    glRenderbufferStorage(target, internalformat, width, height);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1752,9 +1515,6 @@ _evgld_glSampleCoverage(GLclampf value, GLboolean invert)
    EVGL_FUNC_BEGIN();
    glSampleCoverage(value, invert);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1766,21 +1526,19 @@ _evgld_glShaderBinary(GLsizei n, const GLuint* shaders, GLenum binaryformat, con
    _evgl_glShaderBinary(n, shaders, binaryformat, binary, length);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
 
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
 void
-_evgld_glShaderSource(GLuint shader, GLsizei count, const char** string, const GLint* length)
+_evgld_glShaderSource(GLuint shader, GLsizei count, const char* const * string, const GLint* length)
 {
    EVGL_FUNC_BEGIN();
-   glShaderSource(shader, count, string, length);
+#ifdef GL_GLES
+   glShaderSource(shader, count, (const GLchar * const *) string, length);
+#else
+   glShaderSource(shader, count, (const GLchar **) string, length);
+#endif
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1790,9 +1548,6 @@ _evgld_glStencilFunc(GLenum func, GLint ref, GLuint mask)
    EVGL_FUNC_BEGIN();
    glStencilFunc(func, ref, mask);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1802,9 +1557,6 @@ _evgld_glStencilFuncSeparate(GLenum face, GLenum func, GLint ref, GLuint mask)
    EVGL_FUNC_BEGIN();
    glStencilFuncSeparate(face, func, ref, mask);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1814,9 +1566,6 @@ _evgld_glStencilMask(GLuint mask)
    EVGL_FUNC_BEGIN();
    glStencilMask(mask);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1826,9 +1575,6 @@ _evgld_glStencilMaskSeparate(GLenum face, GLuint mask)
    EVGL_FUNC_BEGIN();
    glStencilMaskSeparate(face, mask);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1838,9 +1584,6 @@ _evgld_glStencilOp(GLenum fail, GLenum zfail, GLenum zpass)
    EVGL_FUNC_BEGIN();
    glStencilOp(fail, zfail, zpass);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1850,9 +1593,6 @@ _evgld_glStencilOpSeparate(GLenum face, GLenum fail, GLenum zfail, GLenum zpass)
    EVGL_FUNC_BEGIN();
    glStencilOpSeparate(face, fail, zfail, zpass);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1862,9 +1602,6 @@ _evgld_glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei wi
    EVGL_FUNC_BEGIN();
    glTexImage2D(target, level, internalformat, width, height, border, format, type, pixels);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1874,9 +1611,6 @@ _evgld_glTexParameterf(GLenum target, GLenum pname, GLfloat param)
    EVGL_FUNC_BEGIN();
    glTexParameterf(target, pname, param);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1886,9 +1620,6 @@ _evgld_glTexParameterfv(GLenum target, GLenum pname, const GLfloat* params)
    EVGL_FUNC_BEGIN();
    glTexParameterfv(target, pname, params);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1898,9 +1629,6 @@ _evgld_glTexParameteri(GLenum target, GLenum pname, GLint param)
    EVGL_FUNC_BEGIN();
    glTexParameteri(target, pname, param);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1910,9 +1638,6 @@ _evgld_glTexParameteriv(GLenum target, GLenum pname, const GLint* params)
    EVGL_FUNC_BEGIN();
    glTexParameteriv(target, pname, params);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1922,9 +1647,6 @@ _evgld_glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset,
    EVGL_FUNC_BEGIN();
    glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1934,9 +1656,6 @@ _evgld_glUniform1f(GLint location, GLfloat x)
    EVGL_FUNC_BEGIN();
    glUniform1f(location, x);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1946,9 +1665,6 @@ _evgld_glUniform1fv(GLint location, GLsizei count, const GLfloat* v)
    EVGL_FUNC_BEGIN();
    glUniform1fv(location, count, v);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1958,9 +1674,6 @@ _evgld_glUniform1i(GLint location, GLint x)
    EVGL_FUNC_BEGIN();
    glUniform1i(location, x);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1970,9 +1683,6 @@ _evgld_glUniform1iv(GLint location, GLsizei count, const GLint* v)
    EVGL_FUNC_BEGIN();
    glUniform1iv(location, count, v);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1982,9 +1692,6 @@ _evgld_glUniform2f(GLint location, GLfloat x, GLfloat y)
    EVGL_FUNC_BEGIN();
    glUniform2f(location, x, y);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -1994,9 +1701,6 @@ _evgld_glUniform2fv(GLint location, GLsizei count, const GLfloat* v)
    EVGL_FUNC_BEGIN();
    glUniform2fv(location, count, v);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2006,9 +1710,6 @@ _evgld_glUniform2i(GLint location, GLint x, GLint y)
    EVGL_FUNC_BEGIN();
    glUniform2i(location, x, y);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2018,9 +1719,6 @@ _evgld_glUniform2iv(GLint location, GLsizei count, const GLint* v)
    EVGL_FUNC_BEGIN();
    glUniform2iv(location, count, v);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2030,9 +1728,6 @@ _evgld_glUniform3f(GLint location, GLfloat x, GLfloat y, GLfloat z)
    EVGL_FUNC_BEGIN();
    glUniform3f(location, x, y, z);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2042,9 +1737,6 @@ _evgld_glUniform3fv(GLint location, GLsizei count, const GLfloat* v)
    EVGL_FUNC_BEGIN();
    glUniform3fv(location, count, v);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2054,9 +1746,6 @@ _evgld_glUniform3i(GLint location, GLint x, GLint y, GLint z)
    EVGL_FUNC_BEGIN();
    glUniform3i(location, x, y, z);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2066,9 +1755,6 @@ _evgld_glUniform3iv(GLint location, GLsizei count, const GLint* v)
    EVGL_FUNC_BEGIN();
    glUniform3iv(location, count, v);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2078,9 +1764,6 @@ _evgld_glUniform4f(GLint location, GLfloat x, GLfloat y, GLfloat z, GLfloat w)
    EVGL_FUNC_BEGIN();
    glUniform4f(location, x, y, z, w);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2090,9 +1773,6 @@ _evgld_glUniform4fv(GLint location, GLsizei count, const GLfloat* v)
    EVGL_FUNC_BEGIN();
    glUniform4fv(location, count, v);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2102,9 +1782,6 @@ _evgld_glUniform4i(GLint location, GLint x, GLint y, GLint z, GLint w)
    EVGL_FUNC_BEGIN();
    glUniform4i(location, x, y, z, w);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2114,9 +1791,6 @@ _evgld_glUniform4iv(GLint location, GLsizei count, const GLint* v)
    EVGL_FUNC_BEGIN();
    glUniform4iv(location, count, v);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2126,9 +1800,6 @@ _evgld_glUniformMatrix2fv(GLint location, GLsizei count, GLboolean transpose, co
    EVGL_FUNC_BEGIN();
    glUniformMatrix2fv(location, count, transpose, value);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2138,9 +1809,6 @@ _evgld_glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, co
    EVGL_FUNC_BEGIN();
    glUniformMatrix3fv(location, count, transpose, value);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2150,9 +1818,6 @@ _evgld_glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, co
    EVGL_FUNC_BEGIN();
    glUniformMatrix4fv(location, count, transpose, value);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2162,9 +1827,6 @@ _evgld_glUseProgram(GLuint program)
    EVGL_FUNC_BEGIN();
    glUseProgram(program);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2174,9 +1836,6 @@ _evgld_glValidateProgram(GLuint program)
    EVGL_FUNC_BEGIN();
    glValidateProgram(program);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2186,9 +1845,6 @@ _evgld_glVertexAttrib1f(GLuint indx, GLfloat x)
    EVGL_FUNC_BEGIN();
    glVertexAttrib1f(indx, x);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2198,9 +1854,6 @@ _evgld_glVertexAttrib1fv(GLuint indx, const GLfloat* values)
    EVGL_FUNC_BEGIN();
    glVertexAttrib1fv(indx, values);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2210,9 +1863,6 @@ _evgld_glVertexAttrib2f(GLuint indx, GLfloat x, GLfloat y)
    EVGL_FUNC_BEGIN();
    glVertexAttrib2f(indx, x, y);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2222,9 +1872,6 @@ _evgld_glVertexAttrib2fv(GLuint indx, const GLfloat* values)
    EVGL_FUNC_BEGIN();
    glVertexAttrib2fv(indx, values);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2234,9 +1881,6 @@ _evgld_glVertexAttrib3f(GLuint indx, GLfloat x, GLfloat y, GLfloat z)
    EVGL_FUNC_BEGIN();
    glVertexAttrib3f(indx, x, y, z);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2246,9 +1890,6 @@ _evgld_glVertexAttrib3fv(GLuint indx, const GLfloat* values)
    EVGL_FUNC_BEGIN();
    glVertexAttrib3fv(indx, values);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2258,9 +1899,6 @@ _evgld_glVertexAttrib4f(GLuint indx, GLfloat x, GLfloat y, GLfloat z, GLfloat w)
    EVGL_FUNC_BEGIN();
    glVertexAttrib4f(indx, x, y, z, w);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2270,9 +1908,6 @@ _evgld_glVertexAttrib4fv(GLuint indx, const GLfloat* values)
    EVGL_FUNC_BEGIN();
    glVertexAttrib4fv(indx, values);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2282,9 +1917,6 @@ _evgld_glVertexAttribPointer(GLuint indx, GLint size, GLenum type, GLboolean nor
    EVGL_FUNC_BEGIN();
    glVertexAttribPointer(indx, size, type, normalized, stride, ptr);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2498,7 +2130,7 @@ shadersrc_gles_to_gl(GLsizei count, const char** string, char **s, const GLint* 
 
 
 void
-_evgld_glShaderSource(GLuint shader, GLsizei count, const char** string, const GLint* length)
+_evgld_glShaderSource(GLuint shader, GLsizei count, const char* const* string, const GLint* length)
 {
    EVGL_FUNC_BEGIN();
 
@@ -2562,10 +2194,6 @@ _evgld_glClear(GLbitfield mask)
 
    _evgl_glClear(mask);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2576,10 +2204,6 @@ _evgld_glEnable(GLenum cap)
 
    _evgl_glEnable(cap);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2590,10 +2214,6 @@ _evgld_glDisable(GLenum cap)
 
    _evgl_glDisable(cap);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2603,9 +2223,6 @@ _evgld_glGetIntegerv(GLenum pname, GLint* params)
    EVGL_FUNC_BEGIN();
    _evgl_glGetIntegerv(pname, params);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2616,10 +2233,6 @@ _evgld_glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum form
 
    _evgl_glReadPixels(x, y, width, height, format, type, pixels);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2630,10 +2243,6 @@ _evgld_glScissor(GLint x, GLint y, GLsizei width, GLsizei height)
 
    _evgl_glScissor(x, y, width, height);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 
@@ -2644,10 +2253,6 @@ _evgld_glViewport(GLint x, GLint y, GLsizei width, GLsizei height)
 
    _evgl_glViewport(x, y, width, height);
    GLERR(__FUNCTION__, __FILE__, __LINE__, "");
-
-   goto finish;
-
-finish:
    EVGL_FUNC_END();
 }
 //-------------------------------------------------------------//
@@ -2755,7 +2360,8 @@ _normal_gl_api_get(Evas_GL_API *funcs)
    ORD(glSampleCoverage);
 //   ORD(glScissor);
 //   ORD(glShaderBinary);
-   ORD(glShaderSource);
+// Deal with double glShaderSource signature
+   funcs->glShaderSource = (void (*)(GLuint, GLsizei, const char * const *, const GLint *))glShaderSource;
    ORD(glStencilFunc);
    ORD(glStencilFuncSeparate);
    ORD(glStencilMask);
