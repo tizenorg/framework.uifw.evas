@@ -12,4 +12,5 @@ int evas_xlib_swapper_buffer_state_get(X_Swapper *swp);
 int evas_xlib_swapper_depth_get(X_Swapper *swp);
 int evas_xlib_swapper_byte_order_get(X_Swapper *swp);
 int evas_xlib_swapper_bit_order_get(X_Swapper *swp);
+void evas_xlib_swapper_buffer_size_get(X_Swapper *swp, int *w, int *h);
     

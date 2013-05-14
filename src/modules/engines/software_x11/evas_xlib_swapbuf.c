@@ -314,6 +314,7 @@ evas_software_xlib_swapbuf_free_region_for_update(Outbuf *buf EINA_UNUSED, RGBA_
 void
 evas_software_xlib_swapbuf_flush(Outbuf *buf)
 {
+   int buf_w, buf_h, temp;
    if (!buf->priv.pending_writes)
      {
         Eina_Rectangle *rects, *rect;
@@ -329,7 +330,17 @@ evas_software_xlib_swapbuf_flush(Outbuf *buf)
              rects[i] = *rect;
           }
         evas_xlib_swapper_buffer_unmap(buf->priv.swapper);
-        evas_xlib_swapper_swap(buf->priv.swapper, rects, n);
+        evas_xlib_swapper_buffer_size_get(buf->priv.swapper, &buf_w, &buf_h);
+        if ((buf->rot == 90) || (buf->rot == 270))
+          {
+             temp = buf_w;
+             buf_w = buf_h;
+             buf_h = temp;
+          }
+
+        if ((buf_w == buf->w) && (buf_h == buf->h))
+           evas_xlib_swapper_swap(buf->priv.swapper, rects, n);
+
         eina_array_clean(&buf->priv.onebuf_regions);
         im = buf->priv.onebuf;
         buf->priv.onebuf = NULL;
@@ -398,7 +409,17 @@ evas_software_xlib_swapbuf_flush(Outbuf *buf)
              i++;
           }
         evas_xlib_swapper_buffer_unmap(buf->priv.swapper);
-        evas_xlib_swapper_swap(buf->priv.swapper, rects, n);
+        evas_xlib_swapper_buffer_size_get(buf->priv.swapper, &buf_w, &buf_h);
+        if ((buf->rot == 90) || (buf->rot == 270))
+          {
+             temp = buf_w;
+             buf_w = buf_h;
+             buf_h = temp;
+          }
+
+        if ((buf_w == buf->w) && (buf_h == buf->h))
+           evas_xlib_swapper_swap(buf->priv.swapper, rects, n);
+
 //        evas_xlib_swapper_swap(buf->priv.swapper, NULL, 0);
      }
 }
