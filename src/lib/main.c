@@ -82,7 +82,11 @@ evas_debug_input_null(void)
      }
    if (_evas_debug_show == _EVAS_DEBUG_SHOW)
      CRIT("Input object pointer is NULL!");
+
+   /* disable temporarily*/
+   /*
    if (_evas_debug_abort) abort();
+   */
 }
 
 void
