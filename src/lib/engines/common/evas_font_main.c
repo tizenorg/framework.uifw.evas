@@ -69,36 +69,9 @@ evas_common_font_font_all_unload(void)
 }
 
 EAPI int
-evas_common_font_ascent_get(RGBA_Font *fn)
+evas_common_font_instance_ascent_get(RGBA_Font_Int *fi)
 {
    int val;
-   RGBA_Font_Int *fi;
-
-//   evas_common_font_size_use(fn);
-#if 0
-     {
-        Eina_List *l;
-        
-        EINA_LIST_FOREACH(fn->fonts, l, fi)
-          {
-             if (!fi->src->ft.face) continue;
-             if (fi->src->current_size != fi->size)
-               {
-		  FTLOCK();
-                  FT_Activate_Size(fi->ft.size);
-		  FTUNLOCK();
-                  fi->src->current_size = fi->size;
-               }
-             val = (int)fi->src->ft.face->size->metrics.ascender;
-             if (fi->src->ft.face->units_per_EM == 0)
-               return val;
-             dv = (fi->src->ft.orig_upem * 2048) / fi->src->ft.face->units_per_EM;
-             ret = (val * fi->src->ft.face->size->metrics.y_scale) / (dv * dv);
-             printf(" ==== %p: %i\n", fi, ret);
-          }
-     }
-#endif
-   fi = fn->fonts->data;
    evas_common_font_int_reload(fi);
    if (fi->src->current_size != fi->size)
      {
@@ -122,13 +95,9 @@ evas_common_font_ascent_get(RGBA_Font *fn)
 }
 
 EAPI int
-evas_common_font_descent_get(RGBA_Font *fn)
+evas_common_font_instance_descent_get(RGBA_Font_Int *fi)
 {
    int val;
-   RGBA_Font_Int *fi;
-
-//   evas_common_font_size_use(fn);
-   fi = fn->fonts->data;
    evas_common_font_int_reload(fi);
    if (fi->src->current_size != fi->size)
      {
@@ -147,14 +116,11 @@ evas_common_font_descent_get(RGBA_Font *fn)
 }
 
 EAPI int
-evas_common_font_max_ascent_get(RGBA_Font *fn)
+evas_common_font_instance_max_ascent_get(RGBA_Font_Int *fi)
 {
    int val, dv;
    int ret;
-   RGBA_Font_Int *fi;
 
-//   evas_common_font_size_use(fn);
-   fi = fn->fonts->data;
    evas_common_font_int_reload(fi);
   if (fi->src->current_size != fi->size)
      {
@@ -177,14 +143,11 @@ evas_common_font_max_ascent_get(RGBA_Font *fn)
 }
 
 EAPI int
-evas_common_font_max_descent_get(RGBA_Font *fn)
+evas_common_font_instance_max_descent_get(RGBA_Font_Int *fi)
 {
    int val, dv;
    int ret;
-   RGBA_Font_Int *fi;
 
-//   evas_common_font_size_use(fn);
-   fi = fn->fonts->data;
    evas_common_font_int_reload(fi);
    if (fi->src->current_size != fi->size)
      {
@@ -204,6 +167,34 @@ evas_common_font_max_descent_get(RGBA_Font *fn)
    dv = (fi->src->ft.orig_upem * 2048) / fi->src->ft.face->units_per_EM;
    ret = FONT_METRIC_CONV(val, dv, fi->src->ft.face->size->metrics.y_scale);
    return ret;
+}
+
+EAPI int
+evas_common_font_ascent_get(RGBA_Font *fn)
+{
+//   evas_common_font_size_use(fn);
+   return evas_common_font_instance_ascent_get(fn->fonts->data);
+}
+
+EAPI int
+evas_common_font_descent_get(RGBA_Font *fn)
+{
+//   evas_common_font_size_use(fn);
+   return evas_common_font_instance_descent_get(fn->fonts->data);
+}
+
+EAPI int
+evas_common_font_max_ascent_get(RGBA_Font *fn)
+{
+//   evas_common_font_size_use(fn);
+   return evas_common_font_instance_max_ascent_get(fn->fonts->data);
+}
+
+EAPI int
+evas_common_font_max_descent_get(RGBA_Font *fn)
+{
+//   evas_common_font_size_use(fn);
+   return evas_common_font_instance_max_descent_get(fn->fonts->data);
 }
 
 EAPI int
