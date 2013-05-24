@@ -884,7 +884,7 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
                   return clean_them;
                }
           }
-        else
+        else if (obj->clip.clipees || obj->cur.have_clipees)
           {
              RDI(level);
              RD("      }\n");
