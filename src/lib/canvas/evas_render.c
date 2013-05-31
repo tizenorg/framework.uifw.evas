@@ -848,7 +848,8 @@ _smart_members_changed_check(Evas_Object *obj)
 Eina_Bool
 evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
                    int off_x, int off_y, int mapped,
-                   int ecx, int ecy, int ecw, int ech, Evas_Object *proxy_obj
+                   int ecx, int ecy, int ecw, int ech,
+                   Evas_Proxy_Render_Data *proxy_render_data
 #ifdef REND_DBG
                    , int level
 #endif
@@ -859,13 +860,13 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
    Eina_Bool clean_them = EINA_FALSE;
    Eina_Bool proxy_src_clip = EINA_TRUE;
 
-   if (!proxy_obj)
+   if (!proxy_render_data)
      {
         if (evas_object_is_source_invisible(obj))
           return clean_them;
      }
    else
-     proxy_src_clip = evas_object_image_source_clip_get(proxy_obj);
+     proxy_src_clip = proxy_render_data->source_clip;
 
    evas_object_clip_recalc(obj);
 
@@ -1016,7 +1017,7 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
                                                            obj->map.surface,
                                                            off_x2, off_y2, 1,
                                                            ecx, ecy, ecw, ech,
-                                                           proxy_obj
+                                                           proxy_render_data
 #ifdef REND_DBG
                                                            , level + 1
 #endif
@@ -1130,7 +1131,7 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
                                                            surface,
                                                            off_x, off_y, 1,
                                                            ecx, ecy, ecw, ech,
-                                                           proxy_obj
+                                                           proxy_render_data
 #ifdef REND_DBG
                                                            , level + 1
 #endif
@@ -1167,20 +1168,30 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
                          }
                        else
                          {
-                            //FIXME: Consider to clip by the proxy clipper.
-                            if (proxy_obj && (proxy_obj != obj))
-                              {
-                                 if (_evas_render_has_map(obj))
-                                   evas_object_clip_recalc(obj);
+                            if (_evas_render_has_map(obj))
+                              evas_object_clip_recalc(obj);
 
+                            //FIXME: Consider to clip by the proxy clipper.
+                            if (proxy_render_data->src_obj != obj)
+                              {
                                  x = obj->cur.clipper->cur.geometry.x + off_x;
                                  y = obj->cur.clipper->cur.geometry.y + off_y;
                                  w = obj->cur.clipper->cur.geometry.w;
                                  h = obj->cur.clipper->cur.geometry.h;
 
-                                 e->engine.func->context_clip_set(e->engine.data.output,
-                                                                  ctx, x, y, w, h);
                               }
+                            else
+                              {
+                                 Evas_Object *proxy =
+                                    proxy_render_data->proxy_obj;
+                                 x = proxy->cur.clipper->cur.geometry.x + off_x;
+                                 y = proxy->cur.clipper->cur.geometry.y + off_y;
+                                 w = proxy->cur.clipper->cur.geometry.w;
+                                 h = proxy->cur.clipper->cur.geometry.h;
+                              }
+                            e->engine.func->context_clip_set(e->engine.data.output,
+                                                             ctx, x, y, w, h);
+
                          }
                     }
                   obj->func->render(obj, e->engine.data.output, ctx,

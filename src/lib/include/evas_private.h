@@ -50,6 +50,7 @@ typedef struct _Evas_Smart_Cb_Description_Array Evas_Smart_Cb_Description_Array;
 typedef struct _Evas_Smart_Interfaces_Array Evas_Smart_Interfaces_Array;
 typedef struct _Evas_Post_Callback          Evas_Post_Callback;
 typedef struct _Evas_Coord_Touch_Point      Evas_Coord_Touch_Point;
+typedef struct _Evas_Proxy_Render_Data      Evas_Proxy_Render_Data;
 
 enum _Evas_Font_Style
 {
@@ -1076,6 +1077,13 @@ struct _Evas_Imaging_Font
    RGBA_Font *font;
 };
 
+struct _Evas_Proxy_Render_Data
+{
+   Evas_Object *proxy_obj;
+   Evas_Object *src_obj;
+   Eina_Bool source_clip : 1;
+};
+
 int evas_async_events_init(void);
 int evas_async_events_shutdown(void);
 int evas_async_target_del(const void *target);
@@ -1099,7 +1107,7 @@ Eina_Bool evas_render_mapped(Evas *e, Evas_Object *obj,
                              void *context, void *surface,
                              int off_x, int off_y, int mapped,
                              int ecx, int ecy, int ecw, int ech,
-                             Evas_Object *proxy_obj
+                             Evas_Proxy_Render_Data *proxy_render_data
 #ifdef REND_DBG
                              , int level
 #endif

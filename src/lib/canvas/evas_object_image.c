@@ -2426,10 +2426,19 @@ _proxy_subrender(Evas *e, Evas_Object *source, Evas_Object *proxy)
    e->engine.func->context_free(e->engine.data.output, ctx);
 
    ctx = e->engine.func->context_new(e->engine.data.output);
+
+   Eina_Bool source_clip = evas_object_image_source_clip_get(proxy);
+
+   Evas_Proxy_Render_Data proxy_render_data = {
+        .proxy_obj = proxy,
+        .src_obj = source,
+        .source_clip = source_clip
+   };
+
    evas_render_mapped(e, source, ctx, source->proxy.surface,
                       -source->cur.geometry.x,
                       -source->cur.geometry.y,
-                      1, 0, 0, e->output.w, e->output.h, proxy
+                      1, 0, 0, e->output.w, e->output.h, &proxy_render_data
 #ifdef REND_DBG
                       , 1
 #endif
