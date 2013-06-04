@@ -548,6 +548,7 @@ _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType *gif, Image_Entry
                          {
                             if (rows[i1][j1] == alpha)
                               {
+                                 *ptr = bg_val;
                                  ptr++;
                               }
                             else
