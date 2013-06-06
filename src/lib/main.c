@@ -99,7 +99,11 @@ evas_debug_magic_null(void)
    if ((_evas_debug_show == _EVAS_DEBUG_SHOW) ||
          (_evas_debug_show == _EVAS_DEBUG_DEFAULT))
      CRIT("Input object is zero'ed out (maybe a freed object or zero-filled RAM)!");
-   if (_evas_debug_abort) abort();
+   if (_evas_debug_abort)
+     {
+        ERR("### EFL abort on errors ###\n");
+        abort();
+     }
 }
 
 void
@@ -116,7 +120,11 @@ evas_debug_magic_wrong(DATA32 expected, DATA32 supplied)
 	  "    Supplied: %08x - %s",
 	  expected, evas_debug_magic_string_get(expected),
 	  supplied, evas_debug_magic_string_get(supplied));
-   if (_evas_debug_abort) abort();
+   if (_evas_debug_abort)
+     {
+        ERR("### EFL abort on errors ###\n");
+        abort();
+     }
 }
 
 void
@@ -129,7 +137,11 @@ evas_debug_generic(const char *str)
    if ((_evas_debug_show == _EVAS_DEBUG_SHOW) ||
          (_evas_debug_show == _EVAS_DEBUG_DEFAULT))
      CRIT("%s", str);
-   if (_evas_debug_abort) abort();
+   if (_evas_debug_abort)
+     {
+        ERR("### EFL abort on errors ###\n");
+        abort();
+     }
 }
 
 const char *
