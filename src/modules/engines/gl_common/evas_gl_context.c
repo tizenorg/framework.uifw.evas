@@ -37,7 +37,6 @@ typedef unsigned int  (*secsym_func_uint) ();
 typedef void         *(*secsym_func_void_ptr) ();
 
 static _eng_fn  (*glsym_eglGetProcAddress)           (const char *a) = NULL;
-static const char *(*glsym_eglQueryString)             (void *a, int name) = NULL;
 
 void          *(*secsym_eglCreateImage)               (void *a, void *b, GLenum c, void *d, const int *e) = NULL;
 unsigned int   (*secsym_eglDestroyImage)              (void *a, void *b) = NULL;
@@ -50,7 +49,6 @@ typedef void (*_eng_fn) (void);
 
 typedef _eng_fn (*glsym_func_eng_fn) ();
 static _eng_fn  (*glsym_glXGetProcAddress)  (const char *a) = NULL;
-static const char *(*glsym_glXQueryExtensionsString) (void *a, int screen) = NULL;
 #endif
 
 static int dbgflushnum = -1;
@@ -82,8 +80,6 @@ gl_symbols(void)
    FINDSYM(glsym_eglGetProcAddress, "eglGetProcAddressEXT", glsym_func_eng_fn);
    FINDSYM(glsym_eglGetProcAddress, "eglGetProcAddressARB", glsym_func_eng_fn);
    FINDSYM(glsym_eglGetProcAddress, "eglGetProcAddress", glsym_func_eng_fn);
-
-    FINDSYM(glsym_eglQueryString, "eglQueryString", glsym_func_const_char_ptr);
 #else
 #define FINDSYM(dst, sym, typ) \
    if (glsym_glXGetProcAddress) { \
@@ -94,8 +90,6 @@ gl_symbols(void)
    FINDSYM(glsym_glXGetProcAddress, "glXGetProcAddressEXT", glsym_func_eng_fn);
    FINDSYM(glsym_glXGetProcAddress, "glXGetProcAddressARB", glsym_func_eng_fn);
    FINDSYM(glsym_glXGetProcAddress, "glXGetProcAddress", glsym_func_eng_fn);
-
-   FINDSYM(glsym_glXQueryExtensionsString, "glXQueryExtensionsString", glsym_func_const_char_ptr);
 #endif
 #define FINDSYM2(dst, sym, typ) if (!dst) dst = (typ)dlsym(RTLD_DEFAULT, sym)
 #define FALLBAK(dst, typ) if (!dst) dst = (typ)sym_missing;
@@ -2411,27 +2405,27 @@ scissor_rot(Evas_Engine_GL_Context *gc __UNUSED__,
    switch (rot)
      {
       case 0: // UP this way: ^
-        glScissor(cx, cy, cw, ch);
-        break;
+         glScissor(cx, cy, cw, ch);
+         break;
       case 90: // UP this way: <
-        glScissor(gh - (cy + ch), cx, ch, cw);
-        break;
+         glScissor(gh - (cy + ch), cx, ch, cw);
+         break;
       case 180: // UP this way: v
-        glScissor(gw - (cx + cw), gh - (cy + ch), cw, ch);
-        break;
+         glScissor(gw - (cx + cw), gh - (cy + ch), cw, ch);
+         break;
       case 270: // UP this way: >
-        glScissor(cy, gw - (cx + cw), ch, cw);
-        break;
+         glScissor(cy, gw - (cx + cw), ch, cw);
+         break;
       default: // assume up is up
-        glScissor(cx, cy, cw, ch);
-        break;
+         glScissor(cx, cy, cw, ch);
+         break;
      }
 }
 
 static void
 shader_array_flush(Evas_Engine_GL_Context *gc)
 {
-   int i, gw, gh, setclip, cy, fbo = 0, done = 0;
+   int i, gw, gh, setclip, fbo = 0, done = 0;
 
    if (!gc->havestuff) return;
    gw = gc->w;
@@ -2579,47 +2573,90 @@ shader_array_flush(Evas_Engine_GL_Context *gc)
           }
         if (gc->pipe[i].shader.clip != gc->state.current.clip)
           {
+             int cx, cy, cw, ch;
 
-             if (gc->pipe[i].shader.clip)
+             cx = gc->pipe[i].shader.cx;
+             cy = gc->pipe[i].shader.cy;
+             cw = gc->pipe[i].shader.cw;
+             ch = gc->pipe[i].shader.ch;
+             if ((gc->master_clip.enabled) && (!fbo))
                {
-                  cy = gh - gc->pipe[i].shader.cy - gc->pipe[i].shader.ch;
-                  if (fbo) cy = gc->pipe[i].shader.cy;
+                  if (gc->pipe[i].shader.clip)
+                    {
+                       RECTS_CLIP_TO_RECT(cx, cy, cw, ch,
+                                          gc->master_clip.x, gc->master_clip.y,
+                                          gc->master_clip.w, gc->master_clip.h);
+                    }
+                  else
+                    {
+                       cx = gc->master_clip.x;
+                       cy = gc->master_clip.y;
+                       cw = gc->master_clip.w;
+                       ch = gc->master_clip.h;
+                    }
+               }
+             if ((gc->pipe[i].shader.clip) ||
+                 ((gc->master_clip.enabled) && (!fbo)))
+               {
                   glEnable(GL_SCISSOR_TEST);
                   if (!fbo)
-                     scissor_rot(gc, gc->rot, gw, gh,
-                                 gc->pipe[i].shader.cx,
-                                 cy,
-                                 gc->pipe[i].shader.cw,
-                                 gc->pipe[i].shader.ch);
+                     scissor_rot(gc, gc->rot, gw, gh, cx, gh - cy - ch, cw, ch);
                   else
-                     glScissor(gc->pipe[i].shader.cx, cy,
-                               gc->pipe[i].shader.cw, gc->pipe[i].shader.ch);
+                     glScissor(cx, cy, cw, ch);
                   setclip = 1;
+                  gc->state.current.cx = cx;
+                  gc->state.current.cy = cy;
+                  gc->state.current.cw = cw;
+                  gc->state.current.ch = ch;
                }
              else
                {
                   glDisable(GL_SCISSOR_TEST);
                   glScissor(0, 0, 0, 0);
+                  gc->state.current.cx = 0;
+                  gc->state.current.cy = 0;
+                  gc->state.current.cw = 0;
+                  gc->state.current.ch = 0;
                }
           }
-        if ((gc->pipe[i].shader.clip) && (!setclip))
+        if (((gc->pipe[i].shader.clip) && (!setclip)) ||
+            ((gc->master_clip.enabled) && (!fbo)))
           {
-             if ((gc->pipe[i].shader.cx != gc->state.current.cx) ||
-                 (gc->pipe[i].shader.cy != gc->state.current.cy) ||
-                 (gc->pipe[i].shader.cw != gc->state.current.cw) ||
-                 (gc->pipe[i].shader.ch != gc->state.current.ch))
+             int cx, cy, cw, ch;
+
+             cx = gc->pipe[i].shader.cx;
+             cy = gc->pipe[i].shader.cy;
+             cw = gc->pipe[i].shader.cw;
+             ch = gc->pipe[i].shader.ch;
+             if ((gc->master_clip.enabled) && (!fbo))
                {
-                  cy = gh - gc->pipe[i].shader.cy - gc->pipe[i].shader.ch;
-                  if (fbo) cy = gc->pipe[i].shader.cy;
-                  if (!fbo)
-                     scissor_rot(gc, gc->rot, gw, gh,
-                                 gc->pipe[i].shader.cx,
-                                 cy,
-                                 gc->pipe[i].shader.cw,
-                                 gc->pipe[i].shader.ch);
+                  if (gc->pipe[i].shader.clip)
+                    {
+                       RECTS_CLIP_TO_RECT(cx, cy, cw, ch,
+                                          gc->master_clip.x, gc->master_clip.y,
+                                          gc->master_clip.w, gc->master_clip.h);
+                    }
                   else
-                     glScissor(gc->pipe[i].shader.cx, cy,
-                               gc->pipe[i].shader.cw, gc->pipe[i].shader.ch);
+                    {
+                       cx = gc->master_clip.x;
+                       cy = gc->master_clip.y;
+                       cw = gc->master_clip.w;
+                       ch = gc->master_clip.h;
+                    }
+               }
+             if ((cx != gc->state.current.cx) ||
+                 (cy != gc->state.current.cy) ||
+                 (cw != gc->state.current.cw) ||
+                 (ch != gc->state.current.ch))
+               {
+                  if (!fbo)
+                     scissor_rot(gc, gc->rot, gw, gh, cx, gh - cy - ch, cw, ch);
+                  else
+                       glScissor(cx, cy, cw, ch);
+                  gc->state.current.cx = cx;
+                  gc->state.current.cy = cy;
+                  gc->state.current.cw = cw;
+                  gc->state.current.ch = ch;
                }
           }
         
@@ -2819,10 +2856,10 @@ shader_array_flush(Evas_Engine_GL_Context *gc)
         gc->state.current.cur_prog  = gc->pipe[i].shader.cur_prog;
         gc->state.current.cur_tex   = gc->pipe[i].shader.cur_tex;
         gc->state.current.render_op = gc->pipe[i].shader.render_op;
-        gc->state.current.cx        = gc->pipe[i].shader.cx;
-        gc->state.current.cy        = gc->pipe[i].shader.cy;
-        gc->state.current.cw        = gc->pipe[i].shader.cw;
-        gc->state.current.ch        = gc->pipe[i].shader.ch;
+//        gc->state.current.cx        = gc->pipe[i].shader.cx;
+//        gc->state.current.cy        = gc->pipe[i].shader.cy;
+//        gc->state.current.cw        = gc->pipe[i].shader.cw;
+//        gc->state.current.ch        = gc->pipe[i].shader.ch;
         gc->state.current.smooth    = gc->pipe[i].shader.smooth;
         gc->state.current.blend     = gc->pipe[i].shader.blend;
         gc->state.current.clip      = gc->pipe[i].shader.clip;

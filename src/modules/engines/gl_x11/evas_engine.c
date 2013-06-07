@@ -2,6 +2,12 @@
 #include "evas_engine.h"
 #include "evas_gl_core_private.h"
 
+//#define TIMDBG 1
+#ifdef TIMDBG
+# include <sys/time.h>
+# include <unistd.h>
+#endif
+
 #ifdef HAVE_DLSYM
 # include <dlfcn.h>      /* dlopen,dlclose,etc */
 #else
@@ -10,6 +16,16 @@
 
 #define EVAS_GL_NO_GL_H_CHECK 1
 #include "Evas_GL.h"
+
+#define EVAS_GL_UPDATE_TILE_SIZE 16
+
+enum {
+   MERGE_BOUNDING,
+   MERGE_FULL
+};
+
+static int partial_render_debug = -1;
+static int partial_rect_union_mode = -1;
 
 enum {
    MODE_FULL,
@@ -35,10 +51,18 @@ struct _Render_Engine
    int                      w, h;
    int                      vsync;
    int                      lost_back;
+   int                      prev_age;
+
+   struct {
+      Evas_Object_Image_Pixels_Get_Cb  get_pixels;
+      void                            *get_pixels_data;
+      Evas_Object                     *obj;
+   } func;
 };
 
 static int initted = 0;
 static int gl_wins = 0;
+static int extn_have_buffer_age = 1;
 
 typedef void            (*_eng_fn) (void);
 typedef _eng_fn         (*glsym_func_eng_fn) ();
@@ -53,15 +77,23 @@ typedef const char     *(*glsym_func_const_char_ptr) ();
 #ifndef EGL_NATIVE_PIXMAP_KHR
 # define EGL_NATIVE_PIXMAP_KHR 0x30b0
 #endif
+#ifndef EGL_BUFFER_AGE_EXT
+# define EGL_BUFFER_AGE_EXT 0x313d
+#endif
 _eng_fn  (*glsym_eglGetProcAddress)            (const char *a) = NULL;
 void    *(*glsym_eglCreateImage)               (EGLDisplay a, EGLContext b, EGLenum c, EGLClientBuffer d, const int *e) = NULL;
 void     (*glsym_eglDestroyImage)              (EGLDisplay a, void *b) = NULL;
 void     (*glsym_glEGLImageTargetTexture2DOES) (int a, void *b)  = NULL;
 void          *(*glsym_eglMapImageSEC)         (void *a, void *b, int c, int d) = NULL;
 unsigned int   (*glsym_eglUnmapImageSEC)       (void *a, void *b, int c) = NULL;
-const char    *(*glsym_eglQueryString)         (EGLDisplay a, int name) = NULL;
+void     (*glsym_eglSwapBuffersRegion)         (EGLDisplay a, void *b, EGLint c, const EGLint *d) = NULL;
 
 #else
+
+#ifndef GLX_BACK_BUFFER_AGE_EXT
+# define GLX_BACK_BUFFER_AGE_EXT 0x20f4
+#endif
+
 typedef XID     (*glsym_func_xid) ();
 
 _eng_fn  (*glsym_glXGetProcAddress)  (const char *a) = NULL;
@@ -74,7 +106,53 @@ void     (*glsym_glXDestroyPixmap)   (Display *a, XID b) = NULL;
 void     (*glsym_glXQueryDrawable)   (Display *a, XID b, int c, unsigned int *d) = NULL;
 int      (*glsym_glXSwapIntervalSGI) (int a) = NULL;
 void     (*glsym_glXSwapIntervalEXT) (Display *s, GLXDrawable b, int c) = NULL;
+void     (*glsym_glXReleaseBuffersMESA)   (Display *a, XID b) = NULL;
 
+#endif
+
+#ifdef TIMDBG
+static double
+gettime(void)
+{
+   struct timeval      timev;
+
+   gettimeofday(&timev, NULL);
+   return (double)timev.tv_sec + (((double)timev.tv_usec) / 1000000);
+}
+
+static void
+measure(int end, const char *name)
+{
+   FILE *fs;
+   static unsigned long user = 0, kern = 0, user2 = 0, kern2 = 0;
+   static double t = 0.0, t2 = 0.0;
+   unsigned long u = 0, k = 0;
+
+   fs = fopen("/proc/self/stat", "rb");
+   if (fs) {
+      fscanf(fs, "%*s %*s %*s %*s %*s %*s %*s %*s %*s %*s %*s %*s %*s "
+             "%lu %lu %*s", &u, &k);
+      fclose(fs);
+   }
+   if (end)
+     {
+        long hz;
+
+        t2 = gettime();
+        user2 = u;
+        kern2 = k;
+        hz = sysconf(_SC_CLK_TCK);
+        fprintf(stderr, "(%8lu %8lu) k=%4lu u=%4lu == tot=%4lu@%4li in=%3.5f < %s\n",
+                user, kern, kern2 - kern, user2 - user,
+                (kern2 - kern) + (user2 - user), hz, t2 - t, name);
+     }
+   else
+     {
+        user = u;
+        kern = k;
+        t = gettime();
+     }
+}
 #endif
 
 //----------------------------------------------------------//
@@ -447,10 +525,7 @@ evgl_eng_string_get(void *data)
 
 #ifdef GL_GLES
    // EGL Extensions
-   if (glsym_eglQueryString)
-      return glsym_eglQueryString(re->win->egl_disp, EGL_EXTENSIONS);
-   else
-      return "";
+   return eglQueryString(re->win->egl_disp, EGL_EXTENSIONS);
 #else
    return glXQueryExtensionsString(re->info->info.display,
                                    re->info->info.screen);
@@ -543,10 +618,9 @@ gl_symbols(void)
    FINDSYM(glsym_eglMapImageSEC, "eglMapImageSEC", glsym_func_void_ptr);
    FINDSYM(glsym_eglUnmapImageSEC, "eglUnmapImageSEC", glsym_func_uint);
 
-   FINDSYM(glsym_eglQueryString, "eglQueryString", glsym_func_const_char_ptr);
+   FINDSYM(glsym_eglSwapBuffersRegion, "eglSwapBuffersRegionSEC", glsym_func_void_ptr);
+   FINDSYM(glsym_eglSwapBuffersRegion, "eglSwapBuffersRegion", glsym_func_void_ptr);
 
-//   FINDSYM(glsym_eglSwapBuffersRegion, "eglSwapBuffersRegionSEC", glsym_func_void_ptr);
-//   FINDSYM(glsym_eglSwapBuffersRegion, "eglSwapBuffersRegion", glsym_func_void_ptr);
 
 #else
 #define FINDSYM(dst, sym, typ) \
@@ -584,10 +658,6 @@ gl_symbols(void)
    FINDSYM(glsym_glXQueryDrawable, "glXQueryDrawableARB", glsym_func_void);
    FINDSYM(glsym_glXQueryDrawable, "glXQueryDrawable", glsym_func_void);
 
-   FINDSYM(glsym_glXQueryExtensionsString, "glXQueryExtensionsStringEXT", glsym_func_const_char_ptr);
-   FINDSYM(glsym_glXQueryExtensionsString, "glXQueryExtensionsStringARB", glsym_func_const_char_ptr);
-   FINDSYM(glsym_glXQueryExtensionsString, "glXQueryExtensionsString", glsym_func_const_char_ptr);
-
    FINDSYM(glsym_glXSwapIntervalSGI, "glXSwapIntervalMESA", glsym_func_int);
    FINDSYM(glsym_glXSwapIntervalSGI, "glXSwapIntervalSGI", glsym_func_int);
 
@@ -598,6 +668,77 @@ gl_symbols(void)
 #endif
 
    done = 1;
+}
+
+static void
+gl_extn_veto(Render_Engine *re)
+{
+   const char *str = NULL;
+#ifdef GL_GLES
+   str = eglQueryString(re->win->egl_disp, EGL_EXTENSIONS);
+   if (str)
+     {
+        if (getenv("EVAS_GL_INFO"))
+          printf("EGL EXTN:\n%s\n", str);
+        if (!strstr(str, "EGL_EXT_buffer_age"))
+          {
+             extn_have_buffer_age = 0;
+          }
+     }
+   else
+     {
+        if (getenv("EVAS_GL_INFO"))
+          printf("NO EGL EXTN!\n");
+        extn_have_buffer_age = 0;
+     }
+#else
+   str = glsym_glXQueryExtensionsString(re->info->info.display,
+                                        re->info->info.screen);
+   if (str)
+     {
+        if (getenv("EVAS_GL_INFO"))
+          printf("GLX EXTN:\n%s\n", str);
+        if (!strstr(str, "_texture_from_pixmap"))
+          {
+             glsym_glXBindTexImage = NULL;
+             glsym_glXReleaseTexImage = NULL;
+          }
+        if (!strstr(str, "_video_sync"))
+          {
+             glsym_glXGetVideoSync = NULL;
+             glsym_glXWaitVideoSync = NULL;
+          }
+        if (!strstr(str, "GLX_EXT_buffer_age"))
+          {
+             extn_have_buffer_age = 0;
+          }
+        if (!strstr(str, "GLX_EXT_swap_control"))
+          {
+             glsym_glXSwapIntervalEXT = NULL;
+          }
+        if (!strstr(str, "GLX_SGI_swap_control"))
+          {
+             glsym_glXSwapIntervalSGI = NULL;
+          }
+        if (!strstr(str, "GLX_MESA_release_buffers"))
+          {
+             glsym_glXReleaseBuffersMESA = NULL;
+          }
+     }
+   else
+     {
+        if (getenv("EVAS_GL_INFO"))
+          printf("NO GLX EXTN!\n");
+        glsym_glXBindTexImage = NULL;
+        glsym_glXReleaseTexImage = NULL;
+        glsym_glXGetVideoSync = NULL;
+        glsym_glXWaitVideoSync = NULL;
+        extn_have_buffer_age = 0;
+        glsym_glXSwapIntervalEXT = NULL;
+        glsym_glXSwapIntervalSGI = NULL;
+        glsym_glXReleaseBuffersMESA = NULL;
+     }
+#endif
 }
 
 int _evas_engine_GL_X11_log_dom = -1;
@@ -705,6 +846,7 @@ eng_setup(Evas *e, void *in)
              evas_common_font_init();
              evas_common_draw_init();
              evas_common_tilebuf_init();
+             gl_extn_veto(re);
              evgl_engine_init(re, &evgl_funcs);
              initted = 1;
           }
@@ -838,7 +980,8 @@ eng_setup(Evas *e, void *in)
         free(re);
         return 0;
      }
-   evas_common_tilebuf_set_tile_size(re->tb, TILESIZE, TILESIZE);
+   evas_common_tilebuf_set_tile_size(re->tb, EVAS_GL_UPDATE_TILE_SIZE, EVAS_GL_UPDATE_TILE_SIZE);
+   evas_common_tilebuf_tile_strict_set(re->tb, EINA_TRUE);
 
    if (!e->engine.data.context)
      e->engine.data.context =
@@ -872,9 +1015,18 @@ eng_output_free(void *data)
 #endif
         if (re->win)
           {
+#ifdef GL_GLES
              eng_window_free(re->win);
+#else
+             Display *disp = re->win->disp;
+             Window win = re->win->win;
+             eng_window_free(re->win);
+             if (glsym_glXReleaseBuffersMESA)
+               glsym_glXReleaseBuffersMESA(disp, win);
+#endif
              gl_wins--;
           }
+
         evas_common_tilebuf_free(re->tb);
         if (re->rects) evas_common_tilebuf_free_render_rects(re->rects);
         if (re->rects_prev[0]) evas_common_tilebuf_free_render_rects(re->rects_prev[0]);
@@ -906,7 +1058,10 @@ eng_output_resize(void *data, int w, int h)
    evas_common_tilebuf_free(re->tb);
    re->tb = evas_common_tilebuf_new(w, h);
    if (re->tb)
-     evas_common_tilebuf_set_tile_size(re->tb, TILESIZE, TILESIZE);
+     {
+        evas_common_tilebuf_set_tile_size(re->tb, EVAS_GL_UPDATE_TILE_SIZE, EVAS_GL_UPDATE_TILE_SIZE);
+        evas_common_tilebuf_tile_strict_set(re->tb, EINA_TRUE);
+     }
 }
 
 static void
@@ -952,8 +1107,8 @@ static Tilebuf_Rect *
 _merge_rects(Tilebuf *tb, Tilebuf_Rect *r1, Tilebuf_Rect *r2, Tilebuf_Rect *r3)
 {
    Tilebuf_Rect *r, *rects;
-   int x1, y1, x2, y2;
-   
+   Evas_Point p1, p2;
+
    if (r1)
      {
         EINA_INLIST_FOREACH(EINA_INLIST_GET(r1), r)
@@ -968,7 +1123,7 @@ _merge_rects(Tilebuf *tb, Tilebuf_Rect *r1, Tilebuf_Rect *r2, Tilebuf_Rect *r3)
              evas_common_tilebuf_add_redraw(tb, r->x, r->y, r->w, r->h);
           }
      }
-   if (r2)
+   if (r3)
      {
         EINA_INLIST_FOREACH(EINA_INLIST_GET(r3), r)
           {
@@ -977,29 +1132,47 @@ _merge_rects(Tilebuf *tb, Tilebuf_Rect *r1, Tilebuf_Rect *r2, Tilebuf_Rect *r3)
      }
    rects = evas_common_tilebuf_get_render_rects(tb);
    
+   if (partial_rect_union_mode == -1)
+     {
+        const char *s = getenv("EVAS_GL_PARTIAL_MERGE");
+        if (s)
+          {
+             if ((!strcmp(s, "bounding")) ||
+                 (!strcmp(s, "b")))
+               partial_rect_union_mode = MERGE_BOUNDING;
+             else if ((!strcmp(s, "full")) ||
+                      (!strcmp(s, "f")))
+               partial_rect_union_mode = MERGE_FULL;
+          }
+        else
+          partial_rect_union_mode = MERGE_BOUNDING;
+     }
+   if (partial_rect_union_mode == MERGE_BOUNDING)
+     {
 // bounding box -> make a bounding box single region update of all regions.
 // yes we could try and be smart and figure out size of regions, how far
 // apart etc. etc. to try and figure out an optimal "set". this is a tradeoff
 // between multiple update regions to render and total pixels to render.
-   if (rects)
-     {
-        x1 = rects->x; y1 = rects->y;
-        x2 = rects->x + rects->w; y2 = rects->y + rects->h;
-        EINA_INLIST_FOREACH(EINA_INLIST_GET(rects), r)
-          {
-             if (r->x < x1) x1 = r->x;
-             if (r->y < y1) y1 = r->y;
-             if ((r->x + r->w) > x2) x2 = r->x + r->w;
-             if ((r->y + r->h) > y2) y2 = r->y + r->h;
-          }
-        evas_common_tilebuf_free_render_rects(rects);
-        rects = calloc(1, sizeof(Tilebuf_Rect));
         if (rects)
           {
-             rects->x = x1;
-             rects->y = y1;
-             rects->w = x2 - x1;
-             rects->h = y2 - y1;
+             p1.x = rects->x; p1.y = rects->y;
+             p2.x = rects->x + rects->w; p2.y = rects->y + rects->h;
+             EINA_INLIST_FOREACH(EINA_INLIST_GET(rects), r)
+               {
+                  if (r->x < p1.x) p1.x = r->x;
+                  if (r->y < p1.y) p1.y = r->y;
+                  if ((r->x + r->w) > p2.x) p2.x = r->x + r->w;
+                  if ((r->y + r->h) > p2.y) p2.y = r->y + r->h;
+               }
+             evas_common_tilebuf_free_render_rects(rects);
+             rects = calloc(1, sizeof(Tilebuf_Rect));
+             if (rects)
+               {
+                  rects->x = p1.x;
+                  rects->y = p1.y;
+                  rects->w = p2.x - p1.x;
+                  rects->h = p2.y - p1.y;
+               }
           }
      }
    evas_common_tilebuf_clear(tb);
@@ -1014,14 +1187,13 @@ eng_output_redraws_next_update_get(void *data, int *x, int *y, int *w, int *h, i
 {
    Render_Engine *re;
    Tilebuf_Rect *rect;
-   int i;
    Eina_Bool first_rect = EINA_FALSE;
-   
+
 #define CLEAR_PREV_RECTS(x) \
    do { \
-      if (re->rects_prev[i]) \
-        evas_common_tilebuf_free_render_rects(re->rects_prev[i]); \
-      re->rects_prev[i] = NULL; \
+      if (re->rects_prev[x]) \
+        evas_common_tilebuf_free_render_rects(re->rects_prev[x]); \
+      re->rects_prev[x] = NULL; \
    } while (0)
 
    re = (Render_Engine *)data;
@@ -1036,7 +1208,44 @@ eng_output_redraws_next_update_get(void *data, int *x, int *y, int *w, int *h, i
         re->rects = evas_common_tilebuf_get_render_rects(re->tb);
         if (re->rects)
           {
-             if (re->lost_back)
+             if (re->info->swap_mode == EVAS_ENGINE_GL_X11_SWAP_MODE_AUTO)
+               {
+                  if (extn_have_buffer_age)
+                    {
+#ifdef GL_GLES
+                       EGLint age = 0;
+
+                       if (!eglQuerySurface(re->win->egl_disp,
+                                            re->win->egl_surface[0],
+                                            EGL_BUFFER_AGE_EXT, &age))
+                         age = 0;
+#else
+                       unsigned int age = 0;
+
+                       if (glsym_glXQueryDrawable)
+                         {
+                            if (re->win->glxwin)
+                              glsym_glXQueryDrawable(re->win->disp,
+                                                     re->win->glxwin,
+                                                     GLX_BACK_BUFFER_AGE_EXT,
+                                                     &age);
+                            else
+                              glsym_glXQueryDrawable(re->win->disp,
+                                                     re->win->win,
+                                                     GLX_BACK_BUFFER_AGE_EXT,
+                                                     &age);
+                         }
+#endif
+                       if (age == 1) re->mode = MODE_COPY;
+                       else if (age == 2) re->mode = MODE_DOUBLE;
+                       else if (age == 3) re->mode = MODE_TRIPLE;
+                       else re->mode = MODE_FULL;
+                       if ((int)age != re->prev_age) re->mode = MODE_FULL;
+                       re->prev_age = age;
+                    }
+               }
+
+             if ( (re->lost_back) || (re->mode == MODE_FULL) )
                {
                   /* if we lost our backbuffer since the last frame redraw all */
                   re->lost_back = 0;
@@ -1046,35 +1255,31 @@ eng_output_redraws_next_update_get(void *data, int *x, int *y, int *w, int *h, i
                }
              /* ensure we get rid of previous rect lists we dont need if mode
               * changed/is appropriate */
+             evas_common_tilebuf_clear(re->tb);
+             CLEAR_PREV_RECTS(2);
+             re->rects_prev[2] = re->rects_prev[1];
+             re->rects_prev[1] = re->rects_prev[0];
+             re->rects_prev[0] = re->rects;
+             re->rects = NULL;
              switch (re->mode)
                {
                 case MODE_FULL:
                 case MODE_COPY: // no prev rects needed
-                  for (i = 0; i < 3; i++) CLEAR_PREV_RECTS(i);
+                  re->rects = _merge_rects(re->tb, re->rects_prev[0], NULL, NULL);
                   break;
                 case MODE_DOUBLE: // double mode - only 1 level of prev rect
-                  for (i = 1; i < 3; i++) CLEAR_PREV_RECTS(i);
-                  re->rects_prev[1] = re->rects_prev[0];
-                  re->rects_prev[0] = re->rects;
-                  // merge prev[1] + prev[0] -> rects
                   re->rects = _merge_rects(re->tb, re->rects_prev[0], re->rects_prev[1], NULL);
                   break;
                 case MODE_TRIPLE: // keep all
-                  for (i = 2; i < 3; i++) CLEAR_PREV_RECTS(i);
-                  re->rects_prev[2] = re->rects_prev[1];
-                  re->rects_prev[1] = re->rects_prev[0];
-                  re->rects_prev[0] = re->rects;
-                  re->rects = NULL;
-                  // merge prev[2] + prev[1] + prev[0] -> rects
                   re->rects = _merge_rects(re->tb, re->rects_prev[0], re->rects_prev[1], re->rects_prev[2]);
                   break;
                 default:
                   break;
                }
-             re->cur_rect = EINA_INLIST_GET(re->rects);
              first_rect = EINA_TRUE;
           }
         evas_common_tilebuf_clear(re->tb);
+        re->cur_rect = EINA_INLIST_GET(re->rects);
      }
    if (!re->cur_rect) return NULL;
    rect = (Tilebuf_Rect *)re->cur_rect;
@@ -1095,6 +1300,11 @@ eng_output_redraws_next_update_get(void *data, int *x, int *y, int *w, int *h, i
              *cw = rect->w;
              *ch = rect->h;
              re->cur_rect = re->cur_rect->next;
+             re->win->gl_context->master_clip.enabled = EINA_TRUE;
+             re->win->gl_context->master_clip.x = rect->x;
+             re->win->gl_context->master_clip.y = rect->y;
+             re->win->gl_context->master_clip.w = rect->w;
+             re->win->gl_context->master_clip.h = rect->h;
              break;
            case MODE_FULL:
              re->cur_rect = NULL;
@@ -1106,6 +1316,7 @@ eng_output_redraws_next_update_get(void *data, int *x, int *y, int *w, int *h, i
              if (cy) *cy = 0;
              if (cw) *cw = re->win->w;
              if (ch) *ch = re->win->h;
+             re->win->gl_context->master_clip.enabled = EINA_FALSE;
              break;
            default:
              break;
@@ -1122,9 +1333,16 @@ eng_output_redraws_next_update_get(void *data, int *x, int *y, int *w, int *h, i
              
              evas_gl_common_context_flush(re->win->gl_context);
              evas_gl_common_context_newframe(re->win->gl_context);
-//// debug partial updates :)
-//             glClearColor(1.0, 0.5, 0.2, 1.0);
-//             glClear(GL_COLOR_BUFFER_BIT);
+             if (partial_render_debug == -1)
+               {
+                  if (getenv("EVAS_GL_PARTIAL_DEBUG")) partial_render_debug = 1;
+                  else partial_render_debug = 0;
+               }
+             if (partial_render_debug == 1)
+               {
+                  glClearColor(0.2, 0.5, 1.0, 1.0);
+                  glClear(GL_COLOR_BUFFER_BIT);
+               }
           }
         if (!re->cur_rect)
           {
@@ -1167,14 +1385,14 @@ eng_output_redraws_next_update_push(void *data, void *surface __UNUSED__, int x 
    // this is needed to make sure all previous rendering is flushed to
    // buffers/surfaces
    // previous rendering should be done and swapped
-   if (!safe_native) eglWaitNative(EGL_CORE_NATIVE_ENGINE);
+//xx   if (!safe_native) eglWaitNative(EGL_CORE_NATIVE_ENGINE);
 //   if (eglGetError() != EGL_SUCCESS)
 //     {
 //        printf("Error:  eglWaitNative(EGL_CORE_NATIVE_ENGINE) fail.\n");
 //     }
 #else
    // previous rendering should be done and swapped
-   if (!safe_native) glXWaitX();
+//xx   if (!safe_native) glXWaitX();
 #endif
 }
 
@@ -1202,8 +1420,68 @@ eng_output_flush(void *data)
         re->info->callback.pre_swap(re->info->callback.data, re->evas);
      }
    // XXX: if partial swaps can be done use re->rects
-   eglSwapBuffers(re->win->egl_disp, re->win->egl_surface[0]);
-   if (!safe_native) eglWaitGL();
+   if ((glsym_eglSwapBuffersRegion) && (re->mode != MODE_FULL))
+     {
+        EGLint num = 0, *rects = NULL, i;
+        Tilebuf_Rect *r;
+
+        // if partial swaps can be done use re->rects
+        EINA_INLIST_FOREACH(EINA_INLIST_GET(re->rects), r) num++;
+        if (num > 0) rects = malloc(sizeof(EGLint) * 4 * num);
+        if (rects)
+          {
+             i = 0;
+             EINA_INLIST_FOREACH(EINA_INLIST_GET(re->rects), r)
+               {
+                  int gw, gh;
+
+                  gw = re->win->gl_context->w;
+                  gh = re->win->gl_context->h;
+                  switch (re->win->rot)
+                    {
+                     case 0:
+                       rects[i + 0] = r->x;
+                       rects[i + 1] = r->y;
+                       rects[i + 2] = r->w;
+                       rects[i + 3] = r->h;
+                       break;
+                     case 90:
+                       rects[i + 0] = r->y;
+                       rects[i + 1] = gw - (r->x + r->w);
+                       rects[i + 2] = r->h;
+                       rects[i + 3] = r->w;
+                       break;
+                     case 180:
+                       rects[i + 0] = gw - (r->x + r->w);
+                       rects[i + 1] = gh - (r->y + r->h);
+                       rects[i + 2] = r->w;
+                       rects[i + 3] = r->h;
+                       break;
+                     case 270:
+                       rects[i + 0] = gh - (r->y + r->h);
+                       rects[i + 1] = r->x;
+                       rects[i + 2] = r->h;
+                       rects[i + 3] = r->w;
+                       break;
+                     default:
+                       rects[i + 0] = r->x;
+                       rects[i + 1] = r->y;
+                       rects[i + 2] = r->w;
+                       rects[i + 3] = r->h;
+                       break;
+                    }
+                  i += 4;
+               }
+
+             glsym_eglSwapBuffersRegion(re->win->egl_disp,
+                                        re->win->egl_surface[0],
+                                        num, rects);
+             free(rects);
+          }
+     }
+   else
+      eglSwapBuffers(re->win->egl_disp, re->win->egl_surface[0]);
+   //xx   if (!safe_native) eglWaitGL();
    if (re->info->callback.post_swap)
      {
         re->info->callback.post_swap(re->info->callback.data, re->evas);
@@ -1225,7 +1503,7 @@ eng_output_flush(void *data)
                   re->vsync = 1;
                }
           }
-        if (glsym_glXSwapIntervalSGI)
+        else if (glsym_glXSwapIntervalSGI)
           {
              if (!re->vsync)
                {
@@ -2504,10 +2782,30 @@ eng_image_draw(void *data, void *context, void *surface, void *image, int src_x,
 
    if ((n) && (n->ns.type == EVAS_NATIVE_SURFACE_OPENGL) &&
        (n->ns.data.opengl.framebuffer_id == 0) &&
-       (evgl_direct_rendered()))
+       re->func.get_pixels)
      {
         DBG("Rendering Directly to the window: %p", data);
-        evas_object_image_pixels_dirty_set(evgl_direct_img_obj_get(), EINA_TRUE);
+
+        re->win->gl_context->dc = context;
+
+        if (re->func.get_pixels)
+          {
+
+             // Pass the clip info the evas_gl
+             evgl_direct_img_clip_set(1,
+                                      re->win->gl_context->dc->clip.x,
+                                      re->win->gl_context->dc->clip.y,
+                                      re->win->gl_context->dc->clip.w,
+                                      re->win->gl_context->dc->clip.h);
+
+             // Call pixel get function
+             evgl_direct_img_obj_set(re->func.obj, re->win->gl_context->rot);
+             re->func.get_pixels(re->func.get_pixels_data, re->func.obj);
+             evgl_direct_img_obj_set(NULL, 0);
+
+             // Reset clip
+             evgl_direct_img_clip_set(0, 0, 0, 0, 0);
+          }
      }
    else
      {
@@ -2775,13 +3073,21 @@ eng_gl_api_get(void *data __UNUSED__)
 }
 
 static void
-eng_gl_img_obj_set(void *data __UNUSED__, void *image, int has_alpha)
+eng_gl_direct_override_get(void *data __UNUSED__, int *override, int *force_off)
+{
+   evgl_direct_override_get(override, force_off);
+}
+//--------------------------------//
+
+static void
+eng_gl_get_pixels_set(void *data, void *get_pixels, void *get_pixels_data, void *obj)
 {
    Render_Engine *re = (Render_Engine *)data;
 
-   evgl_direct_img_obj_set(image, has_alpha, re->win->gl_context->rot);
+   re->func.get_pixels = get_pixels;
+   re->func.get_pixels_data = get_pixels_data;
+   re->func.obj = (Evas_Object*)obj;
 }
-//--------------------------------//
 
 static int
 eng_image_load_error_get(void *data __UNUSED__, void *image)
@@ -3017,7 +3323,8 @@ module_open(Evas_Module *em)
    ORD(gl_proc_address_get);
    ORD(gl_native_surface_get);
    ORD(gl_api_get);
-   ORD(gl_img_obj_set);
+   ORD(gl_direct_override_get);
+   ORD(gl_get_pixels_set);
 
    ORD(image_load_error_get);
 

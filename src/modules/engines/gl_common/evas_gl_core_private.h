@@ -129,7 +129,6 @@ struct _EVGL_Context
    int          scissor_enabled;
    int          scissor_updated;
    int          scissor_coord[4];
-   int          dr_scissor_coord[4];
    int          direct_scissor;
 
    int          viewport_updated;
@@ -212,6 +211,10 @@ struct _EVGL_Resource
 
    int                  direct_rendered;
    Evas_Object         *direct_img_obj;
+   int                  get_pixels_set;
+
+   int                  master_clip;
+   int                  clip[4];
 };
 
 struct _EVGL_Engine
@@ -236,8 +239,11 @@ struct _EVGL_Engine
    int                direct_mem_opt;
    int                api_debug_mode;
 
-   // Force Off fo Debug purposes
+   // Force Off for Debug purposes
    int                direct_force_off;
+
+   // Force Direct Scissoring off for Debug purposes
+   int                direct_scissor_off;
 
    // Keep track of all the current surfaces/contexts
    Eina_List         *surfaces;

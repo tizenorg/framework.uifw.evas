@@ -1287,7 +1287,7 @@ _evgl_direct_enabled()
 EVGL_Engine *
 evgl_engine_init(void *eng_data, EVGL_Interface *efunc)
 {
-   int direct_mem_opt = 0, direct_off = 0, debug_mode = 0;
+   int direct_mem_opt = 0, direct_off = 0, direct_soff = 0, debug_mode = 0;
    char *s = NULL;
 
    if (evgl_engine) return evgl_engine;
@@ -1361,6 +1361,12 @@ evgl_engine_init(void *eng_data, EVGL_Interface *efunc)
    if (s) direct_off = atoi(s);
    if (direct_off == 1)
       evgl_engine->direct_force_off = 1;
+
+   // Check if Direct Rendering Override Force Off flag is on
+   s = getenv("EVAS_GL_DIRECT_SCISSOR_OFF");
+   if (s) direct_soff = atoi(s);
+   if (direct_soff == 1)
+      evgl_engine->direct_scissor_off = 1;
 
    // Check if API Debug mode is on
    s = getenv("EVAS_GL_API_DEBUG");
@@ -1746,6 +1752,7 @@ evgl_make_current(void *eng_data, EVGL_Surface *sfc, EVGL_Context *ctx)
              glBindFramebuffer(GL_FRAMEBUFFER, 0);
              ctx->current_fbo = 0;
           }
+
         rsc->direct_rendered = 1;
      }
    else
@@ -1830,7 +1837,7 @@ evgl_direct_rendered()
 }
 
 void
-evgl_direct_img_obj_set(Evas_Object *img, int alpha, int rot)
+evgl_direct_img_obj_set(Evas_Object *img, int rot)
 {
    EVGL_Resource *rsc;
 
@@ -1838,7 +1845,7 @@ evgl_direct_img_obj_set(Evas_Object *img, int alpha, int rot)
 
    // Normally direct rendering isn't allowed if alpha is on and
    // rotation is not 0.  BUT, if override is on, allow it.
-   if ((alpha) || (rot!=0))
+   if (rot!=0)
      {
         if (evgl_engine->direct_override)
            rsc->direct_img_obj = img;
@@ -1865,6 +1872,29 @@ evgl_api_get()
    _evgl_api_get(&gl_funcs, evgl_engine->api_debug_mode);
 
    return &gl_funcs;
+}
+
+
+void
+evgl_direct_img_clip_set(int c, int x, int y, int w, int h)
+{
+   EVGL_Resource *rsc;
+
+   if (!(rsc=_evgl_tls_resource_get())) return NULL;
+
+   rsc->master_clip = c;
+   rsc->clip[0] = x;
+   rsc->clip[1] = y;
+   rsc->clip[2] = w;
+   rsc->clip[3] = h;
+
+}
+
+void
+evgl_direct_override_get(int *override, int *force_off)
+{
+   *override  = evgl_engine->direct_override;
+   *force_off = evgl_engine->direct_force_off;
 }
 
 //-----------------------------------------------------//
