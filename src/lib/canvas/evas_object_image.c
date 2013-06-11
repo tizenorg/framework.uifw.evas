@@ -2253,13 +2253,6 @@ _proxy_unset(Evas_Object *proxy)
    o = proxy->object_data;
    if (!o->cur.source) return;
 
-   if (o->cur.source->proxy.surface)
-     {
-        proxy->layer->evas->engine.func->image_map_surface_free(proxy->layer->evas->engine.data.output,
-                                                                o->cur.source->proxy.surface);
-        o->cur.source->proxy.surface = NULL;
-     }
-
    o->cur.source->proxy.proxies = eina_list_remove(o->cur.source->proxy.proxies, proxy);
 
    o->cur.source = NULL;
