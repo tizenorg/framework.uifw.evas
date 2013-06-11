@@ -1,5 +1,8 @@
 Evas 1.8.0
 
+Changes since Evas 1.7.7
+-------------------------
+
 Additions:
    * Add EVAS_GL_LINE_OFFSET_HACK_DISABLE to turn off line shift correction by evas.
 
@@ -8,6 +11,7 @@ Fixes:
    * Fix the line drawing clipping problem on arm gl driver.
    * Evas: Fix Evas_Object_Text when LTR and RTL are used in the same paragraph.
    * Evas font: click on left/right half of char does matter now.
+   * Fix memory leak in textgrid
 
 Improvements:
    * Evas textblock : Added split cursor for BiDi text

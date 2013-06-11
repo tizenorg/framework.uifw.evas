@@ -1275,3 +1275,7 @@
 2013-04-10 Tom Hacohen (Tasn) Yakov Goldberg
 
         * Evas textblock : Added split cursor for BiDi text
+
+2013-06-11  Stefan Schmidt
+
+        * Fix memory leak in error path of textgrid

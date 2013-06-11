@@ -1329,6 +1329,7 @@ evas_object_textgrid_palette_set(Evas_Object *obj, Evas_Textgrid_Palette pal, in
              if (!c)
                {
                   ERR("Evas can not allocate memory");
+                  free(color);
                   return;
                }
              eina_array_push(palette, c);
