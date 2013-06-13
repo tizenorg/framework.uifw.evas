@@ -92,6 +92,7 @@ struct _Evas_Object_Image
    Eina_Bool         created : 1;
    Eina_Bool         proxy_src_clip : 1;
    Eina_Bool         direct_render : 1;
+   Eina_Bool         written : 1;
 };
 
 /* private methods for image objects */
@@ -412,7 +413,7 @@ evas_object_image_file_set(Evas_Object *obj, const char *file, const char *key)
         o->cur.image.h = 0;
         o->cur.image.stride = 0;
      }
-
+   o->written = EINA_FALSE;
    o->changed = EINA_TRUE;
    if (resize_call) evas_object_inform_call_image_resize(obj);
    evas_object_change(obj);
@@ -901,6 +902,7 @@ evas_object_image_size_set(Evas_Object *obj, int w, int h)
      }
    else
       stride = w * 4;
+   o->written = EINA_TRUE;
    o->cur.image.stride = stride;
 
 /* FIXME - in engine call above
@@ -1053,6 +1055,7 @@ evas_object_image_data_set(Evas_Object *obj, void *data)
                 stride = o->cur.image.w * 4;
              o->cur.image.stride = stride;
          }
+        o->written = EINA_TRUE;
      }
    else
      {
@@ -1076,6 +1079,7 @@ evas_object_image_data_set(Evas_Object *obj, void *data)
    if (p_data != o->engine_data)
      {
         EVAS_OBJECT_IMAGE_FREE_FILE_AND_KEY(o);
+        o->written = EINA_TRUE;
         o->pixels_checked_out = 0;
      }
    o->changed = EINA_TRUE;
@@ -1128,6 +1132,7 @@ evas_object_image_data_get(const Evas_Object *obj, Eina_Bool for_writing)
    if (for_writing)
      {
         EVAS_OBJECT_IMAGE_FREE_FILE_AND_KEY(o);
+        o->written = EINA_TRUE;
      }
 
    return data;
@@ -1224,6 +1229,7 @@ evas_object_image_data_copy_set(Evas_Object *obj, void *data)
         else
            stride = o->cur.image.w * 4;
         o->cur.image.stride = stride;
+        o->written = EINA_TRUE;
      }
    o->pixels_checked_out = 0;
    EVAS_OBJECT_IMAGE_FREE_FILE_AND_KEY(o);
@@ -1244,6 +1250,7 @@ evas_object_image_data_update_add(Evas_Object *obj, int x, int y, int w, int h)
    MAGIC_CHECK_END();
    RECTS_CLIP_TO_RECT(x, y, w, h, 0, 0, o->cur.image.w, o->cur.image.h);
    if ((w <= 0)  || (h <= 0)) return;
+   if (!o->written) return;
    NEW_RECT(r, x, y, w, h);
    if (r) o->pixel_updates = eina_list_append(o->pixel_updates, r);
 
@@ -1297,6 +1304,7 @@ evas_object_image_alpha_set(Evas_Object *obj, Eina_Bool has_alpha)
         else
            stride = o->cur.image.w * 4;
         o->cur.image.stride = stride;
+        o->written = EINA_TRUE;
      }
    evas_object_image_data_update_add(obj, 0, 0, o->cur.image.w, o->cur.image.h);
    EVAS_OBJECT_IMAGE_FREE_FILE_AND_KEY(o);
