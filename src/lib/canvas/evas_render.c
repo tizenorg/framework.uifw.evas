@@ -1146,11 +1146,11 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
                     {
                        int x, y, w, h;
 
+                       if (_evas_render_has_map(obj))
+                         evas_object_clip_recalc(obj);
+
                        if (proxy_src_clip)
                          {
-                            if (_evas_render_has_map(obj))
-                              evas_object_clip_recalc(obj);
-
                             x = obj->cur.cache.clip.x + off_x;
                             y = obj->cur.cache.clip.y + off_y;
                             w = obj->cur.cache.clip.w;
@@ -1168,9 +1168,6 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
                          }
                        else
                          {
-                            if (_evas_render_has_map(obj))
-                              evas_object_clip_recalc(obj);
-
                             //FIXME: Consider to clip by the proxy clipper.
                             if (proxy_render_data->src_obj != obj)
                               {
@@ -1178,19 +1175,22 @@ evas_render_mapped(Evas *e, Evas_Object *obj, void *context, void *surface,
                                  y = obj->cur.clipper->cur.geometry.y + off_y;
                                  w = obj->cur.clipper->cur.geometry.w;
                                  h = obj->cur.clipper->cur.geometry.h;
-
+                                 e->engine.func->context_clip_set(e->engine.data.output, ctx, x, y, w, h);
                               }
                             else
                               {
                                  Evas_Object *proxy =
                                     proxy_render_data->proxy_obj;
-                                 x = proxy->cur.clipper->cur.geometry.x + off_x;
-                                 y = proxy->cur.clipper->cur.geometry.y + off_y;
-                                 w = proxy->cur.clipper->cur.geometry.w;
-                                 h = proxy->cur.clipper->cur.geometry.h;
+                                 if (proxy->cur.clipper)
+                                   {
+                                      x = proxy->cur.clipper->cur.geometry.x + off_x;
+                                      y = proxy->cur.clipper->cur.geometry.y + off_y;
+                                      w = proxy->cur.clipper->cur.geometry.w;
+                                      h = proxy->cur.clipper->cur.geometry.h;
+                                      e->engine.func->context_clip_set(e->engine.data.output, ctx, x, y, w, h);
+
+                                   }
                               }
-                            e->engine.func->context_clip_set(e->engine.data.output,
-                                                             ctx, x, y, w, h);
 
                          }
                     }
