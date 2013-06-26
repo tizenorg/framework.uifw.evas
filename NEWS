@@ -12,6 +12,7 @@ Fixes:
    * Evas: Fix Evas_Object_Text when LTR and RTL are used in the same paragraph.
    * Evas font: click on left/right half of char does matter now.
    * Fix memory leak in textgrid
+   * Fix evas_common_convert_yuv_42* functions to actually return the converted data.
 
 Improvements:
    * Evas textblock : Added split cursor for BiDi text

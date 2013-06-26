@@ -1279,3 +1279,7 @@
 2013-06-11  Stefan Schmidt
 
         * Fix memory leak in error path of textgrid
+
+2013-06-26  Daniel Willmann
+	* Evas: Fix evas_common_convert_yuv_42* functions to actually return
+	the converted data.
