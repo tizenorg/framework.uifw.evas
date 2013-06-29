@@ -25,8 +25,8 @@ struct _JPEG_error_mgr
 static void _JPEGFatalErrorHandler(j_common_ptr cinfo);
 static void _JPEGErrorHandler(j_common_ptr cinfo);
 static void _JPEGErrorHandler2(j_common_ptr cinfo, int msg_level);
-static int _get_orientation_app0(char *app0_head, size_t remain_length);
-static int _get_orientation_app1(char *app1_head, size_t remain_length);
+static Eina_Bool _get_next_app0(unsigned char *map, size_t fsize, size_t *position);
+static Eina_Bool _get_orientation_app1(unsigned char *map, size_t fsize, size_t *position, int *orientation);
 static int _get_orientation(void *map, size_t length);
 
 static Eina_Bool evas_image_load_file_head_jpeg_internal(Image_Entry *ie,
@@ -175,18 +175,22 @@ typedef enum {
      EXIF_BYTE_ALIGN_MM
 } ExifByteAlign;
 
-static int
-_get_orientation_app0(char *app0_head, size_t remain_length)
+static Eina_Bool
+_get_next_app0(unsigned char *map, size_t fsize, size_t *position)
 {
-   unsigned int length = 0;
+   unsigned short length = 0;
    unsigned int w = 0, h = 0;
    unsigned int format = 0;
    unsigned int data_size = 0;
-   char *p;
+   unsigned char *app0_head, *p;
+
+
+   /* header_mark:2, length:2, identifier:5 version:2, unit:1, den=4 thum=2 */
+   if (*position + 16 >= fsize) return EINA_FALSE;
+   app0_head  = map + *position;
 
    /* p is appn's start pointer excluding app0 marker */
    p = app0_head + 2;
-
 
    length = ((*p << 8) + *(p + 1));
 
@@ -208,29 +212,46 @@ _get_orientation_app0(char *app0_head, size_t remain_length)
      }
 
      data_size = format * w * h;
-     p += length + data_size;
 
-     if (!memcmp(p, App1, sizeof (App1)))
-       return _get_orientation_app1(p, remain_length - (2 + length + data_size));
-     else
-       return 0;
+     if ((*position + 2+ length + data_size) > fsize)
+       return EINA_FALSE;
+
+     *position = *position + 2 + length + data_size;
+
+     return EINA_TRUE;
 }
 
-static int
-_get_orientation_app1(char *app1_head, size_t remain_length)
+/* If app1 data is abnormal, returns EINA_FALSE.
+   If app1 data is normal, returns EINA_TRUE.
+   If app1 data is normal but not orientation data, orientation value is -1.
+ */
+
+static Eina_Bool
+_get_orientation_app1(unsigned char *map, size_t fsize, size_t *position, int *orientation_res)
 {
-   char *buf;
-   char orientation[2];
+   unsigned char *app1_head, *buf;
+   unsigned char orientation[2];
    ExifByteAlign byte_align;
    unsigned int num_directory = 0;
    unsigned int i, j;
    int direction;
+   unsigned int data_size = 0;
 
-   /* start of app1 frame */
+   /* app1 mark:2, data_size:2, exif:6 tiff:8 */
+   if ((*position + 18) >= fsize) return EINA_FALSE;
+   app1_head  = map + *position;
    buf = app1_head;
 
-   /* 1. check 4~9bype with Exif Header (0x45786966 0000) */
-   if (memcmp(buf + 4, ExifHeader, sizeof (ExifHeader))) return 0;
+
+   data_size = ((*(buf + 2) << 8) + *(buf + 3));
+   if ((*position + 2 + data_size) > fsize) return EINA_FALSE;
+
+   if (memcmp(buf + 4, ExifHeader, sizeof (ExifHeader)))
+   {
+       *position = *position + 2 + data_size;
+       *orientation_res = -1;
+       return EINA_TRUE;
+   }
 
    /* 2. get 10&11 byte  get info of "II(0x4949)" or "MM(0x4d4d)" */
    /* 3. get [18]&[19] get directory entry # */
@@ -248,11 +269,12 @@ _get_orientation_app1(char *app1_head, size_t remain_length)
         orientation[0] = 0x12;
         orientation[1] = 0x01;
      }
-   else return 0;
+   else return EINA_FALSE;
+
+   /* check num_directory data */
+   if ((*position + (12 * num_directory + 20)) > fsize) return EINA_FALSE;
 
    buf = app1_head + 20;
-
-   if (remain_length < (12 * num_directory + 20)) return 0;
 
    j = 0;
 
@@ -262,45 +284,64 @@ _get_orientation_app1(char *app1_head, size_t remain_length)
           {
              /*get orientation tag */
              if (byte_align == EXIF_BYTE_ALIGN_MM)
-	       direction = *(buf+ j + 9);
+               direction = *(buf+ j + 9);
              else direction = *(buf+ j + 8);
              switch (direction)
                {
                 case 3:
                 case 4:
-                   return 180;
+                   *orientation_res = 180;
+                   return EINA_TRUE;
                 case 6:
                 case 7:
-                   return 90;
+                   *orientation_res = 90;
+                   return EINA_TRUE;
                 case 5:
                 case 8:
-                   return 270;
+                   *orientation_res = 270;
+                   return EINA_TRUE;
                 default:
-                   return 0;
+                   *orientation_res = 0;
+                   return EINA_TRUE;
                }
           }
         else
           j = j + 12;
      }
-   return 0;
+   return EINA_FALSE;
 }
 
 static int
 _get_orientation(void *map, size_t length)
 {
-   char *buf;
+   unsigned char *buf;
+   size_t position = 0;
+   int orientation = -1;
+   Eina_Bool res = EINA_FALSE;
 
    /* open file and get 22 byte frome file */
    if (!map) return 0;
    /* 1. read 22byte */
    if (length < 22) return 0;
-   buf = (char *)map;
+   buf = (unsigned char *)map;
 
+   position = 2;
    /* 2. check 2,3 bypte with APP0(0xFFE0) or APP1(0xFFE1) */
-   if (!memcmp(buf + 2, App0, sizeof (App0)))
-      return _get_orientation_app0(buf + 2, length - 2);
-   if (!memcmp(buf + 2, App1, sizeof (App1)))
-      return _get_orientation_app1(buf + 2, length - 2);
+   while((length - position) > 0)
+     {
+        if (!memcmp(buf + position, App0, sizeof (App0)))
+          {
+             res = _get_next_app0(map, length, &position);
+             if (!res) break;
+          }
+        else if (!memcmp(buf + position, App1, sizeof (App1)))
+          {
+             res = _get_orientation_app1(map, length, &position, &orientation);
+             if (!res) break;
+             if (orientation != -1) return orientation;
+          }
+        else break;
+     }
    return 0;
 }
 
@@ -349,7 +390,6 @@ evas_image_load_file_head_jpeg_internal(Image_Entry *ie,
    cinfo.dct_method = JDCT_ISLOW; // JDCT_FLOAT JDCT_IFAST(quality loss)
    cinfo.dither_mode = JDITHER_ORDERED;
    jpeg_start_decompress(&cinfo);
-
    /* rotation decoding */
    if (ie->load_opts.orientation)
      {
