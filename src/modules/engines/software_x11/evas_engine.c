@@ -986,9 +986,25 @@ evas_software_image_map_draw(void *data, void *context, RGBA_Image *surface, RGB
 static void
 eng_image_map_draw(void *data, void *context, void *surface, void *image, RGBA_Map *m, int smooth, int level)
 {
+
+   RGBA_Image *im;
+   Native *n = NULL;
+
    if (!image) return;
    if (m->count < 3) return;
 
+   im = image;
+   if (im->native.data)
+     n = im->native.data;
+   if ((n) && (n->ns.type == EVAS_NATIVE_SURFACE_X11))
+     {
+#ifdef BUILD_ENGINE_SOFTWARE_XLIB
+        if(evas_xlib_image_shm_copy(im))
+          {
+             evas_common_image_colorspace_dirty(im);
+          }
+#endif
+     }
    evas_software_image_map_draw(data, context, surface, image, m, smooth, level, 0);
 }
 
