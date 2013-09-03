@@ -395,13 +395,21 @@ _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType *gif, Image_Entry
         else
           {
              Gif_Frame *gif_frame2 = NULL;
+             int prev_x = 0, prev_y = 0, prev_w = 0, prev_h = 0;
              ptr_src = new_frame->data;
              if (new_frame->info)
                {
                   gif_frame2 = (Gif_Frame *)(new_frame->info);
                   disposal = gif_frame2->frame_info.disposal;
                   gif_frame->bg_val = gif_frame2->bg_val;
-                  bg_val = gif_frame->bg_val;
+                  if (alpha == bg)
+                    bg_val == ARGB_JOIN(0x00, 0x00, 0x00, 0x00);
+                  else
+                    bg_val = gif_frame->bg_val;
+                  prev_x = gif_frame2->image_des.x;
+                  prev_y = gif_frame2->image_des.y;
+                  prev_w = gif_frame2->image_des.w;
+                  prev_h = gif_frame2->image_des.h;
                }
              switch(disposal) /* we only support disposal flag 0,1,2 */
                {
@@ -448,10 +456,10 @@ _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType *gif, Image_Entry
                          {
                             int i1, j1;
                             i1 = i - scale_y;
-                            
+
                             for (j = 0; j < cache_w; j++)
                               {
-                                 j1 = j - scale_x;
+                                 j1 = (j - scale_x) * scale_ratio;
                                  if ((j < scale_x) || (j >= (scale_x + cur_w)))
                                    {
                                       *ptr = bg_val;
@@ -459,15 +467,16 @@ _evas_image_load_frame_image_data(Image_Entry *ie, GifFileType *gif, Image_Entry
                                    }
                                  else
                                    {
-                                       if (rows[i1][j1 * scale_ratio] == alpha)
+                                      if ((i1 >= prev_y) && (i1 < (prev_y + prev_h)) && (j1 >= prev_x) && (j1 < (prev_x + prev_w)))
+                                        *ptr = bg_val;
+
+                                      if (rows[i1][j1] == alpha)
+                                        ptr++;
+                                      else
                                          {
-                                            ptr++;
-                                         }
-                                       else
-                                         {
-                                            r = cmap->Colors[rows[i1][j1 * scale_ratio]].Red;
-                                            g = cmap->Colors[rows[i1][j1 * scale_ratio]].Green;
-                                            b = cmap->Colors[rows[i1][j1 * scale_ratio]].Blue;
+                                            r = cmap->Colors[rows[i1][j1]].Red;
+                                            g = cmap->Colors[rows[i1][j1]].Green;
+                                            b = cmap->Colors[rows[i1][j1]].Blue;
                                             *ptr++ = ARGB_JOIN(0xff, r, g, b);
                                          }
                                    }
