@@ -905,6 +905,7 @@ evas_image_load_specific_frame(Image_Entry *ie, const char *file, int frame_inde
      {
         if (fd) close(fd);
         *error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
+        free(frame);
         return EINA_FALSE;
      }
    frame->info = gif_frame;
@@ -913,6 +914,8 @@ evas_image_load_specific_frame(Image_Entry *ie, const char *file, int frame_inde
      {
         if (fd) close(fd);
         *error = EVAS_LOAD_ERROR_UNKNOWN_FORMAT;
+        free(gif_frame);
+        free(frame);
         return EINA_FALSE;
      }
 
