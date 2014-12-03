@@ -14,8 +14,19 @@ evas_xlib_image_shm_copy(RGBA_Image *im)
    Evas_X_Image *exim;
    Evas_Native_Surface *ns;
 
+   if (!im)
+     {
+        ERR("RGBA Image NULL!!\n");
+        return EINA_FALSE;
+     }
+
    if (im->native.data)
      n = im->native.data;
+   else
+     {
+        ERR("Native data NUll!!\n");
+        return EINA_FALSE;
+     }
    exim = n->exim;
    d = n->d;
    ns = &(n->ns);
