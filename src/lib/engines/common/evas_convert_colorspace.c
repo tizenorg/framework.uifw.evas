@@ -59,7 +59,8 @@ evas_common_convert_argb8888_to_a8(void *data, int w, int h, int stride, Eina_Bo
 
    if (!has_alpha)
      {
-        return memset(ret, 0xff, w * h);
+        memset(ret, 0xff, w * h);
+        return ret;
      }
 
    dst = ret;
