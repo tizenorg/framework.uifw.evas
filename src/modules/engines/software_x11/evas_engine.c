@@ -396,7 +396,8 @@ _best_depth_get(int backend, void *connection, int screen)
                break;
             }
 
-        return s->root_depth;
+        if (s)
+          return s->root_depth;
      }
 #endif
 
