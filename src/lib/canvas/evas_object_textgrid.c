@@ -322,12 +322,7 @@ evas_object_textgrid_textprop_unref(Evas_Object_Textgrid *o, unsigned int props_
           eina_array_push(&o->glyphs_cleanup,
                           (void *)((unsigned long)props_index));
         else
-          {
-             Evas_Glyph *glyphs = props->glyphs;
-             int glyphs_length = props->glyphs_length;
-
-             evas_common_text_props_content_nofree_unref(props);
-          }
+          evas_common_text_props_content_nofree_unref(props);
      }
 }
 
