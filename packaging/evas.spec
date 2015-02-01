@@ -1,10 +1,10 @@
 #sbs-git:slp/pkgs/e/evas evas 1.1.0+svn.69113slp2+build01 828d8bb285397266eb8985fd081fa2692fa3a7d6
 Name:       evas
 Summary:    Multi-platform Canvas Library
-Version:    1.7.1+svn.77561+build108b10
+Version:    1.7.1+svn.77561+build187
 Release:    1
 Group:      System/Libraries
-License:    BSD
+License:    BSD 2-Clause
 URL:        http://www.enlightenment.org/
 Source0:    %{name}-%{version}.tar.gz
 Requires(post): /sbin/ldconfig
@@ -21,30 +21,21 @@ BuildRequires:  pkgconfig(xext)
 BuildRequires:  pkgconfig(libpng)
 BuildRequires:  pkgconfig(zlib)
 BuildRequires:  pkgconfig(harfbuzz)
+BuildRequires:  libjpeg-devel
 BuildRequires:  giflib-devel
 BuildRequires:  pkgconfig(pixman-1)
-BuildRequires:  pkgconfig(harfbuzz)
-BuildRequires:  pkgconfig(gles20)
-BuildRequires:  pkgconfig(zlib)
-%if %{_repository} == "mobile"
-BuildRequires:  pkgconfig(xpm)
-BuildRequires:  pkgconfig(sm)
-BuildRequires:  libjpeg-turbo-devel
-BuildRequires:  pkgconfig(gles11)
-BuildRequires:  pkgconfig(libdri2)
-BuildRequires:  pkgconfig(xfixes)
-BuildRequires:  pkgconfig(libtbm)
-%endif
-%if %{_repository} == "wearable"
-BuildRequires:  libjpeg-devel
+
 %ifarch %{arm}
+BuildRequires:  pkgconfig(gles20)
 BuildRequires:  pkgconfig(libdri2)
 BuildRequires:  pkgconfig(xfixes)
 BuildRequires:  pkgconfig(libtbm)
-BuildRequires:  native-buffer-devel
+#BuildRequires:  pkgconfig(native-buffer)
+%else
+BuildRequires:  pkgconfig(gles20)
 %endif
-%endif
-				
+
+
 %description
 Enlightenment DR17 advanced canvas library Evas is an advanced canvas library, providing six engines for rendering: X11,
  OpenGL (hardware accelerated), DirectFB, the framebuffer, Microsoft Windows
@@ -71,57 +62,49 @@ Enlightenment DR17 advanced canvas library (devel)
 
 %build
 %ifarch %{arm}
-	export CFLAGS+=" -fvisibility=hidden -ffast-math -mfpu=neon -mfloat-abi=softfp -fPIC"
-	export CXXFLAGS+=" -mfpu=neon -mfloat-abi=softfp"
+	export CFLAGS+=" -fvisibility=hidden -ffast-math -mfpu=neon -ftree-vectorize -mfloat-abi=softfp -fPIC"
+	export CXXFLAGS+=" -mfpu=neon -ftree-vectorize -mfloat-abi=softfp"
 %else
 	export CFLAGS+=" -fvisibility=hidden -ffast-math -fPIC"
 %endif
 export LDFLAGS+=" -fvisibility=hidden -Wl,--hash-style=both -Wl,--as-needed "
 
-cd %{_repository} && %autogen --disable-static \
+%autogen --disable-static \
 	--disable-image-loader-svg \
 	--enable-simple-x11 \
 	--with-x \
 	--enable-fb \
-	--enable-xrender-x11 \
 	--enable-line-dither-mask \
 	--disable-image-loader-edb \
-	--disable-rpath \
-	--enable-gl-x11 \
 	--enable-gl-flavor-gles \
-	--enable-gles-variety-sgx \
 	--enable-pixman \
 	--enable-pixman-image \
 	--enable-pixman-image-scale-sample \
-%if %{_repository} == "wearable"
+	--enable-tile-rotate \
 	--disable-wayland-shm \
 	--disable-wayland-egl \
 	--disable-evas-cserve \
 	--disable-evas-cserve2 \
-	--disable-image-loader-pmaps \
 	--disable-image-loader-psd \
 	--disable-image-loader-tga \
 	--disable-image-loader-xpm \
-%ifarch %{arm} 
-    --enable-native-buffer \
-%endif
-%endif
 %ifarch %{arm}
-    --enable-pthreads \
-    --enable-cpu-neon \
-    --enable-winkcodec=yes \
+	--enable-pthreads \
+	--enable-cpu-neon \
 %else
-    --enable-pthreads \
-    --enable-winkcodec=no \
+	--enable-pthreads \
 %endif
-    --enable-tile-rotate 
+
+# Add the following for the benchmarks
+#	--enable-build-examples \
+#	--enable-install-examples
 
 make %{?jobs:-j%jobs}
 
 
 %install
-#rm -rf %{buildroot}
-cd %{_repository} && %make_install
+rm -rf %{buildroot}
+%make_install
 mkdir -p %{buildroot}/usr/share/license
 cp %{_builddir}/%{buildsubdir}/COPYING %{buildroot}/usr/share/license/%{name}
 
@@ -138,20 +121,17 @@ cp %{_builddir}/%{buildsubdir}/COPYING %{buildroot}/usr/share/license/%{name}
 %{_libdir}/evas/modules/engines/*/*/module.so
 %{_libdir}/evas/modules/loaders/*/*/module.so
 %{_libdir}/evas/modules/savers/*/*/module.so
-%if %{_repository} == "mobile"
-%{_libdir}/evas/cserve2/loaders/*/*/module.so
-%{_bindir}/evas_cserve2_client
-%{_bindir}/evas_cserve2_usage
-%{_bindir}/evas_cserve2_debug
-%{_libexecdir}/evas_cserve2
-%{_libexecdir}/evas_cserve2_slave
-%{_libexecdir}/dummy_slave
-%endif
+#%{_libdir}/evas/cserve2/loaders/*/*/module.so
+#%{_bindir}/evas_cserve2_client
+#%{_bindir}/evas_cserve2_usage
+#%{_bindir}/evas_cserve2_debug
+#%{_libexecdir}/evas_cserve2
+#%{_libexecdir}/evas_cserve2_slave
+#%{_libexecdir}/dummy_slave
 %manifest %{name}.manifest
 /usr/share/license/%{name}
 # The temp file for eina_prefix by raster
 %{_datadir}/evas/checkme
-
 
 %files devel
 %defattr(-,root,root,-)
@@ -159,3 +139,4 @@ cp %{_builddir}/%{buildsubdir}/COPYING %{buildroot}/usr/share/license/%{name}
 %{_libdir}/libevas.so
 %{_libdir}/pkgconfig/*.pc
 %{_datadir}/evas/examples/*
+#%{_datadir}/evas/benchmarks/*
