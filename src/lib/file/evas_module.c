@@ -42,7 +42,7 @@ _evas_module_append(Eina_List *list, char *path)
 void
 evas_module_paths_init(void)
 {
-   char *path;
+   char *libdir, *path;
 
    /* 1. ~/.evas/modules/ */
    path = eina_module_environment_path_get("HOME", "/.evas/modules");
@@ -56,13 +56,24 @@ evas_module_paths_init(void)
      evas_module_paths = _evas_module_append(evas_module_paths, path);
 
    /* 3. libevas.so/../evas/modules/ */
-   path = eina_module_symbol_path_get(evas_module_paths_init, "/evas/modules");
+   libdir = (char *)_evas_module_libdir_get();
+   if (!libdir)
+     path = eina_module_symbol_path_get(evas_module_paths_init, "/evas/modules");
+   else
+     {
+        path = malloc(strlen(libdir) + strlen("/evas/modules") + 1);
+        if (path)
+          {
+             strcpy(path, libdir);
+             strcat(path, "/evas/modules");
+          }
+     }
    if (eina_list_search_unsorted(evas_module_paths, (Eina_Compare_Cb) strcmp, path))
      free(path);
    else
      evas_module_paths = _evas_module_append(evas_module_paths, path);
 
-   /* 4. PREFIX/evas/modules/ */
+   /* 4. PREFIX/lib/evas/modules/ */
 #ifndef _MSC_VER
    path = PACKAGE_LIB_DIR "/evas/modules";
    if (!eina_list_search_unsorted(evas_module_paths, (Eina_Compare_Cb) strcmp, path))
@@ -88,10 +99,6 @@ EVAS_EINA_STATIC_MODULE_DEFINE(engine, fb);
 EVAS_EINA_STATIC_MODULE_DEFINE(engine, gl_x11);
 EVAS_EINA_STATIC_MODULE_DEFINE(engine, gl_sdl);
 EVAS_EINA_STATIC_MODULE_DEFINE(engine, psl1ght);
-EVAS_EINA_STATIC_MODULE_DEFINE(engine, software_16);
-EVAS_EINA_STATIC_MODULE_DEFINE(engine, software_16_sdl);
-EVAS_EINA_STATIC_MODULE_DEFINE(engine, software_16_wince);
-EVAS_EINA_STATIC_MODULE_DEFINE(engine, software_16_x11);
 EVAS_EINA_STATIC_MODULE_DEFINE(engine, software_8);
 EVAS_EINA_STATIC_MODULE_DEFINE(engine, software_8_x11);
 EVAS_EINA_STATIC_MODULE_DEFINE(engine, software_ddraw);
@@ -112,12 +119,16 @@ EVAS_EINA_STATIC_MODULE_DEFINE(image_loader, svg);
 EVAS_EINA_STATIC_MODULE_DEFINE(image_loader, tga);
 EVAS_EINA_STATIC_MODULE_DEFINE(image_loader, tiff);
 EVAS_EINA_STATIC_MODULE_DEFINE(image_loader, wbmp);
+EVAS_EINA_STATIC_MODULE_DEFINE(image_loader, webp);
 EVAS_EINA_STATIC_MODULE_DEFINE(image_loader, xpm);
+EVAS_EINA_STATIC_MODULE_DEFINE(image_loader, tgv);
 EVAS_EINA_STATIC_MODULE_DEFINE(image_saver, edb);
 EVAS_EINA_STATIC_MODULE_DEFINE(image_saver, eet);
 EVAS_EINA_STATIC_MODULE_DEFINE(image_saver, jpeg);
 EVAS_EINA_STATIC_MODULE_DEFINE(image_saver, png);
 EVAS_EINA_STATIC_MODULE_DEFINE(image_saver, tiff);
+EVAS_EINA_STATIC_MODULE_DEFINE(image_saver, tgv);
+
 
 static const struct {
    Eina_Bool (*init)(void);
@@ -143,18 +154,6 @@ static const struct {
 #endif
 #ifdef EVAS_STATIC_BUILD_PSL1GHT
   EVAS_EINA_STATIC_MODULE_USE(engine, psl1ght),
-#endif
-#ifdef EVAS_STATIC_BUILD_SOFTWARE_16
-  EVAS_EINA_STATIC_MODULE_USE(engine, software_16),
-#endif
-#ifdef EVAS_STATIC_BUILD_SOFTWARE_16_SDL
-  EVAS_EINA_STATIC_MODULE_USE(engine, software_16_sdl),
-#endif
-#ifdef EVAS_STATIC_BUILD_SOFTWARE_16_WINCE
-  EVAS_EINA_STATIC_MODULE_USE(engine, software_16_wince),
-#endif
-#ifdef EVAS_STATIC_BUILD_SOFTWARE_16_X11
-  EVAS_EINA_STATIC_MODULE_USE(engine, software_16_x11),
 #endif
 #ifdef EVAS_STATIC_BUILD_SOFTWARE_GDI
   EVAS_EINA_STATIC_MODULE_USE(engine, software_gdi),
@@ -222,8 +221,14 @@ static const struct {
 #ifdef EVAS_STATIC_BUILD_WBMP
   EVAS_EINA_STATIC_MODULE_USE(image_loader, wbmp),
 #endif
+#ifdef EVAS_STATIC_BUILD_WEBP
+  EVAS_EINA_STATIC_MODULE_USE(image_loader, webp),
+#endif
 #ifdef EVAS_STATIC_BUILD_XPM
   EVAS_EINA_STATIC_MODULE_USE(image_loader, xpm),
+#endif
+#ifdef EVAS_STATIC_BUILD_TGV
+  EVAS_EINA_STATIC_MODULE_USE(image_loader, tgv),
 #endif
 #ifdef EVAS_STATIC_BUILD_EDB
   EVAS_EINA_STATIC_MODULE_USE(image_saver, edb),
@@ -239,6 +244,9 @@ static const struct {
 #endif
 #ifdef EVAS_STATIC_BUILD_TIFF
   EVAS_EINA_STATIC_MODULE_USE(image_saver, tiff),
+#endif
+#ifdef EVAS_STATIC_BUILD_TGV
+  EVAS_EINA_STATIC_MODULE_USE(image_saver, tgv),
 #endif
   { NULL, NULL }
 };
@@ -282,8 +290,12 @@ evas_module_register(const Evas_Module_Api *module, Evas_Module_Type type)
 
    if (type == EVAS_MODULE_TYPE_ENGINE)
      {
-	eina_array_push(evas_engines, em);
-	em->id_engine = eina_array_count(evas_engines);
+        if (!eina_array_push(evas_engines, em))
+          {
+             free(em);
+             return EINA_FALSE;
+          }
+        em->id_engine = eina_array_count(evas_engines);
      }
 
    eina_hash_direct_add(evas_modules[type], module->name, em);
@@ -356,7 +368,7 @@ evas_module_unregister(const Evas_Module_Api *module, Evas_Module_Type type)
    if (!em || em->definition != module) return EINA_FALSE;
 
    if (type == EVAS_MODULE_TYPE_ENGINE)
-     eina_array_data_set(evas_engines, em->id_engine, NULL);
+     eina_array_data_set(evas_engines, em->id_engine - 1, NULL);
 
    eina_hash_del(evas_modules[type], module->name, em);
    free(em);
@@ -560,6 +572,8 @@ evas_module_clean(void)
 /*      } */
 }
 
+static Eina_Prefix *pfx = NULL;
+
 /* will dlclose all the modules loaded and free all the structs */
 void
 evas_module_shutdown(void)
@@ -588,6 +602,11 @@ evas_module_shutdown(void)
 
    eina_array_free(evas_engines);
    evas_engines = NULL;
+   if (pfx)
+     {
+        eina_prefix_free(pfx);
+        pfx = NULL;
+     }
 }
 
 EAPI int
@@ -610,13 +629,11 @@ _evas_module_engine_inherit(Evas_Func *funcs, char *name)
    return 0;
 }
 
-static Eina_Prefix *pfx = NULL;
-
 EAPI const char *
 _evas_module_libdir_get(void)
 {
    if (!pfx) pfx = eina_prefix_new
-      (NULL, _evas_module_libdir_get, "EVAS", "evas", NULL,
+      (NULL, _evas_module_libdir_get, "EVAS", "evas", "checkme",
        PACKAGE_BIN_DIR, PACKAGE_LIB_DIR, PACKAGE_DATA_DIR, PACKAGE_DATA_DIR);
    if (!pfx) return NULL;
    return eina_prefix_lib_get(pfx);

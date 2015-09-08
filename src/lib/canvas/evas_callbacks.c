@@ -14,9 +14,12 @@ _evas_post_event_callback_call(Evas *e)
 {
    Evas_Post_Callback *pc;
    int skip = 0;
+   static int first_run = 1; // FIXME: This is a workaround to prevent this
+                             // function from being called recursively.
 
-   if (e->delete_me) return;
+   if (e->delete_me || (!first_run)) return;
    _evas_walk(e);
+   first_run = 0;
    EINA_LIST_FREE(e->post_events, pc)
      {
         if ((!skip) && (!e->delete_me) && (!pc->delete_me))
@@ -25,6 +28,7 @@ _evas_post_event_callback_call(Evas *e)
           }
         EVAS_MEMPOOL_FREE(_mp_pc, pc);
      }
+   first_run = 1;
    _evas_unwalk(e);
 }
 

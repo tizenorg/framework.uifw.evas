@@ -87,7 +87,7 @@ evas_bidi_is_rtl_str(const Eina_Unicode *str)
    for ( ; *str ; str++)
      {
         type = fribidi_get_bidi_type((FriBidiChar) *str);
-        if (FRIBIDI_IS_LETTER(type) && FRIBIDI_IS_RTL(type))
+        if (FRIBIDI_IS_RTL(type))
           {
              return EINA_TRUE;
           }
@@ -182,8 +182,10 @@ evas_bidi_segment_idxs_get(const Eina_Unicode *str, const char *delim)
                        if (!tmp_ret)
                          {
                             free(ret);
+                            free(udelim);
                             return NULL;
                          }
+                       ret = tmp_ret;
                     }
                   ret[ret_idx++] = str - str_base;
                   break;
@@ -233,11 +235,12 @@ evas_bidi_paragraph_props_get(const Eina_Unicode *eina_ustr, size_t len,
       return NULL;
 
 
-   if (!evas_bidi_is_rtl_str(eina_ustr)) /* No need to handle bidi */
-     {
-        len = -1;
-        goto cleanup;
-     }
+   // TIZEN_ONLY(20140822): Added evas_bidi_direction_hint_set, get APIs and applied to textblock, text.
+   //if (!evas_bidi_is_rtl_str(eina_ustr)) /* No need to handle bidi */
+   //  {
+   //     len = -1;
+   //     goto cleanup;
+   //  }
 
    len = eina_unicode_strlen(eina_ustr);
    /* The size of fribidichar s different than eina_unicode, convert */

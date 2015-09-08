@@ -1,4 +1,122 @@
-Evas 1.3.0
+Evas 1.8.0
+
+Changes since Evas 1.7.7
+-------------------------
+
+Additions:
+   * Add EVAS_GL_LINE_OFFSET_HACK_DISABLE to turn off line shift correction by evas.
+
+Fixes:
+   * Fix evas textblock tag parser to respect escaped spaces and escaped single quotes
+   * Fix the line drawing clipping problem on arm gl driver.
+   * Evas: Fix Evas_Object_Text when LTR and RTL are used in the same paragraph.
+   * Evas font: click on left/right half of char does matter now.
+   * Fix memory leak in textgrid
+   * Fix evas_common_convert_yuv_42* functions to actually return the converted data.
+   * Evas textblock: Fixed order of tags inserted with markup_app/prepend.
+
+Improvements:
+   * Evas textblock : Added split cursor for BiDi text
+
+Evas 1.7.7
+
+Changes since Evas 1.7.6
+-------------------------
+
+    * Fix SIGFPE in evas map update if image is 0.
+    * Evas textblock: Fixed issue and simplified cursor_geometry_get.
+    * Evas text: Fixed issue with horiz advance.
+    * Evas text utils: Fixed issue with no-harfbuzz bidi.
+    * Fixed pixman surface alloc where allocated and image size differ.
+
+Changes since Evas 1.7.5:
+-------------------------
+
+   * Fix build of Evas XCB backend.
+   * Fix evas bmp loader code which deal with image size.
+   * Fix not up to date clip cache for Evas_Object_Text.
+   * Evas texblock: Fixed a bug with breaking after format items.
+   * Evas textblock: Fixed issue with line height when breaking on a format.
+   
+Changes since Evas 1.7.4:
+-------------------------
+
+   * Fix mask write lines to not choose too small segments
+
+Evas 1.7.4
+
+Changes since Evas 1.7.3:
+-------------------------
+
+Fixes:
+   * Fix the gl line incorrect position drawing.
+   * Fix uninitialized data in Evas_Smart initialization code.
+   * Fix potential segv in software engine native_set call.
+   * Fix uninitialized data in OpenGL engine native_set call.
+   * Fix crash when precise_is_inside is set on an image, and events are generated from it.
+   * Properly close async pipe fd on exec.
+   * Fix the line drawing clipping problem on arm gl driver.
+   * Fix big rendering/conversion problem in kvm/qemu 24bpp.
+   * Fix Evas RGBA_Image->flags.loaded for copied images. 
+   * Fix evas_object_image_is_inside()
+   * Fix small memory leak in evas_bidi_utils error path
+    
+    
+Evas 1.7.3
+
+Changes since Evas 1.7.2
+-------------------------
+
+Fixes:
+   * Fixed evas_object_box to reset size_hint_min to zero when no child.
+   * Don't leak fd on exec.
+
+Evas 1.7.2
+
+Changes since Evas 1.7.1
+-------------------------
+
+Fixes:
+   * Fix evas textblock tag parser to respect escaped spaces and escaped single quotes
+   * Fixed longstanding memset bug in evas box.
+   * Fixed GLX native surface handling (fixes new mesa+intel comp bug).
+   * Fixed textblock textprop leak.
+    
+Changes since Evas 1.7.0:
+-------------------------
+
+Additions:
+
+   * WEBP image loader support.
+   * EVAS_CALLBACK_IMAGE_RESIZE.
+   * Evas_Device registration/manipulation/querying API
+   * Evas_Object_Display_Mode querying API
+   * EVAS_GL_API_DEBUG=1 env. var option for outputting debug logs related to Evas GL's GL calls.
+
+Improvements:
+
+   * Function to rotate an evas map with a quaternion: evas_map_util_quat_rotate().
+   * EVAS_GL_NO_BLACKLIST env var to turn off blacklisted drivers in gl
+   * Evas gl engine can do partial swaps now.
+   * evas_object_del() now takes NULL parameters
+   * make xpm loader faster (from O(N) to O(log(N))).
+
+Fixes:
+
+   * Fix segmentation fault with the esvg loader.
+   * Fix EGL/GLES dest alpha rendering bug (no rendering).
+   * Fix evas_object_image_alpha_set when image data not loaded yet.
+   * Fix map surface leak.
+   * Fix native surface set to null crash bug in gl engine.
+   * Fix font sizing issue with some rare sizes and fonts when rounding wrong.
+   * Fix software line drawing c fallback code.
+   * Update move event when object freeze event is off.
+   * coordinate compute bug for Evas GL direct rendering.
+    
+Removal:
+   * No more support s3c6410.
+
+Evas 1.7.0
 
 Changes since Evas 1.2.0:
 -------------------------
@@ -16,6 +134,7 @@ Improvements:
    * Cache convertion from Evas_Map to RGBA_Map.
    * evas_object_smart_members_get() now returns NULL on non-smart objects.
    * Pipeline rendering use prepare stage more extensively.
+   * Properly warn when user try to link object from different canvas.
 
 Fixes:
    * Add missing files in the tarball.
@@ -26,6 +145,8 @@ Fixes:
    * Don't crash when calling evas_object_smart_type_check without type.
    * Handle proxy with the right context.
    * Force proxied object to stay active to keep track of change in them.
+   * Fix evas_gl's internal resource surface bug when evas' window is deleted/recreated.
+   * Fix evas_gl current_context update issue when evas_gl context is deleted.
 
 Removal:
    * Remove EVAS_FRAME_QUEUING, EVAS_SLI, METRIC_CACHE and WORD_CACHE.

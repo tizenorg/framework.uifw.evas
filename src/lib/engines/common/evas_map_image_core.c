@@ -1,5 +1,7 @@
 //#undef SCALE_USING_MMX
 {
+   DATA8 *mask;
+   RGBA_Image *mask_ie;
    if (smooth)
      {
         for (y = ystart; y <= yend; y++)
@@ -7,36 +9,36 @@
              int x, w, ww;
              FPc u, v, ud, vd, dv, ue, ve;
              DATA32 *d, *s;
-#ifdef COLMUL             
+#ifdef COLMUL
              FPc cv, cd; // col
 # ifdef SCALE_USING_MMX
              FPc cc;
-#endif             
+#endif
              DATA32 c1, c2; // col
-#endif             
+#endif
              Line *line;
-             
+
 #ifdef SCALE_USING_MMX
              pxor_r2r(mm0, mm0);
              MOV_A2R(ALPHA_255, mm5)
 #endif
-               
+
              line = &(spans[y - ystart]);
              for (i = 0; i < 2; i++)
                {
                   Span *span;
-                  
+
                   span = &(line->span[i]);
                   if (span->x1 >= 0)
                     {
                        long long tl;
-                       
+
                        x = span->x1;
                        w = (span->x2 - x);
                        if (w <= 0) continue;
                        dv = (span->o2 - span->o1);
                        if (dv <= 0) continue;
-                       
+
                        ww = w;
                        u = span->u[0] << FPI;
                        if (u < 0) u = 0;
@@ -56,7 +58,7 @@
                        tl = tl / dv;
                        ud = tl;
                        u -= (ud * (span->o1 - (span->x1 << FP))) / FP1;
-                       
+
                        tl = (long long)vd * (w << FP);
                        tl = tl / dv;
                        vd = tl;
@@ -74,27 +76,31 @@
                        else
                          d = buf;
 
-#define SMOOTH 1                       
-#ifdef COLMUL             
+#define SMOOTH 1
+#ifdef COLMUL
                        c1 = span->col[0]; // col
                        c2 = span->col[1]; // col
                        cv = 0; // col
                        cd = (255 << 16) / w; // col
-                       
+
                        if (c1 == c2)
                          {
                             if (c1 == 0xffffffff)
                               {
-#endif                         
+#endif
+#define COLSAME 1
 #include "evas_map_image_loop.c"
-#ifdef COLMUL             
+#undef COLSAME
+#ifdef COLMUL
                               }
                             else if ((c1 == 0x0000ff) && (!src->cache_entry.flags.alpha))
                               {
                                  // all black line
 # define COLBLACK 1
+# define COLSAME 1
 # include "evas_map_image_loop.c"
-# undef COLBLACK                                 
+# undef COLSAME
+# undef COLBLACK
                               }
                             else if (c1 == 0x000000)
                               {
@@ -103,19 +109,31 @@
                             else
                               {
                                  // generic loop
+# define COLSAME 1
 # include "evas_map_image_loop.c"
+# undef COLSAME
                               }
                          }
                        else
                          {
 # include "evas_map_image_loop.c"
                          }
-#endif                         
+#endif
                        if (!direct)
                          {
                             d = dst->image.data;
                             d += (y * dst->cache_entry.w) + x;
-                            func(buf, NULL, dc->mul.col, d, w);
+                            if (!dc->clip.mask)
+                              func(buf, NULL, dc->mul.col, d, w);
+                            else
+                              {
+                                 mask_ie = dc->clip.mask;
+                                 mask = mask_ie->image.data8
+                                    + (y - dc->clip.mask_y) * mask_ie->cache_entry.w
+                                    + (x - dc->clip.mask_x);
+                                 if (dc->mul.use) func2(buf, NULL, dc->mul.col, buf, w);
+                                 func(buf, mask, 0, d, w);
+                              }
                          }
                     }
                   else break;
@@ -132,20 +150,20 @@
 #ifdef COLMUL
              FPc cv, cd; // col
              DATA32 c1, c2; // col
-#endif             
+#endif
              Line *line;
-             
+
              line = &(spans[y - ystart]);
              for (i = 0; i < 2; i++)
                {
                   Span *span;
-                  
+
                   span = &(line->span[i]);
                   if (span->x1 >= 0)
                     {
                        x = span->x1;
                        w = (span->x2 - x);
-                       
+
                        if (w <= 0) continue;
                        ww = w;
                        u = span->u[0] << FPI;
@@ -185,16 +203,20 @@
                          {
                             if (c1 == 0xffffffff)
                               {
-#endif                                 
+#endif
+#define COLSAME 1
 #include "evas_map_image_loop.c"
+#undef COLSAME
 #ifdef COLMUL
                               }
                             else if ((c1 == 0x0000ff) && (!src->cache_entry.flags.alpha))
                               {
                                  // all black line
 # define COLBLACK 1
+# define COLSAME 1
 # include "evas_map_image_loop.c"
-# undef COLBLACK                                 
+# undef COLSAME
+# undef COLBLACK
                               }
                             else if (c1 == 0x000000)
                               {
@@ -203,7 +225,9 @@
                             else
                               {
                                  // generic loop
+# define COLSAME 1
 # include "evas_map_image_loop.c"
+# undef COLSAME
                               }
                          }
                        else
@@ -211,12 +235,22 @@
                             // generic loop
 # include "evas_map_image_loop.c"
                          }
-#endif                       
+#endif
                        if (!direct)
                          {
                             d = dst->image.data;
                             d += (y * dst->cache_entry.w) + x;
-                            func(buf, NULL, dc->mul.col, d, w);
+                            if (!dc->clip.mask)
+                              func(buf, NULL, dc->mul.col, d, w);
+                            else
+                              {
+                                 mask_ie = dc->clip.mask;
+                                 mask = mask_ie->image.data8
+                                    + (y - dc->clip.mask_y) * mask_ie->cache_entry.w
+                                    + (x - dc->clip.mask_x);
+                                 if (dc->mul.use) func2(buf, NULL, dc->mul.col, buf, w);
+                                 func(buf, mask, 0, d, w);
+                              }
                          }
                     }
                   else break;

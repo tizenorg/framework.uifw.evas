@@ -271,3 +271,13 @@ td.nav_active {
 	width: 100%;
 }
 
+div.fragment {
+       font-family: monospace, mono, fixed;
+       font-size: 9pt;
+       white-space: pre;
+}
+
+.line {
+       line-height: 0%;
+}
+

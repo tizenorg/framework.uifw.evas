@@ -1,12 +1,72 @@
 #include "evas_common.h"
 #include "evas_convert_color.h"
 
+#ifdef BUILD_NEON
+#include <arm_neon.h>
+#endif
+
+EAPI DATA32
+evas_common_convert_ag_premul(DATA16 *data, unsigned int len)
+{
+   DATA16 *de = data + len;
+   DATA32 nas = 0;
+
+   while (data < de)
+     {
+        DATA16  a = 1 + ((*data >> 8) & 0xff);
+
+        *data = (*data & 0xff00) |
+          ((((*data & 0xff) * a) >> 8) & 0xff);
+        data++;
+
+        if ((a == 1) || (a == 256))
+          nas++;
+     }
+
+   return nas;
+}
 
 EAPI DATA32
 evas_common_convert_argb_premul(DATA32 *data, unsigned int len)
 {
    DATA32 *de = data + len;
    DATA32 nas = 0;
+
+   #ifdef BUILD_NEON
+   if (evas_common_cpu_has_feature(CPU_FEATURE_NEON))
+     {
+        uint8x8_t mask_0x00 = vdup_n_u8(0);
+        uint8x8_t mask_0x01 = vdup_n_u8(1);
+        uint8x8_t mask_0xff = vdup_n_u8(255);
+        uint8x8_t cmp;
+
+        while (data <= de - 8)
+          {
+
+             uint8x8x4_t rgba = vld4_u8(data);
+
+             cmp = vand_u8(vorr_u8(
+               vceq_u8(rgba.val[3], mask_0xff),
+               vceq_u8(rgba.val[3], mask_0x00)
+             ), mask_0x01);
+             nas += vpaddl_u32(vpaddl_u16(vpaddl_u8(cmp)));
+
+             uint16x8x4_t lrgba;
+
+             lrgba.val[0] = vmovl_u8(rgba.val[0]);
+             lrgba.val[1] = vmovl_u8(rgba.val[1]);
+             lrgba.val[2] = vmovl_u8(rgba.val[2]);
+
+             rgba.val[0] = vshrn_n_u16(vmlal_u8(lrgba.val[0], rgba.val[0], rgba.val[3]), 8);
+             rgba.val[1] = vshrn_n_u16(vmlal_u8(lrgba.val[1], rgba.val[1], rgba.val[3]), 8);
+             rgba.val[2] = vshrn_n_u16(vmlal_u8(lrgba.val[2], rgba.val[2], rgba.val[3]), 8);
+
+             vst4_u8(data, rgba);
+             data += 8;
+
+          }
+     }
+   #endif
 
    while (data < de)
      {
@@ -29,18 +89,28 @@ evas_common_convert_argb_unpremul(DATA32 *data, unsigned int len)
 {
    DATA32  *de = data + len;
 
+   DATA32 preva = 0;
+   DATA32 prevdata = 0;
+
    while (data < de)
      {
-	DATA32  a = (*data >> 24);
-
-	if ((a > 0) && (a < 255))
-	   *data = ARGB_JOIN(a,
-			     (R_VAL(data) * 255) / a,
-			     (G_VAL(data) * 255) / a,
-			     (B_VAL(data) * 255) / a);
-	data++;
+        if (preva == *data)
+          {
+            *data = prevdata;
+          }
+        else
+          {
+            DATA32  a = (*data >> 24);
+            preva = *data;
+            if ((a > 0) && (a < 255))
+               *data = ARGB_JOIN(a,
+                     (R_VAL(data) * 255) / a,
+                     (G_VAL(data) * 255) / a,
+                     (B_VAL(data) * 255) / a);
+            prevdata = *data;
+          }
+        data++;
      }
-
 }
 
 EAPI void

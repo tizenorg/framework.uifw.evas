@@ -86,10 +86,10 @@ _limit(Span *s, int c1, int c2, int nocol)
 static void
 _calc_spans(RGBA_Map_Point *p, Line *spans, int ystart, int yend, int cx, int cy __UNUSED__, int cw, int ch __UNUSED__)
 {
-   int i, y, yp, yy;
+   int i, y, yp;
    int py[4];
    int edge[4][4], edge_num, swapped, order[4];
-   FPc uv[4][2], u, v, x, h, t, uu, vv;
+   FPc uv[4][2], u, v, x, h, t;
    DATA32 col[4];
    
 #if 1 // maybe faster on x86?
@@ -170,10 +170,11 @@ _calc_spans(RGBA_Map_Point *p, Line *spans, int ystart, int yend, int cx, int cy
              int e1 = edge[i][0];
              int e2 = edge[i][1];
              FPc t256;
-             
+
              h = (p[e2].y - p[e1].y) >> FP; // height of edge
              if (h < 1) h = 1;
-             t = (((y << FP) + (FP1 / 2) - 1) - p[e1].y) >> FP;
+             //t = (((y << FP) + (FP1 - 2) - 1) - p[e1].y) >> FP;
+             t = (((y << FP) + (FP1 - 1)) - p[e1].y ) >> FP;
              x = p[e2].x - p[e1].x;
              x = p[e1].x + ((x * t) / h);
 
@@ -222,8 +223,10 @@ _calc_spans(RGBA_Map_Point *p, Line *spans, int ystart, int yend, int cx, int cy
                   pt = t;
                   t = ((z1 - zt) * hf) / dz;
                }
- */
+*/
              u = p[e2].u - p[e1].u;
+             u = p[e1].u + ((u * t) / h);
+/*
              uu = u >> FP;
              if (uu < 0) uu = -uu;
              if (uu == h)
@@ -241,8 +244,10 @@ _calc_spans(RGBA_Map_Point *p, Line *spans, int ystart, int yend, int cx, int cy
                   else
                      u = p[e1].u + (((u * t) - (FP1 / 2)) / h);
                }
-             
+*/
              v = p[e2].v - p[e1].v;
+             v = p[e1].v + ((v * t) / h);
+/*
              vv = v >> FP;
              if (vv < 0) vv = -vv;
              if (vv == h)
@@ -260,7 +265,7 @@ _calc_spans(RGBA_Map_Point *p, Line *spans, int ystart, int yend, int cx, int cy
                   else
                      v = p[e1].v + (((v * t) - (FP1 / 2)) / h);
                }
-
+*/
              // FIXME: 3d accuracy for color too
              t256 = (t << 8) / h; // maybe * 255?
              col[i] = INTERP_256(t256, p[e2].col, p[e1].col);
@@ -565,7 +570,7 @@ evas_common_map_rgba_prepare(RGBA_Image *src, RGBA_Image *dst,
                              RGBA_Map *m)
 {
    RGBA_Map_Cutout *spans;
-   Cutout_Rects *rects;
+   Cutout_Rects *rects = NULL;
    Cutout_Rect *r;
    int i;
 
@@ -603,10 +608,6 @@ evas_common_map_rgba_prepare(RGBA_Image *src, RGBA_Image *dst,
      {
         rects = spans->rects;
         spans->rects = NULL;
-     }
-   else
-     {
-        rects = evas_common_draw_context_cutouts_new();
      }
    rects = evas_common_draw_context_apply_cutouts(dc, rects);
    _rgba_map_cutout_resize(m, rects->active);
@@ -648,6 +649,17 @@ evas_common_map_rgba_prepare(RGBA_Image *src, RGBA_Image *dst,
 #  undef SCALE_USING_MMX
 #  include "evas_map_image_internal.c"
 # endif
+# ifdef BUILD_NEON
+#  undef FUNC_NAME
+#  undef FUNC_NAME_DO
+#  define FUNC_NAME evas_common_map_rgba_internal_neon
+#  define FUNC_NAME_DO evas_common_map_rgba_internal_neon_do
+#  undef SCALE_USING_NEON
+#  define SCALE_USING_NEON
+#  undef SCALE_USING_MMX
+#  include "evas_map_image_internal.c"
+#  undef SCALE_USING_NEON
+# endif
 #endif
 
 EAPI void
@@ -685,6 +697,11 @@ evas_common_map_rgba(RGBA_Image *src, RGBA_Image *dst,
           evas_common_map_rgba_internal_mmx(src, dst, dc, p, smooth, level);
         else
 #endif
+#ifdef BUILD_NEON
+        if (evas_common_cpu_has_feature(CPU_FEATURE_NEON))
+          evas_common_map_rgba_internal_neon(src, dst, dc, p, smooth, level);
+        else
+#endif
 #ifdef BUILD_C
           evas_common_map_rgba_internal(src, dst, dc, p, smooth, level);
 #endif
@@ -707,6 +724,11 @@ evas_common_map_rgba(RGBA_Image *src, RGBA_Image *dst,
 #ifdef BUILD_MMX
         if (mmx)
           evas_common_map_rgba_internal_mmx(src, dst, dc, p, smooth, level);
+        else
+#endif
+#ifdef BUILD_NEON
+        if (evas_common_cpu_has_feature(CPU_FEATURE_NEON))
+          evas_common_map_rgba_internal_neon(src, dst, dc, p, smooth, level);
         else
 #endif
 #ifdef BUILD_C
@@ -749,6 +771,12 @@ evas_common_map_rgba_do(const Eina_Rectangle *clip,
                                                &spans->spans[0], smooth, level);
         else
 #endif
+#ifdef BUILD_NEON
+        if (evas_common_cpu_has_feature(CPU_FEATURE_NEON))
+          evas_common_map_rgba_internal_neon_do(src, dst, dc,
+                                               &spans->spans[0], smooth, level);
+        else
+#endif
 #ifdef BUILD_C
           evas_common_map_rgba_internal_do(src, dst, dc,
                                            &spans->spans[0], smooth, level);
@@ -766,6 +794,12 @@ evas_common_map_rgba_do(const Eina_Rectangle *clip,
 #ifdef BUILD_MMX
         if (mmx)
           evas_common_map_rgba_internal_mmx_do(src, dst, dc,
+                                               &spans->spans[i], smooth, level);
+        else
+#endif
+#ifdef BUILD_NEON
+        if (evas_common_cpu_has_feature(CPU_FEATURE_NEON))
+          evas_common_map_rgba_internal_neon_do(src, dst, dc,
                                                &spans->spans[i], smooth, level);
         else
 #endif

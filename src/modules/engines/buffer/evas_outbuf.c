@@ -121,13 +121,13 @@ evas_buffer_outbuf_buf_new_region_for_update(Outbuf *buf, int x, int y, int w, i
 		 ((buf->depth == OUTBUF_DEPTH_BGRA_32BPP_8888_8888)))
 	       {
 		  im->cache_entry.flags.alpha = 1;
-#ifdef EVAS_CSERVE2
-                  if (evas_cserve2_use_get())
-                    evas_cache2_image_size_set(&im->cache_entry, w, h);
-                  else
-#endif
-                  im = (RGBA_Image *) evas_cache_image_size_set(&im->cache_entry, w, h);
                }
+#ifdef EVAS_CSERVE2
+               if (evas_cserve2_use_get())
+                 evas_cache2_image_size_set(&im->cache_entry, w, h);
+               else
+#endif
+                 im = (RGBA_Image *) evas_cache_image_size_set(&im->cache_entry, w, h);
           }
      }
    return im;
@@ -331,19 +331,30 @@ evas_buffer_outbuf_buf_push_updated_region(Outbuf *buf, RGBA_Image *update, int 
 	     if (!buf->priv.back_buf)
 	       {
 		  Gfx_Func_Copy func;
-		  
+
 		  func = evas_common_draw_func_copy_get(w, 0);
 		  if (func)
 		    {
-		       for (yy = 0; yy < h; yy++)
-			 {
-			    src = update->image.data + (yy * update->cache_entry.w);
-			    dst = (DATA32 *)((DATA8 *)(buf->dest) + ((y + yy) * row_bytes));
-			    func(src, dst, w);
-			 }
-		       
-		    }
-	       }
+		     if (buf->dest_row_bytes != (buf->w * sizeof(DATA32)))
+		       {
+			  for (yy = 0; yy < h; yy++)
+			    {
+			       src = update->image.data + (yy * update->cache_entry.w);
+			       dst = (DATA32 *)((DATA8 *)(buf->dest) + ((y + yy) * row_bytes) + (x * 4));
+			       func(src, dst, w);
+			    }
+		       }
+		     else
+		       {
+		        for (yy = 0; yy < h; yy++)
+			  {
+			     src = update->image.data + (yy * update->cache_entry.w);
+			     dst = (DATA32 *)((DATA8 *)(buf->dest) + ((y + yy) * row_bytes));
+			     func(src, dst, w);
+			  }
+		     }
+		  }
+	     }
 	     if (buf->func.free_update_region)
 	       {
 		  buf->func.free_update_region(x, y, w, h, dest);

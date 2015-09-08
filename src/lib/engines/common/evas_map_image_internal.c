@@ -10,7 +10,7 @@ FUNC_NAME(RGBA_Image *src, RGBA_Image *dst,
    int ytop, ybottom, ystart, yend, y, sw, shp, swp, direct;
    Line *spans;
    DATA32 *buf = NULL, *sp;
-   RGBA_Gfx_Func func = NULL;
+   RGBA_Gfx_Func func = NULL, func2 = NULL;
    int havea = 0;
    int havecol = 4;
 
@@ -84,27 +84,37 @@ FUNC_NAME(RGBA_Image *src, RGBA_Image *dst,
    // if operation is solid, bypass buf and draw func and draw direct to dst
    direct = 0;
    if ((!src->cache_entry.flags.alpha) && (!dst->cache_entry.flags.alpha) &&
-       (!dc->mul.use) && (!havea))
+       (!dc->mul.use) && (!havea) && (!dc->clip.mask))
      {
         direct = 1;
      }
    else
      {
         int pa;
-        
+
         buf = alloca(cw * sizeof(DATA32));
         pa = src->cache_entry.flags.alpha;
         if (havea) src->cache_entry.flags.alpha = 1;
-        if (dc->mul.use)
-          func = evas_common_gfx_func_composite_pixel_color_span_get(src, dc->mul.col, dst, cw, dc->render_op);
+
+        if (!dc->clip.mask)
+          {
+             if (dc->mul.use)
+               func = evas_common_gfx_func_composite_pixel_color_span_get(src, dc->mul.col, dst, cw, dc->render_op);
+             else
+               func = evas_common_gfx_func_composite_pixel_span_get(src, dst, cw, dc->render_op);
+          }
         else
-          func = evas_common_gfx_func_composite_pixel_span_get(src, dst, cw, dc->render_op);
+          {
+             func = evas_common_gfx_func_composite_pixel_mask_span_get(src, dst, cw, dc->render_op);
+             if (dc->mul.use)
+               func2 = evas_common_gfx_func_composite_pixel_color_span_get(src, dc->mul.col, dst, cw, EVAS_RENDER_COPY);
+          }
         src->cache_entry.flags.alpha = pa;
      }
-    
+
    if (!havecol)
      {
-#undef COLMUL     
+#undef COLMUL
 #include "evas_map_image_core.c"
      }
    else
@@ -122,7 +132,7 @@ FUNC_NAME_DO(RGBA_Image *src, RGBA_Image *dst,
 {
    Line *spans;
    DATA32 *buf = NULL, *sp;
-   RGBA_Gfx_Func func = NULL;
+   RGBA_Gfx_Func func = NULL, func2 = NULL;
    int cx, cy, cw, ch;
    int ystart, yend, y, sw, shp, swp, direct;
    int havecol;
@@ -160,16 +170,26 @@ FUNC_NAME_DO(RGBA_Image *src, RGBA_Image *dst,
         buf = alloca(cw * sizeof(DATA32));
         pa = src->cache_entry.flags.alpha;
         if (ms->havea) src->cache_entry.flags.alpha = 1;
-        if (dc->mul.use)
-          func = evas_common_gfx_func_composite_pixel_color_span_get(src, dc->mul.col, dst, cw, dc->render_op);
+
+        if (!dc->clip.mask)
+          {
+             if (dc->mul.use)
+               func = evas_common_gfx_func_composite_pixel_color_span_get(src, dc->mul.col, dst, cw, dc->render_op);
+             else
+               func = evas_common_gfx_func_composite_pixel_span_get(src, dst, cw, dc->render_op);
+          }
         else
-          func = evas_common_gfx_func_composite_pixel_span_get(src, dst, cw, dc->render_op);
+          {
+             func = evas_common_gfx_func_composite_pixel_mask_span_get(src, dst, cw, dc->render_op);
+             if (dc->mul.use)
+               func2 = evas_common_gfx_func_composite_pixel_color_span_get(src, dc->mul.col, dst, cw, EVAS_RENDER_COPY);
+          }
         src->cache_entry.flags.alpha = pa;
      }
-    
+
    if (!havecol)
      {
-#undef COLMUL     
+#undef COLMUL
 #include "evas_map_image_core.c"
      }
    else

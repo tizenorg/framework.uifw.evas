@@ -2,6 +2,20 @@
 #include <unistd.h>
 
 #ifdef BUILD_PIPE_RENDER
+
+# ifdef BUILD_PTHREAD
+typedef struct _Thinfo
+{
+   RGBA_Image            *im;
+   int                    thread_num;
+   pthread_t              thread_id;
+   pthread_barrier_t     *barrier;
+   const Eina_Inlist     *tasks;
+   Eina_Array             cutout_trash;
+   Eina_Array             rects_task;
+} Thinfo;
+#endif
+
 static RGBA_Pipe *evas_common_pipe_add(RGBA_Pipe *pipe, RGBA_Pipe_Op **op);
 static void evas_common_pipe_draw_context_copy(RGBA_Draw_Context *dc, RGBA_Pipe_Op *op);
 static void evas_common_pipe_op_free(RGBA_Pipe_Op *op);
@@ -292,7 +306,7 @@ evas_common_pipe_rectangle_prepare(void *data, RGBA_Image *dst, RGBA_Pipe_Op *op
    Eina_Bool r;
 
    recycle = evas_pipe_cutout_rects_pop(info);
-   r = evas_common_rectangle_draw_prepare(recycle, dst, &(op->context),
+   r = evas_common_rectangle_draw_prepare(&recycle, dst, &(op->context),
                                           op->op.rect.x, op->op.rect.y,
                                           op->op.rect.w, op->op.rect.h);
    if (recycle->active) op->rects = recycle;
@@ -439,7 +453,7 @@ evas_common_pipe_text_draw_prepare(void *data, RGBA_Image *dst, RGBA_Pipe_Op *op
    Eina_Bool r;
 
    recycle = evas_pipe_cutout_rects_pop(info);
-   r = evas_common_font_draw_prepare_cutout(recycle, dst, &(op->context),
+   r = evas_common_font_draw_prepare_cutout(&recycle, dst, &(op->context),
 					    &(op->op.text.func));
    if (recycle->active) op->rects = recycle;
    else evas_pipe_cutout_rects_push(info, recycle);
@@ -487,7 +501,7 @@ evas_common_pipe_op_image_prepare(void *data, RGBA_Image *dst, RGBA_Pipe_Op *op)
    Eina_Bool r;
 
    recycle = evas_pipe_cutout_rects_pop(info);
-   r = evas_common_scale_rgba_in_to_out_clip_prepare(recycle,
+   r = evas_common_scale_rgba_in_to_out_clip_prepare(&recycle,
 						     op->op.image.src, dst,
 						     &(op->context),
                                                      op->op.image.dx, op->op.image.dy,

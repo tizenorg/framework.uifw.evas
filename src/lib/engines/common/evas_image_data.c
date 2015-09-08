@@ -22,6 +22,14 @@ evas_common_rgba_image_from_data(Image_Entry* ie_dst, int w, int h, DATA32 *imag
 	dst->image.no_free = 1;
 	dst->cache_entry.flags.alpha = alpha ? 1 : 0;
 	break;
+      case EVAS_COLORSPACE_AGRY88:
+      case EVAS_COLORSPACE_GRY8:
+	dst->cache_entry.w = w;
+	dst->cache_entry.h = h;
+    dst->image.data8 = (DATA8 *) image_data;
+    dst->image.no_free = 1;
+	dst->cache_entry.flags.alpha = 1;
+	break;
       case EVAS_COLORSPACE_YCBCR422P601_PL:
       case EVAS_COLORSPACE_YCBCR422P709_PL:
       case EVAS_COLORSPACE_YCBCR422601_PL:
@@ -55,6 +63,16 @@ evas_common_rgba_image_from_copied_data(Image_Entry* ie_dst, int w, int h, DATA3
          dst->cache_entry.flags.alpha = alpha ? 1 : 0;
          if (image_data)
            memcpy(dst->image.data, image_data, w * h * sizeof(DATA32));
+         break;
+      case EVAS_COLORSPACE_AGRY88:
+         dst->cache_entry.flags.alpha = 1;
+         if (image_data)
+           memcpy(dst->image.data8, image_data, w * h * sizeof(DATA16));
+         break;
+      case EVAS_COLORSPACE_GRY8:
+         dst->cache_entry.flags.alpha = 1;
+         if (image_data)
+           memcpy(dst->image.data8, image_data, w * h * sizeof(DATA8));
          break;
       case EVAS_COLORSPACE_YCBCR422P601_PL:
       case EVAS_COLORSPACE_YCBCR422P709_PL:
@@ -104,16 +122,25 @@ int
 evas_common_rgba_image_colorspace_set(Image_Entry* ie_dst, int cspace)
 {
    RGBA_Image   *dst = (RGBA_Image *) ie_dst;
+   Eina_Bool change = (dst->cache_entry.space != cspace);
 
    switch (cspace)
      {
       case EVAS_COLORSPACE_ARGB8888:
+      case EVAS_COLORSPACE_AGRY88:
+      case EVAS_COLORSPACE_GRY8:
 	if (dst->cs.data)
 	  {
 	     if (!dst->cs.no_free) free(dst->cs.data);
 	     dst->cs.data = NULL;
 	     dst->cs.no_free = 0;
 	  }
+        if (change && dst->image.data)
+          {
+             if (!dst->image.no_free) free(dst->image.data);
+             dst->image.data = NULL;
+             dst->image.no_free = 0;
+          }
 	break;
       case EVAS_COLORSPACE_YCBCR422P601_PL:
       case EVAS_COLORSPACE_YCBCR422P709_PL:

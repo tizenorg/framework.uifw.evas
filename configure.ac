@@ -1,7 +1,7 @@
 ##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
 ##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
 m4_define([v_maj], [1])
-m4_define([v_min], [6])
+m4_define([v_min], [7])
 m4_define([v_mic], [99])
 m4_define([v_rev], m4_esyscmd([(svnversion "${SVN_REPO_PATH:-.}" | grep -v '\(export\|Unversioned directory\)' || echo 0) | awk -F : '{printf("%s\n", $1);}' | tr -d ' :MSP\n']))
 m4_if(v_rev, [0], [m4_define([v_rev], m4_esyscmd([git log 2> /dev/null | (grep -m1 git-svn-id || echo 0) | sed -e 's/.*@\([0-9]*\).*/\1/' | tr -d '\n']))])
@@ -100,9 +100,6 @@ want_evas_engine_software_xcb="no"
 want_evas_engine_software_gdi="no"
 want_evas_engine_software_ddraw="no"
 want_evas_engine_software_8_x11="no"
-want_evas_engine_software_16_x11="no"
-want_evas_engine_software_16_wince="no"
-want_evas_engine_software_16_sdl="no"
 want_evas_engine_gl_xlib="no"
 want_evas_engine_gl_xcb="no"
 want_evas_engine_gl_sdl="no"
@@ -126,8 +123,10 @@ want_evas_image_loader_xpm="yes"
 want_evas_image_loader_bmp="yes"
 want_evas_image_loader_tga="yes"
 want_evas_image_loader_wbmp="yes"
+want_evas_image_loader_webp="yes"
 want_evas_image_loader_ico="yes"
 want_evas_image_loader_psd="yes"
+want_evas_image_loader_tgv="yes"
 want_evas_image_loader_generic="yes"
 
 want_evas_font_loader_eet="yes"
@@ -135,7 +134,6 @@ want_evas_font_loader_eet="yes"
 case "$host_os" in
    mingw32ce*)
       want_fontconfig="no"
-      want_evas_engine_software_16_wince="yes"
       want_evas_image_loader_edb="no"
       want_evas_image_loader_gif="no"
       want_evas_image_loader_svg="no"
@@ -146,7 +144,7 @@ case "$host_os" in
       want_evas_engine_software_ddraw="yes"
       want_evas_engine_direct3d="yes"
       want_evas_image_loader_edb="no"
-      want_evas_image_loader_svg="no"
+      want_evas_image_loader_svg="yes"
       ;;
    darwin*)
       want_evas_engine_software_xlib="auto"
@@ -162,7 +160,6 @@ case "$host_os" in
       want_evas_engine_wayland_egl="auto"
 ### no - not ready/usable/complete
 #      want_evas_engine_software_8_x11="auto"
-#      want_evas_engine_software_16_x11="auto"
       ;;
 esac
 
@@ -544,7 +541,7 @@ AC_SUBST(lt_enable_auto_import)
 ### Checks for library functions
 
 AC_ISC_POSIX
-AC_CHECK_FUNCS([siglongjmp])
+AC_CHECK_FUNCS([siglongjmp fcntl])
 
 # alloca
 AC_FUNC_ALLOCA
@@ -669,7 +666,9 @@ AC_ARG_ENABLE(gl-flavor-gles,
   [
       if test "x$enableval" = "xyes" ; then
         AC_MSG_RESULT(yes)
+        AC_DEFINE(GL_GLES, 1, [GLSL runtime shader GLES2 support])
         gl_flavor_gles="yes"
+        gles_variety_sgx="yes"
       else
         AC_MSG_RESULT(no)
         gl_flavor_gles="no"
@@ -679,65 +678,6 @@ AC_ARG_ENABLE(gl-flavor-gles,
       gl_flavor_gles="no"
   ]
 )
-
-#######################################
-## GLES variety sgx
-gles_variety_sgx="no"
-AC_MSG_CHECKING(whether to build GLES variety for SGX)
-AC_ARG_ENABLE(gles-variety-sgx,
-  AC_HELP_STRING([--enable-gles-variety-sgx], [GLES variety SGX 3D unit]),
-  [
-      if test "x$enableval" = "xyes" ; then
-        AC_MSG_RESULT(yes)
-        AC_DEFINE(GLES_VARIETY_SGX, 1, [Imagination SGX GLES2 support])
-        gles_variety_sgx="yes"
-      else
-        AC_MSG_RESULT(no)
-        gles_variety_sgx="no"
-      fi
-  ], [
-      AC_MSG_RESULT(no)
-      gles_variety_sgx="no"
-  ]
-)
-
-#######################################
-## GLES variety s3c6410
-gles_variety_s3c6410="no"
-AC_MSG_CHECKING(whether to build GLES variety for s3c6410)
-AC_ARG_ENABLE(gles-variety-s3c6410,
-  AC_HELP_STRING([--enable-gles-variety-s3c6410], [GLES variety s3c6410 3D unit]),
-  [
-      if test "x$enableval" = "xyes" ; then
-        AC_MSG_RESULT(yes)
-        AC_DEFINE(GLES_VARIETY_S3C6410, 1, [Samsung S3c6410 GLES2 support])
-        gles_variety_s3c6410="yes"
-      else
-        AC_MSG_RESULT(no)
-        gles_variety_s3c6410="no"
-      fi
-  ], [
-      AC_MSG_RESULT(no)
-      gles_variety_s3c6410="no"
-  ]
-)
-
-if test "x$gl_flavor_gles" = "xyes"; then
-  eng=""
-  if test "x$gles_variety_sgx" = "xyes"; then eng="x"$eng; fi
-  if test "x$gles_variety_s3c6410" = "xyes"; then eng="x"$eng; fi
-  if test "x$eng" = "xx"; then
-    eng=""
-  else
-     AC_MSG_ERROR(
-       [Please enable just 1 OpenGL-ES flavor. Choices are:
-          --enable-gles-variety-sgx (Most GL-ES2 GPUs with shader compiler)
-          --enable-gles-variety-s3c6410 (s3c6410 with offline shader compiler)
-        You will also need to enable the OpenGL engine for X11 with:
-          --enable-gl-xlib or --enable-gl-xcb
-       ])
-  fi
-fi
 
 #####################################################################
 ## Engines
@@ -761,12 +701,6 @@ EVAS_CHECK_ENGINE([fb], [${want_evas_engine_fb}], [no], [Framebuffer])
 EVAS_CHECK_ENGINE([directfb], [${want_evas_engine_directfb}], [no], [DirectFB])
 
 EVAS_CHECK_ENGINE([software-8-x11], [${want_evas_engine_software_8_x11}], [no], [Software X11 8 bits grayscale])
-
-EVAS_CHECK_ENGINE([software-16-x11], [${want_evas_engine_software_16_x11}], [no], [Software X11 16 bits])
-
-EVAS_CHECK_ENGINE([software-16-wince], [${want_evas_engine_software_16_wince}], [no], [Software Windows CE 16 bits])
-
-EVAS_CHECK_ENGINE([software-16-sdl], [${want_evas_engine_software_16_sdl}], [no], [Software SDL 16 bits])
 
 EVAS_CHECK_ENGINE([wayland-shm], [${want_evas_engine_wayland_shm}], [no], [Wayland Shm])
 
@@ -964,34 +898,6 @@ if test "x$gl_flavor_gles" = "xyes"; then
       [#include <SDL/SDL_video.h>])
 fi
 
-# if software 16 x11 is enabled - build software_16 (the generic 16bit
-# engine). later enable it fb_16 or other "16" bit engines are enabled.
-have_evas_engine_software_16="no"
-if test "x$have_evas_engine_software_16_x11" = "xyes" -o "x$have_evas_engine_software_16_x11" = "xstatic"; then
-   have_evas_engine_software_16="yes"
-fi
-if test "x$have_evas_engine_software_16_sdl" = "xyes" -o "x$have_evas_engine_software_16_sdl" = "xstatic"; then
-   have_evas_engine_software_16="yes"
-fi
-if test "x$have_evas_engine_software_16_wince" = "xyes" -o "x$have_evas_engine_software_16_wince" = "xstatic"; then
-   have_evas_engine_software_16="yes"
-fi
-AM_CONDITIONAL(BUILD_ENGINE_SOFTWARE_16, test "x$have_evas_engine_software_16" = "xyes")
-
-# if software 16 need to be build as part of libevas.so
-have_static_software_16="no"
-AC_ARG_ENABLE([static-software-16],
-   [AC_HELP_STRING([--enable-static-software-16], [Build software 16 engine as part of libevas])],
-   [have_static_software_16=${enableval}]
-)
-AC_MSG_CHECKING([Whether to build software 16 engine as part of libevas])
-AC_MSG_RESULT([${have_static_software_16}])
-
-AM_CONDITIONAL(EVAS_STATIC_BUILD_SOFTWARE_16, test "x${have_static_software_16}" = "xyes")
-if test "x${have_static_software_16}" = "xyes"; then
-   AC_DEFINE(EVAS_STATIC_BUILD_SOFTWARE_16, [1], [Build software 16 engine as part of libevas])
-fi
-
 # if software 8 x11 is enabled - build software_8 (the generic 8bit
 # engine).
 have_evas_engine_software_8="no"
@@ -1056,7 +962,11 @@ EVAS_CHECK_IMAGE_LOADER([BMP], [${want_evas_image_loader_bmp}])
 
 EVAS_CHECK_IMAGE_LOADER([TGA], [${want_evas_image_loader_tga}])
 
+EVAS_CHECK_IMAGE_LOADER([TGV], [${want_evas_image_loader_tgv}])
+
 EVAS_CHECK_IMAGE_LOADER([WBMP], [${want_evas_image_loader_wbmp}])
+
+EVAS_CHECK_IMAGE_LOADER([WEBP], [${want_evas_image_loader_webp}])
 
 EVAS_CHECK_IMAGE_LOADER([ICO], [${want_evas_image_loader_ico}])
 
@@ -1519,45 +1429,6 @@ if test "x$want_evas_magic_debug" = "xyes"; then
   AC_DEFINE(EVAS_MAGIC_DEBUG, 1, [complain when people pass in wrong object types etc.])
 fi
 
-
-#######################################
-## Word Caching
-want_word_cache="no"
-AC_MSG_CHECKING(whether to enable caching of rendered words)
-AC_ARG_ENABLE(word-cache,
-  AC_HELP_STRING(
-    [--enable-word-cache],
-    [Enable experimental word caching to speed up rendering [[default=disabled]]]
-  ),
-  [ want_word_cache="$enableval" ]
-)
-AC_MSG_RESULT($want_word_cache)
-
-AM_CONDITIONAL(WORD_CACHE, test "x$want_word_cache" = "xyes")
-if test "x$want_word_cache" = "xyes"; then
-  AC_DEFINE(WORD_CACHE, 1, [Experimental word caching to speed up text rendering.])
-fi
-
-#######################################
-## Metric Caching
-want_metric_cache="no"
-AC_MSG_CHECKING(whether to enable caching of rendered metrics)
-AC_ARG_ENABLE(metric-cache,
-  AC_HELP_STRING(
-    [--enable-metric-cache],
-    [Enable experimental metric caching to speed up rendering [[default=disabled]]]
-  ),
-  [ want_metric_cache="$enableval" ]
-)
-AC_MSG_RESULT($want_metric_cache)
-
-AM_CONDITIONAL(METRIC_CACHE, test "x$want_metric_cache" = "xyes")
-if test "x$want_metric_cache" = "xyes"; then
-  AC_DEFINE(METRIC_CACHE, 1, [Experimental metric caching to speed up text rendering.])
-fi
-
-
-
 #####################################################################
 ## ARGB engine options
 
@@ -1829,6 +1700,13 @@ fi
 AC_SUBST(EVAS_CFLAGS)
 AC_SUBST(EVAS_LIBS)
 
+# General CFLAGS
+
+EVAS_GENERAL_CFLAGS="${EINA_CFLAGS}"
+EVAS_GENERAL_LIBS="${EINA_LIBS}"
+AC_SUBST(EVAS_GENERAL_CFLAGS)
+AC_SUBST(EVAS_GENERAL_LIBS)
+
 #####################################################################
 ## Fill in flags
 
@@ -1851,11 +1729,9 @@ evas-opengl-cocoa.pc
 evas-software-buffer.pc
 evas-software-x11.pc
 evas-software-8-x11.pc
-evas-software-16-x11.pc
 evas-software-gdi.pc
 evas-software-ddraw.pc
 evas-direct3d.pc
-evas-software-16-wince.pc
 evas-software-sdl.pc
 evas-psl1ght.pc
 evas-wayland-shm.pc
@@ -1877,6 +1753,7 @@ src/bin/loaders/ico/Makefile
 src/bin/loaders/tga/Makefile
 src/bin/loaders/pmaps/Makefile
 src/bin/loaders/wbmp/Makefile
+src/bin/loaders/webp/Makefile
 src/bin/loaders/psd/Makefile
 src/lib/Makefile
 src/lib/canvas/Makefile
@@ -1894,14 +1771,13 @@ src/lib/engines/common/evas_op_mask/Makefile
 src/lib/engines/common/evas_op_mul/Makefile
 src/lib/engines/common/evas_op_sub/Makefile
 src/lib/engines/common_8/Makefile
-src/lib/engines/common_16/Makefile
+src/lib/filters/Makefile
 src/modules/Makefile
 src/modules/engines/Makefile
 src/modules/engines/software_generic/Makefile
 src/modules/engines/software_gdi/Makefile
 src/modules/engines/software_ddraw/Makefile
 src/modules/engines/direct3d/Makefile
-src/modules/engines/software_16_wince/Makefile
 src/modules/engines/software_x11/Makefile
 src/modules/engines/fb/Makefile
 src/modules/engines/buffer/Makefile
@@ -1913,9 +1789,6 @@ src/modules/engines/gl_cocoa/Makefile
 src/modules/engines/psl1ght/Makefile
 src/modules/engines/software_8/Makefile
 src/modules/engines/software_8_x11/Makefile
-src/modules/engines/software_16/Makefile
-src/modules/engines/software_16_x11/Makefile
-src/modules/engines/software_16_sdl/Makefile
 src/modules/engines/wayland_shm/Makefile
 src/modules/engines/wayland_egl/Makefile
 src/modules/loaders/Makefile
@@ -1929,9 +1802,11 @@ src/modules/loaders/xpm/Makefile
 src/modules/loaders/bmp/Makefile
 src/modules/loaders/ico/Makefile
 src/modules/loaders/tga/Makefile
+src/modules/loaders/tgv/Makefile
 src/modules/loaders/svg/Makefile
 src/modules/loaders/pmaps/Makefile
 src/modules/loaders/wbmp/Makefile
+src/modules/loaders/webp/Makefile
 src/modules/loaders/psd/Makefile
 src/modules/loaders/generic/Makefile
 src/modules/savers/Makefile
@@ -1940,11 +1815,16 @@ src/modules/savers/eet/Makefile
 src/modules/savers/jpeg/Makefile
 src/modules/savers/png/Makefile
 src/modules/savers/tiff/Makefile
+src/modules/savers/tgv/Makefile
 src/static_deps/Makefile
 src/static_deps/liblinebreak/Makefile
+src/static_deps/lz4/Makefile
+src/static_deps/rg_etc/Makefile
 src/lib/include/Makefile
 src/examples/Makefile
 src/tests/Makefile
+src/benchmarks/evas/Makefile
+data/Makefile
 evas.spec
 ])
 
@@ -1984,7 +1864,7 @@ echo "  Software Memory Buffer.....: $have_evas_engine_buffer"
 echo "  Software X11...............: $have_evas_engine_software_x11 (Xlib: $have_evas_engine_software_xlib) (XCB: $have_evas_engine_software_xcb)"
 echo $ECHO_N "  OpenGL X11.................: $have_evas_engine_gl_x11 (Xlib: $have_evas_engine_gl_xlib) (XCB: $have_evas_engine_gl_xcb) $ECHO_C"
 if test "x$have_evas_engine_gl_x11" = "xyes"; then
-  echo "(GLES: $gl_flavor_gles) (SGX: $gles_variety_sgx) (s3c6410: $gles_variety_s3c6410)"
+  echo "(GLES: $gl_flavor_gles)"
 else
   echo
 fi
@@ -1993,7 +1873,7 @@ echo "  Software DirectDraw........: $have_evas_engine_software_ddraw"
 echo "  Direct3d...................: $have_evas_engine_direct3d"
 echo "  OpenGL SDL.................: $have_evas_engine_gl_sdl $ECHO_C"
 if test "x$have_evas_engine_gl_sdl" = "xyes"; then
-  echo "(GLES: $gl_flavor_gles) (SGX: $gles_variety_sgx) (s3c6410: $gles_variety_s3c6410)"
+  echo "(GLES: $gl_flavor_gles)"
 else
   echo
 fi
@@ -2002,11 +1882,6 @@ echo "  Software Framebuffer.......: $have_evas_engine_fb"
 echo "  DirectFB...................: $have_evas_engine_directfb"
 echo "  PSL1GHT....................: $have_evas_engine_psl1ght"
 echo "  Software 8bit grayscale....: $have_evas_engine_software_8"
-# FIXME: kill software 16bit
-echo "  Software 16bit ............: $have_evas_engine_software_16"
-echo "  Software 16bit X11.........: $have_evas_engine_software_16_x11"
-echo "  Software 16bit WinCE.......: $have_evas_engine_software_16_wince"
-echo "  Software 16bit SDL.........: $have_evas_engine_software_16_sdl (primitive: $sdl_primitive)"
 echo "  Wayland Shm................: $have_evas_engine_wayland_shm"
 echo "  Wayland Egl................: $have_evas_engine_wayland_egl"
 echo
@@ -2025,7 +1900,9 @@ echo "  SVG.....................: $have_evas_image_loader_svg"
 echo "  TGA.....................: $have_evas_image_loader_tga"
 echo "  TIFF....................: $have_evas_image_loader_tiff"
 echo "  WBMP....................: $have_evas_image_loader_wbmp"
+echo "  WEBP....................: $have_evas_image_loader_webp"
 echo "  XPM.....................: $have_evas_image_loader_xpm"
+echo "  TGV.....................: $have_evas_image_loader_tgv"
 echo
 echo "Font Sourcing Systems:"
 echo "  EET.....................: $have_evas_font_loader_eet"
@@ -2062,9 +1939,6 @@ dnl
 echo "  Threaded Pipe Rendering.: $build_pipe_render"
 echo "  Async Events............: $build_async_events"
 echo "  Async Image Preload.....: $build_async_preload"
-echo
-echo "  Word Cache..............: $want_word_cache"
-echo "  Metric Cache............: $want_metric_cache"
 echo
 echo "  Pixman..................: $have_pixman"
 echo "  Pixman Fonts............: $have_pixman_font"

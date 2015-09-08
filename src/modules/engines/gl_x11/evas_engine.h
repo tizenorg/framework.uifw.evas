@@ -10,26 +10,16 @@
 
 #define GL_GLEXT_PROTOTYPES
 
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-# if defined(GLES_VARIETY_S3C6410)
-#  include <EGL/egl.h>
-#  include <GLES2/gl2.h>
-#  include <X11/Xlib.h>
-#  include <X11/Xatom.h>
-#  include <X11/Xutil.h>
-#  include <X11/extensions/Xrender.h>
-#  include <X11/Xresource.h> // xres - dpi
-# elif defined(GLES_VARIETY_SGX)
-#  define SUPPORT_X11 1
-#  include <EGL/egl.h>
-#  include <GLES2/gl2.h>
-#  include <GLES2/gl2ext.h>
-#  include <X11/Xlib.h>
-#  include <X11/Xatom.h>
-#  include <X11/Xutil.h>
-#  include <X11/extensions/Xrender.h>
-#  include <X11/Xresource.h> // xres - dpi
-# endif
+#ifdef GL_GLES
+# define SUPPORT_X11 1
+# include <EGL/egl.h>
+# include <GLES2/gl2.h>
+# include <GLES2/gl2ext.h>
+# include <X11/Xlib.h>
+# include <X11/Xatom.h>
+# include <X11/Xutil.h>
+# include <X11/extensions/Xrender.h>
+# include <X11/Xresource.h> // xres - dpi
 #else
 # include <X11/Xlib.h>
 # include <X11/Xatom.h>
@@ -40,6 +30,9 @@
 # include <GL/glext.h>
 # include <GL/glx.h>
 #endif
+
+#define EVAS_GL_NO_GL_H_CHECK 1
+#include "Evas_GL.h"
 
 extern int _evas_engine_GL_X11_log_dom ;
 #ifdef ERR
@@ -72,7 +65,8 @@ typedef struct _Evas_GL_X11_Window Evas_GL_X11_Window;
 struct _Evas_GL_X11_Window
 {
    Display         *disp;
-   Window           win;
+   Drawable         win;
+   Drawable         win_back;
    int              w, h;
    int              screen;
    XVisualInfo     *visualinfo;
@@ -81,46 +75,49 @@ struct _Evas_GL_X11_Window
    int              depth;
    int              alpha;
    int              rot;
+   int              depth_bits;
+   int              stencil_bits;
+   int              msaa_bits;
+   int              offscreen;
    Evas_Engine_GL_Context *gl_context;
    struct {
-      int              redraw : 1;
-      int              drew : 1;
-      int              x1, y1, x2, y2;
+      int           drew : 1;
    } draw;
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+#ifdef GL_GLES
    EGLContext       egl_context[1];
-   EGLSurface       egl_surface[1];
+   EGLSurface       egl_surface[2];
    EGLConfig        egl_config;
    EGLDisplay       egl_disp;
 #else
    GLXContext       context;
    GLXWindow        glxwin;
-   struct {
-      GLXFBConfig   fbc;
-      int           tex_format;
-      int           tex_target;
-      int           mipmap;
-      unsigned char yinvert : 1;
-   } depth_cfg[33]; // config for all 32 possible depths!
+#endif
 
    struct {
-      unsigned int loose_binding : 1;
-   } detected;
+      unsigned char depth_buffer_size;
+      unsigned char stencil_buffer_size;
+      unsigned char msaa;
+#ifndef GL_GLES
+      unsigned char loose_binding : 1;
 #endif
-   int             surf : 1;
+   } detected;
+   unsigned char    surf : 1;
 };
 
-Evas_GL_X11_Window *eng_window_new(Display *disp, Window win, int screen,
+Evas_GL_X11_Window *eng_window_new(Display *disp, Drawable win, int screen,
                                    Visual *vis, Colormap cmap,
                                    int depth, int w, int h, int indirect,
-                                   int alpha, int rot);
+                                   int alpha, int rot, int depth_bits, int stencil_bits, int msaa_bits,
+                                   Drawable offscreen);
 void      eng_window_free(Evas_GL_X11_Window *gw);
 void      eng_window_use(Evas_GL_X11_Window *gw);
-void      eng_window_unsurf(Evas_GL_X11_Window *gw);
+void      eng_window_unsurf(Evas_GL_X11_Window *gw, Eina_Bool pre_rotation_resurf);
 void      eng_window_resurf(Evas_GL_X11_Window *gw);
 
 Visual   *eng_best_visual_get(Evas_Engine_Info_GL_X11 *einfo);
 Colormap  eng_best_colormap_get(Evas_Engine_Info_GL_X11 *einfo);
 int       eng_best_depth_get(Evas_Engine_Info_GL_X11 *einfo);
+int       eng_native_config_check(Display *disp, void *cfg, int target, void *pixmap, int *w, int *h);
+Eina_Bool eng_init(void);
 
 #endif

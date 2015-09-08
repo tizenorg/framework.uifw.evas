@@ -7,10 +7,12 @@
 #endif
 
 #ifdef BUILD_ASYNC_PRELOAD
-# include <pthread.h>
-# ifdef __linux__
-# include <sys/syscall.h>
-# endif
+#include <pthread.h>
+#ifdef __linux__
+#include <sys/syscall.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+#endif
 #endif
 
 #include "evas_common.h"
@@ -20,6 +22,7 @@
 #ifdef BUILD_ASYNC_PRELOAD
 
 static int _threads_max = 0;
+static int _threads_priority = 19;
 
 typedef struct _Evas_Preload_Pthread_Worker Evas_Preload_Pthread_Worker;
 typedef struct _Evas_Preload_Pthread_Data Evas_Preload_Pthread_Data;
@@ -79,6 +82,12 @@ _evas_preload_thread_worker(void *data)
    Evas_Preload_Pthread_Worker *work;
 
    eina_sched_prio_drop();
+
+   /// main thread was stuck by preload thread. set priority the lowest value.
+#ifdef __linux__
+   setpriority(PRIO_PROCESS, 0, _threads_priority);
+#endif
+
    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 on_error:
@@ -213,9 +222,11 @@ evas_preload_thread_run(void (*func_heavy) (void *data),
    LKL(_mutex);
    if (_threads_count == 0)
      {
-	LKU(_mutex);
-	if (work->func_cancel) work->func_cancel(work->data);
-	free(work);
+        _workers = EINA_INLIST_CONTAINER_GET(eina_inlist_remove(EINA_INLIST_GET(_workers), EINA_INLIST_GET(work)), Evas_Preload_Pthread_Worker);
+
+        LKU(_mutex);
+        if (work->func_cancel) work->func_cancel(work->data);
+        free(work);
         return NULL;
      }
    LKU(_mutex);

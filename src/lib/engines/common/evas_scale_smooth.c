@@ -449,6 +449,14 @@ evas_common_scale_rgba_mipmap_down_1x2_mmx(DATA32 *src, DATA32 *dst, int src_w, 
 #  undef SCALE_USING_MMX
 #  include "evas_scale_smooth_scaler.c"
 # endif
+# ifdef BUILD_NEON
+#  undef SCALE_FUNC
+#  undef SCALE_USING_NEON
+#  define SCALE_USING_NEON
+#  define SCALE_FUNC evas_common_scale_rgba_in_to_out_clip_smooth_neon
+#  include "evas_scale_smooth_scaler.c"
+#  undef SCALE_USING_NEON
+# endif
 EAPI void
 evas_common_scale_rgba_in_to_out_clip_smooth(RGBA_Image *src, RGBA_Image *dst,
 				 RGBA_Draw_Context *dc,
@@ -484,6 +492,15 @@ evas_common_scale_rgba_in_to_out_clip_smooth(RGBA_Image *src, RGBA_Image *dst,
 					       dst_region_w, dst_region_h);
 	else
 # endif
+# ifdef BUILD_NEON
+	if (evas_common_cpu_has_feature(CPU_FEATURE_NEON))
+	  evas_common_scale_rgba_in_to_out_clip_smooth_neon(src, dst, dc,
+					     src_region_x, src_region_y,
+					     src_region_w, src_region_h,
+					     dst_region_x, dst_region_y,
+					     dst_region_w, dst_region_h);
+	else
+# endif
 # ifdef BUILD_C
 	  evas_common_scale_rgba_in_to_out_clip_smooth_c(src, dst, dc,
 					     src_region_x, src_region_y,
@@ -515,6 +532,15 @@ evas_common_scale_rgba_in_to_out_clip_smooth(RGBA_Image *src, RGBA_Image *dst,
 					       src_region_w, src_region_h,
 					       dst_region_x, dst_region_y,
 					       dst_region_w, dst_region_h);
+	else
+# endif
+# ifdef BUILD_NEON
+	if (evas_common_cpu_has_feature(CPU_FEATURE_NEON))
+	  evas_common_scale_rgba_in_to_out_clip_smooth_neon(src, dst, dc,
+					     src_region_x, src_region_y,
+					     src_region_w, src_region_h,
+					     dst_region_x, dst_region_y,
+					     dst_region_w, dst_region_h);
 	else
 # endif
 # ifdef BUILD_C
@@ -561,6 +587,15 @@ evas_common_scale_rgba_in_to_out_clip_smooth_do(const Cutout_Rects *reuse,
 					       dst_region_w, dst_region_h);
 	else
 # endif
+# ifdef BUILD_NEON
+	if (evas_common_cpu_has_feature(CPU_FEATURE_NEON))
+	  evas_common_scale_rgba_in_to_out_clip_smooth_neon(src, dst, dc,
+					     src_region_x, src_region_y,
+					     src_region_w, src_region_h,
+					     dst_region_x, dst_region_y,
+					     dst_region_w, dst_region_h);
+	else
+# endif
 # ifdef BUILD_C
 	  evas_common_scale_rgba_in_to_out_clip_smooth_c(src, dst, dc,
 					     src_region_x, src_region_y,
@@ -585,6 +620,15 @@ evas_common_scale_rgba_in_to_out_clip_smooth_do(const Cutout_Rects *reuse,
 					       src_region_w, src_region_h,
 					       dst_region_x, dst_region_y,
 					       dst_region_w, dst_region_h);
+	else
+# endif
+# ifdef BUILD_NEON
+	if (evas_common_cpu_has_feature(CPU_FEATURE_NEON))
+	  evas_common_scale_rgba_in_to_out_clip_smooth_neon(src, dst, dc,
+					     src_region_x, src_region_y,
+					     src_region_w, src_region_h,
+					     dst_region_x, dst_region_y,
+					     dst_region_w, dst_region_h);
 	else
 # endif
 # ifdef BUILD_C

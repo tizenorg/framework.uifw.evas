@@ -903,6 +903,7 @@ evas_cache_image_copied_data(Evas_Cache_Image *cache,
         return NULL;
      }
    im->references = 1;
+   im->flags.loaded = EINA_TRUE;
    if (cache->func.debug) cache->func.debug("copied-data", im);
    return im;
 }
@@ -1244,6 +1245,10 @@ evas_cache_image_wakeup(void)
 {
 #ifdef BUILD_ASYNC_PRELOAD
    if (_evas_cache_mutex_init > 0)
-     eina_condition_broadcast(&cond_wakeup);
+     {
+        LKL(wakeup);
+        eina_condition_broadcast(&cond_wakeup);
+        LKU(wakeup);
+     }
 #endif
 }

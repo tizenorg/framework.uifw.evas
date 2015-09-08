@@ -1,3 +1,3 @@
 MAINTAINERCLEANFILES = Makefile.in
 
-SUBDIRS = static_deps lib bin modules tests examples
+SUBDIRS = static_deps lib bin modules tests examples benchmarks/evas

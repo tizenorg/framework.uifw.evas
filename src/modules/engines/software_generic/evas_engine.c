@@ -297,15 +297,77 @@ eng_context_new(void *data __UNUSED__)
 }
 
 static void
-eng_context_free(void *data __UNUSED__, void *context)
-{
-   evas_common_draw_context_free(context);
-}
-
-static void
 eng_context_clip_set(void *data __UNUSED__, void *context, int x, int y, int w, int h)
 {
    evas_common_draw_context_set_clip(context, x, y, w, h);
+}
+
+static void
+eng_context_clip_image_unset(void *data __UNUSED__, void *context)
+{
+   RGBA_Draw_Context *ctx = context;
+
+   if (ctx->clip.mask)
+     {
+        Image_Entry *ie = ctx->clip.mask;
+#ifdef EVAS_CSERVE2
+        if (evas_cserve2_use_get())
+          evas_cache2_image_close(ie);
+        else
+#endif
+          evas_cache_image_drop(ie);
+        // Is the above code safe? Hmmm...
+        //evas_unref_queue_image_put(EVAS???, &ctx->clip.ie->cache_entry);
+        ctx->clip.mask = NULL;
+     }
+}
+
+static void
+eng_context_clip_image_set(void *data __UNUSED__, void *context, void *surface, int x, int y)
+{
+   RGBA_Draw_Context *ctx = context;
+   Eina_Bool noinc = EINA_FALSE;
+
+   if (ctx->clip.mask)
+     {
+        if (ctx->clip.mask != surface)
+          eng_context_clip_image_unset(data, context);
+        else
+          noinc = EINA_TRUE;
+     }
+
+   ctx->clip.mask = surface;
+   ctx->clip.mask_x = x;
+   ctx->clip.mask_y = y;
+
+   if (surface)
+     {
+        Image_Entry *ie = surface;
+        if (!noinc) ie->references++;
+        RECTS_CLIP_TO_RECT(ctx->clip.x, ctx->clip.y, ctx->clip.w, ctx->clip.h,
+                           x, y, ie->w, ie->h);
+     }
+}
+
+static void
+eng_context_clip_image_get(void *data EINA_UNUSED, void *context, void **ie, int *x, int *y)
+{
+   RGBA_Draw_Context *ctx = context;
+
+   if (ie) *ie = ctx->clip.mask;
+   if (x) *x = ctx->clip.mask_x;
+   if (y) *y = ctx->clip.mask_y;
+}
+
+static void
+eng_context_free(void *data, void *context)
+{
+   RGBA_Draw_Context *ctx = context;
+
+   if (!ctx) return;
+   if (ctx->clip.mask)
+     eng_context_clip_image_unset(data, context);
+   evas_common_draw_context_free(context);
 }
 
 static void
@@ -367,25 +429,6 @@ eng_context_multiplier_get(void *data __UNUSED__, void *context, int *r, int *g,
    *a = (int)(A_VAL(&((RGBA_Draw_Context *)context)->mul.col));
    return ((RGBA_Draw_Context *)context)->mul.use;
 }
-
-static void
-eng_context_mask_set(void *data __UNUSED__, void *context, void *mask, int x, int y, int w, int h)
-{
-   evas_common_draw_context_set_mask(context, mask, x, y, w, h);
-}
-
-static void
-eng_context_mask_unset(void *data __UNUSED__, void *context)
-{
-   evas_common_draw_context_unset_mask(context);
-}
-/*
-static void *
-eng_context_mask_get(void *data __UNUSED__, void *context)
-{
-   return ((RGBA_Draw_Context *)context)->mask.mask;
-}
-*/
 
 static void
 eng_context_cutout_add(void *data __UNUSED__, void *context, int x, int y, int w, int h)
@@ -569,6 +612,7 @@ eng_image_alpha_set(void *data __UNUSED__, void *image, int has_alpha)
 	im->cache_entry.flags.alpha = 0;
 	return im;
      }
+   if (!im->image.data) evas_cache_image_load_data(&im->cache_entry);
    im = (RGBA_Image *) evas_cache_image_alone(&im->cache_entry);
    im->cache_entry.flags.alpha = has_alpha ? 1 : 0;
    evas_common_image_colorspace_dirty(im);
@@ -622,27 +666,13 @@ eng_image_native_set(void *data __UNUSED__, void *image, void *native __UNUSED__
    Evas_Native_Surface *ns = native;
    Image_Entry *im = image, *im2 = NULL;
 
-   if (!im)
-     {
-        if ((!ns) && (ns->data.x11.visual))
-          {
-             im = evas_cache_image_data(evas_common_image_cache_get(),
-                                        im->w, im->h,
-                                        ns->data.x11.visual, 1,
-                                        EVAS_COLORSPACE_ARGB8888);
-             return im;
-          }
-        else
-           return NULL;
-     }
-
-   if ((!ns) && (!im)) return im;
+   if (!im || !ns) return im;
 
    if (!ns) return im;
 
    im2 = evas_cache_image_data(evas_common_image_cache_get(),
                                im->w, im->h,
-                               ns->data.x11.visual, 1,
+                               NULL, 1,
                                EVAS_COLORSPACE_ARGB8888);
    evas_cache_image_drop(im);
    im = im2;
@@ -961,12 +991,17 @@ evas_software_image_map_draw(void *data, void *context, RGBA_Image *surface, RGB
        (m->pts[2 + offset].v == (int)(im->cache_entry.h << FP)) &&
        (m->pts[3 + offset].u == 0) &&
        (m->pts[3 + offset].v == (int)(im->cache_entry.h << FP)) &&
-       (m->pts[0 + offset].col == 0xffffffff) &&
-       (m->pts[1 + offset].col == 0xffffffff) &&
-       (m->pts[2 + offset].col == 0xffffffff) &&
-       (m->pts[3 + offset].col == 0xffffffff))
+       (m->pts[0 + offset].col == m->pts[1 + offset].col) &&
+       (m->pts[1 + offset].col == m->pts[2 + offset].col) &&
+       (m->pts[2 + offset].col == m->pts[3 + offset].col))  
      {
+        DATA32 col;
+        int a, r, g, b;
         int dx, dy, dw, dh;
+
+        eng_context_color_get(data, context, &r, &g, &b, &a);
+        col = MUL4_256(a, r, g, b, m->pts[0 + offset].col);
+        eng_context_color_set(data, context, R_VAL(&col), G_VAL(&col), B_VAL(&col), A_VAL(&col));
 
         dx = m->pts[0 + offset].x >> FP;
         dy = m->pts[0 + offset].y >> FP;
@@ -976,6 +1011,8 @@ evas_software_image_map_draw(void *data, void *context, RGBA_Image *surface, RGB
           (data, context, surface, im,
            0, 0, im->cache_entry.w, im->cache_entry.h,
            dx, dy, dw, dh, smooth);
+
+        eng_context_color_set(data, context, r, g, b, a);
      }
    else
      {
@@ -1157,6 +1194,76 @@ static int
 eng_image_cache_get(void *data __UNUSED__)
 {
    return evas_common_image_get_cache();
+}
+
+static Eina_Bool
+eng_pixel_alpha_get(RGBA_Image *im, int x, int y, DATA8 *alpha,
+                 int src_region_x, int src_region_y, int src_region_w, int src_region_h,
+                 int dst_region_x, int dst_region_y, int dst_region_w, int dst_region_h)
+{
+   int px, py, dx, dy, sx, sy, src_w, src_h;
+   double scale_w, scale_h;
+
+   if ((dst_region_x > x) || (x >= (dst_region_x + dst_region_w)) ||
+       (dst_region_y > y) || (y >= (dst_region_y + dst_region_h)))
+     {
+        *alpha = 0;
+        return EINA_FALSE;
+     }
+
+   src_w = im->cache_entry.w;
+   src_h = im->cache_entry.h;
+   if ((src_w == 0) || (src_h == 0))
+     {
+        *alpha = 0;
+        return EINA_TRUE;
+     }
+
+   EINA_SAFETY_ON_TRUE_GOTO(src_region_x < 0, error_oob);
+   EINA_SAFETY_ON_TRUE_GOTO(src_region_y < 0, error_oob);
+   EINA_SAFETY_ON_TRUE_GOTO(src_region_x + src_region_w > src_w, error_oob);
+   EINA_SAFETY_ON_TRUE_GOTO(src_region_y + src_region_h > src_h, error_oob);
+
+   scale_w = (double)dst_region_w / (double)src_region_w;
+   scale_h = (double)dst_region_h / (double)src_region_h;
+
+   /* point at destination */
+   dx = x - dst_region_x;
+   dy = y - dst_region_y;
+
+   /* point at source */
+   sx = dx / scale_w;
+   sy = dy / scale_h;
+
+   /* pixel point (translated) */
+   px = src_region_x + sx;
+   py = src_region_y + sy;
+   EINA_SAFETY_ON_TRUE_GOTO(px >= src_w, error_oob);
+   EINA_SAFETY_ON_TRUE_GOTO(py >= src_h, error_oob);
+
+   switch (im->cache_entry.space)
+     {
+     case EVAS_COLORSPACE_ARGB8888:
+       {
+          DATA32 *pixel = im->image.data;
+          pixel += ((py * src_w) + px);
+          *alpha = ((*pixel) >> 24) & 0xff;
+       }
+       break;
+
+     default:
+        ERR("Colorspace %d not supported.", im->cache_entry.space);
+        *alpha = 0;
+     }
+   return EINA_TRUE;
+
+ error_oob:
+   ERR("Invalid region src=(%d, %d, %d, %d), dst=(%d, %d, %d, %d), image=%dx%d",
+       src_region_x, src_region_y, src_region_w, src_region_h,
+       dst_region_x, dst_region_y, dst_region_w, dst_region_h,
+       src_w, src_h);
+   *alpha = 0;
+   return EINA_TRUE;
 }
 
 static Evas_Font_Set *
@@ -1562,7 +1669,7 @@ eng_gl_surface_destroy(void *data __UNUSED__, void *surface)
 }
 
 static void *
-eng_gl_context_create(void *data __UNUSED__, void *share_context)
+eng_gl_context_create(void *data __UNUSED__, void *share_context, int version)
 {
 #ifdef EVAS_GL
    Render_Engine_GL_Context *ctx;
@@ -1690,14 +1797,14 @@ eng_gl_make_current(void *data __UNUSED__, void *surface, void *context)
 }
 
 // FIXME!!! Implement later
-static void *
+static const char *
 eng_gl_string_query(void *data __UNUSED__, int name __UNUSED__)
 {
    return NULL;
 }
 
 static void *
-eng_gl_proc_address_get(void *data __UNUSED__, const char *name)
+eng_gl_proc_address_get(void *data __UNUSED__, Evas_GL_Ext *ext __UNUSED__, const char *name)
 {
 #ifdef EVAS_GL
    if (_sym_OSMesaGetProcAddress) return _sym_OSMesaGetProcAddress(name);
@@ -1734,10 +1841,13 @@ eng_gl_native_surface_get(void *data __UNUSED__, void *surface, void *native_sur
 
 
 static void *
-eng_gl_api_get(void *data __UNUSED__)
+eng_gl_api_get(void *data __UNUSED__, int version)
 {
 #ifdef EVAS_GL
-   return &gl_funcs;
+   if (version == EVAS_GL_GLES_2_X)
+     return &gl_funcs;
+   else
+     return NULL;
 #else
    return NULL;
 #endif
@@ -1775,11 +1885,14 @@ static Evas_Func func =
      eng_canvas_alpha_get,
      eng_context_free,
      eng_context_clip_set,
+     eng_context_clip_image_set,
+     eng_context_clip_image_unset,
+     eng_context_clip_image_get,
      eng_context_clip_clip,
      eng_context_clip_unset,
      eng_context_clip_get,
-     eng_context_mask_set,
-     eng_context_mask_unset,
+     NULL, // deprecated old mask
+     NULL, // deprecated old mask
      eng_context_color_set,
      eng_context_color_get,
      eng_context_multiplier_set,
@@ -1863,6 +1976,7 @@ static Evas_Func func =
      eng_image_map_surface_new,
      eng_image_map_surface_free,
      eng_image_map_clean,
+     NULL, // eng_image_scaled_get - used for live scaling in GL only (fastpath)
      NULL, // eng_image_content_hint_set - software doesn't use it
      NULL, // eng_image_content_hint_get - software doesn't use it
      eng_font_pen_coords_get,
@@ -1875,6 +1989,7 @@ static Evas_Func func =
      eng_image_filtered_free,
 #endif   
      NULL, // need software mesa for gl rendering <- gl_surface_create
+     NULL, // need software mesa for gl rendering <- gl_pbuffer_surface_create
      NULL, // need software mesa for gl rendering <- gl_surface_destroy
      NULL, // need software mesa for gl rendering <- gl_context_create
      NULL, // need software mesa for gl rendering <- gl_context_destroy
@@ -1883,7 +1998,17 @@ static Evas_Func func =
      NULL, // need software mesa for gl rendering <- gl_proc_address_get
      NULL, // need software mesa for gl rendering <- gl_native_surface_get
      NULL, // need software mesa for gl rendering <- gl_api_get
-     NULL, // need software mesa for gl rendering <- gl_img_obj_set
+     NULL, // need software mesa for gl rendering <- gl_direct_override
+     NULL, // need software mesa for gl rendering <- gl_get_pixels_set
+     NULL, // need software mesa for gl rendering <- gl_surface_lock
+     NULL, // need software mesa for gl rendering <- gl_surface_read_pixel
+     NULL, // need software mesa for gl rendering <- gl_surface_unlock
+     NULL, // need software mesa for gl rendering <- gl_error_get
+     NULL, // need software mesa for gl rendering <- gl_current_context_get
+     NULL, // need software mesa for gl rendering <- gl_current_surface_get
+     NULL, // need software mesa for gl rendering <- gl_rotation_angle_get
+     NULL, // need software mesa for gl rendering <- gl_surface_query
+     NULL, // need software mesa for gl rendering <- gl_surface_direct_renderable_get
      eng_image_load_error_get,
      eng_font_run_font_end_get,
      eng_image_animated_get,
@@ -1892,7 +2017,17 @@ static Evas_Func func =
      eng_image_animated_loop_count_get,
      eng_image_animated_frame_duration_get,
      eng_image_animated_frame_set,
-     NULL
+     NULL, // image_max_size_get
+     NULL, // eng_context_flush - software doesn't use it
+     NULL, // eng_gl_ext_buffer_age_get
+     NULL, // eng_gl_ext_update_region_get
+     NULL, // eng_gl_ext_surface_from_native_create
+     NULL, // eng_gl_ext_surface_is_texture
+     NULL, // get_pixels_render_post - opengl_x11, wayland only use it
+     NULL, // gl_engine_init
+     NULL, // gl_engine_shutdown
+     NULL, // image_direct_set
+     NULL, // image_direct_get
    /* FUTURE software generic calls go here */
 };
 
@@ -2521,25 +2656,34 @@ patch_gles_shader(const char *source, int length, int *patched_len)
           {
              if (!strncmp(p, "gl_MaxVertexUniformVectors", 26))
                {
-                  p = "(gl_MaxVertexUniformComponents / 4)";
+                  free(p);
+                  p = strdup("(gl_MaxVertexUniformComponents / 4)");
                }
              else if (!strncmp(p, "gl_MaxFragmentUniformVectors", 28))
                {
-                  p = "(gl_MaxFragmentUniformComponents / 4)";
+                  free(p);
+                  p = strdup("(gl_MaxFragmentUniformComponents / 4)");
                }
              else if (!strncmp(p, "gl_MaxVaryingVectors", 20))
                {
-                  p = "(gl_MaxVaryingFloats / 4)";
+                  free(p);
+                  p = strdup("(gl_MaxVaryingFloats / 4)");
                }
 
              int new_len = strlen(p);
              if (*patched_len + new_len > patched_size)
                {
-                  patched_size *= 2;
-                  patched = realloc(patched, patched_size + 1);
+                  char *tmp;
 
-                  if (!patched)
-                     return NULL;
+                  patched_size *= 2;
+                  tmp = realloc(patched, patched_size + 1);
+                  if (!tmp)
+                    {
+                       free(patched);
+                       free(p);
+                       return NULL;
+                    }
+                  patched = tmp;
                }
 
              memcpy(patched + *patched_len, p, new_len);
@@ -2827,7 +2971,15 @@ gl_lib_init(void)
 {
 #ifdef EVAS_GL
    // dlopen OSMesa
-   gl_lib_handle = dlopen("libOSMesa.so.1", RTLD_NOW);
+   gl_lib_handle = dlopen("libOSMesa.so.9", RTLD_NOW);
+   if (!gl_lib_handle) gl_lib_handle = dlopen("libOSMesa.so.8", RTLD_NOW);
+   if (!gl_lib_handle) gl_lib_handle = dlopen("libOSMesa.so.7", RTLD_NOW);
+   if (!gl_lib_handle) gl_lib_handle = dlopen("libOSMesa.so.6", RTLD_NOW);
+   if (!gl_lib_handle) gl_lib_handle = dlopen("libOSMesa.so.5", RTLD_NOW);
+   if (!gl_lib_handle) gl_lib_handle = dlopen("libOSMesa.so.4", RTLD_NOW);
+   if (!gl_lib_handle) gl_lib_handle = dlopen("libOSMesa.so.3", RTLD_NOW);
+   if (!gl_lib_handle) gl_lib_handle = dlopen("libOSMesa.so.2", RTLD_NOW);
+   if (!gl_lib_handle) gl_lib_handle = dlopen("libOSMesa.so.1", RTLD_NOW);
    if (!gl_lib_handle) gl_lib_handle = dlopen("libOSMesa.so", RTLD_NOW);
    if (!gl_lib_handle)
      {

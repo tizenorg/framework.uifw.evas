@@ -31,3 +31,10 @@ if !EVAS_STATIC_BUILD_TIFF
 SUBDIRS += tiff
 endif
 endif
+
+if BUILD_LOADER_TGV
+if !EVAS_STATIC_BUILD_TGV
+SUBDIRS += tgv
+endif
+endif
+

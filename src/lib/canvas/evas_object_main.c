@@ -36,15 +36,21 @@ evas_object_change_reset(Evas_Object *obj)
    obj->changed = EINA_FALSE;
    obj->changed_move = EINA_FALSE;
    obj->changed_color = EINA_FALSE;
-   obj->changed_map = EINA_FALSE;
    obj->changed_pchange = EINA_FALSE;
+   obj->changed_src_visible = EINA_FALSE;
 }
 
 void
 evas_object_cur_prev(Evas_Object *obj)
 {
-   if (!obj->prev.valid_map && (obj->prev.map == obj->cur.map))
-     obj->prev.map = NULL;
+   if (!obj->prev.valid_map)
+     {
+        if (obj->prev.map != obj->cur.map)
+          evas_map_free(obj->prev.map);
+        if (obj->cache_map == obj->prev.map)
+          obj->cache_map = NULL;
+        obj->prev.map = NULL;
+     }
 
    if (obj->cur.map != obj->prev.map)
      {
@@ -66,6 +72,32 @@ evas_object_free(Evas_Object *obj, int clean_layer)
    evas_object_map_set(obj, NULL);
    if (obj->prev.map) evas_map_free(obj->prev.map);
    if (obj->cache_map) evas_map_free(obj->cache_map);
+   if (obj->map.surface)
+     {
+        if (obj->layer)
+          {
+             obj->layer->evas->engine.func->image_map_surface_free
+                (obj->layer->evas->engine.data.output,
+                 obj->map.surface);
+          }
+        obj->map.surface = NULL;
+     }
+   if (obj->mask.is_mask)
+     {
+        obj->mask.is_mask = EINA_FALSE;
+        obj->mask.redraw = EINA_FALSE;
+        obj->mask.is_alpha = EINA_FALSE;
+        obj->mask.w = obj->mask.h = 0;
+        if (obj->mask.surface)
+          {
+             if (obj->layer)
+               {
+                  obj->layer->evas->engine.func->image_map_surface_free
+                       (obj->layer->evas->engine.data.output, obj->mask.surface);
+                  obj->mask.surface = NULL;
+               }
+          }
+     }
    evas_object_grabs_cleanup(obj);
    evas_object_intercept_cleanup(obj);
    if (obj->smart.parent) was_smart_child = 1;
@@ -77,6 +109,11 @@ evas_object_free(Evas_Object *obj, int clean_layer)
    evas_object_clip_changes_clean(obj);
    evas_object_event_callback_all_del(obj);
    evas_object_event_callback_cleanup(obj);
+   if (obj->spans)
+     {
+        free(obj->spans);
+        obj->spans = NULL;
+     }
    while (obj->data.elements)
      {
         Evas_Data_Node *node;
@@ -100,6 +137,7 @@ evas_object_change(Evas_Object *obj)
    Evas_Object *obj2;
    Eina_Bool movch = EINA_FALSE;
 
+   if (!obj->layer) return;
    if (obj->layer->evas->nochange) return;
    obj->layer->evas->changed = EINA_TRUE;
 
@@ -254,6 +292,9 @@ evas_object_render_pre_effect_updates(Eina_Array *rects, Evas_Object *obj, int i
    Eina_Array_Iterator it;
    int x, y, w, h;
 
+   if (!obj) return;
+   if (!obj->layer) return;
+
    if (obj->smart.smart) goto end;
    /* FIXME: was_v isn't used... why? */
    if (!obj->clip.clipees)
@@ -380,6 +421,20 @@ evas_object_was_inside(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
 }
 /* routines apps will call */
 
+void
+evas_object_mapped_across_change(Evas_Object *obj)
+{
+   while (obj)
+     {
+        if (_evas_render_has_map(obj))
+          {
+             obj->changed_pchange = EINA_TRUE;
+             obj->changed_map = EINA_TRUE;
+          }
+        obj = obj->smart.parent;
+     }
+}
+
 EAPI void
 evas_object_ref(Evas_Object *obj)
 {
@@ -412,6 +467,10 @@ evas_object_ref_get(const Evas_Object *obj)
 EAPI void
 evas_object_del(Evas_Object *obj)
 {
+   Evas_Object *proxy;
+   Eina_List *l, *l2;
+
+   if (!obj) return;
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    return;
    MAGIC_CHECK_END();
@@ -424,21 +483,32 @@ evas_object_del(Evas_Object *obj)
         return;
      }
 
+   // FIXME: After EO is integrated, remove on_deletion flag.
+   if (obj->on_deletion)
+     {
+        WRN("Object %p [%s] is already deleting", obj, obj->type);
+        return;
+     }
+   obj->on_deletion = 1;
+
    evas_object_hide(obj);
    if (obj->focused)
      {
         obj->focused = EINA_FALSE;
-        obj->layer->evas->focused = NULL;
+        if (obj->layer)
+          obj->layer->evas->focused = NULL;
         _evas_object_event_new();
         evas_object_event_callback_call(obj, EVAS_CALLBACK_FOCUS_OUT, NULL, _evas_event_counter);
-        _evas_post_event_callback_call(obj->layer->evas);
+        if (obj->layer)
+          _evas_post_event_callback_call(obj->layer->evas);
      }
    _evas_object_event_new();
    evas_object_event_callback_call(obj, EVAS_CALLBACK_DEL, NULL, _evas_event_counter);
-   _evas_post_event_callback_call(obj->layer->evas);
-   if (obj->mouse_grabbed > 0)
+   if (obj->layer)
+     _evas_post_event_callback_call(obj->layer->evas);
+   if ((obj->mouse_grabbed > 0) && (obj->layer))
       obj->layer->evas->pointer.mouse_grabbed -= obj->mouse_grabbed;
-   if ((obj->mouse_in) || (obj->mouse_grabbed > 0))
+   if (((obj->mouse_in) || (obj->mouse_grabbed > 0)) && (obj->layer))
       obj->layer->evas->pointer.object.in = eina_list_remove(obj->layer->evas->pointer.object.in, obj);
    obj->mouse_grabbed = 0;
    obj->mouse_in = 0;
@@ -451,14 +521,21 @@ evas_object_del(Evas_Object *obj)
    evas_object_grabs_cleanup(obj);
    while (obj->clip.clipees)
      evas_object_clip_unset(obj->clip.clipees->data);
-   while (obj->proxy.proxies)
-     evas_object_image_source_unset(obj->proxy.proxies->data);
+   EINA_LIST_FOREACH_SAFE(obj->proxy.proxies, l, l2, proxy)
+     {
+        if (!proxy || !proxy->type) continue;
+        if (!strcmp("image", proxy->type))
+          evas_object_image_source_unset(proxy);
+        else if (!strcmp("text", proxy->type))
+          evas_object_text_filter_source_set(proxy, NULL, obj);
+     }
    if (obj->cur.clipper) evas_object_clip_unset(obj);
    evas_object_map_set(obj, NULL);
    if (obj->smart.smart) evas_object_smart_del(obj);
    _evas_object_event_new();
    evas_object_event_callback_call(obj, EVAS_CALLBACK_FREE, NULL, _evas_event_counter);
-   _evas_post_event_callback_call(obj->layer->evas);
+   if (obj->layer)
+     _evas_post_event_callback_call(obj->layer->evas);
    evas_object_smart_cleanup(obj);
    obj->delete_me = 1;
    evas_object_change(obj);
@@ -585,27 +662,28 @@ evas_object_update_bounding_box(Evas_Object *obj)
 EAPI void
 evas_object_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
 {
+   Evas *evas;
    int is, was = 0, pass = 0, freeze = 0;
    int nx = 0, ny = 0;
+   Eina_Bool source_invisible = EINA_FALSE;
 
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    return;
    MAGIC_CHECK_END();
    if (obj->delete_me) return;
+   if (!obj->layer) return;
 
    nx = x;
    ny = y;
 
-   if (!obj->is_frame)
+   evas = obj->layer->evas;
+
+   if ((!obj->is_frame) && (obj != evas->framespace.clip))
      {
         if ((!obj->smart.parent) && (obj->smart.smart))
           {
-             int fx, fy;
-
-             evas_output_framespace_get(obj->layer->evas, 
-                                        &fx, &fy, NULL, NULL);
-             nx += fx;
-             ny += fy;
+             nx += evas->framespace.x;
+             ny += evas->framespace.y;
           }
      }
 
@@ -619,11 +697,20 @@ evas_object_move(Evas_Object *obj, Evas_Coord x, Evas_Coord y)
 
    if ((obj->cur.geometry.x == nx) && (obj->cur.geometry.y == ny)) return;
 
+   Evas_Map *map = evas_object_map_get(obj);
+   if (map && map->move_sync.enabled)
+     {
+        Evas_Coord diff_x = x - obj->cur.geometry.x;
+        Evas_Coord diff_y = y - obj->cur.geometry.y;
+        evas_map_object_move_diff_set(map, diff_x, diff_y);
+     }
+
    if (obj->layer->evas->events_frozen <= 0)
      {
         pass = evas_event_passes_through(obj);
         freeze = evas_event_freezes_through(obj);
-        if ((!pass) && (!freeze))
+        source_invisible = evas_object_is_source_invisible(obj);
+        if ((!pass) && (!freeze) && (!source_invisible))
           was = evas_object_is_in_output_rect(obj,
                                               obj->layer->evas->pointer.x,
                                               obj->layer->evas->pointer.y, 1, 1);
@@ -672,11 +759,13 @@ EAPI void
 evas_object_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
 {
    int is, was = 0, pass = 0, freeze =0;
+   Eina_Bool source_invisible = EINA_FALSE;
 
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    return;
    MAGIC_CHECK_END();
    if (obj->delete_me) return;
+   if (!obj->layer) return;
    if (w < 0) w = 0; if (h < 0) h = 0;
 
    if (evas_object_intercept_call_resize(obj, w, h)) return;
@@ -693,6 +782,7 @@ evas_object_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
      {
         pass = evas_event_passes_through(obj);
         freeze = evas_event_freezes_through(obj);
+        source_invisible = evas_object_is_source_invisible(obj);
         if ((!pass) && (!freeze))
           was = evas_object_is_in_output_rect(obj,
                                               obj->layer->evas->pointer.x,
@@ -744,13 +834,14 @@ evas_object_resize(Evas_Object *obj, Evas_Coord w, Evas_Coord h)
 EAPI void
 evas_object_geometry_get(const Evas_Object *obj, Evas_Coord *x, Evas_Coord *y, Evas_Coord *w, Evas_Coord *h)
 {
+   Evas *evas;
    int nx = 0, ny = 0;
 
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    if (x) *x = 0; if (y) *y = 0; if (w) *w = 0; if (h) *h = 0;
    return;
    MAGIC_CHECK_END();
-   if (obj->delete_me)
+   if ((obj->delete_me) || (!obj->layer))
      {
         if (x) *x = 0; if (y) *y = 0; if (w) *w = 0; if (h) *h = 0;
         return;
@@ -759,22 +850,14 @@ evas_object_geometry_get(const Evas_Object *obj, Evas_Coord *x, Evas_Coord *y, E
    nx = obj->cur.geometry.x;
    ny = obj->cur.geometry.y;
 
-   if (!obj->is_frame)
+   evas = obj->layer->evas;
+
+   if ((!obj->is_frame) && (obj != evas->framespace.clip))
      {
-        int fx, fy;
-
-        evas_output_framespace_get(obj->layer->evas, 
-                                   &fx, &fy, NULL, NULL);
-
         if ((!obj->smart.parent) && (obj->smart.smart))
           {
-             if (nx > 0) nx -= fx;
-             if (ny > 0) ny -= fy;
-          }
-        else if ((obj->smart.parent) && (!obj->smart.smart))
-          {
-             if (nx > 0) nx -= fx;
-             if (ny > 0) ny -= fy;
+             if (nx > 0) nx -= evas->framespace.x;
+             if (ny > 0) ny -= evas->framespace.y;
           }
      }
 
@@ -797,6 +880,33 @@ _evas_object_size_hint_alloc(Evas_Object *obj)
    obj->size_hints->max.h = -1;
    obj->size_hints->align.x = 0.5;
    obj->size_hints->align.y = 0.5;
+   obj->size_hints->dispmode = EVAS_DISPLAY_MODE_NONE;
+}
+
+EAPI Evas_Display_Mode
+evas_object_size_hint_display_mode_get(const Evas_Object *obj)
+{
+   MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
+   return EVAS_DISPLAY_MODE_NONE;
+   MAGIC_CHECK_END();
+   if ((!obj->size_hints) || obj->delete_me)
+     return EVAS_DISPLAY_MODE_NONE;
+   return obj->size_hints->dispmode;
+}
+
+EAPI void
+evas_object_size_hint_display_mode_set(Evas_Object *obj, Evas_Display_Mode dispmode)
+{
+   MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
+   return;
+   MAGIC_CHECK_END();
+   if (obj->delete_me)
+     return;
+   _evas_object_size_hint_alloc(obj);
+   if (obj->size_hints->dispmode == dispmode) return;
+   obj->size_hints->dispmode = dispmode;
+
+   evas_object_inform_call_changed_size_hints(obj);
 }
 
 EAPI void
@@ -1039,6 +1149,7 @@ evas_object_show(Evas_Object *obj)
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    return;
    MAGIC_CHECK_END();
+   if (!obj->layer) return;
    if (obj->delete_me) return;
    if (evas_object_intercept_call_show(obj)) return;
    if (obj->smart.smart)
@@ -1058,7 +1169,8 @@ evas_object_show(Evas_Object *obj)
         evas_object_clip_across_clippees_check(obj);
         evas_object_recalc_clippees(obj);
         if ((!evas_event_passes_through(obj)) &&
-            (!evas_event_freezes_through(obj)))
+            (!evas_event_freezes_through(obj)) &&
+            (!evas_object_is_source_invisible(obj)))
           {
              if (!obj->smart.smart)
                {
@@ -1082,6 +1194,7 @@ evas_object_hide(Evas_Object *obj)
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    return;
    MAGIC_CHECK_END();
+   if (!obj->layer) return;
    if (obj->delete_me) return;
    if (evas_object_intercept_call_hide(obj)) return;
    if (obj->smart.smart)
@@ -1094,6 +1207,20 @@ evas_object_hide(Evas_Object *obj)
         return;
      }
    obj->cur.visible = 0;
+
+   if (obj->mask.is_mask)
+     {
+        obj->mask.redraw = EINA_FALSE;
+        obj->mask.is_alpha = EINA_FALSE;
+        obj->mask.w = obj->mask.h = 0;
+        if (obj->mask.surface)
+          {
+             obj->layer->evas->engine.func->image_map_surface_free
+                   (obj->layer->evas->engine.data.output, obj->mask.surface);
+             obj->mask.surface = NULL;
+          }
+     }
+
    evas_object_change(obj);
    evas_object_clip_dirty(obj);
    if (obj->layer->evas->events_frozen <= 0)
@@ -1101,7 +1228,8 @@ evas_object_hide(Evas_Object *obj)
         evas_object_clip_across_clippees_check(obj);
         evas_object_recalc_clippees(obj);
         if ((!evas_event_passes_through(obj)) &&
-            (!evas_event_freezes_through(obj)))
+            (!evas_event_freezes_through(obj)) &&
+            (!evas_object_is_source_invisible(obj)))
           {
              if ((!obj->smart.smart) ||
                  ((obj->cur.map) && (obj->cur.map->count == 4) && (obj->cur.usemap)))
@@ -1320,7 +1448,7 @@ evas_object_evas_get(const Evas_Object *obj)
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    return NULL;
    MAGIC_CHECK_END();
-   if (obj->delete_me) return NULL;
+   if ((obj->delete_me) || (!obj->layer)) return NULL;
    return obj->layer->evas;
 }
 
@@ -1346,6 +1474,7 @@ evas_object_top_at_xy_get(const Evas *e, Evas_Coord x, Evas_Coord y, Eina_Bool i
              if (obj->delete_me) continue;
              if ((!include_pass_events_objects) &&
                  (evas_event_passes_through(obj))) continue;
+             if (evas_object_is_source_invisible(obj)) continue;
              if ((!include_hidden_objects) && (!obj->cur.visible)) continue;
              evas_object_clip_recalc(obj);
              if ((evas_object_is_in_output_rect(obj, xx, yy, 1, 1)) &&
@@ -1391,6 +1520,7 @@ evas_object_top_in_rectangle_get(const Evas *e, Evas_Coord x, Evas_Coord y, Evas
              if (obj->delete_me) continue;
              if ((!include_pass_events_objects) &&
                  (evas_event_passes_through(obj))) continue;
+             if (evas_object_is_source_invisible(obj)) continue;
              if ((!include_hidden_objects) && (!obj->cur.visible)) continue;
              evas_object_clip_recalc(obj);
              if ((evas_object_is_in_output_rect(obj, xx, yy, ww, hh)) &&
@@ -1424,6 +1554,7 @@ evas_objects_at_xy_get(const Evas *e, Evas_Coord x, Evas_Coord y, Eina_Bool incl
              if (obj->delete_me) continue;
              if ((!include_pass_events_objects) &&
                  (evas_event_passes_through(obj))) continue;
+             if (evas_object_is_source_invisible(obj)) continue;
              if ((!include_hidden_objects) && (!obj->cur.visible)) continue;
              evas_object_clip_recalc(obj);
              if ((evas_object_is_in_output_rect(obj, xx, yy, 1, 1)) &&
@@ -1475,6 +1606,7 @@ evas_objects_in_rectangle_get(const Evas *e, Evas_Coord x, Evas_Coord y, Evas_Co
              if (obj->delete_me) continue;
              if ((!include_pass_events_objects) &&
                  (evas_event_passes_through(obj))) continue;
+             if (evas_object_is_source_invisible(obj)) continue;
              if ((!include_hidden_objects) && (!obj->cur.visible)) continue;
              evas_object_clip_recalc(obj);
              if ((evas_object_is_in_output_rect(obj, xx, yy, ww, hh)) &&

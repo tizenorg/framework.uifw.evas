@@ -49,7 +49,7 @@ evas_common_rectangle_draw(RGBA_Image *dst, RGBA_Draw_Context *dc, int x, int y,
 }
 
 EAPI Eina_Bool
-evas_common_rectangle_draw_prepare(Cutout_Rects *reuse, const RGBA_Image *dst, RGBA_Draw_Context *dc, int x, int y, int w, int h)
+evas_common_rectangle_draw_prepare(Cutout_Rects **reuse, const RGBA_Image *dst, RGBA_Draw_Context *dc, int x, int y, int w, int h)
 {
    if ((w <= 0) || (h <= 0)) return EINA_FALSE;
    if (!(RECTS_INTERSECT(x, y, w, h, 0, 0, dst->cache_entry.w, dst->cache_entry.h)))
@@ -62,7 +62,7 @@ evas_common_rectangle_draw_prepare(Cutout_Rects *reuse, const RGBA_Image *dst, R
        evas_common_draw_context_clip_clip(dc, x, y, w, h);
        /* our clip is 0 size.. abort */
        if ((dc->clip.w > 0) && (dc->clip.h > 0))
-	 reuse = evas_common_draw_context_apply_cutouts(dc, reuse);
+         *reuse = evas_common_draw_context_apply_cutouts(dc, *reuse);
      }
 
    return EINA_TRUE;
@@ -104,6 +104,8 @@ rectangle_draw_internal(RGBA_Image *dst, RGBA_Draw_Context *dc, int x, int y, in
    RGBA_Gfx_Func func;
    int yy;
    DATA32 *ptr;
+   DATA8 *mask = NULL, *mbegin = NULL, *mend = NULL;
+   RGBA_Image *mask_ie = dc->clip.mask;
 
    RECTS_CLIP_TO_RECT(x, y, w, h, dc->clip.x, dc->clip.y, dc->clip.w, dc->clip.h);
    if ((w <= 0) || (h <= 0)) return;
@@ -125,11 +127,32 @@ rectangle_draw_internal(RGBA_Image *dst, RGBA_Draw_Context *dc, int x, int y, in
 # endif     
 #endif
      {
-        func = evas_common_gfx_func_composite_color_span_get(dc->col.col, dst, w, dc->render_op);
+        if (mask_ie)
+          {
+             func = evas_common_gfx_func_composite_mask_color_span_get(dc->col.col, dst, w, dc->render_op);
+             mbegin = mask_ie->image.data8;
+             mend = mbegin + (mask_ie->cache_entry.w * mask_ie->cache_entry.h);
+          }
+        else
+          func = evas_common_gfx_func_composite_color_span_get(dc->col.col, dst, w, dc->render_op);
         ptr = dst->image.data + (y * dst->cache_entry.w) + x;
         for (yy = 0; yy < h; yy++)
           {
-	    func(NULL, NULL, dc->col.col, ptr, w);
+             if (mask_ie)
+               {
+                  mask = mask_ie->image.data8
+                     + (y + yy - dc->clip.mask_y) * mask_ie->cache_entry.w
+                     + (x - dc->clip.mask_x);
+                  /* FIXME!!! Quick workaround crashes */
+                  if ((mask < mbegin) || ((mask + w) > mend))
+                    {
+                       ptr += dst->cache_entry.w;
+                       continue;
+                    }
+                  func(NULL, mask, dc->col.col, ptr, w);
+               }
+             else
+               func(NULL, NULL, dc->col.col, ptr, w);
 
 	    ptr += dst->cache_entry.w;
           }

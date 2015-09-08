@@ -101,12 +101,19 @@ evas_object_line_xy_set(Evas_Object *obj, Evas_Coord x1, Evas_Coord y1, Evas_Coo
    MAGIC_CHECK(o, Evas_Object_Line, MAGIC_OBJ_LINE);
    return;
    MAGIC_CHECK_END();
-   if ((x1 == o->cur.x1) && (y1 == o->cur.y1) &&
-       (x2 == o->cur.x2) && (y2 == o->cur.y2)) return;
+
+   if ((x1 == (obj->cur.geometry.x + o->cur.x1)) &&
+       (y1 == (obj->cur.geometry.y + o->cur.y1)) &&
+       (x2 == (obj->cur.geometry.x + o->cur.x2)) &&
+       (y2 == (obj->cur.geometry.y + o->cur.y2)))
+     {
+        return;
+     }
    if (obj->layer->evas->events_frozen <= 0)
      {
         if (!evas_event_passes_through(obj) &&
-            !evas_event_freezes_through(obj))
+            !evas_event_freezes_through(obj) &&
+            !evas_object_is_source_invisible(obj))
           was = evas_object_is_in_output_rect(obj,
                                               obj->layer->evas->pointer.x,
                                               obj->layer->evas->pointer.y,
@@ -151,7 +158,8 @@ evas_object_line_xy_set(Evas_Object *obj, Evas_Coord x1, Evas_Coord y1, Evas_Coo
                                            obj->layer->evas->pointer.x,
                                            obj->layer->evas->pointer.y, 1, 1);
         if (!evas_event_passes_through(obj) &&
-            !evas_event_freezes_through(obj))
+            !evas_event_freezes_through(obj) &&
+            !evas_object_is_source_invisible(obj))
           {
              if ((is ^ was) && obj->cur.visible)
                evas_event_feed_mouse_move(obj->layer->evas,

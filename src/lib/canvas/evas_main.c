@@ -85,6 +85,7 @@ evas_shutdown(void)
    if (--_evas_init_count != 0)
      return _evas_init_count;
 
+   evas_font_path_global_clear();
 #ifdef BUILD_ASYNC_EVENTS
    _evas_preload_thread_shutdown();
 #endif
@@ -94,7 +95,6 @@ evas_shutdown(void)
 #ifdef BUILD_ASYNC_EVENTS
    evas_async_events_shutdown();
 #endif
-   evas_font_dir_cache_free();
    evas_common_shutdown();
    evas_module_shutdown();
    eina_log_domain_unregister(_evas_log_dom_global);
@@ -127,6 +127,9 @@ evas_new(void)
    e->name_hash = eina_hash_string_superfast_new(NULL);
    eina_clist_init(&e->calc_list);
    eina_clist_init(&e->calc_done);
+   // TIZEN_ONLY(20140822): Added evas_bidi_direction_hint_set, get APIs and applied to textblock, text.
+   e->bidi_direction_hint = EVAS_BIDI_DIRECTION_LTR;
+   //
 
 #define EVAS_ARRAY_SET(E, Array) \
    eina_array_step_set(&E->Array, sizeof (E->Array), 4096);
@@ -185,8 +188,12 @@ evas_free(Evas *e)
 		       e->walking_list--;
 		       return;
 		    }
-		  if (!o->delete_me)
-		    del = 1;
+                  if (!o->delete_me)
+                    {
+                       if (o->ref > 0)
+                         ERR("obj(%p, %s) ref count(%d) is more than 0. This object couldn't be deleted", o, o->type, o->ref);
+                       del = 1;
+                    }
 	       }
 	  }
      }
@@ -242,6 +249,8 @@ evas_free(Evas *e)
    EINA_LIST_FREE(e->touch_points, touch_point)
      free(touch_point);
 
+   _evas_device_cleanup(e);
+   
    e->magic = 0;
    free(e);
 }
@@ -261,6 +270,7 @@ evas_output_method_set(Evas *e, int render_method)
    if (e->output.render_method != RENDER_METHOD_INVALID) return;
    /* Request the right engine. */
    em = evas_module_engine_get(render_method);
+
    if (!em) return ;
    if (em->id_engine != render_method) return;
    if (!evas_module_load(em)) return;
@@ -689,3 +699,25 @@ evas_data_argb_unpremul(unsigned int *data, unsigned int len)
    if (!data || (len < 1)) return;
    evas_common_convert_argb_unpremul(data, len);
 }
+
+// TIZEN_ONLY(20140822): Added evas_bidi_direction_hint_set, get APIs and applied to textblock, text.
+EAPI void
+evas_bidi_direction_hint_set(Evas *e, Evas_BiDi_Direction dir)
+{
+   MAGIC_CHECK(e, Evas, MAGIC_EVAS);
+   return;
+   MAGIC_CHECK_END();
+   if (e->bidi_direction_hint != dir)
+     e->bidi_direction_hint = dir;
+}
+
+EAPI Evas_BiDi_Direction
+evas_bidi_direction_hint_get(Evas *e)
+{
+   MAGIC_CHECK(e, Evas, MAGIC_EVAS);
+   return EVAS_BIDI_DIRECTION_LTR;
+   MAGIC_CHECK_END();
+
+   return e->bidi_direction_hint;
+}
+//

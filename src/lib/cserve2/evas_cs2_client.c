@@ -930,7 +930,7 @@ _font_load_server_send(Font_Entry *fe, Message_Type type)
    msg->dpi = fe->dpi;
 
    buf = ((char *)msg) + sizeof(*msg);
-   memcpy(buf, fe->source, source_len);
+   if (source_len > 0) memcpy(buf, fe->source, source_len);
    buf += source_len;
    memcpy(buf, fe->name, path_len);
 
@@ -1043,7 +1043,7 @@ _glyph_request_cb(void *data, const void *msg)
         while (i < nglyphs)
           {
              unsigned int idx, offset, glsize;
-             int rows, width, pitch, num_grays, pixel_mode;
+             int rows, width, pitch;
              CS_Glyph_Out *gl;
 
              memcpy(&idx, buf, sizeof(int));
@@ -1058,10 +1058,6 @@ _glyph_request_cb(void *data, const void *msg)
              buf += sizeof(int);
              memcpy(&pitch, buf, sizeof(int));
              buf += sizeof(int);
-             memcpy(&num_grays, buf, sizeof(int));
-             buf += sizeof(int);
-             memcpy(&pixel_mode, buf, sizeof(int));
-             buf += sizeof(int);
 
              gl = fash_gl_find(fe->fash[grd->hints], idx);
              gl->map = map;
@@ -1070,9 +1066,11 @@ _glyph_request_cb(void *data, const void *msg)
              gl->base.bitmap.rows = rows;
              gl->base.bitmap.width = width;
              gl->base.bitmap.pitch = pitch;
-             gl->base.bitmap.buffer = map->data + gl->offset;
-             gl->base.bitmap.num_grays = num_grays;
-             gl->base.bitmap.pixel_mode = pixel_mode;
+	    	  gl->base.bitmap.buffer = NULL;
+             gl->base.bitmap.rle_alloc = 0;
+			gl->base.bitmap.no_free_glout = 1;
+			gl->base.rle =
+               (unsigned char *) gl->map->mempool.data + gl->offset;
 
              gl->rid = 0;
 
@@ -1132,7 +1130,7 @@ _glyph_request_server_send(Font_Entry *fe, Font_Hint_Flags hints, Eina_Bool used
    msg->nglyphs = nglyphs;
 
    buf = ((char *)msg) + sizeof(*msg);
-   memcpy(buf, fe->source, source_len);
+   if (source_len > 0) memcpy(buf, fe->source, source_len);
    buf += source_len;
    memcpy(buf, fe->name, name_len);
    buf += name_len;

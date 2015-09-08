@@ -74,6 +74,12 @@ SUBDIRS += tga
 endif
 endif
 
+if BUILD_LOADER_TGV
+if !EVAS_STATIC_BUILD_TGV
+SUBDIRS += tgv
+endif
+endif
+
 if BUILD_LOADER_TIFF
 if !EVAS_STATIC_BUILD_TIFF
 SUBDIRS += tiff
@@ -83,6 +89,12 @@ endif
 if BUILD_LOADER_WBMP
 if !EVAS_STATIC_BUILD_WBMP
 SUBDIRS += wbmp
+endif
+endif
+
+if BUILD_LOADER_WEBP
+if !EVAS_STATIC_BUILD_WEBP
+SUBDIRS += webp
 endif
 endif
 

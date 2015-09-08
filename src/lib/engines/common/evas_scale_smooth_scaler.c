@@ -186,26 +186,17 @@ SCALE_FUNC(RGBA_Image *src, RGBA_Image *dst,
  *
  */
 
-   /* if 1:1 scale */
-   if ((dst_region_w == src_region_w) &&
-       (dst_region_h == src_region_h))
+   /* scaling up only - dont need anything except original */
+   //	if ((!dc->anti_alias) || ((dst_region_w >= src_region_w) && (dst_region_h >= src_region_h)))
+   if (((dst_region_w >= src_region_w) && (dst_region_h >= src_region_h)))
      {
-#include "evas_scale_smooth_scaler_noscale.c"
+#include "evas_scale_smooth_scaler_up.c"
+        return;
      }
    else
+     /* scaling down... funkiness */
      {
-	/* scaling up only - dont need anything except original */
-//	if ((!dc->anti_alias) || ((dst_region_w >= src_region_w) && (dst_region_h >= src_region_h)))
-	if (((dst_region_w >= src_region_w) && (dst_region_h >= src_region_h)))
-	  {
-#include "evas_scale_smooth_scaler_up.c"
-	     return;
-	  }
-	else
-	  /* scaling down... funkiness */
-	  {
 #include "evas_scale_smooth_scaler_down.c"
-	     return;
-	  }
+        return;
      }
 }

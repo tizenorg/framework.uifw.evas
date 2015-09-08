@@ -1,8 +1,12 @@
 /* blend pixel x mask --> dst */
 
+// FIXME: These functions most likely don't perform the correct operation.
+// Test them with masks and images.
+
 #ifdef BUILD_NEON
+#if 0
 static void
-_op_blend_pas_mas_dp_neon(DATA32 *s, DATA8 *m, DATA32 c __UNUSED__, DATA32 *d, int l) {
+_op_blend_pas_mas_dp_neon(DATA32 *s, DATA8 *m, DATA32 c EINA_UNUSED, DATA32 *d, int l) {
    DATA32 *e;
    int alpha;
    UNROLL8_PLD_WHILE(d, l, e,
@@ -25,7 +29,7 @@ _op_blend_pas_mas_dp_neon(DATA32 *s, DATA8 *m, DATA32 c __UNUSED__, DATA32 *d, i
 }
 
 static void
-_op_blend_pan_mas_dp_neon(DATA32 *s, DATA8 *m, DATA32 c __UNUSED__, DATA32 *d, int l) {
+_op_blend_pan_mas_dp_neon(DATA32 *s, DATA8 *m, DATA32 c EINA_UNUSED, DATA32 *d, int l) {
    DATA32 *e;
    int alpha;
    UNROLL8_PLD_WHILE(d, l, e,
@@ -46,6 +50,11 @@ _op_blend_pan_mas_dp_neon(DATA32 *s, DATA8 *m, DATA32 c __UNUSED__, DATA32 *d, i
                         m++;  s++;  d++;
                      });
 }
+#else
+// FIXME
+#define _op_blend_pas_mas_dp_neon NULL
+#define _op_blend_pan_mas_dp_neon NULL
+#endif
 
 #define _op_blend_p_mas_dp_neon _op_blend_pas_mas_dp_neon
 

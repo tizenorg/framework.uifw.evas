@@ -19,6 +19,7 @@
 
 static int _fd_write = -1;
 static int _fd_read = -1;
+static pid_t _fd_pid = 0;
 
 static int _init_evas_event = 0;
 
@@ -32,6 +33,26 @@ struct _Evas_Event_Async
    Evas_Callback_Type	     type;
 };
 
+Eina_Bool
+_evas_fd_close_on_exec(int fd)
+{
+#ifdef HAVE_FCNTL
+   int flags;
+
+   flags = fcntl(fd, F_GETFD);
+   if (flags == -1)
+     return EINA_FALSE;
+
+   flags |= FD_CLOEXEC;
+   if (fcntl(fd, F_SETFD, flags) == -1)
+     return EINA_FALSE;
+   return EINA_TRUE;
+#else
+   (void) fd;
+   return EINA_FALSE;
+#endif
+}
+
 int
 evas_async_events_init(void)
 {
@@ -40,11 +61,16 @@ evas_async_events_init(void)
    _init_evas_event++;
    if (_init_evas_event > 1) return _init_evas_event;
 
+   _fd_pid = getpid();
+   
    if (pipe(filedes) == -1)
      {
 	_init_evas_event = 0;
 	return 0;
      }
+
+   _evas_fd_close_on_exec(filedes[0]);
+   _evas_fd_close_on_exec(filedes[1]);
 
    _fd_read = filedes[0];
    _fd_write = filedes[1];
@@ -68,12 +94,23 @@ evas_async_events_shutdown(void)
    return _init_evas_event;
 }
 
+static void
+_evas_async_events_fork_handle(void)
+{
+   int i, count = _init_evas_event;
+   
+   if (getpid() == _fd_pid) return;
+   for (i = 0; i < count; i++) evas_async_events_shutdown();
+   for (i = 0; i < count; i++) evas_async_events_init();
+}
+
 #endif
 
 EAPI int
 evas_async_events_fd_get(void)
 {
 #ifdef BUILD_ASYNC_EVENTS
+   _evas_async_events_fork_handle();
    return _fd_read;
 #else
    return -1;
@@ -90,6 +127,8 @@ evas_async_events_process(void)
 
    if (_fd_read == -1) return 0;
 
+   _evas_async_events_fork_handle();
+   
    do
      {
 	check = read(_fd_read, &ev, sizeof (Evas_Event_Async *));
@@ -134,6 +173,8 @@ evas_async_events_put(const void *target, Evas_Callback_Type type, void *event_i
    if (!func) return 0;
    if (_fd_write == -1) return 0;
 
+   _evas_async_events_fork_handle();
+   
    ev = calloc(1, sizeof (Evas_Event_Async));
    if (!ev) return 0;
 

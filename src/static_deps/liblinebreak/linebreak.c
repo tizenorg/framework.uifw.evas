@@ -536,6 +536,9 @@ void set_linebreaks(
 	struct LineBreakProperties *lbpLang;
 	size_t posCur = 0;
 	size_t posLast = 0;
+	// TIZEN ONLY : (2013.08.19) for special processing at Zero-width space character
+	int zw_flag = 0;
+	//
 
 	--posLast;	/* To be ++'d later */
 	ch = get_next_char(s, len, &posCur);
@@ -584,6 +587,8 @@ nextline:
 			goto nextline;
 		}
 
+		// TIZEN ONLY : (2013.08.19) for special processing at Zero-width space character
+		/*
 		switch (lbcNew)
 		{
 		case LBP_SP:
@@ -638,6 +643,112 @@ nextline:
 		}
 
 		lbcCur = lbcNew;
+		*/
+
+		// TIZEN ONLY - START
+		if (lbcCur == LBP_ZW && !zw_flag)
+		{
+			zw_flag = 1;
+			posLast = -1;
+			posCur = 0;
+			ch = get_next_char(s, len, &posCur);
+			lbcCur = resolve_lb_class(get_char_lb_class_lang(ch, lbpLang), lang);
+			lbcNew = LBP_Undefined;
+			goto nextline;
+		}
+		else if (zw_flag)
+		{
+			if (lbcCur == LBP_ZW)
+				brks[posLast] = LINEBREAK_ALLOWBREAK;
+			else
+				brks[posLast] = LINEBREAK_NOBREAK;
+			lbcCur = lbcNew;
+		}
+		else
+		{
+			// TIZEN ONLY(20131106): For Hangul word wrap
+			switch (lbcCur)
+			{
+				case LBP_H2:			/**< Hangul LV */
+				case LBP_H3:			/**< Hangul LVT */
+				case LBP_JL:			/**< Hangul L Jamo */
+				case LBP_JV:			/**< Hangul V Jamo */
+				case LBP_JT:			/**< Hangul T Jamo */
+					lbcCur = LBP_AL;
+					break;
+				default:
+					break;
+			}
+
+			switch (lbcNew)
+			{
+				case LBP_H2:			/**< Hangul LV */
+				case LBP_H3:			/**< Hangul LVT */
+				case LBP_JL:			/**< Hangul L Jamo */
+				case LBP_JV:			/**< Hangul V Jamo */
+				case LBP_JT:			/**< Hangul T Jamo */
+					lbcNew = LBP_AL;
+					break;
+				default:
+					break;
+			}
+			//
+
+			switch (lbcNew)
+			{
+				case LBP_SP:
+					brks[posLast] = LINEBREAK_NOBREAK;
+					continue;
+				case LBP_BK:
+				case LBP_LF:
+				case LBP_NL:
+					brks[posLast] = LINEBREAK_NOBREAK;
+					lbcCur = LBP_BK;
+					continue;
+				case LBP_CR:
+					brks[posLast] = LINEBREAK_NOBREAK;
+					lbcCur = LBP_CR;
+					continue;
+				case LBP_CB:
+					brks[posLast] = LINEBREAK_ALLOWBREAK;
+					lbcCur = LBP_BA;
+					continue;
+				default:
+					break;
+			}
+
+			lbcNew = resolve_lb_class(lbcNew, lang);
+
+			assert(lbcCur <= LBP_JT);
+			assert(lbcNew <= LBP_JT);
+			switch (baTable[lbcCur - 1][lbcNew - 1])
+			{
+				case DIR_BRK:
+					brks[posLast] = LINEBREAK_ALLOWBREAK;
+					break;
+				case CMI_BRK:
+				case IND_BRK:
+					if (lbcLast == LBP_SP)
+					{
+						brks[posLast] = LINEBREAK_ALLOWBREAK;
+					}
+					else
+					{
+						brks[posLast] = LINEBREAK_NOBREAK;
+					}
+					break;
+				case CMP_BRK:
+					brks[posLast] = LINEBREAK_NOBREAK;
+					if (lbcLast != LBP_SP)
+						continue;
+					break;
+				case PRH_BRK:
+					brks[posLast] = LINEBREAK_NOBREAK;
+					break;
+			}
+			lbcCur = lbcNew;
+		}
+		// TIZEN ONLY - END
 	}
 
 	assert(posLast == posCur - 1 && posCur <= len);

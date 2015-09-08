@@ -1,6 +1,6 @@
 MAINTAINERCLEANFILES = Makefile.in
 
-SUBDIRS = canvas cache cache2 cserve cserve2 file engines include
+SUBDIRS = canvas cache cache2 cserve cserve2 file engines filters include
 EVAS_STATIC_MODULE =
 EVAS_STATIC_LIBADD =
 
@@ -48,20 +48,6 @@ SUBDIRS += ../modules/engines/psl1ght/
 EVAS_STATIC_MODULE += ../modules/engines/psl1ght/libevas_engine_psl1ght.la
 EVAS_STATIC_LIBADD += @evas_engine_psl1ght_libs@
 endif
-if EVAS_STATIC_BUILD_SOFTWARE_16
-SUBDIRS += ../modules/engines/software_16/
-EVAS_STATIC_MODULE += ../modules/engines/software_16/libevas_engine_software_16.la
-endif
-if EVAS_STATIC_BUILD_SOFTWARE_16_WINCE
-SUBDIRS += ../modules/engines/software_16_wince/
-EVAS_STATIC_MODULE += ../modules/engines/software_16_wince/libevas_engine_software_16_wince.la
-EVAS_STATIC_LIBADD += @evas_engine_software_16_wince_libs@
-endif
-if EVAS_STATIC_BUILD_SOFTWARE_16_X11
-SUBDIRS += ../modules/engines/software_16_x11/
-EVAS_STATIC_MODULE += ../modules/engines/software_16_x11/libevas_engine_software_16_x11.la
-EVAS_STATIC_LIBADD += @evas_engine_software_16_x11_libs@
-endif
 if EVAS_STATIC_BUILD_SOFTWARE_8
 SUBDIRS += ../modules/engines/software_8/
 EVAS_STATIC_MODULE += ../modules/engines/software_8/libevas_engine_software_8.la
@@ -70,13 +56,6 @@ if EVAS_STATIC_BUILD_SOFTWARE_8_X11
 SUBDIRS += ../modules/engines/software_8_x11/
 EVAS_STATIC_MODULE += ../modules/engines/software_8_x11/libevas_engine_software_8_x11.la
 EVAS_STATIC_LIBADD += @evas_engine_software_8_x11_libs@
-endif
-if EVAS_STATIC_BUILD_SOFTWARE_16_SDL
-SUBDIRS += \
-	../modules/engines/software_16_sdl/
-EVAS_STATIC_MODULE += \
-	../modules/engines/software_16_sdl/libevas_engine_software_16_sdl.la
-EVAS_STATIC_LIBADD += @SDL_LIBS@
 endif
 if EVAS_STATIC_BUILD_SOFTWARE_DDRAW
 SUBDIRS += ../modules/engines/software_ddraw/
@@ -185,7 +164,7 @@ AM_CPPFLAGS = \
 -DPACKAGE_BIN_DIR=\"$(bindir)\" \
 -DPACKAGE_LIB_DIR=\"$(libdir)\" \
 -DPACKAGE_DATA_DIR=\"$(datadir)/$(PACKAGE)\" \
-@EINA_CFLAGS@ \
+@EVAS_GENERAL_CFLAGS@ \
 @FREETYPE_CFLAGS@ \
 @FRIBIDI_CFLAGS@ \
 @HARFBUZZ_CFLAGS@ \
@@ -196,7 +175,7 @@ AM_CPPFLAGS = \
 
 lib_LTLIBRARIES = libevas.la
 
-includes_HEADERS = Evas.h Evas_GL.h
+includes_HEADERS = Evas.h Evas_GL.h Evas_GL_GLES1_Helpers.h Evas_GL_GLES2_Helpers.h
 includesdir = $(includedir)/evas-@VMAJ@
 
 libevas_la_SOURCES = main.c
@@ -226,7 +205,7 @@ engines/common/libevas_engine_common.la \
 @EET_LIBS@ \
 @FONTCONFIG_LIBS@ \
 @pthread_libs@ \
-@EINA_LIBS@ \
+@EVAS_GENERAL_LIBS@ \
 $(EVAS_STATIC_MODULE) \
 $(EVAS_STATIC_LIBADD) \
 @PIXMAN_LIBS@ \
@@ -251,13 +230,6 @@ cache2/libevas_cache2.la
 
 endif
 
-if BUILD_ENGINE_SOFTWARE_16
-
-libevas_la_LIBADD += engines/common_16/libevas_engine_common_16.la
-libevas_la_DEPENDENCIES += engines/common_16/libevas_engine_common_16.la
-
-endif
-
 if BUILD_ENGINE_SOFTWARE_8
 
 libevas_la_LIBADD += engines/common_8/libevas_engine_common_8.la
@@ -265,9 +237,13 @@ libevas_la_DEPENDENCIES += engines/common_8/libevas_engine_common_8.la
 
 endif
 
+# Evas filters (text effects)
+libevas_la_LIBADD += filters/libevas_filters.la
+libevas_la_DEPENDENCIES += filters/libevas_filters.la
+
 libevas_la_LDFLAGS = -no-undefined @lt_enable_auto_import@ -version-info @version_info@ @release_info@
 
 ### Evas_GL we are still using it in our code, so just don't install it.
 EXTRA_DIST=Evas_GL.h
 
-DIST_SUBDIRS = canvas cache cache2 cserve cserve2 file engines include
+DIST_SUBDIRS = canvas cache cache2 cserve cserve2 file engines filters include

@@ -37,7 +37,6 @@ _evas_map_calc_map_geometry(Evas_Object *obj)
    Eina_Bool ch = EINA_FALSE;
 
    if (!obj->cur.map) return;
-
    // WARN: Do not merge below code to SLP until it is fixed.
    // It has an infinite loop bug.
    if (obj->prev.map)
@@ -48,14 +47,12 @@ _evas_map_calc_map_geometry(Evas_Object *obj)
              if (obj->prev.map->count == obj->cur.map->count)
                {
                   const Evas_Map_Point *p2;
-
+                  
                   p = obj->cur.map->points;
                   p2 = obj->prev.map->points;
-
-                  ch = memcmp(p, p2,
-                              sizeof (Evas_Map_Point) * obj->prev.map->count);
-
-                  ch = !!ch;
+                  if (memcmp(p, p2, sizeof(Evas_Map_Point) * 
+                             obj->prev.map->count) != 0)
+                    ch = EINA_TRUE;
                   if (!ch)
                     {
                        if (obj->cache_map) evas_map_free(obj->cache_map); 
@@ -64,12 +61,12 @@ _evas_map_calc_map_geometry(Evas_Object *obj)
                     }
                }
              else
-               ch = 1;
+               ch = EINA_TRUE;
           }
      }
    else
-      ch = 1;
-
+      ch = EINA_TRUE;
+   
    p = obj->cur.map->points;
    p_end = p + obj->cur.map->count;
    x1 = x2 = lround(p->x);
@@ -148,6 +145,7 @@ _evas_map_copy(Evas_Map *dst, const Evas_Map *src)
      memcpy(dst->points, src->points, src->count * sizeof(Evas_Map_Point));
    dst->smooth = src->smooth;
    dst->alpha = src->alpha;
+   dst->move_sync = src->move_sync;
    dst->persp = src->persp;
    return EINA_TRUE;
 }
@@ -160,6 +158,7 @@ _evas_map_dup(const Evas_Map *orig)
    memcpy(copy->points, orig->points, orig->count * sizeof(Evas_Map_Point));
    copy->smooth = orig->smooth;
    copy->alpha = orig->alpha;
+   copy->move_sync = orig->move_sync;
    copy->persp = orig->persp;
    return copy;
 }
@@ -169,9 +168,6 @@ _evas_map_free(Evas_Object *obj, Evas_Map *m)
 {
    if (obj)
      {
-        if (m->surface)
-          obj->layer->evas->engine.func->image_map_surface_free
-            (obj->layer->evas->engine.data.output, m->surface);
         if (obj->spans)
           {
              obj->layer->evas->engine.func->image_map_clean(obj->layer->evas->engine.data.output, obj->spans);
@@ -231,14 +227,21 @@ evas_map_coords_get(const Evas_Map *m, Evas_Coord x, Evas_Coord y,
    return EINA_FALSE;
    MAGIC_CHECK_END();
 
-   int i, j, edges, edge[m->count][2], douv;
+   if (m->count < 4) return EINA_FALSE;
+
+   Eina_Bool inside = evas_map_inside_get(m, x, y);
+   if ((!mx) && (!my)) return inside;
+
+   // FIXME: need to handle grab mode and extrapolate coords outside map
+   if (grab && !inside) return EINA_FALSE;
+
+   int i, j, edges, edge[m->count][2];
+   Eina_Bool douv = EINA_FALSE;
    Evas_Coord xe[2];
    double u[2] = { 0.0, 0.0 };
    double v[2] = { 0.0, 0.0 };
 
-   if (m->count < 4) return 0;
-   // FIXME need to handle grab mode and extrapolte coords outside
-   // map
+/*
    if (grab)
      {
         Evas_Coord ymin, ymax;
@@ -253,7 +256,8 @@ evas_map_coords_get(const Evas_Map *m, Evas_Coord x, Evas_Coord y,
         if (y <= ymin) y = ymin + 1;
         if (y >= ymax) y = ymax - 1;
      }
-   edges = 0;
+*/
+   edges = EINA_FALSE;
    for (i = 0; i < m->count; i++)
      {
         j = (i + 1) % m->count;
@@ -270,8 +274,7 @@ evas_map_coords_get(const Evas_Map *m, Evas_Coord x, Evas_Coord y,
              edges++;
           }
      }
-   douv = 0;
-   if ((mx) || (my)) douv = 1;
+   if ((mx) || (my)) douv = EINA_TRUE;
    for (i = 0; i < (edges - 1); i+= 2)
      {
         Evas_Coord yp, yd;
@@ -343,13 +346,14 @@ evas_map_coords_get(const Evas_Map *m, Evas_Coord x, Evas_Coord y,
                   if (mx)
                     *mx = u[0] + (((x - xe[0]) * (u[1] - u[0])) /
                                   (xe[1] - xe[0]));
-                 if (my)
+                  if (my)
                     *my = v[0] + (((x - xe[0]) * (v[1] - v[0])) /
                                   (xe[1] - xe[0]));
                }
              return EINA_TRUE;
           }
-        if (grab)
+/*
+		  if (grab)
           {
              if (douv)
                {
@@ -362,6 +366,7 @@ evas_map_coords_get(const Evas_Map *m, Evas_Coord x, Evas_Coord y,
                }
              return EINA_TRUE;
           }
+*/
      }
    return EINA_FALSE;
 }
@@ -369,7 +374,29 @@ evas_map_coords_get(const Evas_Map *m, Evas_Coord x, Evas_Coord y,
 Eina_Bool
 evas_map_inside_get(const Evas_Map *m, Evas_Coord x, Evas_Coord y)
 {
-   return evas_map_coords_get(m, x, y, NULL, NULL, 0);
+   int i = 0, j = m->count - 1;
+   double pt1_x, pt1_y, pt2_x, pt2_y, tmp_x;
+   Eina_Bool inside = EINA_FALSE;
+
+   //Check the point inside the map coords by using Jordan curve theorem.
+   for (i = 0; i < m->count; i++)
+     {
+        pt1_x = m->points[i].x;
+        pt1_y = m->points[i].y;
+        pt2_x = m->points[j].x;
+        pt2_y = m->points[j].y;
+
+        //Is the point inside the map on y axis?
+        if (((y >= pt1_y) && (y < pt2_y)) || ((y >= pt2_y) && (y < pt1_y)))
+          {
+             //Check the point is left side of the line segment.
+             tmp_x = (pt1_x + ((pt2_x - pt1_x) / (pt2_y - pt1_y)) *
+                      ((double)y - pt1_y));
+             if ((double)x < tmp_x) inside = !inside;
+          }
+        j = i;
+     }
+   return inside;
 }
 
 static Eina_Bool
@@ -411,6 +438,13 @@ evas_object_map_enable_set(Evas_Object *obj, Eina_Bool enabled)
      }
    else
      {
+        if (obj->map.surface)
+          {
+             obj->layer->evas->engine.func->image_map_surface_free
+               (obj->layer->evas->engine.data.output,
+                   obj->map.surface);
+             obj->map.surface = NULL;
+          }
         if (obj->cur.map)
           {
              _evas_map_calc_geom_change(obj);
@@ -452,19 +486,18 @@ evas_object_map_set(Evas_Object *obj, const Evas_Map *map)
    return;
    MAGIC_CHECK_END();
 
-   if (!map || map->count < 4)
+   if ((!map) || (map->count < 4))
      {
+        if (obj->map.surface)
+          {
+             obj->layer->evas->engine.func->image_map_surface_free
+               (obj->layer->evas->engine.data.output,
+                   obj->map.surface);
+             obj->map.surface = NULL;
+          }
         if (obj->cur.map)
           {
              obj->changed_map = EINA_TRUE;
-
-             if (obj->cur.map->surface)
-               {
-                  obj->layer->evas->engine.func->image_map_surface_free
-                    (obj->layer->evas->engine.data.output,
-                     obj->cur.map->surface);
-                  obj->cur.map->surface = NULL;
-               }
              obj->prev.geometry = obj->cur.map->normal_geometry;
 
              if (obj->prev.map == obj->cur.map)
@@ -579,6 +612,31 @@ evas_map_alpha_get(const Evas_Map *m)
    return m->alpha;
 }
 
+EAPI void
+evas_map_util_object_move_sync_set(Evas_Map *m, Eina_Bool enabled)
+{
+   MAGIC_CHECK(m, Evas_Map, MAGIC_MAP);
+   return;
+   MAGIC_CHECK_END();
+
+   if (!enabled)
+     {
+        m->move_sync.diff_x = 0;
+        m->move_sync.diff_y = 0;
+     }
+   m->move_sync.enabled = !!enabled;
+}
+
+EAPI Eina_Bool
+evas_map_util_object_move_sync_get(const Evas_Map *m)
+{
+   MAGIC_CHECK(m, Evas_Map, MAGIC_MAP);
+   return EINA_FALSE;
+   MAGIC_CHECK_END();
+
+   return m->move_sync.enabled;
+}
+
 EAPI Evas_Map *
 evas_map_dup(const Evas_Map *m)
 {
@@ -636,9 +694,9 @@ evas_map_point_coord_get(const Evas_Map *m, int idx, Evas_Coord *x, Evas_Coord *
 
    if (idx >= m->count) goto error;
    p = m->points + idx;
-   if (x) *x = p->x;
-   if (y) *y = p->y;
-   if (z) *z = p->z;
+   if (x) *x = lround(p->x);
+   if (y) *y = lround(p->y);
+   if (z) *z = lround(p->z);
    return;
 
  error:
@@ -899,6 +957,49 @@ evas_map_util_3d_rotate(Evas_Map *m, double dx, double dy, double dz,
 }
 
 EAPI void
+evas_map_util_quat_rotate(Evas_Map *m, double qx, double qy, double qz,
+                          double qw, double cx, double cy, double cz)
+{
+   MAGIC_CHECK(m, Evas_Map, MAGIC_MAP);
+   return;
+   MAGIC_CHECK_END();
+
+   Evas_Map_Point *p, *p_end;
+
+   p = m->points;
+   p_end = p + m->count;
+
+   for (; p < p_end; p++)
+     {
+       double x, y, z, uvx, uvy, uvz, uuvx, uuvy, uuvz;
+
+       x = p->x - cx;
+       y = p->y - cy;
+       z = p->z - cz;
+
+       uvx = qy * z - qz * y;
+       uvy = qz * x - qx * z;
+       uvz = qx * y - qy * x;
+
+       uuvx = qy * uvz - qz * uvy;
+       uuvy = qz * uvx - qx * uvz;
+       uuvz = qx * uvy - qy * uvx;
+
+       uvx *= (2.0f * qw);
+       uvy *= (2.0f * qw);
+       uvz *= (2.0f * qw);
+
+       uuvx *= 2.0f;
+       uuvy *= 2.0f;
+       uuvz *= 2.0f;
+
+       p->px = p->x = cx + x + uvx + uuvx;
+       p->py = p->y = cy + y + uvy + uuvy;
+       p->z = cz + z + uvz + uuvz;
+     }
+}
+
+EAPI void
 evas_map_util_3d_lighting(Evas_Map *m,
                           Evas_Coord lx, Evas_Coord ly, Evas_Coord lz,
                           int lr, int lg, int lb, int ar, int ag, int ab)
@@ -1048,7 +1149,10 @@ evas_map_util_clockwise_get(Evas_Map *m)
    return EINA_FALSE;
 }
 
-void
+/****************************************************************************/
+/* If the return value is true, the map surface should be redrawn.          */
+/****************************************************************************/
+Eina_Bool
 evas_object_map_update(Evas_Object *obj,
                        int x, int y,
                        int imagew, int imageh,
@@ -1069,9 +1173,11 @@ evas_object_map_update(Evas_Object *obj,
         obj->changed_map = EINA_TRUE;
      }
 
-   if (!obj->changed_map) return ;
+   evas_object_map_move_sync(obj);
 
-   if (obj->cur.map && obj->spans && obj->cur.map->count != obj->spans->count)
+   if (!obj->changed_map) return EINA_FALSE;
+
+   if (obj->spans && obj->cur.map->count != obj->spans->count)
      {
         if (obj->spans)
           {
@@ -1085,7 +1191,7 @@ evas_object_map_update(Evas_Object *obj,
      obj->spans = calloc(1, sizeof (RGBA_Map) +
                          sizeof (RGBA_Map_Point) * (obj->cur.map->count - 1));
 
-   if (!obj->spans) return ;
+   if (!obj->spans) return EINA_FALSE;
 
    obj->spans->count = obj->cur.map->count;
    obj->spans->x = x;
@@ -1100,7 +1206,7 @@ evas_object_map_update(Evas_Object *obj,
    p = obj->cur.map->points;
    p_end = p + obj->cur.map->count;
    pt = pts;
-             
+
    pts[0].px = obj->cur.map->persp.px << FP;
    pts[0].py = obj->cur.map->persp.py << FP;
    pts[0].foc = obj->cur.map->persp.foc << FP;
@@ -1114,8 +1220,10 @@ evas_object_map_update(Evas_Object *obj,
         pt->fx = p->px;
         pt->fy = p->py;
         pt->fz = p->z;
-        pt->u = ((lround(p->u) * imagew) / uvw) * FP1;
-        pt->v = ((lround(p->v) * imageh) / uvh) * FP1;
+        if (imagew == 0) pt->u = 0;
+        else pt->u = ((lround(p->u) * imagew) / uvw) * FP1;
+        if (imageh == 0) pt->v = 0;
+        else pt->v = ((lround(p->v) * imageh) / uvh) * FP1;
         if      (pt->u < 0) pt->u = 0;
         else if (pt->u > (imagew * FP1)) pt->u = (imagew * FP1);
         if      (pt->v < 0) pt->v = 0;
@@ -1128,4 +1236,55 @@ evas_object_map_update(Evas_Object *obj,
      }
 
    // Request engine to update it's point
+
+   obj->changed_map = EINA_FALSE;
+
+   return obj->changed_pchange;
+}
+
+void
+evas_map_object_move_diff_set(Evas_Map *m,
+                              Evas_Coord diff_x,
+                              Evas_Coord diff_y)
+{
+   MAGIC_CHECK(m, Evas_Map, MAGIC_MAP);
+   return;
+   MAGIC_CHECK_END();
+
+   m->move_sync.diff_x += diff_x;
+   m->move_sync.diff_y += diff_y;
+}
+
+void
+evas_object_map_move_sync(Evas_Object *obj)
+{
+   Evas_Map *m;
+   Evas_Map_Point *p;
+   Evas_Coord diff_x, diff_y;
+   int i, count;
+
+   if (!obj) return;
+
+   if ((!obj->cur.map->move_sync.enabled) ||
+       ((obj->cur.map->move_sync.diff_x == 0) &&
+        (obj->cur.map->move_sync.diff_y == 0)))
+     return;
+
+   m = obj->cur.map;
+   p = m->points;
+   count = m->count;
+   diff_x = m->move_sync.diff_x;
+   diff_y = m->move_sync.diff_y;
+
+   for (i = 0; i < count; i++, p++)
+     {
+        p->px += diff_x;
+        p->py += diff_y;
+        p->x += diff_x;
+        p->y += diff_y;
+     }
+   m->move_sync.diff_x = 0;
+   m->move_sync.diff_y = 0;
+
+   _evas_map_calc_map_geometry(obj);
 }

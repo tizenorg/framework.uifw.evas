@@ -77,3 +77,32 @@ evas_object_inform_call_image_unloaded(Evas_Object *obj)
    evas_object_event_callback_call(obj, EVAS_CALLBACK_IMAGE_UNLOADED, NULL, _evas_event_counter);
    _evas_post_event_callback_call(obj->layer->evas);
 }
+
+void
+evas_object_inform_call_image_resize(Evas_Object *obj)
+{
+   _evas_object_event_new();
+   evas_object_event_callback_call(obj, EVAS_CALLBACK_IMAGE_RESIZE, NULL, _evas_event_counter);
+   _evas_post_event_callback_call(obj->layer->evas);
+}
+
+///Jiyoun: This code will be modified after opensource fix lockup issue
+#define EVAS_CALLBACK_CANVAS_OBJECT_RENDER_PRE 100
+#define EVAS_CALLBACK_CANVAS_OBJECT_RENDER_POST 101
+
+void
+evas_object_inform_call_render_pre(Evas_Object *obj)
+{
+   _evas_object_event_new();
+   evas_object_event_callback_call(obj, EVAS_CALLBACK_CANVAS_OBJECT_RENDER_PRE, NULL, _evas_event_counter);
+   _evas_post_event_callback_call(obj->layer->evas);
+}
+
+void
+evas_object_inform_call_render_post(Evas_Object *obj)
+{
+   _evas_object_event_new();
+   evas_object_event_callback_call(obj, EVAS_CALLBACK_CANVAS_OBJECT_RENDER_POST, NULL, _evas_event_counter);
+   _evas_post_event_callback_call(obj->layer->evas);
+}
+

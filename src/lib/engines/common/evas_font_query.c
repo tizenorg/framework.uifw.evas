@@ -70,21 +70,30 @@ evas_common_font_query_run_font_end_get(RGBA_Font *fn, RGBA_Font_Int **script_fi
    while (itr < run_end)
      {
         RGBA_Font_Int *tmp_fi;
+        // HAVE_UNICODE_EMOTICON(2013.10.07): Basic implementation for supporting unicode 6.0 emoticon.
+        Eina_Bool emo = EINA_FALSE;
+        //
         /* Itr will end up being the first of the next run  */
         for ( ; itr < run_end ; itr++)
           {
+             // HAVE_UNICODE_EMOTICON(2013.10.07): Basic implementation for supporting unicode 6.0 emoticon.
+             UNICODE_EMOTICON_CHECK(*itr)
+               {
+                  emo = EINA_TRUE;
+                  break;
+               }
+             //
+
              /* 0x1F is the last ASCII contral char, just a hack in
               * the meanwhile. */
              if (*itr <= 0x1F)
                 continue;
              /* Break if either it's not in the font, or if it is in the
               * script's font. */
-             if (fi == *script_fi)
-               {
-                  if (!evas_common_get_char_index(fi, *itr))
-                     break;
-               }
-             else
+             if (!evas_common_get_char_index(fi, *itr))
+                break;
+
+             if (fi != *script_fi)
                {
                   if (evas_common_get_char_index(*script_fi, *itr))
                      break;
@@ -108,6 +117,10 @@ evas_common_font_query_run_font_end_get(RGBA_Font *fn, RGBA_Font_Int **script_fi
              else
                {
                   itr++;
+                  // HAVE_UNICODE_EMOTICON(2013.10.11): Fix emoticon unicode parsing code.
+                  if (emo)
+                    break;
+                  //
                   /* Go through all the chars that can't be rendered with any
                    * font */
                   for ( ; itr < run_end ; itr++)
@@ -133,9 +146,17 @@ evas_common_font_query_run_font_end_get(RGBA_Font *fn, RGBA_Font_Int **script_fi
                     }
                }
              itr++;
+             // HAVE_UNICODE_EMOTICON(2013.10.11): Fix emoticon unicode parsing code.
+             if (emo)
+               break;
+             //
           }
         else
           {
+             // HAVE_UNICODE_EMOTICON(2013.10.07): Basic implementation for supporting unicode 6.0 emoticon.
+             if (emo)
+               break;
+             //
              /* If this char is not renderable by any font, but the replacement
               * char can be rendered using the currentfont, continue this
               * run. */
@@ -177,12 +198,14 @@ evas_common_font_query_kerning(RGBA_Font_Int *fi, FT_UInt left, FT_UInt right,
    int *result;
    FT_Vector delta;
    int key[2];
+   int hash;
    int error = 1;
 
    key[0] = left;
    key[1] = right;
+   hash = eina_hash_int32(&left, sizeof (int)) ^ eina_hash_int32(&right, sizeof (int));
 
-   result = eina_hash_find(fi->kerning, key);
+   result = eina_hash_find_by_hash(fi->kerning, key, sizeof (int) * 2, hash);
    if (result)
      {
 	*kerning = result[2];
@@ -196,7 +219,7 @@ evas_common_font_query_kerning(RGBA_Font_Int *fi, FT_UInt left, FT_UInt right,
    evas_common_font_int_reload(fi);
    FTLOCK();
    if (FT_Get_Kerning(fi->src->ft.face,
-		      key[0], key[1],
+		      left, right,
 		      FT_KERNING_DEFAULT, &delta) == 0)
      {
 	int *push;
@@ -207,11 +230,11 @@ evas_common_font_query_kerning(RGBA_Font_Int *fi, FT_UInt left, FT_UInt right,
 	push = malloc(sizeof (int) * 3);
 	if (!push) return 1;
 
-	push[0] = key[0];
-	push[1] = key[1];
+	push[0] = left;
+	push[1] = right;
 	push[2] = *kerning;
 
-	eina_hash_direct_add(fi->kerning, push, push);
+	eina_hash_direct_add_by_hash(fi->kerning, push, sizeof(int) * 2, hash, push);
 
 	goto on_correct;
      }
@@ -264,6 +287,8 @@ evas_common_font_query_right_inset(RGBA_Font *fn __UNUSED__, const Evas_Text_Pro
    if (gli->width == 0)
       return 0;
 
+   // TIZEN_ONLY(20140301): Added checking language of text props. We can draw glyphs of specific language without harfbuzz.
+   /*
    return ((gli > text_props->info->glyph) ?
       gli->pen_after - (gli - 1)->pen_after : gli->pen_after) -
       (gli->width + gli->x_bear
@@ -272,6 +297,57 @@ evas_common_font_query_right_inset(RGBA_Font *fn __UNUSED__, const Evas_Text_Pro
               text_props->info->ot[text_props->start + text_props->len - 1]))
 #endif
       );
+   */
+   return ((gli > text_props->info->glyph) ?
+      gli->pen_after - (gli - 1)->pen_after : gli->pen_after) -
+      (gli->width + gli->x_bear
+#ifdef OT_SUPPORT
+       + (CHECK_LANGUAGE_HARFBUZZ_AVAILABLE(text_props)) ?
+       EVAS_FONT_ROUND_26_6_TO_INT(EVAS_FONT_OT_X_OFF_GET(
+            text_props->info->ot[text_props->start + text_props->len - 1])) : 0
+#endif
+      );
+   //
+}
+
+/**
+ * @internal
+ * Calculate the ascent/descent of a run. This is different from
+ * evas_common_font_[max]_ascent/descent_get because this one returns the
+ * actual sizee (i.e including accents), and not just what the font reports.
+ *
+ * @param fn the font set to use.
+ * @param text_props the string object.
+ * @param[out] ascent the calculated ascent
+ * @param[out] descent the calculated descent
+ */
+EAPI void
+evas_common_font_ascent_descent_get(RGBA_Font *fn, const Evas_Text_Props *text_props, int *ascent, int *descent)
+{
+   int asc = 0, desc = 0;
+   int max_asc, max_desc;
+
+   max_asc = evas_common_font_ascent_get(fn);
+   max_desc = evas_common_font_descent_get(fn);
+
+   /* FIXME: Not supported yet!!! */
+   desc = max_desc;
+
+   EVAS_FONT_WALK_TEXT_INIT();
+   EVAS_FONT_WALK_TEXT_START()
+     {
+        EVAS_FONT_WALK_TEXT_WORK();
+        if (!EVAS_FONT_WALK_IS_VISIBLE) continue;
+
+        if ((EVAS_FONT_WALK_PEN_Y + EVAS_FONT_WALK_Y_OFF + EVAS_FONT_WALK_Y_BEAR) > asc)
+          {
+             asc = EVAS_FONT_WALK_PEN_Y + EVAS_FONT_WALK_Y_OFF + EVAS_FONT_WALK_Y_BEAR;
+          }
+     }
+   EVAS_FONT_WALK_TEXT_END();
+
+   if (ascent) *ascent = (asc > max_asc) ? asc : max_asc;
+   if (descent) *descent = (desc < max_desc) ? desc : max_desc;
 }
 
 /**
@@ -305,8 +381,15 @@ evas_common_font_query_size(RGBA_Font *fn, const Evas_Text_Props *text_props, in
                 ret_w -= glyph[-1].pen_after;
           }
 #ifdef OT_SUPPORT
-        ret_w += EVAS_FONT_ROUND_26_6_TO_INT(EVAS_FONT_OT_X_OFF_GET(
-              text_props->info->ot[text_props->start + text_props->len - 1]));
+        // TIZEN_ONLY(20140301): Added checking language of text props. We can draw glyphs of specific language without harfbuzz.
+        //ret_w += EVAS_FONT_ROUND_26_6_TO_INT(EVAS_FONT_OT_X_OFF_GET(
+        //      text_props->info->ot[text_props->start + text_props->len - 1]));
+        if (CHECK_LANGUAGE_HARFBUZZ_AVAILABLE(text_props))
+          {
+             ret_w += EVAS_FONT_ROUND_26_6_TO_INT(EVAS_FONT_OT_X_OFF_GET(
+                   text_props->info->ot[text_props->start + text_props->len - 1]));
+          }
+        //
 #endif
         ret_w += last_glyph->width + last_glyph->x_bear;
      }
@@ -440,8 +523,15 @@ evas_common_font_query_char_coords(RGBA_Font *fn, const Evas_Text_Props *text_pr
           {
              found = 1;
 #ifdef OT_SUPPORT
-             items = evas_common_font_ot_cluster_size_get(text_props,
-                                                          char_index);
+             // TIZEN_ONLY(20140301): Added checking language of text props. We can draw glyphs of specific language without harfbuzz.
+             //items = evas_common_font_ot_cluster_size_get(text_props,
+             //                                             char_index);
+             if (CHECK_LANGUAGE_HARFBUZZ_AVAILABLE(text_props))
+               {
+                  items = evas_common_font_ot_cluster_size_get(text_props,
+                                                               char_index);
+               }
+             //
 #endif
              item_pos = position - EVAS_FONT_WALK_POS + 1;
           }
@@ -452,8 +542,15 @@ evas_common_font_query_char_coords(RGBA_Font *fn, const Evas_Text_Props *text_pr
           {
              found = 1;
 #ifdef OT_SUPPORT
-             items = evas_common_font_ot_cluster_size_get(text_props,
-                                                          char_index);
+             // TIZEN_ONLY(20140301): Added checking language of text props. We can draw glyphs of specific language without harfbuzz.
+             //items = evas_common_font_ot_cluster_size_get(text_props,
+             //                                             char_index);
+             if (CHECK_LANGUAGE_HARFBUZZ_AVAILABLE(text_props))
+               {
+                  items = evas_common_font_ot_cluster_size_get(text_props,
+                                                               char_index);
+               }
+             //
 #endif
              item_pos = items - (position - EVAS_FONT_WALK_POS);
           }
@@ -571,8 +668,13 @@ evas_common_font_query_pen_coords(RGBA_Font *fn, const Evas_Text_Props *text_pro
           {
              found = 1;
 #ifdef OT_SUPPORT
-             items = evas_common_font_ot_cluster_size_get(text_props,
-                                                          char_index);
+             // TIZEN_ONLY(20140301): Added checking language of text props. We can draw glyphs of specific language without harfbuzz.
+             //items = evas_common_font_ot_cluster_size_get(text_props,
+             //                                             char_index);
+             if (CHECK_LANGUAGE_HARFBUZZ_AVAILABLE(text_props))
+               items = evas_common_font_ot_cluster_size_get(text_props,
+                                                            char_index);
+             //
 #endif
              item_pos = position - EVAS_FONT_WALK_POS + 1;
           }
@@ -583,8 +685,13 @@ evas_common_font_query_pen_coords(RGBA_Font *fn, const Evas_Text_Props *text_pro
           {
              found = 1;
 #ifdef OT_SUPPORT
-             items = evas_common_font_ot_cluster_size_get(text_props,
-                                                          char_index);
+             // TIZEN_ONLY(20140301): Added checking language of text props. We can draw glyphs of specific language without harfbuzz.
+             //items = evas_common_font_ot_cluster_size_get(text_props,
+             //                                             char_index);
+             if (CHECK_LANGUAGE_HARFBUZZ_AVAILABLE(text_props))
+               items = evas_common_font_ot_cluster_size_get(text_props,
+                                                            char_index);
+             //
 #endif
              item_pos = items - (position - EVAS_FONT_WALK_POS);
           }
@@ -671,8 +778,13 @@ evas_common_font_query_char_at_coords(RGBA_Font *fn, const Evas_Text_Props *text
             (x <= (EVAS_FONT_WALK_PEN_X_AFTER)) && (y >= -asc) && (y <= desc))
           {
 #ifdef OT_SUPPORT
-             items = evas_common_font_ot_cluster_size_get(text_props,
-                                                          char_index);
+             // TIZEN_ONLY(20140301): Added checking language of text props. We can draw glyphs of specific language without harfbuzz.
+             //items = evas_common_font_ot_cluster_size_get(text_props,
+             //                                             char_index);
+             if (CHECK_LANGUAGE_HARFBUZZ_AVAILABLE(text_props))
+               items = evas_common_font_ot_cluster_size_get(text_props,
+                                                            char_index);
+             //
 #endif
              found = 1;
           }
@@ -683,6 +795,7 @@ evas_common_font_query_char_at_coords(RGBA_Font *fn, const Evas_Text_Props *text
    if (found)
      {
         int item_pos;
+        Evas_Coord cx_it, cw_it, cmid;
         Evas_Coord cluster_adv;
         cluster_adv = EVAS_FONT_WALK_PEN_X - cluster_start;
 
@@ -698,12 +811,34 @@ evas_common_font_query_char_at_coords(RGBA_Font *fn, const Evas_Text_Props *text
              part = cluster_adv / items;
              item_pos = items - ((int) ((x - cluster_start) / part)) - 1;
           }
-        if (cx) *cx = EVAS_FONT_WALK_PEN_X +
-          ((cluster_adv / items) * (item_pos - 1));
+
+        cx_it = EVAS_FONT_WALK_PEN_X + ((cluster_adv / items) * (item_pos - 1));
+        cw_it = (cluster_adv / items);
+
+        if (cx) *cx = cx_it;
         if (cy) *cy = -asc;
-        if (cw) *cw = (cluster_adv / items);
+        if (cw) *cw = cw_it;
         if (ch) *ch = asc + desc;
         ret_val = prev_cluster + item_pos;
+
+        /* Check, if x coord points to RIGHT half part of LTR char
+         * or to LEFT half char of RTL char. If so, increment found position */
+        cmid = cx_it + (cw_it / 2);
+        if (text_props->bidi.dir == EVAS_BIDI_DIRECTION_LTR)
+          {
+             if (x > cmid)
+               {
+                  ret_val++;
+               }
+          }
+        else
+          {
+             if (x < cmid)
+               {
+                  ret_val++;
+               }
+          }
+
         goto end;
      }
 end:
@@ -763,9 +898,21 @@ evas_common_font_query_last_up_to_pos(RGBA_Font *fn, const Evas_Text_Props *text
                         (y >= -asc) && (y <= desc))
                     {
 #ifdef OT_SUPPORT
-                       ret = EVAS_FONT_OT_POS_GET(
-                             text_props->info->ot[text_props->start + i]) -
-                          text_props->text_offset;
+                       // TIZEN_ONLY(20140301): Added checking language of text props. We can draw glyphs of specific language without harfbuzz.
+                       //ret = EVAS_FONT_OT_POS_GET(
+                       //   text_props->info->ot[text_props->start + i]) -
+                       //   text_props->text_offset;
+                       if (CHECK_LANGUAGE_HARFBUZZ_AVAILABLE(text_props))
+                         {
+                            ret = EVAS_FONT_OT_POS_GET(
+                               text_props->info->ot[text_props->start + i]) -
+                               text_props->text_offset;
+                         }
+                       else
+                         {
+                            ret = text_props->text_len - i - 1;
+                         }
+                       //
 #else
                        ret = text_props->text_len - i - 1;
 #endif

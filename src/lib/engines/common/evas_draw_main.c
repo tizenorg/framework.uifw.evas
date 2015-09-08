@@ -143,7 +143,7 @@ evas_common_draw_context_set_color(RGBA_Draw_Context *dc, int r, int g, int b, i
    B_VAL(&(dc->col.col)) = (DATA8)b;
    A_VAL(&(dc->col.col)) = (DATA8)a;
 #ifdef HAVE_PIXMAN
-   if (dc && dc->col.pixman_color_image)
+   if (dc->col.pixman_color_image)
      pixman_image_unref(dc->col.pixman_color_image);
    
    pixman_color_t pixman_color;
@@ -177,47 +177,17 @@ evas_common_draw_context_unset_multiplier(RGBA_Draw_Context *dc)
 EAPI void
 evas_common_draw_context_set_mask(RGBA_Draw_Context *dc, RGBA_Image *mask, int x, int y, int w, int h)
 {
-   dc->mask.mask = mask;
-   dc->mask.x = x;
-   dc->mask.y = y;
-   dc->mask.w = w;
-   dc->mask.h = h;
-
-#ifdef HAVE_PIXMAN
-   if (mask->pixman.im)
-     pixman_image_unref(mask->pixman.im);
-   
-   if (mask->cache_entry.flags.alpha)
-     {
-        mask->pixman.im = pixman_image_create_bits(PIXMAN_a8r8g8b8, w, h, 
-                                                   (uint32_t *)mask->mask.mask,
-                                                   w * 4);
-     }
-   else
-     {
-        mask->pixman.im = pixman_image_create_bits(PIXMAN_x8r8g8b8, w, h, 
-                                                   (uint32_t *)mask->mask.mask,
-                                                   w * 4);
-     }
-#endif
-
+   (void) dc; (void) mask; (void) x; (void) y; (void) w; (void) h;
+   CRIT("This function should not be used.");
+   return;
 }
 
 EAPI void
 evas_common_draw_context_unset_mask(RGBA_Draw_Context *dc)
 {
-   dc->mask.mask = NULL;
-
-#ifdef HAVE_PIXMAN
-   RGBA_Image *mask;
-   mask = (RGBA_Image *)dc->mask.mask;
-
-   if (mask && mask->pixman.im)
-     {
-        pixman_image_unref(mask->pixman.im);
-        mask->pixman.im = NULL;
-     }
-#endif
+   (void) dc;
+   CRIT("This function should not be used.");
+   return;
 }
 
 

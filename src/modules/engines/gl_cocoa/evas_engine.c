@@ -446,6 +446,9 @@ eng_image_alpha_set(void *data, void *image, int has_alpha)
      {
         Evas_GL_Image *im_new;
         
+        if (!im->im->image.data)
+          evas_cache_image_load_data(&im->im->cache_entry);
+        evas_gl_common_image_alloc_ensure(im);
         im_new = evas_gl_common_image_new_from_copied_data
            (im->gc, im->im->cache_entry.w, im->im->cache_entry.h, 
                im->im->image.data,
@@ -516,6 +519,7 @@ eng_image_colorspace_set(void *data, void *image, int cspace)
    /* FIXME: can move to gl_common */
    if (im->cs.space == cspace) return;
    eng_window_use(re->win);
+   evas_gl_common_image_alloc_ensure(im);
    evas_cache_image_colorspace(&im->im->cache_entry, cspace);
    switch (cspace)
      {
@@ -684,6 +688,7 @@ eng_image_size_set(void *data, void *image, int w, int h)
    if ((eng_image_colorspace_get(data, image) == EVAS_COLORSPACE_YCBCR422P601_PL) ||
        (eng_image_colorspace_get(data, image) == EVAS_COLORSPACE_YCBCR422P709_PL))
      w &= ~0x1;
+   evas_gl_common_image_alloc_ensure(im);
    if ((im_old) &&
        ((int)im_old->im->cache_entry.w == w) &&
        ((int)im_old->im->cache_entry.h == h))
@@ -751,6 +756,7 @@ eng_image_data_get(void *data, void *image, int to_write, DATA32 **image_data, i
      }
    eng_window_use(re->win);
    error = evas_cache_image_load_data(&im->im->cache_entry);
+   evas_gl_common_image_alloc_ensure(im);
    switch (im->cs.space)
      {
       case EVAS_COLORSPACE_ARGB8888:
@@ -802,6 +808,7 @@ eng_image_data_put(void *data, void *image, DATA32 *image_data)
    im = image;
    if (im->native.data) return image;
    eng_window_use(re->win);
+   evas_gl_common_image_alloc_ensure(im);
    if ((im->tex) && (im->tex->pt) && (im->tex->pt->dyn.data))
      {
         if (im->tex->pt->dyn.data == image_data)
@@ -984,8 +991,12 @@ eng_image_map_surface_free(void *data __UNUSED__, void *surface)
 }
 
 static void
-eng_image_content_hint_set(void *data __UNUSED__, void *image, int hint)
+eng_image_content_hint_set(void *data, void *image, int hint)
 {
+   Render_Engine *re;
+   re = (Render_Engine *)data;
+
+   if (re) eng_window_use(re->win);
    if (image) evas_gl_common_image_content_hint_set(image, hint);
 }
 
@@ -1104,7 +1115,7 @@ evgl_glBindRenderbuffer(GLenum target, GLuint renderbuffer)
 static void
 evgl_glClearDepthf(GLclampf depth)
 {
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+#ifdef GL_GLES
    glClearDepthf(depth);
 #else
    glClearDepth(depth);
@@ -1114,7 +1125,7 @@ evgl_glClearDepthf(GLclampf depth)
 static void
 evgl_glDepthRangef(GLclampf zNear, GLclampf zFar)
 {
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+#ifdef GL_GLES
    glDepthRangef(zNear, zFar);
 #else
    glDepthRange(zNear, zFar);
@@ -1124,7 +1135,7 @@ evgl_glDepthRangef(GLclampf zNear, GLclampf zFar)
 static void
 evgl_glGetShaderPrecisionFormat(GLenum shadertype, GLenum precisiontype, GLint* range, GLint* precision)
 {
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+#ifdef GL_GLES
    glGetShaderPrecisionFormat(shadertype, precisiontype, range, precision);
 #else
    if (range)
@@ -1144,7 +1155,7 @@ evgl_glGetShaderPrecisionFormat(GLenum shadertype, GLenum precisiontype, GLint* 
 static void
 evgl_glReleaseShaderCompiler(void)
 {
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+#ifdef GL_GLES
    glReleaseShaderCompiler();
 #else
 #endif
@@ -1153,7 +1164,7 @@ evgl_glReleaseShaderCompiler(void)
 static void
 evgl_glShaderBinary(GLsizei n, const GLuint* shaders, GLenum binaryformat, const void* binary, GLsizei length)
 {
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+#ifdef GL_GLES
    glShaderBinary(n, shaders, binaryformat, binary, length);
 #else
 // FIXME: need to dlsym/getprocaddress for this

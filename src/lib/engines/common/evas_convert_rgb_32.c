@@ -1,5 +1,8 @@
 #include "evas_common.h"
 #include "evas_convert_rgb_32.h"
+#ifdef BUILD_NEON
+#include <arm_neon.h>
+#endif
 
 #ifdef BUILD_CONVERT_32_RGB_8888
 #ifdef BUILD_CONVERT_32_RGB_ROT0
@@ -49,51 +52,104 @@ evas_common_convert_rgba_to_32bpp_rgb_8888_rot_180 (DATA32 *src, DATA8 *dst, int
 #endif
 
 #ifdef TILE_ROTATE
+#ifdef BUILD_NEON
 #define FAST_SIMPLE_ROTATE(suffix, pix_type) \
    static void \
-   blt_rotated_90_trivial_##suffix(pix_type       *dst, \
+   blt_rotated_90_trivial_##suffix(pix_type * restrict dst, \
                                    int             dst_stride, \
-                                   const pix_type *src, \
+                                   const pix_type * restrict src, \
                                    int             src_stride, \
                                    int             w, \
                                    int             h) \
    { \
       int x, y; \
-      for (y = 0; y < h; y++) \
+      if((w%4) == 0) \
+      { \
+        int klght = 4 * src_stride; \
+        for(y = 0; y < h; y++) \
         { \
-           const pix_type *s = src + (h - y - 1); \
-           pix_type *d = dst + (dst_stride * y); \
-           for (x = 0; x < w; x++) \
-             { \
-                *d++ = *s; \
-                s += src_stride; \
-             } \
+          const pix_type *s = &(src[(h - y - 1)]); \
+          pix_type *d = &(dst[(dst_stride * y)]); \
+          pix_type *ptr1 = s; \
+          pix_type *ptr2 = ptr1 + src_stride; \
+          pix_type *ptr3 = ptr2 + src_stride; \
+          pix_type *ptr4 = ptr3 + src_stride; \
+          for(x = 0; x < w; x+=4) \
+          { \
+            pix_type s_array[4] = {*ptr1, *ptr2, *ptr3, *ptr4}; \
+            vst1q_s32(d, vld1q_s32(s_array)); \
+            d += 4; \
+            ptr1 += klght; \
+            ptr2 += klght; \
+            ptr3 += klght; \
+            ptr4 += klght; \
+          } \
         } \
+      } \
+      else \
+      { \
+        for (y = 0; y < h; y++) \
+          { \
+             const pix_type *s = &(src[(h - y - 1)]); \
+             pix_type *d = &(dst[(dst_stride * y)]); \
+             for (x = 0; x < w; x++) \
+               { \
+                  *d++ = *s; \
+                  s += src_stride; \
+               } \
+          } \
+      } \
    } \
    static void \
-   blt_rotated_270_trivial_##suffix(pix_type       *dst, \
+   blt_rotated_270_trivial_##suffix(pix_type * restrict dst, \
                                     int             dst_stride, \
-                                    const pix_type *src, \
+                                    const pix_type * restrict src, \
                                     int             src_stride, \
                                     int             w, \
                                     int             h) \
    { \
       int x, y; \
-      for (y = 0; y < h; y++) \
+      if((w%4) == 0) \
+      { \
+        int klght = 4 * src_stride; \
+        for(y = 0; y < h; y++) \
         { \
-           const pix_type *s = src + (src_stride * (w - 1)) + y; \
-           pix_type *d = dst + (dst_stride * y); \
-           for (x = 0; x < w; x++) \
-             { \
-                *d++ = *s; \
-                s -= src_stride; \
-             } \
+          const pix_type *s = &(src[(src_stride * (w - 1)) + y]); \
+          pix_type *d = &(dst[(dst_stride * y)]); \
+          pix_type *ptr1 = s; \
+          pix_type *ptr2 = ptr1 - src_stride; \
+          pix_type *ptr3 = ptr2 - src_stride; \
+          pix_type *ptr4 = ptr3 - src_stride; \
+          for(x = 0; x < w; x+=4) \
+          { \
+            pix_type s_array[4] = {*ptr1, *ptr2, *ptr3, *ptr4}; \
+            vst1q_s32(d, vld1q_s32(s_array)); \
+            d += 4; \
+            ptr1 -= klght; \
+            ptr2 -= klght; \
+            ptr3 -= klght; \
+            ptr4 -= klght; \
+          } \
         } \
+      } \
+      else \
+      { \
+        for(y = 0; y < h; y++) \
+        { \
+           const pix_type *s = &(src[(src_stride * (w - 1)) + y]); \
+           pix_type *d = &(dst[(dst_stride * y)]); \
+           for (x = 0; x < w; x++) \
+           { \
+              *d++ = *s; \
+              s -= src_stride; \
+           } \
+        } \
+      } \
    } \
    static void \
-   blt_rotated_90_##suffix(pix_type       *dst, \
+   blt_rotated_90_##suffix(pix_type * restrict dst, \
                            int             dst_stride, \
-                           const pix_type *src, \
+                           const pix_type * restrict src, \
                            int             src_stride, \
                            int             w, \
                            int             h) \
@@ -128,7 +184,7 @@ evas_common_convert_rgba_to_32bpp_rgb_8888_rot_180 (DATA32 *src, DATA8 *dst, int
         { \
            blt_rotated_90_trivial_##suffix(dst + x, \
                                            dst_stride, \
-                                           src + (src_stride * x), \
+                                           &(src[(src_stride * x)]), \
                                            src_stride, \
                                            TILE_SIZE, \
                                            h); \
@@ -136,15 +192,15 @@ evas_common_convert_rgba_to_32bpp_rgb_8888_rot_180 (DATA32 *src, DATA8 *dst, int
       if (trailing_pixels) \
         blt_rotated_90_trivial_##suffix(dst + w, \
                                         dst_stride, \
-                                        src + (w * src_stride), \
+                                        &(src[(w * src_stride)]), \
                                         src_stride, \
                                         trailing_pixels, \
                                         h); \
    } \
    static void \
-   blt_rotated_270_##suffix(pix_type       *dst, \
+   blt_rotated_270_##suffix(pix_type * restrict dst, \
                             int             dst_stride, \
-                            const pix_type *src, \
+                            const pix_type * restrict src, \
                             int             src_stride, \
                             int             w, \
                             int             h) \
@@ -159,7 +215,7 @@ evas_common_convert_rgba_to_32bpp_rgb_8888_rot_180 (DATA32 *src, DATA8 *dst, int
              leading_pixels = w; \
            blt_rotated_270_trivial_##suffix(dst, \
                                             dst_stride, \
-                                            src + (src_stride * (w - leading_pixels)), \
+                                            &(src[(src_stride * (w - leading_pixels))]), \
                                             src_stride, \
                                             leading_pixels, \
                                             h); \
@@ -179,7 +235,155 @@ evas_common_convert_rgba_to_32bpp_rgb_8888_rot_180 (DATA32 *src, DATA8 *dst, int
         { \
            blt_rotated_270_trivial_##suffix(dst + x, \
                                             dst_stride, \
-                                            src + (src_stride * (w - x - TILE_SIZE)), \
+                                            &(src[(src_stride * (w - x - TILE_SIZE))]), \
+                                            src_stride, \
+                                            TILE_SIZE, \
+                                            h); \
+        } \
+      if (trailing_pixels) \
+        blt_rotated_270_trivial_##suffix(dst + w, \
+                                         dst_stride, \
+                                         src - (trailing_pixels * src_stride), \
+                                         src_stride, \
+                                         trailing_pixels, \
+                                         h); \
+   }
+#else
+#define FAST_SIMPLE_ROTATE(suffix, pix_type) \
+   static void \
+   blt_rotated_90_trivial_##suffix(pix_type * restrict dst, \
+                                   int             dst_stride, \
+                                   const pix_type * restrict src, \
+                                   int             src_stride, \
+                                   int             w, \
+                                   int             h) \
+   { \
+      int x, y; \
+      { \
+        for (y = 0; y < h; y++) \
+          { \
+             const pix_type *s = &(src[(h - y - 1)]); \
+             pix_type *d = &(dst[(dst_stride * y)]); \
+             for (x = 0; x < w; x++) \
+               { \
+                  *d++ = *s; \
+                  s += src_stride; \
+               } \
+          } \
+      } \
+   } \
+   static void \
+   blt_rotated_270_trivial_##suffix(pix_type * restrict dst, \
+                                    int             dst_stride, \
+                                    const pix_type * restrict src, \
+                                    int             src_stride, \
+                                    int             w, \
+                                    int             h) \
+   { \
+      int x, y; \
+      { \
+        for(y = 0; y < h; y++) \
+        { \
+           const pix_type *s = &(src[(src_stride * (w - 1)) + y]); \
+           pix_type *d = &(dst[(dst_stride * y)]); \
+           for (x = 0; x < w; x++) \
+           { \
+              *d++ = *s; \
+              s -= src_stride; \
+           } \
+        } \
+      } \
+   } \
+   static void \
+   blt_rotated_90_##suffix(pix_type * restrict dst, \
+                           int             dst_stride, \
+                           const pix_type * restrict src, \
+                           int             src_stride, \
+                           int             w, \
+                           int             h) \
+   { \
+      int x, leading_pixels = 0, trailing_pixels = 0; \
+      const int TILE_SIZE = TILE_CACHE_LINE_SIZE / sizeof(pix_type); \
+      if ((uintptr_t)dst & (TILE_CACHE_LINE_SIZE - 1)) \
+        { \
+           leading_pixels = TILE_SIZE - \
+             (((uintptr_t)dst & (TILE_CACHE_LINE_SIZE - 1)) / sizeof(pix_type)); \
+           if (leading_pixels > w) \
+             leading_pixels = w; \
+           blt_rotated_90_trivial_##suffix(dst, \
+                                           dst_stride, \
+                                           src, \
+                                           src_stride, \
+                                           leading_pixels, \
+                                           h); \
+           dst += leading_pixels; \
+           src += leading_pixels * src_stride; \
+           w -= leading_pixels; \
+        } \
+      if ((uintptr_t)(dst + w) & (TILE_CACHE_LINE_SIZE - 1)) \
+        { \
+           trailing_pixels = (((uintptr_t)(dst + w) & \
+                               (TILE_CACHE_LINE_SIZE - 1)) / sizeof(pix_type)); \
+           if (trailing_pixels > w) \
+             trailing_pixels = w; \
+           w -= trailing_pixels; \
+        } \
+      for (x = 0; x < w; x += TILE_SIZE) \
+        { \
+           blt_rotated_90_trivial_##suffix(dst + x, \
+                                           dst_stride, \
+                                           &(src[(src_stride * x)]), \
+                                           src_stride, \
+                                           TILE_SIZE, \
+                                           h); \
+        } \
+      if (trailing_pixels) \
+        blt_rotated_90_trivial_##suffix(dst + w, \
+                                        dst_stride, \
+                                        &(src[(w * src_stride)]), \
+                                        src_stride, \
+                                        trailing_pixels, \
+                                        h); \
+   } \
+   static void \
+   blt_rotated_270_##suffix(pix_type * restrict dst, \
+                            int             dst_stride, \
+                            const pix_type * restrict src, \
+                            int             src_stride, \
+                            int             w, \
+                            int             h) \
+   { \
+      int x, leading_pixels = 0, trailing_pixels = 0; \
+      const int TILE_SIZE = TILE_CACHE_LINE_SIZE / sizeof(pix_type); \
+      if ((uintptr_t)dst & (TILE_CACHE_LINE_SIZE - 1)) \
+        { \
+           leading_pixels = TILE_SIZE - \
+             (((uintptr_t)dst & (TILE_CACHE_LINE_SIZE - 1)) / sizeof(pix_type)); \
+           if (leading_pixels > w) \
+             leading_pixels = w; \
+           blt_rotated_270_trivial_##suffix(dst, \
+                                            dst_stride, \
+                                            &(src[(src_stride * (w - leading_pixels))]), \
+                                            src_stride, \
+                                            leading_pixels, \
+                                            h); \
+           dst += leading_pixels; \
+           w -= leading_pixels; \
+        } \
+      if ((uintptr_t)(dst + w) & (TILE_CACHE_LINE_SIZE - 1)) \
+        { \
+           trailing_pixels = (((uintptr_t)(dst + w) & \
+                               (TILE_CACHE_LINE_SIZE - 1)) / sizeof(pix_type)); \
+           if (trailing_pixels > w) \
+             trailing_pixels = w; \
+           w -= trailing_pixels; \
+           src += trailing_pixels * src_stride; \
+        } \
+      for (x = 0; x < w; x += TILE_SIZE) \
+        { \
+           blt_rotated_270_trivial_##suffix(dst + x, \
+                                            dst_stride, \
+                                            &(src[(src_stride * (w - x - TILE_SIZE))]), \
                                             src_stride, \
                                             TILE_SIZE, \
                                             h); \
@@ -193,6 +397,7 @@ evas_common_convert_rgba_to_32bpp_rgb_8888_rot_180 (DATA32 *src, DATA8 *dst, int
                                          h); \
    }
 
+#endif
 FAST_SIMPLE_ROTATE(8888, DATA32)
 #endif
 

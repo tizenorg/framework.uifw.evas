@@ -933,6 +933,12 @@ evas_common_tilebuf_get_tile_size(Tilebuf *tb, int *tw, int *th)
    if (th) *th = tb->tile_size.h;
 }
 
+EAPI void
+evas_common_tilebuf_tile_strict_set(Tilebuf *tb, Eina_Bool strict)
+{
+   tb->strict_tiles = strict;
+}
+
 #ifdef EVAS_RECT_SPLIT
 static inline int
 _add_redraw(list_t *rects, int x, int y, int w, int h)
@@ -973,6 +979,11 @@ evas_common_tilebuf_add_redraw(Tilebuf *tb, int x, int y, int w, int h)
      evas_common_regionbuf_span_add(tb->rb, x, x + w - 1, y + i);
    return 1;
  */
+   if ((w <= 0) || (h <= 0)) return 0;
+   RECTS_CLIP_TO_RECT(x, y, w, h, 0, 0, tb->outbuf_w, tb->outbuf_h);
+   if ((w <= 0) || (h <= 0)) return 0;
+
+   return _add_redraw(&tb->rects, x, y, w, h);
 #elif defined(EVAS_RECT_SPLIT)
    if ((w <= 0) || (h <= 0)) return 0;
    RECTS_CLIP_TO_RECT(x, y, w, h, 0, 0, tb->outbuf_w, tb->outbuf_h);
@@ -1166,16 +1177,40 @@ evas_common_tilebuf_get_render_rects(Tilebuf *tb)
  */
 #elif defined(EVAS_RECT_SPLIT)
    list_node_t *n;
+   list_t to_merge;
    Tilebuf_Rect *rects = NULL;
    int bx1 = 0, bx2 = 0, by1 = 0, by2 = 0, num = 0;
 
    if (tb->need_merge)
      {
-        list_t to_merge;
         to_merge = tb->rects;
         tb->rects = list_zeroed;
         rect_list_merge_rects(&tb->rects, &to_merge, FUZZ * FUZZ);
         tb->need_merge = 0;
+     }
+   if (tb->strict_tiles)
+     {
+        // round up rects to tb->tile_size.w and tb->tile_size.h
+        to_merge = list_zeroed;
+        for (n = tb->rects.head; n; n = n->next)
+          {
+             int x1, x2, y1, y2;
+             int x, y, w, h;
+
+             x1 = ((rect_node_t *)n)->rect.left;
+             x2 = x1 + ((rect_node_t *)n)->rect.width;
+             y1 = ((rect_node_t *)n)->rect.top;
+             y2 = y1 + ((rect_node_t *)n)->rect.height;
+             x1 = tb->tile_size.w * (x1 / tb->tile_size.w);
+             y1 = tb->tile_size.h * (y1 / tb->tile_size.h);
+             x2 = tb->tile_size.w * ((x2 + tb->tile_size.w - 1) / tb->tile_size.w);
+             y2 = tb->tile_size.h * ((y2 + tb->tile_size.h - 1) / tb->tile_size.h);
+
+             x = x1; y = y1; w = x2 - x1; h = y2 - y1;
+             RECTS_CLIP_TO_RECT(x, y, w, h, 0, 0, tb->outbuf_w, tb->outbuf_h);
+             _add_redraw(&to_merge, x, y, w, h);
+          }
+        rect_list_merge_rects(&tb->rects, &to_merge, FUZZ * FUZZ);
      }
    
    n = tb->rects.head;

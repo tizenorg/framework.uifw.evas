@@ -10,7 +10,8 @@
 
    DATA32      *psrc, *pdst, *pdst_end;
    DATA32      *buf, *pbuf, *pbuf_end;
-   RGBA_Gfx_Func  func = NULL;
+   DATA8       *mask;
+   RGBA_Gfx_Func  func = NULL, func2 = NULL;
 
    /* check value  to make overflow(only check value related with overflow) */
    if ((src_region_w > SCALE_SIZE_MAX) ||
@@ -19,7 +20,7 @@
    /* a scanline buffer */
    pdst = dst_ptr;  // it's been set at (dst_clip_x, dst_clip_y)
    pdst_end = pdst + (dst_clip_h * dst_w);
-   if (!dc->mul.use)
+   if (!dc->mul.use && !dc->clip.mask)
      {
 	if ((dc->render_op == _EVAS_RENDER_BLEND) && !src->cache_entry.flags.alpha)
 	  { direct_scale = 1;  buf_step = dst->cache_entry.w; }
@@ -33,10 +34,20 @@
    if (!direct_scale)
      {
 	buf = alloca(dst_clip_w * sizeof(DATA32));
-	if (dc->mul.use)
-	   func = evas_common_gfx_func_composite_pixel_color_span_get(src, dc->mul.col, dst, dst_clip_w, dc->render_op);
-	else
-	   func  = evas_common_gfx_func_composite_pixel_span_get(src, dst, dst_clip_w, dc->render_op);
+
+        if (!dc->clip.mask)
+          {
+             if (dc->mul.use)
+               func = evas_common_gfx_func_composite_pixel_color_span_get(src, dc->mul.col, dst, dst_clip_w, dc->render_op);
+             else
+               func  = evas_common_gfx_func_composite_pixel_span_get(src, dst, dst_clip_w, dc->render_op);
+          }
+        else
+          {
+             func = evas_common_gfx_func_composite_pixel_mask_span_get(src, dst, dst_clip_w, dc->render_op);
+             if (dc->mul.use)
+               func2 = evas_common_gfx_func_composite_pixel_color_span_get(src, dc->mul.col, dst, dst_clip_w, EVAS_RENDER_COPY);
+          }
      }
    else
 	buf = pdst;
@@ -61,6 +72,7 @@
    if (drh == srh)
      {
 	int  sxx0 = sxx;
+        int  y = 0;
 	psrc = src->image.data + (src_w * (sry + cy)) + srx;
 	while (pdst < pdst_end)
 	  {
@@ -99,7 +111,27 @@
 		}
 	    /* * blend here [clip_w *] buf -> dptr * */
 	    if (!direct_scale)
-	      func(buf, NULL, dc->mul.col, pdst, dst_clip_w);
+              {
+                 if (!dc->clip.mask)
+                   func(buf, NULL, dc->mul.col, pdst, dst_clip_w);
+                 else
+                   {
+                      RGBA_Image *im = dc->clip.mask;
+                      DATA8 *mbegin = im->image.data8;
+                      DATA8 *mend = mbegin + (im->cache_entry.w * im->cache_entry.h);
+                      mask = im->image.data8
+                         + ((dst_clip_y - dc->clip.mask_y + y) * im->cache_entry.w)
+                         + (dst_clip_x - dc->clip.mask_x);
+
+                      /* FIXME!!! Quick workaround crashes */
+                      if ((mask < mbegin) || ((mask + dst_clip_w) > mend))
+                        return;
+
+                      if (dc->mul.use) func2(buf, NULL, dc->mul.col, buf, dst_clip_w);
+                      func(buf, mask, 0, pdst, dst_clip_w);
+                   }
+                 y++;
+              }
 
 	    pdst += dst_w;
 	    psrc += src_w;
@@ -111,6 +143,7 @@
    else if (drw == srw)
      {
 	DATA32  *ps = src->image.data + (src_w * sry) + srx + cx;
+        int y = 0;
 
 	while (pdst < pdst_end)
 	  {
@@ -149,7 +182,28 @@
 	      }
 	    /* * blend here [clip_w *] buf -> dptr * */
 	    if (!direct_scale)
-	      func(buf, NULL, dc->mul.col, pdst, dst_clip_w);
+              {
+                 if (!dc->clip.mask)
+                   func(buf, NULL, dc->mul.col, pdst, dst_clip_w);
+                 else
+                   {
+                      RGBA_Image *im = dc->clip.mask;
+                      DATA8 *mbegin = im->image.data8;
+                      DATA8 *mend = mbegin + (im->cache_entry.w * im->cache_entry.h);
+                      mask = im->image.data8
+                         + ((dst_clip_y - dc->clip.mask_y + y) * im->cache_entry.w)
+                         + (dst_clip_x - dc->clip.mask_x);
+
+                      /* FIXME!!! Quick workaround crashes */
+                      if ((mask < mbegin) || ((mask + dst_clip_w) > mend))
+                        return;
+
+                      if (dc->mul.use) func2(buf, NULL, dc->mul.col, buf, dst_clip_w);
+                      func(buf, mask, 0, pdst, dst_clip_w);
+                   }
+                 y++;
+              }
+
 	    pdst += dst_w;
 	    syy += dsyy;
 	    buf += buf_step;
@@ -160,6 +214,7 @@
      {
 	DATA32  *ps = src->image.data + (src_w * sry) + srx;
 	int     sxx0 = sxx;
+        int     y = 0;
 
 	while (pdst < pdst_end)
 	  {
@@ -172,6 +227,10 @@
 	    MOV_A2R(ay, mm4)
 	    pxor_r2r(mm0, mm0);
 	    MOV_A2R(ALPHA_255, mm5)
+#elif defined SCALE_USING_NEON
+            FPU_NEON;
+            VDUP_NEON(d12, ay);
+            VMOV_I2R_NEON(q2, #255);
 #endif
 	    pbuf = buf;  pbuf_end = buf + dst_clip_w;
 	    sxx = sxx0;
@@ -210,6 +269,28 @@
 		INTERP_256_R2R(mm4, mm2, mm1, mm5)
 		MOV_R2P(mm1, *pbuf, mm0)
 		pbuf++;
+#elif defined SCALE_USING_NEON
+                if (p0 | p1 | p2 | p3)
+                  {
+                    FPU_NEON;
+                    VMOV_M2R_NEON(d8, p0);
+                    VEOR_NEON(q0);
+                    VMOV_M2R_NEON(d9, p2);
+                    VMOV_M2R_NEON(d10, p1);
+                    VEOR_NEON(q1);
+                    VMOV_M2R_NEON(d11, p3);
+                    VDUP_NEON(q3, ax);
+                    VZIP_NEON(q4, q0);
+                    VZIP_NEON(q5, q1);
+                    VMOV_R2R_NEON(d9, d0);
+                    VMOV_R2R_NEON(d11, d2);
+                    INTERP_256_NEON(q3, q5, q4, q2);
+                    INTERP_256_NEON(d12, d9, d8, d5);
+                    VMOV_R2M_NEON(q4, d8, pbuf);
+                    pbuf++;
+                  }
+                else
+                  *pbuf++ = p0;
 #else
 		if (p0 | p1)
 		  p0 = INTERP_256(ax, p1, p0);
@@ -223,7 +304,27 @@
 	      }
 	    /* * blend here [clip_w *] buf -> dptr * */
 	    if (!direct_scale)
-	      func(buf, NULL, dc->mul.col, pdst, dst_clip_w);
+              {
+                 if (!dc->clip.mask)
+                   func(buf, NULL, dc->mul.col, pdst, dst_clip_w);
+                 else
+                   {
+                      RGBA_Image *im = dc->clip.mask;
+                      DATA8 *mbegin = im->image.data8;
+                      DATA8 *mend = mbegin + (im->cache_entry.w * im->cache_entry.h);
+                      mask = im->image.data8
+                         + ((dst_clip_y - dc->clip.mask_y + y) * im->cache_entry.w)
+                         + (dst_clip_x - dc->clip.mask_x);
+
+                      /* FIXME!!! Quick workaround crashes */
+                      if ((mask < mbegin) || ((mask + dst_clip_w) > mend))
+                        return;
+
+                      if (dc->mul.use) func2(buf, NULL, dc->mul.col, buf, dst_clip_w);
+                      func(buf, mask, 0, pdst, dst_clip_w);
+                   }
+                 y++;
+              }
 
 	    pdst += dst_w;
 	    syy += dsyy;

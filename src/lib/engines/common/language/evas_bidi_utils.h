@@ -90,6 +90,12 @@ struct _Evas_BiDi_Props
 #define EVAS_BIDI_PARAGRAPH_WLTR    FRIBIDI_PAR_WLTR
 #define EVAS_BIDI_PARAGRAPH_WRTL    FRIBIDI_PAR_WRTL
 
+// TIZEN_ONLY(20140822): Added evas_bidi_direction_hint_set, get APIs and applied to textblock, text.
+#define EVAS_BIDI_PARAGRAPH_DIRECTION_IS_NEUTRAL(x)       \
+   (((x) && (x->direction == EVAS_BIDI_PARAGRAPH_NEUTRAL)) ?   \
+    EINA_TRUE : EINA_FALSE)
+//
+
 #define EVAS_BIDI_PARAGRAPH_DIRECTION_IS_RTL(x)       \
    (((x) &&                                \
      ((x->direction == EVAS_BIDI_PARAGRAPH_RTL) ||   \

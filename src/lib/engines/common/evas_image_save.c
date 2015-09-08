@@ -9,7 +9,8 @@
 
 
 int
-evas_common_save_image_to_file(RGBA_Image *im, const char *file, const char *key, int quality, int compress)
+evas_common_save_image_to_file(RGBA_Image *im, const char *file, const char *key,
+                               int quality, int compress, const char *encoding)
 {
    Evas_Image_Save_Func *evas_image_save_func = NULL;
    char *p;
@@ -30,6 +31,8 @@ evas_common_save_image_to_file(RGBA_Image *im, const char *file, const char *key
           saver = "eet";
 	if (!strcasecmp(p, "edb"))
           saver = "edb";
+    if (!strcasecmp(p, "tgv"))
+      saver = "tgv";
      }
 
    if (saver)
@@ -42,8 +45,9 @@ evas_common_save_image_to_file(RGBA_Image *im, const char *file, const char *key
 	     evas_module_use(em);
 	     if (evas_module_load(em))
 	       {
-		  evas_image_save_func = em->functions;
-		  return evas_image_save_func->image_save(im, file, key, quality, compress);
+                  evas_image_save_func = em->functions;
+                  return evas_image_save_func->image_save(im, file, key, quality,
+                                                          compress, encoding);
 	       }
 	  }
      }

@@ -18,6 +18,7 @@ eng_window_new(struct wl_display *disp, struct wl_surface *surface, int screen,
    int config_attrs[40];
    int major_version, minor_version;
    int num_config, n = 0;
+   const char *s;
    const GLubyte *vendor, *renderer, *version;
 
    gw = calloc(1, sizeof(Evas_GL_Wl_Window));
@@ -38,44 +39,6 @@ eng_window_new(struct wl_display *disp, struct wl_surface *surface, int screen,
    context_attrs[1] = 2;
    context_attrs[2] = EGL_NONE;
 
-#if defined(GLES_VARIETY_S3C6410)
-   if (gw->visualinfo->depth == 16) // 16bpp
-     {
-        config_attrs[n++] = EGL_SURFACE_TYPE;
-        config_attrs[n++] = EGL_WINDOW_BIT;
-        config_attrs[n++] = EGL_RENDERABLE_TYPE;
-        config_attrs[n++] = EGL_OPENGL_ES2_BIT;
-        config_attrs[n++] = EGL_RED_SIZE;
-        config_attrs[n++] = 5;
-        config_attrs[n++] = EGL_GREEN_SIZE;
-        config_attrs[n++] = 6;
-        config_attrs[n++] = EGL_BLUE_SIZE;
-        config_attrs[n++] = 5;
-        config_attrs[n++] = EGL_DEPTH_SIZE;
-        config_attrs[n++] = 0;
-        config_attrs[n++] = EGL_STENCIL_SIZE;
-        config_attrs[n++] = 0;
-        config_attrs[n++] = EGL_NONE;
-     }
-   else // 24/32bit. no one does 8bpp anymore. and 15bpp... dead
-     {
-        config_attrs[n++] = EGL_SURFACE_TYPE;
-        config_attrs[n++] = EGL_WINDOW_BIT;
-        config_attrs[n++] = EGL_RENDERABLE_TYPE;
-        config_attrs[n++] = EGL_OPENGL_ES2_BIT;
-        config_attrs[n++] = EGL_RED_SIZE;
-        config_attrs[n++] = 8;
-        config_attrs[n++] = EGL_GREEN_SIZE;
-        config_attrs[n++] = 8;
-        config_attrs[n++] = EGL_BLUE_SIZE;
-        config_attrs[n++] = 8;
-        config_attrs[n++] = EGL_DEPTH_SIZE;
-        config_attrs[n++] = 0;
-        config_attrs[n++] = EGL_STENCIL_SIZE;
-        config_attrs[n++] = 0;
-        config_attrs[n++] = EGL_NONE;
-     }
-#elif defined(GLES_VARIETY_SGX)
    config_attrs[n++] = EGL_SURFACE_TYPE;
    config_attrs[n++] = EGL_WINDOW_BIT;
    config_attrs[n++] = EGL_RENDERABLE_TYPE;
@@ -104,8 +67,15 @@ eng_window_new(struct wl_display *disp, struct wl_surface *surface, int screen,
    config_attrs[n++] = 0;
    config_attrs[n++] = EGL_STENCIL_SIZE;
    config_attrs[n++] = 0;
+   if (s = getenv("EVAS_GL_MULTISAMPLE"))
+     {
+        int multisample_bits = atoi(s);
+        config_attrs[n++] = EGL_SAMPLE_BUFFERS;
+        config_attrs[n++] = 1;
+        config_attrs[n++] = EGL_SAMPLES;
+        config_attrs[n++] = multisample_bits;
+     }
    config_attrs[n++] = EGL_NONE;
-#endif
    
    gw->egl_disp = eglGetDisplay((EGLNativeDisplayType)(gw->disp));
    if (!gw->egl_disp)
@@ -137,7 +107,10 @@ eng_window_new(struct wl_display *disp, struct wl_surface *surface, int screen,
         return NULL;
      }
 
-   gw->win = wl_egl_window_create(gw->surface, gw->w, gw->h);
+   if ((gw->rot == 0) || (gw->rot == 180))
+     gw->win = wl_egl_window_create(gw->surface, gw->w, gw->h);
+   else if ((gw->rot == 90) || (gw->rot == 270))
+     gw->win = wl_egl_window_create(gw->surface, gw->h, gw->w);
 
    gw->egl_surface[0] = eglCreateWindowSurface(gw->egl_disp, gw->egl_config,
                                                (EGLNativeWindowType)gw->win,
@@ -150,7 +123,9 @@ eng_window_new(struct wl_display *disp, struct wl_surface *surface, int screen,
         return NULL;
      }
 
-   gw->egl_context[0] = eglCreateContext(gw->egl_disp, gw->egl_config, share_context, context_attrs);
+   gw->egl_context[0] = 
+     eglCreateContext(gw->egl_disp, gw->egl_config, share_context, 
+                      context_attrs);
 
    if (gw->egl_context[0] == EGL_NO_CONTEXT)
      {
@@ -189,7 +164,9 @@ eng_window_new(struct wl_display *disp, struct wl_surface *surface, int screen,
 	eng_window_free(gw);
 	return NULL;
      }
+#ifdef GL_GLES
    gw->gl_context->egldisp = gw->egl_disp;
+#endif
    eng_window_use(gw);
    evas_gl_common_context_resize(gw->gl_context, w, h, rot);
    gw->surf = 1;
@@ -235,7 +212,12 @@ eng_window_use(Evas_GL_Wl_Window *gw)
 
    if (_evas_gl_wl_window)
      {
-        if ((eglGetCurrentContext() !=
+        if (
+#ifdef GL_GLES
+            (eglGetCurrentDisplay() !=
+             _evas_gl_x11_window->egl_disp) ||
+#endif
+            (eglGetCurrentContext() !=
              _evas_gl_wl_window->egl_context[0]) ||
             (eglGetCurrentSurface(EGL_READ) !=
                 _evas_gl_wl_window->egl_surface[0]) ||
@@ -317,12 +299,5 @@ eng_best_depth_get(Evas_Engine_Info_Wayland_Egl *einfo)
 {
    if (!einfo) return 0;
    if (!einfo->info.display) return 0;
-   return 32;
-   /* if (!_evas_gl_x11_vi) eng_best_visual_get(einfo); */
-   /* if (!_evas_gl_x11_vi) return 0; */
-   /* if (einfo->info.destination_alpha) */
-   /*   { */
-   /*      if (_evas_gl_x11_rgba_vi) return _evas_gl_x11_rgba_vi->depth; */
-   /*   } */
-   /* return _evas_gl_x11_vi->depth; */
+   return (einfo->info.depth ? einfo->info.depth : 32);
 }

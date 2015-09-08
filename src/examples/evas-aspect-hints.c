@@ -27,6 +27,9 @@
 #define WIDTH         320
 #define HEIGHT        480
 
+#define __UNUSED__
+#define PACKAGE_EXAMPLES_DIR "."
+
 static const char *border_img_path = PACKAGE_EXAMPLES_DIR "/red.png";
 static const char *edje_file_path = PACKAGE_EXAMPLES_DIR "/aspect.edj";
 

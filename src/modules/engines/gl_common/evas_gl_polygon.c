@@ -70,10 +70,15 @@ evas_gl_common_poly_point_add(Evas_GL_Polygon *poly, int x, int y)
 {
    Evas_GL_Polygon_Point *pt;
 
-   if (!poly) poly = calloc(1, sizeof(Evas_GL_Polygon));
-   if (!poly) return NULL;
    pt = calloc(1, sizeof(Evas_GL_Polygon_Point));
    if (!pt) return NULL;
+
+   if (!poly) poly = calloc(1, sizeof(Evas_GL_Polygon));
+   if (!poly)
+     {
+        free(pt);
+        return NULL;
+     }
    pt->x = x;
    pt->y = y;
    poly->points = eina_list_append(poly->points, pt);
@@ -263,12 +268,13 @@ evas_gl_common_poly_draw(Evas_Engine_GL_Context *gc, Evas_GL_Polygon *poly, int 
                   y = span->y;
                   w = span->w;
                   h = 1;
-                  evas_gl_common_context_rectangle_push(gc, x, y, w, h, cr, cg, cb, ca);
+                  evas_gl_common_context_rectangle_push(gc, x, y, w, h,
+                                                        cr, cg, cb, ca,
+                                                        NULL, 0, 0, 0, 0, EINA_FALSE);
                }
           }
         else
           {
-             evas_common_draw_context_clip_clip(gc->dc, x, y, w, h);
              /* our clip is 0 size.. abort */
              if ((gc->dc->clip.w > 0) && (gc->dc->clip.h > 0))
                {
@@ -286,7 +292,9 @@ evas_gl_common_poly_draw(Evas_Engine_GL_Context *gc, Evas_GL_Polygon *poly, int 
                                  h = 1;
                                  RECTS_CLIP_TO_RECT(x, y, w, h, r->x, r->y, r->w, r->h);
                                  if ((w > 0) && (h > 0))
-                                   evas_gl_common_context_rectangle_push(gc, x, y, w, h, cr, cg, cb, ca);
+                                   evas_gl_common_context_rectangle_push(gc, x, y, w, h,
+                                                                         cr, cg, cb, ca,
+                                                                         NULL, 0, 0, 0, 0, EINA_FALSE);
                               }
                          }
                     }

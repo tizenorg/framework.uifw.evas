@@ -198,6 +198,7 @@ _evas_object_table_cache_reset(Evas_Object_Table_Data *priv)
    Evas_Object_Table_Cache *c = priv->cache;
    int size;
 
+   if (!c) return;
    c->total.expands.v = 0;
    c->total.expands.h = 0;
    c->total.min.w = 0;
@@ -479,8 +480,10 @@ _evas_object_table_calculate_layout_homogeneous(Evas_Object *o, Evas_Object_Tabl
 
         cx = x + ((opt->col * ww) / priv->size.cols);
         cw = x + (((opt->col + opt->colspan) * ww) / priv->size.cols) - cx;
+        cw += (opt->colspan - 1) * priv->pad.v;
         cy = y + ((opt->row * hh) / priv->size.rows);
         ch = y + (((opt->row + opt->rowspan) * hh) / priv->size.rows) - cy;
+        ch += (opt->rowspan - 1) * priv->pad.h;
 
         cx += (opt->col) * priv->pad.h;
         cy += (opt->row) * priv->pad.v;
@@ -637,10 +640,8 @@ _evas_object_table_calculate_hints_regular(Evas_Object *o, Evas_Object_Table_Dat
    _evas_object_table_cache_reset(priv);
 
    /* cache interesting data */
-   memset(c->expands.h, 1, priv->size.cols);
-   memset(c->expands.v, 1, priv->size.rows);
-   memset(c->weights.h, 0, priv->size.cols);
-   memset(c->weights.v, 0, priv->size.rows);
+   memset(c->expands.h, 1, priv->size.cols * sizeof(Eina_Bool));
+   memset(c->expands.v, 1, priv->size.rows * sizeof(Eina_Bool));
    EINA_LIST_FOREACH(priv->children, l, opt)
      {
         Evas_Object *child = opt->obj;
@@ -679,14 +680,14 @@ _evas_object_table_calculate_hints_regular(Evas_Object *o, Evas_Object_Table_Dat
           }
 
         if (!opt->expand_h)
-          memset(c->expands.h + opt->col, 0, opt->colspan);
+          memset(c->expands.h + opt->col, 0, opt->colspan * sizeof(Eina_Bool));
         else
           {
              for (i = opt->col; i < opt->col + opt->colspan; i++)
                c->weights.h[i] += (weightw / (double)opt->colspan);
           }
         if (!opt->expand_v)
-          memset(c->expands.v + opt->row, 0, opt->rowspan);
+          memset(c->expands.v + opt->row, 0, opt->rowspan * sizeof(Eina_Bool));
         else
           {
              for (i = opt->row; i < opt->row + opt->rowspan; i++)
@@ -773,8 +774,10 @@ _evas_object_table_calculate_layout_regular(Evas_Object *o, Evas_Object_Table_Da
    Evas_Coord *cols = NULL, *rows = NULL;
    Evas_Coord x, y, w, h;
 
-   evas_object_geometry_get(o, &x, &y, &w, &h);
    c = priv->cache;
+   if (!c) return;
+
+   evas_object_geometry_get(o, &x, &y, &w, &h);
 
    /* handle horizontal */
    if ((c->total.expands.h <= 0) || (c->total.min.w >= w))
@@ -849,13 +852,16 @@ _evas_object_table_calculate_layout_regular(Evas_Object *o, Evas_Object_Table_Da
      }
 
  end:
-   if (cols != c->sizes.h)
+   if (priv->cache)
      {
-        if (cols) free(cols);
-     }
-   if (rows != c->sizes.v)
-     {
-        if (rows) free(rows);
+        if (cols != c->sizes.h)
+          {
+             if (cols) free(cols);
+          }
+        if (rows != c->sizes.v)
+          {
+             if (rows) free(rows);
+          }
      }
 }
 
@@ -1068,19 +1074,39 @@ evas_object_table_pack_get(const Evas_Object *o, Evas_Object *child, unsigned sh
 EAPI Eina_Bool
 evas_object_table_pack(Evas_Object *o, Evas_Object *child, unsigned short col, unsigned short row, unsigned short colspan, unsigned short rowspan)
 {
+   Eina_Bool optalloc = EINA_FALSE;
+
    Evas_Object_Table_Option *opt;
 
    EVAS_OBJECT_TABLE_DATA_GET_OR_RETURN_VAL(o, priv, 0);
 
+   if (colspan < 1)
+     {
+        ERR("colspan < 1");
+        return EINA_FALSE;
+     }
+   if ((0xffff - col) < colspan)
+     {
+        ERR("col + colspan > 0xffff");
+        return EINA_FALSE;
+     }
+   if ((col + colspan) >= 0x7ffff)
+     {
+        WRN("col + colspan getting rather large (>32767)");
+     }
    if (rowspan < 1)
      {
         ERR("rowspan < 1");
         return EINA_FALSE;
      }
-   if (colspan < 1)
+   if ((0xffff - row) < rowspan)
      {
-        ERR("colspan < 1");
+        ERR("row + rowspan > 0xffff");
         return EINA_FALSE;
+     }
+   if ((row + rowspan) >= 0x7ffff)
+     {
+        WRN("row + rowspan getting rather large (>32767)");
      }
 
    opt = _evas_object_table_option_get(child);
@@ -1092,6 +1118,7 @@ evas_object_table_pack(Evas_Object *o, Evas_Object *child, unsigned short col, u
              ERR("could not allocate table option data.");
              return EINA_FALSE;
           }
+        optalloc = EINA_TRUE;
      }
 
    opt->obj = child;
@@ -1129,6 +1156,7 @@ evas_object_table_pack(Evas_Object *o, Evas_Object *child, unsigned short col, u
              priv->size.cols = max_col;
              priv->size.rows = max_row;
           }
+        if (optalloc) free(opt);
      }
    else
      {

@@ -14,7 +14,7 @@ AM_CPPFLAGS	     = -I. \
 		       @FREETYPE_CFLAGS@ @VALGRIND_CFLAGS@ \
                        @PIXMAN_CFLAGS@ \
 		       @EET_CFLAGS@ @pthread_cflags@ \
-		       @EINA_CFLAGS@ \
+		       @EVAS_GENERAL_CFLAGS@ \
                        @FRIBIDI_CFLAGS@ @HARFBUZZ_CFLAGS@ \
                        @PIXMAN_CFLAGS@
 
@@ -26,6 +26,7 @@ evas_op_add_main_.c \
 evas_op_sub_main_.c \
 evas_op_mask_main_.c \
 evas_op_mul_main_.c \
+evas_alpha_main.c \
 evas_blend_main.c \
 evas_blit_main.c \
 evas_convert_color.c \
@@ -46,6 +47,7 @@ evas_font_draw.c \
 evas_font_load.c \
 evas_font_main.c \
 evas_font_query.c \
+evas_font_compress.c \
 evas_image_load.c \
 evas_image_save.c \
 evas_image_main.c \

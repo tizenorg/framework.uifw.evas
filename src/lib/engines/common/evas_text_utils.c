@@ -54,29 +54,87 @@ evas_common_text_props_content_ref(Evas_Text_Props *props)
 }
 
 void
-evas_common_text_props_content_unref(Evas_Text_Props *props)
+evas_common_text_props_content_nofree_unref(Evas_Text_Props *props)
 {
    /* No content in this case */
    if (!props->info)
       return;
 
-   if (props->font_instance)
-     {
-        evas_common_font_int_unref(props->font_instance);
-        props->font_instance = NULL;
-     }
-   
    if (--(props->info->refcount) == 0)
      {
-        free(props->glyphs);
+        if (props->font_instance)
+          {
+             evas_common_font_int_unref(props->font_instance);
+             props->font_instance = NULL;
+          }
+
+        /* After unreferencing the glyph array, a thread will still hold
+         * a reference, so this can be safely set to NULL. */
+	free(props->glyphs);
         props->glyphs = NULL;
-        props->glyphs_length = 0;
+	props->glyphs_length = 0;
+        
+        if (props->info->glyph)
+          free(props->info->glyph);
+#ifdef OT_SUPPORT
+        // TIZEN_ONLY(20140301): Added checking language of text props. We can draw glyphs of specific language without harfbuzz.
+        //if (props->info->ot)
+        //  free(props->info->ot);
+        if (CHECK_LANGUAGE_HARFBUZZ_AVAILABLE(props))
+          {
+             if (props->info->ot)
+               free(props->info->ot);
+          }
+        else
+          {
+             free(props->info);
+             props->info = NULL;
+          }
+        //
+#endif
+        free(props->info);
+        props->info = NULL;
+     }
+}
+
+void
+evas_common_text_props_content_unref(Evas_Text_Props *props)
+{
+   /* No content in this case */
+   if (!props->info)
+      return;
+   
+   /* After unreferencing the glyph array, a thread will still hold
+    * a reference, so this can be safely set to NULL. */
+   free(props->glyphs);
+   props->glyphs = NULL;
+   props->glyphs_length = 0;
+
+   if (--(props->info->refcount) == 0)
+     {
+        if (props->font_instance)
+          {
+             evas_common_font_int_unref(props->font_instance);
+             props->font_instance = NULL;
+          }
 
         if (props->info->glyph)
           free(props->info->glyph);
 #ifdef OT_SUPPORT
-        if (props->info->ot)
-          free(props->info->ot);
+        // TIZEN_ONLY(20140301): Added checking language of text props. We can draw glyphs of specific language without harfbuzz.
+        //if (props->info->ot)
+        //  free(props->info->ot);
+        if (CHECK_LANGUAGE_HARFBUZZ_AVAILABLE(props))
+          {
+             if (props->info->ot)
+               free(props->info->ot);
+          }
+        else
+          {
+             free(props->info);
+             props->info = NULL;
+          }
+        //
 #endif
         free(props->info);
         props->info = NULL;
@@ -91,8 +149,37 @@ _evas_common_text_props_cluster_move(const Evas_Text_Props *props, int pos,
    if (!right && (prop_pos > 0))
      {
 #ifdef OT_SUPPORT
-        return props->info->ot[props->start + prop_pos - 1].source_cluster -
-           props->text_offset;
+        // TIZEN_ONLY(20140301): Added checking language of text props. We can draw glyphs of specific language without harfbuzz.
+        /*
+        int base_cluster = props->info->ot[props->start + prop_pos].source_cluster;
+        prop_pos--;
+        for ( ; prop_pos >= 0 ; prop_pos--)
+          {
+             int cur_cluster = props->info->ot[props->start + prop_pos].source_cluster;
+             if (cur_cluster != base_cluster)
+               {
+                  return cur_cluster - props->text_offset;
+               }
+          }
+        */
+        if (CHECK_LANGUAGE_HARFBUZZ_AVAILABLE(props))
+          {
+             int base_cluster = props->info->ot[props->start + prop_pos].source_cluster;
+             prop_pos--;
+             for ( ; prop_pos >= 0 ; prop_pos--)
+               {
+                  int cur_cluster = props->info->ot[props->start + prop_pos].source_cluster;
+                  if (cur_cluster != base_cluster)
+                    {
+                       return cur_cluster - props->text_offset;
+                    }
+               }
+          }
+        else
+          {
+             return props->start + prop_pos - 1 - props->text_offset;
+          }
+        //
 #else
         return props->start + prop_pos - 1 - props->text_offset;
 #endif
@@ -100,8 +187,37 @@ _evas_common_text_props_cluster_move(const Evas_Text_Props *props, int pos,
    else if (right && (prop_pos < (int) (props->len - 1)))
      {
 #ifdef OT_SUPPORT
-        return props->info->ot[props->start + prop_pos + 1].source_cluster -
-           props->text_offset;
+        // TIZEN_ONLY(20140301): Added checking language of text props. We can draw glyphs of specific language without harfbuzz.
+        /*
+        int base_cluster = props->info->ot[props->start + prop_pos].source_cluster;
+        prop_pos++;
+        for ( ; prop_pos < (int) props->len ; prop_pos++)
+          {
+             int cur_cluster = props->info->ot[props->start + prop_pos].source_cluster;
+             if (cur_cluster != base_cluster)
+               {
+                  return cur_cluster - props->text_offset;
+               }
+          }
+        */
+        if (CHECK_LANGUAGE_HARFBUZZ_AVAILABLE(props))
+          {
+             int base_cluster = props->info->ot[props->start + prop_pos].source_cluster;
+             prop_pos++;
+             for ( ; prop_pos < (int) props->len ; prop_pos++)
+               {
+                  int cur_cluster = props->info->ot[props->start + prop_pos].source_cluster;
+                  if (cur_cluster != base_cluster)
+                    {
+                       return cur_cluster - props->text_offset;
+                    }
+               }
+          }
+        else
+          {
+             return props->start + prop_pos + 1 - props->text_offset;
+          }
+        //
 #else
         return props->start + prop_pos + 1 - props->text_offset;
 #endif
@@ -138,13 +254,26 @@ evas_common_text_props_index_find(const Evas_Text_Props *props, int _cutoff)
    int max = props->len - 1;
    int mid;
 
+   // TIZEN_ONLY(20140301): Added checking language of text props. We can draw glyphs of specific language without harfbuzz.
+   if (!CHECK_LANGUAGE_HARFBUZZ_AVAILABLE(props))
+     {
+        if (props->bidi.dir == EVAS_BIDI_DIRECTION_RTL)
+          {
+             return props->len - _cutoff - 1;
+          }
+        else
+          {
+             return _cutoff;
+          }
+     }
+   //
    _cutoff += props->text_offset;
    ot_info = props->info->ot + props->start;
    /* Should get us closer to the right place. */
    if ((min <= _cutoff) && (_cutoff <= max))
-      mid = _cutoff;
+     mid = _cutoff;
    else
-      mid = (min + max) / 2;
+     mid = (min + max) / 2;
 
    if (props->bidi.dir == EVAS_BIDI_DIRECTION_RTL)
      {
@@ -152,11 +281,11 @@ evas_common_text_props_index_find(const Evas_Text_Props *props, int _cutoff)
         do
           {
              if (_cutoff > (int) ot_info[mid].source_cluster)
-                max = mid - 1;
+               max = mid - 1;
              else if (_cutoff < (int) ot_info[mid].source_cluster)
-                min = mid + 1;
+               min = mid + 1;
              else
-                break;
+               break;
 
              mid = (min + max) / 2;
           }
@@ -168,11 +297,11 @@ evas_common_text_props_index_find(const Evas_Text_Props *props, int _cutoff)
         do
           {
              if (_cutoff < (int) ot_info[mid].source_cluster)
-                max = mid - 1;
+               max = mid - 1;
              else if (_cutoff > (int) ot_info[mid].source_cluster)
-                min = mid + 1;
+               min = mid + 1;
              else
-                break;
+               break;
 
              mid = (min + max) / 2;
           }
@@ -181,7 +310,7 @@ evas_common_text_props_index_find(const Evas_Text_Props *props, int _cutoff)
 
    /* If we didn't find, abort */
    if (min > max)
-      return -1;
+     return -1;
 
    ot_info += mid;
    if (props->bidi.dir == EVAS_BIDI_DIRECTION_RTL)
@@ -190,7 +319,7 @@ evas_common_text_props_index_find(const Evas_Text_Props *props, int _cutoff)
         for ( ; mid < (int) props->len ; mid++, ot_info++)
           {
              if (ot_info->source_cluster != (size_t) _cutoff)
-                break;
+               break;
           }
         mid--;
      }
@@ -200,29 +329,34 @@ evas_common_text_props_index_find(const Evas_Text_Props *props, int _cutoff)
         for ( ; mid >= 0 ; mid--, ot_info--)
           {
              if (ot_info->source_cluster != (size_t) _cutoff)
-                break;
+               break;
           }
         mid++;
      }
 
    return mid;
 #else
-   return _cutoff;
-   (void) props;
+   if (props->bidi.dir == EVAS_BIDI_DIRECTION_RTL)
+     {
+        return props->len - _cutoff - 1;
+     }
+   else
+     {
+        return _cutoff;
+     }
 #endif
 }
 
 /* Won't work in the middle of ligatures, assumes cutoff < len.
  * Also won't work in the middle of indic words, should handle that in a
  * smart way. */
-EAPI void
+EAPI Eina_Bool
 evas_common_text_props_split(Evas_Text_Props *base,
       Evas_Text_Props *ext, int _cutoff)
 {
    size_t cutoff;
 
    /* Translate text cutoff pos to string object cutoff point */
-#ifdef OT_SUPPORT
    _cutoff = evas_common_text_props_index_find(base, _cutoff);
 
    if (_cutoff >= 0)
@@ -231,12 +365,9 @@ evas_common_text_props_split(Evas_Text_Props *base,
      }
    else
      {
-        ERR("Couldn't find the cutoff position. Is it inside a cluster?");
-        return;
+        //Couldn't find the cutoff position. Is it inside a cluster?
+        return EINA_FALSE;
      }
-#else
-   cutoff = (size_t) _cutoff;
-#endif
 
    evas_common_text_props_content_copy_and_ref(ext, base);
    if (base->bidi.dir == EVAS_BIDI_DIRECTION_RTL)
@@ -247,8 +378,19 @@ evas_common_text_props_split(Evas_Text_Props *base,
         base->len = base->len - ext->len;
 
 #ifdef OT_SUPPORT
-        ext->text_offset =
-           ext->info->ot[ext->start + ext->len - 1].source_cluster;
+        // TIZEN_ONLY(20140301): Added checking language of text props. We can draw glyphs of specific language without harfbuzz.
+        //ext->text_offset =
+        //   ext->info->ot[ext->start + ext->len - 1].source_cluster;
+        if (CHECK_LANGUAGE_HARFBUZZ_AVAILABLE(base))
+          {
+             ext->text_offset =
+                ext->info->ot[ext->start + ext->len - 1].source_cluster;
+          }
+        else
+          {
+             ext->text_offset = base->text_offset + base->len;
+          }
+        //
 #else
         ext->text_offset = base->text_offset + base->len;
 #endif
@@ -260,7 +402,13 @@ evas_common_text_props_split(Evas_Text_Props *base,
         base->len = cutoff;
 
 #ifdef OT_SUPPORT
-        ext->text_offset = ext->info->ot[ext->start].source_cluster;
+        // TIZEN_ONLY(20140301): Added checking language of text props. We can draw glyphs of specific language without harfbuzz.
+        //ext->text_offset = ext->info->ot[ext->start].source_cluster;
+        if (CHECK_LANGUAGE_HARFBUZZ_AVAILABLE(base))
+          ext->text_offset = ext->info->ot[ext->start].source_cluster;
+        else
+          ext->text_offset = base->text_offset + base->len;
+        //
 #else
         ext->text_offset = base->text_offset + base->len;
 #endif
@@ -269,6 +417,7 @@ evas_common_text_props_split(Evas_Text_Props *base,
    base->text_len = (ext->text_offset - base->text_offset);
    PROPS_CHANGE(base);
    PROPS_CHANGE(ext);
+   return EINA_TRUE;
 }
 
 /* Won't work in the middle of ligatures */
@@ -374,10 +523,14 @@ _content_create_regular(RGBA_Font_Int *fi, const Eina_Unicode *text,
    FT_Face pface = NULL;
    Evas_Coord pen_x = 0;
    int adv_d, i;
-#if !defined(OT_SUPPORT) && defined(BIDI_SUPPORT)
+   // TIZEN_ONLY(20140301): Added checking language of text props. We can draw glyphs of specific language without harfbuzz.
    Eina_Unicode *base_str = NULL;
+   //
+#if !defined(OT_SUPPORT) && defined(BIDI_SUPPORT)
    if (mode == EVAS_TEXT_PROPS_MODE_SHAPE)
      {
+        // TIZEN_ONLY(20140301): Added checking language of text props. We can draw glyphs of specific language without harfbuzz.
+        //Eina_Unicode *base_str = NULL;
         if (text_props->bidi.dir == EVAS_BIDI_DIRECTION_RTL)
           {
              text = base_str = eina_unicode_strndup(text, len);
@@ -385,9 +538,28 @@ _content_create_regular(RGBA_Font_Int *fi, const Eina_Unicode *text,
           }
      }
 #else
-   (void) mode;
-   (void) par_props;
-   (void) par_pos;
+   // TIZEN_ONLY(20140301): Added checking language of text props. We can draw glyphs of specific language without harfbuzz.
+   //(void) mode;
+   //(void) par_props;
+   //(void) par_pos;
+   if (CHECK_LANGUAGE_HARFBUZZ_AVAILABLE(text_props))
+     {
+        (void) mode;
+        (void) par_props;
+        (void) par_pos;
+     }
+   else
+     {
+        if (mode == EVAS_TEXT_PROPS_MODE_SHAPE)
+          {
+             if (text_props->bidi.dir == EVAS_BIDI_DIRECTION_RTL)
+               {
+                  text = base_str = eina_unicode_strndup(text, len);
+                  evas_bidi_shape_string(base_str, par_props, par_pos, len);
+               }
+          }
+     }
+   //
 #endif
 
    FTLOCK();
@@ -462,10 +634,16 @@ _content_create_regular(RGBA_Font_Int *fi, const Eina_Unicode *text,
         prev_index = idx;
      }
    text_props->len = len;
-# if !defined(OT_SUPPORT) && defined(BIDI_SUPPORT)
+   // TIZEN_ONLY(20140301): Added checking language of text props. We can draw glyphs of specific language without harfbuzz.
+/*
+#if !defined(OT_SUPPORT) && defined(BIDI_SUPPORT)
    if (base_str)
       free(base_str);
-# endif
+#endif
+*/
+   if (base_str)
+      free(base_str);
+   //
 }
 
 EAPI Eina_Bool
@@ -507,9 +685,21 @@ evas_common_text_props_content_create(void *_fi, const Eina_Unicode *text,
    text_props->changed = EINA_TRUE;
 
 #ifdef OT_SUPPORT
-   (void) par_props;
-   (void) par_pos;
-   _content_create_ot(fi, text, text_props, len, mode);
+   // TIZEN_ONLY(20140301): Added checking language of text props. We can draw glyphs of specific language without harfbuzz.
+   //(void) par_props;
+   //(void) par_pos;
+   //_content_create_ot(fi, text, text_props, len, mode);
+   if (CHECK_LANGUAGE_HARFBUZZ_AVAILABLE(text_props))
+     {
+        (void) par_props;
+        (void) par_pos;
+        _content_create_ot(fi, text, text_props, len, mode);
+     }
+   else
+     {
+        _content_create_regular(fi, text, text_props, par_props, par_pos, len, mode);
+     }
+   //
 #else
    _content_create_regular(fi, text, text_props, par_props, par_pos, len, mode);
 #endif
@@ -519,3 +709,88 @@ evas_common_text_props_content_create(void *_fi, const Eina_Unicode *text,
    return EINA_TRUE;
 }
 
+
+/**
+ * @internal
+ * Returns the numeric value of HEX chars for example for ch = 'A'
+ * the function will return 10.
+ *
+ * @param ch The HEX char.
+ * @return numeric value of HEX.
+ */
+static int
+_hex_string_get(char ch, Eina_Bool *ok)
+{
+   if ((ch >= '0') && (ch <= '9')) return (ch - '0');
+   else if ((ch >= 'A') && (ch <= 'F')) return (ch - 'A' + 10);
+   else if ((ch >= 'a') && (ch <= 'f')) return (ch - 'a' + 10);
+   *ok = EINA_FALSE;
+   return 0;
+}
+
+/**
+ * @internal
+ * Parses a string of one of the formas:
+ * 1. "#RRGGBB"
+ * 2. "#RRGGBBAA"
+ * 3. "#RGB"
+ * 4. "#RGBA"
+ * To the rgba values.
+ *
+ * @param[in] str The string to parse - NOT NULL.
+ * @param[out] r The Red value - NOT NULL.
+ * @param[out] g The Green value - NOT NULL.
+ * @param[out] b The Blue value - NOT NULL.
+ * @param[out] a The Alpha value - NOT NULL.
+ */
+Eina_Bool
+evas_common_format_color_parse(const char *str, int slen,
+                               unsigned char *r, unsigned char *g,
+                               unsigned char *b, unsigned char *a)
+{
+   Eina_Bool v = EINA_TRUE;
+
+   *r = *g = *b = *a = 0;
+
+   if (slen == 7) /* #RRGGBB */
+     {
+        *r = (_hex_string_get(str[1], &v) << 4) | (_hex_string_get(str[2], &v));
+        *g = (_hex_string_get(str[3], &v) << 4) | (_hex_string_get(str[4], &v));
+        *b = (_hex_string_get(str[5], &v) << 4) | (_hex_string_get(str[6], &v));
+        *a = 0xff;
+     }
+   else if (slen == 9) /* #RRGGBBAA */
+     {
+        *r = (_hex_string_get(str[1], &v) << 4) | (_hex_string_get(str[2], &v));
+        *g = (_hex_string_get(str[3], &v) << 4) | (_hex_string_get(str[4], &v));
+        *b = (_hex_string_get(str[5], &v) << 4) | (_hex_string_get(str[6], &v));
+        *a = (_hex_string_get(str[7], &v) << 4) | (_hex_string_get(str[8], &v));
+     }
+   else if (slen == 4) /* #RGB */
+     {
+        *r = _hex_string_get(str[1], &v);
+        *r = (*r << 4) | *r;
+        *g = _hex_string_get(str[2], &v);
+        *g = (*g << 4) | *g;
+        *b = _hex_string_get(str[3], &v);
+        *b = (*b << 4) | *b;
+        *a = 0xff;
+     }
+   else if (slen == 5) /* #RGBA */
+     {
+        *r = _hex_string_get(str[1], &v);
+        *r = (*r << 4) | *r;
+        *g = _hex_string_get(str[2], &v);
+        *g = (*g << 4) | *g;
+        *b = _hex_string_get(str[3], &v);
+        *b = (*b << 4) | *b;
+        *a = _hex_string_get(str[4], &v);
+        *a = (*a << 4) | *a;
+     }
+   else v = EINA_FALSE;
+
+   *r = (*r * *a) / 255;
+   *g = (*g * *a) / 255;
+   *b = (*b * *a) / 255;
+   return v;
+}

@@ -107,7 +107,8 @@ static struct LineBreakProperties lb_prop_French[] = {
 static struct LineBreakProperties lb_prop_Russian[] = {
 	{ 0x00AB, 0x00AB, LBP_OP },	/* Left double angle quotation mark: opening */
 	{ 0x00BB, 0x00BB, LBP_CL },	/* Right double angle quotation mark: closing */
-	{ 0x201C, 0x201C, LBP_CL },	/* Left double quotation mark: closing */
+	{ 0x201C, 0x201C, LBP_OP },	/* Left double quotation mark: opening */
+	{ 0x201D, 0x201D, LBP_CL },	/* Right double quotation mark: closing */
 	{ 0, 0, LBP_Undefined }
 };
 

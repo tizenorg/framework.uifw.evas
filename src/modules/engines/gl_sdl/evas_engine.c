@@ -243,7 +243,7 @@ eng_output_flush(void *data)
    re->draw.drew = 0;
 
 #if 0
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+#ifdef GL_GLES
 //   glFlush();
    eglSwapBuffers(re->egl_disp, re->egl_surface[0]);
 #else
@@ -390,6 +390,9 @@ eng_image_alpha_set(void *data, void *image, int has_alpha)
      {
         Evas_GL_Image *im_new;
         
+        if (!im->im->image.data)
+          evas_cache_image_load_data(&im->im->cache_entry);
+        evas_gl_common_image_alloc_ensure(im);
         im_new = evas_gl_common_image_new_from_copied_data(im->gc, im->im->cache_entry.w, im->im->cache_entry.h, im->im->image.data,
                                                            eng_image_alpha_get(data, image),
                                                            eng_image_colorspace_get(data, image));
@@ -456,6 +459,7 @@ eng_image_colorspace_set(void *data, void *image, int cspace)
    if (im->native.data) return;
    /* FIXME: can move to gl_common */
    if (im->cs.space == cspace) return;
+   evas_gl_common_image_alloc_ensure(im);
    evas_cache_image_colorspace(&im->im->cache_entry, cspace);
    switch (cspace)
      {
@@ -497,7 +501,7 @@ struct _Native
 {
    Evas_Native_Surface ns;
    
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+#ifdef GL_GLES
    EGLSurface  egl_surface;
 #endif
 };
@@ -615,6 +619,7 @@ eng_image_size_set(void *data, void *image, int w, int h)
          break;
      }
 
+   evas_gl_common_image_alloc_ensure(im);
    if ((im_old) && (im_old->im->cache_entry.w == w) && (im_old->im->cache_entry.h == h))
      return image;
    if (im_old)
@@ -672,6 +677,7 @@ eng_image_data_get(void *data, void *image, int to_write, DATA32 **image_data, i
         return im;
      }
    error = evas_cache_image_load_data(&im->im->cache_entry);
+   evas_gl_common_image_alloc_ensure(im);
    switch (im->cs.space)
      {
       case EVAS_COLORSPACE_ARGB8888:
@@ -723,6 +729,7 @@ eng_image_data_put(void *data, void *image, DATA32 *image_data)
    if (!image) return NULL;
    im = image;
    if (im->native.data) return image;
+   evas_gl_common_image_alloc_ensure(im);
    switch (im->cs.space)
      {
       case EVAS_COLORSPACE_ARGB8888:

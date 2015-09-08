@@ -1,12 +1,14 @@
 #include "evas_engine.h"
 
-static Evas_GL_X11_Window *_evas_gl_x11_window = NULL;
+static Eina_TLS _evas_gl_x11_window_key = 0;
+static Eina_TLS _context_key = 0;
 
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-static EGLContext context = EGL_NO_CONTEXT;
+#ifdef GL_GLES
+typedef EGLContext GLContext;
 #else
+#warning FIXME TLS Thread safety code not implemented for GLX!!!
 // FIXME: this will only work for 1 display connection (glx land can have > 1)
-static GLXContext context = 0;
+typedef GLXContext GLContext;
 static GLXContext rgba_context = 0;
 static GLXFBConfig fbconf = 0;
 static GLXFBConfig rgba_fbconf = 0;
@@ -20,31 +22,93 @@ static XVisualInfo *_evas_gl_x11_rgba_vi = NULL;
 static Colormap     _evas_gl_x11_cmap = 0;
 static Colormap     _evas_gl_x11_rgba_cmap = 0;
 
+// FIXME: This should use an atomic int. But it's a useless variable...
 static int win_count = 0;
+static Eina_Bool initted = EINA_FALSE;
+
+Eina_Bool
+eng_init(void)
+{
+   if (initted)
+     return EINA_TRUE;
+
+   // FIXME: These resources are never released
+   if (!eina_tls_new(&_evas_gl_x11_window_key))
+     goto error;
+   if (!eina_tls_new(&_context_key))
+     goto error;
+
+   eina_tls_set(_evas_gl_x11_window_key, NULL);
+   eina_tls_set(_context_key, NULL);
+
+   initted = EINA_TRUE;
+   return EINA_TRUE;
+
+error:
+   ERR("Could not create TLS key!");
+   return EINA_FALSE;
+}
+
+static inline Evas_GL_X11_Window *
+_tls_evas_gl_x11_window_get(void)
+{
+   if (!initted) eng_init();
+   return eina_tls_get(_evas_gl_x11_window_key);
+}
+
+static inline Eina_Bool
+_tls_evas_gl_x11_window_set(Evas_GL_X11_Window *xwin)
+{
+   if (!initted) eng_init();
+   return eina_tls_set(_evas_gl_x11_window_key, xwin);
+}
+
+static inline GLContext
+_tls_context_get(void)
+{
+   if (!initted) eng_init();
+   return eina_tls_get(_context_key);
+}
+
+static inline Eina_Bool
+_tls_context_set(GLContext ctx)
+{
+   if (!initted) eng_init();
+   return eina_tls_set(_context_key, ctx);
+}
 
 Evas_GL_X11_Window *
 eng_window_new(Display *disp,
-	       Window   win,
-	       int      screen,
-	       Visual  *vis,
-	       Colormap cmap,
-	       int      depth,
-	       int      w,
-	       int      h,
+               Drawable win,
+               int      screen,
+               Visual  *vis,
+               Colormap cmap,
+               int      depth,
+               int      w,
+               int      h,
                int      indirect,
                int      alpha,
-               int      rot)
+               int      rot,
+               int      depth_bits,
+               int      stencil_bits,
+               int      msaa_bits,
+               Drawable offscreen)
 {
    Evas_GL_X11_Window *gw;
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+   GLContext context;
+
+#ifdef GL_GLES
    int context_attrs[3];
    int config_attrs[40];
+   EGLConfig configs[200];
    int major_version, minor_version;
-   int num_config, n = 0;
+   int i, num, idx;
+   Eina_Bool found;
+   const char *s;
+//   XVisualInfo xVisual_info;
 #endif
-   XVisualInfo *vi_use;
    const GLubyte *vendor, *renderer, *version;
-   int blacklist = 0;
+   int blacklist = 0, val = 0;
 
    if (!_evas_gl_x11_vi) return NULL;
 
@@ -62,160 +126,252 @@ eng_window_new(Display *disp,
    gw->w = w;
    gw->h = h;
    gw->rot = rot;
+   gw->depth_bits = depth_bits;
+   gw->stencil_bits = stencil_bits;
+   gw->msaa_bits = msaa_bits;
+   gw->win_back = offscreen;
 
-   vi_use = _evas_gl_x11_vi;
-   if (gw->alpha)
-     {
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-        if (_evas_gl_x11_rgba_vi)
-          {
-             vi_use = _evas_gl_x11_rgba_vi;
-          }
-#else
-//#ifdef NEWGL
-        if (_evas_gl_x11_rgba_vi)
-          {
-             vi_use = _evas_gl_x11_rgba_vi;
-          }
-//#endif
-#endif
-     }
-   gw->visualinfo = vi_use;
+   if (gw->alpha && _evas_gl_x11_rgba_vi)
+     gw->visualinfo = _evas_gl_x11_rgba_vi;
+   else
+     gw->visualinfo = _evas_gl_x11_vi;
 
 // EGL / GLES
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-   context_attrs[0] = EGL_CONTEXT_CLIENT_VERSION;
-   context_attrs[1] = 2;
-   context_attrs[2] = EGL_NONE;
-
-# if defined(GLES_VARIETY_S3C6410)
-   if (gw->visualinfo->depth == 16) // 16bpp
-     {
-        config_attrs[n++] = EGL_SURFACE_TYPE;
-        config_attrs[n++] = EGL_WINDOW_BIT;
-        config_attrs[n++] = EGL_RENDERABLE_TYPE;
-        config_attrs[n++] = EGL_OPENGL_ES2_BIT;
-        config_attrs[n++] = EGL_RED_SIZE;
-        config_attrs[n++] = 5;
-        config_attrs[n++] = EGL_GREEN_SIZE;
-        config_attrs[n++] = 6;
-        config_attrs[n++] = EGL_BLUE_SIZE;
-        config_attrs[n++] = 5;
-        config_attrs[n++] = EGL_DEPTH_SIZE;
-        config_attrs[n++] = 0;
-        config_attrs[n++] = EGL_STENCIL_SIZE;
-        config_attrs[n++] = 0;
-        config_attrs[n++] = EGL_NONE;
-     }
-   else // 24/32bit. no one does 8bpp anymore. and 15bpp... dead
-     {
-        config_attrs[n++] = EGL_SURFACE_TYPE;
-        config_attrs[n++] = EGL_WINDOW_BIT;
-        config_attrs[n++] = EGL_RENDERABLE_TYPE;
-        config_attrs[n++] = EGL_OPENGL_ES2_BIT;
-        config_attrs[n++] = EGL_RED_SIZE;
-        config_attrs[n++] = 8;
-        config_attrs[n++] = EGL_GREEN_SIZE;
-        config_attrs[n++] = 8;
-        config_attrs[n++] = EGL_BLUE_SIZE;
-        config_attrs[n++] = 8;
-        config_attrs[n++] = EGL_DEPTH_SIZE;
-        config_attrs[n++] = 0;
-        config_attrs[n++] = EGL_STENCIL_SIZE;
-        config_attrs[n++] = 0;
-        config_attrs[n++] = EGL_NONE;
-     }
-# elif defined(GLES_VARIETY_SGX)
-   config_attrs[n++] = EGL_SURFACE_TYPE;
-   config_attrs[n++] = EGL_WINDOW_BIT;
-   config_attrs[n++] = EGL_RENDERABLE_TYPE;
-   config_attrs[n++] = EGL_OPENGL_ES2_BIT;
-#if 0
-// FIXME: n900 - omap3 sgx libs break here
-   config_attrs[n++] = EGL_RED_SIZE;
-   config_attrs[n++] = 1;
-   config_attrs[n++] = EGL_GREEN_SIZE;
-   config_attrs[n++] = 1;
-   config_attrs[n++] = EGL_BLUE_SIZE;
-   config_attrs[n++] = 1;
-// FIXME: end n900 breakage
-#endif
-   if (gw->alpha)
-     {
-        config_attrs[n++] = EGL_ALPHA_SIZE;
-        config_attrs[n++] = 1;
-     }
-   else
-     {
-        config_attrs[n++] = EGL_ALPHA_SIZE;
-        config_attrs[n++] = 0;
-     }
-   config_attrs[n++] = EGL_DEPTH_SIZE;
-   config_attrs[n++] = 0;
-   config_attrs[n++] = EGL_STENCIL_SIZE;
-   config_attrs[n++] = 0;
-   config_attrs[n++] = EGL_NONE;
-# endif
-
+#ifdef GL_GLES
    gw->egl_disp = eglGetDisplay((EGLNativeDisplayType)(gw->disp));
    if (!gw->egl_disp)
      {
         ERR("eglGetDisplay() fail. code=%#x", eglGetError());
-	eng_window_free(gw);
+        eng_window_free(gw);
         return NULL;
      }
    if (!eglInitialize(gw->egl_disp, &major_version, &minor_version))
      {
         ERR("eglInitialize() fail. code=%#x", eglGetError());
-	eng_window_free(gw);
+        eng_window_free(gw);
         return NULL;
      }
-   eglBindAPI(EGL_OPENGL_ES_API);
-   if (eglGetError() != EGL_SUCCESS)
+   if (eglBindAPI(EGL_OPENGL_ES_API) != EGL_TRUE)
      {
         ERR("eglBindAPI() fail. code=%#x", eglGetError());
-	eng_window_free(gw);
+        eng_window_free(gw);
+        return NULL;
+     }
+   /* Find matching config & visual */
+try_again:
+   i = 0;
+
+   context_attrs[0] = EGL_CONTEXT_CLIENT_VERSION;
+   context_attrs[1] = 2;
+   context_attrs[2] = EGL_NONE;
+
+   config_attrs[i++] = EGL_SURFACE_TYPE;
+   if (gw->win_back)
+     config_attrs[i++] = EGL_PIXMAP_BIT;
+   else
+     config_attrs[i++] = EGL_WINDOW_BIT;
+   config_attrs[i++] = EGL_RENDERABLE_TYPE;
+   config_attrs[i++] = EGL_OPENGL_ES2_BIT | EGL_OPENGL_ES_BIT;
+# if 0
+// FIXME: n900 - omap3 sgx libs break here
+   config_attrs[i++] = EGL_RED_SIZE;
+   config_attrs[i++] = 1;
+   config_attrs[i++] = EGL_GREEN_SIZE;
+   config_attrs[i++] = 1;
+   config_attrs[i++] = EGL_BLUE_SIZE;
+   config_attrs[i++] = 1;
+// FIXME: end n900 breakage
+# endif
+
+   if (gw->alpha || gw->win_back)
+     {
+        config_attrs[i++] = EGL_ALPHA_SIZE;
+        config_attrs[i++] = 1;
+     }
+
+   // Direct Rendering Option for widget (e.g. WEBKIT)
+   /*
+     * Sometimes, Tizen Widget uses Evas GL with Direct Rendering.
+     * This widget also runs with depth/stencil.
+     * Unfortunately, Application can not know this widget uses Evas GL that runs with DR, Depth/Stencil buffer.
+     * Although application does not set depth/stencil buffer size,
+     * evas gl render engine should set depth/stencil buffer size with minimum.
+     * This is HACK code for tizen platform.
+     */
+
+   if (depth_bits)
+     {
+        config_attrs[i++] = EGL_DEPTH_SIZE;
+        config_attrs[i++] = depth_bits;
+     }
+   else
+     {
+        config_attrs[i++] = EGL_DEPTH_SIZE;
+        config_attrs[i++] = 1;
+     }
+
+   if (stencil_bits)
+     {
+        config_attrs[i++] = EGL_STENCIL_SIZE;
+        config_attrs[i++] = stencil_bits;
+     }
+   else
+     {
+        config_attrs[i++] = EGL_STENCIL_SIZE;
+        config_attrs[i++] = 1;
+     }
+
+   if (msaa_bits)
+     {
+        config_attrs[i++] = EGL_SAMPLE_BUFFERS;
+        config_attrs[i++] = 1;
+        config_attrs[i++] = EGL_SAMPLES;
+        config_attrs[i++] = msaa_bits;
+     }
+   config_attrs[i++] = EGL_NONE;
+
+   num = 0;
+   if ((!eglChooseConfig(gw->egl_disp, config_attrs, configs, 200, &num))
+       || (num < 1))
+     {
+        ERR("eglChooseConfig() can't find any configs (alpha: %d, depth: %d, stencil: %d, msaa: %d, num %d)",
+            alpha, depth_bits, stencil_bits, gw->msaa_bits,num);
+        if ((depth_bits > 24) || (stencil_bits > 8))
+          {
+             WRN("Please note that your driver might not support 32-bit depth or "
+                 "16-bit stencil buffers, so depth24, stencil8 are the maximum "
+                 "recommended values.");
+             if (depth_bits > 24) depth_bits = 24;
+             if (stencil_bits > 8) stencil_bits = 8;
+             DBG("Trying again with depth:%d, stencil:%d", depth_bits, stencil_bits);
+             goto try_again;
+          }
+        else if (msaa_bits)
+          {
+             msaa_bits /= 2;
+             DBG("Trying again with msaa_samples: %d", msaa_bits);
+             goto try_again;
+          }
+        else if (depth_bits || stencil_bits)
+          {
+             depth_bits = 0;
+             stencil_bits = 0;
+             DBG("Trying again without any depth or stencil buffer");
+             goto try_again;
+          }
+        free(gw);
         return NULL;
      }
 
-   num_config = 0;
-   if (!eglChooseConfig(gw->egl_disp, config_attrs, &gw->egl_config,
-                        1, &num_config) || (num_config != 1))
+   found = EINA_FALSE;
+   for (i = 0; (i < num) && (!found); i++)
      {
-        ERR("eglChooseConfig() fail. code=%#x", eglGetError());
-	eng_window_free(gw);
-        return NULL;
+        EGLint val = 0;
+        VisualID visid = 0;
+        XVisualInfo *xvi, vi_in;
+        int nvi, j;
+
+        if (!eglGetConfigAttrib(gw->egl_disp, configs[i],
+                                EGL_NATIVE_VISUAL_ID, &val))
+          continue;
+        visid = vis;
+        vi_in.screen = screen;
+        vi_in.visualid = visid;
+        xvi = XGetVisualInfo(disp,
+                             VisualScreenMask |
+                             VisualIDMask,
+                             &vi_in, &nvi);
+        for (j = 0; j < nvi; j++)
+          {
+             if (!alpha)
+               {
+                  if (xvi[j].depth == depth)
+                    {
+                       gw->egl_config = configs[i];
+                       found = EINA_TRUE;
+                       break;
+                    }
+               }
+             else
+               {
+                  XRenderPictFormat *fmt;
+
+                  fmt = XRenderFindVisualFormat
+                        (disp, xvi[j].visual);
+                  if ((fmt->direct.alphaMask > 0) &&
+                      (fmt->type == PictTypeDirect))
+                    {
+                       gw->egl_config = configs[i];
+                       found = EINA_TRUE;
+                       break;
+                    }
+               }
+          }
+        if (xvi) XFree(xvi);
      }
-   gw->egl_surface[0] = eglCreateWindowSurface(gw->egl_disp, gw->egl_config,
-                                               (EGLNativeWindowType)gw->win,
-                                               NULL);
-   if (gw->egl_surface[0] == EGL_NO_SURFACE)
+   if (!found)
      {
-        ERR("eglCreateWindowSurface() fail for %#x. code=%#x",
-            (unsigned int)gw->win, eglGetError());
-	eng_window_free(gw);
-        return NULL;
+        // this is a less correct fallback if the above fails to
+        // find the right visuals/configs
+        gw->egl_config = configs[0];
      }
-   if (context == EGL_NO_CONTEXT)
-     context = eglCreateContext(gw->egl_disp, gw->egl_config, NULL,
-                                context_attrs);
-   gw->egl_context[0] = context;
+   if (gw->win_back)
+     {
+        gw->egl_surface[0] = eglCreatePixmapSurface(gw->egl_disp, gw->egl_config,
+                                                    (EGLNativePixmapType)gw->win,
+                                                    NULL);
+        if (gw->egl_surface[0] == EGL_NO_SURFACE)
+          {
+             ERR("eglCreatePixmapSurface() fail for %#x. code=%#x",
+                 (unsigned int)gw->win, eglGetError());
+             eng_window_free(gw);
+             return NULL;
+          }
+
+        gw->egl_surface[1] = eglCreatePixmapSurface(gw->egl_disp, gw->egl_config,
+                                                    (EGLNativePixmapType)gw->win_back,
+                                                    NULL);
+        if (gw->egl_surface[1] == EGL_NO_SURFACE)
+          {
+             ERR("eglCreatePixmapSurface() fail for %#x. code=%#x",
+                 (unsigned int)gw->win_back, eglGetError());
+             eng_window_free(gw);
+             return NULL;
+          }
+     }
+   else
+     {
+        gw->egl_surface[0] = eglCreateWindowSurface(gw->egl_disp, gw->egl_config,
+                                                    (EGLNativeWindowType)gw->win,
+                                                    NULL);
+        if (gw->egl_surface[0] == EGL_NO_SURFACE)
+          {
+             ERR("eglCreateWindowSurface() fail for %#x. code=%#x",
+                 (unsigned int)gw->win, eglGetError());
+             eng_window_free(gw);
+             return NULL;
+          }
+     }
+   context = _tls_context_get();
+   gw->egl_context[0] = eglCreateContext
+     (gw->egl_disp, gw->egl_config, context, context_attrs);
    if (gw->egl_context[0] == EGL_NO_CONTEXT)
      {
         ERR("eglCreateContext() fail. code=%#x", eglGetError());
-	eng_window_free(gw);
+        eng_window_free(gw);
         return NULL;
      }
+   if (context == EGL_NO_CONTEXT)
+     _tls_context_set(gw->egl_context[0]);
    if (eglMakeCurrent(gw->egl_disp,
                       gw->egl_surface[0],
                       gw->egl_surface[0],
                       gw->egl_context[0]) == EGL_FALSE)
      {
         ERR("eglMakeCurrent() fail. code=%#x", eglGetError());
-	eng_window_free(gw);
+        eng_window_free(gw);
         return NULL;
      }
-
    vendor = glGetString(GL_VENDOR);
    renderer = glGetString(GL_RENDERER);
    version = glGetString(GL_VERSION);
@@ -236,7 +392,9 @@ eng_window_new(Display *disp,
      }
    if (strstr((const char *)renderer, "softpipe"))
      blacklist = 1;
-   if (blacklist)
+   if (strstr((const char *)renderer, "llvmpipe"))
+     blacklist = 1;
+   if ((blacklist) && (!getenv("EVAS_GL_NO_BLACKLIST")))
      {
         ERR("OpenGL Driver blacklisted:");
         ERR("Vendor: %s", (const char *)vendor);
@@ -245,8 +403,16 @@ eng_window_new(Display *disp,
         eng_window_free(gw);
         return NULL;
      }
+
+   eglGetConfigAttrib(gw->egl_disp, gw->egl_config, EGL_DEPTH_SIZE, &val);
+   gw->detected.depth_buffer_size = val;
+   eglGetConfigAttrib(gw->egl_disp, gw->egl_config, EGL_STENCIL_SIZE, &val);
+   gw->detected.stencil_buffer_size = val;
+   eglGetConfigAttrib(gw->egl_disp, gw->egl_config, EGL_SAMPLES, &val);
+   gw->detected.msaa = val;
 // GLX
 #else
+   context = _tls_context_get();
    if (!context)
      {
 #ifdef NEWGL
@@ -283,7 +449,7 @@ eng_window_new(Display *disp,
      gw->glxwin = glXCreateWindow(gw->disp, fbconf, gw->win, NULL);
    if (!gw->glxwin)
      {
-	eng_window_free(gw);
+        eng_window_free(gw);
         return NULL;
      }
 
@@ -295,14 +461,11 @@ eng_window_new(Display *disp,
 
    if (!gw->context)
      {
-	eng_window_free(gw);
+        eng_window_free(gw);
         return NULL;
      }
    if (gw->context)
      {
-        int i, j,  num;
-        GLXFBConfig *fbc;
-
         if (gw->glxwin)
           {
              if (!glXMakeContextCurrent(gw->disp, gw->glxwin, gw->glxwin,
@@ -398,12 +561,14 @@ eng_window_new(Display *disp,
           }
         if (strstr((const char *)renderer, "softpipe"))
            blacklist = 1;
-        if (blacklist)
+        if (strstr((const char *)renderer, "llvmpipe"))
+          blacklist = 1;
+        if ((blacklist) && (!getenv("EVAS_GL_NO_BLACKLIST")))
           {
-             ERR("OpenGL Driver blacklisted:");
-             ERR("Vendor: %s", (const char *)vendor);
-             ERR("Renderer: %s", (const char *)renderer);
-             ERR("Version: %s", (const char *)version);
+             fprintf(stderr,"OpenGL Driver blacklisted:");
+             fprintf(stderr,"Vendor: %s", (const char *)vendor);
+             fprintf(stderr,"Renderer: %s", (const char *)renderer);
+             fprintf(stderr,"Version: %s", (const char *)version);
              eng_window_free(gw);
              return NULL;
           }
@@ -432,98 +597,22 @@ eng_window_new(Display *disp,
           {
              // noothing yet. add more cases and options over time
           }
-
-        fbc = glXGetFBConfigs(gw->disp, screen, &num);
-        if (!fbc)
-          {
-             ERR("glXGetFBConfigs() returned no fb configs");
-             eng_window_free(gw);
-             return NULL;
-          }
-        for (i = 0; i <= 32; i++)
-          {
-             for (j = 0; j < num; j++)
-               {
-                  XVisualInfo *vi;
-                  int vd;
-                  int alph, val, dbuf, stencil, tdepth;
-                  int rgba;
-
-                  vi = glXGetVisualFromFBConfig(gw->disp, fbc[j]);
-                  if (!vi) continue;
-                  vd = vi->depth;
-                  XFree(vi);
-
-                  if (vd != i) continue;
-
-                  glXGetFBConfigAttrib(gw->disp, fbc[j], GLX_ALPHA_SIZE, &alph);
-                  glXGetFBConfigAttrib(gw->disp, fbc[j], GLX_BUFFER_SIZE, &val);
-
-                  if ((val != i) && ((val - alph) != i)) continue;
-
-                  val = 0;
-                  rgba = 0;
-
-                  if (i == 32)
-                    {
-                       glXGetFBConfigAttrib(gw->disp, fbc[j], GLX_BIND_TO_TEXTURE_RGBA_EXT, &val);
-                       if (val)
-                         {
-                            rgba = 1;
-                            gw->depth_cfg[i].tex_format = GLX_TEXTURE_FORMAT_RGBA_EXT;
-                         }
-                    }
-                  if (!val)
-                    {
-                       if (rgba) continue;
-                       glXGetFBConfigAttrib(gw->disp, fbc[j], GLX_BIND_TO_TEXTURE_RGB_EXT, &val);
-                       if (!val) continue;
-                       gw->depth_cfg[i].tex_format = GLX_TEXTURE_FORMAT_RGB_EXT;
-                    }
-
-                  dbuf = 0x7fff;
-                  glXGetFBConfigAttrib(gw->disp, fbc[j], GLX_DOUBLEBUFFER, &val);
-                  if (val > dbuf) continue;
-                  dbuf = val;
-
-                  stencil = 0x7fff;
-                  glXGetFBConfigAttrib(gw->disp, fbc[j], GLX_STENCIL_SIZE, &val);
-                  if (val > stencil) continue;
-                  stencil = val;
-
-                  tdepth = 0x7fff;
-                  glXGetFBConfigAttrib(gw->disp, fbc[j], GLX_DEPTH_SIZE, &val);
-                  if (val > tdepth) continue;
-                  tdepth = val;
-
-                  glXGetFBConfigAttrib(gw->disp, fbc[j], GLX_BIND_TO_MIPMAP_TEXTURE_EXT, &val);
-                  if (val < 0) continue;
-                  gw->depth_cfg[i].mipmap = val;
-
-                  glXGetFBConfigAttrib(gw->disp, fbc[j], GLX_Y_INVERTED_EXT, &val);
-                  gw->depth_cfg[i].yinvert = val;
-
-                  glXGetFBConfigAttrib(gw->disp, fbc[j], GLX_BIND_TO_TEXTURE_TARGETS_EXT, &val);
-                  gw->depth_cfg[i].tex_target = val;
-
-                  gw->depth_cfg[i].fbc = fbc[j];
-               }
-          }
-        XFree(fbc);
-        if (!gw->depth_cfg[DefaultDepth(gw->disp, screen)].fbc)
-          {
-             WRN("texture from pixmap not going to work");
-          }
+        glXGetConfig(gw->disp, gw->visualinfo, GLX_DEPTH_SIZE, &val);
+        gw->detected.depth_buffer_size = val;
+        glXGetConfig(gw->disp, gw->visualinfo, GLX_STENCIL_SIZE, &val);
+        gw->detected.stencil_buffer_size = val;
+        glXGetConfig(gw->disp, gw->visualinfo, GLX_SAMPLES, &val);
+        gw->detected.msaa = val;
      }
 #endif
 
    gw->gl_context = evas_gl_common_context_new();
    if (!gw->gl_context)
      {
-	eng_window_free(gw);
-	return NULL;
+        eng_window_free(gw);
+        return NULL;
      }
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+#ifdef GL_GLES
    gw->gl_context->egldisp = gw->egl_disp;
 #endif
    eng_window_use(gw);
@@ -536,33 +625,44 @@ eng_window_new(Display *disp,
 void
 eng_window_free(Evas_GL_X11_Window *gw)
 {
+   Evas_GL_X11_Window *xwin;
+   GLContext context;
    int ref = 0;
+
    win_count--;
    eng_window_use(gw);
-   if (gw == _evas_gl_x11_window) _evas_gl_x11_window = NULL;
+
+   context = _tls_context_get();
+   xwin = _tls_evas_gl_x11_window_get();
+
+   if (gw == xwin) _tls_evas_gl_x11_window_set(NULL);
    if (gw->gl_context)
      {
         ref = gw->gl_context->references - 1;
         evas_gl_common_context_free(gw->gl_context);
      }
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+#ifdef GL_GLES
+   eglMakeCurrent(gw->egl_disp, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
    if (gw->egl_surface[0] != EGL_NO_SURFACE)
       eglDestroySurface(gw->egl_disp, gw->egl_surface[0]);
-   eglMakeCurrent(gw->egl_disp, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+   if (gw->egl_surface[1] != EGL_NO_SURFACE)
+      eglDestroySurface(gw->egl_disp, gw->egl_surface[1]);
+   if (gw->egl_context[0] != context)
+     eglDestroyContext(gw->egl_disp, gw->egl_context[0]);
    if (ref == 0)
      {
         if (context) eglDestroyContext(gw->egl_disp, context);
         eglTerminate(gw->egl_disp);
-        context = EGL_NO_CONTEXT;
+        eglReleaseThread();
+        _tls_context_set(EGL_NO_CONTEXT);
      }
-   eglMakeCurrent(gw->egl_disp, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 #else
    if (gw->glxwin) glXDestroyWindow(gw->disp, gw->glxwin);
    if (ref == 0)
      {
         if (context) glXDestroyContext(gw->disp, context);
         if (rgba_context) glXDestroyContext(gw->disp, rgba_context);
-        context = 0;
+        _tls_context_set(0);
         rgba_context = 0;
         fbconf = 0;
         rgba_fbconf = 0;
@@ -575,42 +675,48 @@ void
 eng_window_use(Evas_GL_X11_Window *gw)
 {
    Eina_Bool force_use = EINA_FALSE;
+   Evas_GL_X11_Window *xwin;
 
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-   if (_evas_gl_x11_window)
+   xwin = _tls_evas_gl_x11_window_get();
+
+#ifdef GL_GLES
+   if (xwin)
      {
-        if ((eglGetCurrentContext() !=
-             _evas_gl_x11_window->egl_context[0]) ||
+        if ((eglGetCurrentDisplay() !=
+             xwin->egl_disp) ||
+        	(eglGetCurrentContext() !=
+             xwin->egl_context[0]) ||
             (eglGetCurrentSurface(EGL_READ) !=
-                _evas_gl_x11_window->egl_surface[0]) ||
+                xwin->egl_surface[xwin->offscreen]) ||
             (eglGetCurrentSurface(EGL_DRAW) !=
-                _evas_gl_x11_window->egl_surface[0]))
+                xwin->egl_surface[xwin->offscreen]))
            force_use = EINA_TRUE;
      }
 #else
-   if (_evas_gl_x11_window)
+   if (xwin)
      {
-        if (glXGetCurrentContext() != _evas_gl_x11_window->context)
+        if (glXGetCurrentContext() != xwin->context)
            force_use = EINA_TRUE;
      }
 #endif
-   if ((_evas_gl_x11_window != gw) || (force_use))
+   if ((xwin != gw) || (force_use))
      {
-        if (_evas_gl_x11_window)
+        if (xwin)
           {
-             evas_gl_common_context_use(_evas_gl_x11_window->gl_context);
-             evas_gl_common_context_flush(_evas_gl_x11_window->gl_context);
+             evas_gl_common_context_use(xwin->gl_context);
+             evas_gl_common_context_flush(xwin->gl_context);
+             xwin->gl_context->pipe[0].shader.surface = NULL;
           }
-        _evas_gl_x11_window = gw;
+        _tls_evas_gl_x11_window_set(gw);
         if (gw)
           {
 // EGL / GLES
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-           if (gw->egl_surface[0] != EGL_NO_SURFACE)
+#ifdef GL_GLES
+           if (gw->egl_surface[gw->offscreen] != EGL_NO_SURFACE)
              {
                 if (eglMakeCurrent(gw->egl_disp,
-                                   gw->egl_surface[0],
-                                   gw->egl_surface[0],
+                                   gw->egl_surface[gw->offscreen],
+                                   gw->egl_surface[gw->offscreen],
                                    gw->egl_context[0]) == EGL_FALSE)
                   {
                      ERR("eglMakeCurrent() failed!");
@@ -640,22 +746,29 @@ eng_window_use(Evas_GL_X11_Window *gw)
 }
 
 void
-eng_window_unsurf(Evas_GL_X11_Window *gw)
+eng_window_unsurf(Evas_GL_X11_Window *gw, Eina_Bool pre_rotation_resurf)
 {
    if (!gw->surf) return;
-   if (!getenv("EVAS_GL_WIN_RESURF")) return;
+   if (!getenv("EVAS_GL_WIN_RESURF") && !pre_rotation_resurf) return;
    if (getenv("EVAS_GL_INFO"))
       printf("unsurf %p\n", gw);
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-   if (_evas_gl_x11_window)
-      evas_gl_common_context_flush(_evas_gl_x11_window->gl_context);
-   if (_evas_gl_x11_window == gw)
+
+#ifdef GL_GLES
+   Evas_GL_X11_Window *xwin;
+
+   xwin = _tls_evas_gl_x11_window_get();
+   if (xwin)
+      evas_gl_common_context_flush(xwin->gl_context);
+   if (xwin == gw || pre_rotation_resurf)
      {
         eglMakeCurrent(gw->egl_disp, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
         if (gw->egl_surface[0] != EGL_NO_SURFACE)
            eglDestroySurface(gw->egl_disp, gw->egl_surface[0]);
         gw->egl_surface[0] = EGL_NO_SURFACE;
-        _evas_gl_x11_window = NULL;
+        if (gw->egl_surface[1] != EGL_NO_SURFACE)
+           eglDestroySurface(gw->egl_disp, gw->egl_surface[1]);
+        gw->egl_surface[1] = EGL_NO_SURFACE;
+        _tls_evas_gl_x11_window_set(NULL);
      }
 #else
    if (gw->glxwin)
@@ -675,19 +788,46 @@ eng_window_resurf(Evas_GL_X11_Window *gw)
    if (gw->surf) return;
    if (getenv("EVAS_GL_INFO"))
       printf("resurf %p\n", gw);
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
-   gw->egl_surface[0] = eglCreateWindowSurface(gw->egl_disp, gw->egl_config,
-                                                     (EGLNativeWindowType)gw->win,
-                                                     NULL);
-   if (gw->egl_surface[0] == EGL_NO_SURFACE)
+#ifdef GL_GLES
+   if (gw->win_back)
      {
-        ERR("eglCreateWindowSurface() fail for %#x. code=%#x",
-            (unsigned int)gw->win, eglGetError());
-        return;
+        gw->egl_surface[0] = eglCreatePixmapSurface(gw->egl_disp, gw->egl_config,
+                                                        (EGLNativePixmapType)gw->win,
+                                                        NULL);
+        if (gw->egl_surface[0] == EGL_NO_SURFACE)
+          {
+             ERR("eglCreatePixmapSurface() fail for %#x. code=%#x",
+                 (unsigned int)gw->win, eglGetError());
+             return;
+          }
+        ERR("%x = eglCreatePixmapSurface(pixmap %x)", gw->egl_surface[0], gw->win);
+
+        gw->egl_surface[1] = eglCreatePixmapSurface(gw->egl_disp, gw->egl_config,
+                                                        (EGLNativePixmapType)gw->win_back,
+                                                        NULL);
+        if (gw->egl_surface[1] == EGL_NO_SURFACE)
+          {
+             ERR("eglCreatePixmapSurface() fail for %#x. code=%#x",
+                 (unsigned int)gw->win_back, eglGetError());
+             return;
+          }
+        ERR("%x = eglCreatePixmapSurface(pixmap %x)", gw->egl_surface[1], gw->win_back);
+     }
+   else
+     {
+        gw->egl_surface[0] = eglCreateWindowSurface(gw->egl_disp, gw->egl_config,
+                                                        (EGLNativeWindowType)gw->win,
+                                                        NULL);
+        if (gw->egl_surface[0] == EGL_NO_SURFACE)
+          {
+             ERR("eglCreateWindowSurface() fail for %#x. code=%#x",
+                 (unsigned int)gw->win, eglGetError());
+             return;
+          }
      }
    if (eglMakeCurrent(gw->egl_disp,
-                      gw->egl_surface[0],
-                      gw->egl_surface[0],
+                      gw->egl_surface[gw->offscreen],
+                      gw->egl_surface[gw->offscreen],
                       gw->egl_context[0]) == EGL_FALSE)
      {
         ERR("eglMakeCurrent() failed!");
@@ -723,7 +863,7 @@ eng_best_visual_get(Evas_Engine_Info_GL_X11 *einfo)
         int alpha;
 
 // EGL / GLES
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+#ifdef GL_GLES
         for (alpha = 0; alpha < 2; alpha++)
           {
              int depth = DefaultDepth(einfo->info.display,
@@ -785,7 +925,7 @@ eng_best_visual_get(Evas_Engine_Info_GL_X11 *einfo)
              config_attrs[i++] = GLX_RED_SIZE;
              config_attrs[i++] = 1;
              config_attrs[i++] = GLX_GREEN_SIZE;
-             config_attrs[i++] =1;
+             config_attrs[i++] = 1;
              config_attrs[i++] = GLX_BLUE_SIZE;
              config_attrs[i++] = 1;
              if (alpha)
@@ -811,7 +951,7 @@ eng_best_visual_get(Evas_Engine_Info_GL_X11 *einfo)
              config_attrs[i++] = GLX_TRANSPARENT_TYPE;
              config_attrs[i++] = GLX_NONE;//GLX_NONE;//GLX_TRANSPARENT_INDEX//GLX_TRANSPARENT_RGB;
              config_attrs[i++] = 0;
-             
+
              configs = glXChooseFBConfig(einfo->info.display,
                                          einfo->info.screen,
                                          config_attrs, &num);
@@ -865,7 +1005,7 @@ eng_best_visual_get(Evas_Engine_Info_GL_X11 *einfo)
    if (einfo->info.destination_alpha)
      {
 // EGL / GLES
-#if defined (GLES_VARIETY_S3C6410) || defined (GLES_VARIETY_SGX)
+#ifdef GL_GLES
         if (_evas_gl_x11_rgba_vi) return _evas_gl_x11_rgba_vi->visual;
 #else
 //# ifdef NEWGL
@@ -916,4 +1056,41 @@ eng_best_depth_get(Evas_Engine_Info_GL_X11 *einfo)
         if (_evas_gl_x11_rgba_vi) return _evas_gl_x11_rgba_vi->depth;
      }
    return _evas_gl_x11_vi->depth;
+}
+
+int
+eng_native_config_check(Display *disp, void *config , int target, void *pixmap, int *w, int *h)
+{
+   Window root;
+   int x, y;
+   unsigned int border;
+   unsigned int depth;
+   int ret = 0;
+   Evas_GL_Config *cfg = config;
+
+   // Check target
+   if (target!=1) // EGL_NATIVE_PIXMAP_KHR
+     {
+        ERR("Invalid native target");
+        return 0;
+     }
+
+   // Retrive pixmap information
+   ret = XGetGeometry(disp, (Drawable)pixmap, &root, &x, &y, w, h, &border, &depth);
+   if (!ret)
+     {
+        ERR("Unable to retrieve pixmap information");
+        return 0;
+     }
+
+   // Check the validity of the depth of the target
+   if ( ((cfg->color_format==EVAS_GL_RGB_888)   && (depth != 24)) ||
+        ((cfg->color_format==EVAS_GL_RGBA_8888) && (depth != 32)) )
+     {
+        ERR("Unsupported native depth");
+        return 0;
+     }
+
+   DBG("Pixmap Width [%d] Height [%d] Depth [%d]", *w, *h, depth);
+   return 1;
 }

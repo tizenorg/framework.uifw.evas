@@ -3,6 +3,8 @@
 #include "evas_private.h"
 #include "Evas_GL.h"
 
+typedef struct _Evas_GL_TLS_data Evas_GL_TLS_data;
+
 struct _Evas_GL
 {
    DATA32      magic;
@@ -10,17 +12,125 @@ struct _Evas_GL
 
    Eina_List  *contexts;
    Eina_List  *surfaces;
+   Eina_Lock   lck;
+   Eina_TLS    resource_key;
+   Eina_List  *resource_list;
 };
 
 struct _Evas_GL_Context
 {
    void    *data;
+   Evas_GL_Context_Version version;
 };
 
 struct _Evas_GL_Surface
 {
    void    *data;
 };
+
+struct _Evas_GL_TLS_data
+{
+   int error_state;
+};
+
+static int _evas_gl_ext_buffer_age_get(Evas_GL *evas_gl);
+static int _evas_gl_ext_update_region_get(Evas_GL *evas_gl, int *x, int *y, int *w, int *h);
+static Evas_GL_Surface * _evas_gl_ext_surface_from_native_create(Evas_GL *evas_gl, Evas_GL_Config *config, int target, void *native);
+static int _evas_gl_ext_surface_is_texture(Evas_GL *evas_gl, Evas_GL_Surface *surf);
+
+static Evas_GL_Ext _evas_gl_ext_funcs[] =
+{
+     {"evas_gl_ext_buffer_age_get", _evas_gl_ext_buffer_age_get},
+     {"evas_gl_ext_update_region_get", _evas_gl_ext_update_region_get},
+     {"evas_gl_ext_surface_from_native_create", _evas_gl_ext_surface_from_native_create},
+     {"evas_gl_ext_surface_is_texture", _evas_gl_ext_surface_is_texture},
+     {NULL, NULL}
+};
+
+
+Evas_GL_TLS_data *
+_evas_gl_internal_tls_get(Evas_GL *evas_gl)
+{
+   Evas_GL_TLS_data *tls_data;
+
+   if (!evas_gl) return NULL;
+
+   if (!(tls_data = eina_tls_get(evas_gl->resource_key)))
+     {
+        tls_data = (Evas_GL_TLS_data*) calloc(1, sizeof(Evas_GL_TLS_data));
+        if (!tls_data)
+          {
+             ERR("Evas_GL: Could not set error!");
+             return NULL;
+          }
+        tls_data->error_state = EVAS_GL_SUCCESS;
+
+        if (eina_tls_set(evas_gl->resource_key, (void*)tls_data) == EINA_TRUE)
+          {
+             LKL(evas_gl->lck);
+             evas_gl->resource_list = eina_list_prepend(evas_gl->resource_list, tls_data);
+             LKU(evas_gl->lck);
+             return tls_data;
+          }
+        else
+          {
+             ERR("Evas_GL: Failed setting TLS data!");
+             free(tls_data);
+             return NULL;
+          }
+     }
+
+   return tls_data;
+}
+
+void
+_evas_gl_internal_tls_destroy(Evas_GL *evas_gl)
+{
+   Evas_GL_TLS_data *tls_data;
+
+   if (!evas_gl) return;
+
+   if (!(tls_data = eina_tls_get(evas_gl->resource_key)))
+     {
+        WRN("Destructor: TLS data was never set!");
+        return;
+     }
+
+   LKL(evas_gl->lck);
+   EINA_LIST_FREE(evas_gl->resource_list, tls_data)
+     free(tls_data);
+
+   if (evas_gl->resource_key)
+     eina_tls_free(evas_gl->resource_key);
+   evas_gl->resource_key = 0;
+   LKU(evas_gl->lck);
+}
+
+void
+_evas_gl_internal_error_set(Evas_GL *evas_gl, int error_enum)
+{
+   Evas_GL_TLS_data *tls_data;
+
+   if (!evas_gl) return;
+
+   tls_data = _evas_gl_internal_tls_get(evas_gl);
+   if (!tls_data) return;
+
+   tls_data->error_state = error_enum;
+}
+
+int
+_evas_gl_internal_error_get(Evas_GL *evas_gl)
+{
+   Evas_GL_TLS_data *tls_data;
+
+   if (!evas_gl) return EVAS_GL_NOT_INITIALIZED;
+
+   tls_data = _evas_gl_internal_tls_get(evas_gl);
+   if (!tls_data) return EVAS_GL_NOT_INITIALIZED;
+
+   return tls_data->error_state;
+}
 
 EAPI Evas_GL *
 evas_gl_new(Evas *e)
@@ -36,14 +146,25 @@ evas_gl_new(Evas *e)
 
    evas_gl->magic = MAGIC_EVAS_GL;
    evas_gl->evas = e;
+   LKI(evas_gl->lck);
 
-   if (!evas_gl->evas->engine.func->gl_context_create)
+   if (!evas_gl->evas->engine.func->gl_engine_init)
      {
         ERR("Evas GL engine not available.");
         free(evas_gl);
         return NULL;
      }
+   evas_gl->evas->engine.func->gl_engine_init(e->engine.data.output);
 
+   // Initialize tls resource key
+   if (eina_tls_new(&(evas_gl->resource_key)) == EINA_FALSE)
+     {
+        ERR("Error creating tls key");
+        free(evas_gl);
+        return NULL;
+     }
+
+   _evas_gl_internal_error_set(evas_gl, EVAS_GL_SUCCESS);
    return evas_gl;
 }
 
@@ -54,7 +175,6 @@ evas_gl_free(Evas_GL *evas_gl)
    return;
    MAGIC_CHECK_END();
 
-
    // Delete undeleted surfaces
    while (evas_gl->surfaces)
      evas_gl_surface_destroy(evas_gl, evas_gl->surfaces->data);
@@ -63,7 +183,11 @@ evas_gl_free(Evas_GL *evas_gl)
    while (evas_gl->contexts)
      evas_gl_context_destroy(evas_gl, evas_gl->contexts->data);
 
+   // Destroy tls
+   _evas_gl_internal_tls_destroy(evas_gl);
+
    evas_gl->magic = 0;
+   LKD(evas_gl->lck);
    free(evas_gl);
 }
 
@@ -97,18 +221,24 @@ evas_gl_surface_create(Evas_GL *evas_gl, Evas_GL_Config *config, int width, int 
    if (!config)
      {
         ERR("Invalid Config Pointer!");
+        _evas_gl_internal_error_set(evas_gl, EVAS_GL_BAD_CONFIG);
         return NULL;
      }
 
-   if ( (width <= 0) || (height <= 0))
+   if ((width <= 0) || (height <= 0))
      {
         ERR("Invalid surface dimensions: %d, %d", width, height);
+        _evas_gl_internal_error_set(evas_gl, EVAS_GL_BAD_PARAMETER);
         return NULL;
      }
 
    surf = calloc(1, sizeof(Evas_GL_Surface));
 
-   if (!surf) return NULL;
+   if (!surf)
+     {
+        _evas_gl_internal_error_set(evas_gl, EVAS_GL_BAD_ALLOC);
+        return NULL;
+     }
 
    surf->data = evas_gl->evas->engine.func->gl_surface_create(evas_gl->evas->engine.data.output, config, width, height);
 
@@ -120,7 +250,65 @@ evas_gl_surface_create(Evas_GL *evas_gl, Evas_GL_Config *config, int width, int 
      }
 
    // Keep track of the surface creations
+   LKL(evas_gl->lck);
    evas_gl->surfaces = eina_list_prepend(evas_gl->surfaces, surf);
+   LKU(evas_gl->lck);
+
+   return surf;
+}
+
+EAPI Evas_GL_Surface *
+evas_gl_pbuffer_surface_create(Evas_GL *evas_gl, Evas_GL_Config *cfg,
+                               int w, int h, const int *attrib_list)
+{
+   Evas_GL_Surface *surf;
+
+   // Magic
+   MAGIC_CHECK(evas_gl, Evas_GL, MAGIC_EVAS_GL);
+   return NULL;
+   MAGIC_CHECK_END();
+
+   if (!cfg)
+     {
+        ERR("Invalid Config Pointer!");
+        _evas_gl_internal_error_set(evas_gl, EVAS_GL_BAD_CONFIG);
+        return NULL;
+     }
+
+   if ((w <= 0) || (h <= 0))
+     {
+        ERR("Invalid surface dimensions: %d, %d", w, h);
+        _evas_gl_internal_error_set(evas_gl, EVAS_GL_BAD_PARAMETER);
+        return NULL;
+     }
+
+   if (!evas_gl->evas->engine.func->gl_pbuffer_surface_create)
+     {
+        ERR("Engine does not support PBuffer!");
+        _evas_gl_internal_error_set(evas_gl, EVAS_GL_NOT_INITIALIZED);
+        return NULL;
+     }
+
+   surf = calloc(1, sizeof(Evas_GL_Surface));
+   if (!surf)
+     {
+        _evas_gl_internal_error_set(evas_gl, EVAS_GL_BAD_ALLOC);
+        return NULL;
+     }
+
+   surf->data = evas_gl->evas->engine.func->gl_pbuffer_surface_create
+     (evas_gl->evas->engine.data.output, cfg, w, h, attrib_list);
+   if (!surf->data)
+     {
+        ERR("Engine failed to create a PBuffer!");
+        free(surf);
+        return NULL;
+     }
+
+   // Keep track of the surface creations
+   LKL(evas_gl->lck);
+   evas_gl->surfaces = eina_list_prepend(evas_gl->surfaces, surf);
+   LKU(evas_gl->lck);
 
    return surf;
 }
@@ -136,6 +324,7 @@ evas_gl_surface_destroy(Evas_GL *evas_gl, Evas_GL_Surface *surf)
    if (!surf)
      {
         ERR("Trying to destroy a NULL surface pointer!");
+        _evas_gl_internal_error_set(evas_gl, EVAS_GL_BAD_SURFACE);
         return;
      }
 
@@ -143,7 +332,9 @@ evas_gl_surface_destroy(Evas_GL *evas_gl, Evas_GL_Surface *surf)
    evas_gl->evas->engine.func->gl_surface_destroy(evas_gl->evas->engine.data.output, surf->data);
 
    // Remove it from the list
+   LKL(evas_gl->lck);
    evas_gl->surfaces = eina_list_remove(evas_gl->surfaces, surf);
+   LKU(evas_gl->lck);
 
    // Delete the object
    free(surf);
@@ -151,7 +342,8 @@ evas_gl_surface_destroy(Evas_GL *evas_gl, Evas_GL_Surface *surf)
 }
 
 EAPI Evas_GL_Context *
-evas_gl_context_create(Evas_GL *evas_gl, Evas_GL_Context *share_ctx)
+evas_gl_context_version_create(Evas_GL *evas_gl, Evas_GL_Context *share_ctx,
+                               Evas_GL_Context_Version version)
 {
    Evas_GL_Context *ctx;
 
@@ -160,23 +352,29 @@ evas_gl_context_create(Evas_GL *evas_gl, Evas_GL_Context *share_ctx)
    return NULL;
    MAGIC_CHECK_END();
 
+   if ((version != EVAS_GL_GLES_1_X) && (version != EVAS_GL_GLES_2_X))
+     {
+        ERR("Can not create an OpenGL-ES %d.x context (not supported).",
+            (int) version);
+        _evas_gl_internal_error_set(evas_gl, EVAS_GL_BAD_PARAMETER);
+        return NULL;
+     }
+
    // Allocate a context object
    ctx = calloc(1, sizeof(Evas_GL_Context));
    if (!ctx)
      {
         ERR("Unable to create a Evas_GL_Context object");
+        _evas_gl_internal_error_set(evas_gl, EVAS_GL_BAD_ALLOC);
         return NULL;
      }
 
    // Call engine->gl_create_context
+   ctx->version = version;
    if (share_ctx)
-     {
-        ctx->data = evas_gl->evas->engine.func->gl_context_create(evas_gl->evas->engine.data.output, share_ctx->data);
-     }
+     ctx->data = evas_gl->evas->engine.func->gl_context_create(evas_gl->evas->engine.data.output, share_ctx->data, version);
    else
-     {
-        ctx->data = evas_gl->evas->engine.func->gl_context_create(evas_gl->evas->engine.data.output, NULL);
-     }
+     ctx->data = evas_gl->evas->engine.func->gl_context_create(evas_gl->evas->engine.data.output, NULL, version);
 
    // Set a few variables
    if (!ctx->data)
@@ -187,10 +385,17 @@ evas_gl_context_create(Evas_GL *evas_gl, Evas_GL_Context *share_ctx)
      }
 
    // Keep track of the context creations
+   LKL(evas_gl->lck);
    evas_gl->contexts = eina_list_prepend(evas_gl->contexts, ctx);
+   LKU(evas_gl->lck);
 
    return ctx;
+}
 
+EAPI Evas_GL_Context *
+evas_gl_context_create(Evas_GL *evas_gl, Evas_GL_Context *share_ctx)
+{
+   return evas_gl_context_version_create(evas_gl, share_ctx, EVAS_GL_GLES_2_X);
 }
 
 EAPI void
@@ -204,6 +409,7 @@ evas_gl_context_destroy(Evas_GL *evas_gl, Evas_GL_Context *ctx)
    if (!ctx)
      {
         ERR("Trying to destroy a NULL context pointer!");
+        _evas_gl_internal_error_set(evas_gl, EVAS_GL_BAD_CONTEXT);
         return;
      }
 
@@ -211,7 +417,9 @@ evas_gl_context_destroy(Evas_GL *evas_gl, Evas_GL_Context *ctx)
    evas_gl->evas->engine.func->gl_context_destroy(evas_gl->evas->engine.data.output, ctx->data);
 
    // Remove it from the list
+   LKL(evas_gl->lck);
    evas_gl->contexts = eina_list_remove(evas_gl->contexts, ctx);
+   LKU(evas_gl->lck);
 
    // Delete the object
    free(ctx);
@@ -226,7 +434,7 @@ evas_gl_make_current(Evas_GL *evas_gl, Evas_GL_Surface *surf, Evas_GL_Context *c
    MAGIC_CHECK(evas_gl, Evas_GL, MAGIC_EVAS_GL);
    return EINA_FALSE;
    MAGIC_CHECK_END();
-   
+
    if ((surf) && (ctx))
      ret = (Eina_Bool)evas_gl->evas->engine.func->gl_make_current(evas_gl->evas->engine.data.output, surf->data, ctx->data);
    else if ((!surf) && (!ctx))
@@ -234,30 +442,93 @@ evas_gl_make_current(Evas_GL *evas_gl, Evas_GL_Surface *surf, Evas_GL_Context *c
    else
      {
         ERR("Bad match between surface: %p and context: %p", surf, ctx);
+        _evas_gl_internal_error_set(evas_gl, EVAS_GL_BAD_MATCH);
         return EINA_FALSE;
      }
 
    return ret;
 }
 
+EAPI Evas_GL_Context *
+evas_gl_current_context_get(Evas_GL *evas_gl)
+{
+   Evas_GL_Context *comp;
+   void *internal_ctx;
+   Eina_List *li;
+
+   // Magic
+   MAGIC_CHECK(evas_gl, Evas_GL, MAGIC_EVAS_GL);
+   return NULL;
+   MAGIC_CHECK_END();
+
+   internal_ctx = evas_gl->evas->engine.func->gl_current_context_get(evas_gl->evas->engine.data.output);
+   if (!internal_ctx)
+     return NULL;
+
+   LKL(evas_gl->lck);
+   EINA_LIST_FOREACH(evas_gl->contexts, li, comp)
+     {
+        if (comp->data == internal_ctx)
+          {
+             LKU(evas_gl->lck);
+             return comp;
+          }
+     }
+
+   ERR("The currently bound context could not be found.");
+   LKU(evas_gl->lck);
+   return NULL;
+}
+
+EAPI Evas_GL_Surface *
+evas_gl_current_surface_get(Evas_GL *evas_gl)
+{
+   Evas_GL_Surface *comp;
+   void *internal_sfc;
+   Eina_List *li;
+
+   // Magic
+   MAGIC_CHECK(evas_gl, Evas_GL, MAGIC_EVAS_GL);
+   return NULL;
+   MAGIC_CHECK_END();
+
+   internal_sfc = evas_gl->evas->engine.func->gl_current_surface_get(evas_gl->evas->engine.data.output);
+   if (!internal_sfc)
+     return NULL;
+
+   LKL(evas_gl->lck);
+   EINA_LIST_FOREACH(evas_gl->surfaces, li, comp)
+     {
+        if (comp->data == internal_sfc)
+          {
+             LKU(evas_gl->lck);
+             return comp;
+          }
+     }
+
+   ERR("The currently bound surface could not be found.");
+   LKU(evas_gl->lck);
+   return NULL;
+}
+
 EAPI const char *
 evas_gl_string_query(Evas_GL *evas_gl, int name)
 {
    MAGIC_CHECK(evas_gl, Evas_GL, MAGIC_EVAS_GL);
-   return EINA_FALSE;
+   return "";
    MAGIC_CHECK_END();
 
-   return (const char *)evas_gl->evas->engine.func->gl_string_query(evas_gl->evas->engine.data.output, name);
+   return evas_gl->evas->engine.func->gl_string_query(evas_gl->evas->engine.data.output, name);
 }
 
 EAPI Evas_GL_Func
 evas_gl_proc_address_get(Evas_GL *evas_gl, const char *name)
 {
    MAGIC_CHECK(evas_gl, Evas_GL, MAGIC_EVAS_GL);
-   return EINA_FALSE;
+   return NULL;
    MAGIC_CHECK_END();
 
-   return (Evas_GL_Func)evas_gl->evas->engine.func->gl_proc_address_get(evas_gl->evas->engine.data.output, name);
+   return (Evas_GL_Func)evas_gl->evas->engine.func->gl_proc_address_get(evas_gl->evas->engine.data.output, _evas_gl_ext_funcs, name);
 }
 
 EAPI Eina_Bool
@@ -267,9 +538,17 @@ evas_gl_native_surface_get(Evas_GL *evas_gl, Evas_GL_Surface *surf, Evas_Native_
    return EINA_FALSE;
    MAGIC_CHECK_END();
 
-   if ((!surf) || (!ns))
+   if (!surf)
+     {
+        ERR("Invalid surface!");
+        _evas_gl_internal_error_set(evas_gl, EVAS_GL_BAD_SURFACE);
+        return EINA_FALSE;
+     }
+
+   if (!ns)
      {
         ERR("Invalid input parameters!");
+        _evas_gl_internal_error_set(evas_gl, EVAS_GL_BAD_PARAMETER);
         return EINA_FALSE;
      }
 
@@ -284,6 +563,192 @@ evas_gl_api_get(Evas_GL *evas_gl)
    return NULL;
    MAGIC_CHECK_END();
 
-   return (Evas_GL_API*)evas_gl->evas->engine.func->gl_api_get(evas_gl->evas->engine.data.output);
-
+   return (Evas_GL_API*)evas_gl->evas->engine.func->gl_api_get(evas_gl->evas->engine.data.output, EVAS_GL_GLES_2_X);
 }
+
+EAPI Evas_GL_API *
+evas_gl_context_api_get(Evas_GL *evas_gl, Evas_GL_Context *ctx)
+{
+   MAGIC_CHECK(evas_gl, Evas_GL, MAGIC_EVAS_GL);
+   return NULL;
+   MAGIC_CHECK_END();
+
+   if (!ctx)
+     {
+        _evas_gl_internal_error_set(evas_gl, EVAS_GL_BAD_CONTEXT);
+        return NULL;
+     }
+
+   return (Evas_GL_API*)evas_gl->evas->engine.func->gl_api_get(evas_gl->evas->engine.data.output, ctx->version);
+}
+
+EAPI int
+evas_gl_rotation_get(Evas_GL *evas_gl)
+{
+   MAGIC_CHECK(evas_gl, Evas_GL, MAGIC_EVAS_GL);
+   return 0;
+   MAGIC_CHECK_END();
+
+   if (!evas_gl->evas->engine.func->gl_rotation_angle_get)
+     return 0;
+
+   return evas_gl->evas->engine.func->gl_rotation_angle_get(evas_gl->evas->engine.data.output);
+}
+
+EAPI int
+evas_gl_error_get(Evas_GL *evas_gl)
+{
+   int err;
+
+   MAGIC_CHECK(evas_gl, Evas_GL, MAGIC_EVAS_GL);
+   return EVAS_GL_NOT_INITIALIZED;
+   MAGIC_CHECK_END();
+
+   if ((err = _evas_gl_internal_error_get(evas_gl)) != EVAS_GL_SUCCESS)
+     goto end;
+
+   if (!evas_gl->evas->engine.func->gl_error_get)
+     err = EVAS_GL_NOT_INITIALIZED;
+   else
+     err = evas_gl->evas->engine.func->gl_error_get(evas_gl->evas->engine.data.output);
+
+end:
+   /* Call to evas_gl_error_get() should set error to EVAS_GL_SUCCESS */
+   _evas_gl_internal_error_set(evas_gl, EVAS_GL_SUCCESS);
+   return err;
+}
+
+EAPI void *
+evas_gl_context_native_get(Evas_GL_Context *ctx)
+{
+   if (!ctx) return NULL;
+
+   return ctx->data;
+}
+
+EAPI Eina_Bool
+evas_gl_surface_query(Evas_GL *evas_gl, Evas_GL_Surface *surface, int attribute, void *value)
+{
+   if (!evas_gl) return EINA_FALSE;
+   if (!surface)
+     {
+        _evas_gl_internal_error_set(evas_gl, EVAS_GL_BAD_SURFACE);
+        return EINA_FALSE;
+     }
+
+   if (!evas_gl->evas->engine.func->gl_surface_query)
+     {
+        _evas_gl_internal_error_set(evas_gl, EVAS_GL_NOT_INITIALIZED);
+        return EINA_FALSE;
+     }
+
+   if (!value)
+     {
+        _evas_gl_internal_error_set(evas_gl, EVAS_GL_BAD_PARAMETER);
+        return EINA_FALSE;
+     }
+
+   return evas_gl->evas->engine.func->gl_surface_query
+         (evas_gl->evas->engine.data.output, surface->data, attribute, value);
+}
+
+/*-----------------------------*/
+/* Evas GL Extension Functions */
+static int
+_evas_gl_ext_buffer_age_get(Evas_GL *evas_gl)
+{
+   MAGIC_CHECK(evas_gl, Evas_GL, MAGIC_EVAS_GL);
+   return 0;
+   MAGIC_CHECK_END();
+
+   if (!evas_gl->evas->engine.func->gl_ext_buffer_age_get) return 0;
+
+   return evas_gl->evas->engine.func->gl_ext_buffer_age_get(evas_gl->evas->engine.data.output);
+}
+
+static int
+_evas_gl_ext_update_region_get(Evas_GL *evas_gl, int *x, int *y, int *w, int *h)
+{
+   MAGIC_CHECK(evas_gl, Evas_GL, MAGIC_EVAS_GL);
+   return 0;
+   MAGIC_CHECK_END();
+
+   if (!evas_gl->evas->engine.func->gl_ext_update_region_get) return 0;
+
+   return evas_gl->evas->engine.func->gl_ext_update_region_get(evas_gl->evas->engine.data.output, x, y, w, h);
+}
+
+static Evas_GL_Surface *
+_evas_gl_ext_surface_from_native_create(Evas_GL *evas_gl, Evas_GL_Config *config, int target, void *native)
+{
+   Evas_GL_Surface *surf;
+
+   MAGIC_CHECK(evas_gl, Evas_GL, MAGIC_EVAS_GL);
+   return NULL;
+   MAGIC_CHECK_END();
+
+   if (!evas_gl->evas->engine.func->gl_ext_surface_from_native_create)
+     {
+        ERR("API Not supported with this backend of Evas GL");
+        _evas_gl_internal_error_set(evas_gl, EVAS_GL_NOT_INITIALIZED);
+        return NULL;
+     }
+
+   if (!config)
+     {
+        ERR("Invalid Config Pointer!");
+        _evas_gl_internal_error_set(evas_gl, EVAS_GL_BAD_CONFIG);
+        return NULL;
+     }
+
+   if (!target)
+     {
+        ERR("Invalid Target!");
+        _evas_gl_internal_error_set(evas_gl, EVAS_GL_BAD_PARAMETER);
+        return NULL;
+     }
+
+   if (!native)
+     {
+        ERR("Invalid Native Buffer Pointer!");
+        _evas_gl_internal_error_set(evas_gl, EVAS_GL_BAD_NATIVE_PIXMAP);
+        return NULL;
+     }
+
+   surf = calloc(1, sizeof(Evas_GL_Surface));
+
+   if (!surf)
+     {
+        _evas_gl_internal_error_set(evas_gl, EVAS_GL_BAD_ALLOC);
+        return NULL;
+     }
+
+   surf->data = evas_gl->evas->engine.func->gl_ext_surface_from_native_create(evas_gl->evas->engine.data.output, config, target, native);
+
+   if (!surf->data)
+     {
+        ERR("Failed creating a surface from the engine.");
+        free(surf);
+        return NULL;
+     }
+
+   // Keep track of the surface creations
+   LKL(evas_gl->lck);
+   evas_gl->surfaces = eina_list_prepend(evas_gl->surfaces, surf);
+   LKU(evas_gl->lck);
+
+   return surf;
+}
+
+static int _evas_gl_ext_surface_is_texture(Evas_GL *evas_gl, Evas_GL_Surface *surf)
+{
+   MAGIC_CHECK(evas_gl, Evas_GL, MAGIC_EVAS_GL);
+   return -1;
+   MAGIC_CHECK_END();
+
+   if (!evas_gl->evas->engine.func->gl_ext_surface_is_texture) return -1;
+
+   return evas_gl->evas->engine.func->gl_ext_surface_is_texture(evas_gl->evas->engine.data.output, surf->data);
+}
+
+

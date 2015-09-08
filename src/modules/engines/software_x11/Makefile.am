@@ -3,7 +3,12 @@ MAINTAINERCLEANFILES = Makefile.in
 
 if BUILD_ENGINE_SOFTWARE_X11
 
-SOFTWARE_X11_SOURCES = evas_engine.c
+SOFTWARE_X11_SOURCES = \
+evas_engine.c \
+evas_x_egl.c \
+evas_native_buffer.c \
+evas_native_tbm.c \
+evas_x_egl.h
 
 if BUILD_ENGINE_SOFTWARE_XLIB
 
@@ -15,7 +20,7 @@ AM_CPPFLAGS = \
 -I$(top_srcdir)/src/modules/engines \
 @FREETYPE_CFLAGS@ \
 @PIXMAN_CFLAGS@ \
-@EINA_CFLAGS@ \
+@EVAS_GENERAL_CFLAGS@ \
 @FRIBIDI_CFLAGS@ \
 @evas_engine_software_xlib_cflags@
 
@@ -23,9 +28,15 @@ SOFTWARE_X11_SOURCES += \
 evas_xlib_outbuf.c \
 evas_xlib_buffer.c \
 evas_xlib_color.c \
-evas_xlib_main.c
+evas_xlib_image.c \
+evas_xlib_image.h \
+evas_xlib_main.c \
+evas_xlib_swapbuf.c \
+evas_xlib_swapbuf.h \
+evas_xlib_swapper.c \
+evas_xlib_swapper.h
 
-SOFTWARE_X11_LIBADD = @FREETYPE_LIBS@ @EINA_LIBS@ @evas_engine_software_xlib_libs@
+SOFTWARE_X11_LIBADD = @FREETYPE_LIBS@ @EVAS_GENERAL_LIBS@ @evas_engine_software_xlib_libs@ @dlopen_libs@
 
 endif
 
@@ -39,7 +50,7 @@ AM_CPPFLAGS = \
 -I$(top_srcdir)/src/modules/engines \
 @FREETYPE_CFLAGS@ \
 @PIXMAN_CFLAGS@ \
-@EINA_CFLAGS@ \
+@EVAS_GENERAL_CFLAGS@ \
 @evas_engine_software_xcb_cflags@
 
 SOFTWARE_X11_SOURCES += \
@@ -49,7 +60,7 @@ evas_xcb_buffer.c \
 evas_xcb_color.c \
 evas_xcb_main.c
 
-SOFTWARE_X11_LIBADD = @FREETYPE_LIBS@ @PIXMAN_LIBS@ @EINA_LIBS@ @evas_engine_software_xcb_libs@
+SOFTWARE_X11_LIBADD = @FREETYPE_LIBS@ @PIXMAN_LIBS@ @EVAS_GENERAL_LIBS@ @evas_engine_software_xcb_libs@ @dlopen_libs@
 
 endif
 

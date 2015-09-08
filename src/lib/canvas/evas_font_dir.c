@@ -16,11 +16,15 @@
 
 #include "evas_common.h"
 #include "evas_private.h"
+// TIZEN ONLY(20140314): Remove warning message casusing by setlocale.
+#include "locale.h"
+//
 
 /* font dir cache */
 static Eina_Hash *font_dirs = NULL;
 static Eina_List *fonts_cache = NULL;
 static Eina_List *fonts_zero = NULL;
+static Eina_List *global_font_path = NULL;
 
 typedef struct _Fndat Fndat;
 
@@ -50,9 +54,37 @@ static Evas_Font_Dir *object_text_font_cache_dir_add(char *dir);
 static void object_text_font_cache_dir_del(char *dir, Evas_Font_Dir *fd);
 static int evas_object_text_font_string_parse(char *buffer, char dest[14][256]);
 
+// TIZEN ONLY(20140207): Remove our own font config.
+/*
 #ifdef HAVE_FONTCONFIG
-static int fc_init = 0;
+static FcConfig *fc_config = NULL;
 #endif
+*/
+//
+
+static void
+evas_font_init(void)
+{
+   DBG("ENTER:: evas_font_init");
+   static Eina_Bool fc_init = EINA_FALSE;
+   if (fc_init)
+   {
+      DBG("RETURN:: evas_font_init");
+      return;
+   }
+   fc_init = EINA_TRUE;
+#ifdef HAVE_FONTCONFIG
+   // TIZEN ONLY(20140207): Remove our own font config.
+   //fc_config = FcInitLoadConfigAndFonts();
+   if (!FcInit())
+     {
+        fc_init = EINA_FALSE;
+        ERR("Fc-config failed to initialize!");
+     }
+    DBG("DONE:: evas_font_init");
+   //
+#endif
+}
 
 void
 evas_font_dir_cache_free(void)
@@ -64,16 +96,16 @@ evas_font_dir_cache_free(void)
    font_dirs = NULL;
 
 #ifdef HAVE_FONTCONFIG
-/* this is bad i got a:
- * fccache.c:512: FcCacheFini: Assertion fcCacheChains[i] == ((void *)0)' failed.   
- * 
- * all i can do for now is shut this puppy down. butthat breaks, so disable
- * it as in reality - there is little reason to care about the memory not
- * being freed etc.
- * 
- *   fc_init--;
- *   if (fc_init == 0) FcFini();
- */
+   // TIZEN ONLY(20140207): Remove our own font config.
+   /*
+   if (fc_config)
+     {
+        FcConfigDestroy(fc_config);
+        fc_config = NULL;
+     }
+   */
+   FcFini();
+   //
 #endif
 }
 
@@ -213,22 +245,6 @@ evas_font_free(Evas *evas, void *font)
      }
 }
 
-static void
-evas_font_init(void)
-{
-   static int done = 0;
-   if (done) return;
-   done = 1;
-#ifdef HAVE_FONTCONFIG
-   fc_init++;
-   if (fc_init == 1)
-     {
-        FcInit();
-        FcConfigEnableHome(1);
-     }
-#endif
-}
-
 #ifdef HAVE_FONTCONFIG
 static Evas_Font_Set *
 evas_load_fontconfig(Evas *evas, FcFontSet *set, int size,
@@ -263,6 +279,10 @@ static int _fc_slant_map[] =
    FC_SLANT_ITALIC
 };
 
+/* Apparently EXTRABLACK is not always available, hardcode. */
+# ifndef FC_WEIGHT_EXTRABLACK
+#  define FC_WEIGHT_EXTRABLACK 215
+# endif
 static int _fc_weight_map[] =
 {
    FC_WEIGHT_NORMAL,
@@ -431,6 +451,8 @@ evas_font_desc_dup(const Evas_Font_Description *fdesc)
    new->ref = 1;
    new->is_new = EINA_TRUE;
    new->name = eina_stringshare_ref(new->name);
+   new->fallbacks = eina_stringshare_ref(new->fallbacks);
+   new->lang = eina_stringshare_ref(new->lang);
 
    return new;
 }
@@ -493,7 +515,7 @@ evas_font_load(Evas *evas, Evas_Font_Description *fdesc, const char *source, Eva
 #endif
 
    Evas_Font_Set *font = NULL;
-   Eina_List *fonts, *l;
+   Eina_List *fonts, *l, *l_next;
    Fndat *fd;
    Fndat *found_fd = NULL;
    char *nm;
@@ -504,8 +526,19 @@ evas_font_load(Evas *evas, Evas_Font_Description *fdesc, const char *source, Eva
 
    if (fdesc->slant != EVAS_FONT_SLANT_NORMAL)
       wanted_rend |= FONT_REND_SLANT;
-   if (fdesc->weight == EVAS_FONT_WEIGHT_BOLD)
+   if (fdesc->weight >= EVAS_FONT_WEIGHT_BOLD)
       wanted_rend |= FONT_REND_WEIGHT;
+
+   // TIZEN ONLY(20140219)
+   // If there is no description for language, get the locale string.
+   if (!fdesc->lang)
+     {
+        char *locale = (char *)setlocale(0, NULL);
+
+        if (locale)
+          fdesc->lang = eina_stringshare_add(locale);
+     }
+   //
 
    evas_font_init();
 
@@ -541,7 +574,7 @@ evas_font_load(Evas *evas, Evas_Font_Description *fdesc, const char *source, Eva
      }
 #endif
 
-   EINA_LIST_FOREACH(fonts_zero, l, fd)
+   EINA_LIST_FOREACH_SAFE(fonts_zero, l, l_next, fd)
      {
         if (!evas_font_desc_cmp(fdesc, fd->fdesc))
 	  {
@@ -599,7 +632,7 @@ evas_font_load(Evas *evas, Evas_Font_Description *fdesc, const char *source, Eva
 				 int fsize = 0;
 
 				 fdata = eet_read(ef, nm, &fsize);
-				 if ((fdata) && (fsize > 0))
+				 if (fdata)
 				   {
 				      font = evas->engine.func->font_memory_load(evas->engine.data.output, source, nm, size, fdata, fsize, wanted_rend);
 				      free(fdata);
@@ -631,6 +664,21 @@ evas_font_load(Evas *evas, Evas_Font_Description *fdesc, const char *source, Eva
 				 if (font) break;
 			      }
 			 }
+
+                       if (!font)
+                         {
+                            EINA_LIST_FOREACH(global_font_path, ll, dir)
+                              {
+                                 const char *f_file;
+
+                                 f_file = evas_font_dir_cache_find(dir, (char *)nm);
+                                 if (f_file)
+                                   {
+                                      font = evas->engine.func->font_load(evas->engine.data.output, f_file, size, wanted_rend);
+                                      if (font) break;
+                                   }
+                              }
+                         }
 		    }
 #ifdef BUILD_FONT_LOADER_EET
 	       }
@@ -663,9 +711,9 @@ evas_font_load(Evas *evas, Evas_Font_Description *fdesc, const char *source, Eva
 				 if ((fdata) && (fsize > 0))
 				   {
 				      ok = evas->engine.func->font_memory_add(evas->engine.data.output, font, source, nm, size, fdata, fsize, wanted_rend);
-				      free(fdata);
 				   }
 				 eet_close(ef);
+                                 free(fdata);
 			      }
 			 }
 		       else
@@ -682,6 +730,7 @@ evas_font_load(Evas *evas, Evas_Font_Description *fdesc, const char *source, Eva
 		    {
 		       Eina_List *ll;
 		       char *dir;
+		       RGBA_Font *fn = NULL;
 
 		       EINA_LIST_FOREACH(evas->font_path, ll, dir)
 			 {
@@ -690,10 +739,27 @@ evas_font_load(Evas *evas, Evas_Font_Description *fdesc, const char *source, Eva
 			    f_file = evas_font_dir_cache_find(dir, (char *)nm);
 			    if (f_file)
 			      {
-				 if (evas->engine.func->font_add(evas->engine.data.output, font, f_file, size, wanted_rend))
+				 fn = (RGBA_Font *)evas->engine.func->font_add(evas->engine.data.output, font, f_file, size, wanted_rend);
+				 if (fn)
 				   break;
 			      }
 			 }
+
+                       if (!fn)
+                         {
+                            EINA_LIST_FOREACH(global_font_path, ll, dir)
+                              {
+                                 const char *f_file;
+
+                                 f_file = evas_font_dir_cache_find(dir, (char *)nm);
+                                 if (f_file)
+                                   {
+                                      fn = (RGBA_Font *)evas->engine.func->font_add(evas->engine.data.output, font, f_file, size, wanted_rend);
+                                      if (fn)
+                                         break;
+                                   }
+                              }
+                         }
 		    }
 #ifdef BUILD_FONT_LOADER_EET
 	       }
@@ -743,11 +809,17 @@ evas_font_load(Evas *evas, Evas_Font_Description *fdesc, const char *source, Eva
         if (fdesc->lang)
            FcPatternAddString (p_nm, FC_LANG, (FcChar8 *) fdesc->lang);
 
+        // TIZEN ONLY(20140207): Remove our own font config.
+	//FcConfigSubstitute(fc_config, p_nm, FcMatchPattern);
 	FcConfigSubstitute(NULL, p_nm, FcMatchPattern);
+        //
 	FcDefaultSubstitute(p_nm);
 
 	/* do matching */
+        // TIZEN ONLY(20140207): Remove our own font config.
+	//set = FcFontSort(fc_config, p_nm, FcTrue, NULL, &res);
 	set = FcFontSort(NULL, p_nm, FcTrue, NULL, &res);
+        //
 	if (!set)
 	  {
 	     ERR("No fontconfig font matches '%s'. It was the last resource, no font found!", fdesc->name);
@@ -813,7 +885,10 @@ evas_font_dir_available_list(const Evas *evas)
    p = FcPatternCreate();
    os = FcObjectSetBuild(FC_FAMILY, FC_STYLE, NULL);
 
+   // TIZEN ONLY(20140207): Remove our own font config.
+   //if (p && os) set = FcFontList(fc_config, p, os);
    if (p && os) set = FcFontList(NULL, p, os);
+   //
 
    if (p) FcPatternDestroy(p);
    if (os) FcObjectSetDestroy(os);
@@ -834,24 +909,44 @@ evas_font_dir_available_list(const Evas *evas)
 #endif
 
    /* Add fonts in evas font_path*/
-   if (!evas->font_path)
-     return available;
-
-   if (!font_dirs) font_dirs = eina_hash_string_superfast_new(NULL);
-
-   EINA_LIST_FOREACH(evas->font_path, l, dir)
+   if (evas->font_path)
      {
-	Evas_Font_Dir *fd;
+        if (!font_dirs) font_dirs = eina_hash_string_superfast_new(NULL);
 
-	fd = eina_hash_find(font_dirs, dir);
-	fd = object_text_font_cache_dir_update(dir, fd);
-	if (fd && fd->aliases)
-	  {
-	     Evas_Font_Alias *fa;
+        EINA_LIST_FOREACH(evas->font_path, l, dir)
+          {
+             Evas_Font_Dir *fd;
 
-	     EINA_LIST_FOREACH(fd->aliases, ll, fa)
-	       available = eina_list_append(available, eina_stringshare_add((char *)fa->alias));
-	  }
+             fd = eina_hash_find(font_dirs, dir);
+             fd = object_text_font_cache_dir_update(dir, fd);
+             if (fd && fd->aliases)
+               {
+                  Evas_Font_Alias *fa;
+
+                  EINA_LIST_FOREACH(fd->aliases, ll, fa)
+                     available = eina_list_append(available, eina_stringshare_add((char *)fa->alias));
+               }
+          }
+     }
+
+   if (global_font_path)
+     {
+        if (!font_dirs) font_dirs = eina_hash_string_superfast_new(NULL);
+
+        EINA_LIST_FOREACH(global_font_path, l, dir)
+          {
+             Evas_Font_Dir *fd;
+
+             fd = eina_hash_find(font_dirs, dir);
+             fd = object_text_font_cache_dir_update(dir, fd);
+             if (fd && fd->aliases)
+               {
+                  Evas_Font_Alias *fa;
+
+                  EINA_LIST_FOREACH(fd->aliases, ll, fa)
+                     available = eina_list_append(available, eina_stringshare_add((char *)fa->alias));
+               }
+          }
      }
 
    return available;
@@ -886,8 +981,8 @@ object_text_font_cache_dir_update(char *dir, Evas_Font_Dir *fd)
 	mt = evas_file_modified_time(dir);
 	if (mt != fd->dir_mod_time)
 	  {
-	     object_text_font_cache_dir_del(dir, fd);
 	     eina_hash_del(font_dirs, dir, fd);
+	     object_text_font_cache_dir_del(dir, fd);
 	  }
 	else
 	  {
@@ -898,8 +993,8 @@ object_text_font_cache_dir_update(char *dir, Evas_Font_Dir *fd)
 		  free(tmp);
 		  if (mt != fd->fonts_dir_mod_time)
 		    {
-		       object_text_font_cache_dir_del(dir, fd);
 		       eina_hash_del(font_dirs, dir, fd);
+		       object_text_font_cache_dir_del(dir, fd);
 		    }
 		  else
 		    {
@@ -911,8 +1006,8 @@ object_text_font_cache_dir_update(char *dir, Evas_Font_Dir *fd)
 			 }
 		       if (mt != fd->fonts_alias_mod_time)
 			 {
-			    object_text_font_cache_dir_del(dir, fd);
 			    eina_hash_del(font_dirs, dir, fd);
+			    object_text_font_cache_dir_del(dir, fd);
 			 }
 		       else
 			 return fd;
@@ -1229,6 +1324,8 @@ evas_font_path_append(Evas *e, const char *path)
 
    if (!path) return;
    e->font_path = eina_list_append(e->font_path, eina_stringshare_add(path));
+
+   evas_font_init();
 }
 
 EAPI void
@@ -1240,6 +1337,8 @@ evas_font_path_prepend(Evas *e, const char *path)
 
    if (!path) return;
    e->font_path = eina_list_prepend(e->font_path, eina_stringshare_add(path));
+
+   evas_font_init();
 }
 
 EAPI const Eina_List *
@@ -1249,6 +1348,51 @@ evas_font_path_list(const Evas *e)
    return NULL;
    MAGIC_CHECK_END();
    return e->font_path;
+}
+
+EAPI void
+evas_font_path_global_append(const char *path)
+{
+   if (!path) return;
+   global_font_path = eina_list_append(global_font_path, eina_stringshare_add(path));
+#ifdef HAVE_FONTCONFIG
+   //if (fc_config)
+   //  FcConfigAppFontAddDir(fc_config, (const FcChar8 *) path);
+   FcConfigAppFontAddDir(NULL, (const FcChar8 *) path);
+#endif
+}
+
+EAPI void
+evas_font_path_global_prepend(const char *path)
+{
+   if (!path) return;
+   global_font_path = eina_list_prepend(global_font_path, eina_stringshare_add(path));
+#ifdef HAVE_FONTCONFIG
+   //if (fc_config)
+   //  FcConfigAppFontAddDir(fc_config, (const FcChar8 *) path);
+   FcConfigAppFontAddDir(NULL, (const FcChar8 *) path);
+#endif
+}
+
+EAPI void
+evas_font_path_global_clear(void)
+{
+   while (global_font_path)
+     {
+        eina_stringshare_del(global_font_path->data);
+        global_font_path = eina_list_remove(global_font_path, global_font_path->data);
+     }
+#ifdef HAVE_FONTCONFIG
+   //if (fc_config)
+   //  FcConfigAppFontClear(fc_config);
+   FcConfigAppFontClear(NULL);
+#endif
+}
+
+EAPI const Eina_List *
+evas_font_path_global_list(void)
+{
+   return global_font_path;
 }
 
 static void
@@ -1358,5 +1502,22 @@ evas_font_available_list_free(Evas *e, Eina_List *available)
    MAGIC_CHECK_END();
 
    evas_font_dir_available_list_free(available);
+}
+
+EAPI void
+evas_font_reinit(void)
+{
+   DBG("ENTER:: evas_font_reinit");
+   Eina_List *l;
+   char *path;
+
+   FcInitReinitialize();
+   DBG("FcInitReinitialize is done!");
+   // TIZEN ONLY(20140207): Remove our own font config.
+   //fc_config = FcConfigGetCurrent();
+   //
+   EINA_LIST_FOREACH(global_font_path, l, path)
+      FcConfigAppFontAddDir(NULL, (const FcChar8 *) path);
+   DBG("DONE:: evas_font_reinit");
 }
 

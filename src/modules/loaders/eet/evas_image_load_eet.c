@@ -20,11 +20,33 @@ Evas_Image_Load_Func evas_image_load_eet_func =
   EINA_FALSE
 };
 
+static const Evas_Colorspace cspaces_etc1[2] = {
+  EVAS_COLORSPACE_ETC1,
+  EVAS_COLORSPACE_ARGB8888
+};
+
+static const Evas_Colorspace cspaces_etc2_rgb[2] = {
+  EVAS_COLORSPACE_RGB8_ETC2,
+  EVAS_COLORSPACE_ARGB8888
+};
+
+static const Evas_Colorspace cspaces_etc2_rgba[2] = {
+  EVAS_COLORSPACE_RGBA8_ETC2_EAC,
+  EVAS_COLORSPACE_ARGB8888
+};
+
+static const Evas_Colorspace cspaces_etc1_alpha[2] = {
+   EVAS_COLORSPACE_ETC1_ALPHA,
+   EVAS_COLORSPACE_ARGB8888
+};
+
 
 static Eina_Bool
 evas_image_load_file_head_eet(Image_Entry *ie, const char *file, const char *key, int *error)
 {
-   int                  alpha, compression, quality, lossy;
+   int                  alpha, compression, quality;
+   Eet_Image_Encoding   lossy;
+   const Eet_Colorspace *cspaces = NULL;
    unsigned int         w, h;
    Eet_File            *ef;
    int                  ok;
@@ -54,6 +76,39 @@ evas_image_load_file_head_eet(Image_Entry *ie, const char *file, const char *key
 	*error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
 	goto on_error;
      }
+
+   if (eet_data_image_colorspace_get(ef, key, NULL, &cspaces))
+     {
+        if (cspaces)
+          {
+             unsigned int i;
+
+             for (i = 0; cspaces[i] != EET_COLORSPACE_ARGB8888; i++)
+               {
+                  if (cspaces[i] == EET_COLORSPACE_ETC1)
+                    {
+                       ie->cspaces = cspaces_etc1;
+                       break;
+                    }
+                  else if (cspaces[i] == EET_COLORSPACE_RGB8_ETC2)
+                    {
+                       ie->cspaces = cspaces_etc2_rgb;
+                       break;
+                    }
+                  else if (cspaces[i] == EET_COLORSPACE_RGBA8_ETC2_EAC)
+                    {
+                       ie->cspaces = cspaces_etc2_rgba;
+                       break;
+                    }
+                  else if (cspaces[i] == EET_COLORSPACE_ETC1_ALPHA)
+                    {
+                       ie->cspaces = cspaces_etc1_alpha;
+                       break;
+                    }
+               }
+          }
+     }
+
    if (alpha) ie->flags.alpha = 1;
    ie->w = w;
    ie->h = h;
@@ -69,11 +124,25 @@ Eina_Bool
 evas_image_load_file_data_eet(Image_Entry *ie, const char *file, const char *key, int *error)
 {
    unsigned int         w, h;
-   int                  alpha, compression, quality, lossy, ok;
+   int                  alpha, compression, quality, ok;
    Eet_File            *ef;
    DATA32              *body, *p, *end, *data;
    DATA32               nas = 0;
    Eina_Bool		res = EINA_FALSE;
+   Eet_Colorspace       cspace;
+   Eet_Image_Encoding   lossy;
+
+   switch (ie->space)
+     {
+      case EVAS_COLORSPACE_ETC1: cspace = EET_COLORSPACE_ETC1; break;
+      case EVAS_COLORSPACE_ETC1_ALPHA: cspace = EET_COLORSPACE_ETC1_ALPHA; break;
+      case EVAS_COLORSPACE_RGB8_ETC2: cspace = EET_COLORSPACE_RGB8_ETC2; break;
+      case EVAS_COLORSPACE_RGBA8_ETC2_EAC: cspace = EET_COLORSPACE_RGBA8_ETC2_EAC; break;
+      case EVAS_COLORSPACE_ARGB8888: cspace = EET_COLORSPACE_ARGB8888; break;
+      default:
+        *error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
+        return EINA_FALSE;
+     }
 
    if (!key)
      {
@@ -110,15 +179,17 @@ evas_image_load_file_data_eet(Image_Entry *ie, const char *file, const char *key
 	*error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
 	goto on_error;
      }
-   ok = eet_data_image_read_to_surface(ef, key, 0, 0,
-				       data, w, h, w * 4,
-				       &alpha, &compression, &quality, &lossy);
+
+   ok = eet_data_image_read_to_cspace_surface_cipher(ef, key, NULL, 0, 0,
+                                                     data, w, h, w * 4,
+                                                     cspace,
+                                                     &alpha, &compression, &quality, &lossy);
    if (!ok)
      {
 	*error = EVAS_LOAD_ERROR_GENERIC;
 	goto on_error;
      }
-   if (alpha)
+   if (alpha && (cspace == EET_COLORSPACE_ARGB8888))
      {
 	ie->flags.alpha = 1;
 

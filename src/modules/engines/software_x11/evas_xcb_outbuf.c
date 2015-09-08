@@ -87,7 +87,8 @@ Outbuf *
 evas_software_xcb_outbuf_setup(int w, int h, int rot, Outbuf_Depth depth, xcb_connection_t *conn, xcb_screen_t *screen, xcb_drawable_t draw, xcb_visualtype_t *vis, xcb_colormap_t cmap, int xdepth, Eina_Bool grayscale, int max_colors, xcb_drawable_t mask, Eina_Bool shape_dither, Eina_Bool alpha) 
 {
    Outbuf *buf = NULL;
-   Gfx_Func_Convert func_conv= NULL;
+   Gfx_Func_Convert func_conv = NULL;
+   Xcb_Output_Buffer *xob;
    const xcb_setup_t *setup;
 
    if (!(buf = calloc(1, sizeof(Outbuf)))) 
@@ -108,6 +109,27 @@ evas_software_xcb_outbuf_setup(int w, int h, int rot, Outbuf_Depth depth, xcb_co
    buf->priv.destination_alpha = alpha;
    buf->priv.x11.xcb.shm = evas_software_xcb_can_do_shm(conn, screen);
 
+   xob = 
+     evas_software_xcb_output_buffer_new(buf->priv.x11.xcb.conn, 
+                                         buf->priv.x11.xcb.visual, 
+                                         buf->priv.x11.xcb.depth, 
+                                         1, 1, buf->priv.x11.xcb.shm, 
+                                         NULL);
+   if (!xob) buf->priv.x11.xcb.shm = 0;
+   xob = 
+     evas_software_xcb_output_buffer_new(buf->priv.x11.xcb.conn, 
+                                         buf->priv.x11.xcb.visual, 
+                                         buf->priv.x11.xcb.depth, 
+                                         1, 1, buf->priv.x11.xcb.shm, 
+                                         NULL);
+   if (!xob) 
+     {
+        free(buf);
+        return NULL;
+     }
+   buf->priv.x11.xcb.imdepth = evas_software_xcb_output_buffer_depth(xob);
+   evas_software_xcb_output_buffer_free(xob, EINA_FALSE);
+   
    eina_array_step_set(&buf->priv.onebuf_regions, sizeof(Eina_Array), 8);
 
 #ifdef WORDS_BIGENDIAN
@@ -259,7 +281,8 @@ evas_software_xcb_outbuf_new_region_for_update(Outbuf *buf, int x, int y, int w,
              return NULL;
           }
 
-        if (!eina_array_push(&buf->priv.onebuf_regions, rect))
+        if ((eina_array_push(&buf->priv.onebuf_regions, rect)) &&
+            (buf->priv.onebuf))
           {
              if (cx) *cx = x;
              if (cy) *cy = y;
@@ -284,8 +307,11 @@ evas_software_xcb_outbuf_new_region_for_update(Outbuf *buf, int x, int y, int w,
         alpha = ((buf->priv.x11.xcb.mask) || (buf->priv.destination_alpha));
         use_shm = buf->priv.x11.xcb.shm;
 
-        if ((buf->rot == 0) && (buf->priv.mask.r == 0xff0000) && 
-            (buf->priv.mask.g == 0x00ff00) && (buf->priv.mask.b == 0x0000ff)) 
+        if ((buf->rot == 0) &&
+            (buf->priv.x11.xcb.imdepth == 32) &&
+            (buf->priv.mask.r == 0xff0000) &&
+            (buf->priv.mask.g == 0x00ff00) &&
+            (buf->priv.mask.b == 0x0000ff))
           {
              obr->xcbob = 
                evas_software_xcb_output_buffer_new(buf->priv.x11.xcb.conn, 
@@ -424,8 +450,11 @@ evas_software_xcb_outbuf_new_region_for_update(Outbuf *buf, int x, int y, int w,
 
    use_shm = buf->priv.x11.xcb.shm;
    alpha = ((buf->priv.x11.xcb.mask) || (buf->priv.destination_alpha));
-   if ((buf->rot == 0) && (buf->priv.mask.r == 0xff0000) && 
-       (buf->priv.mask.g == 0x00ff00) && (buf->priv.mask.b == 0x0000ff)) 
+   if ((buf->rot == 0) &&
+       (buf->priv.x11.xcb.imdepth == 32) &&
+       (buf->priv.mask.r == 0xff0000) && 
+       (buf->priv.mask.g == 0x00ff00) &&
+       (buf->priv.mask.b == 0x0000ff)) 
      {
         obr->xcbob = 
           _find_xcbob(buf->priv.x11.xcb.conn, buf->priv.x11.xcb.visual, 
@@ -836,13 +865,35 @@ evas_software_xcb_outbuf_push_updated_region(Outbuf *buf, RGBA_Image *update, in
    if (data != (unsigned char *)src_data) 
      {
         if (buf->priv.pal)
-          func_conv(src_data, data, update->cache_entry.w - w, 
-                    (bpl / (buf->depth / 8)) - obr->w, 
-                    obr->w, obr->h, x, y, buf->priv.pal->lookup);
+          {
+             func_conv(src_data, data, update->cache_entry.w - w, 
+                       bpl - obr->w, obr->w, obr->h, x, y,
+                       buf->priv.pal->lookup);
+          }
         else
-          func_conv(src_data, data, update->cache_entry.w - w, 
-                    (bpl / (buf->depth / 8)) - obr->w, 
-                    obr->w, obr->h, x, y, NULL);
+          {
+             int pixelb = evas_software_xcb_output_buffer_depth(obr->xcbob) / 8;
+             int run;
+             int dstjump;
+             
+             if (pixelb == 3)
+               {
+                  run = obr->w * pixelb;
+                  dstjump = bpl - run;
+               }
+             else if ((pixelb == 2) || (pixelb == 4))
+               {
+                  run = obr->w;
+                  dstjump = (bpl / pixelb) - run;
+               }
+             else
+               {
+                  run = obr->w;
+                  dstjump = bpl - run;
+               }
+             func_conv(src_data, data, update->cache_entry.w - w, dstjump,
+                       obr->w, obr->h, x, y, NULL);
+          }
      }
 #if 1
 #else
@@ -1065,13 +1116,14 @@ _find_xcbob(xcb_connection_t *conn, xcb_visualtype_t *vis, int depth, int w, int
      return evas_software_xcb_output_buffer_new(conn, vis, depth, w, h, 
                                                 shm, data);
 
-   lbytes = (((w + 31) / 32) * 4);
    if (depth > 1) 
      {
         bpp = (depth / 8);
         if (bpp == 3) bpp = 4;
         lbytes = ((((w * bpp) + 3) / 4) * 4);
      }
+   else
+     lbytes = (((w + 63) / 64) * 8);
 
    sz = (lbytes * h);
    SHMPOOL_LOCK();
@@ -1080,7 +1132,7 @@ _find_xcbob(xcb_connection_t *conn, xcb_visualtype_t *vis, int depth, int w, int
         int szdif = 0;
 
         if ((xcbob2->xim->depth != depth) || (xcbob2->visual != vis) || 
-            (xcbob2->connection != conn)) continue;
+            (xcbob2->connection != conn) || (xcbob2->w != w)) continue;
         szdif = (xcbob2->psize - sz);
         if (szdif < 0) continue;
         if (szdif == 0) 
@@ -1107,7 +1159,7 @@ have_xcbob:
    _shmpool = eina_list_remove_list(_shmpool, xl);
    xcbob->w = w;
    xcbob->h = h;
-   xcbob->bpl = lbytes;
+//   xcbob->bpl = lbytes;
    xcbob->xim->width = xcbob->w;
    xcbob->xim->height = xcbob->h;
    xcbob->xim->stride = xcbob->bpl;

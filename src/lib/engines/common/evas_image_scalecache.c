@@ -521,7 +521,7 @@ evas_common_rgba_image_scalecache_do(Image_Entry *ie, RGBA_Image *dst,
  */
    if ((dst_region_w == 0) || (dst_region_h == 0) ||
        (src_region_w == 0) || (src_region_h == 0)) return;
-   LKL(im->cache.lock);
+
    if ((src_region_w == dst_region_w) && (src_region_h == dst_region_h))
      {
         if (im->cache_entry.space == EVAS_COLORSPACE_ARGB8888)
@@ -536,7 +536,6 @@ evas_common_rgba_image_scalecache_do(Image_Entry *ie, RGBA_Image *dst,
 	evas_common_image_colorspace_normalize(im);
 
 //        noscales++;
-        LKU(im->cache.lock);
         if (im->image.data)
           {
              evas_common_scale_rgba_in_to_out_clip_sample(im, dst, dc,
@@ -566,7 +565,6 @@ evas_common_rgba_image_scalecache_do(Image_Entry *ie, RGBA_Image *dst,
 	evas_common_image_colorspace_normalize(im);
 
 //        misses++;
-        LKU(im->cache.lock);
         if (im->image.data)
           {
              if (smooth)
@@ -584,6 +582,7 @@ evas_common_rgba_image_scalecache_do(Image_Entry *ie, RGBA_Image *dst,
           }
         return;
      }
+   LKL(im->cache.lock);
    if (sci->populate_me)
      {
         int size, osize, used;
@@ -645,6 +644,7 @@ evas_common_rgba_image_scalecache_do(Image_Entry *ie, RGBA_Image *dst,
                   ct = evas_common_draw_context_new();
                   evas_common_draw_context_set_render_op(ct, _EVAS_RENDER_COPY);
                }
+             LKU(im->cache.lock);
              if (im->cache_entry.space == EVAS_COLORSPACE_ARGB8888)
                {
 #ifdef EVAS_CSERVE2
@@ -654,6 +654,7 @@ evas_common_rgba_image_scalecache_do(Image_Entry *ie, RGBA_Image *dst,
 #endif
                     evas_cache_image_load_data(&im->cache_entry);
                }
+             LKL(im->cache.lock);
              evas_common_image_colorspace_normalize(im);
              if (im->image.data)
                {
@@ -778,6 +779,7 @@ evas_common_rgba_image_scalecache_do(Image_Entry *ie, RGBA_Image *dst,
      }
    else
      {
+        LKU(im->cache.lock);
         if (im->cache_entry.space == EVAS_COLORSPACE_ARGB8888)
           {
 #ifdef EVAS_CSERVE2

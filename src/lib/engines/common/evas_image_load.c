@@ -47,9 +47,11 @@ static const struct ext_loader_s loaders[] =
    MATCHING(".bmp", "bmp"),
    MATCHING(".tga", "tga"),
    MATCHING(".wbmp", "wbmp"),
+   MATCHING(".webp", "webp"),
    MATCHING(".ico", "ico"),
    MATCHING(".cur", "ico"),
    MATCHING(".psd", "psd"),
+   MATCHING(".tgv", "tgv"),
    MATCHING(".pdf", "generic"),
    MATCHING(".ps", "generic"),
    MATCHING(".xcf", "generic"),
@@ -127,7 +129,7 @@ static const struct ext_loader_s loaders[] =
 
 static const char *loaders_name[] =
 { /* in order of most likely needed */
-  "png", "jpeg", "eet", "xpm", "tiff", "gif", "svg", "pmaps", "bmp", "tga", "wbmp", "ico", "psd", "edb", "generic"
+  "png", "jpeg", "eet", "xpm", "tiff", "gif", "svg", "webp", "pmaps", "bmp", "tga", "wbmp", "ico", "psd", "edb", "tgv", "generic"
 };
 
 struct evas_image_foreach_loader_data
@@ -239,9 +241,9 @@ evas_common_load_rgba_image_module_from_file(Image_Entry *ie)
 		       goto end;
 		    }
 		  evas_module_unload(em);
-		  INF("failed to load file head using module '%s' (%p): "
-		      "%s (%s)",
-		      loader, em, ie->file, evas_load_error_str(ret));
+		  //INF("failed to load file head using module '%s' (%p): "
+		  //    "%s (%s)",
+		  //    loader, em, ie->file, evas_load_error_str(ret));
 	       }
 	     else
 	       WRN("failed to load module '%s' (%p)", loader, em);
@@ -277,10 +279,10 @@ evas_common_load_rgba_image_module_from_file(Image_Entry *ie)
 			   loaders_name[i], em, ie->file);
 		       goto end;
 		    }
-		  else
-		    INF("brute force loader '%s' (%p) failed on %s (%s)",
-			loaders_name[i], em, ie->file,
-			evas_load_error_str(ret));
+		    //else
+		    //INF("brute force loader '%s' (%p) failed on %s (%s)",
+			//loaders_name[i], em, ie->file,
+			//evas_load_error_str(ret));
 
 		  evas_module_unload(em);
 	       }

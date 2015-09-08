@@ -64,6 +64,8 @@
 #include "evas_common.h"
 #include "evas_private.h"
 #include <stdlib.h>
+// TIZEN ONLY (20131106) : Font effect for tizen.
+#include <math.h>
 
 #ifdef HAVE_LINEBREAK
 #include "linebreak.h"
@@ -78,12 +80,12 @@
 static const char o_type[] = "textblock";
 
 /* The char to be inserted instead of visible formats */
-#define _REPLACEMENT_CHAR 0xFFFC
+#define _REPLACEMENT_CHAR 0x00A0
 #define _PARAGRAPH_SEPARATOR 0x2029
 #define _NEWLINE '\n'
 #define _TAB '\t'
 
-#define _REPLACEMENT_CHAR_UTF8 "\xEF\xBF\xBC"
+#define _REPLACEMENT_CHAR_UTF8 "\xC2\xA0"
 #define _PARAGRAPH_SEPARATOR_UTF8 "\xE2\x80\xA9"
 #define _NEWLINE_UTF8 "\n"
 #define _TAB_UTF8 "\t"
@@ -128,6 +130,10 @@ static const char o_type[] = "textblock";
           } \
      } \
    while(0)
+
+// HAVE_UNICODE_EMOTICON(2013.10.07): Basic implementation for supporting unicode 6.0 emoticon.
+typedef struct _Evas_Object_Textblock_Emoticon_Item Evas_Object_Textblock_Emoticon_Item;
+//
 
 /* private struct for textblock object internal data */
 /**
@@ -195,6 +201,15 @@ typedef struct _Evas_Object_Textblock_Format_Item Evas_Object_Textblock_Format_I
  * A textblock format.
  */
 typedef struct _Evas_Object_Textblock_Format      Evas_Object_Textblock_Format;
+
+/**
+ * // TIZEN_ONLY(20131218)
+ * // Add evas_textblock_cursor_range_text_valid_markup_get API.
+ * @internal
+ * @typedef Evas_Object_Textblock_Format_Pair_Item
+ * For *valid_markup_get.
+ */
+typedef struct _Evas_Object_Textblock_Format_Pair_Item Evas_Object_Textblock_Format_Pair_Item;
 
 /**
  * @internal
@@ -289,6 +304,21 @@ struct _Evas_Object_Textblock_Node_Format
    Eina_Bool                           format_change : 1;
    Eina_Bool                           is_new : 1;
 };
+/**
+ * @internal
+ * @typedef Evas_Textblock_Iterator
+ * A textblock iterator.
+ */
+typedef struct _Evas_Textblock_Iterator Evas_Textblock_Iterator;
+
+// TIZEN_ONLY(20131218)
+// Add evas_textblock_cursor_range_text_valid_markup_get API.
+struct _Evas_Object_Textblock_Format_Pair_Item
+{
+   char                               *format;
+   Eina_Bool                           void_closer;
+};
+//
 
 /* The default tags to use */
 static const Evas_Object_Style_Tag_Base default_tags[] = {
@@ -367,6 +397,11 @@ struct _Evas_Object_Textblock_Item
    Evas_Textblock_Item_Type             type;
    Evas_Object_Textblock_Node_Text     *text_node;
    Evas_Object_Textblock_Format        *format;
+
+   // HAVE_UNICODE_EMOTICON(2013.10.07): Basic implementation for supporting unicode 6.0 emoticon.
+   Evas_Object_Textblock_Line          *ln;
+   //
+
    size_t                               text_pos;
 #ifdef BIDI_SUPPORT
    size_t                               visual_pos;
@@ -384,6 +419,11 @@ struct _Evas_Object_Textblock_Item
 struct _Evas_Object_Textblock_Text_Item
 {
    Evas_Object_Textblock_Item       parent;
+
+   // HAVE_UNICODE_EMOTICON(2013.10.07): Basic implementation for supporting unicode 6.0 emoticon.
+   Evas_Object_Textblock_Emoticon_Item *emoticon_item;
+   //
+
    Evas_Text_Props                  text_props;
    Evas_Coord                       inset;
    Evas_Coord                       x_adjustment; /* Used to indicate by how
@@ -404,6 +444,10 @@ struct _Evas_Object_Textblock_Format_Item
 struct _Evas_Object_Textblock_Format
 {
    Evas_Object_Textblock_Node_Format *fnode;
+   // TIZEN_ONLY(20140702): Add pressed_color tag feature
+   Eina_List           *duplicated_formats;
+   Evas_Object_Textblock_Format *duplicated_from;
+   //
    double               halign;
    double               valign;
    struct {
@@ -416,7 +460,8 @@ struct _Evas_Object_Textblock_Format
       struct {
 	 unsigned char  r, g, b, a;
       } normal, underline, underline2, underline_dash, outline, shadow, glow, glow2, backing,
-	strikethrough;
+	strikethrough,
+        pressed_color; // TIZEN_ONLY(20140702): Add pressed_color tag feature
    } color;
    struct {
       int               l, r;
@@ -432,6 +477,10 @@ struct _Evas_Object_Textblock_Format
    double               linefill;
    double               ellipsis;
    unsigned char        style;
+   // TIZEN_ONLY(20140702): Add pressed_color tag feature
+   Eina_Bool            is_pressed : 1;
+   Eina_Bool            has_pressed_color : 1;
+   //
    Eina_Bool            wrap_word : 1;
    Eina_Bool            wrap_char : 1;
    Eina_Bool            wrap_mixed : 1;
@@ -460,6 +509,25 @@ struct _Evas_Textblock_Cursor
    Evas_Object_Textblock_Node_Text *node;
 };
 
+// HAVE_UNICODE_EMOTICON(2013.10.07): Basic implementation for supporting unicode 6.0 emoticon.
+struct _Evas_Object_Textblock_Emoticon_Item
+{
+   EINA_INLIST;
+   void                            *engine_data;
+   Evas_Object_Textblock_Node_Text *text_node;
+   Evas_Object_Textblock_Text_Item *ti;
+   Eina_Unicode                     unicode;
+   int                              pos;
+   int                              img_w, img_h;
+   // HAVE_UNICODE_EMOTICON(20140626): Adjust emoticon ascent, descent and height.
+   int                              ascent, descent;
+   //
+   Evas_Coord                       x, y, w, h;
+   Eina_Bool                        visible : 1;
+   Eina_Bool                        assigned : 1;
+};
+//
+
 /* Size of the index array */
 #define TEXTBLOCK_PAR_INDEX_SIZE 10
 struct _Evas_Object_Textblock
@@ -476,9 +544,21 @@ struct _Evas_Object_Textblock
    Evas_Object_Textblock_Paragraph    *paragraphs;
    Evas_Object_Textblock_Paragraph    *par_index[TEXTBLOCK_PAR_INDEX_SIZE];
 
+   // TIZEN_ONLY(20140702): Add pressed_color tag feature
+   Eina_Bool                           has_pressed_color;
+   Evas_Object_Textblock_Format       *pressed_format;
+   Evas_Object_Textblock_Format       *prev_pressed_format;
+   //
    Evas_Object_Textblock_Text_Item    *ellip_ti;
+   Eina_List                          *ellip_prev_it;
    Eina_List                          *anchors_a;
    Eina_List                          *anchors_item;
+
+   // HAVE_UNICODE_EMOTICON(2013.10.07): Basic implementation for supporting unicode 6.0 emoticon.
+   Eina_List                          *emoticons;
+   Evas_Object_Textblock_Emoticon_Item *emoticon_items;
+   //
+
    int                                 last_w, last_h;
    struct {
       int                              l, r, t, b;
@@ -489,7 +569,7 @@ struct _Evas_Object_Textblock
    const char                         *repch;
    const char                         *bidi_delimiters;
    struct {
-      int                              w, h;
+      int                              w, h, oneline_h;
       Eina_Bool                        valid : 1;
    } formatted, native;
    Eina_Bool                           redraw : 1;
@@ -498,6 +578,16 @@ struct _Evas_Object_Textblock
    Eina_Bool                           format_changed : 1;
    Eina_Bool                           have_ellipsis : 1;
    Eina_Bool                           legacy_newline : 1;
+   // TIZEN_ONLY(20150513): Add evas_object_text/textblock_ellipsis_status_get internal API.
+   Eina_Bool                           last_computed_ellipsis : 1;
+   //
+};
+
+struct _Evas_Textblock_Iterator
+{
+   Eina_Iterator                       iterator; /**< Eina Iterator. */
+   Eina_List                           *list; /**< Head of list. */
+   Eina_List                           *current; /**< Current node in loop. */
 };
 
 /* private methods for textblock objects */
@@ -518,6 +608,15 @@ static int evas_object_textblock_was_opaque(Evas_Object *obj);
 static void evas_object_textblock_coords_recalc(Evas_Object *obj);
 
 static void evas_object_textblock_scale_update(Evas_Object *obj);
+// TIZEN_ONLY(20140626): Update format when the textblock style is updated.
+static void _evas_object_textblock_format_update(Evas_Object_Textblock *o);
+//
+
+// TIZEN ONLY (20131106) : Font effect for tizen.
+static int evas_object_textblock_effect_outerglow_alpha_get(int x,int y, double opacity, int size);
+static int evas_object_textblock_effect_soft_outerglow_alpha_get(int x,int y, double opacity, int size);
+static int evas_object_textblock_effect_shadow_alpha_get(int x,int y,double opacity,int softness);
+//
 
 static const Evas_Object_Func object_func =
 {
@@ -538,7 +637,7 @@ static const Evas_Object_Func object_func =
      evas_object_textblock_was_opaque,
      NULL,
      NULL,
-     evas_object_textblock_coords_recalc,
+     NULL, //evas_object_textblock_coords_recalc,
      evas_object_textblock_scale_update,
      NULL,
      NULL,
@@ -575,11 +674,327 @@ static Evas_Object_Textblock_Node_Format *_evas_textblock_cursor_node_format_bef
 static size_t _evas_textblock_node_format_pos_get(const Evas_Object_Textblock_Node_Format *fmt);
 static void _evas_textblock_node_format_remove(Evas_Object_Textblock *o, Evas_Object_Textblock_Node_Format *n, int visual_adjustment);
 static void _evas_textblock_node_format_free(Evas_Object_Textblock *o, Evas_Object_Textblock_Node_Format *n);
+static Evas_Object_Textblock_Node_Text *_evas_textblock_node_text_new(void);
 static void _evas_textblock_node_text_free(Evas_Object_Textblock_Node_Text *n);
 static void _evas_textblock_changed(Evas_Object_Textblock *o, Evas_Object *obj);
 static void _evas_textblock_invalidate_all(Evas_Object_Textblock *o);
 static void _evas_textblock_cursors_update_offset(const Evas_Textblock_Cursor *cur, const Evas_Object_Textblock_Node_Text *n, size_t start, int offset);
 static void _evas_textblock_cursors_set_node(Evas_Object_Textblock *o, const Evas_Object_Textblock_Node_Text *n, Evas_Object_Textblock_Node_Text *new_node);
+
+// HAVE_UNICODE_EMOTICON(2013.10.07): Basic implementation for supporting unicode 6.0 emoticon.
+Evas_Object_Textblock_Emoticon_Item *_emoticon_img_new(Evas *e, Evas_Object *obj, const Eina_Unicode *str);
+static void _evas_object_textblock_emoticon_update_geometry(Evas_Object *obj);
+static void _evas_object_textblock_emoticon_update_size(Evas_Object_Textblock_Text_Item *ti);
+static void _evas_object_textblock_emoticon_item_range_text_node_change(const Evas_Object_Textblock *o, Evas_Object_Textblock_Node_Text *from,
+                                                                        Evas_Object_Textblock_Node_Text *to, int start, int end);
+static void _evas_object_textblock_emoticon_item_range_delete(Evas *e, Evas_Object_Textblock *o, Evas_Object_Textblock_Node_Text *n, int start, int end);
+//
+
+// HAVE_UNICODE_EMOTICON(2013.10.07): Basic implementation for supporting unicode 6.0 emoticon.
+Evas_Object_Textblock_Emoticon_Item *
+_emoticon_img_new(Evas *e, Evas_Object *obj, const Eina_Unicode *str)
+{
+   const char *value;
+   char unicode_str[15];
+   char image_file[127];
+   int load_error = EVAS_LOAD_ERROR_NONE;
+   Evas_Image_Load_Opts opts = { EINA_FALSE, 0, 0, 0, 0, { 0, 0, 0, 0 }, 0 };
+   Evas_Object_Textblock_Emoticon_Item *item;
+
+   value = getenv("EVAS_UNICODE_EMOTICON_IMAGE_DISABLE");
+   if (value && !strcmp(value, "1"))
+     return NULL;
+
+   item = calloc(1, sizeof(Evas_Object_Textblock_Emoticon_Item));
+   if (!item)
+     {
+        ERR("Failed to allocate emoticon item, textblock(%p)", obj);
+        return NULL;
+     }
+   eina_convert_xtoa(*str, unicode_str);
+   if (strlen(unicode_str) <= 2)
+     {
+        snprintf(image_file, sizeof(image_file),
+                 "%s/u00%s.png", UNICODE_EMOTICON_FOLDER, unicode_str);
+     }
+   else
+     {
+        snprintf(image_file, sizeof(image_file),
+                 "%s/u%s.png", UNICODE_EMOTICON_FOLDER, unicode_str);
+     }
+
+   item->engine_data = e->engine.func->image_load(e->engine.data.output,
+                                                  image_file,
+                                                  NULL,
+                                                  &load_error,
+                                                  &opts);
+   if (!item->engine_data || (load_error != EVAS_LOAD_ERROR_NONE))
+     {
+        DBG("Failed to emoticon image, textblock(%p) error(%d)", obj, load_error);
+        free(item);
+        return NULL;
+     }
+   e->engine.func->image_size_get(e->engine.data.output, item->engine_data,
+                                  &item->img_w, &item->img_h);
+   return item;
+}
+
+
+// HAVE_UNICODE_EMOTICON(2013.10.07): Basic implementation for supporting unicode 6.0 emoticon.
+static void
+_evas_object_textblock_emoticon_update_geometry(Evas_Object *obj)
+{
+   Evas_Object_Textblock *o;
+   Evas_Object_Textblock_Text_Item *ti;
+   Eina_List *l;
+   int ex, ey, center_offset = 0;
+
+   o = (Evas_Object_Textblock *)(obj->object_data);
+
+   EINA_LIST_FOREACH(o->emoticons, l, ti)
+     {
+        if (!ti->emoticon_item || !ti->parent.ln) continue;
+        if (!ti->parent.ln->par) continue;
+
+        //Compute emoticon position
+        ex = obj->cur.geometry.x + ti->parent.x + ti->parent.ln->x;
+        ey = obj->cur.geometry.y + ti->parent.ln->y + ti->parent.ln->par->y;
+
+        if (ti->parent.h < ti->parent.ln->h)
+          center_offset = (ti->parent.ln->h - ti->parent.h) / 2;
+
+        ey += center_offset;
+
+        ti->emoticon_item->x = ex;
+        ti->emoticon_item->y = ey;
+
+        //Check the visibility
+        //(2013.09.11) There's a scenario to show emoticon
+        //when it is in the proxy image of the object not in the output rect.
+#if 0
+        if (evas_object_is_in_output_rect(obj,
+                                          ti->emoticon_item->x,
+                                          ti->emoticon_item->y,
+                                          ti->emoticon_item->w,
+                                          ti->emoticon_item->h))
+          ti->emoticon_item->visible = EINA_TRUE;
+        else
+          ti->emoticon_item->visible = EINA_FALSE;
+#endif
+        ti->emoticon_item->visible = EINA_TRUE;
+        ti->emoticon_item->x -= obj->cur.geometry.x;
+        ti->emoticon_item->y -= obj->cur.geometry.y;
+
+     }
+}
+
+// HAVE_UNICODE_EMOTICON(2013.10.07): Basic implementation for supporting unicode 6.0 emoticon.
+static void
+_evas_object_textblock_emoticon_update_size(Evas_Object_Textblock_Text_Item *ti)
+{
+   float emoticon_size;
+   // HAVE_UNICODE_EMOTICON(20140626): Adjust emoticon ascent, descent and height.
+   float emoticon_ascent;
+   float emoticon_descent;
+   //
+   float aspect = 1;
+   int emo_w, emo_h;
+
+   if (!ti->emoticon_item) return;
+
+   emoticon_size = (float)(ti->parent.format->font.size) * 72 / 62;
+   // HAVE_UNICODE_EMOTICON(20140626): Adjust emoticon ascent, descent and height.
+   emoticon_ascent = (float)(ti->parent.format->font.size) * 93 / 100;
+   emoticon_descent = (float)(ti->parent.format->font.size) * 27 / 100;
+   ti->emoticon_item->ascent = (int)emoticon_ascent;
+   if ((emoticon_ascent - ti->emoticon_item->ascent) >= 0.5)
+     ti->emoticon_item->ascent++;
+   ti->emoticon_item->descent = (int)emoticon_descent;
+   if ((emoticon_descent - ti->emoticon_item->descent) >= 0.5)
+     ti->emoticon_item->descent++;
+   //
+
+   if (ti->emoticon_item->img_w != 0 && ti->emoticon_item->img_h != 0)
+     aspect = (float)ti->emoticon_item->img_w / (float)ti->emoticon_item->img_h;
+
+   emo_w = (int)emoticon_size * aspect;
+   emo_h = (int)emoticon_size;
+   ti->parent.w = emo_w;
+   // HAVE_UNICODE_EMOTICON(20140626): Adjust emoticon ascent, descent and height.
+   ti->parent.h = ti->emoticon_item->ascent + ti->emoticon_item->descent;
+   //
+   ti->parent.adv = emo_w;
+   ti->emoticon_item->w = emo_w;
+   ti->emoticon_item->h = emo_h;
+}
+
+// HAVE_UNICODE_EMOTICON(2013.10.07): Change text node of emoticon item.
+static void
+_evas_object_textblock_emoticon_item_range_text_node_change(const Evas_Object_Textblock *o, Evas_Object_Textblock_Node_Text *from, Evas_Object_Textblock_Node_Text *to, int start, int end)
+{
+   Evas_Object_Textblock_Emoticon_Item *emoticon_item;
+   if (!o) return;
+
+   if (o->emoticon_items)
+     {
+        Eina_Inlist *itrn;
+        EINA_INLIST_FOREACH_SAFE(EINA_INLIST_GET(o->emoticon_items), itrn,
+                                 emoticon_item)
+          {
+             if (emoticon_item->text_node == from &&
+                 emoticon_item->pos >= start &&
+                 emoticon_item->pos < end)
+               {
+                  emoticon_item->text_node = to;
+               }
+          }
+     }
+}
+
+// HAVE_UNICODE_EMOTICON(2013.10.07): Delete emoticon items when the string of text node is deleted.
+static void
+_evas_object_textblock_emoticon_item_range_delete(Evas *e, Evas_Object_Textblock *o, Evas_Object_Textblock_Node_Text *n, int start, int end)
+{
+   Evas_Object_Textblock_Emoticon_Item *emoticon_item;
+   Eina_Inlist *itrn;
+
+   if (!o) return;
+
+   EINA_INLIST_FOREACH_SAFE(EINA_INLIST_GET(o->emoticon_items), itrn,
+                            emoticon_item)
+     {
+        if ((emoticon_item->text_node == n) &&
+            (emoticon_item->pos >= start) &&
+            (emoticon_item->pos < end))
+          {
+             e->engine.func->image_free(e->engine.data.output,
+                                        emoticon_item->engine_data);
+             if (emoticon_item->ti) emoticon_item->ti->emoticon_item = NULL;
+             o->emoticons = eina_list_remove(o->emoticons, emoticon_item->ti);
+             o->emoticon_items = (Evas_Object_Textblock_Emoticon_Item *)
+                eina_inlist_remove(EINA_INLIST_GET(o->emoticon_items),
+                                   EINA_INLIST_GET(emoticon_item));
+             free(emoticon_item);
+          }
+     }
+}
+
+// HAVE_UNICODE_EMOTICON(2013.10.07): Basic implementation for supporting unicode 6.0 emoticon.
+static void
+_emoticon_render(Evas_Object *obj, void *output, void *context, void *surface, int x, int y)
+{
+   Evas_Object_Textblock *o;
+   Evas_Object_Textblock_Text_Item *ti;
+   Eina_List *l;
+   Evas *e = obj->layer->evas;
+   Evas_Object_Textblock_Emoticon_Item *eitem;
+
+   o = (Evas_Object_Textblock *)(obj->object_data);
+
+   e->engine.func->context_color_set(output, context, 255, 255, 255, 255);
+   if ((obj->cur.cache.clip.r == 255) &&
+       (obj->cur.cache.clip.g == 255) &&
+       (obj->cur.cache.clip.b == 255) &&
+       (obj->cur.cache.clip.a == 255))
+        e->engine.func->context_multiplier_unset(output, context);
+   else if (obj->cur.clipper)
+     {
+        e->engine.func->context_multiplier_set(output, context,
+                                            obj->cur.clipper->cur.cache.clip.r,
+                                            obj->cur.clipper->cur.cache.clip.g,
+                                            obj->cur.clipper->cur.cache.clip.b,
+                                            obj->cur.clipper->cur.cache.clip.a);
+     }
+
+   EINA_LIST_FOREACH(o->emoticons, l, ti)
+     {
+        eitem = ti->emoticon_item;
+        if (!eitem->visible) continue;
+        e->engine.func->image_draw(output, context, surface, eitem->engine_data,
+                                   0, 0, eitem->img_w, eitem->img_h,
+                                   (eitem->x + x + obj->cur.geometry.x), (eitem->y + y + obj->cur.geometry.y),
+                                   eitem->w, eitem->h,
+                                   EINA_TRUE);
+     }
+}
+
+/** iterator */
+/**
+  * @internal
+  * Returns the value of the current data of list node,
+  * and goes to the next list node.
+  *
+  * @param it the iterator.
+  * @param data the data of the current list node.
+  * @return EINA_FALSE if the current list node does not exists.
+  * Otherwise, returns EINA_TRUE.
+  */
+static Eina_Bool
+_evas_textblock_iterator_next(Evas_Textblock_Iterator *it, void **data)
+{
+   if (!it->current)
+     return EINA_FALSE;
+
+   *data = eina_list_data_get(it->current);
+   it->current = eina_list_next(it->current);
+
+   return EINA_TRUE;
+}
+
+/**
+  * @internal
+  * Gets the iterator container (Eina_List) which created the iterator.
+  * @param it the iterator.
+  * @return A pointer to Eina_List.
+  */
+static Eina_List *
+_evas_textblock_iterator_get_container(Evas_Textblock_Iterator *it)
+{
+   return it->list;
+}
+
+/**
+  * @internal
+  * Frees the iterator container (Eina_List).
+  * @param it the iterator.
+  */
+static void
+_evas_textblock_iterator_free(Evas_Textblock_Iterator *it)
+{
+   while (it->list)
+     it->list = eina_list_remove_list(it->list, it->list);
+   EINA_MAGIC_SET(&it->iterator, 0);
+   free(it);
+}
+
+/**
+  * @internal
+  * Creates newly allocated  iterator associated to a list.
+  * @param list The list.
+  * @return If the memory cannot be allocated, NULL is returned.
+  * Otherwise, a valid iterator is returned.
+  */
+Eina_Iterator *
+_evas_textblock_iterator_new(Eina_List *list)
+{
+   Evas_Textblock_Iterator *it;
+
+   it = calloc(1, sizeof(Evas_Textblock_Iterator));
+   if (!it) return NULL;
+
+   EINA_MAGIC_SET(&it->iterator, EINA_MAGIC_ITERATOR);
+   it->list = list;
+   it->current = list;
+
+   it->iterator.version = EINA_ITERATOR_VERSION;
+   it->iterator.next = FUNC_ITERATOR_NEXT(_evas_textblock_iterator_next);
+   it->iterator.get_container = FUNC_ITERATOR_GET_CONTAINER(
+                                 _evas_textblock_iterator_get_container);
+   it->iterator.free = FUNC_ITERATOR_FREE(_evas_textblock_iterator_free);
+
+   return &it->iterator;
+}
+
 
 /* styles */
 /**
@@ -694,6 +1109,95 @@ _nodes_clear(const Evas_Object *obj)
      }
 }
 
+///////////////////////////////////////////////////////////
+// TIZEN_ONLY(20140702): Add pressed_color tag feature
+///////////////////////////////////////////////////////////
+void
+_textblock_format_tree_is_pressed(Evas_Object_Textblock_Format *fmt, Eina_Bool is_pressed)
+{
+   Evas_Object_Textblock_Format *child;
+   Eina_List *l;
+
+   fmt->is_pressed = is_pressed;
+   EINA_LIST_FOREACH(fmt->duplicated_formats, l, child)
+     {
+        if (fmt == child)
+          continue;
+        _textblock_format_tree_is_pressed(child, is_pressed);
+     }
+}
+
+static void
+_textblock_mouse_down_cb(void *data __UNUSED__, Evas *e __UNUSED__, Evas_Object *obj, void *event_info)
+{
+   Evas_Coord x, y, w, h;
+   Evas_Object_Textblock *o;
+   Evas_Object_Textblock_Paragraph *par;
+   Evas_Object_Textblock_Line *line;
+   Evas_Object_Textblock_Item *item;
+   Evas_Event_Mouse_Down *ei = (Evas_Event_Mouse_Down *)event_info;
+
+   o = (Evas_Object_Textblock *)(obj->object_data);
+   if (!o->has_pressed_color) return;
+   evas_object_geometry_get(obj, &x, &y, &w, &h);
+
+   EINA_INLIST_FOREACH(o->paragraphs, par)
+     {
+        if ((ei->output.x >= x) && (ei->output.x <= x + par->w) &&
+            (ei->output.y >= y + par->y) && (ei->output.y <= y + par->y + par->h))
+          {
+             EINA_INLIST_FOREACH(par->lines, line)
+               {
+                  if ((ei->output.x >= x + line->x) && (ei->output.x <= x + line->x + line->w) &&
+                      (ei->output.y >= y + par->y + line->y) && (ei->output.y <= y + par->y + line->y + line->h))
+                    {
+                       EINA_INLIST_FOREACH(line->items, item)
+                         {
+                            if ((ei->output.x >= x + line->x + item->x) && (ei->output.x <= x + line->x + item->x + item->adv))
+                              {
+                                 Evas_Object_Textblock_Format *format = item->format;
+                                 Evas_Object_Textblock_Format *parent = format->duplicated_from;
+                                 if (!format->has_pressed_color)
+                                   {
+                                      o->pressed_format = NULL;
+                                      return;
+                                   }
+                                 while (parent && (parent->has_pressed_color))
+                                   {
+                                      format = parent;
+                                      parent = parent->duplicated_from;
+                                   }
+
+                                 _textblock_format_tree_is_pressed(format, EINA_TRUE);
+                                 o->pressed_format = format;
+                                 evas_object_change(obj);
+                                 return;
+                              }
+                         }
+                       break;
+                    }
+               }
+             break;
+          }
+     }
+   o->pressed_format = NULL;
+}
+
+static void
+_textblock_mouse_up_cb(void *data __UNUSED__, Evas *e __UNUSED__, Evas_Object *obj, void *event_info __UNUSED__)
+{
+   Evas_Object_Textblock *o;
+
+   o = (Evas_Object_Textblock *)(obj->object_data);
+   if (o->pressed_format)
+     {
+        _textblock_format_tree_is_pressed(o->pressed_format, EINA_FALSE);
+        o->pressed_format = NULL;
+        evas_object_change(obj);
+     }
+}
+///////////////////////////////////////////////////////////
+
 /**
  * @internal
  * Unrefs and frees (if needed) a textblock format.
@@ -703,11 +1207,28 @@ _nodes_clear(const Evas_Object *obj)
 static void
 _format_unref_free(const Evas_Object *obj, Evas_Object_Textblock_Format *fmt)
 {
+   Evas_Object_Textblock *o = (Evas_Object_Textblock *)(obj->object_data);
    fmt->ref--;
    if (fmt->ref > 0) return;
    if (fmt->font.fdesc) evas_font_desc_unref(fmt->font.fdesc);
    if (fmt->font.source) eina_stringshare_del(fmt->font.source);
    evas_font_free(obj->layer->evas, fmt->font.font);
+   // TIZEN_ONLY(20140702): Add pressed_color tag feature
+   if (o->pressed_format == fmt)
+     _textblock_format_tree_is_pressed(fmt, EINA_FALSE);
+   o->pressed_format = NULL;
+   if (fmt->duplicated_from)
+     fmt->duplicated_from->duplicated_formats = eina_list_remove(fmt->duplicated_from->duplicated_formats, fmt);
+   if (fmt->duplicated_formats)
+     {
+        Evas_Object_Textblock_Format *format;
+        Eina_List *l;
+        EINA_LIST_FOREACH(fmt->duplicated_formats, l, format)
+           format->duplicated_from = NULL;
+        fmt->duplicated_formats = eina_list_free(fmt->duplicated_formats);
+     }
+   //
+
    free(fmt);
 }
 
@@ -724,6 +1245,19 @@ _item_free(const Evas_Object *obj, Evas_Object_Textblock_Line *ln, Evas_Object_T
    if (it->type == EVAS_TEXTBLOCK_ITEM_TEXT)
      {
         Evas_Object_Textblock_Text_Item *ti = _ITEM_TEXT(it);
+
+        // HAVE_UNICODE_EMOTICON(2013.10.07): Basic implementation for supporting unicode 6.0 emoticon.
+        if (ti->emoticon_item)
+          {
+             Evas_Object_Textblock *o;
+             o = (Evas_Object_Textblock *)(obj->object_data);
+             ti->emoticon_item->assigned = EINA_FALSE;
+             ti->emoticon_item->ti = NULL;
+             ti->emoticon_item->visible = EINA_FALSE;
+             ti->emoticon_item = NULL;
+             o->emoticons = eina_list_remove(o->emoticons, ti);
+          }
+        //
 
         evas_common_text_props_content_unref(&ti->text_props);
      }
@@ -1020,11 +1554,8 @@ _hex_string_get(char ch)
  * @param[out] a The Alpha value - NOT NULL.
  */
 static void
-_format_color_parse(const char *str, unsigned char *r, unsigned char *g, unsigned char *b, unsigned char *a)
+_format_color_parse(const char *str, int slen, unsigned char *r, unsigned char *g, unsigned char *b, unsigned char *a)
 {
-   int slen;
-
-   slen = strlen(str);
    *r = *g = *b = *a = 0;
 
    if (slen == 7) /* #RRGGBB */
@@ -1088,6 +1619,9 @@ static const char *glow_colorstr = NULL;
 static const char *glow2_colorstr = NULL;
 static const char *backing_colorstr = NULL;
 static const char *strikethrough_colorstr = NULL;
+// TIZEN_ONLY(20140702): Add pressed_color tag feature
+static const char *pressed_colorstr = NULL;
+//
 static const char *alignstr = NULL;
 static const char *valignstr = NULL;
 static const char *wrapstr = NULL;
@@ -1136,6 +1670,9 @@ _format_command_init(void)
         glow2_colorstr = eina_stringshare_add("glow2_color");
         backing_colorstr = eina_stringshare_add("backing_color");
         strikethrough_colorstr = eina_stringshare_add("strikethrough_color");
+        // TIZEN_ONLY(20140702): Add pressed_color tag feature
+        pressed_colorstr = eina_stringshare_add("pressed_color");
+        //
         alignstr = eina_stringshare_add("align");
         valignstr = eina_stringshare_add("valign");
         wrapstr = eina_stringshare_add("wrap");
@@ -1187,6 +1724,9 @@ _format_command_shutdown(void)
    eina_stringshare_del(glow2_colorstr);
    eina_stringshare_del(backing_colorstr);
    eina_stringshare_del(strikethrough_colorstr);
+   // TIZEN_ONLY(20140702): Add pressed_color tag feature
+   eina_stringshare_del(pressed_colorstr);
+   //
    eina_stringshare_del(alignstr);
    eina_stringshare_del(valignstr);
    eina_stringshare_del(wrapstr);
@@ -1216,19 +1756,22 @@ _format_command_shutdown(void)
  * @param[out] dst the destination string - Should not be NULL.
  * @param[in] src the source string - Should not be NULL.
  */
-static void
-_format_clean_param(char *dst, const char *src)
+static int
+_format_clean_param(Eina_Tmpstr *s)
 {
-   const char *ss;
+   Eina_Tmpstr *ss;
    char *ds;
+   int len = 0;
 
-   ds = dst;
-   for (ss = src; *ss; ss++, ds++)
+   ds = (char*) s;
+   for (ss = s; *ss; ss++, ds++, len++)
      {
         if ((*ss == '\\') && *(ss + 1)) ss++;
         *ds = *ss;
      }
    *ds = 0;
+
+   return len;
 }
 
 /**
@@ -1241,15 +1784,11 @@ _format_clean_param(char *dst, const char *src)
  * @param[in] param the parameter of the command.
  */
 static void
-_format_command(Evas_Object *obj, Evas_Object_Textblock_Format *fmt, const char *cmd, const char *param)
+_format_command(Evas_Object *obj, Evas_Object_Textblock_Format *fmt, const char *cmd, Eina_Tmpstr *param)
 {
    int len;
-   char *tmp_param;
 
-   len = strlen(param);
-   tmp_param = alloca(len + 1);
-
-   _format_clean_param(tmp_param, param);
+   len = _format_clean_param(param);
 
    /* If we are changing the font, create the fdesc. */
    if ((cmd == font_weightstr) || (cmd == font_widthstr) ||
@@ -1271,17 +1810,17 @@ _format_command(Evas_Object *obj, Evas_Object_Textblock_Format *fmt, const char 
 
    if (cmd == fontstr)
      {
-        evas_font_name_parse(fmt->font.fdesc, tmp_param);
+        evas_font_name_parse(fmt->font.fdesc, param);
      }
    else if (cmd == font_fallbacksstr)
      {
-        eina_stringshare_replace(&(fmt->font.fdesc->fallbacks), tmp_param);
+        eina_stringshare_replace(&(fmt->font.fdesc->fallbacks), param);
      }
    else if (cmd == font_sizestr)
      {
         int v;
 
-        v = atoi(tmp_param);
+        v = atoi(param);
         if (v != fmt->font.size)
           {
              fmt->font.size = v;
@@ -1290,87 +1829,139 @@ _format_command(Evas_Object *obj, Evas_Object_Textblock_Format *fmt, const char 
    else if (cmd == font_sourcestr)
      {
         if ((!fmt->font.source) ||
-              ((fmt->font.source) && (strcmp(fmt->font.source, tmp_param))))
+              ((fmt->font.source) && (strcmp(fmt->font.source, param))))
           {
-             if (fmt->font.source) eina_stringshare_del(fmt->font.source);
-             fmt->font.source = eina_stringshare_add(tmp_param);
+             eina_stringshare_replace(&(fmt->font.source), param);
           }
      }
    else if (cmd == font_weightstr)
      {
-        fmt->font.fdesc->weight = evas_font_style_find(tmp_param,
-              tmp_param + strlen(tmp_param), EVAS_FONT_STYLE_WEIGHT);
+        fmt->font.fdesc->weight = evas_font_style_find(param,
+                                                       param + len,
+                                                       EVAS_FONT_STYLE_WEIGHT);
      }
    else if (cmd == font_stylestr)
      {
-        fmt->font.fdesc->slant = evas_font_style_find(tmp_param,
-              tmp_param + strlen(tmp_param), EVAS_FONT_STYLE_SLANT);
+        fmt->font.fdesc->slant = evas_font_style_find(param,
+                                                      param + len,
+                                                      EVAS_FONT_STYLE_SLANT);
      }
    else if (cmd == font_widthstr)
      {
-        fmt->font.fdesc->width = evas_font_style_find(tmp_param,
-              tmp_param + strlen(tmp_param), EVAS_FONT_STYLE_WIDTH);
+        fmt->font.fdesc->width = evas_font_style_find(param,
+                                                      param + len,
+                                                      EVAS_FONT_STYLE_WIDTH);
      }
    else if (cmd == langstr)
      {
-        eina_stringshare_replace(&(fmt->font.fdesc->lang), tmp_param);
+        eina_stringshare_replace(&(fmt->font.fdesc->lang), param);
      }
    else if (cmd == colorstr)
-     _format_color_parse(tmp_param,
+     _format_color_parse(param, len,
            &(fmt->color.normal.r), &(fmt->color.normal.g),
            &(fmt->color.normal.b), &(fmt->color.normal.a));
    else if (cmd == underline_colorstr)
-     _format_color_parse(tmp_param,
+     _format_color_parse(param, len,
            &(fmt->color.underline.r), &(fmt->color.underline.g),
            &(fmt->color.underline.b), &(fmt->color.underline.a));
    else if (cmd == underline2_colorstr)
-     _format_color_parse(tmp_param,
+     _format_color_parse(param, len,
            &(fmt->color.underline2.r), &(fmt->color.underline2.g),
            &(fmt->color.underline2.b), &(fmt->color.underline2.a));
    else if (cmd == underline_dash_colorstr)
-     _format_color_parse(tmp_param,
+     _format_color_parse(param, len,
            &(fmt->color.underline_dash.r), &(fmt->color.underline_dash.g),
            &(fmt->color.underline_dash.b), &(fmt->color.underline_dash.a));
    else if (cmd == outline_colorstr)
-     _format_color_parse(tmp_param,
+     _format_color_parse(param, len,
            &(fmt->color.outline.r), &(fmt->color.outline.g),
            &(fmt->color.outline.b), &(fmt->color.outline.a));
    else if (cmd == shadow_colorstr)
-     _format_color_parse(tmp_param,
+     _format_color_parse(param, len,
            &(fmt->color.shadow.r), &(fmt->color.shadow.g),
            &(fmt->color.shadow.b), &(fmt->color.shadow.a));
    else if (cmd == glow_colorstr)
-     _format_color_parse(tmp_param,
+     _format_color_parse(param, len,
            &(fmt->color.glow.r), &(fmt->color.glow.g),
            &(fmt->color.glow.b), &(fmt->color.glow.a));
    else if (cmd == glow2_colorstr)
-     _format_color_parse(tmp_param,
+     _format_color_parse(param, len,
            &(fmt->color.glow2.r), &(fmt->color.glow2.g),
            &(fmt->color.glow2.b), &(fmt->color.glow2.a));
    else if (cmd == backing_colorstr)
-     _format_color_parse(tmp_param,
+     /**
+      * @page evas_textblock_style_page Evas Textblock Style Options
+      *
+      * @subsection evas_textblock_style_backing_color Backing Color
+      *
+      * Sets a background color for text. The following formats are
+      * accepted:
+      * @li "#RRGGBB"
+      * @li "#RRGGBBAA"
+      * @li "#RGB"
+      * @li "#RGBA"
+      * @code
+      * backing_color=<color>
+      * @endcode
+      */
+     _format_color_parse(param, len,
            &(fmt->color.backing.r), &(fmt->color.backing.g),
            &(fmt->color.backing.b), &(fmt->color.backing.a));
    else if (cmd == strikethrough_colorstr)
-     _format_color_parse(tmp_param,
+     _format_color_parse(param, len,
            &(fmt->color.strikethrough.r), &(fmt->color.strikethrough.g),
            &(fmt->color.strikethrough.b), &(fmt->color.strikethrough.a));
+   // TIZEN_ONLY(20140702): Add pressed_color tag feature
+   else if (cmd == pressed_colorstr)
+     {
+        Evas_Object_Textblock *o = (Evas_Object_Textblock *)(obj->object_data);
+        if (!o->has_pressed_color)
+          {
+             evas_object_event_callback_add(obj, EVAS_CALLBACK_MOUSE_DOWN, _textblock_mouse_down_cb, NULL);
+             evas_object_event_callback_add(obj, EVAS_CALLBACK_MOUSE_UP, _textblock_mouse_up_cb, NULL);
+             o->has_pressed_color = EINA_TRUE;
+          }
+
+        fmt->has_pressed_color = EINA_TRUE;
+        fmt->is_pressed = EINA_FALSE;
+        _format_color_parse(param, len,
+           &(fmt->color.pressed_color.r), &(fmt->color.pressed_color.g),
+           &(fmt->color.pressed_color.b), &(fmt->color.pressed_color.a));
+     }
+   //
    else if (cmd == alignstr)
      {
-        if (!strcmp(tmp_param, "auto"))
+        if (len == 4 && !strcmp(param, "auto"))
           {
              fmt->halign_auto = EINA_TRUE;
           }
         else
           {
-             if (!strcmp(tmp_param, "middle")) fmt->halign = 0.5;
-             else if (!strcmp(tmp_param, "center")) fmt->halign = 0.5;
-             else if (!strcmp(tmp_param, "left")) fmt->halign = 0.0;
-             else if (!strcmp(tmp_param, "right")) fmt->halign = 1.0;
-             else
+             static const struct {
+                const char *param;
+                int len;
+                double halign;
+             } halign_named[] = {
+               { "middle", 6, 0.5 },
+               { "center", 6, 0.5 },
+               { "left", 4, 0.0 },
+               { "right", 5, 1.0 },
+               { NULL, 0, 0.0 }
+             };
+             unsigned int i;
+
+             for (i = 0; halign_named[i].param; i++)
+               if (len == halign_named[i].len &&
+                   !strcmp(param, halign_named[i].param))
+                 {
+                    fmt->halign = halign_named[i].halign;
+                    break;
+                 }
+
+             if (halign_named[i].param == NULL)
                {
                   char *endptr = NULL;
-                  double val = strtod(tmp_param, &endptr);
+                  double val = strtod(param, &endptr);
                   if (endptr)
                     {
                        while (*endptr && _is_white(*endptr))
@@ -1387,16 +1978,33 @@ _format_command(Evas_Object *obj, Evas_Object_Textblock_Format *fmt, const char 
      }
    else if (cmd == valignstr)
      {
-        if (!strcmp(tmp_param, "top")) fmt->valign = 0.0;
-        else if (!strcmp(tmp_param, "middle")) fmt->valign = 0.5;
-        else if (!strcmp(tmp_param, "center")) fmt->valign = 0.5;
-        else if (!strcmp(tmp_param, "bottom")) fmt->valign = 1.0;
-        else if (!strcmp(tmp_param, "baseline")) fmt->valign = -1.0;
-        else if (!strcmp(tmp_param, "base")) fmt->valign = -1.0;
-        else
+        static const struct {
+           const char *param;
+           int len;
+           double valign;
+        } valign_named[] = {
+          { "top", 3, 0.0 },
+          { "middle", 6, 0.5 },
+          { "center", 6, 0.5 },
+          { "bottom", 6, 1.0 },
+          { "baseline", 8, -1.0 },
+          { "base", 4, -1.0 },
+          { NULL, 0, 0 }
+        };
+        unsigned int i;
+
+        for (i = 0; valign_named[i].param; i++)
+          if (len == valign_named[i].len &&
+              !strcmp(valign_named[i].param, param))
+            {
+               fmt->valign = valign_named[i].valign;
+               break;
+            }
+
+        if (valign_named[i].param == NULL)
           {
              char *endptr = NULL;
-             double val = strtod(tmp_param, &endptr);
+             double val = strtod(param, &endptr);
              if (endptr)
                {
                   while (*endptr && _is_white(*endptr))
@@ -1411,109 +2019,123 @@ _format_command(Evas_Object *obj, Evas_Object_Textblock_Format *fmt, const char 
      }
    else if (cmd == wrapstr)
      {
-        if (!strcmp(tmp_param, "word"))
-          {
-             fmt->wrap_word = 1;
-             fmt->wrap_char = fmt->wrap_mixed = 0;
-          }
-        else if (!strcmp(tmp_param, "char"))
-          {
-             fmt->wrap_word = fmt->wrap_mixed = 0;
-             fmt->wrap_char = 1;
-          }
-        else if (!strcmp(tmp_param, "mixed"))
-          {
-             fmt->wrap_word = fmt->wrap_char = 0;
-             fmt->wrap_mixed = 1;
-          }
-        else
-          {
-             fmt->wrap_word = fmt->wrap_mixed = fmt->wrap_char = 0;
-          }
+        static const struct {
+           const char *param;
+           int len;
+           Eina_Bool wrap_word;
+           Eina_Bool wrap_char;
+           Eina_Bool wrap_mixed;
+        } wrap_named[] = {
+          { "word", 4, 1, 0, 0 },
+          { "char", 4, 0, 1, 0 },
+          { "mixed", 5, 0, 0, 1 },
+          { NULL, 0, 0, 0, 0 }
+        };
+        unsigned int i;
+
+        fmt->wrap_word = fmt->wrap_mixed = fmt->wrap_char = 0;
+        for (i = 0; wrap_named[i].param; i++)
+          if (wrap_named[i].len == len &&
+              !strcmp(wrap_named[i].param, param))
+            {
+               fmt->wrap_word = wrap_named[i].wrap_word;
+               fmt->wrap_char = wrap_named[i].wrap_char;
+               fmt->wrap_mixed = wrap_named[i].wrap_mixed;
+               break;
+            }
      }
    else if (cmd == left_marginstr)
      {
-        if (!strcmp(tmp_param, "reset"))
+        if (len == 5 && !strcmp(param, "reset"))
           fmt->margin.l = 0;
         else
           {
-             if (tmp_param[0] == '+')
-               fmt->margin.l += atoi(&(tmp_param[1]));
-             else if (tmp_param[0] == '-')
-               fmt->margin.l -= atoi(&(tmp_param[1]));
+             if (param[0] == '+')
+               fmt->margin.l += atoi(&(param[1]));
+             else if (param[0] == '-')
+               fmt->margin.l -= atoi(&(param[1]));
              else
-               fmt->margin.l = atoi(tmp_param);
+               fmt->margin.l = atoi(param);
              if (fmt->margin.l < 0) fmt->margin.l = 0;
           }
      }
    else if (cmd == right_marginstr)
      {
-        if (!strcmp(tmp_param, "reset"))
+        if (len == 5 && !strcmp(param, "reset"))
           fmt->margin.r = 0;
         else
           {
-             if (tmp_param[0] == '+')
-               fmt->margin.r += atoi(&(tmp_param[1]));
-             else if (tmp_param[0] == '-')
-               fmt->margin.r -= atoi(&(tmp_param[1]));
+             if (param[0] == '+')
+               fmt->margin.r += atoi(&(param[1]));
+             else if (param[0] == '-')
+               fmt->margin.r -= atoi(&(param[1]));
              else
-               fmt->margin.r = atoi(tmp_param);
+               fmt->margin.r = atoi(param);
              if (fmt->margin.r < 0) fmt->margin.r = 0;
           }
      }
    else if (cmd == underlinestr)
      {
-        if (!strcmp(tmp_param, "off"))
-          {
-             fmt->underline = 0;
-             fmt->underline2 = 0;
-          }
-        else if ((!strcmp(tmp_param, "on")) ||
-              (!strcmp(tmp_param, "single")))
-          {
-             fmt->underline = 1;
-             fmt->underline2 = 0;
-          }
-        else if (!strcmp(tmp_param, "double"))
-          {
-             fmt->underline = 1;
-             fmt->underline2 = 1;
-          }
-        else if (!strcmp(tmp_param, "dashed"))
-          fmt->underline_dash = 1;
+        static const struct {
+           const char *param;
+           int len;
+           Eina_Bool underline;
+           Eina_Bool underline2;
+           Eina_Bool underline_dash;
+        } underlines_named[] = {
+          { "off", 3, 0, 0, 0 },
+          { "on", 2, 1, 0, 0 },
+          { "single", 6, 1, 0, 0 },
+          { "double", 6, 1, 1, 0 },
+          { "dashed", 6, 0, 0, 1 },
+          { NULL, 0, 0, 0, 0 }
+        };
+        unsigned int i;
+
+        fmt->underline = fmt->underline2 = fmt->underline_dash = 0;
+        for (i = 0; underlines_named[i].param; ++i)
+          if (underlines_named[i].len == len &&
+              !strcmp(underlines_named[i].param, param))
+            {
+               fmt->underline = underlines_named[i].underline;
+               fmt->underline2 = underlines_named[i].underline2;;
+               fmt->underline_dash = underlines_named[i].underline_dash;
+               break;
+            }
      }
    else if (cmd == strikethroughstr)
      {
-        if (!strcmp(tmp_param, "off"))
+        if (len == 3 && !strcmp(param, "off"))
           fmt->strikethrough = 0;
-        else if (!strcmp(tmp_param, "on"))
+        else if (len == 2 && !strcmp(param, "on"))
           fmt->strikethrough = 1;
      }
    else if (cmd == backingstr)
      {
-        if (!strcmp(tmp_param, "off"))
+        if (len == 3 && !strcmp(param, "off"))
           fmt->backing = 0;
-        else if (!strcmp(tmp_param, "on"))
+        else if (len == 2 && !strcmp(param, "on"))
           fmt->backing = 1;
      }
    else if (cmd == stylestr)
      {
         char *p1, *p2, *p, *pp;
 
-        p1 = alloca(len + 1);
-        *p1 = 0;
         p2 = alloca(len + 1);
         *p2 = 0;
         /* no comma */
-        if (!strstr(tmp_param, ",")) p1 = tmp_param;
+        if (!strstr(param, ",")) p1 = (char *)param;
         else
           {
+             p1 = alloca(len + 1);
+             *p1 = 0;
+
              /* split string "str1,str2" into p1 and p2 (if we have more than
               * 1 str2 eg "str1,str2,str3,str4" then we don't care. p2 just
               * ends up being the last one as right now it's only valid to have
               * 1 comma and 2 strings */
              pp = p1;
-             for (p = tmp_param; *p; p++)
+             for (p = (char *)param; *p; p++)
                {
                   if (*p == ',')
                     {
@@ -1538,8 +2160,13 @@ _format_command(Evas_Object *obj, Evas_Object_Textblock_Format *fmt, const char 
         else if (!strcmp(p1, "far_shadow"))          fmt->style = EVAS_TEXT_STYLE_FAR_SHADOW;
         else if (!strcmp(p1, "soft_shadow"))         fmt->style = EVAS_TEXT_STYLE_SOFT_SHADOW;
         else if (!strcmp(p1, "far_soft_shadow"))     fmt->style = EVAS_TEXT_STYLE_FAR_SOFT_SHADOW;
+        // TIZEN ONLY (20131106) : Font effect for tizen.
+        else if (!strcmp(p1, "tizen_glow_shadow"))   fmt->style = EVAS_TEXT_STYLE_TIZEN_GLOW_SHADOW;
+        else if (!strcmp(p1, "tizen_soft_glow_shadow")) fmt->style = EVAS_TEXT_STYLE_TIZEN_SOFT_GLOW_SHADOW;
+        else if (!strcmp(p1, "tizen_shadow"))        fmt->style = EVAS_TEXT_STYLE_TIZEN_SHADOW;
+        ///////////
         else                                         fmt->style = EVAS_TEXT_STYLE_PLAIN;
-        
+
         if (*p2)
           {
              if      (!strcmp(p2, "bottom_right")) EVAS_TEXT_STYLE_SHADOW_DIRECTION_SET(fmt->style, EVAS_TEXT_STYLE_SHADOW_DIRECTION_BOTTOM_RIGHT);
@@ -1555,18 +2182,18 @@ _format_command(Evas_Object *obj, Evas_Object_Textblock_Format *fmt, const char 
      }
    else if (cmd == tabstopsstr)
      {
-        fmt->tabstops = atoi(tmp_param);
+        fmt->tabstops = atoi(param);
         if (fmt->tabstops < 1) fmt->tabstops = 1;
      }
    else if (cmd == linesizestr)
      {
-        fmt->linesize = atoi(tmp_param);
+        fmt->linesize = atoi(param);
         fmt->linerelsize = 0.0;
      }
    else if (cmd == linerelsizestr)
      {
         char *endptr = NULL;
-        double val = strtod(tmp_param, &endptr);
+        double val = strtod(param, &endptr);
         if (endptr)
           {
              while (*endptr && _is_white(*endptr))
@@ -1581,13 +2208,13 @@ _format_command(Evas_Object *obj, Evas_Object_Textblock_Format *fmt, const char 
      }
    else if (cmd == linegapstr)
      {
-        fmt->linegap = atoi(tmp_param);
+        fmt->linegap = atoi(param);
         fmt->linerelgap = 0.0;
      }
    else if (cmd == linerelgapstr)
      {
         char *endptr = NULL;
-        double val = strtod(tmp_param, &endptr);
+        double val = strtod(param, &endptr);
         if (endptr)
           {
              while (*endptr && _is_white(*endptr))
@@ -1608,7 +2235,7 @@ _format_command(Evas_Object *obj, Evas_Object_Textblock_Format *fmt, const char 
    else if (cmd == linefillstr)
      {
         char *endptr = NULL;
-        double val = strtod(tmp_param, &endptr);
+        double val = strtod(param, &endptr);
         if (endptr)
           {
              while (*endptr && _is_white(*endptr))
@@ -1623,32 +2250,32 @@ _format_command(Evas_Object *obj, Evas_Object_Textblock_Format *fmt, const char 
    else if (cmd == ellipsisstr)
      {
         char *endptr = NULL;
-        fmt->ellipsis = strtod(tmp_param, &endptr);
+        fmt->ellipsis = strtod(param, &endptr);
         if ((fmt->ellipsis < 0.0) || (fmt->ellipsis > 1.0))
           fmt->ellipsis = -1.0;
         else
           {
              Evas_Object_Textblock *o;
-             
+
              o = (Evas_Object_Textblock *)(obj->object_data);
              o->have_ellipsis = 1;
           }
      }
    else if (cmd == passwordstr)
      {
-        if (!strcmp(tmp_param, "off"))
+        if (len == 3 && !strcmp(param, "off"))
           fmt->password = 0;
-        else if (!strcmp(tmp_param, "on"))
+        else if (len == 2 && !strcmp(param, "on"))
           fmt->password = 1;
      }
    else if (cmd == underline_dash_widthstr)
      {
-        fmt->underline_dash_width = atoi(tmp_param);
+        fmt->underline_dash_width = atoi(param);
         if (fmt->underline_dash_width <= 0) fmt->underline_dash_width = 1;
      }
    else if (cmd == underline_dash_gapstr)
      {
-        fmt->underline_dash_gap = atoi(tmp_param);
+        fmt->underline_dash_gap = atoi(param);
         if (fmt->underline_dash_gap <= 0) fmt->underline_dash_gap = 1;
      }
 }
@@ -1679,33 +2306,50 @@ _format_is_param(const char *item)
  * @param[out] val where to store the value at - Not NULL.
  */
 static void
-_format_param_parse(const char *item, const char **key, const char **val)
+_format_param_parse(const char *item, const char **key, Eina_Tmpstr **val)
 {
-   const char *start, *end, *quote;
+   const char *start, *end;
+   char *tmp, *s, *d;
+   size_t len;
 
    start = strchr(item, '=');
    *key = eina_stringshare_add_length(item, start - item);
    start++; /* Advance after the '=' */
-   /* If we can find a quote, our new delimiter is a quote, not a space. */
-   if ((quote = strchr(start, '\'')))
+   /* If we can find a quote as the first non-space char,
+    * our new delimiter is a quote, not a space. */
+   while (*start == ' ')
+      start++;
+
+   if (*start == '\'')
      {
-        start = quote + 1;
+        start++;
         end = strchr(start, '\'');
+        while ((end) && (end > start) && (end[-1] == '\\'))
+          end = strchr(end + 1, '\'');
      }
    else
      {
         end = strchr(start, ' ');
+        while ((end) && (end > start) && (end[-1] == '\\'))
+          end = strchr(end + 1, ' ');
      }
 
    /* Null terminate before the spaces */
-   if (end)
+   if (end) len = end - start;
+   else len = strlen(start);
+
+   tmp = (char*) eina_tmpstr_add_length(start, len);
+
+   for (d = tmp, s = tmp; *s; s++)
      {
-        *val = eina_stringshare_add_length(start, end - start);
+        if (*s != '\\')
+          {
+            *d = *s;
+             d++;
+          }
      }
-   else
-     {
-        *val = eina_stringshare_add(start);
-     }
+   *d = '\0';
+   *val = tmp;;
 }
 
 /**
@@ -1778,12 +2422,13 @@ _format_fill(Evas_Object *obj, Evas_Object_Textblock_Format *fmt, const char *st
      {
         if (_format_is_param(item))
           {
-             const char *key = NULL, *val = NULL;
+             const char *key = NULL;
+             Eina_Tmpstr *val = NULL;
 
              _format_param_parse(item, &key, &val);
              _format_command(obj, fmt, key, val);
              eina_stringshare_del(key);
-             eina_stringshare_del(val);
+             eina_tmpstr_del(val);
           }
         else
           {
@@ -1818,8 +2463,13 @@ _format_dup(Evas_Object *obj, const Evas_Object_Textblock_Format *fmt)
    return fmt2;
 }
 
-
-
+typedef enum
+{
+   TEXTBLOCK_POSITION_START,
+   TEXTBLOCK_POSITION_END,
+   TEXTBLOCK_POSITION_ELSE,
+   TEXTBLOCK_POSITION_SINGLE
+} Textblock_Position;
 
 /**
  * @internal
@@ -1852,6 +2502,7 @@ struct _Ctxt
    int underline_extend;
    int have_underline, have_underline2;
    double align, valign;
+   Textblock_Position position;
    Eina_Bool align_auto : 1;
    Eina_Bool width_changed : 1;
 };
@@ -1859,6 +2510,7 @@ struct _Ctxt
 static void _layout_text_add_logical_item(Ctxt *c, Evas_Object_Textblock_Text_Item *ti, Eina_List *rel);
 static void _text_item_update_sizes(Ctxt *c, Evas_Object_Textblock_Text_Item *ti);
 static void _layout_do_format(const Evas_Object *obj, Ctxt *c, Evas_Object_Textblock_Format **_fmt, Evas_Object_Textblock_Node_Format *n, int *style_pad_l, int *style_pad_r, int *style_pad_t, int *style_pad_b, Eina_Bool create_item);
+
 /**
  * @internal
  * Adjust the ascent/descent of the format and context.
@@ -1907,6 +2559,119 @@ _layout_format_ascent_descent_adjust(const Evas_Object *obj,
              *maxdescent += dh / 2;
              *maxascent += dh - (dh / 2);
              // FIXME: set flag that says "if heigh changes - reformat"
+          }
+     }
+}
+
+static void
+_layout_item_max_ascent_descent_calc(const Evas_Object *obj,
+      Evas_Coord *maxascent, Evas_Coord *maxdescent,
+      Evas_Object_Textblock_Item *it, Textblock_Position position)
+{
+   void *fi = NULL;
+   *maxascent = *maxdescent = 0;
+
+   if (!it || !it->format || !it->format->font.font)
+      return;
+
+   if (it->type == EVAS_TEXTBLOCK_ITEM_TEXT)
+     {
+        fi = _ITEM_TEXT(it)->text_props.font_instance;
+
+        // HAVE_UNICODE_EMOTICON(20140626): Adjust emoticon ascent, descent and height.
+        if (_ITEM_TEXT(it)->emoticon_item)
+          {
+             *maxascent = _ITEM_TEXT(it)->emoticon_item->ascent;
+             *maxdescent = _ITEM_TEXT(it)->emoticon_item->descent;
+             return;
+          }
+        //
+     }
+
+   if ((position == TEXTBLOCK_POSITION_START) ||
+         (position == TEXTBLOCK_POSITION_SINGLE))
+     {
+        Evas_Coord asc = 0;
+
+        if (fi)
+          {
+             asc = evas_common_font_instance_max_ascent_get(fi);
+          }
+        else
+          {
+             asc = ENFN->font_max_ascent_get(ENDT,
+                   it->format->font.font);
+          }
+
+        if (asc > *maxascent)
+           *maxascent = asc;
+     }
+
+   if ((position == TEXTBLOCK_POSITION_END) ||
+         (position == TEXTBLOCK_POSITION_SINGLE))
+     {
+        /* Calculate max descent. */
+        Evas_Coord desc = 0;
+
+        if (fi)
+          {
+             desc = evas_common_font_instance_max_descent_get(fi);
+          }
+        else
+          {
+             desc = ENFN->font_max_descent_get(ENDT,
+                   it->format->font.font);
+          }
+
+        if (desc > *maxdescent)
+           *maxdescent = desc;
+     }
+}
+
+/**
+ * @internal
+ * Adjust the ascent/descent of the item and context.
+ *
+ * @param maxascent The ascent to update - Not NUL.
+ * @param maxdescent The descent to update - Not NUL.
+ * @param it The format to adjust - NOT NULL.
+ * @param position The position inside the textblock
+ */
+static void
+_layout_item_ascent_descent_adjust(const Evas_Object *obj,
+      Evas_Coord *maxascent, Evas_Coord *maxdescent,
+      Evas_Object_Textblock_Item *it, Textblock_Position position)
+{
+   _layout_format_ascent_descent_adjust(obj, maxascent, maxdescent, it->format);
+
+   if (it->type == EVAS_TEXTBLOCK_ITEM_TEXT)
+     {
+        void *fi = _ITEM_TEXT(it)->text_props.font_instance;
+
+        // HAVE_UNICODE_EMOTICON(20140626): Adjust emoticon ascent, descent and height.
+        if (_ITEM_TEXT(it)->emoticon_item)
+          {
+             *maxascent = _ITEM_TEXT(it)->emoticon_item->ascent;
+             *maxdescent = _ITEM_TEXT(it)->emoticon_item->descent;
+             return;
+          }
+        //
+
+        if ((position == TEXTBLOCK_POSITION_START) ||
+              (position == TEXTBLOCK_POSITION_SINGLE))
+          {
+             int asc = 0;
+
+             if (fi)
+               {
+                  asc = evas_common_font_instance_max_ascent_get(fi);
+               }
+             else
+               {
+                  asc = ENFN->font_max_ascent_get(ENDT, it->format->font.font);
+               }
+             if (maxascent && (asc > *maxascent))
+                *maxascent = asc;
           }
      }
 }
@@ -2051,8 +2816,19 @@ _layout_update_bidi_props(const Evas_Object_Textblock *o,
         par->bidi_props = evas_bidi_paragraph_props_get(text,
               eina_ustrbuf_length_get(par->text_node->unicode),
               segment_idxs);
-        par->direction = EVAS_BIDI_PARAGRAPH_DIRECTION_IS_RTL(par->bidi_props) ?
-           EVAS_BIDI_DIRECTION_RTL : EVAS_BIDI_DIRECTION_LTR;
+
+        // TIZEN_ONLY(20140822): Added evas_bidi_direction_hint_set, get APIs and applied to textblock, text.
+        //par->direction = EVAS_BIDI_PARAGRAPH_DIRECTION_IS_RTL(par->bidi_props) ?
+        //   EVAS_BIDI_DIRECTION_RTL : EVAS_BIDI_DIRECTION_LTR;
+        par->direction = evas_bidi_direction_hint_get(evas_object_evas_get(o->cursor->obj));
+
+        if (!EVAS_BIDI_PARAGRAPH_DIRECTION_IS_NEUTRAL(par->bidi_props))
+          {
+             par->direction = EVAS_BIDI_PARAGRAPH_DIRECTION_IS_RTL(par->bidi_props) ?
+                EVAS_BIDI_DIRECTION_RTL : EVAS_BIDI_DIRECTION_LTR;
+          }
+        //
+
         par->is_bidi = !!par->bidi_props;
         if (segment_idxs) free(segment_idxs);
      }
@@ -2170,7 +2946,15 @@ _layout_format_push(Ctxt *c, Evas_Object_Textblock_Format *fmt,
 {
    if (fmt)
      {
-        fmt = _format_dup(c->obj, fmt);
+        // TIZEN_ONLY(20140702): Add pressed_color tag feature
+        //fmt = _format_dup(c->obj, fmt);
+        Evas_Object_Textblock_Format *fmt2;
+        fmt2 = _format_dup(c->obj, fmt);
+        fmt2->duplicated_from = (Evas_Object_Textblock_Format *)fmt;
+        fmt2->duplicated_formats = NULL;
+        fmt->duplicated_formats = eina_list_append(fmt->duplicated_formats, fmt2);
+        fmt = fmt2;
+        //
         c->format_stack  = eina_list_prepend(c->format_stack, fmt);
         fmt->fnode = fnode;
      }
@@ -2191,6 +2975,11 @@ _layout_format_push(Ctxt *c, Evas_Object_Textblock_Format *fmt,
         fmt->underline_dash_gap = 2;
         fmt->linerelgap = 0.0;
         fmt->password = 1;
+        fmt->ellipsis = -1;
+        // TIZEN_ONLY(20140702): Add pressed_color tag feature
+        fmt->duplicated_formats = NULL;
+        fmt->duplicated_from = NULL;
+        //
      }
    return fmt;
 }
@@ -2288,12 +3077,13 @@ _layout_format_pop(Ctxt *c, const char *format)
 static void
 _layout_format_value_handle(Ctxt *c, Evas_Object_Textblock_Format *fmt, const char *item)
 {
-   const char *key = NULL, *val = NULL;
+   const char *key = NULL;
+   Eina_Tmpstr *val = NULL;
 
    _format_param_parse(item, &key, &val);
    if ((key) && (val)) _format_command(c->obj, fmt, key, val);
    if (key) eina_stringshare_del(key);
-   if (val) eina_stringshare_del(val);
+   if (val) eina_tmpstr_del(val);
    c->align = fmt->halign;
    c->align_auto = fmt->halign_auto;
    c->marginl = fmt->margin.l;
@@ -2413,6 +3203,10 @@ _layout_line_reorder(Evas_Object_Textblock_Line *line)
                     {
                        line->items = (Evas_Object_Textblock_Item *) eina_inlist_remove(EINA_INLIST_GET(line->items), EINA_INLIST_GET(min));
                        line->items = (Evas_Object_Textblock_Item *) eina_inlist_prepend_relative(EINA_INLIST_GET(line->items), EINA_INLIST_GET(min), EINA_INLIST_GET(i));
+
+                       // HAVE_UNICODE_EMOTICON(2013.10.07): Basic implementation for supporting unicode 6.0 emoticon.
+                       i->ln = line;
+                       //
                     }
 
                   i = (Evas_Object_Textblock_Item *) EINA_INLIST_GET(min)->next;
@@ -2433,17 +3227,22 @@ _layout_line_reorder(Evas_Object_Textblock_Line *line)
 /* FIXME: doc */
 static void
 _layout_calculate_format_item_size(const Evas_Object *obj,
-      const Evas_Object_Textblock_Format_Item *fi,
+      Evas_Object_Textblock_Format_Item *fi,
       Evas_Coord *maxascent, Evas_Coord *maxdescent,
       Evas_Coord *_y, Evas_Coord *_w, Evas_Coord *_h)
 {
    /* Adjust sizes according to current line height/scale */
-   Evas_Coord w, h;
+   Evas_Coord w, h, asc = 0, desc = 0;
    const char *p, *s;
 
    s = fi->item;
    w = fi->parent.w;
    h = fi->parent.h;
+   //TIZEN ONLY (1028) : Fix me - For correct align of item format.
+   asc = ENFN->font_ascent_get(ENDT, fi->parent.format->font.font);
+   desc = ENFN->font_descent_get(ENDT, fi->parent.format->font.font);
+   ///
+
    switch (fi->size)
      {
       case SIZE:
@@ -2466,11 +3265,13 @@ _layout_calculate_format_item_size(const Evas_Object *obj,
               int sz = 1;
               if (fi->vsize == VSIZE_FULL)
                 {
-                   sz = *maxdescent + *maxascent;
+                   //TIZEN ONLY (1028) : Fix me - For correct align of item format.
+                   sz = desc + asc;
                 }
               else if (fi->vsize == VSIZE_ASCENT)
                 {
-                   sz = *maxascent;
+                   //TIZEN ONLY (1028) : Fix me - For correct align of item format.
+                   sz = asc;
                 }
               w = (w * sz) / h;
               h = sz;
@@ -2488,14 +3289,15 @@ _layout_calculate_format_item_size(const Evas_Object *obj,
       case SIZE_ABS:
          switch (fi->vsize)
            {
+            //TIZEN ONLY (1028) : Fix me - For correct align of item format.
             case VSIZE_FULL:
-               if (h > (*maxdescent + *maxascent))
+               if ((h - desc) > *maxascent)
                  {
-                    *maxascent += h - (*maxdescent + *maxascent);
+                    *maxascent += h - (desc + asc);
                     *_y = -*maxascent;
                  }
                else
-                  *_y = -(h - *maxdescent);
+                  *_y = -(h - desc);
                break;
             case VSIZE_ASCENT:
                if (h > *maxascent)
@@ -2506,6 +3308,7 @@ _layout_calculate_format_item_size(const Evas_Object *obj,
                else
                   *_y = -h;
                break;
+            /////////////////////////////////////////
             default:
                break;
            }
@@ -2529,6 +3332,43 @@ _layout_calculate_format_item_size(const Evas_Object *obj,
    *_h = h;
 }
 
+static Evas_Coord
+_layout_last_line_max_descent_adjust_calc(Ctxt *c, const Evas_Object_Textblock_Paragraph *last_vis_par)
+{
+   if (last_vis_par->lines)
+     {
+        Evas_Coord maxdescent = 0, descent = 0;
+        Evas_Object_Textblock_Line *ln = (Evas_Object_Textblock_Line *)
+           EINA_INLIST_GET(last_vis_par->lines)->last;
+        Evas_Object_Textblock_Item *it;
+
+        EINA_INLIST_FOREACH(ln->items, it)
+          {
+             if (it->type == EVAS_TEXTBLOCK_ITEM_TEXT)
+               {
+                  Evas_Coord asc = 0, desc = 0;
+                  Evas_Coord masc = 0, mdesc = 0;
+                  _layout_item_ascent_descent_adjust(c->obj, &asc, &desc,
+                        it, c->position);
+                  _layout_item_max_ascent_descent_calc(c->obj, &masc, &mdesc,
+                        it, c->position);
+
+                  if (desc > descent)
+                     descent = desc;
+                  if (mdesc > maxdescent)
+                     maxdescent = mdesc;
+               }
+          }
+
+        if (maxdescent > descent)
+          {
+             return maxdescent - descent;
+          }
+     }
+
+   return 0;
+}
+
 /**
  * @internal
  * Order the items in the line, update it's properties and update it's
@@ -2543,6 +3383,9 @@ _layout_line_finalize(Ctxt *c, Evas_Object_Textblock_Format *fmt)
 {
    Evas_Object_Textblock_Item *it;
    Evas_Coord x = 0;
+
+   if (c->position == TEXTBLOCK_POSITION_START)
+      c->position = TEXTBLOCK_POSITION_ELSE;
 
    /* If there are no text items yet, calc ascent/descent
     * according to the current format. */
@@ -2561,6 +3404,22 @@ _layout_line_finalize(Ctxt *c, Evas_Object_Textblock_Format *fmt)
              _layout_calculate_format_item_size(c->obj, fi, &c->maxascent,
                    &c->maxdescent, &fi->y, &fi->parent.w, &fi->parent.h);
              fi->parent.adv = fi->parent.w;
+          }
+        else
+          {
+             Evas_Coord asc = 0, desc = 0;
+             _layout_item_ascent_descent_adjust(c->obj, &asc, &desc,
+                   it, c->position);
+
+             // HAVE_UNICODE_EMOTICON(20140626): Adjust emoticon ascent, descent and height.
+             if (_ITEM_TEXT(it)->emoticon_item)
+               it->ln = c->ln;
+             //
+
+             if (asc > c->maxascent)
+                c->maxascent = asc;
+             if (desc > c->maxdescent)
+                c->maxdescent = desc;
           }
 
 loop_advance:
@@ -2658,6 +3517,9 @@ static int
 _layout_text_cutoff_get(Ctxt *c, Evas_Object_Textblock_Format *fmt,
       const Evas_Object_Textblock_Text_Item *ti)
 {
+   // HAVE_UNICODE_EMOTICON(2013.10.07): Fix cutoff position of Emoticon Image.
+   if (ti->emoticon_item) return 0;
+   //
    if (fmt->font.font)
      {
         Evas_Coord x;
@@ -2849,12 +3711,16 @@ _text_item_update_sizes(Ctxt *c, Evas_Object_Textblock_Text_Item *ti)
    if (shx2 > maxx) maxx = shx2;
    inset += -minx;
    ti->x_adjustment = maxx - minx;
-   
+
    ti->inset = inset;
    ti->parent.w = tw + ti->x_adjustment;
    ti->parent.h = th;
    ti->parent.adv = advw;
    ti->parent.x = 0;
+
+   // HAVE_UNICODE_EMOTICON(2013.10.07): Basic implementation for supporting unicode 6.0 emoticon.
+   _evas_object_textblock_emoticon_update_size(ti);
+   //
 }
 
 /**
@@ -2895,6 +3761,10 @@ _layout_text_append(Ctxt *c, Evas_Object_Textblock_Format *fmt, Evas_Object_Text
    Evas_Object_Textblock_Text_Item *ti;
    size_t cur_len = 0;
    Eina_Unicode urepch = 0;
+   // HAVE_UNICODE_EMOTICON(2013.10.07): Basic implementation for supporting unicode 6.0 emoticon.
+   Evas_Object_Textblock_Emoticon_Item *emoticon_item;
+   emoticon_item = c->o->emoticon_items;
+   //
 
    /* prepare a working copy of the string, either filled by the repch or
     * filled with the true values */
@@ -2978,9 +3848,6 @@ skip:
           }
         cur_len -= script_len;
 
-        script = evas_common_language_script_type_get(str, script_len);
-
-
         while (script_len > 0)
           {
              Evas_Font_Instance *cur_fi = NULL;
@@ -2988,6 +3855,8 @@ skip:
              ti = _layout_text_item_new(c, fmt);
              ti->parent.text_node = n;
              ti->parent.text_pos = start + str - tbase;
+
+             script = evas_common_language_script_type_get(str, script_len);
 
              if (ti->parent.format->font.font)
                {
@@ -3006,6 +3875,72 @@ skip:
                         cur_fi, str, &ti->text_props, c->par->bidi_props,
                         ti->parent.text_pos, run_len, EVAS_TEXT_PROPS_MODE_SHAPE);
                }
+
+             // HAVE_UNICODE_EMOTICON(2013.10.07): Basic implementation for supporting unicode 6.0 emoticon.
+             UNICODE_EMOTICON_CHECK(*str)
+               {
+                  Eina_Bool done = EINA_FALSE;
+                  if (emoticon_item)
+                    {
+                       while (emoticon_item &&
+                              ((emoticon_item->text_node != n) ||
+                               emoticon_item->assigned))
+                         emoticon_item = (Evas_Object_Textblock_Emoticon_Item *)
+                            (EINA_INLIST_GET(emoticon_item)->next);
+
+                       if (emoticon_item)
+                         {
+                            if (emoticon_item->unicode == *str)
+                              {
+                                 ti->emoticon_item = emoticon_item;
+                                 emoticon_item->pos = ti->parent.text_pos;
+                                 emoticon_item->assigned = EINA_TRUE;
+                                 emoticon_item->ti = ti;
+                                 emoticon_item = (Evas_Object_Textblock_Emoticon_Item *)(EINA_INLIST_GET(emoticon_item)->next);
+                                 c->o->emoticons = eina_list_append(c->o->emoticons, ti);
+                                 ti->parent.ln = NULL;
+                              }
+                            else
+                              {
+                                 ti->emoticon_item =
+                                    _emoticon_img_new(c->obj->layer->evas, c->obj,
+                                                      str);
+                                 if (ti->emoticon_item)
+                                   {
+                                      ti->emoticon_item->unicode = *str;
+                                      ti->emoticon_item->pos = ti->parent.text_pos;
+                                      ti->emoticon_item->assigned = EINA_TRUE;
+                                      ti->emoticon_item->text_node = n;
+                                      ti->emoticon_item->ti = ti;
+                                      c->o->emoticon_items = (Evas_Object_Textblock_Emoticon_Item *)eina_inlist_prepend_relative(
+                                         EINA_INLIST_GET(c->o->emoticon_items), EINA_INLIST_GET(ti->emoticon_item), EINA_INLIST_GET(emoticon_item));
+                                      c->o->emoticons = eina_list_append(c->o->emoticons, ti);
+                                      ti->parent.ln = NULL;
+                                   }
+                              }
+                            done = EINA_TRUE;
+                         }
+                    }
+                  if (!emoticon_item && !done)
+                    {
+                       ti->emoticon_item = _emoticon_img_new(c->obj->layer->evas,
+                                                             c->obj, str);
+                       if (ti->emoticon_item)
+                         {
+                            ti->emoticon_item->unicode = *str;
+                            ti->emoticon_item->pos = ti->parent.text_pos;
+                            ti->emoticon_item->assigned = EINA_TRUE;
+                            ti->emoticon_item->text_node = n;
+                            ti->emoticon_item->ti = ti;
+                            c->o->emoticon_items = (Evas_Object_Textblock_Emoticon_Item *)eina_inlist_append(
+                               EINA_INLIST_GET(c->o->emoticon_items), EINA_INLIST_GET(ti->emoticon_item));
+                            c->o->emoticons = eina_list_append(c->o->emoticons, ti);
+                            ti->parent.ln = NULL;
+                         }
+                    }
+               }
+             //
+
              str += run_len;
              script_len -= run_len;
 
@@ -3137,11 +4072,11 @@ _layout_do_format(const Evas_Object *obj __UNUSED__, Ctxt *c,
         //   item size=20x10 href=name
         //   item relsize=20x10 href=name
         //   item abssize=20x10 href=name
-        // 
+        //
         // optional arguments:
         //   vsize=full
         //   vsize=ascent
-        // 
+        //
         // size == item size (modifies line size) - can be multiplied by
         //   scale factor
         // relsize == relative size (height is current font height, width
@@ -3388,7 +4323,7 @@ _layout_get_word_mixwrap_common(Ctxt *c, Evas_Object_Textblock_Format *fmt,
            the rest works on the last char of the previous string.
            If it's a whitespace, then it's ok, and no need to go back
            because we'll remove it anyway. */
-        if (!_is_white(str[wrap]))
+        if (!_is_white(str[wrap]) || (wrap + 1 == len))
            MOVE_PREV_UNTIL(line_start, wrap);
         /* If there's a breakable point inside the text, scan backwards until
          * we find it */
@@ -3440,7 +4375,7 @@ _layout_get_word_mixwrap_common(Ctxt *c, Evas_Object_Textblock_Format *fmt,
                }
 
 
-             if ((wrap < len) && (wrap > line_start))
+             if ((wrap < len) && (wrap >= line_start))
                {
                   MOVE_NEXT_UNTIL(len, wrap);
                   return wrap;
@@ -3489,8 +4424,7 @@ _layout_ellipsis_item_new(Ctxt *c, const Evas_Object_Textblock_Item *cur_it)
 
    /* We can free it here, cause there's only one ellipsis item per tb. */
    if (c->o->ellip_ti) _item_free(c->obj, NULL, _ITEM(c->o->ellip_ti));
-   c->o->ellip_ti = ellip_ti = _layout_text_item_new(c,
-         eina_list_data_get(eina_list_last(c->format_stack)));
+   c->o->ellip_ti = ellip_ti = _layout_text_item_new(c, cur_it->format);
    ellip_ti->parent.text_node = cur_it->text_node;
    ellip_ti->parent.text_pos = cur_it->text_pos;
    script = evas_common_language_script_type_get(_ellip_str, len);
@@ -3539,6 +4473,10 @@ _layout_handle_ellipsis(Ctxt *c, Evas_Object_Textblock_Item *it, Eina_List *i)
    int wrap;
    ellip_ti = _layout_ellipsis_item_new(c, it);
    last_it = it;
+   // HAVE_UNICODE_EMOTICON(2014.03.19): Hide all of emoticons after ellipsis text item.
+   Evas_Object_Textblock_Text_Item *emoticon_ti;
+   Eina_List *l;
+   //
 
    save_cx = c->x;
    c->w -= ellip_ti->parent.w;
@@ -3563,6 +4501,16 @@ _layout_handle_ellipsis(Ctxt *c, Evas_Object_Textblock_Item *it, Eina_List *i)
         last_it = NULL;
      }
 
+   // HAVE_UNICODE_EMOTICON(2014.03.19): Hide all of emoticons after ellipsis text item.
+   EINA_LIST_FOREACH(c->o->emoticons, l, emoticon_ti)
+     {
+        if (emoticon_ti->parent.text_pos >= it->text_pos)
+          {
+             emoticon_ti->emoticon_item->visible = EINA_FALSE;
+             emoticon_ti->parent.ln = NULL;
+          }
+     }
+   //
    c->x = save_cx;
    c->w += ellip_ti->parent.w;
    /* If we should add this item, do it */
@@ -3581,6 +4529,9 @@ _layout_handle_ellipsis(Ctxt *c, Evas_Object_Textblock_Item *it, Eina_List *i)
    c->ln->items = (Evas_Object_Textblock_Item *)
       eina_inlist_append(EINA_INLIST_GET(c->ln->items),
             EINA_INLIST_GET(_ITEM(ellip_ti)));
+
+   c->position = (c->position == TEXTBLOCK_POSITION_START) ?
+      TEXTBLOCK_POSITION_SINGLE : TEXTBLOCK_POSITION_END;
    _layout_line_finalize(c, ellip_ti->parent.format);
 }
 
@@ -3622,6 +4573,146 @@ _layout_paragraph_render(Evas_Object_Textblock *o,
 #endif
 }
 
+/* calculates items width in current paragraph */
+static inline Evas_Coord
+_calc_items_width(Ctxt *c)
+{
+   Evas_Object_Textblock_Item *it, *last_it = NULL;
+   Eina_List *i;
+   Evas_Coord w = 0;
+
+   if  (!c->par->logical_items)
+      return 0;
+
+   EINA_LIST_FOREACH(c->par->logical_items, i, it)
+     {
+        w += it->adv;
+        last_it = it;
+     }
+
+   //reaching this point when it is the last item
+   if (last_it)
+      w += last_it->w - last_it->adv;
+   return w;
+}
+
+static inline int
+_item_get_cutoff(Ctxt *c, Evas_Object_Textblock_Item *it, Evas_Coord x)
+{
+   int pos = -1;
+   Evas_Object_Textblock_Text_Item *ti;
+   Evas_Object *obj = c->obj;
+
+   ti = (it->type == EVAS_TEXTBLOCK_ITEM_TEXT) ? _ITEM_TEXT(it) : NULL;
+   if (ti && ti->parent.format->font.font)
+     {
+        pos = ENFN->font_last_up_to_pos(ENDT, ti->parent.format->font.font,
+              &ti->text_props, x, 0);
+     }
+   return pos;
+}
+
+/**
+ * @internal
+ * This handles ellipsis prior most of the work in _layout_par.
+ * Currently it is here to handle all value in the range of 0.0 to 0.9999 (<1).
+ * It starts by getting the total width of items, and calculates the 'block' of
+ * text that needs to be removed i.e. sets low and high boundaries
+ * of that block.
+ * All text items that intersect this block will be cut: the edge items (ones
+ * that don't intersect in whole) will be split, and the rest are set to be
+ * visually-deleted.
+ * Note that a special case for visible format items does not
+ * split them, but instead just visually-deletes them (because there are no 
+ * characters to split).
+ */
+static inline void
+_layout_par_ellipsis_items(Ctxt *c, double ellip)
+{
+   Evas_Object_Textblock_Item *it;
+   Evas_Object_Textblock_Text_Item *ellip_ti;
+   Eina_List *i, *j;
+   Evas_Coord items_width, exceed, items_cut;
+   Evas_Coord l, h, off;
+   int pos;
+
+   c->o->ellip_prev_it = NULL;
+
+   /* calc exceed amount */
+   items_width = _calc_items_width(c);
+   exceed = items_width - (c->w - c->o->style_pad.l - c->o->style_pad.r
+                         - c->marginl - c->marginr);
+
+   if (exceed <= 0)
+      return;
+
+   // TIZEN_ONLY(20150513): Add evas_object_text/textblock_ellipsis_status_get internal API.
+   c->o->last_computed_ellipsis = EINA_TRUE;
+   //
+
+     {
+        Evas_Object_Textblock_Item *first_it =
+           _ITEM(eina_list_data_get(c->par->logical_items));
+        ellip_ti = _layout_ellipsis_item_new(c, first_it);
+     }
+   exceed += ellip_ti->parent.adv;
+   items_cut = items_width * ellip;
+   l = items_cut - (exceed * ellip);
+   h = l + exceed; //h = items_cut - (exceed * (1 - ellip))
+
+   off = 0;
+   /* look for the item that is being cut by the lower boundary */
+   i = c->par->logical_items;
+   EINA_LIST_FOREACH(c->par->logical_items, i, it)
+     {
+        if (it->w > (l - off))
+           break;
+        off += it->adv;
+     }
+   c->o->ellip_prev_it = i;
+   if (it) _layout_ellipsis_item_new(c, it);
+
+
+   pos = (it && it->type == EVAS_TEXTBLOCK_ITEM_TEXT) ?
+      (_item_get_cutoff(c, it, l - off)) : -1;
+   if (pos >= 0)
+     {
+        _layout_item_text_split_strip_white(c, _ITEM_TEXT(it), i, pos);
+        off += it->adv;
+        i = eina_list_next(i);
+     }
+
+   /* look for the item that is being cut by the upper boundary */
+   EINA_LIST_FOREACH(i, j, it)
+     {
+        if (it->w > (h - off))
+           break;
+        off += it->adv;
+        /* if item is not being cut by the upper boundary, then
+         * it is contained in the area that we are supposed to
+         * visually remove */
+        it->visually_deleted = EINA_TRUE;
+     }
+
+   pos = (it && it->type == EVAS_TEXTBLOCK_ITEM_TEXT) ?
+      (_item_get_cutoff(c, it, h - off)) : -1;
+   if (pos >= 0)
+      _layout_item_text_split_strip_white(c, _ITEM_TEXT(it), j, pos + 1);
+   if (it)
+      it->visually_deleted = EINA_TRUE;
+}
+
+static inline void
+_layout_par_append_ellipsis(Ctxt *c)
+{
+   Evas_Object_Textblock_Text_Item *ellip_ti = c->o->ellip_ti;
+   c->ln->items = (Evas_Object_Textblock_Item *)
+      eina_inlist_append(EINA_INLIST_GET(c->ln->items),
+            EINA_INLIST_GET(_ITEM(ellip_ti)));
+   ellip_ti->parent.ln = c->ln;
+   c->x += ellip_ti->parent.adv;
+}
+
 /* 0 means go ahead, 1 means break without an error, 2 means
  * break with an error, should probably clean this a bit (enum/macro)
  * FIXME ^ */
@@ -3633,6 +4724,7 @@ _layout_par(Ctxt *c)
    int ret = 0;
    int wrap = -1;
    char *line_breaks = NULL;
+   Eina_Bool skip_ellip = EINA_FALSE;
 
    if (!c->par->logical_items)
      return 2;
@@ -3658,6 +4750,12 @@ _layout_par(Ctxt *c)
                 EINA_INLIST_GET(c->par->lines)->last;
              if (ln)
                 c->line_no = c->par->line_no + ln->line_no + 1;
+
+             /* After this par we are no longer at the beginning, as there
+              * must be some text in the par. */
+             if (c->position == TEXTBLOCK_POSITION_START)
+                c->position = TEXTBLOCK_POSITION_ELSE;
+
              return 0;
           }
         c->par->text_node->dirty = EINA_FALSE;
@@ -3682,6 +4780,7 @@ _layout_par(Ctxt *c)
                     }
                   else
                     {
+                       ititr->visually_deleted = EINA_FALSE;
                        prev_it = ititr;
                     }
                }
@@ -3694,34 +4793,52 @@ _layout_par(Ctxt *c)
    _layout_line_new(c, it->format);
    /* We walk on our own because we want to be able to add items from
     * inside the list and then walk them on the next iteration. */
+
+   /* TODO: We need to consider where ellipsis is used in the current text.
+      Currently, we assume that ellipsis is at the beginning of the
+      paragraph. This is a safe assumption for now, as other usages
+      seem a bit unnatural.*/
+     {
+        double ellip;
+        ellip = it->format->ellipsis;
+        if ((0 <= ellip) && (ellip < 1.0))
+           _layout_par_ellipsis_items(c, ellip);
+     }
+
    for (i = c->par->logical_items ; i ; )
      {
+        Evas_Coord prevdescent = 0, prevascent = 0;
         int adv_line = 0;
         int redo_item = 0;
         it = _ITEM(eina_list_data_get(i));
         /* Skip visually deleted items */
         if (it->visually_deleted)
           {
+             //one more chance for ellipsis special cases
+             if (c->o->ellip_prev_it == i)
+                _layout_par_append_ellipsis(c);
+
              i = eina_list_next(i);
              continue;
           }
 
         if (it->type == EVAS_TEXTBLOCK_ITEM_TEXT)
           {
-             Evas_Object_Textblock_Text_Item *ti = _ITEM_TEXT(it);
-             _layout_format_ascent_descent_adjust(c->obj, &c->maxascent,
-                   &c->maxdescent, ti->parent.format);
+             _layout_item_ascent_descent_adjust(c->obj, &c->maxascent,
+                   &c->maxdescent, it, c->position);
           }
         else
           {
              Evas_Object_Textblock_Format_Item *fi = _ITEM_FORMAT(it);
              if (fi->formatme)
                {
+                  prevdescent = c->maxdescent;
+                  prevascent = c->maxascent;
                   /* If there are no text items yet, calc ascent/descent
                    * according to the current format. */
                   if (c->maxascent + c->maxdescent == 0)
-                     _layout_format_ascent_descent_adjust(c->obj, &c->maxascent,
-                           &c->maxdescent, it->format);
+                     _layout_item_ascent_descent_adjust(c->obj, &c->maxascent,
+                           &c->maxdescent, it, c->position);
 
                   _layout_calculate_format_item_size(c->obj, fi, &c->maxascent,
                         &c->maxdescent, &fi->y, &fi->parent.w, &fi->parent.h);
@@ -3729,6 +4846,69 @@ _layout_par(Ctxt *c)
                }
           }
 
+        /* Handle ellipsis here. If we don't have more width left
+         * and no height left, or no more width left and no wrapping.
+         * Note that this is only for ellipsis == 1.0, and is treated in a
+         * fast path.
+         * Other values of 0.0 <= ellipsis < 1.0 are handled in
+         * _layout_par_ellipsis_items */
+        if (!skip_ellip)
+          {
+             if ((it->format->ellipsis == 1.0) && (c->h >= 0) &&
+                 ((2 * it->h + c->y >
+                   c->h - c->o->style_pad.t - c->o->style_pad.b) ||
+                  (!it->format->wrap_word && !it->format->wrap_char &&
+                   !it->format->wrap_mixed)))
+               {
+                  Evas_Object_Textblock_Text_Item *ellip_ti;
+                  ellip_ti = _layout_ellipsis_item_new(c, it);
+
+                  if ((c->w >= 0) &&
+                      (((c->x + it->adv + ellip_ti->parent.adv) >
+                        (c->w - c->o->style_pad.l - c->o->style_pad.r -
+                         c->marginl - c->marginr)) || (wrap > 0)))
+                    {
+                       Eina_List *ll = i;
+                       int limit = c->w - c->o->style_pad.l - c->o->style_pad.r -
+                          c->marginl - c->marginr - c->x - it->adv;
+
+                       // TIZEN_ONLY(20150513): Add evas_object_text/textblock_ellipsis_status_get internal API.
+                       c->o->last_computed_ellipsis = EINA_TRUE;
+                       //
+
+                       if (limit < 0)
+                         {
+                            _layout_handle_ellipsis(c, it, i);
+                            ret = 1;
+                            goto end;
+                         }
+                       ll = eina_list_next(ll);
+                       while (ll)
+                         {
+                            Evas_Object_Textblock_Item *itt;
+
+                            itt = _ITEM(eina_list_data_get(ll));
+                            if (itt->type != EVAS_TEXTBLOCK_ITEM_TEXT)
+                              {
+                                 Evas_Object_Textblock_Format_Item *itt_fi = _ITEM_FORMAT(itt);
+                                 Evas_Coord _maxa = 0, _maxd = 0, _yy = 0, _ww = 0, _hh = 0;
+                                 _layout_calculate_format_item_size(c->obj, itt_fi, &_maxa,
+                                       &_maxd, &_yy, &_ww, &_hh);
+                                 itt_fi->parent.adv = _ww;
+                              }
+                            limit -= itt->adv;
+                            if (limit < 0)
+                              {
+                                 _layout_handle_ellipsis(c, it, i);
+                                 ret = 1;
+                                 goto end;
+                              }
+                            ll = eina_list_next(ll);
+                         }
+                       skip_ellip = EINA_TRUE;
+                    }
+               }
+          }
 
         /* Check if we need to wrap, i.e the text is bigger than the width,
            or we already found a wrap point. */
@@ -3737,21 +4917,9 @@ _layout_par(Ctxt *c)
                 (c->w - c->o->style_pad.l - c->o->style_pad.r -
                  c->marginl - c->marginr)) || (wrap > 0)))
           {
-             /* Handle ellipsis here. If we don't have more width left
-              * and no height left, or no more width left and no wrapping. */
-             if ((it->format->ellipsis == 1.0) && (c->h >= 0) &&
-                   ((2 * it->h + c->y >
-                     c->h - c->o->style_pad.t - c->o->style_pad.b) ||
-                    (!it->format->wrap_word && !it->format->wrap_char &&
-                     !it->format->wrap_mixed)))
-               {
-                  _layout_handle_ellipsis(c, it, i);
-                  ret = 1;
-                  goto end;
-               }
              /* If we want to wrap and it's worth checking for wrapping
               * (i.e there's actually text). */
-             else if ((it->format->wrap_word || it->format->wrap_char ||
+             if ((it->format->wrap_word || it->format->wrap_char ||
                 it->format->wrap_mixed) && it->text_node)
                {
                   size_t line_start;
@@ -3759,8 +4927,6 @@ _layout_par(Ctxt *c)
 
                   it_len = (it->type == EVAS_TEXTBLOCK_ITEM_FORMAT) ?
                      1 : _ITEM_TEXT(it)->text_props.text_len;
-
-
 #ifdef HAVE_LINEBREAK
                   /* If we haven't calculated the linebreaks yet,
                    * do */
@@ -3852,10 +5018,13 @@ _layout_par(Ctxt *c)
                                     item_pos as the line_start, because
                                     there's already no cut before*/
                                  wrap = -1;
+                                 adv_line = 0;
                               }
-                        }
+                         }
                        else
-                          wrap -= it->text_pos; /* Cut here */
+                         {
+                            wrap -= it->text_pos; /* Cut here */
+                         }
                     }
 
                   if (wrap > 0)
@@ -3869,6 +5038,12 @@ _layout_par(Ctxt *c)
                   else if (wrap == 0)
                     {
                        /* Should wrap before the item */
+
+                       /* We didn't end up using the item, so revert the ascent
+                        * and descent changes. */
+                       c->maxdescent = prevdescent;
+                       c->maxascent = prevascent;
+
                        adv_line = 0;
                        redo_item = 1;
                        _layout_line_advance(c, it->format);
@@ -3898,7 +5073,10 @@ _layout_par(Ctxt *c)
                        adv_line = 1;
                     }
                }
+
              c->x += it->adv;
+             if (c->o->ellip_prev_it == i)
+                _layout_par_append_ellipsis(c);
              i = eina_list_next(i);
           }
         if (adv_line)
@@ -3912,8 +5090,15 @@ _layout_par(Ctxt *c)
              _layout_line_advance(c, it->format);
           }
      }
+
    if (c->ln->items)
      {
+        if (c->par && !EINA_INLIST_GET(c->par)->next)
+          {
+             c->position = (c->position == TEXTBLOCK_POSITION_START) ?
+                TEXTBLOCK_POSITION_SINGLE : TEXTBLOCK_POSITION_END;
+          }
+
         /* Here 'it' is the last format used */
         _layout_line_finalize(c, it->format);
      }
@@ -4022,6 +5207,8 @@ _format_changes_invalidate_text_nodes(Ctxt *c)
              start_n = _NODE_TEXT(EINA_INLIST_GET(start_n)->next);
           }
      }
+
+   eina_list_free(fstack);
 }
 
 
@@ -4283,6 +5470,8 @@ _layout(const Evas_Object *obj, int w, int h, int *w_ret, int *h_ret)
       int par_count = 1; /* Force it to take the first one */
       int par_index_pos = 0;
 
+      c->position = TEXTBLOCK_POSITION_START;
+
       if (par_index_step == 0) par_index_step = 1;
 
       /* Clear all of the index */
@@ -4326,7 +5515,11 @@ _layout(const Evas_Object *obj, int w, int h, int *w_ret, int *h_ret)
             EINA_INLIST_GET(c->paragraphs)->last;
 
       if (last_vis_par)
-         c->hmax = last_vis_par->y + last_vis_par->h;
+        {
+           c->hmax = last_vis_par->y + last_vis_par->h +
+              _layout_last_line_max_descent_adjust_calc(c, last_vis_par);
+        }
+
    }
 
    /* Clean the rest of the format stack */
@@ -4375,11 +5568,31 @@ _relayout(const Evas_Object *obj)
    Evas_Object_Textblock *o;
 
    o = (Evas_Object_Textblock *)(obj->object_data);
+   // TIZEN_ONLY(20150513): Add evas_object_text/textblock_ellipsis_status_get internal API.
+   o->last_computed_ellipsis = EINA_FALSE;
+   //
+   // TIZEN_ONLY(20140702): Add pressed_color tag feature
+   if (o->pressed_format)
+     _textblock_format_tree_is_pressed(o->pressed_format, EINA_FALSE);
+   o->pressed_format = NULL;
+   //
    _layout(obj, obj->cur.geometry.w, obj->cur.geometry.h,
          &o->formatted.w, &o->formatted.h);
+
+   // HAVE_UNICODE_EMOTICON(2013.10.07): Basic implementation for supporting unicode 6.0 emoticon.
+   _evas_object_textblock_emoticon_update_geometry((Evas_Object *)obj);
+   //
+
    o->formatted.valid = 1;
+   o->formatted.oneline_h = 0;
    o->last_w = obj->cur.geometry.w;
    o->last_h = obj->cur.geometry.h;
+   if ((o->paragraphs) && (!EINA_INLIST_GET(o->paragraphs)->next) &&
+       (o->paragraphs->lines) && (!EINA_INLIST_GET(o->paragraphs->lines)->next))
+     {
+        if (obj->cur.geometry.h < o->formatted.h)
+          o->formatted.oneline_h = o->formatted.h;
+     }
    o->changed = 0;
    o->content_changed = 0;
    o->format_changed = EINA_FALSE;
@@ -4405,6 +5618,8 @@ _find_layout_item_line_match(Evas_Object *obj, Evas_Object_Textblock_Node_Text *
    Evas_Object_Textblock *o;
 
    o = (Evas_Object_Textblock *)(obj->object_data);
+
+   evas_object_textblock_coords_recalc(obj);
    if (!o->formatted.valid) _relayout(obj);
 
    found_par = n->par;
@@ -4525,6 +5740,8 @@ evas_textblock_style_set(Evas_Textblock_Style *ts, const char *text)
        (ts->style_text && text && !strcmp(text, ts->style_text)))
       return;
 
+   // TIZEN_ONLY(20140626): Update format when the textblock style is updated.
+   /*
    EINA_LIST_FOREACH(ts->objects, l, obj)
      {
         Evas_Object_Textblock *o;
@@ -4533,6 +5750,8 @@ evas_textblock_style_set(Evas_Textblock_Style *ts, const char *text)
         _evas_textblock_invalidate_all(o);
         _evas_textblock_changed(o, obj);
      }
+   */
+   //
 
    _style_replace(ts, text);
 
@@ -4650,6 +5869,19 @@ evas_textblock_style_set(Evas_Textblock_Style *ts, const char *text)
              p++;
           }
      }
+
+   // TIZEN_ONLY(20140626): Update format when the textblock style is updated.
+   EINA_LIST_FOREACH(ts->objects, l, obj)
+     {
+        Evas_Object_Textblock *o;
+
+        o = (Evas_Object_Textblock *)(obj->object_data);
+        _evas_textblock_invalidate_all(o);
+        _evas_textblock_changed(o, obj);
+
+        _evas_object_textblock_format_update(o);
+     }
+   //
 }
 
 EAPI const char *
@@ -4657,6 +5889,32 @@ evas_textblock_style_get(const Evas_Textblock_Style *ts)
 {
    if (!ts) return NULL;
    return ts->style_text;
+}
+
+static const char *
+_textblock_format_node_from_style_tag(Evas_Object_Textblock *o, Evas_Object_Textblock_Node_Format *fnode, const char *format, size_t format_len)
+{
+   const char *match;
+   size_t replace_len;
+   if (!o->style_user || !(match = _style_match_tag(o->style_user, format,
+               format_len, &replace_len)))
+     {
+        match = _style_match_tag(o->style, format, format_len,
+              &replace_len);
+     }
+
+   if (match)
+     {
+        if (match[0] != '-')
+          {
+             fnode->opener = EINA_TRUE;
+             if (match[0] != '+')
+               {
+                  fnode->own_closer = EINA_TRUE;
+               }
+          }
+     }
+   return match;
 }
 
 /* textblock styles */
@@ -4688,6 +5946,43 @@ _textblock_style_generic_set(Evas_Object *obj, Evas_Textblock_Style *ts,
      }
    *obj_ts = ts;
 
+   Evas_Object_Textblock_Node_Format *fnode = o->format_nodes;
+   while (fnode)
+     {
+        const char *match;
+        size_t format_len = eina_stringshare_strlen(fnode->orig_format);
+        /* Is this safe to use alloca here? Strings might possibly get large */
+        char *format = alloca(format_len + 2);
+
+        if (!fnode->opener)
+          {
+             format[0] = '/';
+             format[1] = '\0';
+          }
+        else
+          {
+             format[0] = '\0';
+          }
+
+        strcat(format, fnode->orig_format);
+
+        match = _textblock_format_node_from_style_tag(o, fnode, format,
+              format_len);
+
+        if (match && fnode->format && strcmp(match, fnode->format))
+          {
+             if ((*match == '+') || (*match == '-'))
+               {
+                  match++;
+                  while (*match == ' ') match++;
+               }
+             fnode->is_new = EINA_TRUE;
+             eina_stringshare_replace(&fnode->format, match);
+          }
+        fnode = _NODE_FORMAT(EINA_INLIST_GET(fnode)->next);
+     }
+
+   o->format_changed = EINA_TRUE;
    _evas_textblock_invalidate_all(o);
    _evas_textblock_changed(o, obj);
 }
@@ -4912,11 +6207,11 @@ _escaped_char_get(const char *s, const char *s_end)
           }
 
         len = s_end - s;
-        if (len >= sizeof(ustr) + 1)
+        if (len >= sizeof(ustr))
            len = sizeof(ustr);
 
         memcpy(ustr, s, len);
-        ustr[len] = '\0';
+        ustr[len-1] = '\0';
         uchar[0] = strtol(ustr, NULL, base);
 
         if (uchar[0] == 0)
@@ -5019,6 +6314,12 @@ evas_object_textblock_text_markup_set(Evas_Object *obj, const char *text)
         o->markup_text = NULL;
      }
    _nodes_clear(obj);
+
+   o->cursor->node = _evas_textblock_node_text_new();
+   o->text_nodes = _NODE_TEXT(eina_inlist_append(
+            EINA_INLIST_GET(o->text_nodes),
+            EINA_INLIST_GET(o->cursor->node)));
+
    if (!o->style && !o->style_user)
      {
         if (text != o->markup_text)
@@ -5142,9 +6443,18 @@ evas_object_textblock_text_markup_prepend(Evas_Textblock_Cursor *cur, const char
                     }
                }
              /* Unicode object replcament char */
+             // TIZEN_ONLY(20140815): Don't remove NO-BREAK SPACE(0x00A0) character.
+             /*
              else if (!strncmp(_REPLACEMENT_CHAR_UTF8, p,
                       text_len = strlen(_REPLACEMENT_CHAR_UTF8)) ||
                    !strncmp(_NEWLINE_UTF8, p,
+                      text_len = strlen(_NEWLINE_UTF8)) ||
+                   !strncmp(_TAB_UTF8, p,
+                      text_len = strlen(_TAB_UTF8)) ||
+                   !strncmp(_PARAGRAPH_SEPARATOR_UTF8, p,
+                      text_len = strlen(_PARAGRAPH_SEPARATOR_UTF8)))
+              */
+             else if (!strncmp(_NEWLINE_UTF8, p,
                       text_len = strlen(_NEWLINE_UTF8)) ||
                    !strncmp(_TAB_UTF8, p,
                       text_len = strlen(_TAB_UTF8)) ||
@@ -5194,6 +6504,63 @@ _markup_get_format_append(Eina_Strbuf *txt, Evas_Object_Textblock_Node_Format *f
 }
 
 /**
+ * // TIZEN_ONLY(20131218)
+ * // Add evas_textblock_cursor_range_text_valid_markup_get API.
+ * @internal
+ * An helper function to markup get. Prepends the format from fnode to the strbuf txt.
+ *
+ * @param txt the strbuf to prepend to.
+ * @param fnode the format node to process.
+ */
+static void
+_markup_get_format_prepend(Eina_Strbuf *txt, Evas_Object_Textblock_Node_Format *fnode)
+{
+   if (fnode->own_closer)
+     eina_strbuf_prepend_printf(txt, "<%s/>", fnode->orig_format);
+   else if (fnode->opener)
+     eina_strbuf_prepend_printf(txt, "<%s>", fnode->orig_format);
+   else
+     eina_strbuf_prepend_printf(txt, "</%s>", fnode->orig_format);
+}
+
+/**
+ * @internal
+ * An helper function to _markup_get_text_append and others, used for getting
+ * back only the "dangerous" escapes.
+ */
+static void
+_markup_get_text_utf8_append(Eina_Strbuf *sbuf, const char *text)
+{
+   int ch, pos = 0, pos2 = 0;
+
+   for (;;)
+     {
+        pos = pos2;
+        pos2 = evas_string_char_next_get(text, pos2, &ch);
+        if ((ch <= 0) || (pos2 <= 0)) break;
+
+        if (ch == _NEWLINE)
+           eina_strbuf_append(sbuf, "<br/>");
+        else if (ch == _TAB)
+           eina_strbuf_append(sbuf, "<tab/>");
+        else if (ch == '<')
+           eina_strbuf_append(sbuf, "&lt;");
+        else if (ch == '>')
+           eina_strbuf_append(sbuf, "&gt;");
+        else if (ch == '&')
+           eina_strbuf_append(sbuf, "&amp;");
+        else if (ch == _PARAGRAPH_SEPARATOR)
+           eina_strbuf_append(sbuf, "<ps/>");
+        else if (ch == _REPLACEMENT_CHAR)
+           eina_strbuf_append(sbuf, "&#xa0;");
+        else if (ch != '\r')
+          {
+             eina_strbuf_append_length(sbuf, text + pos, pos2 - pos);
+          }
+     }
+}
+
+/**
  * @internal
  * An helper function to markup get. Appends the text in text.
  *
@@ -5203,25 +6570,10 @@ _markup_get_format_append(Eina_Strbuf *txt, Evas_Object_Textblock_Node_Format *f
 static void
 _markup_get_text_append(Eina_Strbuf *txt, const Eina_Unicode *text)
 {
-   char *p = eina_unicode_unicode_to_utf8(text, NULL);
-   char *base = p;
-   while (*p)
-     {
-        const char *escape;
-        int adv;
+   char *base = eina_unicode_unicode_to_utf8(text, NULL);
 
-        escape = _escaped_char_match(p, &adv);
-        if (escape)
-          {
-             p += adv;
-             eina_strbuf_append(txt, escape);
-          }
-        else
-          {
-             eina_strbuf_append_char(txt, *p);
-             p++;
-          }
-     }
+   _markup_get_text_utf8_append(txt, base);
+
    free(base);
 }
 EAPI const char *
@@ -5255,7 +6607,7 @@ evas_object_textblock_text_markup_get(const Evas_Object *obj)
           {
              Eina_Unicode tmp_ch;
              off += fnode->offset;
-             
+
              if (off > len) break;
              /* No need to skip on the first run */
              tmp_ch = text[off];
@@ -5372,8 +6724,15 @@ evas_textblock_text_markup_to_utf8(const Evas_Object *obj, const char *text)
                }
              else if (*p == 0)
                {
-                  eina_strbuf_append_length(sbuf, s, p - s);
-                  s = NULL;
+                  if (s)
+                    {
+                       eina_strbuf_append_length(sbuf, s, p - s);
+                       s = NULL;
+                    }
+                  else
+                    {
+                       ERR("There is a invalid markup tag at positoin '%u'. Please check the text.", (unsigned int) (p - text));
+                    }
                }
              if (*p == 0)
                 break;
@@ -5386,8 +6745,15 @@ evas_textblock_text_markup_to_utf8(const Evas_Object *obj, const char *text)
                    * mark the start of the tag */
                   tag_start = p;
                   tag_end = NULL;
-                  eina_strbuf_append_length(sbuf, s, p - s);
-                  s = NULL;
+                  if (s)
+                    {
+                       eina_strbuf_append_length(sbuf, s, p - s);
+                       s = NULL;
+                    }
+                  else
+                    {
+                       ERR("There is a invalid markup tag at positoin '%u'. Please check the text.", (unsigned int) (p - text));
+                    }
                }
           }
         else if (*p == '>')
@@ -5406,8 +6772,15 @@ evas_textblock_text_markup_to_utf8(const Evas_Object *obj, const char *text)
                    * the start of the escape sequence */
                   esc_start = p;
                   esc_end = NULL;
-                  eina_strbuf_append_length(sbuf, s, p - s);
-                  s = NULL;
+                  if (s)
+                    {
+                       eina_strbuf_append_length(sbuf, s, p - s);
+                       s = NULL;
+                    }
+                  else
+                    {
+                       ERR("There is a invalid markup tag at positoin '%u'. Please check the text.", (unsigned int) (p - text));
+                    }
                }
           }
         else if (*p == ';')
@@ -5431,7 +6804,6 @@ evas_textblock_text_utf8_to_markup(const Evas_Object *obj, const char *text)
 {
    Eina_Strbuf *sbuf;
    char *str = NULL;
-   int ch, pos = 0, pos2 = 0;
 
    (void) obj;
 
@@ -5439,31 +6811,8 @@ evas_textblock_text_utf8_to_markup(const Evas_Object *obj, const char *text)
 
    sbuf = eina_strbuf_new();
 
-   for (;;)
-     {
-        pos = pos2;
-        pos2 = evas_string_char_next_get(text, pos2, &ch);
-        if ((ch <= 0) || (pos2 <= 0)) break;
+   _markup_get_text_utf8_append(sbuf, text);
 
-        if (ch == _NEWLINE)
-           eina_strbuf_append(sbuf, "<br/>");
-        else if (ch == _TAB)
-           eina_strbuf_append(sbuf, "<tab/>");
-        else if (ch == '<')
-           eina_strbuf_append(sbuf, "&lt;");
-        else if (ch == '>')
-           eina_strbuf_append(sbuf, "&gt;");
-        else if (ch == '&')
-           eina_strbuf_append(sbuf, "&amp;");
-        else if (ch == _PARAGRAPH_SEPARATOR)
-           eina_strbuf_append(sbuf, "<ps/>");
-        else if (ch == _REPLACEMENT_CHAR)
-           eina_strbuf_append(sbuf, "&#xfffc;");
-        else
-          {
-             eina_strbuf_append_length(sbuf, text + pos, pos2 - pos);
-          }
-     }
    str = eina_strbuf_string_steal(sbuf);
    eina_strbuf_free(sbuf);
    return str;
@@ -5496,6 +6845,9 @@ _evas_textblock_nodes_merge(Evas_Object_Textblock *o, Evas_Object_Textblock_Node
    text = eina_ustrbuf_string_get(from->unicode);
    len = eina_ustrbuf_length_get(from->unicode);
    eina_ustrbuf_append_length(to->unicode, text, len);
+   // HAVE_UNICODE_EMOTICON(2013.10.07): Change text node of emoticon item.
+   _evas_object_textblock_emoticon_item_range_text_node_change(o, from, to, 0, len);
+   //
 
    itr = from->format_node;
    if (itr && (itr->text_node == from))
@@ -5896,6 +7248,11 @@ found:
         Evas_Textblock_Cursor cur;
         cur.obj = obj;
 
+        // HAVE_UNICODE_EMOTICON(2013.10.07): Delete emoticon items when the string of text node is deleted.
+        _evas_object_textblock_emoticon_item_range_delete(obj->layer->evas, o,
+                                                          n->text_node, ind,
+                                                          ind + 1);
+        //
         eina_ustrbuf_remove(n->text_node->unicode, ind, ind + 1);
         if (format && _IS_PARAGRAPH_SEPARATOR(o, format))
           {
@@ -6120,18 +7477,25 @@ evas_textblock_cursor_word_start(Evas_Textblock_Cursor *cur)
    if (!cur) return EINA_FALSE;
    TB_NULL_CHECK(cur->node, EINA_FALSE);
 
+   size_t len = eina_ustrbuf_length_get(cur->node->unicode);
+
    text = eina_ustrbuf_string_get(cur->node->unicode);
 
 #ifdef HAVE_LINEBREAK
      {
         const char *lang = ""; /* FIXME: get lang */
-        size_t len = eina_ustrbuf_length_get(cur->node->unicode);
         breaks = malloc(len);
         set_wordbreaks_utf32((const utf32_t *) text, len, lang, breaks);
      }
 #endif
 
-   i = cur->pos;
+   if ((cur->pos > 0) && (cur->pos == len))
+      cur->pos--;
+
+   for (i = cur->pos ; _is_white(text[i]) && BREAK_AFTER(i) ; i--)
+     {
+        if (i == 0) break;
+     }
 
    for ( ; i > 0 ; i--)
      {
@@ -6161,18 +7525,22 @@ evas_textblock_cursor_word_end(Evas_Textblock_Cursor *cur)
    if (!cur) return EINA_FALSE;
    TB_NULL_CHECK(cur->node, EINA_FALSE);
 
+   size_t len = eina_ustrbuf_length_get(cur->node->unicode);
+
+   if (cur->pos == len)
+      return EINA_TRUE;
+
    text = eina_ustrbuf_string_get(cur->node->unicode);
 
 #ifdef HAVE_LINEBREAK
      {
         const char *lang = ""; /* FIXME: get lang */
-        size_t len = eina_ustrbuf_length_get(cur->node->unicode);
         breaks = malloc(len);
         set_wordbreaks_utf32((const utf32_t *) text, len, lang, breaks);
      }
 #endif
 
-   i = cur->pos;
+   for (i = cur->pos; text[i] && _is_white(text[i]) && (BREAK_AFTER(i)) ; i++);
 
    for ( ; text[i] ; i++)
      {
@@ -6191,8 +7559,8 @@ evas_textblock_cursor_word_end(Evas_Textblock_Cursor *cur)
    return EINA_TRUE;
 }
 
-EAPI Eina_Bool
-evas_textblock_cursor_char_next(Evas_Textblock_Cursor *cur)
+static Eina_Bool
+_evas_textblock_cursor_next(Evas_Textblock_Cursor *cur, Eina_Bool per_cluster)
 {
    int ind;
    const Eina_Unicode *text;
@@ -6202,7 +7570,59 @@ evas_textblock_cursor_char_next(Evas_Textblock_Cursor *cur)
 
    ind = cur->pos;
    text = eina_ustrbuf_string_get(cur->node->unicode);
-   if (text[ind]) ind++;
+
+   if (text[ind])
+     {
+        if (per_cluster)
+          {
+             Evas_Object_Textblock_Paragraph *par = cur->node->par;
+
+             if (par)
+               {
+                  Eina_List *l;
+                  Evas_Object_Textblock_Item *it, *last_it = NULL;
+                  EINA_LIST_FOREACH(par->logical_items, l, it)
+                    {
+                       if (it->text_pos > cur->pos)
+                         {
+                            if (!last_it) last_it = it;
+                            break;
+                         }
+                       last_it = it;
+                    }
+
+                  if (last_it)
+                    {
+                       if ((last_it->type == EVAS_TEXTBLOCK_ITEM_TEXT) &&
+                           (CHECK_LANGUAGE_CLUSTER_AVAILABLE(_ITEM_TEXT(last_it)->text_props.script)))
+                         {
+                            size_t cluster_pos = 0;
+
+                            cluster_pos = last_it->text_pos + evas_common_text_props_cluster_next(
+                               &_ITEM_TEXT(last_it)->text_props, cur->pos - last_it->text_pos);
+
+                            if (cluster_pos == cur->pos)
+                              {
+                                 if (it)
+                                   {
+                                      cluster_pos = it->text_pos;
+                                   }
+                                 else
+                                   {
+                                      cluster_pos = eina_ustrbuf_length_get(cur->node->unicode);
+                                   }
+                              }
+
+                            ind = cluster_pos;
+                         }
+                    }
+               }
+          }
+
+        if (ind <= (int)cur->pos)
+          ind = cur->pos + 1;
+     }
+
    /* Only allow pointing a null if it's the last paragraph.
     * because we don't have a PS there. */
    if (text[ind])
@@ -6229,18 +7649,89 @@ evas_textblock_cursor_char_next(Evas_Textblock_Cursor *cur)
      }
 }
 
-EAPI Eina_Bool
-evas_textblock_cursor_char_prev(Evas_Textblock_Cursor *cur)
+static Eina_Bool
+_evas_textblock_cursor_prev(Evas_Textblock_Cursor *cur, Eina_Bool per_cluster)
 {
    if (!cur) return EINA_FALSE;
    TB_NULL_CHECK(cur->node, EINA_FALSE);
 
    if (cur->pos != 0)
      {
+        if (per_cluster)
+          {
+             Evas_Object_Textblock_Paragraph *par = cur->node->par;
+
+             if (par)
+               {
+                  Eina_List *l;
+                  Evas_Object_Textblock_Item *it, *last_it = NULL;
+                  EINA_LIST_FOREACH(par->logical_items, l, it)
+                    {
+                       if (it->text_pos >= cur->pos)
+                         {
+                            if (!last_it) last_it = it;
+                            break;
+                         }
+                       last_it = it;
+                    }
+
+                  if (last_it)
+                    {
+                       if ((last_it->type == EVAS_TEXTBLOCK_ITEM_TEXT) &&
+                           (CHECK_LANGUAGE_CLUSTER_AVAILABLE(_ITEM_TEXT(last_it)->text_props.script)))
+                         {
+                            size_t i = 0, cluster_temp = 0;
+                            size_t cluster_pos;
+
+                            cluster_pos = last_it->text_pos + evas_common_text_props_cluster_prev(
+                               &_ITEM_TEXT(last_it)->text_props, cur->pos - last_it->text_pos);
+                            cluster_temp = cluster_pos;
+
+                            while ((cur->pos - i > last_it->text_pos) &&
+                                   (cluster_temp == cur->pos - i))
+                              {
+                                 cluster_pos--;
+                                 i++;
+                                 cluster_temp = last_it->text_pos + evas_common_text_props_cluster_prev(
+                                    &_ITEM_TEXT(last_it)->text_props, cur->pos - last_it->text_pos - i);
+                              }
+
+                            cur->pos = cluster_pos;
+                            return EINA_TRUE;
+                         }
+                    }
+               }
+          }
+
         cur->pos--;
         return EINA_TRUE;
      }
+
    return evas_textblock_cursor_paragraph_prev(cur);
+}
+
+EAPI Eina_Bool
+evas_textblock_cursor_cluster_next(Evas_Textblock_Cursor *cur)
+{
+   return _evas_textblock_cursor_next(cur, EINA_TRUE);
+}
+
+EAPI Eina_Bool
+evas_textblock_cursor_cluster_prev(Evas_Textblock_Cursor *cur)
+{
+   return _evas_textblock_cursor_prev(cur, EINA_TRUE);
+}
+
+EAPI Eina_Bool
+evas_textblock_cursor_char_next(Evas_Textblock_Cursor *cur)
+{
+   return _evas_textblock_cursor_next(cur, EINA_FALSE);
+}
+
+EAPI Eina_Bool
+evas_textblock_cursor_char_prev(Evas_Textblock_Cursor *cur)
+{
+   return _evas_textblock_cursor_prev(cur, EINA_FALSE);
 }
 
 EAPI void
@@ -6281,6 +7772,8 @@ evas_textblock_cursor_line_char_first(Evas_Textblock_Cursor *cur)
    if (!cur) return;
    TB_NULL_CHECK(cur->node);
    o = (Evas_Object_Textblock *)(cur->obj->object_data);
+
+   evas_object_textblock_coords_recalc(cur->obj);
    if (!o->formatted.valid) _relayout(cur->obj);
 
    _find_layout_item_match(cur, &ln, &it);
@@ -6315,6 +7808,8 @@ evas_textblock_cursor_line_char_last(Evas_Textblock_Cursor *cur)
    if (!cur) return;
    TB_NULL_CHECK(cur->node);
    o = (Evas_Object_Textblock *)(cur->obj->object_data);
+
+   evas_object_textblock_coords_recalc(cur->obj);
    if (!o->formatted.valid) _relayout(cur->obj);
 
    _find_layout_item_match(cur, &ln, &it);
@@ -6402,6 +7897,43 @@ _evas_textblock_format_is_visible(Evas_Object_Textblock_Node_Format *fnode,
           }
      }
 }
+
+// TIZEN_ONLY(20140626): Update format when the textblock style is updated.
+static void
+_evas_object_textblock_format_update(Evas_Object_Textblock *o)
+{
+   Evas_Object_Textblock_Node_Format *n;
+   const char *pre_stripped_format = NULL;
+
+   EINA_INLIST_FOREACH(o->format_nodes, n)
+     {
+        /* Update format */
+        const char *format;
+        const char *match;
+        size_t format_len = eina_stringshare_strlen(n->orig_format);
+
+        match = _textblock_format_node_from_style_tag(o, n, n->orig_format, format_len);
+        if (!match)
+          continue;
+
+        pre_stripped_format = match;
+
+        /* Strip format */
+          {
+             const char *tmp = pre_stripped_format;
+             if ((*tmp == '+') || (*tmp == '-'))
+               {
+                  tmp++;
+                  while (*tmp == ' ') tmp++;
+               }
+             eina_stringshare_replace(&(n->format), tmp);
+          }
+        format = n->format;
+
+        _evas_textblock_format_is_visible(n, format);
+     }
+}
+//
 
 /**
  * Sets the cursor to the position of where the fmt points to.
@@ -6613,7 +8145,6 @@ _evas_textblock_node_text_adjust_offsets_to_start(Evas_Object_Textblock *o,
       Evas_Object_Textblock_Node_Text *n, size_t start, int end)
 {
    Evas_Object_Textblock_Node_Format *last_node, *itr;
-   Evas_Object_Textblock_Node_Text *new_node;
    int use_end = 1;
    int delta = 0;
    int first = 1;
@@ -6632,21 +8163,6 @@ _evas_textblock_node_text_adjust_offsets_to_start(Evas_Object_Textblock *o,
      {
         /* We don't want the last one */
         end--;
-     }
-
-   /* If we are not removing the text node, all should stay in this text
-    * node, otherwise, everything should move to the previous node */
-   if ((start == 0) && !use_end)
-     {
-        new_node = _NODE_TEXT(EINA_INLIST_GET(n)->prev);
-        if (!new_node)
-          {
-             new_node = n;
-          }
-     }
-   else
-     {
-        new_node = n;
      }
 
    /* Find the first node after start */
@@ -6706,7 +8222,6 @@ _evas_textblock_node_text_adjust_offsets_to_start(Evas_Object_Textblock *o,
                }
 
           }
-        last_node->text_node = new_node;
      }
 
    return EINA_FALSE;
@@ -6867,6 +8382,8 @@ evas_textblock_cursor_line_set(Evas_Textblock_Cursor *cur, int line)
 
    if (!cur) return EINA_FALSE;
    o = (Evas_Object_Textblock *)(cur->obj->object_data);
+
+   evas_object_textblock_coords_recalc(cur->obj);
    if (!o->formatted.valid) _relayout(cur->obj);
 
    ln = _find_layout_line_num(cur->obj, line);
@@ -7025,6 +8542,9 @@ _evas_textblock_cursor_break_paragraph(Evas_Textblock_Cursor *cur,
         if (len > 0)
           {
              text = eina_ustrbuf_string_get(cur->node->unicode);
+             // HAVE_UNICODE_EMOTICON(2013.10.07): Change text node of emoticon item.
+             _evas_object_textblock_emoticon_item_range_text_node_change(o, cur->node, n, start, start + len);
+             //
              eina_ustrbuf_append_length(n->unicode, text + start, len);
              eina_ustrbuf_remove(cur->node->unicode, start, start + len);
              cur->node->dirty = EINA_TRUE;
@@ -7144,6 +8664,14 @@ _evas_textblock_changed(Evas_Object_Textblock *o, Evas_Object *obj)
    o->formatted.valid = 0;
    o->native.valid = 0;
    o->content_changed = 1;
+   // TIZEN_ONLY(20140702): Add pressed_color tag feature
+   if (o->has_pressed_color)
+     {
+        evas_object_event_callback_del(obj, EVAS_CALLBACK_MOUSE_DOWN, _textblock_mouse_down_cb);
+        evas_object_event_callback_del(obj, EVAS_CALLBACK_MOUSE_UP, _textblock_mouse_up_cb);
+        o->has_pressed_color = EINA_FALSE;
+     }
+   //
    if (o->markup_text)
      {
 	free(o->markup_text);
@@ -7290,7 +8818,6 @@ _evas_textblock_node_format_new(Evas_Object_Textblock *o, const char *_format)
      {
         const char *match;
         size_t format_len;
-        size_t replace_len;
 
         format++; /* Advance after '<' */
         format_len = strlen(format);
@@ -7298,31 +8825,20 @@ _evas_textblock_node_format_new(Evas_Object_Textblock *o, const char *_format)
           {
              format_len--; /* We don't care about '>' */
              /* Check if it closes itself. Skip the </> case. */
-             if ((format_len > 1) && format[format_len - 1] == '/')
+             // TIZEN_ONLY(20140620): Check Anchor, Item type before set own closer flag.
+             // if ((format_len > 1) && format[format_len - 1] == '/')
+             if ((format_len > 1) && format[format_len - 1] == '/'
+                 && strncmp(format, "a ", 2) && strncmp(format, "item ", 5))
                {
                   format_len--; /* We don't care about '/' */
                   n->own_closer = EINA_TRUE;
                }
           }
 
-        if (!o->style_user || !(match = _style_match_tag(o->style_user, format,
-                    format_len, &replace_len)))
-          {
-             match = _style_match_tag(o->style, format, format_len,
-                   &replace_len);
-          }
+        match = _textblock_format_node_from_style_tag(o, n, format, format_len);
 
         if (match)
           {
-             if (match[0] != '-')
-               {
-                  n->opener = EINA_TRUE;
-                  if (match[0] != '+')
-                    {
-                       n->own_closer = EINA_TRUE;
-                    }
-               }
-
              pre_stripped_format = match;
           }
         else
@@ -7447,6 +8963,7 @@ evas_textblock_cursor_format_append(Evas_Textblock_Cursor *cur, const char *form
           }
         else
           {
+             fmt = _evas_textblock_node_format_last_at_off(fmt);
              if (evas_textblock_cursor_format_is_visible_get(cur))
                {
                   o->format_nodes = _NODE_FORMAT(eina_inlist_prepend_relative(
@@ -7462,7 +8979,6 @@ evas_textblock_cursor_format_append(Evas_Textblock_Cursor *cur, const char *form
                }
              else
                {
-                  fmt = _evas_textblock_node_format_last_at_off(fmt);
                   o->format_nodes = _NODE_FORMAT(eina_inlist_append_relative(
                            EINA_INLIST_GET(o->format_nodes),
                            EINA_INLIST_GET(n),
@@ -7574,6 +9090,10 @@ evas_textblock_cursor_char_delete(Evas_Textblock_Cursor *cur)
 
    if (chr == 0) return;
    ppos = cur->pos;
+   // HAVE_UNICODE_EMOTICON(2013.10.07): Delete emoticon items when the string of text node is deleted.
+   _evas_object_textblock_emoticon_item_range_delete(cur->obj->layer->evas, o, n,
+                                                     cur->pos, ind);
+   //
    eina_ustrbuf_remove(n->unicode, cur->pos, ind);
    /* Remove a format node if needed, and remove the char only if the
     * fmt node is not visible */
@@ -7670,23 +9190,18 @@ evas_textblock_cursor_range_delete(Evas_Textblock_Cursor *cur1, Evas_Textblock_C
                {
                   should_merge = EINA_TRUE;
                }
-             else
-               {
-                  n = _NODE_TEXT(EINA_INLIST_GET(n1)->prev);
-                  /* Short path */
-                  if (!n)
-                    {
-                       /* Clear the whole textblock - do it nicer. */
-                       evas_object_textblock_text_markup_set(cur1->obj, "");
-                       return;
-                    }
-               }
+             _evas_textblock_node_text_adjust_offsets_to_start(o, n1, cur1->pos, -1);
           }
         else
           {
              should_merge = _evas_textblock_node_text_adjust_offsets_to_start(o,
                    n1, cur1->pos, cur2->pos);
           }
+        // HAVE_UNICODE_EMOTICON(2013.10.07): Delete emoticon items when the string of text node is deleted.
+        _evas_object_textblock_emoticon_item_range_delete(cur1->obj->layer->evas,
+                                                          o, n1, cur1->pos,
+                                                          cur2->pos);
+        //
         eina_ustrbuf_remove(n1->unicode, cur1->pos, cur2->pos);
         _evas_textblock_cursors_update_offset(cur1, cur1->node, cur1->pos, - (cur2->pos - cur1->pos));
      }
@@ -7694,7 +9209,6 @@ evas_textblock_cursor_range_delete(Evas_Textblock_Cursor *cur1, Evas_Textblock_C
      {
         Evas_Object_Textblock_Node_Text *n;
         int len;
-        _evas_textblock_node_text_adjust_offsets_to_start(o, n1, cur1->pos, -1);
         n = _NODE_TEXT(EINA_INLIST_GET(n1)->next);
         /* Remove all the text nodes between */
         while (n && (n != n2))
@@ -7702,15 +9216,24 @@ evas_textblock_cursor_range_delete(Evas_Textblock_Cursor *cur1, Evas_Textblock_C
              Evas_Object_Textblock_Node_Text *nnode;
 
              nnode = _NODE_TEXT(EINA_INLIST_GET(n)->next);
-             _evas_textblock_node_text_adjust_offsets_to_start(o, n, 0, -1);
              _evas_textblock_nodes_merge(o, n1);
              n = nnode;
           }
+        /* After we merged all the nodes, move the formats to the start of
+         * the range. */
+        _evas_textblock_node_text_adjust_offsets_to_start(o, n1, cur1->pos, -1);
+
         should_merge = _evas_textblock_node_text_adjust_offsets_to_start(o, n2,
               0, cur2->pos);
 
         /* Remove the formats and the strings in the first and last nodes */
         len = eina_ustrbuf_length_get(n1->unicode);
+        // HAVE_UNICODE_EMOTICON(2013.10.07): Delete emoticon items when the string of text node is deleted.
+        _evas_object_textblock_emoticon_item_range_delete(cur1->obj->layer->evas,
+                                                          o, n1, cur1->pos, len);
+        _evas_object_textblock_emoticon_item_range_delete(cur1->obj->layer->evas,
+                                                          o, n2, 0, cur2->pos);
+        //
         eina_ustrbuf_remove(n1->unicode, cur1->pos, len);
         eina_ustrbuf_remove(n2->unicode, 0, cur2->pos);
         /* Merge the nodes because we removed the PS */
@@ -7782,11 +9305,12 @@ _evas_textblock_cursor_range_text_markup_get(const Evas_Textblock_Cursor *cur1, 
    Evas_Object_Textblock_Node_Text *tnode;
    Eina_Strbuf *buf;
    Evas_Textblock_Cursor *cur2;
-   buf = eina_strbuf_new();
 
    if (!cur1 || !cur1->node) return NULL;
    if (!_cur2 || !_cur2->node) return NULL;
    if (cur1->obj != _cur2->obj) return NULL;
+   buf = eina_strbuf_new();
+
    if (evas_textblock_cursor_compare(cur1, _cur2) > 0)
      {
 	const Evas_Textblock_Cursor *tc;
@@ -7806,26 +9330,18 @@ _evas_textblock_cursor_range_text_markup_get(const Evas_Textblock_Cursor *cur1, 
      {
         Evas_Object_Textblock_Node_Format *fnode;
         Eina_Unicode *text_base, *text;
+        int cur1_pos = 0, cur2_pos = -1;
         int off = 0;
 
         text_base = text =
            eina_unicode_strndup(eina_ustrbuf_string_get(tnode->unicode),
                                 eina_ustrbuf_length_get(tnode->unicode));
         if (tnode == cur2->node)
-          {
-             fnode = _evas_textblock_node_text_get_first_format_between(tnode,
-                   cur1->pos, cur2->pos);
-          }
-        else if (tnode == cur1->node)
-          {
-             fnode = _evas_textblock_node_text_get_first_format_between(tnode,
-                   cur1->pos, -1);
-          }
-        else
-          {
-             fnode = _evas_textblock_node_text_get_first_format_between(tnode,
-                   0, -1);
-          }
+          cur2_pos = cur2->pos;
+        if (tnode == cur1->node)
+          cur1_pos = cur1->pos;
+        fnode = _evas_textblock_node_text_get_first_format_between(tnode,
+                cur1_pos, cur2_pos);
         /* Init the offset so the first one will count starting from cur1->pos
          * and not the previous format node */
         if (tnode == cur1->node)
@@ -7901,11 +9417,11 @@ _evas_textblock_cursor_range_text_plain_get(const Evas_Textblock_Cursor *cur1, c
    Evas_Object_Textblock_Node_Text *n1, *n2;
    Evas_Textblock_Cursor *cur2;
 
-   buf = eina_ustrbuf_new();
-
    if (!cur1 || !cur1->node) return NULL;
    if (!_cur2 || !_cur2->node) return NULL;
    if (cur1->obj != _cur2->obj) return NULL;
+   buf = eina_ustrbuf_new();
+
    if (evas_textblock_cursor_compare(cur1, _cur2) > 0)
      {
 	const Evas_Textblock_Cursor *tc;
@@ -8023,6 +9539,408 @@ evas_textblock_cursor_range_formats_get(const Evas_Textblock_Cursor *cur1, const
 
 }
 
+// TIZEN_ONLY(20131218)
+// Add evas_textblock_cursor_range_text_valid_markup_get API.
+static void
+_evas_textblock_format_search_prepend(Eina_Strbuf *buf, Evas_Object_Textblock_Node_Format *format_node, Eina_List **invalid_fnodes)
+{
+   Eina_List *list = NULL, *l = NULL, *l_next = NULL;
+   Evas_Object_Textblock_Format_Pair_Item *data, *new;
+   Evas_Object_Textblock_Node_Format *fnode, *fn;
+   char *simple_format, *copy;
+
+   fnode = format_node;
+   if (!fnode) return;
+
+   while (fnode)
+     {
+        if (fnode->own_closer) goto next;
+        if (fnode->visible) goto next;
+        if (fnode->opener)
+          {
+             EINA_LIST_FOREACH_SAFE(list, l, l_next, data)
+               {
+                  if (data->void_closer ||
+                      !strncmp(fnode->orig_format, data->format, strlen(data->format)))
+                    {
+                       if (data->format)
+                         free((void *)data->format);
+                       free((void *)data);
+                       list = eina_list_remove_list(list, l);
+                       goto next;
+                    }
+               }
+             EINA_LIST_FOREACH_SAFE(*invalid_fnodes, l, l_next, fn)
+               {
+                  if (!strncmp(fnode->orig_format, fn->orig_format, strlen(fn->orig_format)))
+                    {
+                       *invalid_fnodes = eina_list_remove_list(*invalid_fnodes, l);
+                       goto next;
+                    }
+               }
+             _markup_get_format_prepend(buf, fnode);
+          }
+        else
+          {
+             copy = strdup(fnode->orig_format);
+             simple_format = strtok(copy, " ,=");
+
+             new = calloc(1, sizeof(Evas_Object_Textblock_Format_Pair_Item));
+             if (!simple_format)
+               {
+                  new->void_closer = EINA_TRUE;
+                  new->format = NULL;
+               }
+             else
+               {
+                  new->void_closer = EINA_FALSE;
+                  new->format = calloc(strlen(simple_format) + 1, 1);
+                  strcpy(new->format, simple_format);
+               }
+
+             free(copy);
+             list = eina_list_prepend(list, new);
+          }
+next:
+        fnode = _NODE_FORMAT(EINA_INLIST_GET(fnode)->prev);
+     }
+
+   EINA_LIST_FOREACH(list, l, data)
+     {
+        if (data->format)
+          free((void *)data->format);
+        free((void *)data);
+     }
+   eina_list_free(list);
+}
+
+// TIZEN_ONLY(20131218)
+// Add evas_textblock_cursor_range_text_valid_markup_get API.
+static void
+_evas_textblock_format_search_append(Eina_Strbuf *buf, Evas_Object_Textblock_Node_Format *format_node)
+{
+   Eina_List *list = NULL, *l = NULL, *l_next = NULL;
+   Evas_Object_Textblock_Format_Pair_Item *data, *new;
+   Eina_Bool void_closer = EINA_FALSE;
+   Evas_Object_Textblock_Node_Format *fnode;
+   char *simple_format, *copy;
+
+   fnode = format_node;
+   if (!fnode) return;
+
+   while (fnode)
+     {
+        if (fnode->own_closer) goto next;
+        if (fnode->visible && strncmp(fnode->orig_format, "item", 4)) goto next;
+        if (!fnode->opener)
+          {
+             if (!strcmp(fnode->orig_format, ""))
+               void_closer = EINA_TRUE;
+
+             EINA_LIST_FOREACH_SAFE(list, l, l_next, data)
+               {
+                  if (void_closer || (data->void_closer) ||
+                      !strncmp(fnode->orig_format, data->format, strlen(data->format)))
+                    {
+                       void_closer = EINA_FALSE;
+                       if (data->format)
+                         free((void *)data->format);
+                       free((void *)data);
+                       list = eina_list_remove_list(list, l);
+                       goto next;
+                    }
+               }
+             _markup_get_format_append(buf, fnode);
+          }
+        else
+          {
+             copy = strdup(fnode->orig_format);
+             simple_format = strtok(copy, " ,=");
+
+             new = calloc(1, sizeof(Evas_Object_Textblock_Format_Pair_Item));
+             if (!simple_format)
+               {
+                  new->void_closer = EINA_TRUE;
+                  new->format = NULL;
+               }
+             else
+               {
+                  new->format = calloc(strlen(simple_format) + 1, 1);
+                  strcpy(new->format, simple_format);
+               }
+
+             free(copy);
+             list = eina_list_prepend(list, new);
+          }
+next:
+        fnode = _NODE_FORMAT(EINA_INLIST_GET(fnode)->next);
+     }
+
+   EINA_LIST_FOREACH(list, l, data)
+     {
+        if (data->format)
+          free((void *)data->format);
+        free((void *)data);
+     }
+   eina_list_free(list);
+}
+
+// TIZEN_ONLY(20131218)
+// Add evas_textblock_cursor_range_text_valid_markup_get API.
+static char *
+_evas_textblock_cursor_range_text_valid_markup_get(const Evas_Textblock_Cursor *cur1, const Evas_Textblock_Cursor *_cur2)
+{
+   Evas_Object_Textblock_Node_Text *tnode;
+   Evas_Object_Textblock_Node_Format *start_fnode = NULL,*prev_fnode = NULL;
+   Eina_Strbuf *buf;
+   Evas_Textblock_Cursor *cur2;
+   Eina_Bool valid_result;
+   Eina_List *invalid_fnodes = NULL;
+   int item_pair = 0;
+
+   if (!cur1 || !cur1->node) return NULL;
+   if (!_cur2 || !_cur2->node) return NULL;
+   if (cur1->obj != _cur2->obj) return NULL;
+   buf = eina_strbuf_new();
+
+   if (evas_textblock_cursor_compare(cur1, _cur2) > 0)
+     {
+        const Evas_Textblock_Cursor *tc;
+
+        tc = cur1;
+        cur1 = _cur2;
+        _cur2 = tc;
+     }
+   /* Work on a local copy of the cur */
+   cur2 = alloca(sizeof(Evas_Textblock_Cursor));
+   cur2->obj = _cur2->obj;
+   evas_textblock_cursor_copy(_cur2, cur2);
+   valid_result = EINA_FALSE;
+
+   /* Parse the text between the cursors. */
+   for (tnode = cur1->node ; tnode ;
+        tnode = _NODE_TEXT(EINA_INLIST_GET(tnode)->next))
+     {
+        Evas_Object_Textblock_Node_Format *fnode;
+        Eina_Unicode *text_base, *text;
+        int cur1_pos = 0, cur2_pos = -1;
+        int off = 0;
+
+        text_base = text =
+           eina_unicode_strndup(eina_ustrbuf_string_get(tnode->unicode),
+                                eina_ustrbuf_length_get(tnode->unicode));
+        if (tnode == cur2->node)
+          cur2_pos = cur2->pos;
+        if (tnode == cur1->node)
+          cur1_pos = cur1->pos;
+        fnode = _evas_textblock_node_text_get_first_format_between(tnode,
+                cur1_pos, cur2_pos);
+        /* Init the offset so the first one will count starting from cur1->pos
+         * and not the previous format node */
+        if (tnode == cur1->node)
+          {
+             if (fnode)
+               {
+                  off = _evas_textblock_node_format_pos_get(fnode) -
+                     cur1->pos - fnode->offset;
+               }
+             text += cur1->pos;
+          }
+        else
+          {
+             off = 0;
+          }
+
+        // Keep start position for searching format
+        if (tnode == cur1->node)
+          start_fnode = fnode;
+        //////////////
+
+        while (fnode && (fnode->text_node == tnode))
+          {
+             Eina_Unicode tmp_ch;
+             off += fnode->offset;
+             if ((tnode == cur2->node) &&
+                 ((size_t) (text - text_base + off) >= cur2->pos))
+               {
+                  break;
+               }
+             /* No need to skip on the first run */
+             tmp_ch = text[off];
+             text[off] = 0; /* Null terminate the part of the string */
+             if ((!valid_result) && (*text))
+               valid_result = EINA_TRUE;
+
+             _markup_get_text_append(buf, text);
+
+             // Closer item format is invisible and opener item format is visible.
+             // So, we need to get rid of useless item closer format.
+             if (!strncmp(fnode->orig_format, "item", 4))
+               {
+                  if (fnode->opener)
+                    {
+                       item_pair++;
+                       _markup_get_format_append(buf, fnode);
+                    }
+                  else if (item_pair > 0)
+                    {
+                       item_pair--;
+                       _markup_get_format_append(buf, fnode);
+                    }
+               }
+             else
+               {
+                  if ((!fnode->visible) && (!fnode->opener) && (!valid_result))
+                    invalid_fnodes = eina_list_append(invalid_fnodes, fnode);
+                  else
+                    {
+                       if (fnode->visible)
+                         valid_result = EINA_TRUE;
+                       _markup_get_format_append(buf, fnode);
+                    }
+               }
+             ////////////////
+
+             text[off] = tmp_ch; /* Restore the char */
+             text += off;
+             if (fnode->visible)
+               {
+                  off = -1;
+                  text++;
+               }
+             else
+               {
+                  off = 0;
+               }
+             fnode = _NODE_FORMAT(EINA_INLIST_GET(fnode)->next);
+          }
+        /* If we got to the last node, stop and add the rest outside */
+        if (cur2->node == tnode)
+          {
+             /* Add the rest, skip replacement */
+             /* Don't go past the second cursor pos */
+             text_base[cur2->pos] = '\0';
+             _markup_get_text_append(buf, text);
+             free(text_base);
+             if ((!valid_result) && (*text))
+               valid_result = EINA_TRUE;
+
+             // Search valid opener markup tag
+             if (start_fnode)
+               {
+                  _evas_textblock_format_search_prepend(buf, _NODE_FORMAT(EINA_INLIST_GET(start_fnode)->prev), &invalid_fnodes);
+                  prev_fnode = NULL;
+               }
+             else
+               {
+                  size_t pos = cur1->pos;
+                  while (pos > 0 && !prev_fnode)
+                    {
+                       prev_fnode = _evas_textblock_node_text_get_first_format_between(cur1->node,
+                                                                                       --pos, cur1->pos);
+                    }
+                  if (!prev_fnode)
+                    {
+                       Evas_Object_Textblock_Node_Text *prev_tnode, *text_temp;
+                       Evas_Object_Textblock_Node_Format *format_temp;
+
+                       prev_tnode = _NODE_TEXT(EINA_INLIST_GET(cur1->node)->prev);
+
+                       if (prev_tnode)
+                         {
+                            while (1)
+                              {
+                                 prev_fnode = prev_tnode->format_node;
+                                 if (prev_fnode)
+                                   break;
+                                 text_temp = _NODE_TEXT(EINA_INLIST_GET(prev_tnode)->prev);
+                                 if (!text_temp)
+                                   break;
+                                 prev_tnode = text_temp;
+                              }
+                         }
+                       while (prev_fnode)
+                         {
+                            format_temp = _NODE_FORMAT(EINA_INLIST_GET(prev_fnode)->next);
+                            if (!format_temp || (format_temp->text_node != prev_tnode))
+                              break;
+                            prev_fnode = format_temp;
+                         }
+                    }
+                  if (prev_fnode)
+                    _evas_textblock_format_search_prepend(buf, prev_fnode, &invalid_fnodes);
+               }
+             if (invalid_fnodes)
+               invalid_fnodes = eina_list_free(invalid_fnodes);
+
+             // Search valid closer markup tag
+             if (fnode)
+               {
+                  _evas_textblock_format_search_append(buf, fnode);
+               }
+             else if (prev_fnode)
+               {
+                  _evas_textblock_format_search_append(buf, _NODE_FORMAT(EINA_INLIST_GET(prev_fnode)->next));
+               }
+             else
+               {
+                  Evas_Object_Textblock_Node_Format *next_fnode = NULL;
+                  next_fnode = _evas_textblock_node_text_get_first_format_between(tnode, cur2->pos, -1);
+                  Evas_Object_Textblock_Node_Text *text_temp;
+
+                  if (!next_fnode)
+                    {
+                       Evas_Object_Textblock_Node_Text *next_tnode = _NODE_TEXT(EINA_INLIST_GET(tnode)->next);
+                       if (next_tnode)
+                         {
+                            while (1)
+                              {
+                                 next_fnode = next_tnode->format_node;
+                                 if (next_fnode)
+                                   break;
+                                 text_temp = _NODE_TEXT(EINA_INLIST_GET(next_tnode)->next);
+                                 if (!text_temp)
+                                   break;
+                                 next_tnode = text_temp;
+                              }
+                         }
+                    }
+                  if (next_fnode)
+                    _evas_textblock_format_search_append(buf, next_fnode);
+               }
+             ///////////
+             break;
+          }
+        else
+          {
+             /* Add the rest, skip replacement */
+             _markup_get_text_append(buf, text);
+             free(text_base);
+             if ((!valid_result) && (*text))
+               valid_result = EINA_TRUE;
+          }
+     }
+   /* return the string */
+     {
+        char *ret, *utf8_ret;
+        ret = eina_strbuf_string_steal(buf);
+        utf8_ret = evas_textblock_text_markup_to_utf8(NULL, ret);
+        eina_strbuf_free(buf);
+        DBG("RESULT [%s], utf8[%s]", ret, utf8_ret);
+        if ((!utf8_ret) || (!strcmp(utf8_ret, "")))
+          return NULL;
+        return ret;
+     }
+}
+
+// TIZEN_ONLY(20131218)
+// Add evas_textblock_cursor_range_text_valid_markup_get API.
+EAPI char *
+evas_textblock_cursor_range_text_valid_markup_get(const Evas_Textblock_Cursor *cur1, const Evas_Textblock_Cursor *cur2)
+{
+   return _evas_textblock_cursor_range_text_valid_markup_get(cur1, cur2);
+}
+
 EAPI char *
 evas_textblock_cursor_range_text_get(const Evas_Textblock_Cursor *cur1, const Evas_Textblock_Cursor *cur2, Evas_Textblock_Text_Type format)
 {
@@ -8122,18 +10040,223 @@ evas_textblock_cursor_format_is_visible_get(const Evas_Textblock_Cursor *cur)
    return EVAS_TEXTBLOCK_IS_VISIBLE_FORMAT_CHAR(text[cur->pos]);
 }
 
+#ifdef BIDI_SUPPORT
+static Evas_Object_Textblock_Line*
+_find_layout_line_by_item(Evas_Object_Textblock_Paragraph *par, Evas_Object_Textblock_Item *_it)
+{
+   Evas_Object_Textblock_Line *ln;
+
+   if (par)
+     {
+        EINA_INLIST_FOREACH(par->lines, ln)
+          {
+             Evas_Object_Textblock_Item *it;
+
+             EINA_INLIST_FOREACH(ln->items, it)
+               {
+                  if (_it == it)
+                    return ln;
+               }
+          }
+     }
+   return NULL;
+}
+#endif
+
+EAPI Eina_Bool
+evas_textblock_cursor_geometry_bidi_get(const Evas_Textblock_Cursor *cur, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch, Evas_Coord *cx2, Evas_Coord *cy2, Evas_Coord *cw2, Evas_Coord *ch2, Evas_Textblock_Cursor_Type ctype)
+{
+   if (!cur) return EINA_FALSE;
+   Evas_Object_Textblock *o = cur->obj->object_data;
+
+   evas_object_textblock_coords_recalc(cur->obj);
+   if (!o->formatted.valid) _relayout(cur->obj);
+
+   if (ctype == EVAS_TEXTBLOCK_CURSOR_UNDER)
+     {
+        evas_textblock_cursor_pen_geometry_get(cur, cx, cy, cw, ch);
+        return EINA_FALSE;
+     }
+
+#ifdef BIDI_SUPPORT
+#define IS_RTL(par) ((par) % 2)
+#define IS_DIFFERENT_DIR(l1, l2) ((IS_RTL(l1) && (!IS_RTL(l2))) || \
+                                  ((!IS_RTL(l1)) && IS_RTL(l2)))
+   else
+     {
+        Evas_Object_Textblock_Line *ln = NULL;
+        Evas_Object_Textblock_Item *it = NULL;
+        _find_layout_item_match(cur, &ln, &it);
+        if (ln && it)
+          {
+             if (ln->par->is_bidi)
+               {
+                  if (cw) *cw = 0;
+                  if (cw2) *cw2 = 0;
+
+                  /* If we are at the start or the end of the item there's a chance
+                   *                    * we'll want a split cursor.  */
+                  Evas_Object_Textblock_Item *previt = NULL;
+                  Evas_Object_Textblock_Item *it1 = NULL, *it2 = NULL;
+                  Evas_Coord adv1 = 0, adv2 = 0;
+
+                  if (cur->pos == it->text_pos)
+                    {
+                       EvasBiDiLevel par_level, it_level, previt_level;
+
+                       _layout_update_bidi_props(o, ln->par);
+                       par_level = *(ln->par->bidi_props->embedding_levels);
+                       it_level = ln->par->bidi_props->embedding_levels[it->text_pos];
+                       /* Get the logically previous item. */
+                         {
+                            Eina_List *itr;
+                            Evas_Object_Textblock_Item *ititr;
+
+                            EINA_LIST_FOREACH(ln->par->logical_items, itr, ititr)
+                              {
+                                 if (ititr == it)
+                                   break;
+                                 previt = ititr;
+                              }
+
+                            if (previt)
+                              {
+                                 previt_level = ln->par->bidi_props->embedding_levels[previt->text_pos];
+                              }
+                         }
+
+                       if (previt && (it_level != previt_level))
+                         {
+                            Evas_Object_Textblock_Item *curit = NULL, *curit_opp = NULL;
+                            EvasBiDiLevel cur_level;
+
+                            if (it_level > previt_level)
+                              {
+                                 curit = it;
+                                 curit_opp = previt;
+                                 cur_level = it_level;
+                              }
+                            else
+                              {
+                                 curit = previt;
+                                 curit_opp = it;
+                                 cur_level = previt_level;
+                              }
+
+                            if (((curit == it) && (!IS_RTL(par_level))) ||
+                                ((curit == previt) && (IS_RTL(par_level))))
+                              {
+                                 adv1 = (IS_DIFFERENT_DIR(cur_level, par_level)) ?
+                                    curit_opp->adv : 0;
+                                 adv2 = curit->adv;
+                              }
+                            else if (((curit == previt) && (!IS_RTL(par_level))) ||
+                                     ((curit == it) && (IS_RTL(par_level))))
+                              {
+                                 adv1 = (IS_DIFFERENT_DIR(cur_level, par_level)) ?
+                                    0 : curit->adv;
+                                 adv2 = 0;
+                              }
+
+                            if (!IS_DIFFERENT_DIR(cur_level, par_level))
+                              curit_opp = curit;
+
+                            it1 = curit_opp;
+                            it2 = curit;
+                         }
+                       /* Clear the bidi props because we don't need them anymore. */
+                       evas_bidi_paragraph_props_unref(ln->par->bidi_props);
+                       ln->par->bidi_props = NULL;
+                    }
+                  /* Handling last char in line (or in paragraph).
+                   *                    * T.e. prev condition didn't work, so we are not standing in the beginning of item,
+                   *                                       * but in the end of line or paragraph. */
+                  else if (evas_textblock_cursor_eol_get(cur))
+                    {
+                       EvasBiDiLevel par_level, it_level;
+
+                       _layout_update_bidi_props(o, ln->par);
+                       par_level = *(ln->par->bidi_props->embedding_levels);
+                       it_level = ln->par->bidi_props->embedding_levels[it->text_pos];
+
+                       if (it_level > par_level)
+                         {
+                            Evas_Object_Textblock_Item *lastit = it;
+
+                            if (IS_RTL(par_level)) /* RTL par*/
+                              {
+                                 /*  We know, that all the items before current are of the same or bigger embedding level.
+                                  *                                    *  So search backwards for the first one. */
+                                 while (EINA_INLIST_GET(lastit)->prev)
+                                   {
+                                      lastit = _EINA_INLIST_CONTAINER(it, EINA_INLIST_GET(lastit)->prev);
+                                   }
+
+                                 adv1 = 0;
+                                 adv2 = it->adv;
+                              }
+                            else /* LTR par */
+                              {
+                                 /*  We know, that all the items after current are of bigger or same embedding level.
+                                  *                                    *  So search forward for the last one. */
+                                 while (EINA_INLIST_GET(lastit)->next)
+                                   {
+                                      lastit = _EINA_INLIST_CONTAINER(it, EINA_INLIST_GET(lastit)->next);
+                                   }
+
+                                 adv1 = lastit->adv;
+                                 adv2 = 0;
+                              }
+
+                            it1 = lastit;
+                            it2 = it;
+                         }
+                       /* Clear the bidi props because we don't need them anymore. */
+                       evas_bidi_paragraph_props_unref(ln->par->bidi_props);
+                       ln->par->bidi_props = NULL;
+                    }
+
+                  if (it1 && it2)
+                    {
+                       Evas_Object_Textblock_Line *ln1 = NULL, *ln2 = NULL;
+                       ln1 = _find_layout_line_by_item(ln->par, it1);
+                       if (cx) *cx = ln1->x + it1->x + adv1;
+                       if (cy) *cy = ln1->par->y + ln1->y;
+                       if (ch) *ch = ln1->h;
+
+                       ln2 = _find_layout_line_by_item(ln->par, it2);
+                       if (cx2) *cx2 = ln2->x + it2->x + adv2;
+                       if (cy2) *cy2 = ln2->par->y + ln2->y;
+                       if (ch2) *ch2 = ln2->h;
+
+                       return EINA_TRUE;
+                    }
+               }
+          }
+     }
+#undef IS_DIFFERENT_DIR
+#undef IS_RTL
+#else
+   (void) cx2;
+   (void) cy2;
+   (void) cw2;
+   (void) ch2;
+#endif
+   evas_textblock_cursor_geometry_get(cur, cx, cy, cw, ch, NULL, ctype);
+   return EINA_FALSE;
+}
+
 EAPI int
 evas_textblock_cursor_geometry_get(const Evas_Textblock_Cursor *cur, Evas_Coord *cx, Evas_Coord *cy, Evas_Coord *cw, Evas_Coord *ch, Evas_BiDi_Direction *dir, Evas_Textblock_Cursor_Type ctype)
 {
    int ret = -1;
-   const Evas_Textblock_Cursor *dir_cur;
-   Evas_Textblock_Cursor cur2;
    Evas_Object_Textblock *o;
    if (!cur) return -1;
    o = (Evas_Object_Textblock *)(cur->obj->object_data);
+
+   evas_object_textblock_coords_recalc(cur->obj);
    if (!o->formatted.valid) _relayout(cur->obj);
 
-   dir_cur = cur;
    if (ctype == EVAS_TEXTBLOCK_CURSOR_UNDER)
      {
         ret = evas_textblock_cursor_pen_geometry_get(cur, cx, cy, cw, ch);
@@ -8143,142 +10266,30 @@ evas_textblock_cursor_geometry_get(const Evas_Textblock_Cursor *cur, Evas_Coord 
         /* In the case of a "before cursor", we should get the coordinates
          * of just after the previous char (which in bidi text may not be
          * just before the current char). */
-        Evas_Coord x, y, h, w;
-        Evas_Object_Textblock_Node_Format *fmt;
+        Evas_Coord x, y, w, h;
 
-        /* If it's at the end of the line, we want to get the position, not
-         * the position of the previous */
-        if ((cur->pos > 0) && !_evas_textblock_cursor_is_at_the_end(cur))
-          {
-#ifdef BIDI_SUPPORT
-             Eina_Bool before_char = EINA_FALSE;
-#endif
-             cur2.obj = cur->obj;
-             evas_textblock_cursor_copy(cur, &cur2);
-             evas_textblock_cursor_char_prev(&cur2);
+        Evas_Object_Textblock_Line *ln;
+        Evas_Object_Textblock_Item *it;
 
-             fmt = _evas_textblock_cursor_node_format_at_pos_get(&cur2);
-
-             if (!fmt || !_IS_LINE_SEPARATOR(fmt->format))
-               {
-                  dir_cur = &cur2;
-#ifdef BIDI_SUPPORT
-                  before_char = EINA_FALSE;
-#endif
-               }
-#ifdef BIDI_SUPPORT
-             else
-               {
-                  before_char = EINA_TRUE;
-               }
-#endif
-             ret = evas_textblock_cursor_pen_geometry_get(
-                   dir_cur, &x, &y, &w, &h);
-#ifdef BIDI_SUPPORT
-             /* Adjust if the char is an rtl char */
-             if (ret >= 0)
-               {
-                  Eina_Bool is_rtl = EINA_FALSE;
-                  if (dir_cur->node->par->is_bidi)
-                    {
-                       Evas_Object_Textblock_Line *ln;
-                       Evas_Object_Textblock_Item *it;
-                       _find_layout_item_match(dir_cur, &ln, &it);
-                       if ((it->type == EVAS_TEXTBLOCK_ITEM_TEXT) &&
-                             (_ITEM_TEXT(it)->text_props.bidi.dir ==
-                              EVAS_BIDI_DIRECTION_RTL))
-                          is_rtl = EINA_TRUE;
-                       else if ((it->type == EVAS_TEXTBLOCK_ITEM_FORMAT) &&
-                             (_ITEM_FORMAT(it)->bidi_dir ==
-                              EVAS_BIDI_DIRECTION_RTL))
-                          is_rtl = EINA_TRUE;
-                    }
-
-                  if ((!before_char && is_rtl) ||
-                        (before_char && !is_rtl))
-                    {
-                       /* Just don't advance the width */
-                       w = 0;
-                    }
-               }
-#endif
-          }
-        else if (cur->pos == 0)
-          {
-             ret = evas_textblock_cursor_pen_geometry_get(
-                   dir_cur, &x, &y, &w, &h);
-#ifdef BIDI_SUPPORT
-             Eina_Bool is_rtl = EINA_FALSE;
-             if (dir_cur->node && dir_cur->node->par->is_bidi)
-               {
-                  Evas_Object_Textblock_Line *ln;
-                  Evas_Object_Textblock_Item *it;
-                  _find_layout_item_match(dir_cur, &ln, &it);
-                  if ((it->type == EVAS_TEXTBLOCK_ITEM_TEXT) &&
-                        (_ITEM_TEXT(it)->text_props.bidi.dir ==
-                         EVAS_BIDI_DIRECTION_RTL))
-                     is_rtl = EINA_TRUE;
-                  else if ((it->type == EVAS_TEXTBLOCK_ITEM_FORMAT) &&
-                        (_ITEM_FORMAT(it)->bidi_dir ==
-                         EVAS_BIDI_DIRECTION_RTL))
-                     is_rtl = EINA_TRUE;
-               }
-
-             /* Adjust if the char is an rtl char */
-             if ((ret >= 0) && (!is_rtl))
-               {
-                  /* Just don't advance the width */
-                  w = 0;
-               }
-#endif
-          }
-        else
-          {
-             ret = evas_textblock_cursor_pen_geometry_get(
-                   dir_cur, &x, &y, &w, &h);
-          }
+        ret = evas_textblock_cursor_pen_geometry_get(cur, &x, &y, &w, &h);
+        _find_layout_item_match(cur, &ln, &it);
         if (ret >= 0)
           {
-             if (cx) *cx = x + w;
+             Evas_BiDi_Direction itdir =
+                (it->type == EVAS_TEXTBLOCK_ITEM_TEXT) ?
+                _ITEM_TEXT(it)->text_props.bidi.dir :
+                _ITEM_FORMAT(it)->bidi_dir;
+             if (itdir == EVAS_BIDI_DIRECTION_RTL)
+               {
+                  if (cx) *cx = x + w;
+               }
+             else
+               {
+                  if (cx) *cx = x;
+               }
              if (cy) *cy = y;
-             if (cw) *cw = 0;
-             if (ch) *ch = h;
-          }
-     }
-
-   if (dir && dir_cur && dir_cur->node)
-     {
-#ifdef BIDI_SUPPORT
-        Eina_Bool is_rtl = EINA_FALSE;
-        if (dir_cur->node->par->is_bidi)
-          {
-             Evas_Object_Textblock_Line *ln;
-             Evas_Object_Textblock_Item *it;
-             _find_layout_item_match(dir_cur, &ln, &it);
-             if ((it->type == EVAS_TEXTBLOCK_ITEM_TEXT) &&
-                   (_ITEM_TEXT(it)->text_props.bidi.dir ==
-                    EVAS_BIDI_DIRECTION_RTL))
-                is_rtl = EINA_TRUE;
-             else if ((it->type == EVAS_TEXTBLOCK_ITEM_FORMAT) &&
-                   (_ITEM_FORMAT(it)->bidi_dir ==
-                    EVAS_BIDI_DIRECTION_RTL))
-                is_rtl = EINA_TRUE;
-          }
-
-        if (_evas_textblock_cursor_is_at_the_end(dir_cur) && (dir_cur->pos > 0))
-          {
-             *dir = (is_rtl) ?
-                EVAS_BIDI_DIRECTION_RTL : EVAS_BIDI_DIRECTION_LTR;
-          }
-        else if (dir_cur->pos > 0)
-          {
-             *dir = (is_rtl) ?
-                EVAS_BIDI_DIRECTION_RTL : EVAS_BIDI_DIRECTION_LTR;
-          }
-        else
-#endif
-          {
-             *dir = EVAS_BIDI_DIRECTION_LTR;
+             if (cw) *cw = 0;                                                                if (ch) *ch = h;
+             if (dir) *dir = itdir;
           }
      }
    return ret;
@@ -8311,6 +10322,8 @@ _evas_textblock_cursor_char_pen_geometry_common_get(int (*query_func) (void *dat
 
    if (!cur) return -1;
    o = (Evas_Object_Textblock *)(cur->obj->object_data);
+
+   evas_object_textblock_coords_recalc(cur->obj);
    if (!o->formatted.valid) _relayout(cur->obj);
 
    if (!cur->node)
@@ -8357,6 +10370,16 @@ _evas_textblock_cursor_char_pen_geometry_common_get(int (*query_func) (void *dat
                    pos,
                    &x, &y, &w, &h);
           }
+
+        // HAVE_UNICODE_EMOTICON(2013.10.07): Modify Emoticon image area for supporting unicode 6.0 emoticon.
+        if (ti->emoticon_item)
+          {
+             if (pos)
+               x = ti->parent.w;
+             else
+               w = ti->parent.w;
+          }
+        //
 
         x += ln->x + _ITEM(ti)->x;
 
@@ -8438,6 +10461,8 @@ evas_textblock_cursor_line_geometry_get(const Evas_Textblock_Cursor *cur, Evas_C
 
    if (!cur) return -1;
    o = (Evas_Object_Textblock *)(cur->obj->object_data);
+
+   evas_object_textblock_coords_recalc(cur->obj);
    if (!o->formatted.valid) _relayout(cur->obj);
    if (!cur->node)
      {
@@ -8476,8 +10501,8 @@ evas_textblock_cursor_visible_range_get(Evas_Textblock_Cursor *start, Evas_Textb
    return EINA_TRUE;
 }
 
-EAPI Eina_Bool
-evas_textblock_cursor_char_coord_set(Evas_Textblock_Cursor *cur, Evas_Coord x, Evas_Coord y)
+static Eina_Bool
+_evas_textblock_cursor_coord_set(Evas_Textblock_Cursor *cur, Evas_Coord x, Evas_Coord y, Eina_Bool per_cluster)
 {
    Evas_Object_Textblock *o;
    Evas_Object_Textblock_Paragraph *found_par;
@@ -8486,6 +10511,8 @@ evas_textblock_cursor_char_coord_set(Evas_Textblock_Cursor *cur, Evas_Coord x, E
 
    if (!cur) return EINA_FALSE;
    o = (Evas_Object_Textblock *)(cur->obj->object_data);
+
+   evas_object_textblock_coords_recalc(cur->obj);
    if (!o->formatted.valid) _relayout(cur->obj);
    x += o->style_pad.l;
    y += o->style_pad.t;
@@ -8549,8 +10576,24 @@ evas_textblock_cursor_char_coord_set(Evas_Textblock_Cursor *cur, Evas_Coord x, E
                                          &ti->text_props,
                                          x - it->x - ln->x, 0,
                                          &cx, &cy, &cw, &ch);
+
+                                 // HAVE_UNICODE_EMOTICON(2013.10.07): Modify Emoticon image area for supporting unicode 6.0 emoticon.
+                                 if (ti->emoticon_item)
+                                   {
+                                      if (x - it->x - ln->x < ti->parent.w / 2)
+                                        pos = 0;
+                                      else
+                                        pos = 1;
+                                   }
+                                 //
+
                                  if (pos < 0)
                                    return EINA_FALSE;
+
+                                 while (per_cluster && (evas_common_text_props_index_find(&ti->text_props, pos) == -1) &&
+                                        CHECK_LANGUAGE_CLUSTER_AVAILABLE(ti->text_props.script))
+                                   pos--;
+
                                  cur->pos = pos + it->text_pos;
                                  cur->node = it->text_node;
                                  return EINA_TRUE;
@@ -8568,20 +10611,37 @@ evas_textblock_cursor_char_coord_set(Evas_Textblock_Cursor *cur, Evas_Coord x, E
                }
           }
      }
-   else if (o->paragraphs && (y >= o->paragraphs->y + o->formatted.h))
+
+   if (o->paragraphs)
      {
-        /* If we are after the last paragraph, use the last position in the
-         * text. */
-        evas_textblock_cursor_paragraph_last(cur);
-        return EINA_TRUE;
-     }
-   else if (o->paragraphs && (y < o->paragraphs->y))
-     {
-        evas_textblock_cursor_paragraph_first(cur);
-        return EINA_TRUE;
+        Evas_Object_Textblock_Line *first_line = o->paragraphs->lines;
+        if (y >= o->paragraphs->y + o->formatted.h)
+          {
+             /* If we are after the last paragraph, use the last position in the
+              * text. */
+             evas_textblock_cursor_paragraph_last(cur);
+             return EINA_TRUE;
+          }
+        else if (o->paragraphs && (y < (o->paragraphs->y + first_line->y)))
+          {
+             evas_textblock_cursor_paragraph_first(cur);
+             return EINA_TRUE;
+          }
      }
 
    return EINA_FALSE;
+}
+
+EAPI Eina_Bool
+evas_textblock_cursor_cluster_coord_set(Evas_Textblock_Cursor *cur, Evas_Coord x, Evas_Coord y)
+{
+   return _evas_textblock_cursor_coord_set(cur, x, y, EINA_TRUE);
+}
+
+EAPI Eina_Bool
+evas_textblock_cursor_char_coord_set(Evas_Textblock_Cursor *cur, Evas_Coord x, Evas_Coord y)
+{
+   return _evas_textblock_cursor_coord_set(cur, x, y, EINA_FALSE);
 }
 
 EAPI int
@@ -8593,6 +10653,8 @@ evas_textblock_cursor_line_coord_set(Evas_Textblock_Cursor *cur, Evas_Coord y)
 
    if (!cur) return -1;
    o = (Evas_Object_Textblock *)(cur->obj->object_data);
+
+   evas_object_textblock_coords_recalc(cur->obj);
    if (!o->formatted.valid) _relayout(cur->obj);
    y += o->style_pad.t;
 
@@ -8785,6 +10847,16 @@ _evas_textblock_cursor_range_in_line_geometry_get(
                    &ti->text_props,
                    start,
                    &x1, &y, &w1, &h);
+
+             // HAVE_UNICODE_EMOTICON(2013.10.07): Modify Emoticon image area for supporting unicode 6.0 emoticon.
+             if (ti->emoticon_item)
+               {
+                  if (start)
+                    x1 = ti->parent.w;
+                  else
+                    w1 = ti->parent.w;
+               }
+             //
           }
         if (!ret)
           {
@@ -8795,6 +10867,17 @@ _evas_textblock_cursor_range_in_line_geometry_get(
               &ti->text_props,
               end,
               &x2, &y, &w2, &h);
+
+        // HAVE_UNICODE_EMOTICON(2013.10.07): Modify Emoticon image area for supporting unicode 6.0 emoticon.
+        if (ti->emoticon_item)
+          {
+             if (end)
+               x2 = ti->parent.w;
+             else
+               w2 = ti->parent.w;
+          }
+        //
+
         if (!ret)
           {
              return NULL;
@@ -8835,6 +10918,23 @@ _evas_textblock_cursor_range_in_line_geometry_get(
              tr->w = w;
           }
      }
+   else if ((it1 == it2) && (it1->type != EVAS_TEXTBLOCK_ITEM_TEXT))
+     {
+        Evas_Coord x, w;
+        x = 0;
+        w = it1->w;
+        _evas_textblock_range_calc_x_w(it1, &x, &w, EINA_TRUE,
+                                       switch_items);
+        if (w > 0)
+          {
+             tr = calloc(1, sizeof(Evas_Textblock_Rectangle));
+             rects = eina_list_append(rects, tr);
+             tr->x = ln->x + it1->x + x;
+             tr->y = ln->par->y + ln->y;
+             tr->h = ln->h;
+             tr->w = w;
+          }
+     }
    else if (it1 != it2)
      {
         /* Get the middle items */
@@ -8855,6 +10955,17 @@ _evas_textblock_cursor_range_in_line_geometry_get(
                    &ti->text_props,
                    start,
                    &x, &y, &w, &h);
+
+             // HAVE_UNICODE_EMOTICON(2013.10.07): Modify Emoticon image area for supporting unicode 6.0 emoticon.
+             if (ti->emoticon_item)
+               {
+                  if (start)
+                    x = ti->parent.w;
+                  else
+                    w = ti->parent.w;
+               }
+             //
+
              if (!ret)
                {
                   /* BUG! Skip the first item */
@@ -8909,6 +11020,17 @@ _evas_textblock_cursor_range_in_line_geometry_get(
                    &ti->text_props,
                    end,
                    &x, &y, &w, &h);
+
+             // HAVE_UNICODE_EMOTICON(2013.10.07): Modify Emoticon image area for supporting unicode 6.0 emoticon.
+             if (ti->emoticon_item)
+               {
+                  if (end)
+                    x = ti->parent.w;
+                  else
+                    w = ti->parent.w;
+               }
+             //
+
              if (!ret)
                {
                   /* BUG! skip the last item */
@@ -8922,8 +11044,16 @@ _evas_textblock_cursor_range_in_line_geometry_get(
           }
         else
           {
-             x = 0;
-             w = it2->w;
+             if (end > 0)
+               {
+                  x = it2->adv;
+                  w = 0;
+               }
+             else
+               {
+                  x = 0;
+                  w = it2->adv;
+               }
              _evas_textblock_range_calc_x_w(it2, &x, &w, EINA_FALSE,
                         switch_items);
           }
@@ -8940,6 +11070,102 @@ _evas_textblock_cursor_range_in_line_geometry_get(
    return rects;
 }
 
+EAPI Eina_Iterator *
+evas_textblock_cursor_range_simple_geometry_get(const Evas_Textblock_Cursor *cur1, const Evas_Textblock_Cursor *cur2)
+{
+   Evas_Object_Textblock *o;
+   Evas_Object_Textblock_Line *ln1, *ln2;
+   Evas_Object_Textblock_Item *it1, *it2;
+   Eina_List *rects = NULL;
+   Eina_Iterator *itr = NULL;
+
+   if (!cur1 || !cur1->node) return NULL;
+   if (!cur2 || !cur2->node) return NULL;
+   if (cur1->obj != cur2->obj) return NULL;
+   o = (Evas_Object_Textblock *)(cur1->obj->object_data);
+
+   evas_object_textblock_coords_recalc(cur1->obj);
+   if (!o->formatted.valid) _relayout(cur1->obj);
+
+   if (evas_textblock_cursor_compare(cur1, cur2) > 0)
+     {
+        const Evas_Textblock_Cursor *tc;
+
+        tc = cur1;
+        cur1 = cur2;
+        cur2 = tc;
+     }
+
+   ln1 = ln2 = NULL;
+   it1 = it2 = NULL;
+   _find_layout_item_match(cur1, &ln1, &it1);
+   if (!ln1 || !it1) return NULL;
+   _find_layout_item_match(cur2, &ln2, &it2);
+   if (!ln2 || !it2) return NULL;
+
+   if (ln1 == ln2)
+     {
+        rects = _evas_textblock_cursor_range_in_line_geometry_get(ln1, cur1, cur2);
+     }
+   else
+     {
+        int lm = 0, rm = 0;
+        Eina_List *rects2 = NULL;
+        Evas_Coord w;
+        Evas_Textblock_Cursor *tc;
+        Evas_Textblock_Rectangle *tr;
+
+        if (ln1->items)
+          {
+             Evas_Object_Textblock_Format *fm = ln1->items->format;
+             if (fm)
+               {
+                  lm = fm->margin.l;
+                  rm = fm->margin.r;
+               }
+          }
+
+        evas_object_geometry_get(cur1->obj, NULL, NULL, &w, NULL);
+        rects = _evas_textblock_cursor_range_in_line_geometry_get(ln1, cur1, NULL);
+
+        /* Extend selection rectangle in first line */
+        tc = evas_object_textblock_cursor_new(cur1->obj);
+        evas_textblock_cursor_copy(cur1, tc);
+        evas_textblock_cursor_line_char_last(tc);
+        tr = calloc(1, sizeof(Evas_Textblock_Rectangle));
+        evas_textblock_cursor_pen_geometry_get(tc, &tr->x, &tr->y, &tr->w, &tr->h);
+        if (ln1->par->direction == EVAS_BIDI_DIRECTION_RTL)
+          {
+             tr->w = tr->x + tr->w - rm;
+             tr->x = lm;
+          }
+        else
+          {
+             tr->w = w - tr->x - rm;
+          }
+        rects = eina_list_append(rects, tr);
+        evas_textblock_cursor_free(tc);
+
+        rects2 = _evas_textblock_cursor_range_in_line_geometry_get(ln2, NULL, cur2);
+
+        /* Add middle rect */
+        if (ln1->par->y + ln1->y + ln1->h != ln2->par->y + ln2->y)
+          {
+             tr = calloc(1, sizeof(Evas_Textblock_Rectangle));
+             tr->x = lm;
+             tr->y = ln1->par->y + ln1->y + ln1->h;
+             tr->w = w - tr->x - rm;
+             tr->h = ln2->par->y + ln2->y - tr->y;
+             rects = eina_list_append(rects, tr);
+          }
+        rects = eina_list_merge(rects, rects2);
+     }
+   itr = _evas_textblock_iterator_new(rects);
+
+   return itr;
+}
+
+
 EAPI Eina_List *
 evas_textblock_cursor_range_geometry_get(const Evas_Textblock_Cursor *cur1, const Evas_Textblock_Cursor *cur2)
 {
@@ -8953,6 +11179,8 @@ evas_textblock_cursor_range_geometry_get(const Evas_Textblock_Cursor *cur1, cons
    if (!cur2 || !cur2->node) return NULL;
    if (cur1->obj != cur2->obj) return NULL;
    o = (Evas_Object_Textblock *)(cur1->obj->object_data);
+
+   evas_object_textblock_coords_recalc(cur1->obj);
    if (!o->formatted.valid) _relayout(cur1->obj);
    if (evas_textblock_cursor_compare(cur1, cur2) > 0)
      {
@@ -9024,9 +11252,12 @@ evas_textblock_cursor_format_item_geometry_get(const Evas_Textblock_Cursor *cur,
 
    if (!cur || !evas_textblock_cursor_format_is_visible_get(cur)) return EINA_FALSE;
    o = (Evas_Object_Textblock *)(cur->obj->object_data);
+
+   evas_object_textblock_coords_recalc(cur->obj);
    if (!o->formatted.valid) _relayout(cur->obj);
    if (!evas_textblock_cursor_format_is_visible_get(cur)) return EINA_FALSE;
    _find_layout_item_line_match(cur->obj, cur->node, cur->pos, &ln, &it);
+   if (it && (it->type != EVAS_TEXTBLOCK_ITEM_FORMAT)) return EINA_FALSE;
    fi = _ITEM_FORMAT(it);
    if ((!ln) || (!fi)) return EINA_FALSE;
    x = ln->x + fi->parent.x;
@@ -9115,6 +11346,8 @@ EAPI void
 evas_object_textblock_size_formatted_get(const Evas_Object *obj, Evas_Coord *w, Evas_Coord *h)
 {
    TB_HEAD();
+
+   evas_object_textblock_coords_recalc((Evas_Object *)obj);
    if (!o->formatted.valid) _relayout(obj);
    if (w) *w = o->formatted.w;
    if (h) *h = o->formatted.h;
@@ -9122,7 +11355,7 @@ evas_object_textblock_size_formatted_get(const Evas_Object *obj, Evas_Coord *w, 
 
 static void
 _size_native_calc_line_finalize(const Evas_Object *obj, Eina_List *items,
-      Evas_Coord *ascent, Evas_Coord *descent, Evas_Coord *w)
+      Evas_Coord *ascent, Evas_Coord *descent, Evas_Coord *w, Textblock_Position position)
 {
    Evas_Object_Textblock_Item *it;
    Eina_List *i;
@@ -9132,11 +11365,19 @@ _size_native_calc_line_finalize(const Evas_Object *obj, Eina_List *items,
 
    if (it)
      {
+        Evas_Coord asc = 0, desc = 0;
         /* If there are no text items yet, calc ascent/descent
          * according to the current format. */
-        if (*ascent + *descent == 0)
-           _layout_format_ascent_descent_adjust(obj, ascent, descent,
-                 it->format);
+        if (it->format)
+          {
+             _layout_item_ascent_descent_adjust(obj, &asc, &desc,
+                                                it, position);
+          }
+
+        if (asc > *ascent)
+           *ascent = asc;
+        if (desc > *descent)
+           *descent = desc;
 
         /* Add margins. */
         if (it->format)
@@ -9157,6 +11398,21 @@ _size_native_calc_line_finalize(const Evas_Object *obj, Eina_List *items,
              _layout_calculate_format_item_size(obj, fi, ascent,
                    descent, &fy, &fw, &fh);
           }
+        else
+          {
+             Evas_Coord maxasc = 0, maxdesc = 0;
+             /* We are passing else because we don't want anything to be
+              * done wrt position. */
+             _layout_item_ascent_descent_adjust(obj, ascent, descent,
+                   it, TEXTBLOCK_POSITION_ELSE);
+             _layout_item_max_ascent_descent_calc(obj, &maxasc, &maxdesc,
+                   it, position);
+
+             if (maxasc > *ascent)
+                *ascent = maxasc;
+             if (maxdesc > *descent)
+                *descent = maxdesc;
+          }
 
 loop_advance:
         *w += it->adv;
@@ -9168,6 +11424,7 @@ static void
 _size_native_calc_paragraph_size(const Evas_Object *obj,
       const Evas_Object_Textblock *o,
       const Evas_Object_Textblock_Paragraph *par,
+      Textblock_Position *position,
       Evas_Coord *_w, Evas_Coord *_h)
 {
    Eina_List *i;
@@ -9185,7 +11442,7 @@ _size_native_calc_paragraph_size(const Evas_Object *obj,
                       _IS_PARAGRAPH_SEPARATOR(o, fi->item)))
                {
                   _size_native_calc_line_finalize(obj, line_items, &ascent,
-                        &descent, &w);
+                        &descent, &w, *position);
 
                   if (ascent + descent > h)
                      h = ascent + descent;
@@ -9195,6 +11452,7 @@ _size_native_calc_paragraph_size(const Evas_Object *obj,
                      wmax = w;
                   h = 0;
                   ascent = descent = 0;
+                  *position = TEXTBLOCK_POSITION_ELSE;
                   line_items = eina_list_free(line_items);
                }
              else
@@ -9202,9 +11460,9 @@ _size_native_calc_paragraph_size(const Evas_Object *obj,
                   Evas_Coord fw, fh, fy;
                   /* If there are no text items yet, calc ascent/descent
                    * according to the current format. */
-                  if (it && (ascent + descent == 0))
-                     _layout_format_ascent_descent_adjust(obj, &ascent,
-                           &descent, it->format);
+                  if (ascent + descent == 0)
+                     _layout_item_ascent_descent_adjust(obj, &ascent,
+                           &descent, it, *position);
 
                   _layout_calculate_format_item_size(obj, fi, &ascent,
                         &descent, &fy, &fw, &fh);
@@ -9212,12 +11470,20 @@ _size_native_calc_paragraph_size(const Evas_Object *obj,
           }
         else
           {
-             _layout_format_ascent_descent_adjust(obj, &ascent,
-                   &descent, it->format);
+             _layout_item_ascent_descent_adjust(obj, &ascent,
+                   &descent, it, *position);
           }
      }
 
-   _size_native_calc_line_finalize(obj, line_items, &ascent, &descent, &w);
+   if (!EINA_INLIST_GET(par)->next)
+     {
+        *position = (*position == TEXTBLOCK_POSITION_START) ?
+           TEXTBLOCK_POSITION_SINGLE : TEXTBLOCK_POSITION_END;
+     }
+   _size_native_calc_line_finalize(obj, line_items, &ascent, &descent, &w, *position);
+
+   if (*position == TEXTBLOCK_POSITION_START)
+      *position = TEXTBLOCK_POSITION_ELSE;
 
    line_items = eina_list_free(line_items);
 
@@ -9240,13 +11506,16 @@ evas_object_textblock_size_native_get(const Evas_Object *obj, Evas_Coord *w, Eva
      {
         Evas_Coord wmax = 0, hmax = 0;
         Evas_Object_Textblock_Paragraph *par;
+        Textblock_Position position = TEXTBLOCK_POSITION_START;
         /* We just want the layout objects to update, should probably
          * split that. */
+
+        evas_object_textblock_coords_recalc((Evas_Object *)obj);
         if (!o->formatted.valid) _relayout(obj);
         EINA_INLIST_FOREACH(o->paragraphs, par)
           {
              Evas_Coord tw, th;
-             _size_native_calc_paragraph_size(obj, o, par, &tw, &th);
+             _size_native_calc_paragraph_size(obj, o, par, &position, &tw, &th);
              if (tw > wmax)
                 wmax = tw;
              hmax += th;
@@ -9267,6 +11536,8 @@ EAPI void
 evas_object_textblock_style_insets_get(const Evas_Object *obj, Evas_Coord *l, Evas_Coord *r, Evas_Coord *t, Evas_Coord *b)
 {
    TB_HEAD();
+
+   evas_object_textblock_coords_recalc((Evas_Object *)obj);
    if (!o->formatted.valid) _relayout(obj);
    if (l) *l = o->style_pad.l;
    if (r) *r = o->style_pad.r;
@@ -9279,10 +11550,44 @@ evas_object_textblock_style_insets_get(const Evas_Object *obj, Evas_Coord *l, Ev
  * This is an ugly workaround to get around the fact that
  * evas_object_textblock_coords_recalc isn't really called when it's supposed
  * to. When that bug is fixed please remove this. */
+/*
 static void
 _workaround_object_coords_recalc(void *data __UNUSED__, Evas *e __UNUSED__, Evas_Object *obj, void *event_info __UNUSED__)
 {
    evas_object_textblock_coords_recalc(obj);
+}
+*/
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// HAVE_UNICODE_EMOTICON(2013.10.07): Basic implementation for supporting unicode 6.0 emoticon.
+static void
+_evas_object_textblock_emoticon_clear(Evas_Object *obj)
+{
+   Evas_Object_Textblock *o;
+   Evas_Object_Textblock_Emoticon_Item *emoticon_item;
+   Eina_Inlist *itrn;
+
+   Evas *e = obj->layer->evas;
+   o = (Evas_Object_Textblock *)(obj->object_data);
+
+   o->emoticons = eina_list_free(o->emoticons);
+
+   EINA_INLIST_FOREACH_SAFE(EINA_INLIST_GET(o->emoticon_items), itrn,
+                            emoticon_item)
+     {
+        if (emoticon_item->engine_data)
+          {
+             e->engine.func->image_free(e->engine.data.output,
+                                        emoticon_item->engine_data);
+          }
+
+        if (emoticon_item->ti) emoticon_item->ti->emoticon_item = NULL;
+
+        o->emoticon_items = (Evas_Object_Textblock_Emoticon_Item *)
+           eina_inlist_remove(EINA_INLIST_GET(o->emoticon_items),
+                              EINA_INLIST_GET(emoticon_item));
+        free(emoticon_item);
+     }
 }
 
 /* all nice and private */
@@ -9323,8 +11628,14 @@ evas_object_textblock_init(Evas_Object *obj)
    evas_object_textblock_text_markup_set(obj, "");
 
    o->legacy_newline = EINA_TRUE;
-   evas_object_event_callback_priority_add(obj, EVAS_CALLBACK_RESIZE, -1000,
-         _workaround_object_coords_recalc, NULL);
+//   evas_object_event_callback_priority_add(obj, EVAS_CALLBACK_RESIZE, -1000,
+//         _workaround_object_coords_recalc, NULL);
+
+   // TIZEN_ONLY(20140702): Add pressed_color tag feature
+   o->pressed_format = NULL;
+   o->prev_pressed_format = NULL;
+   o->has_pressed_color = EINA_FALSE;
+   //
 }
 
 static void *
@@ -9348,6 +11659,10 @@ evas_object_textblock_free(Evas_Object *obj)
 {
    Evas_Object_Textblock *o;
 
+   // HAVE_UNICODE_EMOTICON(2013.10.07): Basic implementation for supporting unicode 6.0 emoticon.
+   _evas_object_textblock_emoticon_clear(obj);
+   //
+
    _evas_object_textblock_clear_all(obj);
    evas_object_textblock_style_set(obj, NULL);
    while (evas_object_textblock_style_user_peek(obj))
@@ -9369,8 +11684,67 @@ evas_object_textblock_free(Evas_Object *obj)
    o->magic = 0;
    EVAS_MEMPOOL_FREE(_mp_obj, o);
   _format_command_shutdown();
+
+
 }
 
+///////////////////// TIZEN ONLY (20131106) : Font effect for tizen. /////////////////////
+static int __attribute__((optimize("O0")))
+evas_object_textblock_effect_outerglow_alpha_get(int x,int y, double opacity, int size)
+{
+    const float SPREAD_COEFF = 1.12f;
+    double sizeD = (double)size;
+    int alpha;
+    double intensity = sqrt((x * x) + (y * y));
+    intensity = (sizeD * SPREAD_COEFF - intensity) / sizeD;
+    if (intensity > 0.0)
+      {
+         intensity = (intensity >= 1.0) ? 1.0 : intensity;
+         intensity = sin(intensity * 3.141592 / 2.0);
+         alpha = (int)((255.0 * opacity) * intensity + 0.5);
+         return alpha;
+      }
+    else
+      return 0;
+}
+
+static int __attribute__((optimize("O0")))
+evas_object_textblock_effect_soft_outerglow_alpha_get(int x,int y, double opacity, int size)
+{
+    const float SPREAD_COEFF = 1.50f;
+    double sizeD = (double)size + 0.3;
+    int alpha;
+    double intensity = sqrt((x * x) + (y * y));
+    intensity = (sizeD * SPREAD_COEFF - intensity) / sizeD;
+    if (intensity > 0.0)
+      {
+         intensity = (intensity >= 1.0) ? 1.0 : intensity;
+         intensity = sin(intensity * 3.141592 / 2.0);
+         alpha =(int)((255.0 * opacity) * intensity + 0.5);
+         return alpha;
+      }
+    else
+      return 0;
+}
+
+static int __attribute__((optimize("O0")))
+evas_object_textblock_effect_shadow_alpha_get(int x,int y,double opacity,int softness)
+{
+   int alpha;
+   double softnessD = (double)softness;
+   double intensity = sqrt((x * x) + (y * y));
+   intensity = (softnessD - intensity) / softnessD;
+   if (intensity > 0.0)
+     {
+        intensity = sin((intensity * 3.141592) / 2.0);
+        intensity *= intensity;
+        alpha =((255.0 * opacity) * intensity + 0.5) / (softnessD * 2);
+        return alpha;
+     }
+   else
+     return 0;
+}
+//////////////////////////////////////////////////////////////////////////////////////////
 
 static void
 evas_object_textblock_render(Evas_Object *obj, void *output, void *context, void *surface, int x, int y)
@@ -9389,10 +11763,22 @@ evas_object_textblock_render(Evas_Object *obj, void *output, void *context, void
 	  {0, 1, 2, 1, 0}
      };
 
+   Eina_Bool instant_pre = EINA_FALSE;
+
+   /* FIXME: render_pre() won't be called if the textblock is a member of the
+      mapped parent. Especially, textblock should be cared since it's geometry
+      is updated in the render pre time. */
+   if (!obj->pre_render_done)
+     {
+        evas_object_textblock_render_pre(obj);
+        instant_pre = EINA_TRUE;
+     }
+
    /* render object to surface with context, and offxet by x,y */
    o = (Evas_Object_Textblock *)(obj->object_data);
    obj->layer->evas->engine.func->context_multiplier_unset(output,
 							   context);
+   ENFN->context_render_op_set(output, context, obj->cur.render_op);
    /* FIXME: This clipping is just until we fix inset handling correctly. */
    ENFN->context_clip_clip(output, context,
                               obj->cur.geometry.x + x,
@@ -9400,6 +11786,7 @@ evas_object_textblock_render(Evas_Object *obj, void *output, void *context, void
                               obj->cur.geometry.w,
                               obj->cur.geometry.h);
    clip = ENFN->context_clip_get(output, context, &cx, &cy, &cw, &ch);
+
    /* If there are no paragraphs and thus there are no lines,
     * there's nothing left to do. */
    if (!o->paragraphs) return;
@@ -9533,17 +11920,59 @@ evas_object_textblock_render(Evas_Object *obj, void *output, void *context, void
              _og = itr->format->color.oname.g; \
              _ob = itr->format->color.oname.b; \
              _oa = itr->format->color.oname.a; \
-             if (!EINA_INLIST_GET(itr)->next) \
-               { \
-                  DRAW_RECT(itr->x, oy, itr->w, oh, _or, _og, _ob, _oa); \
-               } \
-             else \
-               { \
-                  DRAW_RECT(itr->x, oy, itr->adv, oh, _or, _og, _ob, _oa); \
-               } \
+             DRAW_RECT(itr->x, oy, itr->adv, oh, _or, _og, _ob, _oa); \
           } \
      } \
    while (0)
+
+////////////////////////////////////////////////////////////////
+// TIZEN_ONLY(20140702): Add pressed_color tag feature
+////////////////////////////////////////////////////////////////
+#define COLOR_SET_CHECK_PRESSED(col) \
+   if (itr->format->has_pressed_color && \
+       itr->format->is_pressed) \
+     { \
+        ENFN->context_color_set(output, context, \
+              (obj->cur.cache.clip.r * ti->parent.format->color.pressed_color.r) / 255, \
+              (obj->cur.cache.clip.g * ti->parent.format->color.pressed_color.g) / 255, \
+              (obj->cur.cache.clip.b * ti->parent.format->color.pressed_color.b) / 255, \
+              (obj->cur.cache.clip.a * ti->parent.format->color.pressed_color.a) / 255); \
+     } \
+   else \
+     { \
+        ENFN->context_color_set(output, context, \
+              (obj->cur.cache.clip.r * ti->parent.format->color.col.r) / 255, \
+              (obj->cur.cache.clip.g * ti->parent.format->color.col.g) / 255, \
+              (obj->cur.cache.clip.b * ti->parent.format->color.col.b) / 255, \
+              (obj->cur.cache.clip.a * ti->parent.format->color.col.a) / 255); \
+     }
+
+#define DRAW_FORMAT_CHECK_PRESSED(oname, oy, oh) \
+   do \
+     { \
+        if (itr->format->oname) \
+          { \
+             unsigned char _or, _og, _ob, _oa; \
+             if (itr->format->has_pressed_color && \
+                 itr->format->is_pressed) \
+               { \
+                  _or = itr->format->color.pressed_color.r; \
+                  _og = itr->format->color.pressed_color.g; \
+                  _ob = itr->format->color.pressed_color.b; \
+                  _oa = itr->format->color.pressed_color.a; \
+               } \
+             else \
+               { \
+                  _or = itr->format->color.oname.r; \
+                  _og = itr->format->color.oname.g; \
+                  _ob = itr->format->color.oname.b; \
+                  _oa = itr->format->color.oname.a; \
+               } \
+             DRAW_RECT(itr->x, oy, itr->adv, oh, _or, _og, _ob, _oa); \
+          } \
+     } \
+   while (0)
+////////////////////////////////////////////////////////////////
 
      {
         Evas_Coord look_for_y = 0 - (obj->cur.geometry.y + y);
@@ -9579,6 +12008,9 @@ evas_object_textblock_render(Evas_Object *obj, void *output, void *context, void
         Evas_Object_Textblock_Text_Item *ti;
         ti = (itr->type == EVAS_TEXTBLOCK_ITEM_TEXT) ? _ITEM_TEXT(itr) : NULL;
         if (!ti) continue;
+        // HAVE_UNICODE_EMOTICON(2013.10.07): Basic implementation for supporting unicode 6.0 emoticon.
+        if (ti->emoticon_item) continue;
+        //
 
         shad_dst = shad_sz = dx = dy = haveshad = 0;
         switch (ti->parent.format->style & EVAS_TEXT_STYLE_MASK_BASIC)
@@ -9681,6 +12113,9 @@ evas_object_textblock_render(Evas_Object *obj, void *output, void *context, void
         Evas_Object_Textblock_Text_Item *ti;
         ti = (itr->type == EVAS_TEXTBLOCK_ITEM_TEXT) ? _ITEM_TEXT(itr) : NULL;
         if (!ti) continue;
+        // HAVE_UNICODE_EMOTICON(2013.10.07): Basic implementation for supporting unicode 6.0 emoticon.
+        if (ti->emoticon_item) continue;
+        //
 
         if (ti->parent.format->style == EVAS_TEXT_STYLE_GLOW)
           {
@@ -9704,12 +12139,102 @@ evas_object_textblock_render(Evas_Object *obj, void *output, void *context, void
      }
    ITEM_WALK_END();
 
+   // TIZEN ONLY (20131106) : Font effect for tizen.
+   ITEM_WALK()
+     {
+        Evas_Object_Textblock_Text_Item *ti;
+        ti = (itr->type == EVAS_TEXTBLOCK_ITEM_TEXT) ? _ITEM_TEXT(itr) : NULL;
+        if (!ti) continue;
+        // HAVE_UNICODE_EMOTICON(20140626): Skip effect for emoticon.
+        if (ti->emoticon_item) continue;
+        //
+        if ((ti->parent.format->style & EVAS_TEXT_STYLE_MASK_BASIC) == EVAS_TEXT_STYLE_TIZEN_GLOW_SHADOW) // HOME_SCREEN_ICON
+          {
+             int size = 2;
+             int softness = 3;
+
+             for (j = -size; j <= size; j++)
+               {
+                  for (i = -size; i <= size; i++)
+                    {
+                       int alpha = evas_object_textblock_effect_outerglow_alpha_get(i,j, 0.30, size); // OutGlow2
+                       if(alpha == 0)
+                         continue;
+                       COLOR_SET_AMUL(glow, alpha);
+                       DRAW_TEXT(j, i);
+                    }
+               }
+             for (j = -softness; j <= softness; j++)
+               {
+                  for (i = -softness; i <= softness; i++)
+                    {
+                       if (i != 0 && j != 0)
+                         {
+                            int alpha = evas_object_textblock_effect_shadow_alpha_get(i, j, 0.80, softness); // DropShadow
+                            if(alpha == 0) continue;
+                            COLOR_SET_AMUL(shadow, alpha);
+                            DRAW_TEXT(j, i + 2);
+                         }
+                    }
+               }
+          }
+        if ((ti->parent.format->style & EVAS_TEXT_STYLE_MASK_BASIC) == EVAS_TEXT_STYLE_TIZEN_SOFT_GLOW_SHADOW)
+          {
+             int size = 1;
+             int softness = 1;
+
+             for (j = -size; j <= size; j++)
+               {
+                  for (i = -size; i <= size; i++)
+                    {
+                       if (i != 0 && j != 0)
+                         {
+                            int alpha = evas_object_textblock_effect_soft_outerglow_alpha_get(i, j, 0.40, size); // OutGlow3
+                            if(alpha == 0) continue;
+                            COLOR_SET_AMUL(glow, alpha);
+                            DRAW_TEXT(j, i);
+                         }
+                    }
+               }
+             for (j = -softness; j <= softness; j++)
+               {
+                  for (i = -softness; i <= softness; i++)
+                    {
+                       int alpha = evas_object_textblock_effect_shadow_alpha_get(i, j, 0.65, softness); // DropShadow
+                       if(alpha == 0) continue;
+                       COLOR_SET_AMUL(shadow, alpha);
+                       DRAW_TEXT(j, i + 2);
+                    }
+               }
+          }
+        if ((ti->parent.format->style & EVAS_TEXT_STYLE_MASK_BASIC) == EVAS_TEXT_STYLE_TIZEN_SHADOW)
+          {
+             int softness = 3;
+
+             for (j = -softness; j <= softness; j++)
+               {
+                  for (i = -softness; i <= softness; i++)
+                    {
+                       int alpha = evas_object_textblock_effect_shadow_alpha_get(i, j, 0.5, softness); // DropShadow
+                       if(alpha == 0) continue;
+                       COLOR_SET_AMUL(shadow, alpha);
+                       DRAW_TEXT(j, i + 2);
+                    }
+               }
+          }
+     }
+   ITEM_WALK_END();
+   ////////////////////////////////////////////////////////////////////
+
    /* outlines */
    ITEM_WALK()
      {
         Evas_Object_Textblock_Text_Item *ti;
         ti = (itr->type == EVAS_TEXTBLOCK_ITEM_TEXT) ? _ITEM_TEXT(itr) : NULL;
         if (!ti) continue;
+        // HAVE_UNICODE_EMOTICON(2013.10.07): Basic implementation for supporting unicode 6.0 emoticon.
+        if (ti->emoticon_item) continue;
+        //
 
         if ((ti->parent.format->style == EVAS_TEXT_STYLE_OUTLINE) ||
               (ti->parent.format->style == EVAS_TEXT_STYLE_OUTLINE_SHADOW) ||
@@ -9746,25 +12271,61 @@ evas_object_textblock_render(Evas_Object *obj, void *output, void *context, void
         /* NORMAL TEXT */
         if (ti)
           {
+             // HAVE_UNICODE_EMOTICON(2013.10.07): Basic implementation for supporting unicode 6.0 emoticon.
+             if (!ti->emoticon_item)
+               {
+                  // TIZEN_ONLY(20140702): Add pressed_color tag feature
+                  //COLOR_SET(normal);
+                  COLOR_SET_CHECK_PRESSED(normal);
+                  //
+                  DRAW_TEXT(0, 0);
+               }
+             //
+             /*
+
              COLOR_SET(normal);
              DRAW_TEXT(0, 0);
+              */
           }
 
         /* STRIKETHROUGH */
-        DRAW_FORMAT(strikethrough, (ln->h / 2), 1);
+        // TIZEN_ONLY(20140702): Add pressed_color tag feature
+        //DRAW_FORMAT(strikethrough, (ln->h / 2), 4);
+        DRAW_FORMAT_CHECK_PRESSED(strikethrough, (ln->h / 2), 4);
+        //
 
         /* UNDERLINE */
-        DRAW_FORMAT(underline, ln->baseline + 1, 1);
+        // TIZEN ONLY : for not overlapping with characters.
+        //DRAW_FORMAT(underline, ln->h - 2, 1);
+        //DRAW_FORMAT(underline, ln->baseline + 1, 1);
+        // TIZEN_ONLY(20140702): Add pressed_color tag feature
+        DRAW_FORMAT_CHECK_PRESSED(underline, ln->h - 2, 1);
+        //
 
         /* UNDERLINE DASHED */
-        DRAW_FORMAT_DASHED(underline_dash, ln->baseline + 1, 1,
-                         ti->parent.format->underline_dash_width,
-                         ti->parent.format->underline_dash_gap);
+        // TIZEN ONLY : for not overlapping with characters.
+        DRAW_FORMAT_DASHED(underline_dash, ln->h - 2, 1,
+                           itr->format->underline_dash_width,
+                           itr->format->underline_dash_gap);
+        //DRAW_FORMAT_DASHED(underline_dash, ln->baseline + 1, 1,
+        //                   ti->parent.format->underline_dash_width,
+        //                   ti->parent.format->underline_dash_gap);
 
         /* UNDERLINE2 */
-        DRAW_FORMAT(underline2, ln->baseline + 3, 1);
+        // TIZEN ONLY : for not overlapping with characters.
+        //DRAW_FORMAT(underline2, ln->h, 1);
+        //DRAW_FORMAT(underline2, ln->baseline + 3, 1);
+        // TIZEN_ONLY(20140702): Add pressed_color tag feature
+        DRAW_FORMAT_CHECK_PRESSED(underline2, ln->h, 1);
+        //
      }
    ITEM_WALK_END();
+
+   _emoticon_render(obj, output, context, surface, x, y);
+
+   /* FIXME: render_post() should be called if the render_pre() is called
+      instantly. */
+   if (instant_pre) evas_object_textblock_render_post(obj);
 }
 
 static void
@@ -9782,6 +12343,8 @@ evas_object_textblock_render_pre(Evas_Object *obj)
    /* then when this is done the object needs to figure if it changed and */
    /* if so what and where and add the appropriate redraw textblocks */
    o = (Evas_Object_Textblock *)(obj->object_data);
+
+   evas_object_textblock_coords_recalc(obj);
    if ((o->changed) || (o->content_changed) || (o->format_changed) ||
        ((obj->cur.geometry.w != o->last_w) ||
            (((o->valign != 0.0) || (o->have_ellipsis)) &&
@@ -9818,7 +12381,7 @@ evas_object_textblock_render_pre(Evas_Object *obj)
 	evas_object_render_pre_visible_change(&obj->layer->evas->clip_changes, obj, is_v, was_v);
 	goto done;
      }
-   if (obj->changed_map)
+   if (obj->changed_map || obj->changed_src_visible)
      {
         evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes,
                                             obj);
@@ -9854,7 +12417,25 @@ evas_object_textblock_render_pre(Evas_Object *obj)
 	evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes, obj);
 	goto done;
      }
+   if (obj->cur.render_op != obj->prev.render_op)
+     {
+        evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes, obj);
+        goto done;
+     }
+   // TIZEN_ONLY(20140702): Add pressed_color tag feature
+   if (o->pressed_format != o->prev_pressed_format)
+     {
+        evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes, obj);
+        goto done;
+     }
+   //
    done:
+   // TIZEN_ONLY(20140702): Add pressed_color tag feature
+   o->prev_pressed_format = o->pressed_format;
+   //
+   // HAVE_UNICODE_EMOTICON(2013.10.07): Basic implementation for supporting unicode 6.0 emoticon.
+   _evas_object_textblock_emoticon_update_geometry(obj);
+   //
    evas_object_render_pre_effect_updates(&obj->layer->evas->clip_changes, obj, is_v, was_v);
 }
 
@@ -9924,9 +12505,25 @@ evas_object_textblock_coords_recalc(Evas_Object *obj)
    Evas_Object_Textblock *o;
 
    o = (Evas_Object_Textblock *)(obj->object_data);
-   if ((obj->cur.geometry.w != o->last_w) ||
+   if (
+       // width changed thus we may have to re-wrap or change centering etc.
+       (obj->cur.geometry.w != o->last_w) ||
+       // if valign not top OR we have ellipsis, then if height changed we need to re-eval valign or ... spot
        (((o->valign != 0.0) || (o->have_ellipsis)) &&
-           (obj->cur.geometry.h != o->last_h)))
+           (
+               ((o->formatted.oneline_h == 0) &&
+                   (obj->cur.geometry.h != o->last_h)) ||
+
+               ((o->formatted.oneline_h != 0) &&
+                   (((obj->cur.geometry.h != o->last_h) &&
+                     (o->formatted.oneline_h < obj->cur.geometry.h))))
+           )
+       ) ||
+       // obviously if content text changed we need to reformat it
+       (o->content_changed) ||
+       // if format changed (eg styles) we need to re-format/match tags etc.
+       (o->format_changed)
+      )
      {
 	o->formatted.valid = 0;
 	o->changed = 1;
@@ -9941,6 +12538,8 @@ evas_object_textblock_scale_update(Evas_Object *obj)
    o = (Evas_Object_Textblock *)(obj->object_data);
    _evas_textblock_invalidate_all(o);
    _evas_textblock_changed(o, obj);
+   o->last_w = -1;
+   o->last_h = -1;
 }
 
 void
@@ -9963,7 +12562,7 @@ _evas_object_textblock_rehint(Evas_Object *obj)
                     {
                        Evas_Object_Textblock_Text_Item *ti = _ITEM_TEXT(it);
                        if (ti->parent.format->font.font)
-                         {  
+                         {
                             evas_font_load_hinting_set(obj->layer->evas,
                                   ti->parent.format->font.font,
                                   obj->layer->evas->hinting);
@@ -9974,6 +12573,14 @@ _evas_object_textblock_rehint(Evas_Object *obj)
      }
    _evas_textblock_invalidate_all(o);
    _evas_textblock_changed(o, obj);
+}
+
+// TIZEN_ONLY(20150513): Add evas_object_text/textblock_ellipsis_status_get internal API.
+EAPI Eina_Bool
+evas_object_textblock_ellipsis_status_get(const Evas_Object *obj)
+{
+   TB_HEAD_RETURN(EINA_FALSE);
+   return o->last_computed_ellipsis;
 }
 
 /**
@@ -9993,6 +12600,7 @@ _evas_textblock_check_item_node_link(Evas_Object *obj)
    o = (Evas_Object_Textblock *)(obj->object_data);
    if (!o) return EINA_FALSE;
 
+   evas_object_textblock_coords_recalc(obj);
    if (!o->formatted.valid) _relayout(obj);
 
    EINA_INLIST_FOREACH(o->paragraphs, par)

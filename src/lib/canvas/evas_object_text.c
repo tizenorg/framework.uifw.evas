@@ -1,5 +1,9 @@
 #include "evas_common.h" /* Includes evas_bidi_utils stuff. */
 #include "evas_private.h"
+// TIZEN ONLY (20131106) : Font effect for tizen.
+#include <math.h>
+
+#include "evas_filter.h"
 
 /* save typing */
 #define ENFN obj->layer->evas->engine.func
@@ -11,10 +15,17 @@ static const char o_type[] = "text";
 /* private struct for text object internal data */
 typedef struct _Evas_Object_Text Evas_Object_Text;
 typedef struct _Evas_Object_Text_Item Evas_Object_Text_Item;
+// HAVE_UNICODE_EMOTICON(2013.12.06): refactored emoticon drawing.
+typedef struct _Evas_Object_Text_Emoticon_Item Evas_Object_Text_Emoticon_Item;
+//
 
 struct _Evas_Object_Text
 {
    DATA32               magic;
+
+   // HAVE_UNICODE_EMOTICON(2013.10.07): Basic implementation for supporting unicode 6.0 emoticon.
+   Eina_List                  *emoticons;
+   //
 
    struct {
       const char          *utf8_text; /* The text exposed to the API */
@@ -27,6 +38,19 @@ struct _Evas_Object_Text
       } outline, shadow, glow, glow2;
 
       unsigned char        style;
+      double               ellipsis;
+      Eina_Unicode        *text;
+
+      // special effects. VERY EXPERIMENTAL for now.
+      struct {
+         Eina_Stringshare    *code;
+         Evas_Filter_Program *chain;
+         Eina_Hash           *sources; // Evas_Filter_Proxy_Binding
+         int                  sources_count;
+         void                *output;
+         Eina_Bool            changed : 1;
+         Eina_Bool            invalid : 1; // Code parse failed
+      } filter;
    } cur, prev;
 
    float                       ascent, descent;
@@ -37,12 +61,38 @@ struct _Evas_Object_Text
 
    Evas_Font_Set              *font;
 
+   struct {
+      Evas_Object_Text_Item    *ellipsis_start;
+      Evas_Object_Text_Item    *ellipsis_end;
+      Evas_Coord                w, h;
+      int                       advance;
+      Eina_Bool                 ellipsis;
+   } last_computed;
+
    char                        changed : 1;
 };
+
+// HAVE_UNICODE_EMOTICON(2013.12.06): refactored emoticon drawing.
+struct _Evas_Object_Text_Emoticon_Item
+{
+   Evas                            *e;
+   void                            *engine_data;
+   int                              img_w, img_h;
+   // HAVE_UNICODE_EMOTICON(20140626): Adjust emoticon ascent, descent and height.
+   int                              ascent, descent;
+   //
+   Evas_Coord                       x, y, w, h;
+   Eina_Bool                        visible : 1;
+};
+//
 
 struct _Evas_Object_Text_Item
 {
    EINA_INLIST;
+
+   // HAVE_UNICODE_EMOTICON(2013.12.06): refactored emoticon drawing.
+   Evas_Object_Text_Emoticon_Item *emoticon_item;
+   //
 
    size_t               text_pos;
    size_t               visual_pos;
@@ -66,8 +116,17 @@ static int evas_object_text_is_opaque(Evas_Object *obj);
 static int evas_object_text_was_opaque(Evas_Object *obj);
 
 static void evas_object_text_scale_update(Evas_Object *obj);
-static void _evas_object_text_recalc(Evas_Object *obj);
+static void _evas_object_text_recalc(Evas_Object *obj, Eina_Unicode *text);
 
+// HAVE_UNICODE_EMOTICON(2013.12.06): refactored emoticon drawing.
+static void _evas_object_text_emoticon_update_geometry(Evas_Object *obj);
+static void _evas_object_text_emoticon_update_size(Evas_Object_Text *o, Evas_Object_Text_Item *it);
+//
+// TIZEN ONLY (20131106) : Font effect for tizen.
+static int evas_object_text_effect_outerglow_alpha_get(int x, int y, double opacity, int size);
+static int evas_object_text_effect_soft_outerglow_alpha_get(int x, int y, double opacity, int size);
+static int evas_object_text_effect_shadow_alpha_get(int x, int y, double opacity, int softness);
+//
 static const Evas_Object_Func object_func =
 {
    /* methods (compulsory) */
@@ -99,6 +158,173 @@ static const Evas_Object_Func object_func =
 
 EVAS_MEMPOOL(_mp_obj);
 
+// HAVE_UNICODE_EMOTICON(2013.12.06): refactored emoticon drawing.
+Evas_Object_Text_Emoticon_Item *
+_text_emoticon_img_new(Evas *e, Evas_Object *obj, Eina_Unicode str)
+{
+   const char *value;
+   char unicode_str[15];
+   char image_file[127];
+   int load_error = EVAS_LOAD_ERROR_NONE;
+   Evas_Image_Load_Opts opts = { EINA_FALSE, 0, 0, 0, 0, { 0, 0, 0, 0 }, 0 };
+   Evas_Object_Text_Emoticon_Item *item;
+
+   value = getenv("EVAS_UNICODE_EMOTICON_IMAGE_DISABLE");
+   if (value && !strcmp(value, "1"))
+     return NULL;
+
+   item = calloc(1, sizeof(Evas_Object_Text_Emoticon_Item));
+   if (!item)
+     {
+        ERR("Failed to allocate emoticon item, textb(%p)", obj);
+        return NULL;
+     }
+   eina_convert_xtoa(str, unicode_str);
+   if (strlen(unicode_str) <= 2)
+     {
+        snprintf(image_file, sizeof(image_file),
+                 "%s/u00%s.png", UNICODE_EMOTICON_FOLDER, unicode_str);
+     }
+   else
+     {
+        snprintf(image_file, sizeof(image_file),
+                 "%s/u%s.png", UNICODE_EMOTICON_FOLDER, unicode_str);
+     }
+
+   item->engine_data = e->engine.func->image_load(e->engine.data.output,
+                                                  image_file,
+                                                  NULL,
+                                                  &load_error,
+                                                  &opts);
+   if (!item->engine_data || (load_error != EVAS_LOAD_ERROR_NONE))
+     {
+        DBG("Failed to emoticon image, textblock(%p) error(%d)", obj, load_error);
+        free(item);
+        return NULL;
+     }
+   e->engine.func->image_size_get(e->engine.data.output, item->engine_data,
+                                  &item->img_w, &item->img_h);
+   return item;
+}
+
+// HAVE_UNICODE_EMOTICON(2013.12.06): refactored emoticon drawing.
+static void
+_text_emoticon_render(Evas_Object *obj, void *output, void *context, void *surface, int x, int y)
+{
+   Evas_Object_Text *o;
+   Evas_Object_Text_Item *it;
+   Eina_List *l;
+   Evas *e = obj->layer->evas;
+   Evas_Object_Text_Emoticon_Item *eitem;
+
+   o = (Evas_Object_Text *)(obj->object_data);
+
+   e->engine.func->context_color_set(output, context, 255, 255, 255, 255);
+   if ((obj->cur.cache.clip.r == 255) &&
+       (obj->cur.cache.clip.g == 255) &&
+       (obj->cur.cache.clip.b == 255) &&
+       (obj->cur.cache.clip.a == 255))
+        e->engine.func->context_multiplier_unset(output, context);
+   else if (obj->cur.clipper)
+     {
+        e->engine.func->context_multiplier_set(output, context,
+                                            obj->cur.clipper->cur.cache.clip.r,
+                                            obj->cur.clipper->cur.cache.clip.g,
+                                            obj->cur.clipper->cur.cache.clip.b,
+                                            obj->cur.clipper->cur.cache.clip.a);
+     }
+
+   EINA_LIST_FOREACH(o->emoticons, l, it)
+     {
+        eitem = it->emoticon_item;
+        if (!eitem->visible) continue;
+        e->engine.func->image_draw(output, context, surface, eitem->engine_data,
+                                   0, 0, eitem->img_w, eitem->img_h,
+                                   (eitem->x + x), (eitem->y + y),
+                                   eitem->w, eitem->h,
+                                   EINA_TRUE);
+     }
+}
+
+// HAVE_UNICODE_EMOTICON(2013.12.06): refactored emoticon drawing.
+static void
+_evas_object_text_emoticon_update_geometry(Evas_Object *obj)
+{
+   Evas_Object_Text *o;
+   Evas_Object_Text_Item *it;
+   Eina_List *l;
+   int ex, ey, center_offset = 0;
+
+   o = (Evas_Object_Text *)(obj->object_data);
+   if (o->emoticons)
+     {
+        EINA_LIST_FOREACH(o->emoticons, l, it)
+          {
+             if (!it->emoticon_item) continue;
+
+             //Compute emoticon position
+             if (it->h < o->max_ascent + o->max_descent)
+               center_offset = (o->max_ascent + o->max_descent - it->h) / 2;
+
+             ex = obj->cur.geometry.x + it->x;
+             ey = obj->cur.geometry.y + center_offset;
+
+             it->emoticon_item->x = ex;
+             it->emoticon_item->y = ey;
+
+             //Check the visibility
+             if (evas_object_is_in_output_rect(obj,
+                                               it->emoticon_item->x,
+                                               it->emoticon_item->y,
+                                               it->emoticon_item->w,
+                                               it->emoticon_item->h))
+               it->emoticon_item->visible = EINA_TRUE;
+             else
+               it->emoticon_item->visible = EINA_FALSE;
+          }
+     }
+}
+
+// HAVE_UNICODE_EMOTICON(2013.12.06): refactored emoticon drawing.
+static void
+_evas_object_text_emoticon_update_size(Evas_Object_Text *o, Evas_Object_Text_Item *it)
+{
+   float emoticon_size;
+   // HAVE_UNICODE_EMOTICON(20140626): Adjust emoticon ascent, descent and height.
+   float emoticon_ascent;
+   float emoticon_descent;
+   //
+   float aspect = 1;
+   int emo_w, emo_h;
+
+   if (!it->emoticon_item) return;
+
+   emoticon_size = (float)(o->cur.size) * 72 / 62;
+   // HAVE_UNICODE_EMOTICON(20140626): Adjust emoticon ascent, descent and height.
+   emoticon_ascent = (float)(o->cur.size) * 93 / 100;
+   emoticon_descent = (float)(o->cur.size) * 27 / 100;
+   it->emoticon_item->ascent = (int)emoticon_ascent;
+   if ((emoticon_ascent - it->emoticon_item->ascent) >= 0.5)
+     it->emoticon_item->ascent++;
+   it->emoticon_item->descent = (int)emoticon_descent;
+   if ((emoticon_descent - it->emoticon_item->descent) >= 0.5)
+     it->emoticon_item->descent++;
+   //
+
+   if (it->emoticon_item->img_w != 0 && it->emoticon_item->img_h != 0)
+     aspect = (float)it->emoticon_item->img_w / (float)it->emoticon_item->img_h;
+
+   emo_w = (int)emoticon_size * aspect;
+   emo_h = (int)emoticon_size;
+   it->w = emo_w;
+   // HAVE_UNICODE_EMOTICON(20140626): Adjust emoticon ascent, descent and height.
+   it->h = it->emoticon_item->ascent + it->emoticon_item->descent;
+   //
+   it->adv = emo_w;
+   it->emoticon_item->w = emo_w;
+   it->emoticon_item->h = emo_h;
+}
+
 static int
 _evas_object_text_char_coords_get(const Evas_Object *obj,
       const Evas_Object_Text *o,
@@ -114,6 +340,15 @@ _evas_object_text_char_coords_get(const Evas_Object *obj,
              int ret;
              ret = ENFN->font_char_coords_get(ENDT, o->font,
                    &it->text_props, pos - it->text_pos, x, y, w, h);
+
+             // HAVE_UNICODE_EMOTICON(2013.12.06): refactored emoticon drawing.
+             if (it->emoticon_item)
+               {
+                  *w = it->w;
+                  *h = it->h;
+               }
+             //
+
              if (x) *x += it->x;
              return ret;
           }
@@ -128,18 +363,94 @@ _evas_object_text_item_clean(Evas_Object_Text_Item *it)
 }
 
 static void
-_evas_object_text_items_clear(Evas_Object_Text *o)
+_evas_object_text_item_del(Evas_Object_Text *o, Evas_Object_Text_Item *it)
 {
-   Evas_Object_Text_Item *it;
+   if (!o || !it) return;
+   // HAVE_UNICODE_EMOTICON(2013.12.06): refactored emoticon drawing.
+   if (it->emoticon_item)
+     {
+        o->emoticons = eina_list_remove(o->emoticons, it);
 
+        if (it->emoticon_item->engine_data)
+          {
+             Evas *e = it->emoticon_item->e;
+             e->engine.func->image_free(e->engine.data.output,
+                                        it->emoticon_item->engine_data);
+          }
+        free(it->emoticon_item);
+        it->emoticon_item = NULL;
+     }
+   //
+
+   if (o->last_computed.ellipsis_start == it)
+     o->last_computed.ellipsis_start = NULL;
+   else if (o->last_computed.ellipsis_end == it)
+     o->last_computed.ellipsis_end = NULL;
+
+   if ((EINA_INLIST_GET(it)->next) ||
+       (EINA_INLIST_GET(it)->prev) ||
+       (EINA_INLIST_GET(o->items) == (EINA_INLIST_GET(it))))
+   o->items = (Evas_Object_Text_Item *) eina_inlist_remove(
+         EINA_INLIST_GET(o->items),
+         EINA_INLIST_GET(it));
+   _evas_object_text_item_clean(it);
+   free(it);
+}
+
+static void
+_evas_object_text_items_clean(Evas_Object *obj, Evas_Object_Text *o)
+{
+   /* FIXME: also preserve item */
+   if ((o->cur.font == o->prev.font) &&
+       (o->cur.fdesc == o->prev.fdesc) &&
+       (o->cur.size == o->prev.size) &&
+       (!memcmp(&o->cur.outline, &o->prev.outline, sizeof (o->cur.outline))) &&
+       (!memcmp(&o->cur.shadow, &o->prev.shadow, sizeof (o->cur.shadow))) &&
+       (!memcmp(&o->cur.glow, &o->prev.glow, sizeof (o->cur.glow))) &&
+       (!memcmp(&o->cur.glow2, &o->prev.glow2, sizeof (o->cur.glow2))) &&
+       (o->cur.style == o->prev.style) &&
+       (obj->cur.scale == obj->prev.scale))
+     {
+        if ((o->last_computed.ellipsis_start) &&
+            (o->last_computed.ellipsis_start == o->items))
+          o->items = (Evas_Object_Text_Item *) eina_inlist_remove(EINA_INLIST_GET(o->items),
+                                                                  EINA_INLIST_GET(o->last_computed.ellipsis_start));
+        if ((o->last_computed.ellipsis_end) &&
+            (EINA_INLIST_GET(o->last_computed.ellipsis_end) == EINA_INLIST_GET(o->items)->last))
+          o->items = (Evas_Object_Text_Item *) eina_inlist_remove(EINA_INLIST_GET(o->items),
+                                                                  EINA_INLIST_GET(o->last_computed.ellipsis_end));
+     }
+   else
+     {
+        _evas_object_text_item_del(o, o->last_computed.ellipsis_start);
+        o->last_computed.ellipsis_start = NULL;
+        _evas_object_text_item_del(o, o->last_computed.ellipsis_end);
+        o->last_computed.ellipsis_end = NULL;
+     }
    while (o->items)
      {
-        it = o->items;
-        o->items = (Evas_Object_Text_Item *) eina_inlist_remove(
-              EINA_INLIST_GET(o->items),
-              EINA_INLIST_GET(it));
-        _evas_object_text_item_clean(it);
-        free(it);
+        _evas_object_text_item_del(o, o->items);
+     }
+}
+
+static void
+_evas_object_text_items_clear(Evas_Object_Text *o)
+{
+   if ((o->last_computed.ellipsis_start) &&
+       (o->last_computed.ellipsis_start != o->items))
+     {
+        _evas_object_text_item_del(o, o->last_computed.ellipsis_start);
+     }
+   o->last_computed.ellipsis_start = NULL;
+   if ((o->last_computed.ellipsis_end) &&
+       (EINA_INLIST_GET(o->last_computed.ellipsis_end) != EINA_INLIST_GET(o->items)->last))
+     {
+        _evas_object_text_item_del(o, o->last_computed.ellipsis_end);
+     }
+   o->last_computed.ellipsis_end = NULL;
+   while (o->items)
+     {
+        _evas_object_text_item_del(o, o->items);
      }
 }
 
@@ -222,6 +533,11 @@ _evas_object_text_char_at_coords(const Evas_Object *obj,
      {
         if ((it->x <= cx) && (cx < it->x + it->adv))
           {
+             // HAVE_UNICODE_EMOTICON(2013.12.06): refactored emoticon drawing.
+             if (it->emoticon_item)
+               return it->text_pos;
+             //
+
              return it->text_pos + ENFN->font_char_at_coords_get(ENDT,
                    o->font,
                    &it->text_props,
@@ -235,23 +551,9 @@ _evas_object_text_char_at_coords(const Evas_Object *obj,
 }
 
 static Evas_Coord
-_evas_object_text_horiz_advance_get(const Evas_Object *obj,
-      const Evas_Object_Text *o)
+_evas_object_text_horiz_advance_get(const Evas_Object_Text *o)
 {
-   Evas_Object_Text_Item *it, *last_it = NULL;
-   Evas_Coord adv;
-   (void) obj;
-
-   adv = 0;
-   EINA_INLIST_FOREACH(EINA_INLIST_GET(o->items), it)
-     {
-        adv += it->adv;
-        last_it = it;
-     }
-
-   if (last_it && (last_it->w > last_it->adv))
-      adv += last_it->w - last_it->adv;
-   return adv;
+   return o->last_computed.advance;
 }
 
 static Evas_Coord
@@ -320,6 +622,7 @@ evas_object_text_font_set(Evas_Object *obj, const char *font, Evas_Font_Size siz
    Evas_Object_Text *o;
    int is, was = 0, pass = 0, freeze = 0;
    Evas_Font_Description *fdesc;
+   Eina_Bool source_invisible = EINA_FALSE;
 
    if ((!font) || (size <= 0)) return;
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
@@ -330,10 +633,18 @@ evas_object_text_font_set(Evas_Object *obj, const char *font, Evas_Font_Size siz
    return;
    MAGIC_CHECK_END();
 
-   fdesc = evas_font_desc_new();
-   evas_font_name_parse(fdesc, font);
+   if (!(o->cur.font && !strcmp(font, o->cur.font)))
+     {
+        fdesc = evas_font_desc_new();
+        evas_font_name_parse(fdesc, font);
+     }
+   else
+     {
+        fdesc = evas_font_desc_ref(o->cur.fdesc);
+     }
+
    if (o->cur.fdesc && !evas_font_desc_cmp(fdesc, o->cur.fdesc) &&
-         (size == o->cur.size))
+       (size == o->cur.size))
      {
         evas_font_desc_unref(fdesc);
         return;
@@ -350,7 +661,8 @@ evas_object_text_font_set(Evas_Object *obj, const char *font, Evas_Font_Size siz
      {
         pass = evas_event_passes_through(obj);
         freeze = evas_event_freezes_through(obj);
-        if ((!pass) && (!freeze))
+        source_invisible = evas_object_is_source_invisible(obj);
+        if ((!pass) && (!freeze) && (!source_invisible))
           was = evas_object_is_in_output_rect(obj,
                                               obj->layer->evas->pointer.x,
                                               obj->layer->evas->pointer.y, 1, 1);
@@ -379,8 +691,9 @@ evas_object_text_font_set(Evas_Object *obj, const char *font, Evas_Font_Size siz
         o->max_ascent = 0;
         o->max_descent = 0;
      }
-   _evas_object_text_recalc(obj);
+   _evas_object_text_recalc(obj, o->cur.text);
    o->changed = 1;
+   o->cur.filter.changed = EINA_TRUE;
    evas_object_change(obj);
    evas_object_clip_dirty(obj);
    evas_object_coords_recalc(obj);
@@ -423,6 +736,16 @@ evas_object_text_font_get(const Evas_Object *obj, const char **font, Evas_Font_S
    if (size) *size = o->cur.size;
 }
 
+static void
+_evas_object_text_item_update_sizes(Evas_Object *obj, Evas_Object_Text *o, Evas_Object_Text_Item *it)
+{
+   ENFN->font_string_size_get(ENDT,
+         o->font,
+         &it->text_props,
+         &it->w, &it->h);
+   it->adv = ENFN->font_h_advance_get(ENDT, o->font,
+         &it->text_props);
+}
 
 /**
  * @internal
@@ -451,13 +774,7 @@ _evas_object_text_item_new(Evas_Object *obj, Evas_Object_Text *o,
         ENFN->font_text_props_info_create(ENDT,
               fi, str + pos, &it->text_props,
               o->bidi_par_props, it->text_pos, len, EVAS_TEXT_PROPS_MODE_SHAPE);
-
-        ENFN->font_string_size_get(ENDT,
-              o->font,
-              &it->text_props,
-              &it->w, &it->h);
-        it->adv = ENFN->font_h_advance_get(ENDT, o->font,
-              &it->text_props);
+        _evas_object_text_item_update_sizes(obj, o, it);
      }
    o->items = (Evas_Object_Text_Item *)
       eina_inlist_append(EINA_INLIST_GET(o->items), EINA_INLIST_GET(it));
@@ -518,6 +835,62 @@ _evas_object_text_item_order(Evas_Object *obj, Evas_Object_Text *o)
 }
 
 /**
+ * Create ellipsis.
+ */
+static const Eina_Unicode _ellip_str[2] = { 0x2026, '\0' };
+
+/* FIXME: We currently leak ellipsis items. */
+static Evas_Object_Text_Item *
+_layout_ellipsis_item_new(Evas_Object *obj, Evas_Object_Text *o)
+{
+   Evas_Object_Text_Item *ellip_ti = NULL;
+   Evas_Script_Type script;
+   Evas_Font_Instance *script_fi = NULL, *cur_fi = NULL;
+   size_t len = 1; /* The length of _ellip_str */
+
+   script = evas_common_language_script_type_get(_ellip_str, 1);
+
+   if (o->font)
+     {
+        (void) ENFN->font_run_end_get(ENDT, o->font, &script_fi, &cur_fi,
+                                      script, _ellip_str, 1);
+        ellip_ti = _evas_object_text_item_new(obj, o, cur_fi,
+                                              _ellip_str, script, 0, 0, len);
+     }
+
+   return ellip_ti;
+}
+
+/* EINA_TRUE if this item is ok and should be included, false if should be
+ * discarded. */
+static Eina_Bool
+_layout_text_item_trim(Evas_Object *obj, Evas_Object_Text *o, Evas_Object_Text_Item *ti, int idx, Eina_Bool want_start)
+{
+   Evas_Text_Props new_text_props;
+   if (idx >= (int) ti->text_props.text_len)
+      return EINA_FALSE;
+
+   memset(&new_text_props, 0, sizeof (new_text_props));
+
+   while (!evas_common_text_props_split(&ti->text_props, &new_text_props, idx))
+     idx--;
+   if (want_start)
+     {
+        evas_common_text_props_content_unref(&new_text_props);
+     }
+   else
+     {
+        evas_common_text_props_content_unref(&ti->text_props);
+        memcpy(&ti->text_props, &new_text_props, sizeof(ti->text_props));
+        ti->text_pos += idx;
+        ti->visual_pos += idx;
+     }
+   _evas_object_text_item_update_sizes(obj, o, ti);
+
+   return EINA_TRUE;
+}
+
+/**
  * @internal
  * Populates o->items with the items of the text according to text
  *
@@ -526,14 +899,30 @@ _evas_object_text_item_order(Evas_Object *obj, Evas_Object_Text *o)
  * @param text the text to layout
  */
 static void
-_evas_object_text_layout(Evas_Object *obj, Evas_Object_Text *o, const Eina_Unicode *text)
+_evas_object_text_layout(Evas_Object *obj, Evas_Object_Text *o, Eina_Unicode *text)
 {
    EvasBiDiStrIndex *v_to_l = NULL;
+   Evas_Coord advance = 0;
    size_t pos, visual_pos;
    int len = eina_unicode_strlen(text);
+   int l = 0, r = 0;
 #ifdef BIDI_SUPPORT
    int par_len = len;
    int *segment_idxs = NULL;
+#endif
+
+   if (o->items &&
+       !memcmp(&o->cur, &o->prev, sizeof (o->cur)) &&
+       o->cur.text == text &&
+       obj->cur.scale == obj->prev.scale &&
+       ((o->last_computed.advance <= obj->cur.geometry.w && !o->last_computed.ellipsis) ||
+        o->last_computed.w == obj->cur.geometry.w))
+     return ;
+
+   o->last_computed.ellipsis = EINA_FALSE;
+   if (o->items) _evas_object_text_items_clean(obj, o);
+
+#ifdef BIDI_SUPPORT
    if (o->bidi_delimiters)
       segment_idxs = evas_bidi_segment_idxs_get(text, o->bidi_delimiters);
    evas_bidi_paragraph_props_unref(o->bidi_par_props);
@@ -555,10 +944,11 @@ _evas_object_text_layout(Evas_Object *obj, Evas_Object_Text *o, const Eina_Unico
         if (tmp_cut > 0)
            script_len = tmp_cut;
 
-        script = evas_common_language_script_type_get(text, script_len);
+        script = evas_common_language_script_type_get(text + pos, script_len);
 
         while (script_len > 0)
           {
+             Evas_Object_Text_Item *it;
              Evas_Font_Instance *cur_fi = NULL;
              int run_len = script_len;
              if (o->font)
@@ -573,20 +963,254 @@ _evas_object_text_layout(Evas_Object *obj, Evas_Object_Text *o, const Eina_Unico
 #else
              visual_pos = pos;
 #endif
-             _evas_object_text_item_new(obj, o, cur_fi, text, script,
-                   pos, visual_pos, run_len);
+             it = _evas_object_text_item_new(obj, o, cur_fi, text, script,
+                                             pos, visual_pos, run_len);
 
+             // HAVE_UNICODE_EMOTICON(2013.12.06): refactored emoticon drawing.
+             UNICODE_EMOTICON_CHECK(*(text + pos))
+               {
+                  it->emoticon_item = _text_emoticon_img_new(obj->layer->evas, obj, *(text+pos));
+                  if (it->emoticon_item)
+                    {
+                       it->emoticon_item->e = obj->layer->evas;
+                       o->emoticons = eina_list_append(o->emoticons, it);
+                       _evas_object_text_emoticon_update_size(o, it);
+                    }
+               }
+             //
+
+             advance += it->adv;
              pos += run_len;
              script_len -= run_len;
              len -= run_len;
           }
      }
 
+   if (!o->cur.filter.chain)
+     evas_text_style_pad_get(o->cur.style, &l, &r, NULL, NULL);
+   else
+     evas_filter_program_padding_get(o->cur.filter.chain, &l, &r, NULL, NULL);
+
+   /* Handle ellipsis */
+  if (pos && (o->cur.ellipsis >= 0.0) && (advance + l + r > obj->cur.geometry.w) && (obj->cur.geometry.w > 0))
+     {
+        Evas_Coord ellip_frame = obj->cur.geometry.w;
+        Evas_Object_Text_Item *start_ellip_it = NULL, *end_ellip_it = NULL;
+
+        o->last_computed.ellipsis = EINA_TRUE;
+
+        /* Account of the ellipsis item width. As long as ellipsis != 0
+         * we have a left ellipsis. And the same with 1 and right. */
+        if (o->cur.ellipsis != 0)
+          {
+             if (o->last_computed.ellipsis_start)
+               {
+                  start_ellip_it = o->last_computed.ellipsis_start;
+                  o->items = (Evas_Object_Text_Item *)
+                    eina_inlist_append(EINA_INLIST_GET(o->items), EINA_INLIST_GET(start_ellip_it));
+               }
+             else
+               {
+                  start_ellip_it = _layout_ellipsis_item_new(obj, o);
+               }
+             o->last_computed.ellipsis_start = start_ellip_it;
+             ellip_frame -= start_ellip_it->adv;
+          }
+        if (o->cur.ellipsis != 1)
+          {
+             /* FIXME: Should take the last item's font and style and etc. *//* weird it's a text, should always have the same style/font */
+             if (o->last_computed.ellipsis_end)
+               {
+                  end_ellip_it = o->last_computed.ellipsis_end;
+                  o->items = (Evas_Object_Text_Item *)
+                    eina_inlist_append(EINA_INLIST_GET(o->items), EINA_INLIST_GET(end_ellip_it));
+               }
+             else
+               {
+                  end_ellip_it = _layout_ellipsis_item_new(obj, o);
+               }
+             o->last_computed.ellipsis_end = end_ellip_it;
+             ellip_frame -= end_ellip_it->adv;
+          }
+
+        /* The point where we should start from, going for the full
+         * ellip frame. */
+        Evas_Coord ellipsis_coord = o->cur.ellipsis * (advance - ellip_frame);
+        if (start_ellip_it)
+          {
+             Evas_Object_Text_Item *itr = o->items;
+             advance = 0;
+
+             while (itr && (advance + l + r + itr->adv < ellipsis_coord))
+               {
+                  Eina_Inlist *itrn = EINA_INLIST_GET(itr)->next;
+                  if ((itr != start_ellip_it) && (itr != end_ellip_it))
+                    {
+                       advance += itr->adv;
+                       _evas_object_text_item_del(o, itr);
+                    }
+                  itr = (Evas_Object_Text_Item *) itrn;
+               }
+             if (itr && (itr != start_ellip_it))
+               {
+                  int cut = 1 + ENFN->font_last_up_to_pos(ENDT,
+                        o->font,
+                        &itr->text_props,
+                        ellipsis_coord - (advance + l + r),
+                        0);
+                  if (cut > 0)
+                    {
+                       start_ellip_it->text_pos = itr->text_pos;
+                       start_ellip_it->visual_pos = itr->visual_pos;
+                       if (!_layout_text_item_trim(obj, o, itr, cut, EINA_FALSE))
+                         {
+                            _evas_object_text_item_del(o, itr);
+                         }
+                    }
+               }
+
+	     o->items = (Evas_Object_Text_Item *) eina_inlist_remove(EINA_INLIST_GET(o->items), EINA_INLIST_GET(start_ellip_it));
+             o->items = (Evas_Object_Text_Item *) eina_inlist_prepend(EINA_INLIST_GET(o->items), EINA_INLIST_GET(start_ellip_it));
+          }
+
+        if (end_ellip_it)
+          {
+             Evas_Object_Text_Item *itr = o->items;
+             int idx = 0;
+             advance = 0;
+
+             while (itr)
+               {
+                  if (itr != end_ellip_it) /* was start_ellip_it */
+                    {
+                       if (advance + l + r + itr->adv >= ellip_frame)
+                         {
+                            break;
+                         }
+                       advance += itr->adv;
+                    }
+                  idx++;
+                  itr = (Evas_Object_Text_Item *) EINA_INLIST_GET(itr)->next;
+               }
+
+             if (itr == end_ellip_it)
+               {
+                  /* FIXME: We shouldn't do anything. */
+               }
+
+             int cut = ENFN->font_last_up_to_pos(ENDT,
+                   o->font,
+                   &itr->text_props,
+                   ellip_frame - (advance + l + r),
+                   0);
+
+             if (cut >= 0)
+               {
+                  end_ellip_it->text_pos = itr->text_pos + cut;
+                  end_ellip_it->visual_pos = itr->visual_pos + cut;
+                  // HAVE_UNICODE_EMOTICON(2013.12.06): refactored emoticon drawing.
+                  if (itr->emoticon_item)
+                    {
+                       o->emoticons = eina_list_remove(o->emoticons, itr);
+
+                       if (itr->emoticon_item->engine_data)
+                         {
+                            Evas *e = obj->layer->evas;
+                            e->engine.func->image_free(e->engine.data.output,
+                                                       itr->emoticon_item->engine_data);
+                         }
+                       free(itr->emoticon_item);
+                       itr->emoticon_item = NULL;
+                    }
+                  //
+                  if (_layout_text_item_trim(obj, o, itr, cut, EINA_TRUE))
+                    {
+                       itr = (Evas_Object_Text_Item *) EINA_INLIST_GET(itr)->next;
+                    }
+               }
+
+             /* Remove the rest of the items */
+             while (itr)
+               {
+                  Eina_Inlist *itrn = EINA_INLIST_GET(itr)->next;
+                  if ((itr != start_ellip_it) && (itr != end_ellip_it))
+                     _evas_object_text_item_del(o, itr);
+                  itr = (Evas_Object_Text_Item *) itrn;
+               }
+          }
+     }
+   if (o->cur.text != text) free(o->cur.text);
+   o->cur.text = text;
+   o->prev = o->cur;
+
+   {
+      Evas_Object_Text_Item *itr = o->items;
+      advance = 0;
+
+      while (itr)
+        {
+           advance += itr->adv;
+           itr = (Evas_Object_Text_Item *) EINA_INLIST_GET(itr)->next;
+        }
+      o->last_computed.advance = advance;
+   }
+
    _evas_object_text_item_order(obj, o);
+
+   // HAVE_UNICODE_EMOTICON(2013.10.07): Basic implementation for supporting unicode 6.0 emoticon.
+   _evas_object_text_emoticon_update_geometry(obj);
+   //
 
    if (v_to_l) free(v_to_l);
 }
 
+static void
+_text_resize(void *data,
+             Evas *e EINA_UNUSED,
+             Evas_Object *obj,
+             void *event_info EINA_UNUSED)
+{
+   Evas_Object_Text *o = data;
+
+   _evas_object_text_recalc(obj, o->cur.text);
+}
+
+EAPI void
+evas_object_text_ellipsis_set(Evas_Object *obj, double ellipsis)
+{
+   Evas_Object_Text *o;
+
+   MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
+   return;
+   MAGIC_CHECK_END();
+   o = (Evas_Object_Text *)(obj->object_data);
+   MAGIC_CHECK(o, Evas_Object_Text, MAGIC_OBJ_TEXT);
+   return;
+   MAGIC_CHECK_END();
+
+   if (o->cur.ellipsis == ellipsis) return ;
+
+   o->cur.ellipsis = ellipsis;
+   o->changed = 1;
+   evas_object_change(obj);
+   evas_object_clip_dirty(obj);
+}
+
+EAPI double
+evas_object_text_ellipsis_get(const Evas_Object *obj)
+{
+   Evas_Object_Text *o;
+
+   MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
+   return -1;
+   MAGIC_CHECK_END();
+   o = (Evas_Object_Text *)(obj->object_data);
+   MAGIC_CHECK(o, Evas_Object_Text, MAGIC_OBJ_TEXT);
+   return -1;
+   MAGIC_CHECK_END();
+
+   return o->cur.ellipsis;
+}
 
 EAPI void
 evas_object_text_text_set(Evas_Object *obj, const char *_text)
@@ -594,7 +1218,7 @@ evas_object_text_text_set(Evas_Object *obj, const char *_text)
    Evas_Object_Text *o;
    int is, was, len;
    Eina_Unicode *text;
-   
+
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    return;
    MAGIC_CHECK_END();
@@ -616,23 +1240,14 @@ evas_object_text_text_set(Evas_Object *obj, const char *_text)
 
    if (o->items) _evas_object_text_items_clear(o);
 
-   if ((text) && (*text)) 
-     {
-        _evas_object_text_layout(obj, o, text);
-	eina_stringshare_replace(&o->cur.utf8_text, _text);
-        o->prev.utf8_text = NULL;
-    }
-   else 
-     {
-	eina_stringshare_replace(&o->cur.utf8_text, NULL);
-     }
-   if (text)
-     {
-        free(text);
-        text = NULL;
-     }
-   _evas_object_text_recalc(obj);
+   _evas_object_text_recalc(obj, text);
+   eina_stringshare_replace(&o->cur.utf8_text, _text);
+   o->prev.utf8_text = NULL;
+
+   if (o->cur.text != text) free(text);
+
    o->changed = 1;
+   o->cur.filter.changed = EINA_TRUE;
    evas_object_change(obj);
    evas_object_clip_dirty(obj);
    evas_object_coords_recalc(obj);
@@ -646,7 +1261,6 @@ evas_object_text_text_set(Evas_Object *obj, const char *_text)
 				obj->layer->evas->last_timestamp,
 				NULL);
    evas_object_inform_call_resize(obj);
-   if (text) free(text);
 }
 
 EAPI void
@@ -709,10 +1323,25 @@ evas_object_text_direction_get(const Evas_Object *obj)
    MAGIC_CHECK(o, Evas_Object_Text, MAGIC_OBJ_TEXT);
    return EVAS_BIDI_DIRECTION_NEUTRAL;
    MAGIC_CHECK_END();
+   // TIZEN_ONLY(20140822): Added evas_bidi_direction_hint_set, get APIs and applied to textblock, text.
+   /*
    if (o->items)
      {
         return o->items->text_props.bidi.dir;
      }
+   */
+   if (o->bidi_par_props)
+     {
+        Evas_BiDi_Direction dir = evas_bidi_direction_hint_get(evas_object_evas_get(obj));
+
+        if (!EVAS_BIDI_PARAGRAPH_DIRECTION_IS_NEUTRAL(o->bidi_par_props))
+          {
+             dir = EVAS_BIDI_PARAGRAPH_DIRECTION_IS_RTL(o->bidi_par_props) ?
+                EVAS_BIDI_DIRECTION_RTL : EVAS_BIDI_DIRECTION_LTR;
+          }
+        return dir;
+     }
+   //////////
    return EVAS_BIDI_DIRECTION_NEUTRAL;
 }
 
@@ -807,7 +1436,7 @@ evas_object_text_horiz_advance_get(const Evas_Object *obj)
    MAGIC_CHECK_END();
    if (!o->font) return 0;
    if (!o->items) return 0;
-   return _evas_object_text_horiz_advance_get(obj, o);
+   return _evas_object_text_horiz_advance_get(o);
 }
 
 EAPI Evas_Coord
@@ -845,7 +1474,10 @@ evas_object_text_char_pos_get(const Evas_Object *obj, int pos, Evas_Coord *cx, E
    if (!o->items || (pos < 0)) return EINA_FALSE;
    ret = _evas_object_text_char_coords_get(obj, o, (size_t) pos,
             &x, &y, &w, &h);
-   evas_text_style_pad_get(o->cur.style, &l, &r, &t, &b);
+   if (!o->cur.filter.chain)
+     evas_text_style_pad_get(o->cur.style, &l, &r, &t, &b);
+   else
+     evas_filter_program_padding_get(o->cur.filter.chain, &l, &r, &t, &b);
    y += o->max_ascent - t;
    x -= l;
    if (x < 0)
@@ -905,7 +1537,10 @@ evas_object_text_char_coords_get(const Evas_Object *obj, Evas_Coord x, Evas_Coor
    if (!o->items) return -1;
    ret = _evas_object_text_char_at_coords(obj, o, x, y - o->max_ascent,
          &rx, &ry, &rw, &rh);
-   evas_text_style_pad_get(o->cur.style, &l, &r, &t, &b);
+   if (!o->cur.filter.chain)
+     evas_text_style_pad_get(o->cur.style, &l, &r, &t, &b);
+   else
+     evas_filter_program_padding_get(o->cur.filter.chain, &l, &r, &t, &b);
    ry += o->max_ascent - t;
    rx -= l;
    if (rx < 0)
@@ -1188,7 +1823,10 @@ evas_object_text_style_pad_get(const Evas_Object *obj, int *l, int *r, int *t, i
    return;
    MAGIC_CHECK_END();
    /* use temps to be certain we have initialized values */
-   evas_text_style_pad_get(o->cur.style, &sl, &sr, &st, &sb);
+   if (!o->cur.filter.chain)
+     evas_text_style_pad_get(o->cur.style, &sl, &sr, &st, &sb);
+   else
+     evas_filter_program_padding_get(o->cur.filter.chain, &sl, &sr, &st, &sb);
    if (l) *l = sl;
    if (r) *r = sr;
    if (t) *t = st;
@@ -1203,8 +1841,11 @@ evas_string_char_next_get(const char *str, int pos, int *decoded)
 {
    int p, d;
 
-   if (decoded) *decoded = 0;
-   if ((!str) || (pos < 0)) return 0;
+   if ((!str) || (pos < 0))
+     {
+        if (decoded) *decoded = 0;
+        return 0;
+     }
    p = pos;
    d = eina_unicode_utf8_get_next(str, &p);
    if (decoded) *decoded = d;
@@ -1279,6 +1920,12 @@ evas_text_style_pad_get(Evas_Text_Style_Type style, int *l, int *r, int *t, int 
            case EVAS_TEXT_STYLE_OUTLINE:
               out_sz = 1;
               break;
+	   case EVAS_TEXT_STYLE_TIZEN_GLOW_SHADOW:
+           case EVAS_TEXT_STYLE_TIZEN_SOFT_GLOW_SHADOW:
+           case EVAS_TEXT_STYLE_TIZEN_SHADOW:
+              out_sz = 1;
+              break;
+
            default:
               break;
           }
@@ -1379,6 +2026,8 @@ evas_object_text_init(Evas_Object *obj)
    /* set up methods (compulsory) */
    obj->func = &object_func;
    obj->type = o_type;
+
+   evas_object_event_callback_add(obj, EVAS_CALLBACK_RESIZE, _text_resize, obj->object_data);
 }
 
 static void *
@@ -1392,6 +2041,7 @@ evas_object_text_new(void)
    if (!o) return NULL;
    EVAS_MEMPOOL_PREP(_mp_obj, o, Evas_Object_Text);
    o->magic = MAGIC_OBJ_TEXT;
+   o->cur.ellipsis = -1.0;
    o->prev = o->cur;
 #ifdef BIDI_SUPPORT
    o->bidi_par_props = evas_bidi_paragraph_props_new();
@@ -1409,12 +2059,30 @@ evas_object_text_free(Evas_Object *obj)
    MAGIC_CHECK(o, Evas_Object_Text, MAGIC_OBJ_TEXT);
    return;
    MAGIC_CHECK_END();
+
+
+   /* free filter output */
+   if (o->cur.filter.output)
+     ENFN->image_free(ENDT, o->cur.filter.output);
+   eina_hash_free(o->cur.filter.sources);
+   evas_filter_program_del(o->cur.filter.chain);
+   eina_stringshare_del(o->cur.filter.code);
+   o->cur.filter.output = NULL;
+   o->cur.filter.chain = NULL;
+   o->cur.filter.sources = NULL;
+   o->cur.filter.code = NULL;
+   o->cur.filter.sources_count = 0;
+
    /* free obj */
-   if (o->items) _evas_object_text_items_clear(o);
+   _evas_object_text_items_clear(o);
+   // HAVE_UNICODE_EMOTICON(2013.12.06): Refactoring draw.
+   o->emoticons = eina_list_free(o->emoticons);
+   //
    if (o->cur.utf8_text) eina_stringshare_del(o->cur.utf8_text);
    if (o->cur.font) eina_stringshare_del(o->cur.font);
    if (o->cur.fdesc) evas_font_desc_unref(o->cur.fdesc);
    if (o->cur.source) eina_stringshare_del(o->cur.source);
+   if (o->cur.text) free(o->cur.text);
    if (o->font) evas_font_free(obj->layer->evas, o->font);
 #ifdef BIDI_SUPPORT
    evas_bidi_paragraph_props_unref(o->bidi_par_props);
@@ -1422,6 +2090,64 @@ evas_object_text_free(Evas_Object *obj)
    o->magic = 0;
    EVAS_MEMPOOL_FREE(_mp_obj, o);
 }
+
+///////////////////// TIZEN ONLY (20131106) : Font effect for tizen. /////////////////////
+static int __attribute__((optimize("O0")))
+evas_object_text_effect_outerglow_alpha_get(int x, int y, double opacity, int size)
+{
+   const float SPREAD_COEFF = 1.12f;
+   double sizeD = (double)size;
+   int alpha;
+   double intensity = sqrt((x * x) + (y * y));
+   intensity = (sizeD * SPREAD_COEFF - intensity) / sizeD;
+   if (intensity > 0.0)
+     {
+        intensity = (intensity >= 1.0) ? 1.0 : intensity;
+	intensity = sin(intensity * 3.141592 / 2.0);
+        alpha = (int)((255.0 * opacity) * intensity + 0.5);
+        return alpha;
+     }
+   else
+     return 0;
+}
+
+static int __attribute__((optimize("O0")))
+evas_object_text_effect_soft_outerglow_alpha_get(int x, int y, double opacity, int size)    //
+{
+   const float SPREAD_COEFF = 1.50f;
+   double sizeD = (double)size + 0.3;
+   int alpha;
+   double intensity = sqrt((x * x) + (y * y));
+   intensity = (sizeD * SPREAD_COEFF - intensity) / sizeD;
+   if (intensity > 0.0)
+     {
+        intensity = (intensity >= 1.0) ? 1.0 : intensity;
+        intensity = sin(intensity * 3.141592 / 2.0);
+        alpha =(int)((255.0 * opacity) * intensity + 0.5);
+        return alpha;
+     }
+   else
+     return 0;
+}
+
+static int __attribute__((optimize("O0")))
+evas_object_text_effect_shadow_alpha_get(int x, int y, double opacity, int softness)
+{
+   int alpha;
+   double softnessD = (double)softness;
+   double intensity = sqrt((x * x) + (y * y));
+   intensity = (softnessD - intensity) / softnessD;
+   if (intensity > 0.0)
+     {
+        intensity = sin((intensity * 3.141592) / 2.0);
+        intensity *= intensity;
+        alpha =((255.0 * opacity) * intensity + 0.5) / (softnessD * 2);
+        return alpha;
+     }
+   else
+     return 0;
+}
+//////////////////////////////////////////////////////////////////////////////////////////
 
 static void
 evas_object_text_render(Evas_Object *obj, void *output, void *context, void *surface, int x, int y)
@@ -1442,7 +2168,10 @@ evas_object_text_render(Evas_Object *obj, void *output, void *context, void *sur
 
    /* render object to surface with context, and offxet by x,y */
    o = (Evas_Object_Text *)(obj->object_data);
-   evas_text_style_pad_get(o->cur.style, &sl, NULL, &st, NULL);
+   if (!o->cur.filter.chain)
+     evas_text_style_pad_get(o->cur.style, &sl, NULL, &st, NULL);
+   else
+     evas_filter_program_padding_get(o->cur.filter.chain, &sl, NULL, &st, NULL);
    ENFN->context_multiplier_unset(output, context);
    ENFN->context_render_op_set(output, context, obj->cur.render_op);
    /* FIXME: This clipping is just until we fix inset handling correctly. */
@@ -1513,6 +2242,156 @@ evas_object_text_render(Evas_Object *obj, void *output, void *context, void *sur
 		     obj->cur.geometry.w, \
 		     obj->cur.geometry.h, \
 		     &it->text_props);
+
+   /* FIXME/WARNING
+    * The code below is EXPERIMENTAL, and not to be considered usable or even
+    * remotely similar to its final form. You've been warned :)
+    */
+
+   if (!o->cur.filter.invalid && (o->cur.filter.chain || o->cur.filter.code))
+     {
+        int X, Y, W, H;
+        Evas_Filter_Context *filter;
+        const int inbuf = 1;
+        const int outbuf = 2;
+        void *filter_ctx;
+        Eina_Bool ok;
+        int ox = 0, oy = 0;
+        Image_Entry *previous = o->cur.filter.output;
+        const Eina_Bool do_async = EINA_FALSE;
+
+        /* NOTE: Font effect rendering is now done ENTIRELY on CPU.
+         * So we rely on cache/cache2 to allocate a real image buffer,
+         * that we can draw to. The OpenGL texture will be created only
+         * after the rendering has been done, as we simply push the output
+         * image to GL.
+         */
+
+        W = obj->cur.geometry.w;
+        H = obj->cur.geometry.h;
+        X = obj->cur.geometry.x;
+        Y = obj->cur.geometry.y;
+
+        // Prepare color multiplier
+        ENFN->context_color_set(ENDT, context, 255, 255, 255, 255);
+        if ((obj->cur.cache.clip.r == 255) && (obj->cur.cache.clip.g == 255) &&
+            (obj->cur.cache.clip.b == 255) && (obj->cur.cache.clip.a == 255))
+          ENFN->context_multiplier_unset(ENDT, context);
+        else
+          ENFN->context_multiplier_set(ENDT, context,
+                                       obj->cur.cache.clip.r,
+                                       obj->cur.cache.clip.g,
+                                       obj->cur.cache.clip.b,
+                                       obj->cur.cache.clip.a);
+
+        if (!o->cur.filter.chain)
+          {
+             Evas_Filter_Program *pgm;
+             pgm = evas_filter_program_new("Evas_Text");
+             evas_filter_program_source_set_all(pgm, o->cur.filter.sources);
+             if (!evas_filter_program_parse(pgm, o->cur.filter.code))
+               {
+                  ERR("Filter program parsing failed");
+                  evas_filter_program_del(pgm);
+                  o->cur.filter.invalid = EINA_TRUE;
+                  goto normal_render;
+               }
+             o->cur.filter.chain = pgm;
+             o->cur.filter.invalid = EINA_FALSE;
+          }
+        else if (previous)
+          {
+             Eina_Bool redraw = o->cur.filter.changed;
+
+             // Scan proxies to find if any changed
+             if (!redraw && o->cur.filter.sources)
+               {
+                  Evas_Filter_Proxy_Binding *pb;
+                  Eina_Iterator *iter;
+
+                  iter = eina_hash_iterator_data_new(o->cur.filter.sources);
+                  EINA_ITERATOR_FOREACH(iter, pb)
+                    {
+                       if (pb->eo_source->changed)
+                         {
+                            redraw = EINA_TRUE;
+                            break;
+                         }
+                    }
+                  eina_iterator_free(iter);
+               }
+
+             if (!redraw)
+               {
+                  // Render this image only
+                  ENFN->image_draw(ENDT, context,
+                                   surface, previous,
+                                   0, 0, W, H,         // src
+                                   X + x, Y + y, W, H, // dst
+                                   EINA_FALSE);
+                  return;
+               }
+          }
+
+        filter = evas_filter_context_new(obj->layer->evas, do_async);
+        ok = evas_filter_context_program_use(filter, o->cur.filter.chain);
+        if (!filter || !ok)
+          {
+             ERR("Parsing failed?");
+             evas_filter_context_destroy(filter);
+             goto normal_render;
+          }
+
+        // Proxies
+        evas_filter_context_proxy_render_all(filter, obj, EINA_FALSE);
+
+        // Draw Context
+        filter_ctx = ENFN->context_new(ENDT);
+        ENFN->context_color_set(ENDT, filter_ctx, 255, 255, 255, 255);
+
+        // Allocate all buffers now
+        evas_filter_context_buffers_allocate_all(filter, W, H);
+        evas_filter_target_set(filter, context, surface, X + x, Y + y);
+
+        // Steal output and release previous
+        o->cur.filter.output = evas_filter_buffer_backing_steal(filter, outbuf);
+        if (o->cur.filter.output != previous)
+          evas_filter_buffer_backing_release(filter, previous);
+
+        // Render text to input buffer
+        EINA_INLIST_FOREACH(EINA_INLIST_GET(o->items), it)
+          if ((o->font) && (it->text_props.len > 0))
+            {
+               evas_filter_font_draw(filter, filter_ctx, inbuf, o->font,
+                                     sl + ox + it->x,
+                                     st + oy + (int) o->max_ascent,
+                                     &it->text_props,
+                                     do_async);
+            }
+
+        ENFN->context_free(ENDT, filter_ctx);
+
+        // Add post-run callback and run filter
+        evas_filter_context_autodestroy(filter);
+        ok = evas_filter_run(filter);
+        o->cur.filter.changed = EINA_FALSE;
+
+        if (ok)
+          {
+             DBG("Effect rendering done.");
+             return;
+          }
+        else
+          {
+             ERR("Rendering failed");
+             o->cur.filter.invalid = EINA_TRUE;
+             goto normal_render;
+          }
+     }
+
+   /* End of the EXPERIMENTAL code */
+
+normal_render:
 
    /* shadows */
    shad_dst = shad_sz = dx = dy = haveshad = 0;
@@ -1587,6 +2466,11 @@ evas_object_text_render(Evas_Object *obj, void *output, void *context, void *sur
      }
    EINA_INLIST_FOREACH(EINA_INLIST_GET(o->items), it)
      {
+        // HAVE_UNICODE_EMOTICON(2013.12.06): refactored emoticon drawing.
+        if (it->emoticon_item)
+          continue;
+        //
+
         /* Shadows */
         if (haveshad)
           {
@@ -1661,25 +2545,110 @@ evas_object_text_render(Evas_Object *obj, void *output, void *context, void *sur
                }
           }
 
+        // TIZEN ONLY (20131106) : Font effect for tizen.
+        if ((o->cur.style == EVAS_TEXT_STYLE_TIZEN_GLOW_SHADOW) ||
+            (o->cur.style == EVAS_TEXT_STYLE_TIZEN_SOFT_GLOW_SHADOW) ||
+            (o->cur.style == EVAS_TEXT_STYLE_TIZEN_SHADOW))
+          {
+
+             if (o->cur.style == EVAS_TEXT_STYLE_TIZEN_GLOW_SHADOW) // HOME_SCREEN_ICON
+               {
+                  int size = 2;
+                  int softness = 3;
+
+                  for (j = -size; j <= size; j++)
+                    {
+                       for (i = -size; i <= size; i++)
+                         {
+                            int alpha = evas_object_text_effect_outerglow_alpha_get(i, j, 0.30, size); // OutGlow2
+                            if (alpha == 0) continue;
+                            COLOR_SET_AMUL(o, cur, glow, alpha);
+                            DRAW_TEXT(j, i);
+                         }
+                    }
+                  for (j = -softness; j <= softness; j++)
+                    {
+                       for (i = -softness; i <= softness; i++)
+                         {
+                            if ((i != 0) && (j != 0))
+                              {
+                                 int alpha = evas_object_text_effect_shadow_alpha_get(i, j, 0.80, softness); // DropShadow
+                                 if (alpha == 0) continue;
+                                 COLOR_SET_AMUL(o, cur, shadow, alpha);
+                                 DRAW_TEXT(j, i + 2);
+                              }
+                         }
+                    }
+               }
+             else if (o->cur.style == EVAS_TEXT_STYLE_TIZEN_SOFT_GLOW_SHADOW) // DYNAMIC_BOX_IMPORT_IMAGE
+               {
+                  int size = 1;
+                  int softness = 1;
+
+                  for (j = -size; j <= size; j++)
+                    {
+                       for (i = -size; i <= size; i++)
+                         {
+                            if ((i != 0) && (j != 0))
+                              {
+                                 int alpha = evas_object_text_effect_soft_outerglow_alpha_get(i, j, 0.40, size); // OutGlow3
+                                 if(alpha == 0) continue;
+                                 COLOR_SET_AMUL(o, cur, glow, alpha);
+                                 DRAW_TEXT(j, i);
+                              }
+                         }
+                    }
+                  for (j = -softness; j <= softness; j++)
+                    {
+                       for (i = -softness; i <= softness; i++)
+                         {
+                            int alpha = evas_object_text_effect_shadow_alpha_get(i, j, 0.65, softness); // DropShadow
+                            if(alpha == 0) continue;
+                            COLOR_SET_AMUL(o, cur, shadow, alpha);
+                            DRAW_TEXT(j, i + 2);
+                         }
+                    }
+               }
+             else if (o->cur.style == EVAS_TEXT_STYLE_TIZEN_SHADOW) // DYNAMIC_BOX_IMAGE
+               {
+                  int softness = 3;
+
+                  for (j = -softness; j <= softness; j++)
+                    {
+                       for (i = -softness; i <= softness; i++)
+                         {
+                            int alpha = evas_object_text_effect_shadow_alpha_get(i, j, 0.5, softness); // DropShadow
+                            if(alpha == 0) continue;
+                            COLOR_SET_AMUL(o, cur, shadow, alpha);
+                            DRAW_TEXT(j, i + 2);
+                         }
+                    }
+               }
+          }
+        //////////////////////
+
         /* normal text */
         COLOR_ONLY_SET(obj, cur.cache, clip);
         DRAW_TEXT(0, 0);
      }
+
+   // HAVE_UNICODE_EMOTICON(2013.12.06): refactored emoticon drawing.
+   _text_emoticon_render(obj, output, context, surface, x, y);
+   //
 }
 
 static void
 evas_object_text_render_pre(Evas_Object *obj)
 {
    Evas_Object_Text *o;
-   int is_v, was_v;
-
+   int is_v = 0, was_v = 0;
    /* dont pre-render the obj twice! */
    if (obj->pre_render_done) return;
    obj->pre_render_done = 1;
    /* pre-render phase. this does anything an object needs to do just before
-    rendering. This could mean loading the image data, retrieving it from 
+    rendering. This could mean loading the image data, retrieving it from
     elsewhere, decoding video etc.
-    Then when this is done the object needs to figure if it changed and 
+    Then when this is done the object needs to figure if it changed and
     if so what and where and add the appropriate redraw rectangles */
    o = (Evas_Object_Text *)(obj->object_data);
    /* if someone is clipping this obj - go calculate the clipper */
@@ -1689,17 +2658,29 @@ evas_object_text_render_pre(Evas_Object *obj)
 	  evas_object_clip_recalc(obj->cur.clipper);
 	obj->cur.clipper->func->render_pre(obj->cur.clipper);
      }
+   /* If object size changed and ellipsis is set */
+   if (((o->cur.ellipsis >= 0.0 ||
+        o->cur.ellipsis != o->prev.ellipsis) &&
+       ((obj->cur.geometry.w != o->last_computed.w) ||
+        (obj->cur.geometry.h != o->last_computed.h))) ||
+       (obj->cur.scale != obj->prev.scale))
+     {
+        _evas_object_text_recalc(obj, o->cur.text);
+        evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes,
+                                            obj);
+	goto done;
+     }
    /* now figure what changed and add draw rects
     if it just became visible or invisible */
    is_v = evas_object_is_visible(obj);
    was_v = evas_object_was_visible(obj);
    if (is_v != was_v)
      {
-	evas_object_render_pre_visible_change(&obj->layer->evas->clip_changes, 
+	evas_object_render_pre_visible_change(&obj->layer->evas->clip_changes,
 					      obj, is_v, was_v);
 	goto done;
      }
-   if (obj->changed_map)
+   if (obj->changed_map || obj->changed_src_visible)
      {
         evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes,
                                             obj);
@@ -1712,7 +2693,7 @@ evas_object_text_render_pre(Evas_Object *obj)
    /* if we restacked (layer or just within a layer) and dont clip anyone */
    if (obj->restack)
      {
-	evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes, 
+	evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes,
 					    obj);
 	goto done;
      }
@@ -1722,7 +2703,7 @@ evas_object_text_render_pre(Evas_Object *obj)
        (obj->cur.color.b != obj->prev.color.b) ||
        (obj->cur.color.a != obj->prev.color.a))
      {
-	evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes, 
+	evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes,
 					    obj);
 	goto done;
      }
@@ -1734,52 +2715,27 @@ evas_object_text_render_pre(Evas_Object *obj)
        (obj->cur.geometry.w != obj->prev.geometry.w) ||
        (obj->cur.geometry.h != obj->prev.geometry.h))
      {
-	evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes, 
+	evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes,
 					    obj);
 	goto done;
      }
    if (obj->cur.render_op != obj->prev.render_op)
      {
-	evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes, 
-					    obj);
-	goto done;
-     }
-   if (obj->cur.scale != obj->prev.scale)
-     {
-	evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes, 
+	evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes,
 					    obj);
 	goto done;
      }
    if (o->changed)
      {
-	if ((o->cur.size != o->prev.size) ||
-	    ((o->cur.font != o->prev.font)) ||
-	    ((o->cur.utf8_text != o->prev.utf8_text)) ||
-	    ((o->cur.style != o->prev.style)) ||
-	    ((o->cur.shadow.r != o->prev.shadow.r)) ||
-	    ((o->cur.shadow.g != o->prev.shadow.g)) ||
-	    ((o->cur.shadow.b != o->prev.shadow.b)) ||
-	    ((o->cur.shadow.a != o->prev.shadow.a)) ||
-	    ((o->cur.outline.r != o->prev.outline.r)) ||
-	    ((o->cur.outline.g != o->prev.outline.g)) ||
-	    ((o->cur.outline.b != o->prev.outline.b)) ||
-	    ((o->cur.outline.a != o->prev.outline.a)) ||
-	    ((o->cur.glow.r != o->prev.glow.r)) ||
-	    ((o->cur.glow.g != o->prev.glow.g)) ||
-	    ((o->cur.glow.b != o->prev.glow.b)) ||
-	    ((o->cur.glow.a != o->prev.glow.a)) ||
-	    ((o->cur.glow2.r != o->prev.glow2.r)) ||
-	    ((o->cur.glow2.g != o->prev.glow2.g)) ||
-	    ((o->cur.glow2.b != o->prev.glow2.b)) ||
-	    ((o->cur.glow2.a != o->prev.glow2.a)))
-	  {
-	     evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes, 
-						 obj);
-	     goto done;
-	  }
+        evas_object_render_pre_prev_cur_add(&obj->layer->evas->clip_changes,
+                                            obj);
+        goto done;
      }
    done:
-   evas_object_render_pre_effect_updates(&obj->layer->evas->clip_changes, 
+   // HAVE_UNICODE_EMOTICON(2013.10.07): Basic implementation for supporting unicode 6.0 emoticon.
+   _evas_object_text_emoticon_update_geometry(obj);
+   //
+   evas_object_render_pre_effect_updates(&obj->layer->evas->clip_changes,
 					 obj, is_v, was_v);
 }
 
@@ -1796,11 +2752,11 @@ evas_object_text_render_post(Evas_Object *obj)
    evas_object_clip_changes_clean(obj);
    /* move cur to prev safely for object data */
    evas_object_cur_prev(obj);
-   o->prev = o->cur;
+   /* o->prev = o->cur; */
    o->changed = 0;
 }
 
-static unsigned int 
+static unsigned int
 evas_object_text_id_get(Evas_Object *obj)
 {
    Evas_Object_Text *o;
@@ -1810,7 +2766,7 @@ evas_object_text_id_get(Evas_Object *obj)
    return MAGIC_OBJ_TEXT;
 }
 
-static unsigned int 
+static unsigned int
 evas_object_text_visual_id_get(Evas_Object *obj)
 {
    Evas_Object_Text *o;
@@ -1833,7 +2789,7 @@ evas_object_text_engine_data_get(Evas_Object *obj)
 static int
 evas_object_text_is_opaque(Evas_Object *obj __UNUSED__)
 {
-   /* this returns 1 if the internal object data implies that the object is 
+   /* this returns 1 if the internal object data implies that the object is
     currently fully opaque over the entire gradient it occupies */
    return 0;
 }
@@ -1878,8 +2834,9 @@ _evas_object_text_rehint(Evas_Object *obj)
 				       obj->layer->evas->pointer.x,
 				       obj->layer->evas->pointer.y, 1, 1);
    /* DO II */
-   _evas_object_text_recalc(obj);
+   _evas_object_text_recalc(obj, o->cur.text);
    o->changed = 1;
+   o->cur.filter.changed = EINA_TRUE;
    evas_object_change(obj);
    evas_object_clip_dirty(obj);
    evas_object_coords_recalc(obj);
@@ -1896,43 +2853,268 @@ _evas_object_text_rehint(Evas_Object *obj)
 }
 
 static void
-_evas_object_text_recalc(Evas_Object *obj)
+_evas_object_text_recalc(Evas_Object *obj, Eina_Unicode *text)
 {
    Evas_Object_Text *o;
-   Eina_Unicode *text = NULL;
    o = (Evas_Object_Text *)(obj->object_data);
-
-   if (o->items) _evas_object_text_items_clear(o);
-   if (o->cur.utf8_text)
-     text = eina_unicode_utf8_to_unicode(o->cur.utf8_text,
-           NULL);
 
    if (!text) text = eina_unicode_strdup(EINA_UNICODE_EMPTY_STRING);
 
    _evas_object_text_layout(obj, o, text);
 
-   if (text) free(text);
+   /* Calc ascent/descent. */
+     {
+        Evas_Object_Text_Item *item;
+
+        for (item = o->items ; item ;
+              item = EINA_INLIST_CONTAINER_GET(
+                 EINA_INLIST_GET(item)->next, Evas_Object_Text_Item))
+          {
+             int asc = 0, desc = 0;
+             int max_asc = 0, max_desc = 0;
+
+             /* Skip items without meaning full information. */
+             if (!item->text_props.font_instance)
+                continue;
+
+             asc = evas_common_font_instance_ascent_get(item->text_props.font_instance);
+             desc = evas_common_font_instance_descent_get(item->text_props.font_instance);
+
+             // HAVE_UNICODE_EMOTICON(20140626): Adjust emoticon ascent, descent and height.
+             if (item->emoticon_item)
+               {
+                  _evas_object_text_emoticon_update_size(o, item);
+                  asc = item->emoticon_item->ascent;
+                  desc = item->emoticon_item->descent;
+               }
+             //
+
+             if (asc > o->ascent)
+                o->ascent = asc;
+             if (desc > o->descent)
+                o->descent = desc;
+
+             max_asc = evas_common_font_instance_max_ascent_get(item->text_props.font_instance);
+             max_desc = evas_common_font_instance_max_descent_get(item->text_props.font_instance);
+
+             // HAVE_UNICODE_EMOTICON(2013.12.06): refactored emoticon drawing.
+             if (item->emoticon_item)
+               {
+                  max_asc = item->emoticon_item->ascent;
+                  max_desc = item->emoticon_item->descent;
+               }
+             //
+
+             if (max_asc > o->max_ascent)
+                o->max_ascent = max_asc;
+             if (max_desc > o->max_descent)
+                o->max_descent = max_desc;
+          }
+     }
 
    if ((o->font) && (o->items))
      {
-	int w, h;
-	int l = 0, r = 0, t = 0, b = 0;
+        int w, h;
+        int l = 0, r = 0, t = 0, b = 0;
 
-        w = _evas_object_text_horiz_advance_get(obj, o);
+        w = _evas_object_text_horiz_advance_get(o);
         h = _evas_object_text_vert_advance_get(obj, o);
-	evas_text_style_pad_get(o->cur.style, &l, &r, &t, &b);
-	obj->cur.geometry.w = w + l + r;
+        if (!o->cur.filter.chain)
+          evas_text_style_pad_get(o->cur.style, &l, &r, &t, &b);
+        else
+          evas_filter_program_padding_get(o->cur.filter.chain, &l, &r, &t, &b);
+
+        if (o->cur.ellipsis >= 0.0)
+          {
+             obj->cur.geometry.w = w + l + r < obj->cur.geometry.w || obj->cur.geometry.w == 0 ?
+                      w + l + r : obj->cur.geometry.w;
+          }
+        else
+          {
+             obj->cur.geometry.w = w + l + r;
+          }
         obj->cur.geometry.h = h + t + b;
-////        obj->cur.cache.geometry.validity = 0;
+        ////        obj->cur.cache.geometry.validity = 0;
      }
    else
      {
-	int t = 0, b = 0;
+        int t = 0, b = 0;
 
-	evas_text_style_pad_get(o->cur.style, NULL, NULL, &t, &b);
-	obj->cur.geometry.w = 0;
+        if (!o->cur.filter.chain)
+          evas_text_style_pad_get(o->cur.style, NULL, NULL, &t, &b);
+        else
+          evas_filter_program_padding_get(o->cur.filter.chain, NULL, NULL, &t, &b);
+        obj->cur.geometry.w = 0;
         obj->cur.geometry.h = o->max_ascent + o->max_descent + t + b;
-////        obj->cur.cache.geometry.validity = 0;
+        ////        obj->cur.cache.geometry.validity = 0;
      }
+   o->last_computed.w = obj->cur.geometry.w;
+   o->last_computed.h = obj->cur.geometry.h;
+   evas_object_clip_dirty(obj);
 }
 
+// TIZEN_ONLY(20150513): Add evas_object_text/textblock_ellipsis_status_get internal API.
+EAPI Eina_Bool
+evas_object_text_ellipsis_status_get(const Evas_Object *obj)
+{
+   Evas_Object_Text *o;
+
+   MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
+   return EINA_FALSE;
+   MAGIC_CHECK_END();
+
+   o = (Evas_Object_Text *)(obj->object_data);
+   return o->last_computed.ellipsis;
+}
+//
+
+/* EXPERIMENTAL CODE BEGIN */
+
+EAPI void
+evas_object_text_filter_program_set(Evas_Object *obj, const char *arg)
+{
+   Evas_Object_Text *o;
+   Evas_Filter_Program *pgm = NULL;
+
+   MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
+   return;
+   MAGIC_CHECK_END();
+   o = (Evas_Object_Text *)(obj->object_data);
+   MAGIC_CHECK(o, Evas_Object_Text, MAGIC_OBJ_TEXT);
+   return;
+   MAGIC_CHECK_END();
+
+   if (!o) return;
+   if (o->cur.filter.code == arg) return;
+   if (o->cur.filter.code && arg && !strcmp(arg, o->cur.filter.code)) return;
+
+   // Parse filter program
+   evas_filter_program_del(o->cur.filter.chain);
+   if (arg)
+     {
+        pgm = evas_filter_program_new("Evas_Text: Filter Program");
+        evas_filter_program_source_set_all(pgm, o->cur.filter.sources);
+        if (!evas_filter_program_parse(pgm, arg))
+          {
+             ERR("Parsing failed!");
+             evas_filter_program_del(pgm);
+             pgm = NULL;
+          }
+     }
+   o->cur.filter.chain = pgm;
+   o->cur.filter.changed = EINA_TRUE;
+   o->cur.filter.invalid = (pgm == NULL);
+   eina_stringshare_replace(&o->cur.filter.code, arg);
+
+   // Update object
+   _evas_object_text_items_clear(o);
+   o->changed = 1;
+   _evas_object_text_recalc(obj, o->cur.text);
+   evas_object_change(obj);
+   evas_object_clip_dirty(obj);
+   evas_object_coords_recalc(obj);
+   evas_object_inform_call_resize(obj);
+}
+
+static void
+_filter_source_hash_free_cb(void *data)
+{
+   Evas_Filter_Proxy_Binding *pb = data;
+   Evas_Object *proxy, *source;
+   Evas_Object_Text *o;
+
+   proxy = pb->eo_proxy;
+   source = pb->eo_source;
+   if (source)
+     source->proxy.proxies = eina_list_remove(source->proxy.proxies, pb->eo_proxy);
+
+   o = (Evas_Object_Text *) (pb->eo_proxy ? pb->eo_proxy->object_data : NULL);
+   if (o && proxy)
+     {
+        o->cur.filter.sources_count--;
+        //if (!o->cur.filter.sources_count)
+          //proxy->proxy->is_proxy = EINA_FALSE;
+     }
+
+   eina_stringshare_del(pb->name);
+   free(pb);
+}
+
+EAPI void
+evas_object_text_filter_source_set(Evas_Object *obj, const char *name,
+                                   Evas_Object *source)
+{
+   Evas_Object_Text *o;
+   Evas_Filter_Program *pgm;
+   Evas_Filter_Proxy_Binding *pb, *pb_old = NULL;
+
+   MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
+   return;
+   MAGIC_CHECK_END();
+   o = (Evas_Object_Text *)(obj->object_data);
+   MAGIC_CHECK(o, Evas_Object_Text, MAGIC_OBJ_TEXT);
+   return;
+   MAGIC_CHECK_END();
+
+   pgm = o->cur.filter.chain;
+
+   if (!name)
+     {
+        if (!source || !o->cur.filter.sources) return;
+        if (eina_hash_del_by_data(o->cur.filter.sources, source))
+          goto update;
+        return;
+     }
+
+   if (!o->cur.filter.sources)
+     {
+        o->cur.filter.sources = eina_hash_string_small_new
+              (EINA_FREE_CB(_filter_source_hash_free_cb));
+     }
+   else
+     {
+        pb_old = eina_hash_find(o->cur.filter.sources, name);
+        if (pb_old)
+          {
+             if (pb_old->eo_source == source) goto update;
+             eina_hash_del(o->cur.filter.sources, name, pb_old);
+          }
+     }
+
+   if (!source)
+     {
+        pb_old = eina_hash_find(o->cur.filter.sources, name);
+        if (!pb_old) return;
+        eina_hash_del_by_key(o->cur.filter.sources, name);
+        goto update;
+     }
+
+   pb = calloc(1, sizeof(*pb));
+   pb->eo_proxy = obj;
+   pb->eo_source = source;
+   pb->name = eina_stringshare_add(name);
+
+   if (!eina_list_data_find(source->proxy.proxies, obj))
+     source->proxy.proxies = eina_list_append(source->proxy.proxies, obj);
+
+   //proxy_write->is_proxy = EINA_TRUE;
+
+   eina_hash_add(o->cur.filter.sources, pb->name, pb);
+   o->cur.filter.sources_count++;
+
+   evas_filter_program_source_set_all(pgm, o->cur.filter.sources);
+
+   // Update object
+update:
+   o->cur.filter.changed = EINA_TRUE;
+   o->cur.filter.invalid = EINA_FALSE;
+   _evas_object_text_items_clear(o);
+   o->changed = 1;
+   _evas_object_text_recalc(obj, o->cur.text);
+   evas_object_change(obj);
+   evas_object_clip_dirty(obj);
+   evas_object_coords_recalc(obj);
+   evas_object_inform_call_resize(obj);
+}
+
+/* EXPERIMENTAL CODE END */

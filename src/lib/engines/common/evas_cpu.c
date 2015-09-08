@@ -208,7 +208,7 @@ evas_common_cpu_init(void)
 #endif
 }
 
-int
+EAPI int
 evas_common_cpu_has_feature(unsigned int feature)
 {
    return (cpu_feature_mask & feature);

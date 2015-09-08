@@ -11,6 +11,7 @@
 
 #include FT_OUTLINE_H
 #include FT_SYNTHESIS_H
+#include FT_BITMAP_H
 
 FT_Library      evas_ft_lib = 0;
 static int      initialised = 0;
@@ -69,36 +70,9 @@ evas_common_font_font_all_unload(void)
 }
 
 EAPI int
-evas_common_font_ascent_get(RGBA_Font *fn)
+evas_common_font_instance_ascent_get(RGBA_Font_Int *fi)
 {
    int val;
-   RGBA_Font_Int *fi;
-
-//   evas_common_font_size_use(fn);
-#if 0
-     {
-        Eina_List *l;
-        
-        EINA_LIST_FOREACH(fn->fonts, l, fi)
-          {
-             if (!fi->src->ft.face) continue;
-             if (fi->src->current_size != fi->size)
-               {
-		  FTLOCK();
-                  FT_Activate_Size(fi->ft.size);
-		  FTUNLOCK();
-                  fi->src->current_size = fi->size;
-               }
-             val = (int)fi->src->ft.face->size->metrics.ascender;
-             if (fi->src->ft.face->units_per_EM == 0)
-               return val;
-             dv = (fi->src->ft.orig_upem * 2048) / fi->src->ft.face->units_per_EM;
-             ret = (val * fi->src->ft.face->size->metrics.y_scale) / (dv * dv);
-             printf(" ==== %p: %i\n", fi, ret);
-          }
-     }
-#endif
-   fi = fn->fonts->data;
    evas_common_font_int_reload(fi);
    if (fi->src->current_size != fi->size)
      {
@@ -112,7 +86,7 @@ evas_common_font_ascent_get(RGBA_Font *fn)
         WRN("NOT SCALABLE!");
      }
    val = (int)fi->src->ft.face->size->metrics.ascender;
-   return val >> 6;
+   return FONT_METRIC_ROUNDUP(val);
 //   printf("%i | %i\n", val, val >> 6);
 //   if (fi->src->ft.face->units_per_EM == 0)
 //     return val;
@@ -122,13 +96,9 @@ evas_common_font_ascent_get(RGBA_Font *fn)
 }
 
 EAPI int
-evas_common_font_descent_get(RGBA_Font *fn)
+evas_common_font_instance_descent_get(RGBA_Font_Int *fi)
 {
    int val;
-   RGBA_Font_Int *fi;
-
-//   evas_common_font_size_use(fn);
-   fi = fn->fonts->data;
    evas_common_font_int_reload(fi);
    if (fi->src->current_size != fi->size)
      {
@@ -138,7 +108,7 @@ evas_common_font_descent_get(RGBA_Font *fn)
         fi->src->current_size = fi->size;
      }
    val = -(int)fi->src->ft.face->size->metrics.descender;
-   return val >> 6;
+   return FONT_METRIC_ROUNDUP(val);
 //   if (fi->src->ft.face->units_per_EM == 0)
 //     return val;
 //   dv = (fi->src->ft.orig_upem * 2048) / fi->src->ft.face->units_per_EM;
@@ -147,14 +117,11 @@ evas_common_font_descent_get(RGBA_Font *fn)
 }
 
 EAPI int
-evas_common_font_max_ascent_get(RGBA_Font *fn)
+evas_common_font_instance_max_ascent_get(RGBA_Font_Int *fi)
 {
    int val, dv;
    int ret;
-   RGBA_Font_Int *fi;
 
-//   evas_common_font_size_use(fn);
-   fi = fn->fonts->data;
    evas_common_font_int_reload(fi);
   if (fi->src->current_size != fi->size)
      {
@@ -166,25 +133,22 @@ evas_common_font_max_ascent_get(RGBA_Font *fn)
    if ((fi->src->ft.face->bbox.yMax == 0) &&
        (fi->src->ft.face->bbox.yMin == 0) &&
        (fi->src->ft.face->units_per_EM == 0))
-     val = (int)fi->src->ft.face->size->metrics.ascender / 64;
+     val = FONT_METRIC_ROUNDUP((int)fi->src->ft.face->size->metrics.ascender);
    else
      val = (int)fi->src->ft.face->bbox.yMax;
    if (fi->src->ft.face->units_per_EM == 0)
      return val;
    dv = (fi->src->ft.orig_upem * 2048) / fi->src->ft.face->units_per_EM;
-   ret = (val * fi->src->ft.face->size->metrics.y_scale) / (dv * dv);
+   ret = FONT_METRIC_CONV(val, dv, fi->src->ft.face->size->metrics.y_scale);
    return ret;
 }
 
 EAPI int
-evas_common_font_max_descent_get(RGBA_Font *fn)
+evas_common_font_instance_max_descent_get(RGBA_Font_Int *fi)
 {
    int val, dv;
    int ret;
-   RGBA_Font_Int *fi;
 
-//   evas_common_font_size_use(fn);
-   fi = fn->fonts->data;
    evas_common_font_int_reload(fi);
    if (fi->src->current_size != fi->size)
      {
@@ -196,14 +160,42 @@ evas_common_font_max_descent_get(RGBA_Font *fn)
    if ((fi->src->ft.face->bbox.yMax == 0) &&
        (fi->src->ft.face->bbox.yMin == 0) &&
        (fi->src->ft.face->units_per_EM == 0))
-     val = -(int)fi->src->ft.face->size->metrics.descender / 64;
+     val = FONT_METRIC_ROUNDUP(-(int)fi->src->ft.face->size->metrics.descender);
    else
      val = -(int)fi->src->ft.face->bbox.yMin;
    if (fi->src->ft.face->units_per_EM == 0)
      return val;
    dv = (fi->src->ft.orig_upem * 2048) / fi->src->ft.face->units_per_EM;
-   ret = (val * fi->src->ft.face->size->metrics.y_scale) / (dv * dv);
+   ret = FONT_METRIC_CONV(val, dv, fi->src->ft.face->size->metrics.y_scale);
    return ret;
+}
+
+EAPI int
+evas_common_font_ascent_get(RGBA_Font *fn)
+{
+//   evas_common_font_size_use(fn);
+   return evas_common_font_instance_ascent_get(fn->fonts->data);
+}
+
+EAPI int
+evas_common_font_descent_get(RGBA_Font *fn)
+{
+//   evas_common_font_size_use(fn);
+   return evas_common_font_instance_descent_get(fn->fonts->data);
+}
+
+EAPI int
+evas_common_font_max_ascent_get(RGBA_Font *fn)
+{
+//   evas_common_font_size_use(fn);
+   return evas_common_font_instance_max_ascent_get(fn->fonts->data);
+}
+
+EAPI int
+evas_common_font_max_descent_get(RGBA_Font *fn)
+{
+//   evas_common_font_size_use(fn);
+   return evas_common_font_instance_max_descent_get(fn->fonts->data);
 }
 
 EAPI int
@@ -226,10 +218,10 @@ evas_common_font_get_line_advance(RGBA_Font *fn)
    if ((fi->src->ft.face->bbox.yMax == 0) &&
        (fi->src->ft.face->bbox.yMin == 0) &&
        (fi->src->ft.face->units_per_EM == 0))
-     return val >> 6;
+     return FONT_METRIC_ROUNDUP(val);
    else if (fi->src->ft.face->units_per_EM == 0)
      return val;
-   return val >> 6;
+   return FONT_METRIC_ROUNDUP(val);
 //   dv = (fi->src->ft.orig_upem * 2048) / fi->src->ft.face->units_per_EM;
 //   ret = (val * fi->src->ft.face->size->metrics.y_scale) / (dv * dv);
 //   return ret;
@@ -242,7 +234,12 @@ _fash_int2_free(Fash_Int_Map2 *fash)
 {
    int i;
 
-   for (i = 0; i < 256; i++) if (fash->bucket[i]) free(fash->bucket[i]);
+   for (i = 0; i < 256; i++)
+     if (fash->bucket[i])
+       {
+          free(fash->bucket[i]);
+          fash->bucket[i] = NULL;
+       }
    free(fash);
 }
 
@@ -251,7 +248,12 @@ _fash_int_free(Fash_Int *fash)
 {
    int i;
 
-   for (i = 0; i < 256; i++) if (fash->bucket[i]) _fash_int2_free(fash->bucket[i]);
+   for (i = 0; i < 256; i++)
+     if (fash->bucket[i])
+       {
+          _fash_int2_free(fash->bucket[i]);
+          fash->bucket[i] = NULL;
+       }
    free(fash);
 }
 
@@ -306,10 +308,19 @@ _fash_glyph_free(Fash_Glyph_Map *fmap)
         RGBA_Font_Glyph *fg = fmap->item[i];
         if ((fg) && (fg != (void *)(-1)))
           {
+			if (fg->glyph_out)
+			{
+				if ((fg->glyph_out->rle) && (fg->glyph_out->bitmap.rle_alloc))
+		          free(fg->glyph_out->rle);
+				fg->glyph_out->rle = NULL;
+				if (!fg->glyph_out->bitmap.no_free_glout)
+					free(fg->glyph_out);
+				fg->glyph_out = NULL;
+			}
+			  
              FT_Done_Glyph(fg->glyph);
              /* extension calls */
              if (fg->ext_dat_free) fg->ext_dat_free(fg->ext_dat);
-             if (fg->glyph_out_free) fg->glyph_out_free(fg->glyph_out);
              free(fg);
              fmap->item[i] = NULL;
           }
@@ -423,7 +434,15 @@ evas_common_font_int_cache_glyph_get(RGBA_Font_Int *fi, FT_UInt idx)
       FT_Outline_Transform(&fi->src->ft.face->glyph->outline, &transform);
    /* Embolden the outline of Glyph according to rundtime_rend. */
    if (fi->runtime_rend & FONT_REND_WEIGHT)
-      FT_GlyphSlot_Embolden(fi->src->ft.face->glyph);
+     {
+        // Tizen Only (2013.09.16) : Use FT_Outline_Emobolden instead of FT_GlyphSlot_Embolden.
+        //                           FT_GlyphSlot_Embolden changed metrics, it is not pretty
+        // FT_GlyphSlot_Embolden(fi->src->ft.face->glyph);
+        FT_Pos xstr = FT_MulFix( fi->src->ft.face->units_per_EM,
+                                 fi->src->ft.face->size->metrics.y_scale ) / 64;
+        FT_Outline_Embolden( &fi->src->ft.face->glyph->outline, xstr );
+        //
+     }
 
    fg = malloc(sizeof(struct _RGBA_Font_Glyph));
    if (!fg) return NULL;
@@ -492,32 +511,41 @@ evas_common_font_int_cache_glyph_render(RGBA_Font_Glyph *fg)
      {
         FT_Done_Glyph(fg->glyph);
         FTUNLOCK();
-        free(fg);
         if (!fi->fash) fi->fash = _fash_gl_new();
         if (fi->fash) _fash_gl_add(fi->fash, fg->index, (void *)(-1));
+        free(fg);
         return EINA_FALSE;
      }
    FTUNLOCK();
 
    fbg = (FT_BitmapGlyph)fg->glyph;
 
-   fg->glyph_out = malloc(sizeof(RGBA_Font_Glyph_Out));
+   fg->glyph_out = calloc(1, sizeof(RGBA_Font_Glyph_Out));
    fg->glyph_out->bitmap.rows = fbg->bitmap.rows;
    fg->glyph_out->bitmap.width = fbg->bitmap.width;
    fg->glyph_out->bitmap.pitch = fbg->bitmap.pitch;
    fg->glyph_out->bitmap.buffer = fbg->bitmap.buffer;
-   fg->glyph_out->bitmap.num_grays = fbg->bitmap.num_grays;
-   fg->glyph_out->bitmap.pixel_mode = fbg->bitmap.pixel_mode;
-
-   fg->glyph_out_free = free;
-   /* This '+ 200' is just an estimation of how much memory freetype will use
+   fg->glyph_out->bitmap.rle_alloc = EINA_TRUE;
+   
+   /* This '+ 100' is just an estimation of how much memory freetype will use
     * on it's size. This value is not really used anywhere in code - it's
     * only for statistics. */
    size = sizeof(RGBA_Font_Glyph) + sizeof(Eina_List) +
-    (fg->glyph_out->bitmap.width * fg->glyph_out->bitmap.rows) + 200;
+    (fg->glyph_out->bitmap.width * fg->glyph_out->bitmap.rows / 2) + 100;
    fi->usage += size;
    if (fi->inuse) evas_common_font_int_use_increase(size);
 
+   fg->glyph_out->rle = evas_common_font_glyph_compress
+   (fbg->bitmap.buffer, fbg->bitmap.num_grays, fbg->bitmap.pixel_mode,
+    fbg->bitmap.pitch, fbg->bitmap.width, fbg->bitmap.rows,
+    &(fg->glyph_out->rle_size));
+
+   fg->glyph_out->bitmap.buffer = NULL;
+
+   // this may be technically incorrect as we go and free a bitmap buffer
+   // behind the ftglyph's back...
+   FT_Bitmap_Done(evas_ft_lib, &(fbg->bitmap));
+   
    return EINA_TRUE;
 }
 
@@ -573,6 +601,7 @@ evas_common_get_char_index(RGBA_Font_Int* fi, Eina_Unicode gl)
 #endif
 
 //   result = eina_hash_find(fi->indexes, &gl);
+
 //   if (result) goto on_correct;
 //
 //   result = malloc(sizeof (Font_Char_Index));
@@ -592,6 +621,7 @@ evas_common_get_char_index(RGBA_Font_Int* fi, Eina_Unicode gl)
     */
    /* FTLOCK(); */
    result.index = FT_Get_Char_Index(fi->src->ft.face, gl);
+
    /* FTUNLOCK(); */
    result.gl = gl;
 

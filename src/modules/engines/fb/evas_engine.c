@@ -99,6 +99,7 @@ eng_setup(Evas *e, void *in)
    Evas_Engine_Info_FB *info;
 
    info = (Evas_Engine_Info_FB *)in;
+   EINA_LOG_DBG("[ evasgl_dbg ]: Evas_Engine Info -> FB");
    re = _output_setup(e->output.w,
 		      e->output.h,
 		      info->info.rotation,

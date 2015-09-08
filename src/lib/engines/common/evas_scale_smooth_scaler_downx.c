@@ -1,10 +1,12 @@
 {
    int Cx, j;
    DATA32 *pix, *dptr, *pbuf, **yp;
+   DATA8 *mask;
    int r, g, b, a, rr, gg, bb, aa;
    int *xp, xap, yap, pos;
    //int dyy, dxx;
    int w = dst_clip_w;
+   int y;
 
    dptr = dst_ptr;
    pos = (src_region_y * src_w) + src_region_x;
@@ -19,6 +21,7 @@
 
    if (src->cache_entry.flags.alpha)
      {
+        y = 0;
 	while (dst_clip_h--)
 	  {
 	    while (dst_clip_w--)
@@ -82,7 +85,25 @@
 		xp++;  xapp++;
 	      }
 
-	    func(buf, NULL, dc->mul.col, dptr, w);
+            if (!dc->clip.mask)
+              func(buf, NULL, dc->mul.col, dptr, w);
+            else
+              {
+                 RGBA_Image *im = dc->clip.mask;
+                 DATA8 *mbegin = im->image.data8;
+                 DATA8 *mend = mbegin + (im->cache_entry.w * im->cache_entry.h);
+                 mask = im->image.data8
+                    + ((dst_clip_y - dc->clip.mask_y + y) * im->cache_entry.w)
+                    + (dst_clip_x - dc->clip.mask_x);
+
+                 /* FIXME!!! Quick workaround crashes */
+                 if ((mask < mbegin) || ((mask + w) > mend))
+                   return;
+
+                 if (dc->mul.use) func2(buf, NULL, dc->mul.col, buf, w);
+                 func(buf, mask, 0, dptr, w);
+              }
+            y++;
 
 	    pbuf = buf;
 	    dptr += dst_w;  dst_clip_w = w;
@@ -96,7 +117,8 @@
 #ifdef DIRECT_SCALE
         if ((!src->cache_entry.flags.alpha) &&
 	    (!dst->cache_entry.flags.alpha) &&
-	    (!dc->mul.use))
+	    (!dc->mul.use) &&
+            (!dc->clip.mask))
 	  {
 	     while (dst_clip_h--)
 	       {
@@ -155,7 +177,7 @@
 					  ((b + (1 << 3)) >> 4));
 		      xp++;  xapp++;
 		    }
-		  
+
 		  dptr += dst_w;  dst_clip_w = w;
 		  yp++;  yapp++;
 		  xp = xpoints;// + dxx;
@@ -165,6 +187,7 @@
 	else
 #endif
 	  {
+             y = 0;
 	     while (dst_clip_h--)
 	       {
 		 while (dst_clip_w--)
@@ -220,8 +243,26 @@
 					 ((b + (1 << 3)) >> 4));
 		     xp++;  xapp++;
 		   }
-		 
-		 func(buf, NULL, dc->mul.col, dptr, w);
+
+                 if (!dc->clip.mask)
+                   func(buf, NULL, dc->mul.col, dptr, w);
+                 else
+                   {
+                      RGBA_Image *im = dc->clip.mask;
+                      DATA8 *mbegin = im->image.data8;
+                      DATA8 *mend = mbegin + (im->cache_entry.w * im->cache_entry.h);
+                      mask = im->image.data8
+                         + ((dst_clip_y - dc->clip.mask_y + y) * im->cache_entry.w)
+                         + (dst_clip_x - dc->clip.mask_x);
+
+                      /* FIXME!!! Quick workaround crashes */
+                      if ((mask < mbegin) || ((mask + w) > mend))
+                        return;
+
+                      if (dc->mul.use) func2(buf, NULL, dc->mul.col, buf, w);
+                      func(buf, mask, 0, dptr, w);
+                   }
+                 y++;
 
 		 pbuf = buf;
 		 dptr += dst_w;  dst_clip_w = w;

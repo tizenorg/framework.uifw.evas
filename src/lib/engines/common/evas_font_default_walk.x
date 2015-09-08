@@ -22,12 +22,28 @@
 
 /* Visual walk helper macros */
 #ifdef OT_SUPPORT
+// TIZEN_ONLY(20140301): Added checking language of text props. We can draw glyphs of specific language without harfbuzz.
+/*
 #define _EVAS_FONT_WALK_TEXT_START() \
         Evas_Font_OT_Info *_ot_itr = (text_props->info) ? \
            text_props->info->ot + text_props->start : NULL; \
         if (!_ot_itr) break; \
         for (char_index = 0 ; char_index < text_props->len ; char_index++, _glyph_itr++, _ot_itr++) \
           {
+*/
+#define _EVAS_FONT_WALK_TEXT_START() \
+        Evas_Font_OT_Info *_ot_itr = NULL; \
+        if (CHECK_LANGUAGE_HARFBUZZ_AVAILABLE(text_props)) \
+          { \
+             _ot_itr = (text_props->info) ? \
+             text_props->info->ot + text_props->start : NULL; \
+             if (!_ot_itr) break; \
+          } \
+        for (char_index = 0 ; char_index < text_props->len ; \
+             char_index++, _glyph_itr++, \
+             _ot_itr = (_ot_itr) ? _ot_itr + 1 : NULL) \
+          {
+/////////////
 #else
 #define _EVAS_FONT_WALK_TEXT_START() \
         for (char_index = 0 ; char_index < text_props->len ; char_index++, _glyph_itr++) \
@@ -55,6 +71,8 @@
 
 /*FIXME: doc */
 #ifdef OT_SUPPORT
+// TIZEN_ONLY(20140301): Added checking language of text props. We can draw glyphs of specific language without harfbuzz.
+/*
 # define EVAS_FONT_WALK_X_OFF \
              (EVAS_FONT_ROUND_26_6_TO_INT(EVAS_FONT_OT_X_OFF_GET(*_ot_itr)))
 # define EVAS_FONT_WALK_Y_OFF \
@@ -73,6 +91,42 @@
               text_props->text_offset : \
               EVAS_FONT_WALK_POS \
              )
+*/
+# define EVAS_FONT_WALK_X_OFF \
+             ((_ot_itr) ? \
+             (EVAS_FONT_ROUND_26_6_TO_INT(EVAS_FONT_OT_X_OFF_GET(*_ot_itr))) : 0)
+# define EVAS_FONT_WALK_Y_OFF \
+             ((_ot_itr) ? \
+             (EVAS_FONT_ROUND_26_6_TO_INT(EVAS_FONT_OT_Y_OFF_GET(*_ot_itr))) : 0)
+# define EVAS_FONT_WALK_POS \
+             ((_ot_itr) ? \
+             (EVAS_FONT_OT_POS_GET(*_ot_itr) - text_props->text_offset) : \
+             (((text_props->bidi.dir == EVAS_BIDI_DIRECTION_RTL) ? \
+               (text_props->len - char_index - 1) : \
+               (char_index))))
+# define EVAS_FONT_WALK_POS_NEXT \
+             ((_ot_itr) ? \
+             ((!EVAS_FONT_WALK_IS_LAST) ? \
+              EVAS_FONT_OT_POS_GET(*(_ot_itr + 1)) - \
+               text_props->text_offset : \
+              EVAS_FONT_WALK_POS) : \
+              ((!EVAS_FONT_WALK_IS_LAST) ? \
+              ((text_props->bidi.dir == EVAS_BIDI_DIRECTION_RTL) ? \
+               text_props->len - char_index - 2 \
+               : (char_index + 1)) : \
+              EVAS_FONT_WALK_POS))
+# define EVAS_FONT_WALK_POS_PREV \
+             ((_ot_itr) ? \
+             ((char_index > 0) ? \
+             EVAS_FONT_OT_POS_GET(*(_ot_itr - 1)) - \
+              text_props->text_offset : \
+              EVAS_FONT_WALK_POS) : \
+             ((char_index > 0) ? \
+              ((text_props->bidi.dir == EVAS_BIDI_DIRECTION_RTL) ? \
+               text_props->len - char_index \
+               : (char_index - 1)) : \
+              EVAS_FONT_WALK_POS))
+////////////
 #else
 # define EVAS_FONT_WALK_X_OFF 0
 # define EVAS_FONT_WALK_Y_OFF 0

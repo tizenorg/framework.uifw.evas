@@ -435,6 +435,8 @@ typedef void (*RGBA_Gfx_Pt_Func) (DATA32 src, DATA8 mask, DATA32 col, DATA32 *ds
 typedef void (*Gfx_Func_Copy)    (DATA32 *src, DATA32 *dst, int len);
 
 typedef void (*Gfx_Func_Convert) (DATA32 *src, DATA8 *dst, int src_jump, int dst_jump, int w, int h, int dith_x, int dith_y, DATA8 *pal);
+typedef void (*Alpha_Gfx_Func)   (DATA8 *src, DATA8 *dst, int len);
+
 
 #include "../cache/evas_cache.h"
 #ifdef EVAS_CSERVE2
@@ -449,7 +451,7 @@ typedef enum _RGBA_Image_Flags
 /*    RGBA_IMAGE_HAS_ALPHA     = (1 << 0), */
    RGBA_IMAGE_IS_DIRTY      = (1 << 1),
    RGBA_IMAGE_INDEXED       = (1 << 2),
-   RGBA_IMAGE_ALPHA_ONLY    = (1 << 3),
+/*   RGBA_IMAGE_ALPHA_ONLY    = (1 << 3), */
    RGBA_IMAGE_ALPHA_TILES   = (1 << 4),
 /*    RGBA_IMAGE_ALPHA_SPARSE  = (1 << 5), */
 /*    RGBA_IMAGE_LOADED        = (1 << 6), */
@@ -542,6 +544,7 @@ struct _Image_Entry_Flags
 #endif
    Eina_Bool animated     : 1;
    Eina_Bool rotated      : 1;
+   Eina_Bool flipped      : 1;
 };
 
 struct _Image_Entry_Frame
@@ -597,7 +600,9 @@ struct _Image_Entry
    unsigned char          scale;
 
    RGBA_Image_Loadopts    load_opts;
-   int                    space;
+   Evas_Colorspace        space;
+   const Evas_Colorspace *cspaces; // owned by the loader, live as long as the loader
+
    unsigned int           w;
    unsigned int           h;
 
@@ -696,12 +701,10 @@ struct _RGBA_Draw_Context
    } col;
    struct RGBA_Draw_Context_clip {
       int    x, y, w, h;
+      void  *mask;
+      int    mask_x, mask_y;
       Eina_Bool use : 1;
    } clip;
-   struct {
-      int x, y, w, h;
-      RGBA_Image *mask;
-   } mask;
    Cutout_Rects cutout;
    struct {
       struct {
@@ -811,7 +814,10 @@ struct _RGBA_Image
 
    /* RGBA stuff */
    struct {
-      DATA32            *data;
+      union {
+         DATA32         *data;
+         DATA8          *data8;
+      };
       Eina_Bool          no_free : 1;
    } image;
 
@@ -839,6 +845,13 @@ struct _RGBA_Image
       pixman_image_t *im;
    } pixman;
 #endif
+   struct {
+      void   *data; //Evas_Native_Surface ns;
+      struct {
+        void (*free) (void *data, void *image);
+        void *data;
+      } func;
+   } native;
 };
 
 struct _RGBA_Polygon_Point
@@ -994,14 +1007,16 @@ struct _RGBA_Font_Source
  */
 struct _RGBA_Font_Glyph_Out
 {
+   unsigned char *rle;
    struct {
-      int rows;
-      int width;
-      int pitch;
       unsigned char *buffer;
-      short num_grays;
-      char pixel_mode;
+      unsigned short rows;
+      unsigned short width;
+      unsigned short pitch;
+      unsigned short rle_alloc : 1;
+      unsigned short no_free_glout : 1;
    } bitmap;
+   int rle_size;
 };
 
 struct _RGBA_Font_Glyph
@@ -1077,16 +1092,10 @@ struct rect_node
 
 struct _Tilebuf
 {
-   int outbuf_w;
-   int outbuf_h;
-
+   int outbuf_w, outbuf_h;
    struct {
-      int           w, h;
+      short w, h;
    } tile_size;
-
-   struct {
-      int x, y, w, h;
-   } prev_add, prev_del;
 #ifdef RECTUPDATE
 /*
    Regionbuf *rb;
@@ -1102,6 +1111,10 @@ struct _Tilebuf
    } tiles;
  */
 #endif
+   struct {
+      int x, y, w, h;
+   } prev_add, prev_del;
+   Eina_Bool strict_tiles : 1;
 };
 
 struct _Tilebuf_Tile
@@ -1218,7 +1231,7 @@ void evas_common_shutdown                               (void);
 EAPI void evas_common_cpu_init                          (void);
 
 int  evas_common_cpu_have_cpuid                         (void);
-int  evas_common_cpu_has_feature                        (unsigned int feature);
+EAPI int  evas_common_cpu_has_feature                   (unsigned int feature);
 EAPI void evas_common_cpu_can_do                        (int *mmx, int *sse, int *sse2);
 EAPI void evas_common_cpu_end_opt                       (void);
 
@@ -1259,6 +1272,7 @@ EAPI Tilebuf      *evas_common_tilebuf_new               (int w, int h);
 EAPI void          evas_common_tilebuf_free              (Tilebuf *tb);
 EAPI void          evas_common_tilebuf_set_tile_size     (Tilebuf *tb, int tw, int th);
 EAPI void          evas_common_tilebuf_get_tile_size     (Tilebuf *tb, int *tw, int *th);
+EAPI void          evas_common_tilebuf_tile_strict_set   (Tilebuf *tb, Eina_Bool strict);
 EAPI int           evas_common_tilebuf_add_redraw        (Tilebuf *tb, int x, int y, int w, int h);
 EAPI int           evas_common_tilebuf_del_redraw        (Tilebuf *tb, int x, int y, int w, int h);
 EAPI int           evas_common_tilebuf_add_motion_vector (Tilebuf *tb, int x, int y, int w, int h, int dx, int dy, int alpha);

@@ -1259,10 +1259,6 @@ _glyphs_loaded_msg_create(Glyphs_Request *req, int *resp_size)
              buf += intsize;
              memcpy(buf, &gl->pitch, intsize);
              buf += intsize;
-             memcpy(buf, &gl->num_grays, intsize);
-             buf += intsize;
-             memcpy(buf, &gl->pixel_mode, intsize);
-             buf += intsize;
           }
 
         /* We are removing SHMs from the beginning of the list, so this
@@ -1485,8 +1481,6 @@ _glyphs_load_request_response(Glyphs_Request *req, Slave_Msg_Font_Glyphs_Loaded 
              gl->rows = c->glyphs[j].rows;
              gl->width = c->glyphs[j].width;
              gl->pitch = c->glyphs[j].pitch;
-             gl->num_grays = c->glyphs[j].num_grays;
-             gl->pixel_mode = c->glyphs[j].pixel_mode;
              font_mem_usage += sizeof(*gl);
              fc->glyphs = eina_inlist_append(fc->glyphs, EINA_INLIST_GET(gl));
              fc->nglyphs++;

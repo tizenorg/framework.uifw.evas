@@ -60,6 +60,14 @@ enum _Outbuf_Depth
    OUTBUF_DEPTH_LAST
 };
 
+enum {
+   MODE_FULL,
+   MODE_COPY,
+   MODE_DOUBLE,
+   MODE_TRIPLE,
+   MODE_QUADRUPLE
+};
+
 typedef struct _Outbuf Outbuf;
 
 struct _Outbuf
@@ -82,7 +90,7 @@ struct _Outbuf
                   Pixmap mask;
                   Visual *vis;
                   Colormap cmap;
-                  int depth, shm;
+                  int depth, imdepth, shm;
                   GC gc, gcm;
                   unsigned char swap : 1;
                   unsigned char bit_swap : 1;
@@ -97,7 +105,7 @@ struct _Outbuf
                   xcb_pixmap_t mask;
                   xcb_visualtype_t *visual;
                   xcb_colormap_t cmap;
-                  int depth, shm;
+                  int depth, imdepth, shm;
                   xcb_gcontext_t gc, gcm;
                   unsigned char swap : 1;
                   unsigned char bit_swap : 1;
@@ -112,6 +120,8 @@ struct _Outbuf
         /* 1 big buffer for updates - flush on idle_flush */
         RGBA_Image *onebuf;
         Eina_Array  onebuf_regions;
+        
+        void *swapper;
 
         /* a list of pending regions to write to the target */
         Eina_List *pending_writes;
@@ -128,5 +138,8 @@ struct _Outbuf
 
 void evas_software_xlib_x_init(void);
 void evas_software_xcb_init(void);
+
+void *evas_native_buffer_image_set(void *data, void *image, void *native);
+void *evas_native_tbm_image_set(void *data, void *image, void *native);
 
 #endif

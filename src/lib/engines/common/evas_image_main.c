@@ -347,8 +347,16 @@ _evas_common_rgba_image_post_surface(Image_Entry *ie)
 #ifdef HAVE_PIXMAN
 # ifdef PIXMAN_IMAGE   
    RGBA_Image *im = (RGBA_Image *)ie;
-
+   int w, h;
+   
    if (im->pixman.im) pixman_image_unref(im->pixman.im);
+   w = ie->allocated.w;
+   h = ie->allocated.h;
+   if ((w <= 0) || (h <= 0))
+     {
+        w = im->cache_entry.w;
+        h = im->cache_entry.h;
+     }
    if (im->cache_entry.flags.alpha)
      {
         im->pixman.im = pixman_image_create_bits
@@ -356,10 +364,7 @@ _evas_common_rgba_image_post_surface(Image_Entry *ie)
 // FIXME: endianess determines this
             PIXMAN_a8r8g8b8,
 //            PIXMAN_b8g8r8a8,
-            im->cache_entry.w, im->cache_entry.h,
-            im->image.data,
-            im->cache_entry.w * 4
-        );
+            w, h, im->image.data, w * 4);
      }
    else
      {
@@ -368,10 +373,7 @@ _evas_common_rgba_image_post_surface(Image_Entry *ie)
 // FIXME: endianess determines this
             PIXMAN_x8r8g8b8,
 //            PIXMAN_b8g8r8x8,
-            im->cache_entry.w, im->cache_entry.h,
-            im->image.data,
-            im->cache_entry.w * 4
-        );
+            w, h, im->image.data, w * 4);
      }
 # else
    (void)ie;
@@ -395,10 +397,25 @@ _evas_common_rgba_image_surface_alloc(Image_Entry *ie, unsigned int w, unsigned 
 #endif
    if (im->image.no_free) return 0;
 
-   if (im->flags & RGBA_IMAGE_ALPHA_ONLY)
-     siz = w * h * sizeof(DATA8);
-   else
-     siz = w * h * sizeof(DATA32);
+   switch (im->cache_entry.space)
+     {
+      case EVAS_COLORSPACE_GRY8: siz = w * h * sizeof(DATA8); break;
+      case EVAS_COLORSPACE_AGRY88: siz = w * h * sizeof(DATA16); break;
+      case EVAS_COLORSPACE_ARGB8888: siz = w * h * sizeof(DATA32); break;
+      case EVAS_COLORSPACE_ETC1:
+      case EVAS_COLORSPACE_RGB8_ETC2:
+        // Need to round width and height independently
+        w += 2; h += 2; // We do duplicate border in ETC1 to have better rendering on GPU.
+        siz = (w / 4 + (w % 4 ? 1 : 0)) * (h / 4 + (h % 4 ? 1 : 0)) * 8;
+        break;
+      case EVAS_COLORSPACE_RGBA8_ETC2_EAC:
+      case EVAS_COLORSPACE_ETC1_ALPHA:
+         w += 2; h += 2;
+         siz = (w / 4 + (w % 4 ? 1 : 0)) * (h / 4 + (h % 4 ? 1 : 0)) * 16;
+         break;
+      default:
+        return -1;
+     }
 
    if (im->image.data)
      {
@@ -407,7 +424,7 @@ _evas_common_rgba_image_surface_alloc(Image_Entry *ie, unsigned int w, unsigned 
         surfs = eina_list_remove(surfs, ie);
 #endif        
      }
-   im->image.data = malloc(siz);
+   im->image.data = calloc(1, siz);
    if (!im->image.data) return -1;
    ie->allocated.w = w;
    ie->allocated.h = h;
@@ -446,6 +463,13 @@ _evas_common_rgba_image_surface_delete(Image_Entry *ie)
 #endif
    if (ie->file)
      DBG("unload: [%p] %s %s", ie, ie->file, ie->key);
+
+   if (im->native.data)
+     {
+        if (im->native.func.free)
+          im->native.func.free(im->native.func.data, im);
+        im->native.data = NULL;
+     }
    if ((im->cs.data) && (im->image.data))
      {
 	if (im->cs.data != im->image.data)
@@ -523,17 +547,20 @@ _evas_common_rgba_image_dirty(Image_Entry *ie_dst, const Image_Entry *ie_src)
    evas_common_rgba_image_scalecache_dirty((Image_Entry *)ie_src);
    evas_common_rgba_image_scalecache_dirty(ie_dst);
    evas_cache_image_load_data(&src->cache_entry);
-   if (_evas_common_rgba_image_surface_alloc(&dst->cache_entry,
-                                             src->cache_entry.w, src->cache_entry.h))
+   if (!evas_cache_image_pixels(ie_dst))
      {
+        if (_evas_common_rgba_image_surface_alloc(&dst->cache_entry,
+                                             src->cache_entry.w, src->cache_entry.h))
+          {
 #ifdef EVAS_CSERVE
-        if (ie_src->data1) evas_cserve_image_free((Image_Entry*) ie_src);
+            if (ie_src->data1) evas_cserve_image_free((Image_Entry*) ie_src);
 #endif
 #ifdef EVAS_CSERVE2
-        // if (ie_src->data1) evas_cserve2_image_free((Image_Entry*) ie_src);
-        if (ie_src->data1) ERR("Shouldn't reach this point since we are using cache2.");
+         // if (ie_src->data1) evas_cserve2_image_free((Image_Entry*) ie_src);
+            if (ie_src->data1) ERR("Shouldn't reach this point since we are using cache2.");
 #endif
-        return 1;
+            return 1;
+          }
      }
 
 #ifdef EVAS_CSERVE
@@ -594,7 +621,7 @@ evas_common_image_surface_alpha_tiles_calc(RGBA_Surface *is, int tsize)
    if (is->spans) return;
    if (!is->im->cache_entry.flags.alpha) return;
    /* FIXME: dont handle alpha only images yet */
-   if ((is->im->flags & RGBA_IMAGE_ALPHA_ONLY)) return;
+   if (is->im->space != EVAS_COLORSPACE_GRY8) return;
    if (tsize < 0) tsize = 0;
    is->spans = calloc(1, sizeof(RGBA_Image_Span *) * is->h);
    if (!is->spans) return;
@@ -713,6 +740,8 @@ evas_common_image_colorspace_normalize(RGBA_Image *im)
    switch (im->cache_entry.space)
      {
       case EVAS_COLORSPACE_ARGB8888:
+      case EVAS_COLORSPACE_GRY8:
+      case EVAS_COLORSPACE_AGRY88:
 	if (im->image.data != im->cs.data)
 	  {
 #ifdef EVAS_CSERVE
@@ -952,7 +981,15 @@ evas_common_image_premul(Image_Entry *ie)
    if (!evas_cache_image_pixels(ie)) return ;
    if (!ie->flags.alpha) return;
 
-   nas = evas_common_convert_argb_premul(evas_cache_image_pixels(ie), ie->w * ie->h);
+   switch (ie->space)
+     {
+      case EVAS_COLORSPACE_ARGB8888:
+        nas = evas_common_convert_argb_premul(evas_cache_image_pixels(ie), ie->w * ie->h);
+        break;
+      case EVAS_COLORSPACE_AGRY88:
+        nas = evas_common_convert_ag_premul((void*) evas_cache_image_pixels(ie), ie->w * ie->h);
+      default: return;
+     }
    if ((ALPHA_SPARSE_INV_FRACTION * nas) >= (ie->w * ie->h))
      ie->flags.alpha_sparse = 1;
 }

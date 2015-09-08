@@ -8,770 +8,432 @@
 
 #include <gif_lib.h>
 
-typedef struct _Gif_Frame Gif_Frame;
-
-typedef enum _Frame_Load_Type
-{
-   LOAD_FRAME_NONE = 0,
-   LOAD_FRAME_INFO = 1,
-   LOAD_FRAME_DATA = 2,
-   LOAD_FRAME_DATA_INFO = 3
-} Frame_Load_Type;
-
-struct _Gif_Frame
-{
-   struct {
-      /* Image descriptor */
-      int        x;
-      int        y;
-      int        w;
-      int        h;
-      int        interlace;
-   } image_des;
-
-   struct {
-      /* Graphic Control*/
-      int        disposal;
-      int        transparent;
-      int        delay;
-      int        input;
-   } frame_info;
-};
-
-static Eina_Bool evas_image_load_file_data_gif_internal(Image_Entry *ie, Image_Entry_Frame *frame, int *error);
-
-static Eina_Bool evas_image_load_file_head_gif(Image_Entry *ie, const char *file, const char *key, int *error) EINA_ARG_NONNULL(1, 2, 4);
-static Eina_Bool evas_image_load_file_data_gif(Image_Entry *ie, const char *file, const char *key, int *error) EINA_ARG_NONNULL(1, 2, 4);
-static double evas_image_load_frame_duration_gif(Image_Entry *ie, const char *file, int start_frame, int frame_num) ;
-static Eina_Bool evas_image_load_specific_frame(Image_Entry *ie, const char *file, int frame_index, int *error);
-
-static Evas_Image_Load_Func evas_image_load_gif_func =
-{
-  EINA_TRUE,
-  evas_image_load_file_head_gif,
-  evas_image_load_file_data_gif,
-  evas_image_load_frame_duration_gif,
-  EINA_FALSE
-};
+#ifndef MIN
+# define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#endif
 #define byte2_to_int(a,b)         (((b)<<8)|(a))
-
 #define FRAME_MAX 1024
 
-/* find specific frame in image entry */
-static Eina_Bool
-_find_frame(Image_Entry *ie, int frame_index, Image_Entry_Frame **frame)
+#define LOADERR(x) \
+do { \
+   *error = (x); \
+     printf("loaderr\n"); \
+   goto on_error; \
+} while (0)
+
+#define PIX(_x, _y) rows[yin + _y][xin + _x]
+#define CMAP(_v) cmap->Colors[_v]
+#define PIXLK(_p) ARGB_JOIN(0xff, CMAP(_p).Red, CMAP(_p).Green, CMAP(_p).Blue)
+
+
+typedef struct _Frame_Info Frame_Info;
+
+struct _Frame_Info
+{
+   int x, y, w, h;
+   unsigned short delay;
+   short transparent : 10;
+   short dispose : 6;
+   short interlace : 1;
+};
+
+
+static Image_Entry_Frame *
+_find_frame(Image_Entry *ie, int index)
 {
    Eina_List *l;
-   Image_Entry_Frame *hit_frame = NULL;
+   Image_Entry_Frame *frame;
 
    if (!ie) return EINA_FALSE;
    if (!ie->frames) return EINA_FALSE;
 
-   EINA_LIST_FOREACH(ie->frames, l, hit_frame)
+   EINA_LIST_FOREACH(ie->frames, l, frame)
+      if (frame->index == index) return frame;
+   return NULL;
+}
+
+// fill in am image with a specific rgba color value
+static void
+_fill_image(DATA32 *data, int rowpix, DATA32 val, int x, int y, int w, int h)
+{
+   int xx, yy;
+   DATA32 *p;
+
+   for (yy = 0; yy < h; yy++)
      {
-        if (hit_frame->index == frame_index)
+        p = data + ((y + yy) * rowpix) + x;
+        for (xx = 0; xx < w; xx++)
           {
-             *frame = hit_frame;
-             return EINA_TRUE;
+             *p = val;
+             p++;
           }
      }
-   return EINA_FALSE;
 }
 
-static Eina_Bool
-_find_close_frame(Image_Entry *ie, int frame_index, Image_Entry_Frame **frame)
+static void
+_clip_coords(int imw, int imh, int *xin, int *yin,
+             int x0, int y0, int w0, int h0,
+             int *x, int *y, int *w, int *h)
 {
-  int i;
-  Eina_Bool hit = EINA_FALSE;
-  i = frame_index -1;
-
-  if (!ie) return EINA_FALSE;
-  if (!ie->frames) return EINA_FALSE;
-
-  for (; i > 0; i--)
-    {
-       hit = _find_frame(ie, i, frame);
-       if (hit)
-         return  EINA_TRUE;
-    }
-  return EINA_FALSE;
-}
-
-static Eina_Bool
-_evas_image_skip_frame(GifFileType *gif, int frame)
-{
-   int                 remain_frame = 0;
-   GifRecordType       rec;
-
-   if (!gif) return EINA_FALSE;
-   if (frame == 0) return EINA_TRUE; /* no need to skip */
-   if (frame < 0 || frame > FRAME_MAX) return EINA_FALSE;
-
-   remain_frame = frame;
-
-   do
+   if (x0 < 0)
      {
-        if (DGifGetRecordType(gif, &rec) == GIF_ERROR) return EINA_FALSE;
-
-        if (rec == EXTENSION_RECORD_TYPE)
-          {
-             int                 ext_code;
-             GifByteType        *ext;
-
-             ext = NULL;
-             DGifGetExtension(gif, &ext_code, &ext);
-             while (ext)
-               { /*skip extention */
-                  ext = NULL;
-                  DGifGetExtensionNext(gif, &ext);
-               }
-          }
-
-        if (rec == IMAGE_DESC_RECORD_TYPE)
-          {
-             int                 img_code;
-             GifByteType        *img;
-
-             if (DGifGetImageDesc(gif) == GIF_ERROR) return EINA_FALSE;
-
-             remain_frame --;
-             /* we have to count frame, so use DGifGetCode and skip decoding */
-             if (DGifGetCode(gif, &img_code, &img) == GIF_ERROR) return EINA_FALSE;
-
-             while (img)
-               {
-                  img = NULL;
-                  DGifGetCodeNext(gif, &img);
-               }
-             if (remain_frame < 1) return EINA_TRUE;
-          }
-        if (rec == TERMINATE_RECORD_TYPE) return EINA_FALSE;  /* end of file */
-
-     } while ((rec != TERMINATE_RECORD_TYPE) && (remain_frame > 0));
-   return EINA_FALSE;
+        w0 += x0;
+        *xin = -x0;
+        x0 = 0;
+     }
+   if ((x0 + w0) > imw) w0 = imw - x0;
+   if (y0 < 0)
+     {
+        h0 += y0;
+        *yin = -y0;
+        y0 = 0;
+     }
+   if ((y0 + h0) > imh) h0 = imh - y0;
+   *x = x0;
+   *y = y0;
+   *w = w0;
+   *h = h0;
 }
 
-static Eina_Bool
-_evas_image_load_frame_graphic_info(Image_Entry_Frame *frame, GifByteType  *ext)
+static void
+_fill_frame(DATA32 *data, int rowpix, GifFileType *gif, Frame_Info *finfo,
+            int x, int y, int w, int h)
 {
-   Gif_Frame *gif_frame = NULL;
-   if ((!frame) || (!ext)) return EINA_FALSE;
+   // solid color fill for pre frame region
+   if (finfo->transparent < 0)
+     {
+        ColorMapObject *cmap;
+        int bg;
 
-   gif_frame = (Gif_Frame *) frame->info;
-
-   /* transparent */
-   if ((ext[1] & 0x1) != 0)
-     gif_frame->frame_info.transparent = ext[4];
+        // work out color to use from cmap
+        if (gif->Image.ColorMap) cmap = gif->Image.ColorMap;
+        else cmap = gif->SColorMap;
+        bg = gif->SBackGroundColor;
+        // and do the fill
+        _fill_image
+          (data, rowpix,
+           ARGB_JOIN(0xff, CMAP(bg).Red, CMAP(bg).Green, CMAP(bg).Blue),
+           x, y, w, h);
+     }
+   // fill in region with 0 (transparent)
    else
-     gif_frame->frame_info.transparent = -1;
+     _fill_image(data, rowpix, 0, x, y, w, h);
+}
 
-   gif_frame->frame_info.input = (ext[1] >>1) & 0x1;
-   gif_frame->frame_info.disposal = (ext[1] >>2) & 0x7;
-   gif_frame->frame_info.delay = byte2_to_int(ext[2], ext[3]);
-   return EINA_TRUE;
+// store common fields from gif file info into frame info
+static void
+_store_frame_info(GifFileType *gif, Frame_Info *finfo)
+{
+   finfo->x = gif->Image.Left;
+   finfo->y = gif->Image.Top;
+   finfo->w = gif->Image.Width;
+   finfo->h = gif->Image.Height;
+   finfo->interlace = gif->Image.Interlace;
+}
+
+// check if image fills "screen space" and if so, if it is transparent
+// at all then the image could be transparent - OR if image doesnt fill,
+// then it could be trasnparent (full coverage of screen). some gifs will
+// be recognized as solid here for faster rendering, but not all.
+static void
+_check_transparency(Eina_Bool *full, Frame_Info *finfo, int w, int h)
+{
+   if ((finfo->x == 0) && (finfo->y == 0) &&
+       (finfo->w == w) && (finfo->h == h))
+     {
+        if (finfo->transparent >= 0) *full = EINA_FALSE;
+     }
+   else *full = EINA_FALSE;
+}
+
+// allocate frame and frame info and append to list and store fields
+static Frame_Info *
+_new_frame(Image_Entry *ie,
+           int transparent, int dispose, int delay,
+           int index)
+{
+   Image_Entry_Frame *frame;
+   Frame_Info *finfo;
+
+   // allocate frame and frame info data (MUSt be separate)
+   frame = calloc(1, sizeof(Image_Entry_Frame));
+   if (!frame) return NULL;
+   finfo = calloc(1, sizeof(Frame_Info));
+   if (!finfo)
+     {
+        free(frame);
+        return NULL;
+     }
+   // record transparent index to be used or -1 if none
+   // for this SPECIFIC frame
+   finfo->transparent = transparent;
+   // record dispose mode (3 bits)
+   finfo->dispose = dispose;
+   // record delay (2 bytes so max 65546 /100 sec)
+   finfo->delay = delay;
+   // record the index number we are at
+   frame->index = index;
+   // that frame is stored AT image/screen size
+   frame->info = finfo;
+   ie->frames = eina_list_append(ie->frames, frame);
+   return finfo;
 }
 
 static Eina_Bool
-_evas_image_load_frame_image_des_info(GifFileType *gif, Image_Entry_Frame *frame)
+_decode_image(GifFileType *gif, DATA32 *data, int rowpix, int xin, int yin,
+              int transparent, int x, int y, int w, int h, Eina_Bool fill)
 {
-   Gif_Frame *gif_frame = NULL;
-   if ((!gif) || (!frame)) return EINA_FALSE;
+   int intoffset[] = { 0, 4, 2, 1 };
+   int intjump[] = { 8, 8, 4, 2 };
+   int i, xx, yy, pix;
+   GifRowType *rows;
+   Eina_Bool ret = EINA_FALSE;
+   ColorMapObject *cmap;
+   DATA32 *p;
 
-   gif_frame = (Gif_Frame *) frame->info;
-   gif_frame->image_des.x = gif->Image.Left;
-   gif_frame->image_des.y = gif->Image.Top;
-   gif_frame->image_des.w = gif->Image.Width;
-   gif_frame->image_des.h = gif->Image.Height;
-   gif_frame->image_des.interlace = gif->Image.Interlace;
-   return EINA_TRUE;
-}
+   // build a blob of memory to have pointers to rows of pixels
+   // AND store the decoded gif pixels (1 byte per pixel) as welll
+   rows = malloc((h * sizeof(GifRowType *)) + (w * h * sizeof(GifPixelType)));
+   if (!rows) goto on_error;
 
-static Eina_Bool
-_evas_image_load_frame_image_data(Image_Entry *ie, GifFileType *gif, Image_Entry_Frame *frame, int *error)
-{
-   int                 w;
-   int                 h;
-   int                 x;
-   int                 y;
-   int                 i,j;
-   int                 bg;
-   int                 r;
-   int                 g;
-   int                 b;
-   int                 alpha;
-   double              per;
-   double              per_inc;
-   ColorMapObject     *cmap;
-   GifRowType         *rows;
-   GifPixelType       *tmp = NULL; /*for skip gif line */
-   int                 intoffset[] = { 0, 4, 2, 1 };
-   int                 intjump[] = { 8, 8, 4, 2 };
-   size_t              siz;
-   int                 cache_w;
-   int                 cache_h;
-   int                 cur_h;
-   int                 cur_w;
-   int                 disposal = 0;
-   int                 bg_val = 0;
-   DATA32             *ptr;
-   Gif_Frame          *gif_frame = NULL;
-   /* for scale down decoding */
-   int                 scale_ratio = 1;
-   int                 scale_w, scale_h, scale_x, scale_y;
-
-   if ((!gif) || (!frame)) return EINA_FALSE;
-
-   gif_frame = (Gif_Frame *) frame->info;
-   w = gif->Image.Width;
-   h = gif->Image.Height;
-   x = gif->Image.Left;
-   y = gif->Image.Top;
-   cache_w = ie->w;
-   cache_h = ie->h;
-
-   /* if user don't set scale down, default scale_ratio is 1 */
-   if (ie->load_opts.scale_down_by > 1) scale_ratio = ie->load_opts.scale_down_by;
-   scale_w = w / scale_ratio;
-   scale_h = h / scale_ratio;
-   scale_x = x / scale_ratio;
-   scale_y = y / scale_ratio;
-
-   rows = malloc(scale_h * sizeof(GifRowType *));
-
-   if (!rows)
+   // fill in the pointers at the start
+   for (yy = 0; yy < h; yy++)
      {
-        *error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
-        return EINA_FALSE;
-     }
-   for (i = 0; i < scale_h; i++)
-     {
-        rows[i] = NULL;
-     }
-   /* alloc memory according to scaled size */
-   for (i = 0; i < scale_h; i++)
-     {
-        rows[i] = malloc(w * sizeof(GifPixelType));
-        if (!rows[i])
-          {
-             for (i = 0; i < scale_h; i++)
-               {
-                  if (rows[i])
-                    {
-                       free(rows[i]);
-                    }
-               }
-             free(rows);
-             *error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
-             return EINA_FALSE;
-          }
+        rows[yy] = ((unsigned char *)rows) + (h * sizeof(GifRowType *)) +
+          (yy * w * sizeof(GifPixelType));
      }
 
-   if (scale_ratio > 1)
-     {
-        tmp = malloc(w * sizeof(GifPixelType));
-        if (!tmp)
-          {
-             *error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
-             goto error;
-          }
-     }
-
+   // if give is interlaced, walk interlace pattern and decode into rows
    if (gif->Image.Interlace)
      {
-        Eina_Bool multiple;
-        int scale_j;
         for (i = 0; i < 4; i++)
           {
-             for (j = intoffset[i]; j < h; j += intjump[i])
+             for (yy = intoffset[i]; yy < h; yy += intjump[i])
                {
-                  scale_j = j / scale_ratio;
-                  multiple = ((j % scale_ratio) ? EINA_FALSE : EINA_TRUE);
+                  if (DGifGetLine(gif, rows[yy], w) != GIF_OK)
+                    goto on_error;
+               }
+          }
+     }
+   // normal top to bottom - decode into rows
+   else
+     {
+        for (yy = 0; yy < h; yy++)
+          {
+             if (DGifGetLine(gif, rows[yy], w) != GIF_OK)
+               goto on_error;
+          }
+     }
 
-                  if (multiple && (scale_j < scale_h))
-                    DGifGetLine(gif, rows[scale_j], w);
-                  else
-                    DGifGetLine(gif, tmp, w);
+   // work out what colormap to use
+   if (gif->Image.ColorMap) cmap = gif->Image.ColorMap;
+   else cmap = gif->SColorMap;
+
+   // if we need to deal with transparent pixels at all...
+   if (transparent >= 0)
+     {
+        // if we are told to FILL (overwrite with transparency kept)
+        if (fill)
+          {
+             for (yy = 0; yy < h; yy++)
+               {
+                  p = data + ((y + yy) * rowpix) + x;
+                  for (xx = 0; xx < w; xx++)
+                    {
+                       pix = PIX(xx, yy);
+                       if (pix != transparent) *p = PIXLK(pix);
+                       else *p = 0;
+                       p++;
+                    }
+               }
+          }
+        // paste on top with transparent pixels untouched
+        else
+          {
+             for (yy = 0; yy < h; yy++)
+               {
+                  p = data + ((y + yy) * rowpix) + x;
+                  for (xx = 0; xx < w; xx++)
+                    {
+                       pix = PIX(xx, yy);
+                       if (pix != transparent) *p = PIXLK(pix);
+                       p++;
+                    }
                }
           }
      }
    else
      {
-        for (i = 0; i < scale_h; i++)
+        // walk pixels without worring about transparency at all
+        for (yy = 0; yy < h; yy++)
           {
-             if (DGifGetLine(gif, rows[i], w) != GIF_OK)
+             p = data + ((y + yy) * rowpix) + x;
+             for (xx = 0; xx < w; xx++)
                {
-                  *error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
-                  goto error;
-              }
-             if (scale_ratio > 1)
-               {
-                  /* we use down sample method for scale down, so skip other line */
-                  for (j = 0; j < (scale_ratio - 1); j++)
-                    {
-                       if (DGifGetLine(gif, tmp, w) != GIF_OK)
-                         {
-                            *error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
-                            goto error;
-                         }
-                    }
+                  pix = PIX(xx, yy);
+                  *p = PIXLK(pix);
+                  p++;
                }
           }
      }
+   ret = EINA_TRUE;
 
-   if (scale_ratio > 1)
-     {
-        if (tmp) free(tmp);
-        tmp = NULL;
-     }
-
-   alpha = gif_frame->frame_info.transparent;
-   siz = cache_w *cache_h * sizeof(DATA32);
-   frame->data = malloc(siz);
-   if (!frame->data)
-     {
-        *error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
-        goto error;
-     }
-   ptr = frame->data;
-   bg = gif->SBackGroundColor;
-   cmap = (gif->Image.ColorMap ? gif->Image.ColorMap : gif->SColorMap);
-
-   if (!cmap)
-     {
-        DGifCloseFile(gif);
-        for (i = 0; i < scale_h; i++)
-          {
-             free(rows[i]);
-          }
-        free(rows);
-        if (frame->data) free(frame->data);
-        *error = EVAS_LOAD_ERROR_CORRUPT_FILE;
-        return EINA_FALSE;
-     }
-
-   /* get the background value */
-   r = cmap->Colors[bg].Red;
-   g = cmap->Colors[bg].Green;
-   b = cmap->Colors[bg].Blue;
-   bg_val =  ARGB_JOIN(0xff, r, g, b);
-
-   per_inc = 100.0 / (((double)w) * h);
-   cur_h = scale_h;
-   cur_w = scale_w;
-
-   if (cur_h > cache_h) cur_h = cache_h;
-   if (cur_w > cache_w) cur_w = cache_w;
-
-   if (frame->index > 1)
-     {
-        /* get previous frame only frame index is bigger than 1 */
-        DATA32            *ptr_src;
-        Image_Entry_Frame *new_frame = NULL;
-        int                cur_frame = frame->index;
-        int                start_frame = 1;
-
-        if (_find_close_frame(ie, cur_frame, &new_frame))
-          start_frame = new_frame->index + 1;
-
-        if ((start_frame < 1) || (start_frame > cur_frame))
-          {
-             *error = EVAS_LOAD_ERROR_CORRUPT_FILE;
-             goto error;
-          }
-        /* load previous frame of cur_frame */
-        for (j = start_frame; j < cur_frame ; j++)
-          {
-             if (!evas_image_load_specific_frame(ie, ie->file, j, error))
-               {
-                  *error = EVAS_LOAD_ERROR_CORRUPT_FILE;
-                  goto error;
-               }
-          }
-        if (!_find_frame(ie, cur_frame - 1, &new_frame))
-          {
-             *error = EVAS_LOAD_ERROR_CORRUPT_FILE;
-             goto error;
-          }
-        else
-          {
-             Gif_Frame *gif_frame2 = NULL;
-             ptr_src = new_frame->data;
-             if (new_frame->info)
-               {
-                  gif_frame2 = (Gif_Frame *)(new_frame->info);
-                  disposal = gif_frame2->frame_info.disposal;
-               }
-             switch(disposal) /* we only support disposal flag 0,1,2 */
-               {
-                case 1: /* Do not dispose. need previous frame*/
-                  memcpy(ptr, ptr_src, siz);
-                  /* only decoding image descriptor's region */
-                  ptr = ptr + cache_w * scale_y;
-                  
-                  for (i = 0; i < cur_h; i++)
-                    {
-                       ptr = ptr + scale_x;
-                       for (j = 0; j < cur_w; j++)
-                         {
-                            if (rows[i][j * scale_ratio] == alpha)
-                              {
-                                 ptr++ ;
-                              }
-                            else
-                              {
-                                 r = cmap->Colors[rows[i][j * scale_ratio]].Red;
-                                 g = cmap->Colors[rows[i][j * scale_ratio]].Green;
-                                 b = cmap->Colors[rows[i][j * scale_ratio]].Blue;
-                                 *ptr++ = ARGB_JOIN(0xff, r, g, b);
-                              }
-                            per += per_inc;
-                         }
-                       ptr = ptr + (cache_w - (scale_x + cur_w));
-                    }
-                  break;
-                case 2: /* Restore to background color */
-                   memcpy(ptr, ptr_src, siz);
-                   /* composite frames */
-                   for (i = 0; i < cache_h; i++)
-                    {
-                       if ((i < scale_y) || (i >= (scale_y + cur_h)))
-                         {
-                            for (j = 0; j < cache_w; j++)
-                              {
-                                 *ptr = bg_val;
-                                 ptr++;
-                              }
-                         }
-                       else
-                         {
-                            int i1, j1;
-                            i1 = i - scale_y;
-                            
-                            for (j = 0; j < cache_w; j++)
-                              {
-                                 j1 = j - scale_x;
-                                 if ((j < scale_x) || (j >= (scale_x + cur_w)))
-                                   {
-                                      *ptr = bg_val;
-                                      ptr++;
-                                   }
-                                 else
-                                   {
-                                      r = cmap->Colors[rows[i1][j1 * scale_ratio]].Red;
-                                      g = cmap->Colors[rows[i1][j1 * scale_ratio]].Green;
-                                      b = cmap->Colors[rows[i1][j1 * scale_ratio]].Blue;
-                                      *ptr++ = ARGB_JOIN(0xff, r, g, b);
-                                   }
-                              }
-                         }
-                    }
-                   break;
-                case 0: /* No disposal specified */
-                default:
-                   memset(ptr, 0, siz);
-                   for (i = 0; i < cache_h; i++)
-                     {
-                        if ((i < scale_y) || (i >= (scale_y + cur_h)))
-                          {
-                             for (j = 0; j < cache_w; j++)
-                               {
-                                  *ptr = bg_val;
-                                  ptr++;
-                               }
-                          }
-                        else
-                          {
-                             int i1, j1;
-                             i1 = i - scale_y;
-
-                             for (j = 0; j < cache_w; j++)
-                               {
-                                  j1 = j - scale_x;
-                                  if ((j < scale_x) || (j >= (scale_x + cur_w)))
-                                    {
-                                       *ptr = bg_val;
-                                       ptr++;
-                                    }
-                                  else
-                                    {
-                                       r = cmap->Colors[rows[i1][j1 * scale_ratio]].Red;
-                                       g = cmap->Colors[rows[i1][j1 * scale_ratio]].Green;
-                                       b = cmap->Colors[rows[i1][j1 * scale_ratio]].Blue;
-                                       *ptr++ = ARGB_JOIN(0xff, r, g, b);
-                                    }
-                               }
-                          }
-                     }
-                   break;
-               }
-          }
-     }
-   else /* first frame decoding */
-     {
-        memset(ptr, 0, siz);
-
-        /* fill background color */
-        for (i = 0; i < cache_h; i++)
-          {
-             /* the row's of logical screen not overap with frame */
-             if ((i < scale_y) || (i >= (scale_y + cur_h)))
-               {
-                  for (j = 0; j < cache_w; j++)
-                    {
-                       *ptr = bg_val;
-                       ptr++;
-                    }
-               }
-             else
-               {
-                  int i1, j1;
-                  i1 = i -scale_y;
-
-                  for (j = 0; j < cache_w; j++)
-                    {
-                       j1 = j - scale_x;
-                       if ((j < scale_x) || (j >= (scale_x + cur_w)))
-                         {
-                            *ptr = bg_val;
-                            ptr++;
-                         }
-                       else
-                         {
-                            if (rows[i1][j1] == alpha)
-                              {
-                                 ptr++;
-                              }
-                            else
-                              {
-                                 r = cmap->Colors[rows[i1][j1]].Red;
-                                 g = cmap->Colors[rows[i1][j1]].Green;
-                                 b = cmap->Colors[rows[i1][j1]].Blue;
-                                 *ptr++ = ARGB_JOIN(0xff, r, g, b);
-                              }
-                         }
-                    }
-               }
-          }
-     }
-
-   for (i = 0; i < scale_h; i++)
-     {
-        if (rows[i]) free(rows[i]);
-     }
-   if (rows) free(rows);
-   frame->loaded = EINA_TRUE;
-   return EINA_TRUE;
-error:
-   for (i = 0; i < scale_h; i++)
-     {
-        if (rows[i]) free(rows[i]);
-     }
-   if (rows) free(rows);
-   if (tmp) free(tmp);
-   return EINA_FALSE;
+on_error:
+   free(rows);
+   return ret;
 }
 
-static Eina_Bool
-_evas_image_load_frame(Image_Entry *ie, GifFileType *gif, Image_Entry_Frame *frame, Frame_Load_Type type, int *error)
+static void
+_flush_older_frames(Image_Entry *ie,
+                    int w, int h,
+                    Image_Entry_Frame *thisframe,
+                    Image_Entry_Frame *prevframe)
 {
-   GifRecordType       rec;
-   int                 gra_res = 0, img_res = 0;
-   Eina_Bool           res = EINA_FALSE;
-   Gif_Frame          *gif_frame = NULL;
+   Eina_List *l;
+   Image_Entry_Frame *frame;
+   // target is the amount of memory we want to be under for stored frames
+   int total = 0, target = 512 * 1024;
 
-   if ((!gif) || (!frame)) return EINA_FALSE;
-   gif_frame = (Gif_Frame *) frame->info;
-
-   if (type > LOAD_FRAME_DATA_INFO) return EINA_FALSE;
-   
-   do
+   // total up the amount of memory used by stored frames for this image
+   EINA_LIST_FOREACH(ie->frames, l, frame)
      {
-        if (DGifGetRecordType(gif, &rec) == GIF_ERROR) return EINA_FALSE;
-        if (rec == IMAGE_DESC_RECORD_TYPE)
+        if (frame->data) total++;
+     }
+   total *= (w * h * sizeof(DATA32));
+   // if we use less than target (512k) for frames - dont flush
+   if (total < target) return;
+   // clean oldest frames first and go until below target or until we loop
+   // around back to this frame (curent)
+   EINA_LIST_FOREACH(ie->frames, l, frame)
+     {
+        if (frame == thisframe) break;
+     }
+   if (!l) return;
+   // start on next frame after thisframe
+   l = l->next;
+   // handle wrap to start
+   if (!l) l = ie->frames;
+   // now walk until we hit thisframe again... then stop walk.
+   while (l)
+     {
+        frame = l->data;
+        if (frame == thisframe) break;
+        if (frame->data)
           {
-             img_res++;
-             break;
-          }
-        else if (rec == EXTENSION_RECORD_TYPE)
-          {
-             int           ext_code;
-             GifByteType  *ext;
-
-             ext = NULL;
-             DGifGetExtension(gif, &ext_code, &ext);
-             while (ext)
+             if ((frame != thisframe) && (frame != prevframe))
                {
-                  if (ext_code == 0xf9) /* Graphic Control Extension */
-                    {
-                       gra_res++;
-                       /* fill frame info */
-                       if ((type == LOAD_FRAME_INFO) || (type == LOAD_FRAME_DATA_INFO))
-                         _evas_image_load_frame_graphic_info(frame,ext);
-                    }
-                  ext = NULL;
-                  DGifGetExtensionNext(gif, &ext);
+                  free(frame->data);
+                  frame->data = NULL;
+                  // subtract memory used and if below target - stop flush
+                  total -= (w * h * sizeof(DATA32));
+                  if (total < target) break;
                }
           }
-     } while ((rec != TERMINATE_RECORD_TYPE) && (img_res == 0));
-   if (img_res != 1) return EINA_FALSE;
-   if (DGifGetImageDesc(gif) == GIF_ERROR) return EINA_FALSE;
-   if ((type == LOAD_FRAME_INFO) || (type == LOAD_FRAME_DATA_INFO))
-     _evas_image_load_frame_image_des_info(gif, frame);
-
-   if ((type == LOAD_FRAME_DATA) || (type == LOAD_FRAME_DATA_INFO))
-     {
-        res = _evas_image_load_frame_image_data(ie, gif,frame, error);
-        if (!res) return EINA_FALSE;
+        // go to next - handle wrap to start
+        l = l->next;
+        if (!l) l = ie->frames;
      }
-   return EINA_TRUE;
 }
 
-
-/* set frame data to cache entry's data */
-static Eina_Bool
-evas_image_load_file_data_gif_internal(Image_Entry *ie, Image_Entry_Frame *frame, int *error)
+static int
+_gif_file_open(const char *file, GifFileType **gif)
 {
-   int        w;
-   int        h;
-   int        dst_x;
-   int        dst_y;
-   DATA32    *dst;
-   DATA32    *src;
-   int        cache_w, cache_h;
-   size_t     siz;
-   Gif_Frame *gif_frame = NULL;
-
-   gif_frame = (Gif_Frame *) frame->info;
-   cache_w = ie->w;
-   cache_h = ie->h;
-   w = gif_frame->image_des.w;
-   h = gif_frame->image_des.h;
-   dst_x = gif_frame->image_des.x;
-   dst_y = gif_frame->image_des.y;
-
-   src = frame->data;
-
-   if (!evas_cache_image_pixels(ie))
-     {
-        evas_cache_image_surface_alloc(ie, cache_w, cache_h);
-     }
-
-   if (!evas_cache_image_pixels(ie))
-     {
-        *error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
-        return EINA_FALSE;
-     }
-
-   /* only copy real frame part */
-   siz = cache_w * cache_h *  sizeof(DATA32);
-   dst = evas_cache_image_pixels(ie);
-
-   memcpy(dst, src, siz);
-
-   evas_common_image_premul(ie);
-
-   *error = EVAS_LOAD_ERROR_NONE;
-   return EINA_TRUE;
-}
-
-static Eina_Bool
-evas_image_load_file_head_gif(Image_Entry *ie, const char *file, const char *key __UNUSED__, int *error)
-{
-   int                 fd;
-   GifFileType        *gif;
-   GifRecordType       rec;
-   int                 w;
-   int                 h;
-   int                 alpha;
-   int                 loop_count = -1;
-
-   w = 0;
-   h = 0;
-   alpha = -1;
-
+   int fd;
 #ifndef __EMX__
    fd = open(file, O_RDONLY);
 #else
    fd = open(file, O_RDONLY | O_BINARY);
 #endif
-   if (fd < 0)
+   if (fd < 0) return EVAS_LOAD_ERROR_DOES_NOT_EXIST;
+
+   *gif = DGifOpenFileHandle(fd);
+   if (!(*gif))
      {
-        *error = EVAS_LOAD_ERROR_DOES_NOT_EXIST;
-        return EINA_FALSE;
+        return EVAS_LOAD_ERROR_UNKNOWN_FORMAT;
      }
 
-   gif = DGifOpenFileHandle(fd);
-   if (!gif)
-     {
-        if (fd) close(fd);
-        *error = EVAS_LOAD_ERROR_UNKNOWN_FORMAT;
-        return EINA_FALSE;
-     }
+   return EVAS_LOAD_ERROR_NONE;
+}
 
-   /* check logical screen size */
+static Eina_Bool
+evas_image_load_file_head_gif(Image_Entry *ie,
+                              const char *file,
+                              const char *key __UNUSED__,
+                              int *error)
+{
+   GifFileType *gif = NULL;
+   GifRecordType rec;
+   int w, h;
+   int loop_count = -1;
+   //it is possible which gif file have error midle of frames,
+   //in that case we should play gif file until meet error frame.
+   int image_count = 0;
+   Frame_Info *finfo = NULL;
+   Eina_Bool full = EINA_TRUE;
+   Eina_Bool ret = EINA_FALSE;
+
+   // 1. ask libgif to open the file
+   int err = _gif_file_open(file, &gif);
+   if (err) LOADERR(err);
+
+   // 2. get the gif screen size (the actual image size)
    w = gif->SWidth;
    h = gif->SHeight;
-   /* support scale down feture in gif*/
-   if (ie->load_opts.scale_down_by > 1)
-     {
-        w /= ie->load_opts.scale_down_by;
-        h /= ie->load_opts.scale_down_by;
-     }
 
+   // 3. if size is invalid - abort here
    if ((w < 1) || (h < 1) || (w > IMG_MAX_SIZE) || (h > IMG_MAX_SIZE) ||
        IMG_TOO_BIG(w, h))
      {
-        DGifCloseFile(gif);
         if (IMG_TOO_BIG(w, h))
-          *error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
-        else
-          *error = EVAS_LOAD_ERROR_GENERIC;
-        return EINA_FALSE;
+          LOADERR(EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED);
+        LOADERR(EVAS_LOAD_ERROR_GENERIC);
      }
+
    ie->w = w;
    ie->h = h;
 
+   // 4. get info
    do
      {
         if (DGifGetRecordType(gif, &rec) == GIF_ERROR)
           {
-             /* PrintGifError(); */
-             DGifCloseFile(gif);
-             *error = EVAS_LOAD_ERROR_UNKNOWN_FORMAT;
-             return EINA_FALSE;
+             if (image_count > 1) break;
+             LOADERR(EVAS_LOAD_ERROR_UNKNOWN_FORMAT);
           }
-
-        /* image descript info */
+        // get image description section
         if (rec == IMAGE_DESC_RECORD_TYPE)
           {
              int img_code;
              GifByteType *img;
 
              if (DGifGetImageDesc(gif) == GIF_ERROR)
-               {
-                  /* PrintGifError(); */
-                  DGifCloseFile(gif);
-                  *error = EVAS_LOAD_ERROR_UNKNOWN_FORMAT;
-                  return EINA_FALSE;
-               }
-             /* we have to count frame, so use DGifGetCode and skip decoding */
+               LOADERR(EVAS_LOAD_ERROR_UNKNOWN_FORMAT);
              if (DGifGetCode(gif, &img_code, &img) == GIF_ERROR)
-               {
-                  /* PrintGifError(); */
-                  DGifCloseFile(gif);
-                  *error = EVAS_LOAD_ERROR_UNKNOWN_FORMAT;
-                  return EINA_FALSE;
-               }
+               LOADERR(EVAS_LOAD_ERROR_UNKNOWN_FORMAT);
              while (img)
                {
                   img = NULL;
                   DGifGetCodeNext(gif, &img);
                }
+             if (finfo)
+               {
+                  _store_frame_info(gif, finfo);
+                  _check_transparency(&full, finfo, w, h);
+               }
+             else
+               {
+                  finfo = _new_frame(ie, -1, 0, 0, image_count + 1);
+                  if (!finfo)
+                    LOADERR(EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED);
+                  _store_frame_info(gif, finfo);
+                  _check_transparency(&full, finfo, w, h);
+               }
+             image_count++;
           }
         else if (rec == EXTENSION_RECORD_TYPE)
           {
-             int                 ext_code;
-             GifByteType        *ext;
+             int ext_code;
+             GifByteType *ext;
 
              ext = NULL;
              DGifGetExtension(gif, &ext_code, &ext);
@@ -779,7 +441,14 @@ evas_image_load_file_head_gif(Image_Entry *ie, const char *file, const char *key
                {
                   if (ext_code == 0xf9) /* Graphic Control Extension */
                     {
-                       if ((ext[1] & 1) && (alpha < 0)) alpha = (int)ext[4];
+                       finfo = _new_frame
+                         (ie,
+                          (ext[1] & 1) ? ext[4] : -1, // transparency index
+                          (ext[1] >> 2) & 0x7, // dispose mode
+                          ((int)ext[3] << 8) | (int)ext[2], // delay
+                          image_count + 1);
+                       if (!finfo)
+                         LOADERR(EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED);
                     }
                   else if (ext_code == 0xff) /* application extension */
                     {
@@ -803,209 +472,245 @@ evas_image_load_file_head_gif(Image_Entry *ie, const char *file, const char *key
           }
    } while (rec != TERMINATE_RECORD_TYPE);
 
-   if (alpha >= 0) ie->flags.alpha = 1;
-
-   if (gif->ImageCount > 1)
+   if ((gif->ImageCount > 1) || (image_count > 1))
      {
         ie->flags.animated = 1;
         ie->loop_count = loop_count;
         ie->loop_hint = EVAS_IMAGE_ANIMATED_HINT_LOOP;
-        ie->frame_count = gif->ImageCount;
-        ie->frames = NULL;
+        ie->frame_count = MIN(gif->ImageCount, image_count);
      }
+   if (!full) ie->flags.alpha = 1;
+   ie->cur_frame = 1;
 
-   DGifCloseFile(gif);
    *error = EVAS_LOAD_ERROR_NONE;
-   return EINA_TRUE;
+   ret = EINA_TRUE;
+
+on_error:
+   if (gif) DGifCloseFile(gif);
+   return ret;
 }
 
 static Eina_Bool
-evas_image_load_specific_frame(Image_Entry *ie, const char *file, int frame_index, int *error)
+evas_image_load_file_data_gif(Image_Entry *ie,
+                              const char *file,
+                              const char *key __UNUSED__,
+                              int *error)
 {
-   int                fd;
-   GifFileType       *gif;
+   Eina_Bool ret = EINA_FALSE;
+   GifRecordType rec;
+   GifFileType *gif = NULL;
    Image_Entry_Frame *frame = NULL;
-   Gif_Frame         *gif_frame = NULL;
+   int index = 0, imgnum = 0;
+   Frame_Info *finfo;
 
-#ifndef __EMX__
-   fd = open(file, O_RDONLY);
-#else
-   fd = open(file, O_RDONLY | O_BINARY);
-#endif
-   if (fd < 0)
-     {
-        *error = EVAS_LOAD_ERROR_DOES_NOT_EXIST;
-        return EINA_FALSE;
-     }
-
-   gif = DGifOpenFileHandle(fd);
-   if (!gif)
-     {
-        if (fd) close(fd);
-        *error = EVAS_LOAD_ERROR_UNKNOWN_FORMAT;
-        return EINA_FALSE;
-     }
-   if (!_evas_image_skip_frame(gif, frame_index-1))
-     {
-        if (fd) close(fd);
-        *error = EVAS_LOAD_ERROR_UNKNOWN_FORMAT;
-        return EINA_FALSE;
-     }
-
-   frame = malloc(sizeof (Image_Entry_Frame));
-   if (!frame)
-     {
-        if (fd) close(fd);
-        *error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
-        return EINA_FALSE;
-     }
-
-   gif_frame = malloc(sizeof (Gif_Frame));
-   if (!gif_frame)
-     {
-        if (fd) close(fd);
-        *error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
-        return EINA_FALSE;
-     }
-   frame->info = gif_frame;
-   frame->index = frame_index;
-   if (!_evas_image_load_frame(ie,gif, frame, LOAD_FRAME_DATA_INFO,error))
-     {
-        if (fd) close(fd);
-        *error = EVAS_LOAD_ERROR_UNKNOWN_FORMAT;
-        return EINA_FALSE;
-     }
-
-   ie->frames = eina_list_append(ie->frames, frame);
-   DGifCloseFile(gif);
-   return EINA_TRUE;
-}
-
-static Eina_Bool
-evas_image_load_file_data_gif(Image_Entry *ie, const char *file, const char *key __UNUSED__, int *error)
-{
-   int                cur_frame_index;
-   Image_Entry_Frame *frame = NULL;
-   Eina_Bool          hit;
-
-   if(!ie->flags.animated)
-     cur_frame_index = 1;
-   else
-     cur_frame_index = ie->cur_frame;
+   // 1. index set
+   index = ie->cur_frame;
 
    if ((ie->flags.animated) &&
-       ((cur_frame_index <0) || (cur_frame_index > FRAME_MAX) || (cur_frame_index > ie->frame_count)))
+       ((index <= 0) || (index > FRAME_MAX) || (index > ie->frame_count)))
+     LOADERR(EVAS_LOAD_ERROR_GENERIC);
+
+   frame = _find_frame(ie, index);
+   if (frame)
      {
-        *error = EVAS_LOAD_ERROR_GENERIC;
-        return EINA_FALSE;
+        if ((frame->loaded) && (frame->data))
+          // frame is already there and decoded - jump to end
+          goto on_ok;
      }
-
-   /* first time frame is set to be 0. so default is 1 */
-   if (cur_frame_index == 0) cur_frame_index++;
-
-   /* Check current frame exists in hash table */
-   hit = _find_frame(ie, cur_frame_index, &frame);
-
-   /* if current frame exist in has table, check load flag */
-   if (hit)
-     {
-        if (frame->loaded)
-          evas_image_load_file_data_gif_internal(ie,frame,error);
-        else
-          {
-             int           fd;
-             GifFileType  *gif;
-
-#ifndef __EMX__
-             fd = open(file, O_RDONLY);
-#else
-             fd = open(file, O_RDONLY | O_BINARY);
-#endif
-             if (fd < 0)
-               {
-                  *error = EVAS_LOAD_ERROR_DOES_NOT_EXIST;
-                  return EINA_FALSE;
-               }
-
-             gif = DGifOpenFileHandle(fd);
-             if (!gif)
-               {
-                  if (fd) close(fd);
-                  *error = EVAS_LOAD_ERROR_UNKNOWN_FORMAT;
-                  return EINA_FALSE;
-               }
-             _evas_image_skip_frame(gif, cur_frame_index-1);
-             if (!_evas_image_load_frame(ie, gif, frame, LOAD_FRAME_DATA,error))
-               {
-                  if (fd) close(fd);
-                  *error = EVAS_LOAD_ERROR_UNKNOWN_FORMAT;
-                  return EINA_FALSE;
-               }
-             if (!evas_image_load_file_data_gif_internal(ie, frame, error))
-               {
-                  if (fd) close(fd);
-                  *error = EVAS_LOAD_ERROR_UNKNOWN_FORMAT;
-                  return EINA_FALSE;
-               }
-             DGifCloseFile(gif);
-             *error = EVAS_LOAD_ERROR_NONE;
-             return EINA_TRUE;
-          }
-     }
-   /* current frame does is not exist */
    else
+     LOADERR(EVAS_LOAD_ERROR_CORRUPT_FILE);
+
+   // 2. ask libgif to open the file
+   int err = _gif_file_open(file, &gif);
+   if (err) LOADERR(err);
+
+   // always start from the first frame - don't know the previous frame
+   imgnum = 1;
+   do
      {
-        if (!evas_image_load_specific_frame(ie, file, cur_frame_index, error))
+        if (DGifGetRecordType(gif, &rec) == GIF_ERROR)
+          LOADERR(EVAS_LOAD_ERROR_UNKNOWN_FORMAT);
+        if (rec == EXTENSION_RECORD_TYPE)
           {
-             return EINA_FALSE;
+             int ext_code;
+             GifByteType *ext;
+
+             ext = NULL;
+             DGifGetExtension(gif, &ext_code, &ext);
+             while (ext)
+               {
+                  ext = NULL;
+                  DGifGetExtensionNext(gif, &ext);
+               }
           }
-        hit = EINA_FALSE;
-        frame = NULL;
-        hit = _find_frame(ie, cur_frame_index, &frame);
-        if (!hit) return EINA_FALSE;
-        if (!evas_image_load_file_data_gif_internal(ie, frame, error))
+        else if (rec == IMAGE_DESC_RECORD_TYPE)
           {
-             *error = EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED;
-             return EINA_FALSE;
+             int xin = 0, yin = 0, x = 0, y = 0, w = 0, h = 0;
+             int img_code;
+             GifByteType *img;
+             Image_Entry_Frame *prevframe = NULL;
+             Image_Entry_Frame *thisframe = NULL;
+
+             // get image desc
+             if (DGifGetImageDesc(gif) == GIF_ERROR)
+               LOADERR(EVAS_LOAD_ERROR_UNKNOWN_FORMAT);
+             // get the previous frame entry AND the current one to fill in
+             prevframe = _find_frame(ie, imgnum - 1);
+             thisframe = _find_frame(ie, imgnum);
+
+             // CASE 1: no data & animated
+             if ((thisframe) && (!thisframe->data) && (ie->flags.animated))
+               {
+                  Eina_Bool first = EINA_FALSE;
+
+                  // allocate it
+                  thisframe->data =
+                    malloc(ie->w * ie->h * sizeof(DATA32));
+                  if (!thisframe->data)
+                    LOADERR(EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED);
+                  // if we have no prior frame OR prior frame data... empty
+                  if ((!prevframe) || (!prevframe->data))
+                    {
+                       first = EINA_TRUE;
+                       finfo = thisframe->info;
+                       memset(thisframe->data, 0,
+                              ie->w * ie->h * sizeof(DATA32));
+                    }
+                  // we have a prior frame to copy data from...
+                  else
+                    {
+                       finfo = prevframe->info;
+
+                       // fix coords of sub image in case it goes out...
+                       _clip_coords(ie->w, ie->h, &xin, &yin,
+                                    finfo->x, finfo->y, finfo->w, finfo->h,
+                                    &x, &y, &w, &h);
+                       // if dispose mode is not restore - then copy pre frame
+                       if (finfo->dispose != 3) // GIF_DISPOSE_RESTORE
+                         memcpy(thisframe->data, prevframe->data,
+                              ie->w * ie->h * sizeof(DATA32));
+                       // if dispose mode is "background" then fill with bg
+                       if (finfo->dispose == 2) // GIF_DISPOSE_BACKGND
+                         _fill_frame(thisframe->data, ie->w, gif,
+                                     finfo, x, y, w, h);
+                       else if (finfo->dispose == 3) // GIF_DISPOSE_RESTORE
+                         {
+                            Image_Entry_Frame *prevframe2;
+
+                            // we need to copy data from one frame back
+                            // from the prev frame into the current frame
+                            // (copy the whole image - at least the sample
+                            // GifWin.cpp from libgif indicates this is what
+                            // needs doing
+                            prevframe2 = _find_frame(ie, imgnum - 2);
+                            if (prevframe2)
+                              memcpy(thisframe->data, prevframe2->data,
+                                     ie->w * ie->h * sizeof(DATA32));
+                         }
+                    }
+                  // now draw this frame on top
+                  finfo = thisframe->info;
+                  _clip_coords(ie->w, ie->h, &xin, &yin,
+                               finfo->x, finfo->y, finfo->w, finfo->h,
+                               &x, &y, &w, &h);
+                  if (!_decode_image(gif, thisframe->data, ie->w,
+                                     xin, yin, finfo->transparent,
+                                     x, y, w, h, first))
+                    LOADERR(EVAS_LOAD_ERROR_CORRUPT_FILE);
+                  // mark as loaded and done
+                  thisframe->loaded = EINA_TRUE;
+                  // and flush old memory if needed (too much)
+                  _flush_older_frames(ie, ie->w, ie->h,
+                                      thisframe, prevframe);
+               }
+             // CASE 2
+             else if ((thisframe) && (!thisframe->data) &&
+                      (!ie->flags.animated))
+               {
+                  // if we don't have the data decoded yet - decode it
+                  if ((!thisframe->loaded) || (!thisframe->data))
+                    {
+                       DATA32 *pixels;
+                       if (!evas_cache_image_pixels(ie))
+                         evas_cache_image_surface_alloc(ie, ie->w, ie->h);
+                       pixels = evas_cache_image_pixels(ie);
+
+                       if (!pixels)
+                         LOADERR(EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED);
+
+                       // use frame info but we WONT allocate frame pixels
+                       finfo = thisframe->info;
+                       _clip_coords(ie->w, ie->h, &xin, &yin,
+                                    finfo->x, finfo->y, finfo->w, finfo->h,
+                                    &x, &y, &w, &h);
+                       // clear out all pixels
+                       _fill_frame(pixels, ie->w, gif,
+                                   finfo, 0, 0, ie->w, ie->h);
+                       // and decode the gif with overwriting
+                       if (!_decode_image(gif, pixels, ie->w,
+                                          xin, yin, finfo->transparent,
+                                          x, y, w, h, EINA_TRUE))
+                         LOADERR(EVAS_LOAD_ERROR_CORRUPT_FILE);
+                       // mark as loaded and done
+                       thisframe->loaded = EINA_TRUE;
+                    }
+               }
+             // CASE 3
+             else
+               {
+                  // skip decoding and just walk image to next
+                  if (DGifGetCode(gif, &img_code, &img) == GIF_ERROR)
+                    LOADERR(EVAS_LOAD_ERROR_UNKNOWN_FORMAT);
+                  while (img)
+                    {
+                       img = NULL;
+                       DGifGetCodeNext(gif, &img);
+                    }
+               }
+             if (imgnum >= index) break;
+             imgnum++;
           }
-        return EINA_TRUE;
      }
-   return EINA_FALSE;
+   while (rec != TERMINATE_RECORD_TYPE);
+
+on_ok:
+   if ((ie->flags.animated) && (frame->data))
+     {
+        DATA32 *pixels;
+        if (!evas_cache_image_pixels(ie))
+          evas_cache_image_surface_alloc(ie, ie->w, ie->h);
+        pixels = evas_cache_image_pixels(ie);
+
+        if (!pixels)
+          LOADERR(EVAS_LOAD_ERROR_RESOURCE_ALLOCATION_FAILED);
+        memcpy(pixels, frame->data, ie->w * ie->h * sizeof(DATA32));
+     }
+
+   *error = EVAS_LOAD_ERROR_NONE;
+   ret = EINA_TRUE;
+
+on_error:
+   if (gif) DGifCloseFile(gif);
+   return ret;
 }
 
 static double
-evas_image_load_frame_duration_gif(Image_Entry *ie, const char *file, const int start_frame, const int frame_num)
+evas_image_load_frame_duration_gif(Image_Entry *ie,
+                                   const char *file,
+                                   const int start_frame,
+                                   const int frame_num)
 {
-   int                 fd;
    GifFileType        *gif;
    GifRecordType       rec;
-   int                 done;
    int                 current_frame = 1;
    int                 remain_frames = frame_num;
    double              duration = 0;
-   int                 frame_count = 0;
-
-   frame_count = ie->frame_count;
 
    if (!ie->flags.animated) return -1;
-   if ((start_frame + frame_num) > frame_count) return -1;
+   if ((start_frame + frame_num) > ie->frame_count) return -1;
    if (frame_num < 0) return -1;
 
-   done = 0;
-
-#ifndef __EMX__
-   fd = open(file, O_RDONLY);
-#else
-   fd = open(file, O_RDONLY | O_BINARY);
-#endif
-   if (fd < 0) return -1;
-
-   gif = DGifOpenFileHandle(fd);
-   if (!gif)
-     {
-        if (fd) close(fd);
-        return -1;
-     }
+   if (_gif_file_open(file, &gif)) return -1;
 
    do
      {
@@ -1046,7 +751,7 @@ evas_image_load_frame_duration_gif(Image_Entry *ie, const char *file, const int 
                {
                   if (ext_code == 0xf9) /* Graphic Control Extension */
                     {
-                       if ((current_frame  >= start_frame) && (current_frame <= frame_count))
+                       if ((current_frame  >= start_frame) && (current_frame <= ie->frame_count))
                          {
                             int frame_duration = 0;
                             if (remain_frames < 0) break;
@@ -1067,6 +772,15 @@ evas_image_load_frame_duration_gif(Image_Entry *ie, const char *file, const int 
    DGifCloseFile(gif);
    return duration;
 }
+
+static Evas_Image_Load_Func evas_image_load_gif_func =
+{
+  EINA_TRUE,
+  evas_image_load_file_head_gif,
+  evas_image_load_file_data_gif,
+  evas_image_load_frame_duration_gif,
+  EINA_FALSE
+};
 
 static int
 module_open(Evas_Module *em)

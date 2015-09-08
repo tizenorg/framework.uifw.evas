@@ -95,6 +95,7 @@ evas_key_grab_find(Evas_Object *obj, const char *keyname, Evas_Modifier_Mask mod
 void
 evas_object_grabs_cleanup(Evas_Object *obj)
 {
+   if (!obj->layer) return;
    if (obj->layer->evas->walking_grabs)
      {
         Eina_List *l;
@@ -108,11 +109,11 @@ evas_object_grabs_cleanup(Evas_Object *obj)
         while (obj->grabs)
           {
              Evas_Key_Grab *g = obj->grabs->data;
+             obj->layer->evas->grabs =
+                eina_list_remove(obj->layer->evas->grabs, g);
+             obj->grabs = eina_list_remove(obj->grabs, g);
              if (g->keyname) free(g->keyname);
              free(g);
-             obj->layer->evas->grabs = eina_list_remove(obj->layer->evas->grabs,
-                                                        g);
-             obj->grabs = eina_list_remove(obj->grabs, g);
           }
      }
 }
@@ -142,7 +143,7 @@ evas_object_key_grab(Evas_Object *obj, const char *keyname, Evas_Modifier_Mask m
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    return EINA_FALSE;
    MAGIC_CHECK_END();
-   if (!keyname) return EINA_FALSE;
+   if (((modifiers == not_modifiers) && (modifiers != 0)) || !keyname) return EINA_FALSE;
    if (exclusive)
      {
         g = evas_key_grab_find(obj, keyname, modifiers, not_modifiers,

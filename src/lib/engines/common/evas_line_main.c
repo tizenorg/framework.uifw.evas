@@ -106,6 +106,7 @@ static void
 _evas_draw_point(RGBA_Image *dst, RGBA_Draw_Context *dc, int x, int y)
 {
    RGBA_Gfx_Pt_Func pfunc;
+   DATA8 *mask = NULL;
 
    if (!IN_RANGE(x, y, dst->cache_entry.w, dst->cache_entry.h))
 	return;
@@ -125,9 +126,27 @@ _evas_draw_point(RGBA_Image *dst, RGBA_Draw_Context *dc, int x, int y)
 # endif     
 #endif
      {
-        pfunc = evas_common_gfx_func_composite_color_pt_get(dc->col.col, dst, dc->render_op);
-        if (pfunc)
-          pfunc(0, 255, dc->col.col, dst->image.data + (dst->cache_entry.w * y) + x);
+        //pfunc = evas_common_gfx_func_composite_color_pt_get(dc->col.col, dst, dc->render_op);
+        //if (pfunc)
+          //pfunc(0, 255, dc->col.col, dst->image.data + (dst->cache_entry.w * y) + x);
+
+        if (dc->clip.mask)
+          {
+             RGBA_Image *im = dc->clip.mask;
+             mask = im->image.data8
+                + (y - dc->clip.mask_y) * im->cache_entry.w
+                + (x - dc->clip.mask_x);
+             pfunc = evas_common_gfx_func_composite_mask_color_pt_get(dc->col.col, dst, dc->render_op);
+             if (pfunc)
+               pfunc(0, *mask, dc->col.col, dst->image.data + (dst->cache_entry.w * y) + x);
+          }
+        else
+          {
+             pfunc = evas_common_gfx_func_composite_color_pt_get(dc->col.col, dst, dc->render_op);
+             if (pfunc)
+               pfunc(0, 255, dc->col.col, dst->image.data + (dst->cache_entry.w * y) + x);
+          }
+
      }
 }
 
@@ -142,8 +161,9 @@ _evas_draw_simple_line(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, i
 {
    int     dx, dy, len, lx, ty, rx, by;
    int     clx, cly, clw, clh;
-   int     dstw;
+   int     dstw, mask_w = 0;
    DATA32  *p, color;
+   DATA8   *mask = NULL;
    RGBA_Gfx_Pt_Func pfunc;
    RGBA_Gfx_Func    sfunc;
 
@@ -210,15 +230,30 @@ _evas_draw_simple_line(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, i
 # endif
 #endif
                {
-                  sfunc = evas_common_gfx_func_composite_color_span_get(color, dst, len, dc->render_op);
-                  if (sfunc)
-                    sfunc(NULL, NULL, color, p, len);
+                  if (dc->clip.mask)
+                    {
+                       RGBA_Image *im = dc->clip.mask;
+                       mask = im->image.data8
+                          + ((y0 - dc->clip.mask_y) * im->cache_entry.w)
+                          + (x0 - dc->clip.mask_x);
+                       sfunc = evas_common_gfx_func_composite_mask_color_span_get(color, dst, len, dc->render_op);
+                       if (sfunc) sfunc(NULL, mask, color, p, len);
+                    }
+                  else
+                    {
+                       sfunc = evas_common_gfx_func_composite_color_span_get(color, dst, len, dc->render_op);
+                       if (sfunc)
+                         sfunc(NULL, NULL, color, p, len);
+                    }
                }
           }
         return;
      }
 
-   pfunc = evas_common_gfx_func_composite_color_pt_get(color, dst, dc->render_op);
+   if (dc->clip.mask)
+     pfunc = evas_common_gfx_func_composite_mask_color_pt_get(color, dst, dc->render_op);
+   else
+     pfunc = evas_common_gfx_func_composite_color_pt_get(color, dst, dc->render_op);
    if (!pfunc) return;
 
    if (dx == 0)
@@ -246,10 +281,27 @@ _evas_draw_simple_line(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, i
 # endif
 #endif
                {
-                  while (len--)
+                  if (dc->clip.mask)
                     {
-                       pfunc(0, 255, color, p);
-                       p += dstw;
+                       RGBA_Image *im = dc->clip.mask;
+                       mask_w = im->cache_entry.w;
+                       mask = im->image.data8
+                          + ((y0 - dc->clip.mask_y) * mask_w)
+                          + (x0 - dc->clip.mask_x);
+                       while (len--)
+                         {
+                            pfunc(0, *mask, color, p);
+                            p += dstw;
+                            mask += mask_w;
+                         }
+                    }
+                  else
+                    {
+                       while (len--)
+                         {
+                            pfunc(0, 255, color, p);
+                            p += dstw;
+                         }
                     }
                }
           }
@@ -323,6 +375,16 @@ _evas_draw_simple_line(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, i
              len = y1 - y0 + 1;
              if (dx > 0)  dstw++;
              else  dstw--;
+             if (dc->clip.mask)
+               {
+                  RGBA_Image *im = dc->clip.mask;
+                  mask_w = im->cache_entry.w;
+                  mask = im->image.data8
+                     + ((y0 - dc->clip.mask_y) * mask_w)
+                     + (x0 - dc->clip.mask_x);
+                  if (dx > 0) mask_w++;
+                  else mask_w--;
+               }
           }
         else
           {
@@ -330,6 +392,16 @@ _evas_draw_simple_line(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, i
              p = dst->image.data + (dstw * y1) + x1;
              if (dx > 0)  dstw--;
              else  dstw++;
+             if (dc->clip.mask)
+               {
+                  RGBA_Image *im = dc->clip.mask;
+                  mask_w = im->cache_entry.w;
+                  mask = im->image.data8
+                     + ((y1 - dc->clip.mask_y) * mask_w)
+                     + (x1 - dc->clip.mask_x);
+                  if (dx > 0) mask_w--;
+                  else mask_w++;
+               }
           }
 #ifdef HAVE_PIXMAN
 # ifdef PIXMAN_LINE        
@@ -362,7 +434,15 @@ _evas_draw_simple_line(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, i
              else
 # endif
 #endif
-               pfunc(0, 255, color, p);
+               {
+                  if (mask)
+                    {
+                       pfunc(0, *mask, color, p);
+                       mask += mask_w;
+                    }
+                  else
+                    pfunc(0, 255, color, p);
+               }
 #ifdef HAVE_PIXMAN
 # ifdef PIXMAN_LINE             
              pixman_x_position += x_unit;
@@ -527,8 +607,9 @@ _evas_draw_line(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, int x1, 
    int     dx, dy, rx, by, p0_in, p1_in, dh, a_a = 0;
    int     delx, dely, xx, yy, dxx, dyy;
    int     clx, cly, clw, clh;
-   int     dstw;
+   int     dstw, mask_w = 0;
    DATA32  *p, *data, color;
+   DATA8   *mask = NULL;
    RGBA_Gfx_Pt_Func pfunc;
 
    dx = x1 - x0;
@@ -566,7 +647,10 @@ _evas_draw_line(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, int x1, 
      }
 
    color = dc->col.col;
-   pfunc = evas_common_gfx_func_composite_color_pt_get(color, dst, dc->render_op);
+   if (dc->clip.mask)
+     pfunc = evas_common_gfx_func_composite_mask_color_pt_get(color, dst, dc->render_op);
+   else
+     pfunc = evas_common_gfx_func_composite_color_pt_get(color, dst, dc->render_op);
    if (!pfunc) return;
 
    clx = dc->clip.x;
@@ -583,11 +667,20 @@ _evas_draw_line(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, int x1, 
    x1 -= clx;
    y1 -= cly;
 
+   if (dc->clip.mask)
+     {
+        RGBA_Image *im = dc->clip.mask;
+        mask_w = im->cache_entry.w;
+        mask = im->image.data8
+           + ((cly - dc->clip.mask_y) * mask_w) + (clx - dc->clip.mask_x);
+     }
+
    /* shallow: x-parametric */
    if ((dy < dx) || (dy < -dx))
      {
 	SETUP_LINE_SHALLOW;
 
+        if (mask) mask += (py * mask_w) + px;
 	while (px < rx)
 	  {
 	    y = (yy >> 16);
@@ -596,6 +689,7 @@ _evas_draw_line(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, int x1, 
 	      {
 		prev_y = y;
 		p += dh;
+                if (mask) mask += mask_w;
 		py += dely;
 #ifdef HAVE_PIXMAN
 # ifdef PIXMAN_LINE                 
@@ -630,15 +724,19 @@ _evas_draw_line(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, int x1, 
                                           pix_x, pix_y, 0, 0,
                                           pix_x, pix_y, 1, 1);
                  else
-# endif                         
+# endif
 #endif
-                   pfunc(0, 255, color, p);
+                   {
+                      if (mask) pfunc(0, *mask, color, p);
+                      else pfunc(0, 255, color, p);
+                   }
               }
 
 next_x:
             yy += dyy;
             px++;
             p++;
+            if (mask) mask++;
 #ifdef HAVE_PIXMAN
 # ifdef PIXMAN_LINE             
             pix_x += pix_x_unit;
@@ -651,6 +749,7 @@ next_x:
    /* steep: y-parametric */
 
    SETUP_LINE_STEEP;
+   if (mask) mask += (py * mask_w) + px;
 
    while (py < by)
      {
@@ -661,6 +760,7 @@ next_x:
              prev_x = x;
              px += delx;
              p += delx;
+             if (mask) mask += delx;
 #ifdef HAVE_PIXMAN
 # ifdef PIXMAN_LINE
              pix_x += pix_x_unit;
@@ -694,18 +794,22 @@ next_x:
                                       pix_x, pix_y, 0, 0,
                                       pix_x, pix_y, 1, 1);
              else
-# endif                    
+# endif
 #endif
-               pfunc(0, 255, color, p);
+               {
+                  if (mask) pfunc(0, *mask, color, p);
+                  else pfunc(0, 255, color, p);
+               }
           }
 next_y:
 	xx += dxx;
 	py++;
 	p += dstw;
+        if (mask) mask += mask_w;
 #ifdef HAVE_PIXMAN
 # ifdef PIXMAN_LINE        
         pix_y += pix_y_unit;
-# endif        
+# endif
 #endif
      }
 }
@@ -718,8 +822,9 @@ _evas_draw_line_aa(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, int x
    int     dx, dy, rx, by, p0_in, p1_in, dh, a_a = 1;
    int     delx, dely, xx, yy, dxx, dyy;
    int     clx, cly, clw, clh;
-   int     dstw;
+   int     dstw, mask_w = 0;
    DATA32  *p, *data, color;
+   DATA8   *mask = NULL;
    RGBA_Gfx_Pt_Func pfunc;
 
    dx = x1 - x0;
@@ -782,11 +887,20 @@ _evas_draw_line_aa(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, int x
    x1 -= clx;
    y1 -= cly;
 
+   if (dc->clip.mask)
+     {
+        RGBA_Image *im = dc->clip.mask;
+        mask_w = im->cache_entry.w;
+        mask = im->image.data8
+           + ((cly - dc->clip.mask_y) * mask_w) + (clx - dc->clip.mask_x);
+     }
+
    /* shallow: x-parametric */
    if ((dy < dx) || (dy < -dx))
      {
 	SETUP_LINE_SHALLOW;
 
+        if (mask) mask += (py * mask_w) + px;
 	while (px < rx)
 	  {
 	    DATA8   aa;
@@ -796,11 +910,12 @@ _evas_draw_line_aa(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, int x
 	      {
                  prev_y = y;
                  p += dh;
+                 if (mask) mask += mask_w;
                  py += dely;
 #ifdef HAVE_PIXMAN
 # ifdef PIXMAN_LINE                 
                  pix_y += pix_y_unit;
-# endif                 
+# endif
 #endif
 	      }
 	    if (!p1_in)
@@ -822,7 +937,7 @@ _evas_draw_line_aa(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, int x
                       alpha_data_buffer = 255 - aa;
                       aa_mask_image = pixman_image_create_bits(PIXMAN_a8, 1, 1,
                                                                (uint32_t *)&alpha_data_buffer, 4);
-                      
+
                       if ((dst->pixman.im) && (dc->col.pixman_color_image ) &&
                           (!dc->mask.mask))
                         pixman_image_composite(PIXMAN_OP_OVER,
@@ -840,7 +955,10 @@ _evas_draw_line_aa(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, int x
                       else
 # endif
 #endif
-                        pfunc(0, 255 - aa, color, p);
+                        {
+                           if (mask) pfunc(0, (255 - aa) * (*mask) / 255, color, p);
+                           else pfunc(0, 255 - aa, color, p);
+                        }
 #ifdef HAVE_PIXMAN
 # ifdef PIXMAN_LINE                       
                       pixman_image_unref(aa_mask_image);
@@ -872,7 +990,10 @@ _evas_draw_line_aa(RGBA_Image *dst, RGBA_Draw_Context *dc, int x0, int y0, int x
                       else
 # endif
 #endif
-                        pfunc(0, aa, color, p + dstw);
+                        {
+                           if (mask) pfunc(0, aa * (*(mask + mask_w)) / 255, color, p + dstw);
+                           else pfunc(0, aa, color, p + dstw);
+                        }
 #ifdef HAVE_PIXMAN
 # ifdef PIXMAN_LINE                       
                       pixman_image_unref(aa_mask_image);
@@ -885,6 +1006,7 @@ next_x:
              yy += dyy;
              px++;
              p++;
+             if (mask) mask++;
 #ifdef HAVE_PIXMAN
 # ifdef PIXMAN_LINE                       
              pix_x += pix_x_unit;
@@ -896,6 +1018,7 @@ next_x:
    
    /* steep: y-parametric */
    SETUP_LINE_STEEP;
+   if (mask) mask += (py * mask_w) + px;
 
    while (py < by)
      {
@@ -907,6 +1030,7 @@ next_x:
              prev_x = x;
              px += delx;
              p += delx;
+             if (mask) mask += delx;
 #ifdef HAVE_PIXMAN
 # ifdef PIXMAN_LINE
              pix_x += pix_x_unit;
@@ -949,7 +1073,10 @@ next_x:
                   else
 # endif
 #endif
-                    pfunc(0, 255 - aa, color, p);
+                    {
+                       if (mask) pfunc(0, (255 - aa) * (*mask) / 255, color, p);
+                       else pfunc(0, 255 - aa, color, p);
+                    }
 #ifdef HAVE_PIXMAN
 # ifdef PIXMAN_LINE
                   pixman_image_unref(aa_mask_image);
@@ -982,7 +1109,10 @@ next_x:
                   else
 # endif
 #endif
-                    pfunc(0, aa, color, p + 1);
+                    {
+                       if (mask) pfunc(0, aa * (*(mask + 1)) / 255, color, p + 1);
+                       else pfunc(0, aa, color, p + 1);
+                    }
 #ifdef HAVE_PIXMAN
 # ifdef PIXMAN_LINE
                   pixman_image_unref(aa_mask_image);
@@ -994,6 +1124,7 @@ next_x:
 	xx += dxx;
 	py++;
 	p += dstw;
+        if (mask) mask += mask_w;
 #ifdef HAVE_PIXMAN
 # ifdef PIXMAN_LINE
         pix_y += pix_y_unit;

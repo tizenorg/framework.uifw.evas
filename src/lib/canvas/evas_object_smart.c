@@ -104,14 +104,15 @@ EAPI const void *
 evas_object_smart_interface_get(const Evas_Object *obj,
                                 const char *name)
 {
-   unsigned int i;
    Evas_Smart *s;
+   unsigned int i;
 
    MAGIC_CHECK(obj, Evas_Object, MAGIC_OBJ);
    return NULL;
    MAGIC_CHECK_END();
 
    s = evas_object_smart_smart_get(obj);
+   if (!s) return NULL;
 
    for (i = 0; i < s->interfaces.size; i++)
      {
@@ -138,6 +139,7 @@ evas_object_smart_interface_data_get(const Evas_Object *obj,
    MAGIC_CHECK_END();
 
    s = evas_object_smart_smart_get(obj);
+   if (!s) return NULL;
 
    for (i = 0; i < s->interfaces.size; i++)
      {
@@ -216,7 +218,7 @@ evas_object_smart_member_add(Evas_Object *obj, Evas_Object *smart_obj)
    obj->layer->usage++;
    obj->smart.parent = smart_obj;
    o->contained = eina_inlist_append(o->contained, EINA_INLIST_GET(obj));
-   evas_object_smart_member_cache_invalidate(obj, EINA_TRUE, EINA_TRUE);
+   evas_object_smart_member_cache_invalidate(obj, EINA_TRUE, EINA_TRUE, EINA_TRUE);
    obj->restack = 1;
    evas_object_change(obj);
    evas_object_mapped_clip_across_mark(obj);
@@ -238,6 +240,8 @@ evas_object_smart_member_del(Evas_Object *obj)
    if (!obj->smart.parent) return;
 
    smart_obj = obj->smart.parent;
+   evas_object_mapped_across_change(smart_obj);
+
    if (smart_obj->smart.smart->smart_class->member_del)
      smart_obj->smart.smart->smart_class->member_del(smart_obj, obj);
 
@@ -245,7 +249,7 @@ evas_object_smart_member_del(Evas_Object *obj)
    o->contained = eina_inlist_remove(o->contained, EINA_INLIST_GET(obj));
    o->member_count--;
    obj->smart.parent = NULL;
-   evas_object_smart_member_cache_invalidate(obj, EINA_TRUE, EINA_TRUE);
+   evas_object_smart_member_cache_invalidate(obj, EINA_TRUE, EINA_TRUE, EINA_TRUE);
    obj->layer->usage--;
    obj->cur.layer = obj->layer->layer;
    evas_object_inject(obj, obj->layer->evas);
@@ -813,6 +817,8 @@ evas_call_smarts_calculate(Evas *e)
 {
    Eina_Clist *elem;
    Evas_Object *obj;
+   static int debug_count = 0;
+   static int debug_count1 = 0;
 
 //   printf("+CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAALC-----------v\n");
    evas_event_freeze(e);
@@ -820,7 +826,8 @@ evas_call_smarts_calculate(Evas *e)
 
    while (NULL != (elem = eina_clist_head(&e->calc_list)))
      {
-        Evas_Object_Smart *o;
+	debug_count ++;
+	Evas_Object_Smart *o;
 
         /* move the item to the processed list */
         obj = EINA_CLIST_ENTRY(elem, Evas_Object, calc_entry);
@@ -839,11 +846,15 @@ evas_call_smarts_calculate(Evas *e)
 
    while (NULL != (elem = eina_clist_head(&e->calc_done)))
      {
-        obj = EINA_CLIST_ENTRY(elem, Evas_Object, calc_entry);
-        obj->recalculate_cycle = 0;
-        eina_clist_remove(&obj->calc_entry);
+	debug_count1 ++;
+	obj = EINA_CLIST_ENTRY(elem, Evas_Object, calc_entry);
+	obj->recalculate_cycle = 0;
+	eina_clist_remove(&obj->calc_entry);
+
      }
 
+   debug_count = 0;
+   debug_count1 = 0;
    e->in_smart_calc--;
    if (e->in_smart_calc == 0) e->smart_calc_count++;
    evas_event_thaw(e);
@@ -858,6 +869,31 @@ evas_object_smart_changed(Evas_Object *obj)
    MAGIC_CHECK_END();
    evas_object_change(obj);
    evas_object_smart_need_recalculate_set(obj, 1);
+}
+
+Eina_Bool
+evas_object_smart_changed_get(Evas_Object *obj)
+{
+   Evas_Object *o2;
+
+   if (!evas_object_is_visible(obj) && !evas_object_was_visible(obj))
+     return EINA_FALSE;
+
+  if (!obj->clip.clipees)
+    {
+       if (obj->changed && !obj->smart.smart) return EINA_TRUE;
+       if (_evas_render_has_map(obj))
+         {
+            if (((obj->changed_pchange) && (obj->changed_map)) ||
+                (obj->changed_color))
+              return EINA_TRUE;
+         }
+    }
+
+   EINA_INLIST_FOREACH(evas_object_smart_members_get_direct(obj), o2)
+     if (evas_object_smart_changed_get(o2)) return EINA_TRUE;
+
+   return EINA_FALSE;
 }
 
 /* internal calls */
@@ -897,12 +933,15 @@ evas_object_smart_del(Evas_Object *obj)
    if ((s) && (s->smart_class->del)) s->smart_class->del(obj);
    if (obj->smart.parent) evas_object_smart_member_del(obj);
 
-   for (i = 0; i < s->interfaces.size; i++)
+   if (s)
      {
-        const Evas_Smart_Interface *iface;
+        for (i = 0; i < s->interfaces.size; i++)
+          {
+             const Evas_Smart_Interface *iface;
 
-        iface = s->interfaces.array[i];
-        if (iface->del) iface->del(obj);
+             iface = s->interfaces.array[i];
+             if (iface->del) iface->del(obj);
+          }
      }
 
    free(obj->interface_privates);
@@ -947,7 +986,8 @@ evas_object_smart_cleanup(Evas_Object *obj)
 void
 evas_object_smart_member_cache_invalidate(Evas_Object *obj,
                                           Eina_Bool pass_events,
-                                          Eina_Bool freeze_events)
+                                          Eina_Bool freeze_events,
+                                          Eina_Bool source_invisible)
 {
    Evas_Object_Smart *o;
    Evas_Object *member;
@@ -960,6 +1000,8 @@ evas_object_smart_member_cache_invalidate(Evas_Object *obj,
      obj->parent_cache.pass_events_valid = EINA_FALSE;
    if (freeze_events)
      obj->parent_cache.freeze_events_valid = EINA_FALSE;
+   if (source_invisible)
+     obj->parent_cache.src_invisible_valid = EINA_FALSE;
 
    o = obj->object_data;
    if (o->magic != MAGIC_OBJ_SMART) return;
@@ -967,7 +1009,7 @@ evas_object_smart_member_cache_invalidate(Evas_Object *obj,
    EINA_INLIST_FOREACH(o->contained, member)
      evas_object_smart_member_cache_invalidate(member,
                                                pass_events,
-                                               freeze_events);
+                                               freeze_events, source_invisible);
 }
 
 void
@@ -1234,7 +1276,7 @@ evas_object_smart_render_pre(Evas_Object *obj)
 
    e = obj->layer->evas;
 
-   if (obj->changed_map)
+   if (obj->changed_map || obj->changed_src_visible)
      {
        evas_object_render_pre_prev_cur_add(&e->clip_changes, obj);
      }

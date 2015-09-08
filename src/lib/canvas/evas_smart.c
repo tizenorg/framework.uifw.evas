@@ -255,7 +255,8 @@ _evas_smart_class_callbacks_create(Evas_Smart *s)
 static void
 _evas_smart_class_interfaces_create(Evas_Smart *s)
 {
-   unsigned int i, total_priv_sz;
+   unsigned int i;
+   unsigned int total_priv_sz = 0;
    const Evas_Smart_Class *sc;
 
    /* get number of interfaces on the smart */

@@ -166,7 +166,7 @@ else
 #include <X11/Xresource.h>
       ])
    if test "x${have_egl}" = "xyes" ; then
-      AC_CHECK_LIB(GLESv2, glTexImage2D, [have_glesv2="yes"], , -lEGL ${x_libs} -lm $gl_pt_lib)
+      AC_CHECK_LIB(GLESv2, glTexImage2D, [have_glesv2="yes"], , -L/usr/lib -ldl -lEGL ${x_libs} -lm $gl_pt_lib)
       if test "x${have_glesv2}" = "xyes" ; then
          PKG_CHECK_MODULES([GL_EET], [eet >= 1.6.99], [have_dep="yes"], [have_dep="no"])
          if test "x${have_dep}" = "xyes" ; then
@@ -174,7 +174,7 @@ else
             evas_engine_[]$1[]_libs="${x_libs} -lGLESv2 -lEGL -lm $gl_pt_lib"
             evas_engine_gl_common_libs="-lGLESv2 -lm $gl_pt_lib"
             have_dep="yes"
-            AC_DEFINE(GLES_VARIETY_SGX, 1, [Imagination SGX GLES2 support])
+            AC_DEFINE(GL_GLES, 1, [GLSL runtime shader GLES2 support])
             gles_variety_sgx="yes"
          fi
       fi
@@ -335,7 +335,7 @@ else
 #include <EGL/egl.h>
       ])
    if test "x${have_egl}" = "xyes" ; then
-      AC_CHECK_LIB(GLESv2, glTexImage2D, [have_glesv2="yes"], , -lEGL ${x_libs} -lm $gl_pt_lib)
+      AC_CHECK_LIB(GLESv2, glTexImage2D, [have_glesv2="yes"], , -L/usr/lib -ldl -lEGL ${x_libs} -lm $gl_pt_lib)
       if test "x${have_glesv2}" = "xyes" ; then
          PKG_CHECK_MODULES([GL_EET], [eet >= 1.6.99], [have_dep="yes"], [have_dep="no"])
          if test "x${have_dep}" = "xyes" ; then
@@ -486,41 +486,6 @@ fi
 
 AC_SUBST([evas_engine_$1_cflags])
 AC_SUBST([evas_engine_$1_libs])
-
-if test "x${have_dep}" = "xyes" ; then
-  m4_default([$4], [:])
-else
-  m4_default([$5], [:])
-fi
-
-])
-
-dnl use: EVAS_CHECK_ENGINE_DEP_SOFTWARE_16_SDL(engine, simple, want_static[, ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
-
-AC_DEFUN([EVAS_CHECK_ENGINE_DEP_SOFTWARE_16_SDL],
-[
-
-requirement=""
-have_dep="no"
-evas_engine_[]$1[]_cflags=""
-evas_engine_[]$1[]_libs=""
-
-PKG_CHECK_MODULES([SDL],
-   [sdl >= 1.2.0],
-   [
-    have_dep="yes"
-    requirement="sdl"
-    evas_engine_[]$1[]_cflags="${SDL_CFLAGS}"
-    evas_engine_[]$1[]_libs="${SDL_LIBS}"
-   ]
-)
-
-AC_SUBST([evas_engine_$1_cflags])
-AC_SUBST([evas_engine_$1_libs])
-
-if test "x$3" = "xstatic" ; then
-   requirement_evas="${requirement} ${requirement_evas}"
-fi
 
 if test "x${have_dep}" = "xyes" ; then
   m4_default([$4], [:])
@@ -711,70 +676,6 @@ AC_SUBST([evas_engine_$1_libs])
 if test "x$3" = "xstatic" ; then
    requirement_evas="${requirement} ${requirement_evas}"
 fi
-
-if test "x${have_dep}" = "xyes" ; then
-  m4_default([$4], [:])
-else
-  m4_default([$5], [:])
-fi
-
-])
-
-dnl use: EVAS_CHECK_ENGINE_DEP_SOFTWARE_16_X11(engine, simple, want_static[, ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
-AC_DEFUN([EVAS_CHECK_ENGINE_DEP_SOFTWARE_16_X11],
-[
-
-have_dep="no"
-evas_engine_[]$1[]_cflags=""
-evas_engine_[]$1[]_libs=""
-
-AC_PATH_X
-AC_PATH_XTRA
-
-AC_CHECK_HEADER([X11/X.h], [have_dep="yes"])
-
-if test "x${have_dep}" = "xyes" ; then
-   AC_CHECK_LIB([X11], [XCreateImage], [have_dep="yes"], [have_dep="no"])
-fi
-
-if test "x${have_dep}" = "xyes" ; then
-   AC_CHECK_LIB([Xext], [XShmCreateImage], [have_dep="yes"], [have_dep="no"])
-fi
-
-if test "x${have_dep}" = "xyes" ; then
-   if test "x$2" = "xyes" ; then
-      x_libs="${x_libs} -lX11 -lXext"
-   else
-      x_dir=${x_dir:-/usr/X11R6}
-      x_cflags=${x_cflags:--I${x_includes:-$x_dir/include}}
-      x_libs="${x_libs:--L${x_libraries:-$x_dir/lib}} -lX11 -lXext"
-   fi
-   evas_engine_[]$1[]_cflags="${x_cflags}"
-   evas_engine_[]$1[]_libs="${x_libs}"
-fi
-
-AC_SUBST([evas_engine_$1_cflags])
-AC_SUBST([evas_engine_$1_libs])
-
-if test "x${have_dep}" = "xyes" ; then
-  m4_default([$4], [:])
-else
-  m4_default([$5], [:])
-fi
-
-])
-
-dnl use: EVAS_CHECK_ENGINE_DEP_SOFTWARE_16_WINCE(engine, simple, want_static[, ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
-
-AC_DEFUN([EVAS_CHECK_ENGINE_DEP_SOFTWARE_16_WINCE],
-[
-
-have_dep="yes"
-evas_engine_[]$1[]_cflags=""
-evas_engine_[]$1[]_libs=""
-
-AC_SUBST([evas_engine_$1_cflags])
-AC_SUBST([evas_engine_$1_libs])
 
 if test "x${have_dep}" = "xyes" ; then
   m4_default([$4], [:])

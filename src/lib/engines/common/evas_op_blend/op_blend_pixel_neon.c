@@ -241,7 +241,7 @@ _op_blend_pas_dp_neon(DATA32 *s, DATA8 *m, DATA32 c, DATA32 *d, int l) {
 		"vld1.32	d4[0], [%[d]]			\n\t"
 
 		"vmvn.u8	d8,	d0			\n\t"
-
+		"vadd.u8	d8,	d8,  d16			\n\t"
 		"vshr.u32	d8,	d8,$0x18		\n\t"
 
 		// Mulitply into all fields
@@ -250,7 +250,13 @@ _op_blend_pas_dp_neon(DATA32 *s, DATA8 *m, DATA32 c, DATA32 *d, int l) {
 		// Multiply out
 		"vmull.u8	q6,	d8, d4			\n\t"
 
-		"vqrshrn.u16	d8,	q6, #8			\n\t"
+		"vqrshrn.u16	d9,	q6, #8			\n\t"
+
+		//if alpha is 0, set 1. if not, set 0.
+		"vceq.u8	d8, d8, #0			\n\t"
+
+		// if alpha is 1, choose d4. if not, choose d8.
+		"vbsl       d8, d4, d9\n\t"
 
 		// Add to s
 		"vqadd.u8	d0,	d0,d8			\n\t"
@@ -271,8 +277,9 @@ _op_blend_pas_dp_neon(DATA32 *s, DATA8 *m, DATA32 c, DATA32 *d, int l) {
 		"vldm	%[s]!,	{d0)				\n\t"
 		"vldm	%[d],	{d4}				\n\t"
 
-		// Subtract from 255 (ie negate) and extract alpha channel
+		// Subtract from 256 (ie negate) and extract alpha channel
 		"vmvn.u8	d8,	d0			\n\t"
+		"vadd.u8	d8,	d8,  d16			\n\t"
 		"vshr.u32	d8,	d8,$0x18		\n\t"
 
 		// Mulitply into all fields
@@ -281,7 +288,13 @@ _op_blend_pas_dp_neon(DATA32 *s, DATA8 *m, DATA32 c, DATA32 *d, int l) {
 		// Multiply out
 		"vmull.u8	q6,	d8, d4			\n\t"
 
-		"vqrshrn.u16	d8,	q6, #8			\n\t"
+		"vqrshrn.u16	d9,	q6, #8			\n\t"
+
+		//if alpha is 0, set 1. if not, set 0.
+		"vceq.u8	d8, d8, #0			\n\t"
+
+		// if alpha is 1, choose d4. if not, choose d8.
+		"vbsl       d8, d4, d9\n\t"
 
 		// Add to s
 		"vqadd.u8	d0,	d0,d8			\n\t"
@@ -291,49 +304,63 @@ _op_blend_pas_dp_neon(DATA32 *s, DATA8 *m, DATA32 c, DATA32 *d, int l) {
 		"bne		"AP"dualloop			\n\t"
 
 
-        AP"quadstart:						\n\t"
+	AP"quadstart:						\n\t"
 		"sub		%[tmp], %[e], %[d]		\n\t"
 		"cmp		%[tmp], #32			\n\t"
 		"blt		"AP"loopout			\n\t"
 
 		"sub		%[tmp], %[e],  #31		\n\t"
 
-        AP"quadloop:\n\t"
+	AP"quadloop:\n"
 		"vldm	%[s]!,	{d0,d1,d2,d3)			\n\t"
 		"vldm	%[d],	{d4,d5,d6,d7}			\n\t"
 
-		// Subtract from 255 (ie negate) and extract alpha channel
+		// Subtract from 256 (ie negate) and extract alpha channel
 		"vmvn.u8	q4,	q0			\n\t"
-			"vmvn.u8	q5,	q1		\n\t"
+		"vmvn.u8	q5,	q1		\n\t"
+		"vadd.u8	q4,	q4, q8			\n\t"
+		"vadd.u8	q5,	q5, q8			\n\t"
 		"vshr.u32	q4,	q4,$0x18		\n\t"
-			"vshr.u32	q5,	q5,$0x18	\n\t"
+		"vshr.u32	q5,	q5,$0x18	\n\t"
 
 		// Prepare to preload
 		"add	%[pl], %[s], #32			\n\t"
 
 		// Mulitply into all fields
 		"vmul.u32	q4,	q4, q8			\n\t"
-			"vmul.u32	q5,	q5, q8		\n\t"
+		"vmul.u32	q5,	q5, q8		\n\t"
 		"pld	[%[pl]]					\n\t"
 
 		// Multiply out
-		"vmull.u8	q6,	d8, d4			\n\t"
-			"vmull.u8	q7,	d10, d6		\n\t"
-		"vmull.u8	q2,	d9, d5			\n\t"
-			"vmull.u8	q3,	d11, d7		\n\t"
+		"vmull.u8	q6,	    d8, d4			\n\t"
+		"vmull.u8	q7,	    d9, d5		\n\t"
+		"vmull.u8	q9,	d10, d6			\n\t"
+		"vmull.u8	q10,	d11, d7		\n\t"
 
 		"add	%[pl], %[d], #32			\n\t"
 
-		"vqrshrn.u16	d8,	q6, #8			\n\t"
-			"vqrshrn.u16	d10,	q7, #8		\n\t"
-		"vqrshrn.u16	d9,	q2, #8			\n\t"
-			"vqrshrn.u16	d11,	q3, #8		\n\t"
+		"vqrshrn.u16	d12,	q6, #8			\n\t"
+		"vqrshrn.u16	d13,    q7, #8		\n\t"
+		"vqrshrn.u16	d14,	q9, #8			\n\t"
+		"vqrshrn.u16	d15,	q10, #8		\n\t"
 		"pld	[%[pl]]					\n\t"
 
 		"cmp 		%[tmp], %[pl]			\n\t"
+
+		//if alpha is 0, set 1. if not, set 0.
+		"vceq.u8	q4, q4, #0			\n\t"
+		"vceq.u8	q5, q5, #0			\n\t"
+
+		// if alpha is 1, choose d.
+		"vbsl       d8, d4, d12\n\t"
+		"vbsl       d9, d5, d13\n\t"
+		"vbsl       d10, d6, d14\n\t"
+		"vbsl       d11, d7, d15\n\t"
+
+
 		// Add to s
 		"vqadd.u8	q0,	q0,q4			\n\t"
-			"vqadd.u8	q1,	q1,q5		\n\t"
+		"vqadd.u8	q1,	q1,q5		\n\t"
 
 		"vstm		%[d]!,	{d0,d1,d2,d3}		\n\t"
 
@@ -341,7 +368,7 @@ _op_blend_pas_dp_neon(DATA32 *s, DATA8 *m, DATA32 c, DATA32 *d, int l) {
 
 	AP "loopout:						\n\t"
 		"cmp 		%[d], %[e]			\n\t"
-                "beq 		"AP"done			\n\t"
+		"beq 		"AP"done			\n\t"
 
 		"sub		%[tmp],%[e], %[d]		\n\t"
 		"cmp		%[tmp],$0x04			\n\t"
@@ -353,8 +380,9 @@ _op_blend_pas_dp_neon(DATA32 *s, DATA8 *m, DATA32 c, DATA32 *d, int l) {
 		"vldm		%[s]!,	{d0)			\n\t"
 		"vldm		%[d],	{d4}			\n\t"
 
-		// Subtract from 255 (ie negate) and extract alpha channel
+		// Subtract from 256 (ie negate) and extract alpha channel
 		"vmvn.u8	d8,	d0			\n\t"
+		"vadd.u8	d8,	d8,  d16			\n\t"
 		"vshr.u32	d8,	d8,$0x18		\n\t"
 
 		// Mulitply into all fields
@@ -363,7 +391,13 @@ _op_blend_pas_dp_neon(DATA32 *s, DATA8 *m, DATA32 c, DATA32 *d, int l) {
 		// Multiply out
 		"vmull.u8	q6,	d8, d4			\n\t"
 
-		"vqrshrn.u16	d8,	q6, #8			\n\t"
+		"vqrshrn.u16	d9,	q6, #8			\n\t"
+
+		//if alpha is 0, set 1. if not, set 0.
+		"vceq.u8	d8, d8, #0			\n\t"
+
+		// if alpha is 1, choose d4. if not, choose d8.
+		"vbsl       d8, d4, d9\n\t"
 
 		// Add to s
 		"vqadd.u8	d0,	d0,d8			\n\t"
@@ -382,7 +416,7 @@ _op_blend_pas_dp_neon(DATA32 *s, DATA8 *m, DATA32 c, DATA32 *d, int l) {
 		"vld1.32	d4[0], [%[d]]			\n\t"
 
 		"vmvn.u8	d8,	d0			\n\t"
-
+		"vadd.u8	d8,	d8,  d16			\n\t"
 		"vshr.u32	d8,	d8,$0x18		\n\t"
 
 		// Mulitply into all fields
@@ -391,7 +425,13 @@ _op_blend_pas_dp_neon(DATA32 *s, DATA8 *m, DATA32 c, DATA32 *d, int l) {
 		// Multiply out
 		"vmull.u8	q6,	d8, d4			\n\t"
 
-		"vqrshrn.u16	d8,	q6, #8			\n\t"
+		"vqrshrn.u16	d9,	q6, #8			\n\t"
+
+		//if alpha is 0, set 1. if not, set 0.
+		"vceq.u8	d8, d8, #0			\n\t"
+
+		// if alpha is 1, choose d4. if not, choose d8.
+		"vbsl       d8, d4, d9\n\t"
 
 		// Add to s
 		"vqadd.u8	d0,	d0,d8			\n\t"
@@ -404,7 +444,7 @@ _op_blend_pas_dp_neon(DATA32 *s, DATA8 *m, DATA32 c, DATA32 *d, int l) {
          : /* In */  [s] "r" (s), [e] "r" (e), [d] "r" (d), [tmp] "r" (tmp),
 		[pl] "r" (pl)
          : /* Clobbered */
-		 "q0","q1","q2","q3","q4","q5","q6","q7","q8","memory"
+		 "q0","q1","q2","q3","q4","q5","q6","q7","q8","q9","q10","memory"
       );
 #undef AP
 }

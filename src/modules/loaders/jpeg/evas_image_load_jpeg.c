@@ -25,10 +25,10 @@ struct _JPEG_error_mgr
 static void _JPEGFatalErrorHandler(j_common_ptr cinfo);
 static void _JPEGErrorHandler(j_common_ptr cinfo);
 static void _JPEGErrorHandler2(j_common_ptr cinfo, int msg_level);
-static int _get_orientation_app0(char *app0_head, size_t remain_length);
-static int _get_orientation_app1(char *app1_head, size_t remain_length);
-static int _get_orientation(void *map, size_t length);
-
+static Eina_Bool _get_next_app0(unsigned char *map, size_t fsize, size_t *position);
+static Eina_Bool _get_orientation_app1(unsigned char *map, size_t fsize, size_t *position,
+                                       int *orientation, Eina_Bool *flipped);
+static int _get_orientation(void *map, size_t length, Eina_Bool *flipped);
 static Eina_Bool evas_image_load_file_head_jpeg_internal(Image_Entry *ie,
                                                          void *map,
                                                          size_t len,
@@ -175,18 +175,22 @@ typedef enum {
      EXIF_BYTE_ALIGN_MM
 } ExifByteAlign;
 
-static int
-_get_orientation_app0(char *app0_head, size_t remain_length)
+static Eina_Bool
+_get_next_app0(unsigned char *map, size_t fsize, size_t *position)
 {
-   unsigned int length = 0;
+   unsigned short length = 0;
    unsigned int w = 0, h = 0;
    unsigned int format = 0;
    unsigned int data_size = 0;
-   char *p;
+   unsigned char *app0_head, *p;
+
+
+   /* header_mark:2, length:2, identifier:5 version:2, unit:1, den=4 thum=2 */
+   if (*position + 16 >= fsize) return EINA_FALSE;
+   app0_head  = map + *position;
 
    /* p is appn's start pointer excluding app0 marker */
    p = app0_head + 2;
-
 
    length = ((*p << 8) + *(p + 1));
 
@@ -208,29 +212,47 @@ _get_orientation_app0(char *app0_head, size_t remain_length)
      }
 
      data_size = format * w * h;
-     p += length + data_size;
 
-     if (!memcmp(p, App1, sizeof (App1)))
-       return _get_orientation_app1(p, remain_length - (2 + length + data_size));
-     else
-       return 0;
+     if ((*position + 2+ length + data_size) > fsize)
+       return EINA_FALSE;
+
+     *position = *position + 2 + length + data_size;
+
+     return EINA_TRUE;
 }
 
-static int
-_get_orientation_app1(char *app1_head, size_t remain_length)
+/* If app1 data is abnormal, returns EINA_FALSE.
+   If app1 data is normal, returns EINA_TRUE.
+   If app1 data is normal but not orientation data, orientation value is -1.
+ */
+
+static Eina_Bool
+_get_orientation_app1(unsigned char *map, size_t fsize, size_t *position,
+                      int *orientation_res, Eina_Bool *flipped)
 {
-   char *buf;
-   char orientation[2];
+   unsigned char *app1_head, *buf;
+   unsigned char orientation[2];
    ExifByteAlign byte_align;
    unsigned int num_directory = 0;
    unsigned int i, j;
    int direction;
+   unsigned int data_size = 0;
 
-   /* start of app1 frame */
+   /* app1 mark:2, data_size:2, exif:6 tiff:8 */
+   if ((*position + 18) >= fsize) return EINA_FALSE;
+   app1_head  = map + *position;
    buf = app1_head;
 
-   /* 1. check 4~9bype with Exif Header (0x45786966 0000) */
-   if (memcmp(buf + 4, ExifHeader, sizeof (ExifHeader))) return 0;
+
+   data_size = ((*(buf + 2) << 8) + *(buf + 3));
+   if ((*position + 2 + data_size) > fsize) return EINA_FALSE;
+
+   if (memcmp(buf + 4, ExifHeader, sizeof (ExifHeader)))
+   {
+       *position = *position + 2 + data_size;
+       *orientation_res = -1;
+       return EINA_TRUE;
+   }
 
    /* 2. get 10&11 byte  get info of "II(0x4949)" or "MM(0x4d4d)" */
    /* 3. get [18]&[19] get directory entry # */
@@ -248,11 +270,12 @@ _get_orientation_app1(char *app1_head, size_t remain_length)
         orientation[0] = 0x12;
         orientation[1] = 0x01;
      }
-   else return 0;
+   else return EINA_FALSE;
+
+   /* check num_directory data */
+   if ((*position + (12 * num_directory + 20)) > fsize) return EINA_FALSE;
 
    buf = app1_head + 20;
-
-   if (remain_length < (12 * num_directory + 20)) return 0;
 
    j = 0;
 
@@ -262,47 +285,143 @@ _get_orientation_app1(char *app1_head, size_t remain_length)
           {
              /*get orientation tag */
              if (byte_align == EXIF_BYTE_ALIGN_MM)
-	       direction = *(buf+ j + 9);
+               direction = *(buf+ j + 9);
              else direction = *(buf+ j + 8);
              switch (direction)
                {
                 case 3:
+                  *orientation_res = 180;
+                  *flipped = EINA_FALSE;
+                  return EINA_TRUE;
                 case 4:
-                   return 180;
+                  *orientation_res = 180;
+                  *flipped = EINA_TRUE;
+                  return EINA_TRUE;
                 case 6:
+                  *orientation_res = 90;
+                  *flipped = EINA_FALSE;
+                  return EINA_TRUE;
                 case 7:
-                   return 90;
+                  *orientation_res = 90;
+                  *flipped = EINA_TRUE;
+                  return EINA_TRUE;
                 case 5:
+                  *orientation_res = 270;
+                  *flipped = EINA_TRUE;
+                  return EINA_TRUE;
                 case 8:
-                   return 270;
+                  *orientation_res = 270;
+                  *flipped = EINA_FALSE;
+                  return EINA_TRUE;
+                case 2:
+                  *orientation_res = 0;
+                  *flipped = EINA_TRUE;
+                  return EINA_TRUE;
                 default:
-                   return 0;
+                  *orientation_res = 0;
+                  *flipped = EINA_FALSE;
+                  return EINA_TRUE;
                }
           }
         else
           j = j + 12;
      }
-   return 0;
+   return EINA_FALSE;
 }
 
 static int
-_get_orientation(void *map, size_t length)
+_get_orientation(void *map, size_t length, Eina_Bool *flipped)
 {
-   char *buf;
+   unsigned char *buf;
+   size_t position = 0;
+   int orientation = -1;
+   Eina_Bool res = EINA_FALSE;
+   *flipped = EINA_FALSE;
 
    /* open file and get 22 byte frome file */
    if (!map) return 0;
    /* 1. read 22byte */
    if (length < 22) return 0;
-   buf = (char *)map;
+   buf = (unsigned char *)map;
 
+   position = 2;
    /* 2. check 2,3 bypte with APP0(0xFFE0) or APP1(0xFFE1) */
-   if (!memcmp(buf + 2, App0, sizeof (App0)))
-      return _get_orientation_app0(buf + 2, length - 2);
-   if (!memcmp(buf + 2, App1, sizeof (App1)))
-      return _get_orientation_app1(buf + 2, length - 2);
+   while((length - position) > 0)
+     {
+        if (!memcmp(buf + position, App0, sizeof (App0)))
+          {
+             res = _get_next_app0(map, length, &position);
+             if (!res) break;
+          }
+        else if (!memcmp(buf + position, App1, sizeof (App1)))
+          {
+             res = _get_orientation_app1(map, length, &position, &orientation, flipped);
+             if (!res) break;
+             if (orientation != -1) return orientation;
+          }
+        else break;
+     }
    return 0;
 }
+
+static void
+_rotate_region(unsigned int *r_x, unsigned int *r_y, unsigned int *r_w, unsigned int *r_h,
+               unsigned int x, unsigned int y, unsigned int w, unsigned int h,
+               unsigned int output_w, unsigned int output_h,
+               int degree, Eina_Bool flipped)
+{
+   switch (degree)
+     {
+      case 90:
+        if (flipped)
+          {
+             *r_x = output_w - (y + h);
+             *r_y = output_h - (x + w);
+             *r_w = h;
+             *r_h = w;
+          }
+        else
+          {
+             *r_x = y;
+             *r_y = output_h - (x + w);
+             *r_w = h;
+             *r_h = w;
+          }
+        break;
+      case 180:
+        if (flipped)
+          {
+             *r_y = output_h - (y + h);
+          }
+        else
+          {
+             *r_x = output_w - (x + w);
+             *r_y = output_h - (y + h);
+          }
+        break;
+      case 270:
+        if (flipped)
+          {
+             *r_x = y;
+             *r_y = x;
+             *r_w = h;
+             *r_h = w;
+          }
+        else
+          {
+             *r_x = output_w - (y + h);
+             *r_y = x;
+             *r_w = h;
+             *r_h = w;
+          }
+        break;
+      default:
+        if (flipped)
+           *r_x = output_w - (x + w);
+        break;
+     }
+}
+
 
 static Eina_Bool
 evas_image_load_file_head_jpeg_internal(Image_Entry *ie,
@@ -315,7 +434,7 @@ evas_image_load_file_head_jpeg_internal(Image_Entry *ie,
 
    /* for rotation decoding */
    int degree = 0;
-   Eina_Bool change_wh = EINA_FALSE;
+   Eina_Bool change_wh = EINA_FALSE, flipped = EINA_FALSE;
    unsigned int load_opts_w = 0, load_opts_h = 0;
 
    memset(&cinfo, 0, sizeof(cinfo));
@@ -348,16 +467,17 @@ evas_image_load_file_head_jpeg_internal(Image_Entry *ie,
    cinfo.do_block_smoothing = FALSE;
    cinfo.dct_method = JDCT_ISLOW; // JDCT_FLOAT JDCT_IFAST(quality loss)
    cinfo.dither_mode = JDITHER_ORDERED;
+   cinfo.buffered_image = TRUE; // buffered mode in case jpg is progressive
    jpeg_start_decompress(&cinfo);
-
    /* rotation decoding */
    if (ie->load_opts.orientation)
      {
-        degree = _get_orientation(map, length);
-        if (degree != 0)
+        degree = _get_orientation(map, length, &flipped);
+        if (degree != 0 || flipped)
           {
              ie->load_opts.degree = degree;
              ie->flags.rotated = EINA_TRUE;
+             ie->flags.flipped = flipped;
 
              if (degree == 90 || degree == 270)
                change_wh = EINA_TRUE;
@@ -402,24 +522,29 @@ evas_image_load_file_head_jpeg_internal(Image_Entry *ie,
              ie->load_opts.h = load_opts_w;
           }
 
-	if (ie->load_opts.w > 0)
-	  {
-	     w2 = ie->load_opts.w;
-	     h2 = (ie->load_opts.w * h) / w;
-	     if ((ie->load_opts.h > 0) && (h2 > ie->load_opts.h))
-	       {
-	          unsigned int w3;
-		  h2 = ie->load_opts.h;
-		  w3 = (ie->load_opts.h * w) / h;
-		  if (w3 > w2)
-		    w2 = w3;
-	       }
-	  }
-	else if (ie->load_opts.h > 0)
-	  {
-	     h2 = ie->load_opts.h;
-	     w2 = (ie->load_opts.h * w) / h;
-	  }
+        // TIZEN ONLY
+        if (ie->load_opts.w < cinfo.output_width)
+          {
+             unsigned int ratio_scale;
+             for (ratio_scale = 1; ratio_scale < 4; ratio_scale++)
+               {
+                  scalew = cinfo.output_width >> ratio_scale;
+                  scaleh = scalew * h / w;
+                  if ((scalew <= ie->load_opts.w) && (scaleh <= ie->load_opts.h)) break;
+               }
+             ie->load_opts.w = scalew;
+             ie->load_opts.h = scaleh;
+          }
+        w2 = ie->load_opts.w;
+        h2 = (ie->load_opts.w * h) / w;
+        if (h2 > ie->load_opts.h)
+          {
+             unsigned int w3;
+             h2 = ie->load_opts.h;
+             w3 = (ie->load_opts.h * w) / h;
+             if (w3 > w2)
+             w2 = w3;
+          }
 	w = w2;
 	h = h2;
         if (change_wh)
@@ -467,6 +592,7 @@ evas_image_load_file_head_jpeg_internal(Image_Entry *ie,
 	cinfo.do_block_smoothing = FALSE;
 	cinfo.scale_num = 1;
 	cinfo.scale_denom = ie->scale;
+	cinfo.buffered_image = TRUE; // buffered mode in case jpg is progressive
 	jpeg_calc_output_dimensions(&(cinfo));
 	jpeg_start_decompress(&cinfo);
      }
@@ -485,30 +611,10 @@ evas_image_load_file_head_jpeg_internal(Image_Entry *ie,
              load_region_y = ie->load_opts.region.y;
              load_region_w = ie->load_opts.region.w;
              load_region_h = ie->load_opts.region.h;
-
-             switch (degree)
-               {
-                case 90:
-                   ie->load_opts.region.x = load_region_y;
-                   ie->load_opts.region.y = h - (load_region_x + load_region_w);
-                   ie->load_opts.region.w = load_region_h;
-                   ie->load_opts.region.h = load_region_w;
-                   break;
-                case 180:
-                   ie->load_opts.region.x = w - (load_region_x+ load_region_w);
-                   ie->load_opts.region.y = h - (load_region_y + load_region_h);
-
-                   break;
-                case 270:
-                   ie->load_opts.region.x = w - (load_region_y + load_region_h);
-                   ie->load_opts.region.y = load_region_x;
-                   ie->load_opts.region.w = load_region_h;
-                   ie->load_opts.region.h = load_region_w;
-                   break;
-                default:
-                   break;
-               }
-
+             _rotate_region(&ie->load_opts.region.x, &ie->load_opts.region.y,
+                            &ie->load_opts.region.w, &ie->load_opts.region.h,
+                            load_region_x, load_region_y, load_region_w, load_region_h,
+                            w, h, degree, ie->flags.flipped);
           }
         RECTS_CLIP_TO_RECT(ie->load_opts.region.x, ie->load_opts.region.y,
                            ie->load_opts.region.w, ie->load_opts.region.h,
@@ -555,6 +661,88 @@ get_time(void)
    return (double)timev.tv_sec + (((double)timev.tv_usec) / 1000000);
 }
 */
+
+static void
+_rotate_180(DATA32 *data, int w, int h)
+{
+   DATA32 *p1, *p2;
+   DATA32 pt;
+   int x;
+
+   p1 = data;
+   p2 = data + (h * w) - 1;
+   for (x = (w * h) / 2; --x >= 0;)
+     {
+        pt = *p1;
+        *p1 = *p2;
+        *p2 = pt;
+        p1++;
+        p2--;
+     }
+}
+
+static void
+_flip_horizontal(DATA32 *data, int w, int h)
+{
+   DATA32 *p1, *p2;
+   DATA32 pt;
+   int x, y;
+
+   for (y = 0; y < h; y++)
+     {
+        p1 = data + (y * w);
+        p2 = data + ((y + 1) * w) - 1;
+        for (x = 0; x < (w >> 1); x++)
+          {
+             pt = *p1;
+             *p1 = *p2;
+             *p2 = pt;
+             p1++;
+             p2--;
+          }
+     }
+}
+
+static void
+_flip_vertical(DATA32 *data, int w, int h)
+{
+   DATA32 *p1, *p2;
+   DATA32 pt;
+   int x, y;
+
+   for (y = 0; y < (h >> 1); y++)
+     {
+        p1 = data + (y * w);
+        p2 = data + ((h - 1 - y) * w);
+        for (x = 0; x < w; x++)
+          {
+             pt = *p1;
+             *p1 = *p2;
+             *p2 = pt;
+             p1++;
+             p2++;
+          }
+     }
+}
+
+static void
+_rotate_change_wh(DATA32 *to, DATA32 *from,
+                  int w, int h,
+                  int dx, int dy)
+{
+   int x, y;
+
+   for (x = h; --x >= 0;)
+     {
+        for (y = w; --y >= 0;)
+          {
+             *to = *from;
+             from++;
+             to += dy;
+          }
+        to += dx;
+     }
+}
 
 static Eina_Bool
 evas_image_load_file_data_jpeg_internal(Image_Entry *ie,
@@ -1044,69 +1232,45 @@ evas_image_load_file_data_jpeg_internal(Image_Entry *ie,
      }
    /* if rotation operation need, rotate it */
 done:
-
    if (ie->flags.rotated)
      {
-        DATA32             *data1, *data2,  *to, *from;
-        int                 lx, ly, lw, lh,  hw;
+        uint32_t *to;
+        int hw;
+        hw = ie_w * ie_h;
+        to = evas_cache_image_pixels(ie);
 
-        lw = ie->w;
-        lh = ie->h;
-        hw =lw * lh;
-
-        data1 = evas_cache_image_pixels(ie);
-
-        if (degree == 180)
+        switch (degree)
           {
-             DATA32 tmpd;
+           case 90:
+              if (ie->flags.flipped)
+                _rotate_change_wh(to + hw - 1, ptr_rotate, ie_w, ie_h, hw - 1, -ie_h);
+              else
+                _rotate_change_wh(to + ie_h - 1, ptr_rotate, ie_w, ie_h, -hw - 1, ie_h);
+              break;
 
-             data2 = data1 + (lh * lw) -1;
-             for (lx = (lw * lh) / 2; --lx >= 0;)
-               {
-                  tmpd = *data1;
-                  *data1 = *data2;
-                  *data2 = tmpd;
-                  data1++;
-                  data2--;
-               }
+           case 180:
+              if (ie->flags.flipped)
+                _flip_vertical(to, ie_w, ie_h);
+              else
+                _rotate_180(to, ie_w, ie_h);
+              break;
+
+           case 270:
+              if (ie->flags.flipped)
+                _rotate_change_wh(to, ptr_rotate, ie_w, ie_h, -hw + 1, ie_h);
+              else
+                _rotate_change_wh(to + hw - ie_h, ptr_rotate, ie_w, ie_h, hw + 1, -ie_h);
+              break;
+
+           default:
+              if (ie->flags.flipped)
+                _flip_horizontal(to, ie_w, ie_h);
+              break;
           }
-        else 
+        if (ptr_rotate)
           {
-             data2 = NULL;
-             to = NULL;
-             if (ptr_rotate) data2 = ptr_rotate;
-
-             if (degree == 90)
-               {
-                  to = data1 + lw - 1;
-                  hw = -hw - 1;
-               }
-             else if (degree == 270)
-               {
-                  to = data1 + hw - lw;
-                  lw = -lw;
-                  hw = hw + 1;
-               }
-
-             if (to)
-               {
-                  from = data2;
-                  for (lx = ie->w; --lx >= 0;)
-                    {
-                       for (ly =ie->h; --ly >= 0;)
-                         {
-                            *to = *from;
-                            from++;
-                            to += lw;
-                         }
-                       to += hw;
-                    }
-               }
-             if (ptr_rotate)
-               {
-                  free(ptr_rotate);
-                  ptr_rotate = NULL;
-               }
+             free(ptr_rotate);
+             ptr_rotate = NULL;
           }
         if (region)
           {

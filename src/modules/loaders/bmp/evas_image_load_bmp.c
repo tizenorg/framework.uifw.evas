@@ -109,7 +109,7 @@ evas_image_load_file_head_bmp(Image_Entry *ie, const char *file, const char *key
    char hasa = 0;
    int w = 0, h = 0, bit_count = 0, image_size = 0, comp = 0;
    unsigned int offset, head_size, amask = 0;
-   int fsize = 0;
+   size_t fsize;
    unsigned int bmpsize;
    unsigned short res1, res2;
 
@@ -135,6 +135,7 @@ evas_image_load_file_head_bmp(Image_Entry *ie, const char *file, const char *key
    if (!read_ushort(map, fsize, &position, &res2)) goto close_file;
    if (!read_uint(map, fsize, &position, &offset)) goto close_file;
    if (!read_uint(map, fsize, &position, &head_size)) goto close_file;
+   if (offset > fsize) goto close_file;
    if (head_size == 12) // OS/2 V1 + Windows 3.0
      {
         short tmp;
@@ -392,7 +393,7 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
      rmask = 0, gmask = 0, bmask = 0, amask = 0;
    int right_way_up = 0;
    unsigned char r, g, b, a;
-   int fsize = 0;
+   size_t fsize;
    unsigned int bmpsize;
    unsigned short res1, res2;
 
@@ -424,6 +425,7 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
    if (!read_ushort(map, fsize, &position, &res2)) goto close_file;
    if (!read_uint(map, fsize, &position, &offset)) goto close_file;
    if (!read_uint(map, fsize, &position, &head_size)) goto close_file;
+   if (offset > fsize) goto close_file;
    image_size = fsize - offset;
    if (image_size < 1) goto close_file;
 
@@ -456,7 +458,7 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
         if (!read_int(map, fsize, &position, &tmp2)) goto close_file;
         comp = tmp2; // compression method
         if (!read_int(map, fsize, &position, &tmp2)) goto close_file;
-        image_size = tmp2; // bitmap data size
+        if (tmp2 <= image_size) image_size = tmp2; // bitmap data size, GIMP can handle image size error
         if (!read_int(map, fsize, &position, &tmp2)) goto close_file;
         //hdpi = (tmp2 * 254) / 10000; // horizontal pixels/meter
         if (!read_int(map, fsize, &position, &tmp2)) goto close_file;
@@ -484,7 +486,7 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
         if (!read_int(map, fsize, &position, &tmp2)) goto close_file;
         comp = tmp2; // compression method
         if (!read_int(map, fsize, &position, &tmp2)) goto close_file;
-        image_size = tmp2; // bitmap data size
+        if (tmp2 <= image_size) image_size = tmp2; // bitmap data size, GIMP can handle image size error
         if (!read_int(map, fsize, &position, &tmp2)) goto close_file;
         //hdpi = (tmp2 * 254) / 10000; // horizontal pixels/meter
         if (!read_int(map, fsize, &position, &tmp2)) goto close_file;
@@ -512,7 +514,7 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
         if (!read_int(map, fsize, &position, &tmp2)) goto close_file;
         comp = tmp2; // compression method
         if (!read_int(map, fsize, &position, &tmp2)) goto close_file;
-        image_size = tmp2; // bitmap data size
+        if (tmp2 <= image_size) image_size = tmp2; // bitmap data size, GIMP can handle image size error
         if (!read_int(map, fsize, &position, &tmp2)) goto close_file;
         //hdpi = (tmp2 * 254) / 10000; // horizontal pixels/meter
         if (!read_int(map, fsize, &position, &tmp2)) goto close_file;
@@ -550,7 +552,7 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
         if (!read_int(map, fsize, &position, &tmp2)) goto close_file;
         comp = tmp2; // compression method
         if (!read_int(map, fsize, &position, &tmp2)) goto close_file;
-        image_size = tmp2; // bitmap data size
+        if (tmp2 <= image_size) image_size = tmp2; // bitmap data size, GIMP can handle image size error
         if (!read_int(map, fsize, &position, &tmp2)) goto close_file;
         //hdpi = (tmp2 * 254) / 10000; // horizontal pixels/meter
         if (!read_int(map, fsize, &position, &tmp2)) goto close_file;
@@ -623,6 +625,8 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
      }
 
    row_size = ceil((double)(image_w * bit_count) / 32) * 4;
+   if (image_size != row_size * h)
+     image_size = row_size * h;
 
    if (bit_count < 16)
      {
@@ -659,7 +663,11 @@ evas_image_load_file_data_bmp(Image_Entry *ie, const char *file, const char *key
         position = offset;
 
         if ((scale_ratio == 1) || (comp !=0))
-          buffer = malloc(image_size + 8); // add 8 for padding to avoid checks
+          {
+             if (image_size < (int) fsize - position)
+               image_size = fsize - position;
+             buffer = malloc(image_size + 8); // add 8 for padding to avoid checks
+          }
         else
           {
              scale_surface = malloc(image_w * sizeof(DATA32)); //for one line decoding

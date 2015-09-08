@@ -61,15 +61,18 @@ x_color_alloc_rgb(int nr, int ng, int nb, Display *d, Colormap cmap, Visual *v)
 		  Status ret;
 		  int dr, dg, db;
 
-                  val = (int)((((double)r) / ((nr) - 1)) * 255);
+                  val = (int)(((r * 255) / ((nr) - 1)));
 		  val = (val << 8) | val;
 		  xcl.red = (unsigned short)(val);
-		  val = (int)((((double)g) / ((ng) - 1)) * 255);
+		  val = (int)(((g * 255) / ((ng) - 1)));
 		  val = (val << 8) | val;
 		  xcl.green = (unsigned short)(val);
-		  val = (int)((((double)b) / ((nb) - 1)) * 255);
+		  val = (int)(((b * 255) / ((nb) - 1)));
 		  val = (val << 8) | val;
 		  xcl.blue = (unsigned short)(val);
+                  xcl.pixel = 0;
+                  xcl.flags = 0;
+                  xcl.pad = 0;
 		  xcl_in = xcl;
 		  ret = XAllocColor(d, cmap, &xcl);
 		  dr = (int)xcl_in.red - (int)xcl.red;
@@ -78,7 +81,7 @@ x_color_alloc_rgb(int nr, int ng, int nb, Display *d, Colormap cmap, Visual *v)
 		  if (dg < 0) dg = -dg;
 		  db = (int)xcl_in.blue - (int)xcl.blue;
 		  if (db < 0) db = -db;
-/*
+/*                  
 		  printf("ASK [%i]: %04x %04x %04x = %04x %04x %04x | dif = %04x / %04x\n",
 			 ret,
 			 xcl_in.red, xcl_in.green, xcl_in.blue,
@@ -134,11 +137,14 @@ x_color_alloc_gray(int ng, Display *d, Colormap cmap, Visual *v)
 	int val;
 	Status ret;
 
-	val = (int)((((double)g) / ((ng) - 1)) * 255);
+	val = (int)(((g * 255) / ((ng) - 1)));
 	val = (val << 8) | val;
 	xcl.red = (unsigned short)(val);
 	xcl.green = (unsigned short)(val);
 	xcl.blue = (unsigned short)(val);
+        xcl.pixel = 0;
+        xcl.flags = 0;
+        xcl.pad = 0;
 	xcl_in = xcl;
 	ret = XAllocColor(d, cmap, &xcl);
 	if ((ret == 0) ||
@@ -336,9 +342,10 @@ evas_software_xlib_x_color_allocate(Display         *disp,
    palpriv->cmap = cmap;
    if (pal->colors == PAL_MODE_NONE)
      {
-	if (pal->lookup) free(pal->lookup);
-	free(pal);
-	return NULL;
+        if (pal->lookup) free(pal->lookup);
+        free(palpriv);
+        free(pal);
+        return NULL;
      }
    palettes = eina_list_append(palettes, pal);
    return pal;
