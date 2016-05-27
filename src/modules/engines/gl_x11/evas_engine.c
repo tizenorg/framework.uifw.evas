@@ -2571,7 +2571,7 @@ eng_output_flush(void *data)
      }
    if (re->info->info.drawable_back)
      {
-        glFlush();
+        glFinish();
      }
    else
      {
